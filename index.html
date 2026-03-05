@@ -410,10 +410,53 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
 
   <!-- DASHBOARD -->
   <div id="view-dashboard">
-    <div class="modulo-badge">📊 RESUMO GERAL</div>
     <div id="dash-loading" class="loading">Carregando...</div>
     <div id="dash-content" class="hidden">
-      <div class="shortcut-hint">
+
+      <!-- LOGO EDR -->
+      <div style="text-align:center;padding:18px 0 10px 0;">
+        <div style="display:inline-flex;align-items:center;gap:12px;">
+          <div style="width:48px;height:48px;background:var(--verde3);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:900;color:#fff;font-family:monospace;letter-spacing:-2px;">E</div>
+          <div style="text-align:left;">
+            <div style="font-size:22px;font-weight:900;color:var(--verde-hl);letter-spacing:2px;">EDR</div>
+            <div style="font-size:10px;color:var(--texto3);letter-spacing:3px;text-transform:uppercase;">Engenharia</div>
+          </div>
+        </div>
+        <div style="font-size:10px;color:var(--texto3);margin-top:6px;letter-spacing:2px;">GESTÃO INTEGRADA DE OBRAS</div>
+      </div>
+
+      <!-- CARDS ADMIN -->
+      <div class="card-grid admin-only">
+        <div class="stat-card"><div class="stat-label">TOTAL OBRAS</div><div class="stat-value" id="d-total-obras" style="color:var(--verde)"></div><div class="stat-sub">lançamentos</div></div>
+        <div class="stat-card"><div class="stat-label">CRÉDITOS IBS/CBS</div><div class="stat-value" id="d-creditos" style="color:var(--verde)"></div><div class="stat-sub">Reforma 2027</div></div>
+        <div class="stat-card"><div class="stat-label">EM ESTOQUE</div><div class="stat-value" id="d-estoque" style="color:var(--roxo)"></div><div class="stat-sub">aguard. distribuição</div></div>
+        <div class="stat-card"><div class="stat-label">NOTAS FISCAIS</div><div class="stat-value" id="d-qtd" style="color:var(--azul)"></div><div class="stat-sub">lançadas</div></div>
+      </div>
+
+      <!-- GRÁFICOS ADMIN -->
+      <div class="admin-only" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;" id="dash-graficos">
+        <div class="card" style="padding:16px;">
+          <div class="section-title" style="margin-bottom:12px;">🥧 Gastos por Categoria</div>
+          <canvas id="chart-pizza" height="220"></canvas>
+        </div>
+        <div class="card" style="padding:16px;">
+          <div class="section-title" style="margin-bottom:12px;">🏗 Custo por Obra</div>
+          <canvas id="chart-barras" height="220"></canvas>
+        </div>
+      </div>
+
+      <div class="alert-box alert-verde admin-only"><div class="alert-title">⚡ REFORMA TRIBUTÁRIA 2027</div><div class="alert-text" id="dash-alert"></div></div>
+      <div id="dash-obras" class="hidden"></div>
+
+      <!-- Operacional -->
+      <div class="card hidden" id="oper-welcome" style="text-align:center;padding:24px 16px;">
+        <div style="font-size:40px;margin-bottom:8px;">👷</div>
+        <div class="section-title">Bem-vindo ao EDR System</div>
+        <p style="font-size:13px;color:var(--texto3);line-height:1.7;margin-top:6px;">Use o menu lateral para <strong>lançar notas fiscais</strong> ou <strong>registrar materiais no estoque</strong>.</p>
+      </div>
+
+      <!-- Atalhos -->
+      <div class="shortcut-hint" style="margin-top:8px;">
         <div class="shortcut-title">⌨ ATALHOS</div>
         <div class="shortcut-grid">
           <div class="shortcut-item"><span class="shortcut-key">F1</span> Resumo</div>
@@ -424,30 +467,19 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
           <div class="shortcut-item"><span class="shortcut-key">Ctrl+S</span> Salvar</div>
         </div>
       </div>
-      <div class="card-grid admin-only">
-        <div class="stat-card"><div class="stat-label">TOTAL OBRAS</div><div class="stat-value" id="d-total-obras" style="color:var(--verde)"></div><div class="stat-sub">lançamentos</div></div>
-        <div class="stat-card"><div class="stat-label">CRÉDITOS IBS/CBS</div><div class="stat-value" id="d-creditos" style="color:var(--verde)"></div><div class="stat-sub">Reforma 2027</div></div>
-        <div class="stat-card"><div class="stat-label">EM ESTOQUE</div><div class="stat-value" id="d-estoque" style="color:var(--roxo)"></div><div class="stat-sub">aguard. distribuição</div></div>
-        <div class="stat-card"><div class="stat-label">NOTAS FISCAIS</div><div class="stat-value" id="d-qtd" style="color:var(--azul)"></div><div class="stat-sub">lançadas</div></div>
-      </div>
-      <div class="card admin-only"><div class="section-title">🏗 CUSTO POR OBRA</div><div id="dash-obras"></div></div>
-      <div class="alert-box alert-verde admin-only"><div class="alert-title">⚡ REFORMA TRIBUTÁRIA 2027</div><div class="alert-text" id="dash-alert"></div></div>
-      <!-- Operacional vê isso -->
-      <div class="card operacional-info hidden" id="oper-welcome">
-        <div class="section-title">👋 Bem-vindo ao EDR System</div>
-        <p style="font-size:13px;color:var(--cinza-texto);line-height:1.7;">Use o menu acima para <strong>lançar notas fiscais</strong> ou <strong>dar baixa de materiais do estoque</strong> para as obras.</p>
-      </div>
     </div>
   </div>
 
   <!-- OBRAS (módulo EDR Obras) -->
   <div id="view-obras" class="hidden">
-    <div class="modulo-badge">🏗 EDR OBRAS</div>
-    <div class="filter-row">
-      <input type="text" id="obras-busca" placeholder="🔍 Buscar lançamento..." oninput="filtrarLanc()">
-      <select id="obras-filtro-obra" onchange="filtrarLanc()"><option value="">Todas as obras</option></select>
+    <div style="position:sticky;top:53px;z-index:90;background:var(--bg);padding:10px 0 4px 0;">
+      <div class="modulo-badge">🏗 EDR OBRAS</div>
+      <div class="filter-row">
+        <input type="text" id="obras-busca" placeholder="🔍 Buscar lançamento..." oninput="filtrarLanc()">
+        <select id="obras-filtro-obra" onchange="filtrarLanc()"><option value="">Todas as obras</option></select>
+      </div>
+      <div class="chips-wrap" id="obras-chips"></div>
     </div>
-    <div class="chips-wrap" id="obras-chips"></div>
     <div id="obras-detalhe" class="hidden"></div>
     <div id="obras-lista" class="hidden"></div>
     <div id="obras-total-filtro" class="hidden" style="display:flex;justify-content:space-between;align-items:center;background:var(--bg2);border:1px solid var(--verde-bd);border-radius:10px;padding:10px 14px;margin-bottom:10px;"></div>
@@ -458,12 +490,14 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
 
   <!-- ESTOQUE -->
   <div id="view-estoque" class="hidden">
-    <div class="modulo-badge">📦 ESTOQUE EDR</div>
-    <div style="display:flex;gap:8px;margin-bottom:12px;">
-      <button class="btn-save" style="flex:1;padding:10px;font-size:13px;" onclick="abrirEntradaDireta()">📥 ENTRADA DIRETA</button>
-    </div>
-    <div class="filter-row" style="margin-bottom:8px;">
-      <input type="text" id="estoque-busca" placeholder="🔍 Buscar material..." oninput="renderEstoque()" style="text-transform:none;">
+    <div style="position:sticky;top:53px;z-index:90;background:var(--bg);padding:10px 0 4px 0;">
+      <div class="modulo-badge">📦 ESTOQUE EDR</div>
+      <div style="display:flex;gap:8px;margin-bottom:8px;">
+        <button class="btn-save" style="flex:1;padding:10px;font-size:13px;" onclick="abrirEntradaDireta()">📥 ENTRADA DIRETA</button>
+      </div>
+      <div class="filter-row" style="margin-bottom:4px;">
+        <input type="text" id="estoque-busca" placeholder="🔍 Buscar material..." oninput="renderEstoque()" style="text-transform:none;">
+      </div>
     </div>
 
     <div id="estoque-loading" class="loading">Carregando...</div>
@@ -473,14 +507,16 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
 
   <!-- NOTAS -->
   <div id="view-notas" class="hidden">
-    <div class="modulo-badge">🧾 NOTAS FISCAIS</div>
-    <div class="filter-row">
-      <select id="filtro-obra" onchange="renderNotas()"><option value="">TODAS AS OBRAS</option></select>
-      <select id="filtro-credito" onchange="renderNotas()">
-        <option value="">TODOS</option><option value="sim">GERA CRÉDITO</option>
-        <option value="nao">SEM CRÉDITO</option><option value="estoque">EM ESTOQUE</option>
-        <option value="escritorio">🏢 ESCRITÓRIO</option>
-      </select>
+    <div style="position:sticky;top:53px;z-index:90;background:var(--bg);padding:10px 0 4px 0;">
+      <div class="modulo-badge">🧾 NOTAS FISCAIS</div>
+      <div class="filter-row">
+        <select id="filtro-obra" onchange="renderNotas()"><option value="">TODAS AS OBRAS</option></select>
+        <select id="filtro-credito" onchange="renderNotas()">
+          <option value="">TODOS</option><option value="sim">GERA CRÉDITO</option>
+          <option value="nao">SEM CRÉDITO</option><option value="estoque">EM ESTOQUE</option>
+          <option value="escritorio">🏢 ESCRITÓRIO</option>
+        </select>
+      </div>
     </div>
     <div id="notas-lista"></div>
     <div id="notas-empty" class="empty hidden">Nenhuma nota encontrada.</div>
@@ -594,9 +630,10 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
 
   <!-- CATÁLOGO DE MATERIAIS -->
   <div id="view-catalogo" class="hidden">
-    <div class="modulo-badge">🏷 CATÁLOGO DE MATERIAIS</div>
-    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
-      <input type="text" id="catalogo-busca" placeholder="🔍 Buscar por código ou nome..." oninput="renderCatalogo()" style="flex:2;min-width:200px;background:var(--bg2);border:1px solid var(--borda2);border-radius:10px;padding:10px 14px;color:var(--branco);font-size:13px;font-family:inherit;">
+    <div style="position:sticky;top:53px;z-index:90;background:var(--bg);padding:10px 0 4px 0;">
+      <div class="modulo-badge">🏷 CENTRO DE CUSTO</div>
+      <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+        <input type="text" id="catalogo-busca" placeholder="🔍 Buscar por código ou nome..." oninput="renderCatalogo()" style="flex:2;min-width:200px;background:var(--bg2);border:1px solid var(--borda2);border-radius:10px;padding:10px 14px;color:var(--branco);font-size:13px;font-family:inherit;">
       <select id="catalogo-cat-filtro" onchange="renderCatalogo()" style="flex:1;min-width:140px;background:var(--bg2);border:1px solid var(--borda2);border-radius:10px;padding:10px 14px;color:var(--branco);font-size:13px;font-family:inherit;">
         <option value="">📂 Todas categorias</option>
         <option value="alvenaria">🧱 Alvenaria</option>
@@ -941,33 +978,96 @@ function populateSelects() {
 // ══════════════════════════════════════════
 // DASHBOARD
 // ══════════════════════════════════════════
+let chartPizza = null, chartBarras = null;
+
 function renderDashboard() {
   document.getElementById('dash-loading').classList.add('hidden');
   document.getElementById('dash-content').classList.remove('hidden');
-  if (usuarioAtual?.perfil !== 'admin') return;
+
+  // Operacional
+  if (usuarioAtual?.perfil !== 'admin') {
+    document.getElementById('oper-welcome').classList.remove('hidden');
+    return;
+  }
+
   const totalObras = lancamentos.reduce((s,l) => s + Number(l.total||0), 0);
-  const totalNotas = notas.reduce((s,n) => s + Number(n.valor_bruto||0), 0);
   const creditos = notas.filter(n=>n.gera_credito).reduce((s,n) => s + Number(n.imposto||0), 0);
   const estoque = notas.filter(n=>n.obra==='EDR').reduce((s,n) => s + Number(n.valor_bruto||0), 0);
-  const despesaEscritorio = notas.filter(n=>n.obra==='EDR_ESCRITORIO').reduce((s,n) => s + Number(n.valor_bruto||0), 0);
   document.getElementById('d-total-obras').textContent = fmt(totalObras);
   document.getElementById('d-creditos').textContent = fmt(creditos);
   document.getElementById('d-estoque').textContent = fmt(estoque);
   document.getElementById('d-qtd').textContent = notas.length;
-  const maxV = Math.max(...obras.map(o => lancamentos.filter(l=>l.obra_id===o.id).reduce((s,l)=>s+Number(l.total||0),0)), 1);
+  document.getElementById('dash-alert').innerHTML = `CRÉDITOS IBS/CBS ACUMULADOS: <strong>${fmt(creditos)}</strong>. Controle garantido para aproveitar cada crédito a partir de 2027.`;
+
+  // Dados por obra
   const porObra = obras.map(o => {
     const ls = lancamentos.filter(l => l.obra_id === o.id);
     return { nome: o.nome, total: ls.reduce((s,l)=>s+Number(l.total||0),0), qtd: ls.length };
   }).filter(o => o.qtd > 0).sort((a,b) => b.total - a.total);
-  document.getElementById('dash-obras').innerHTML = !porObra.length ? '<div class="empty" style="padding:8px">Nenhum lançamento ainda.</div>'
-    : porObra.map(o => `<div class="obra-row" style="padding:10px 0;border-bottom:1px solid #f1f5f9;">
-        <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
-          <span style="font-weight:700;">${o.nome}</span><span style="font-weight:700;color:var(--verde)">${fmt(o.total)}</span>
-        </div>
-        <div style="font-size:12px;color:var(--cinza-texto);">${o.qtd} lançamento${o.qtd!==1?'s':''}</div>
-        <div class="progress"><div class="progress-bar" style="width:${(o.total/maxV*100).toFixed(1)}%"></div></div>
-      </div>`).join('');
-  document.getElementById('dash-alert').innerHTML = `CRÉDITOS IBS/CBS ACUMULADOS: <strong>${fmt(creditos)}</strong>. Controle garantido para aproveitar cada crédito a partir de 2027.`;
+
+  // Dados por categoria (usando CATS_ESTOQUE labels)
+  const catMap = {};
+  lancamentos.forEach(l => {
+    const cat = getCatEstoque(l.descricao);
+    const lb = CATS_ESTOQUE.find(c=>c.key===cat)?.lb || '📦 Outros';
+    catMap[lb] = (catMap[lb]||0) + Number(l.total||0);
+  });
+  const catEntries = Object.entries(catMap).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).slice(0,8);
+
+  // Carregar Chart.js se necessário e renderizar
+  function renderCharts() {
+    const cores = ['#2d9e50','#1a5c2a','#4ade80','#86efac','#16a34a','#15803d','#166534','#bbf7d0'];
+    const coresBarra = porObra.map((_,i) => cores[i % cores.length]);
+
+    // Gráfico Pizza
+    const ctxP = document.getElementById('chart-pizza')?.getContext('2d');
+    if (ctxP) {
+      if (chartPizza) chartPizza.destroy();
+      chartPizza = new Chart(ctxP, {
+        type: 'doughnut',
+        data: {
+          labels: catEntries.map(([k])=>k),
+          datasets: [{ data: catEntries.map(([,v])=>v), backgroundColor: cores, borderWidth: 0 }]
+        },
+        options: {
+          plugins: {
+            legend: { position: 'bottom', labels: { color: '#9ca3af', font: { size: 10 }, boxWidth: 12, padding: 8 } },
+            tooltip: { callbacks: { label: ctx => ` ${fmt(ctx.raw)}` } }
+          },
+          cutout: '55%'
+        }
+      });
+    }
+
+    // Gráfico Barras
+    const ctxB = document.getElementById('chart-barras')?.getContext('2d');
+    if (ctxB) {
+      if (chartBarras) chartBarras.destroy();
+      chartBarras = new Chart(ctxB, {
+        type: 'bar',
+        data: {
+          labels: porObra.map(o => o.nome.length > 14 ? o.nome.substring(0,12)+'…' : o.nome),
+          datasets: [{ data: porObra.map(o=>o.total), backgroundColor: coresBarra, borderRadius: 6, borderWidth: 0 }]
+        },
+        options: {
+          plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${fmt(ctx.raw)}` } } },
+          scales: {
+            x: { ticks: { color: '#9ca3af', font: { size: 9 } }, grid: { display: false } },
+            y: { ticks: { color: '#9ca3af', font: { size: 9 }, callback: v => 'R$'+( v>=1000?(v/1000).toFixed(0)+'k':v) }, grid: { color: '#1f2937' } }
+          }
+        }
+      });
+    }
+  }
+
+  if (typeof Chart === 'undefined') {
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js';
+    s.onload = renderCharts;
+    document.head.appendChild(s);
+  } else {
+    renderCharts();
+  }
 }
 
 // ══════════════════════════════════════════
