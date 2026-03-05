@@ -397,7 +397,11 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
   </button>
   <div class="nav-divider"></div>
   <button class="nav-btn" id="nav-catalogo" onclick="setView('catalogo')">
-    <span class="nav-icon">🏷</span>CATÁLOGO
+    <span class="nav-icon">🏷</span>C.CUSTO
+  </button>
+  <div class="nav-divider"></div>
+  <button class="nav-btn admin-only" id="nav-banco" onclick="setView('banco')">
+    <span class="nav-icon">🗄</span>DADOS
   </button>
   <div class="sidebar-bottom">
     <button class="nav-btn admin-only" id="nav-setup" onclick="setView('setup')" style="color:#dc2626;">
@@ -607,6 +611,34 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
       </table>
     </div>
     <div class="alert-box"><div class="alert-title">⚠️ ATENÇÃO</div><div class="alert-text">Consulte seu contador para casos específicos.</div></div>
+  </div>
+
+  <!-- BANCO DE DADOS (admin only) -->
+  <div id="view-banco" class="hidden admin-only">
+    <div style="position:sticky;top:53px;z-index:90;background:var(--bg);padding:10px 0 4px 0;">
+      <div class="modulo-badge">🗄 BANCO DE DADOS</div>
+    </div>
+
+    <!-- OBRAS CADASTRADAS -->
+    <div class="card" style="margin-bottom:12px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div class="section-title" style="margin:0;">🏗 OBRAS CADASTRADAS</div>
+        <button class="btn-save" style="padding:8px 14px;font-size:12px;" onclick="abrirModalObra()">+ Nova Obra</button>
+      </div>
+      <div id="banco-obras-lista"></div>
+    </div>
+
+    <!-- FORNECEDORES -->
+    <div class="card" style="margin-bottom:12px;">
+      <div class="section-title" style="margin-bottom:12px;">🏭 FORNECEDORES</div>
+      <div id="banco-forn-lista"></div>
+    </div>
+
+    <!-- USUÁRIOS -->
+    <div class="card">
+      <div class="section-title" style="margin-bottom:12px;">👥 USUÁRIOS DO SISTEMA</div>
+      <div id="banco-users-lista"></div>
+    </div>
   </div>
 
   <!-- SETUP (admin only) -->
@@ -1016,8 +1048,8 @@ function renderDashboard() {
 
   // Carregar Chart.js se necessário e renderizar
   function renderCharts() {
-    const cores = ['#2d9e50','#1a5c2a','#4ade80','#86efac','#16a34a','#15803d','#166534','#bbf7d0'];
-    const coresBarra = porObra.map((_,i) => cores[i % cores.length]);
+    const cores = ['#22c55e','#64748b','#3b82f6','#f59e0b','#8b5cf6','#06b6d4','#ef4444','#10b981'];
+    const coresBarra = ['#22c55e','#3b82f6','#f59e0b','#8b5cf6','#06b6d4','#ef4444','#64748b','#10b981'];
 
     // Gráfico Pizza
     const ctxP = document.getElementById('chart-pizza')?.getContext('2d');
@@ -1097,7 +1129,6 @@ function renderObrasView() {
   document.getElementById('obras-lista').innerHTML = `
     <div style="display:flex;gap:8px;margin-bottom:12px;">
       <button class="btn-save" style="flex:1;padding:10px;" onclick="abrirModalLanc()">➕ Novo Lançamento</button>
-      <button class="btn-verde-outline admin-only" style="flex:1;padding:10px;" onclick="abrirModalObra()">🏗 Nova Obra</button>
     </div>`;
   aplicarPerfil();
 }
@@ -2087,15 +2118,84 @@ function copiarSQL() { navigator.clipboard.writeText(SQL_SETUP).then(() => showT
 // NAVEGAÇÃO
 // ══════════════════════════════════════════
 function setView(v) {
-  const views = ['dashboard','obras','estoque','notas','form','creditos','setup','catalogo'];
+  const views = ['dashboard','obras','estoque','notas','form','creditos','setup','catalogo','banco'];
   views.forEach(name => {
-    document.getElementById(`view-${name}`).classList.toggle('hidden', name !== v);
+    document.getElementById(`view-${name}`)?.classList.toggle('hidden', name !== v);
     const nb = document.getElementById(`nav-${name}`);
     if (nb) nb.classList.toggle('active', name === v);
   });
   if (v === 'form') setTimeout(() => { const el = document.getElementById('f-numero'); if (el) { el.focus(); el.select && el.select(); } }, 50);
   if (v === 'obras') renderObrasView();
   if (v === 'catalogo') renderCatalogo();
+  if (v === 'banco') renderBanco();
+}
+
+function renderBanco() {
+  // OBRAS
+  const obrasEl = document.getElementById('banco-obras-lista');
+  if (obrasEl) {
+    if (!obras.length) { obrasEl.innerHTML = '<div class="empty">Nenhuma obra cadastrada.</div>'; }
+    else {
+      obrasEl.innerHTML = obras.map(o => {
+        const ls = lancamentos.filter(l => l.obra_id === o.id);
+        const total = ls.reduce((s,l) => s + Number(l.total||0), 0);
+        return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--borda2);">
+          <div>
+            <div style="font-weight:700;font-size:13px;">${o.nome}</div>
+            <div style="font-size:11px;color:var(--texto3);margin-top:2px;">${ls.length} lançamento${ls.length!==1?'s':''}</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-weight:700;color:var(--verde-hl);font-size:13px;">${fmt(total)}</div>
+            <div style="font-size:10px;color:var(--texto3);">ID: ${o.id?.substring(0,8)}…</div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  // FORNECEDORES — extraídos das notas
+  const fornEl = document.getElementById('banco-forn-lista');
+  if (fornEl) {
+    const fornMap = {};
+    notas.forEach(n => {
+      if (!n.fornecedor) return;
+      if (!fornMap[n.fornecedor]) fornMap[n.fornecedor] = { total: 0, qtd: 0, cnpj: n.cnpj || '' };
+      fornMap[n.fornecedor].total += Number(n.valor_bruto||0);
+      fornMap[n.fornecedor].qtd++;
+    });
+    const forns = Object.entries(fornMap).sort((a,b) => b[1].total - a[1].total);
+    if (!forns.length) { fornEl.innerHTML = '<div class="empty">Nenhum fornecedor ainda.</div>'; }
+    else {
+      fornEl.innerHTML = forns.map(([nome, d]) =>
+        `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--borda2);">
+          <div>
+            <div style="font-weight:700;font-size:13px;">${nome}</div>
+            <div style="font-size:11px;color:var(--texto3);margin-top:2px;">${d.cnpj || 'CNPJ não informado'} · ${d.qtd} nota${d.qtd!==1?'s':''}</div>
+          </div>
+          <div style="font-weight:700;color:var(--verde-hl);font-size:13px;">${fmt(d.total)}</div>
+        </div>`
+      ).join('');
+    }
+  }
+
+  // USUÁRIOS
+  const usersEl = document.getElementById('banco-users-lista');
+  if (usersEl) {
+    const usuarios = [
+      { login: 'duamrt', perfil: 'Admin', nome: 'Duam — Operações' },
+      { login: 'elydart', perfil: 'Admin', nome: 'Elyda — Financeiro' },
+      { login: 'operador', perfil: 'Operacional', nome: 'Equipe de Campo' },
+    ];
+    usersEl.innerHTML = usuarios.map(u =>
+      `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--borda2);">
+        <div style="width:36px;height:36px;border-radius:50%;background:var(--verde-bg);display:flex;align-items:center;justify-content:center;font-size:16px;">${u.perfil==='Admin'?'👑':'👷'}</div>
+        <div>
+          <div style="font-weight:700;font-size:13px;">${u.nome}</div>
+          <div style="font-size:11px;color:var(--texto3);">@${u.login} · ${u.perfil}</div>
+        </div>
+      </div>`
+    ).join('');
+  }
 }
 
 function setupClickOutside() {
