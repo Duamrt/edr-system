@@ -62,7 +62,7 @@ if ("serviceWorker" in navigator) {
   --azul-bg:  rgba(59,130,246,.12);
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); min-height: 100vh; color: var(--texto); }
+body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); height: 100vh; overflow: hidden; color: var(--texto); }
 
 /* ── LOGIN ── */
 .login-screen { position: fixed; inset: 0; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 999; padding: 24px; }
@@ -96,7 +96,7 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
 
 /* ── NAV ── */
 /* ── SIDEBAR ── */
-.app-shell { display: flex; min-height: calc(100vh - 53px); }
+.app-shell { display: flex; height: calc(100vh - 53px); overflow: hidden; }
 .sidebar { width: 78px; background: var(--bg2); border-right: 1px solid var(--borda); position: sticky; top: 53px; height: calc(100vh - 53px); overflow-y: auto; overflow-x: visible; display: flex; flex-direction: column; align-items: center; padding: 12px 0; gap: 4px; z-index: 99; flex-shrink: 0; justify-content: flex-start; }
 .sidebar::-webkit-scrollbar { display: none; }
 .nav-btn { width: 66px; padding: 10px 4px 8px; border: 2px solid transparent; background: transparent; font-weight: 800; font-size: 8px; cursor: pointer; color: var(--texto3); border-radius: 10px; transition: all .15s; font-family: inherit; display: flex; flex-direction: column; align-items: center; gap: 4px; letter-spacing: .8px; }
@@ -213,7 +213,7 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
 .cat-chip { display: inline-flex; align-items: center; gap: 4px; background: var(--bg3); border: 1px solid var(--borda2); border-radius: 20px; padding: 5px 12px; font-size: 11px; font-weight: 600; cursor: pointer; color: var(--texto2); white-space: nowrap; transition: all .15s; font-family: inherit; }
 .cat-chip.ativo { background: var(--verde-bg); border-color: var(--verde-bd); color: var(--verde-hl); }
 .cat-chip:hover:not(.ativo) { border-color: var(--borda2); color: var(--texto); background: var(--bg4); }
-.chips-wrap { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 12px; scroll-snap-type: x mandatory; }
+.chips-wrap { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 8px; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }
 .chips-wrap::-webkit-scrollbar { height: 3px; }
 .chips-wrap::-webkit-scrollbar-track { background: var(--bg3); border-radius: 3px; }
 .chips-wrap::-webkit-scrollbar-thumb { background: var(--verde3); border-radius: 3px; }
@@ -475,8 +475,8 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
   </div>
 
   <!-- OBRAS (módulo EDR Obras) -->
-  <div id="view-obras" class="hidden">
-    <div style="position:sticky;top:53px;z-index:90;background:var(--bg);padding:10px 0 4px 0;">
+  <div id="view-obras" class="hidden" style="min-height:0;">
+    <div id="obras-sticky" style="position:sticky;top:0;z-index:90;background:var(--bg);padding:10px 0 8px 0;border-bottom:1px solid var(--borda);margin-bottom:8px;">
       <div class="modulo-badge">🏗 EDR OBRAS</div>
       <div class="filter-row">
         <input type="text" id="obras-busca" placeholder="🔍 Buscar lançamento..." oninput="filtrarLanc()">
@@ -494,7 +494,7 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
 
   <!-- ESTOQUE -->
   <div id="view-estoque" class="hidden">
-    <div style="position:sticky;top:53px;z-index:90;background:var(--bg);padding:10px 0 4px 0;">
+    <div id="estoque-sticky" style="position:sticky;top:0;z-index:90;background:var(--bg);padding:10px 0 8px 0;border-bottom:1px solid var(--borda);margin-bottom:8px;">
       <div class="modulo-badge">📦 ESTOQUE EDR</div>
       <div style="display:flex;gap:8px;margin-bottom:8px;">
         <button class="btn-save" style="flex:1;padding:10px;font-size:13px;" onclick="abrirEntradaDireta()">📥 ENTRADA DIRETA</button>
@@ -511,7 +511,7 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
 
   <!-- NOTAS -->
   <div id="view-notas" class="hidden">
-    <div style="position:sticky;top:53px;z-index:90;background:var(--bg);padding:10px 0 4px 0;">
+    <div id="notas-sticky" style="position:sticky;top:0;z-index:90;background:var(--bg);padding:10px 0 8px 0;border-bottom:1px solid var(--borda);margin-bottom:8px;">
       <div class="modulo-badge">🧾 NOTAS FISCAIS</div>
       <div class="filter-row">
         <select id="filtro-obra" onchange="renderNotas()"><option value="">TODAS AS OBRAS</option></select>
@@ -662,7 +662,7 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
 
   <!-- CATÁLOGO DE MATERIAIS -->
   <div id="view-catalogo" class="hidden">
-    <div style="position:sticky;top:53px;z-index:90;background:var(--bg);padding:10px 0 4px 0;">
+    <div id="catalogo-sticky" style="position:sticky;top:0;z-index:90;background:var(--bg);padding:10px 0 8px 0;border-bottom:1px solid var(--borda);margin-bottom:8px;">
       <div class="modulo-badge">🏷 CENTRO DE CUSTO</div>
       <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
         <input type="text" id="catalogo-busca" placeholder="🔍 Buscar por código ou nome..." oninput="renderCatalogo()" style="flex:2;min-width:200px;background:var(--bg2);border:1px solid var(--borda2);border-radius:10px;padding:10px 14px;color:var(--branco);font-size:13px;font-family:inherit;">
