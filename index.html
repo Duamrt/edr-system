@@ -700,7 +700,10 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
   <div class="modal">
     <div class="modal-title">➕ LANÇAMENTO NA OBRA <button class="modal-close" onclick="fecharModal('lanc')">✕</button></div>
     <div class="field"><label>OBRA *</label><select id="lanc-obra"></select></div>
-    <div class="field"><label>DESCRIÇÃO *</label><input type="text" id="lanc-desc" placeholder="EX: MAO DE OBRA, CIMENTO..."></div>
+    <div class="field autocomplete-wrap"><label>DESCRIÇÃO *</label>
+      <input type="text" id="lanc-desc" placeholder="EX: MAO DE OBRA, CIMENTO..." oninput="onLancDescInput()" autocomplete="off">
+      <div class="autocomplete-list hidden" id="ac-lanc-list"></div>
+    </div>
     <div class="field-row">
       <div class="field"><label>QTD</label><input type="number" id="lanc-qtd" value="1" min="0" step="0.01" style="text-transform:none;"></div>
       <div class="field"><label>VALOR UNIT (R$) *</label><input type="number" id="lanc-preco" placeholder="0,00" min="0" step="0.01" style="text-transform:none;"></div>
@@ -1253,7 +1256,7 @@ function renderEstoque() {
         </div>
         <div style="font-size:11px;color:var(--texto2);margin-top:4px;">
           <span style="color:${m.credito?'var(--verde-hl)':'#f87171'};font-weight:700;">${m.credito?'✓ CRÉDITO':'✗ SEM CRÉDITO'}</span>
-          <span class="admin-only"> · ${fmt(m.valorMedio)}/UN</span>
+          <span class="admin-only"> · ${fmt(m.valorMedio)}/un · Total: ${fmt(m.saldoTotal * m.valorMedio)}</span>
           ${m.lotes.length > 0 ? ` · ${m.lotes.length} lote${m.lotes.length!==1?'s':''}` : ''}
           ${m.qtdDireta > 0 ? ` · <span style="color:var(--amarelo);">+${m.qtdDireta} entrada direta</span>` : ''}
         </div>
@@ -1511,6 +1514,48 @@ function classificarManual(credito) {
   document.getElementById('i-credito-badge').className = `credito-badge ${credito?'sim':'nao'}`;
   document.getElementById('i-credito-badge').textContent = credito ? '✓ CLASSIFICADO MANUALMENTE — GERA CRÉDITO' : '✗ CLASSIFICADO MANUALMENTE — SEM CRÉDITO';
   document.getElementById('i-manual-wrap').classList.add('hidden');
+}
+
+function onLancDescInput() {
+  const val = (document.getElementById('lanc-desc').value||'').toUpperCase();
+  document.getElementById('lanc-desc').value = val;
+  showLancAutocomplete(val);
+}
+
+function showLancAutocomplete(val) {
+  const list = document.getElementById('ac-lanc-list');
+  if (!val || val.length < 2) { list.classList.add('hidden'); return; }
+  const norm = s => (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  const q = norm(val);
+  
+  // Busca no catálogo primeiro
+  const catMatches = catalogoMateriais.filter(m => norm(m.nome).includes(q)).slice(0, 8);
+  // Busca em lançamentos anteriores
+  const descsPrev = [...new Set(lancamentos.map(l => l.descricao))].filter(d => norm(d).includes(q)).slice(0, 5);
+  
+  const items = [];
+  catMatches.forEach(m => {
+    items.push(`<div class="autocomplete-item" onmousedown="selectLancDesc('${m.nome.replace(/'/g,"\\'")}')">
+      <span class="ac-codigo">${m.codigo}</span>
+      <span class="ac-label">${m.nome}</span>
+      <span style="font-size:10px;color:var(--texto3);">${m.unidade||'UN'}</span>
+    </div>`);
+  });
+  descsPrev.filter(d => !catMatches.find(m => m.nome === d)).forEach(d => {
+    items.push(`<div class="autocomplete-item" onmousedown="selectLancDesc('${d.replace(/'/g,"\\'")}')">
+      <span class="ac-label">${d}</span>
+    </div>`);
+  });
+  
+  if (!items.length) { list.classList.add('hidden'); return; }
+  list.innerHTML = items.join('');
+  list.classList.remove('hidden');
+}
+
+function selectLancDesc(nome) {
+  document.getElementById('lanc-desc').value = nome;
+  document.getElementById('ac-lanc-list').classList.add('hidden');
+  document.getElementById('lanc-preco').focus();
 }
 
 function showAutocomplete(val) {
