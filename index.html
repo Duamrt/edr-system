@@ -210,14 +210,14 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
 .btn-voltar { background: var(--bg3); border: 1px solid var(--borda2); border-radius: 8px; padding: 7px 12px; font-size: 13px; cursor: pointer; color: var(--texto2); font-family: inherit; }
 .detalhe-nome { font-weight: 800; font-size: 17px; flex: 1; color: var(--branco); }
 .detalhe-total { font-weight: 800; font-size: 16px; color: var(--verde-hl); }
-.cat-chip { display: inline-flex; align-items: center; gap: 4px; background: var(--bg3); border: 1px solid var(--borda2); border-radius: 20px; padding: 5px 12px; font-size: 11px; font-weight: 600; cursor: pointer; color: var(--texto2); white-space: nowrap; transition: all .15s; font-family: inherit; }
+.cat-chip { display: inline-flex; align-items: center; gap: 4px; background: var(--bg3); border: 1px solid var(--borda2); border-radius: 20px; padding: 4px 10px; font-size: 10px; font-weight: 600; cursor: pointer; color: var(--texto2); white-space: nowrap; transition: all .15s; font-family: inherit; }
 .cat-chip.ativo { background: var(--verde-bg); border-color: var(--verde-bd); color: var(--verde-hl); }
 .cat-chip:hover:not(.ativo) { border-color: var(--borda2); color: var(--texto); background: var(--bg4); }
-.chips-wrap { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 8px; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }
+.chips-wrap { display: flex; flex-wrap: wrap; gap: 5px; padding-bottom: 4px; margin-bottom: 4px; }
 .chips-wrap::-webkit-scrollbar { height: 3px; }
 .chips-wrap::-webkit-scrollbar-track { background: var(--bg3); border-radius: 3px; }
 .chips-wrap::-webkit-scrollbar-thumb { background: var(--verde3); border-radius: 3px; }
-.cat-chip { scroll-snap-align: start; flex-shrink: 0; }
+.cat-chip { flex-shrink: 0; }
 
 /* ── FORM ── */
 .form-section { background: var(--bg2); border: 1px solid var(--borda); border-radius: 14px; padding: 16px; margin-bottom: 12px; }
@@ -666,33 +666,34 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
       <div class="modulo-badge">🏷 CENTRO DE CUSTO</div>
       <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
         <input type="text" id="catalogo-busca" placeholder="🔍 Buscar por código ou nome..." oninput="renderCatalogo()" style="flex:2;min-width:200px;background:var(--bg2);border:1px solid var(--borda2);border-radius:10px;padding:10px 14px;color:var(--branco);font-size:13px;font-family:inherit;">
-      <select id="catalogo-cat-filtro" onchange="renderCatalogo()" style="flex:1;min-width:140px;background:var(--bg2);border:1px solid var(--borda2);border-radius:10px;padding:10px 14px;color:var(--branco);font-size:13px;font-family:inherit;">
-        <option value="">📂 Todas categorias</option>
-        <option value="alvenaria">🧱 Alvenaria</option>
-        <option value="forma">🪵 Forma e Madeira</option>
-        <option value="aco">⚙ Aço/Ferro</option>
-        <option value="hidraulica">🚿 Hidráulica</option>
-        <option value="loucas">🛁 Louças e Metais</option>
-        <option value="esgoto">🪠 Esgoto</option>
-        <option value="eletrica">⚡ Elétrica</option>
-        <option value="cobertura">🏠 Cobertura</option>
-        <option value="esquadria">🪟 Esquadrias</option>
-        <option value="pintura">🖌 Pintura</option>
-        <option value="impermeab">💧 Impermeab.</option>
-        <option value="ferramenta">🔨 Ferramentas</option>
-        <option value="combustivel">⛽ Combustível</option>
-        <option value="limpeza">🧹 Limpeza</option>
-        <option value="alimentacao">🍽 Alimentação</option>
-        <option value="expediente">📎 Expediente</option>
-        <option value="outros">📦 Outros</option>
-      </select>
-      <button class="btn-save" style="padding:10px 18px;white-space:nowrap;" onclick="abrirModalNovoMaterial()">➕ Novo Material</button>
-    </div>
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-      <div id="catalogo-stats" style="font-size:11px;color:var(--texto3);"></div>
-      <div style="display:flex;gap:6px;" id="catalogo-admin-btns">
-        <button class="btn-verde-outline admin-only" style="font-size:11px;padding:6px 12px;" onclick="migrarMateriaisExistentes()">⚡ Migrar do estoque</button>
-        <button class="btn-verde-outline admin-only" style="font-size:11px;padding:6px 12px;" onclick="recalcularCategorias()">🔄 Recalcular categorias</button>
+        <select id="catalogo-cat-filtro" onchange="renderCatalogo()" style="flex:1;min-width:140px;background:var(--bg2);border:1px solid var(--borda2);border-radius:10px;padding:10px 14px;color:var(--branco);font-size:13px;font-family:inherit;">
+          <option value="">📂 Todas categorias</option>
+          <option value="alvenaria">🧱 Alvenaria</option>
+          <option value="forma">🪵 Forma e Madeira</option>
+          <option value="aco">⚙ Aço/Ferro</option>
+          <option value="hidraulica">🚿 Hidráulica</option>
+          <option value="loucas">🛁 Louças e Metais</option>
+          <option value="esgoto">🪠 Esgoto</option>
+          <option value="eletrica">⚡ Elétrica</option>
+          <option value="cobertura">🏠 Cobertura</option>
+          <option value="esquadria">🪟 Esquadrias</option>
+          <option value="pintura">🖌 Pintura</option>
+          <option value="impermeab">💧 Impermeab.</option>
+          <option value="ferramenta">🔨 Ferramentas</option>
+          <option value="combustivel">⛽ Combustível</option>
+          <option value="limpeza">🧹 Limpeza</option>
+          <option value="alimentacao">🍽 Alimentação</option>
+          <option value="expediente">📎 Expediente</option>
+          <option value="outros">📦 Outros</option>
+        </select>
+        <button class="btn-save" style="padding:10px 18px;white-space:nowrap;" onclick="abrirModalNovoMaterial()">➕ Novo Material</button>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div id="catalogo-stats" style="font-size:11px;color:var(--texto3);"></div>
+        <div style="display:flex;gap:6px;" id="catalogo-admin-btns">
+          <button class="btn-verde-outline admin-only" style="font-size:11px;padding:6px 12px;" onclick="migrarMateriaisExistentes()">⚡ Migrar</button>
+          <button class="btn-verde-outline admin-only" style="font-size:11px;padding:6px 12px;" onclick="recalcularCategorias()">🔄 Recalcular</button>
+        </div>
       </div>
     </div>
     <div id="catalogo-lista"></div>
