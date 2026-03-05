@@ -999,7 +999,7 @@ function filtrarLanc() {
   const totalEl = document.getElementById('obras-total-filtro');
   const nFiltros = (obraId ? 1 : 0) + (catFiltroAtual ? 1 : 0) + (busca ? 1 : 0);
   totalEl.classList.remove('hidden');
-  totalEl.innerHTML = `<span style="color:var(--texto2);font-size:11px;">${lista.length} lançamento${lista.length!==1?'s':''} ${nFiltros>0?'filtrados':'no total'}</span><span style="font-size:15px;font-weight:800;color:var(--verde-hl);">${fmt(totalFiltrado)}</span>`;
+  totalEl.innerHTML = `<span style="color:var(--texto2);font-size:11px;">${lista.length} lançamento${lista.length!==1?'s':''} ${nFiltros>0?'filtrados':'no total'}</span>${usuarioAtual?.perfil==='admin' ? `<span style="font-size:15px;font-weight:800;color:var(--verde-hl);">${fmt(totalFiltrado)}</span>` : ''}`;
   const obraMap = {};
   obras.forEach(o => obraMap[o.id] = o.nome);
   el.innerHTML = lista.map(l => `
