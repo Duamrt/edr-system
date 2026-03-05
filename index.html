@@ -107,7 +107,7 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
 .nav-btn.active .nav-key { color: var(--verde3); background: rgba(45,158,80,.15); }
 .nav-divider { width: 40px; height: 1px; background: var(--borda); margin: 4px 0; }
 .sidebar-bottom { margin-top: 8px; padding-bottom: 8px; }
-.main-content { flex: 1; min-width: 0; overflow-x: hidden; }
+.main-content { flex: 1; min-width: 0; overflow-x: hidden; overflow-y: auto; height: calc(100vh - 53px); }
 .content { padding: 14px 20px; max-width: 960px; margin: 0 auto; }
 /* ── CATÁLOGO ── */
 .catalogo-item { background: var(--bg2); border: 1px solid var(--borda); border-radius: 10px; padding: 10px 14px; display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
@@ -397,7 +397,7 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
   </button>
   <div class="nav-divider"></div>
   <button class="nav-btn" id="nav-catalogo" onclick="setView('catalogo')">
-    <span class="nav-icon">🏷</span>C.CUSTO
+    <span class="nav-icon">🏷</span>C.CUSTO<span class="nav-key">F7</span>
   </button>
   <div class="nav-divider"></div>
   <button class="nav-btn admin-only" id="nav-banco" onclick="setView('banco')">
@@ -468,7 +468,7 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
           <div class="shortcut-item"><span class="shortcut-key">F3</span> Estoque</div>
           <div class="shortcut-item"><span class="shortcut-key">F4</span> Notas</div>
           <div class="shortcut-item"><span class="shortcut-key">F5</span> Lançar NF</div>
-          <div class="shortcut-item"><span class="shortcut-key">Ctrl+S</span> Salvar</div>
+          <div class="shortcut-item"><span class="shortcut-key">F7</span> C.Custo</div><div class="shortcut-item"><span class="shortcut-key">Ctrl+S</span> Salvar</div>
         </div>
       </div>
     </div>
@@ -620,23 +620,23 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
     </div>
 
     <!-- OBRAS CADASTRADAS -->
-    <div class="card" style="margin-bottom:12px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-        <div class="section-title" style="margin:0;">🏗 OBRAS CADASTRADAS</div>
-        <button class="btn-save" style="padding:8px 14px;font-size:12px;" onclick="abrirModalObra()">+ Nova Obra</button>
+    <div class="card" style="margin-bottom:12px;padding:16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <div class="section-title" style="margin:0;font-size:13px;">🏗 OBRAS CADASTRADAS</div>
+        <button class="btn-save" style="padding:6px 14px;font-size:12px;" onclick="abrirModalObra()">+ Nova Obra</button>
       </div>
-      <div id="banco-obras-lista"></div>
+      <div id="banco-obras-lista" style="max-height:300px;overflow-y:auto;"></div>
     </div>
 
     <!-- FORNECEDORES -->
-    <div class="card" style="margin-bottom:12px;">
-      <div class="section-title" style="margin-bottom:12px;">🏭 FORNECEDORES</div>
-      <div id="banco-forn-lista"></div>
+    <div class="card" style="margin-bottom:12px;padding:16px;">
+      <div class="section-title" style="margin-bottom:14px;font-size:13px;">🏭 FORNECEDORES <span id="banco-forn-count" style="font-size:11px;color:var(--texto3);font-weight:400;"></span></div>
+      <div id="banco-forn-lista" style="max-height:300px;overflow-y:auto;"></div>
     </div>
 
     <!-- USUÁRIOS -->
-    <div class="card">
-      <div class="section-title" style="margin-bottom:12px;">👥 USUÁRIOS DO SISTEMA</div>
+    <div class="card" style="padding:16px;">
+      <div class="section-title" style="margin-bottom:14px;font-size:13px;">👥 USUÁRIOS DO SISTEMA</div>
       <div id="banco-users-lista"></div>
     </div>
   </div>
@@ -1106,14 +1106,25 @@ function renderDashboard() {
 // OBRAS (módulo EDR Obras integrado)
 // ══════════════════════════════════════════
 const CATS = {
-  'mao':    { lb: '👷 Mão de Obra',    fn: r => /m[aã]o[\s\-]de[\s\-]obra|armador|eletricista|pintor|pedreiro|servente/i.test(r.descricao) },
-  'cimento':{ lb: '🪨 Cimento/Areia',  fn: r => /cimento|areia|brita|saibro/i.test(r.descricao) },
-  'ferro':  { lb: '🔩 Ferro/Aço',      fn: r => /^ferro|vergalh|estribo|^a[cç]o|arame|malha pop|tela sold|disco ferro|prego|parafuso|chumbador/i.test(r.descricao) },
-  'hidro':  { lb: '🚿 Hidráulica',     fn: r => !/(contrato|documento|art |orcamento|proposta)/i.test(r.descricao) && /tubo pvc|joelho|luva hidr|jun[cç]ao|redu[cç]|ralo|cola pvc|flange|registro hidr|registro de agua|esgoto|torneira|caixa d.?agua/i.test(r.descricao) },
-  'elet':   { lb: '⚡ Elétrica',       fn: r => /eletroduto|disjuntor|cabo flex|qd |tomada|caixa 4x2|haste|bocal|l[aâ]mpada|painel led/i.test(r.descricao) },
-  'acab':   { lb: '🎨 Acabamento',     fn: r => /cer[aâ]mica|piso|rejunte|argamassa|tinta|massa corrida|selador|gesso/i.test(r.descricao) },
-  'esquad': { lb: '🪟 Esquadrias',     fn: r => /porta|janela|esquadria|grade|fechadura/i.test(r.descricao) },
-  'doc':    { lb: '📋 Documentação',   fn: r => /contrato|documento|art |anotac|registro de contrato|orcamento|alvara|licenca|projeto|vistoria|memorial|laudo/i.test(r.descricao) },
+  'mao':      { lb: '👷 Mão de Obra',       fn: r => /m[aã]o[\s\-]de[\s\-]obra|armador|eletricista|pintor|pedreiro|servente/i.test(r.descricao) },
+  'alvenaria':{ lb: '🧱 Alvenaria',         fn: r => /cimento|areia|brita|saibro|tijolo|bloco|reboco|chapisco|argamassa|cal|concreto/i.test(r.descricao) },
+  'forma':    { lb: '🪵 Forma e Madeira',   fn: r => /pontalete|sarrafo|forma |madeira|caibro|viga|ripa|tabua|prego|compensado/i.test(r.descricao) },
+  'ferro':    { lb: '⚙ Aço / Ferro',       fn: r => /ferro|vergalh|estribo|arame|malha pop|tela sold|barra chata|cantoneira/i.test(r.descricao) },
+  'eletrica': { lb: '⚡ Elétrica',          fn: r => /fio |cabo flex|eletroduto|conduite|disjuntor|quadro el|tomada|bocal|lampada|luminaria|led|cx luz|caixa 4x2/i.test(r.descricao) },
+  'hidro':    { lb: '🚿 Hidráulica',        fn: r => /tubo sold|tubo pvc|joelho|luva hidr|cola pvc|engate|registro|valvula|torneira|caixa d.?agua/i.test(r.descricao) },
+  'loucas':   { lb: '🛁 Louças e Metais',   fn: r => /bacia sanit|vaso sanit|cuba|lavatorio|pia|chuveiro|ducha|aquecedor|misturador|kit complet/i.test(r.descricao) },
+  'esgoto':   { lb: '🪠 Esgoto',           fn: r => /esg|juncao|caixa sifonada|caixa insp|grelha|caixa gordura|ralo/i.test(r.descricao) },
+  'cobertura':{ lb: '🏠 Cobertura',         fn: r => /telha|cumeeira|rufo|fibrocimento|zinco|isopanel|frechal/i.test(r.descricao) },
+  'esquad':   { lb: '🪟 Esquadrias',        fn: r => /porta|janela|esquadria|grade|fechadura|vidro|portao/i.test(r.descricao) },
+  'rev_cer':  { lb: '🟫 Revest. Cerâmico',  fn: r => /ceramica|porcelanato|azulejo|rejunte|pastilha|granito|marmore/i.test(r.descricao) },
+  'pintura':  { lb: '🖌 Pintura',           fn: r => /tinta|massa corrida|selador|primer|textura|verniz|esmalte|lixa|rolo|trincha/i.test(r.descricao) },
+  'impermeab':{ lb: '💧 Impermeab.',        fn: r => /impermeab|manta asf|neutrol|vedacit|sika/i.test(r.descricao) },
+  'ferramenta':{ lb: '🔨 Ferramentas',      fn: r => /enxada|picareta|marreta|martelo|broxa|pincel|disco de corte|disco de serra|trena|espatula/i.test(r.descricao) },
+  'epi':      { lb: '🦺 EPI',              fn: r => /epi|capacete|bota de seg|luva de seg|cinto de seg|uniforme/i.test(r.descricao) },
+  'combustivel':{ lb: '⛽ Combustível',     fn: r => /gasolina|diesel|combustivel|etanol|alcool/i.test(r.descricao) },
+  'limpeza':  { lb: '🧹 Limpeza',          fn: r => /limpeza|vassoura|detergente|desinfet|balde|saco de lixo/i.test(r.descricao) },
+  'alimentacao':{ lb: '🍽 Alimentação',     fn: r => /alimenta|refeicao|marmita|lanche|cafe|agua mineral/i.test(r.descricao) },
+  'doc':      { lb: '📋 Documentação',     fn: r => /contrato|documento|art |anotac|registro de contrato|orcamento|alvara|licenca|projeto|vistoria/i.test(r.descricao) },
 };
 
 function renderObrasView() {
@@ -2164,6 +2175,8 @@ function renderBanco() {
       fornMap[n.fornecedor].qtd++;
     });
     const forns = Object.entries(fornMap).sort((a,b) => b[1].total - a[1].total);
+    const countEl = document.getElementById('banco-forn-count');
+    if (countEl) countEl.textContent = `(${forns.length})`;
     if (!forns.length) { fornEl.innerHTML = '<div class="empty">Nenhum fornecedor ainda.</div>'; }
     else {
       fornEl.innerHTML = forns.map(([nome, d]) =>
@@ -2235,7 +2248,7 @@ function setupEnterNav() {
 }
 
 function setupKeyboardShortcuts() {
-  const map = { F1:'dashboard', F2:'obras', F3:'estoque', F4:'notas', F5:'form', F6:'creditos' };
+  const map = { F1:'dashboard', F2:'obras', F3:'estoque', F4:'notas', F5:'form', F6:'creditos', F7:'catalogo' };
   document.addEventListener('keydown', e => {
     if (map[e.key]) { e.preventDefault(); setView(map[e.key]); return; }
     if (e.ctrlKey && e.key === 's') { e.preventDefault(); const v = document.getElementById('view-form'); if (v && !v.classList.contains('hidden')) salvarNota(); }
