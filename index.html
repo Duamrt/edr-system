@@ -595,8 +595,26 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
   <!-- CATÁLOGO DE MATERIAIS -->
   <div id="view-catalogo" class="hidden">
     <div class="modulo-badge">🏷 CATÁLOGO DE MATERIAIS</div>
-    <div style="display:flex;gap:8px;margin-bottom:12px;">
-      <input type="text" id="catalogo-busca" placeholder="🔍 Buscar por código ou nome..." oninput="renderCatalogo()" style="flex:1;background:var(--bg2);border:1px solid var(--borda2);border-radius:10px;padding:10px 14px;color:var(--branco);font-size:13px;font-family:inherit;">
+    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+      <input type="text" id="catalogo-busca" placeholder="🔍 Buscar por código ou nome..." oninput="renderCatalogo()" style="flex:2;min-width:200px;background:var(--bg2);border:1px solid var(--borda2);border-radius:10px;padding:10px 14px;color:var(--branco);font-size:13px;font-family:inherit;">
+      <select id="catalogo-cat-filtro" onchange="renderCatalogo()" style="flex:1;min-width:140px;background:var(--bg2);border:1px solid var(--borda2);border-radius:10px;padding:10px 14px;color:var(--branco);font-size:13px;font-family:inherit;">
+        <option value="">📂 Todas categorias</option>
+        <option value="alvenaria">🧱 Alvenaria</option>
+        <option value="aco">⚙ Aço/Ferro</option>
+        <option value="hidraulica">🚿 Hidráulica</option>
+        <option value="esgoto">🪠 Esgoto</option>
+        <option value="eletrica">⚡ Elétrica</option>
+        <option value="cobertura">🏠 Cobertura</option>
+        <option value="esquadria">🪟 Esquadrias</option>
+        <option value="pintura">🖌 Pintura</option>
+        <option value="impermeab">💧 Impermeab.</option>
+        <option value="ferramenta">🔨 Ferramentas</option>
+        <option value="combustivel">⛽ Combustível</option>
+        <option value="limpeza">🧹 Limpeza</option>
+        <option value="alimentacao">🍽 Alimentação</option>
+        <option value="expediente">📎 Expediente</option>
+        <option value="outros">📦 Outros</option>
+      </select>
       <button class="btn-save" style="padding:10px 18px;white-space:nowrap;" onclick="abrirModalNovoMaterial()">➕ Novo Material</button>
     </div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
@@ -1109,7 +1127,7 @@ const CATS_ESTOQUE = [
   { key:'alvenaria',  lb:'🧱 Alvenaria',          fn: d => /cimento|areia|brita|tijolo|bloco|reboco|chapisco|argamassa|cal|saibro|pedrisco|concreto|concreto usinado/i.test(d) },
   { key:'eletrica',   lb:'⚡ Elétrica',           fn: d => /fio |cabo flex|eletroduto|conduite|disjuntor|quadro el|barramento|interruptor|tomada|espelho el|bocal|lampada|luminaria|led|painel led|downlight|plafon|refletor|haste|dps|idr|spda|para.raio|cx luz|caixa de luz|cx 4x2|cx 4x4|pontalete plas/i.test(d) },
   { key:'impermeab',  lb:'💧 Impermeabilização',  fn: d => /impermeab|manta asf|manta bidin|primer betum|aditivo imperm|cristaliz|neutrol|vedacit|sika|manta flex/i.test(d) },
-  { key:'hidraulica', lb:'🚿 Hidráulica',         fn: d => /tubo pvc agua|cano agua|joelho agua|luva agua|cotovelo agua|registro|valvula|conex.*agua|cola pvc|torneira|sifao|caixa d.?agua|pia|cuba|tanque|lavat|ducha|chuveiro|aquecedor|engate|joelho krona|joelho plast|joelho sold|joelho bch|joelho lt|joelho pvc|tubo sold|tubo krona|tubo plast|tubo pvc/i.test(d) },
+  { key:'hidraulica', lb:'🚿 Hidráulica',         fn: d => /tubo pvc agua|cano agua|joelho agua|luva agua|cotovelo agua|registro|valvula|conex.*agua|cola pvc|torneira|sifao|caixa d.?agua|pia|cuba|tanque|lavat|ducha|chuveiro|aquecedor|engate|joelho krona|joelho plast|joelho sold|joelho bch|joelho lt|joelho pvc|tubo sold|tubo krona|tubo plast|tubo pvc|bacia sanit|vaso sanit|kit complet|caixa acoplada|torneira centr|registro de pressao/i.test(d) },
   { key:'esgoto',     lb:'🪠 Esgoto',            fn: d => /esg|juncao|caixa sifonada|caixa de inspe|grelha|caixa gordura|fossa|pluvial|calha|canalete|boca de lobo|ralo/i.test(d) },
   { key:'cobertura',  lb:'🏠 Cobertura',          fn: d => /telha|cumeeira|rufo|telhado|fibrocimento|zinco|metalica|isopanel|madeiramento|frechal|terça|linha|pendural/i.test(d) },
   { key:'esquadria',  lb:'🪟 Esquadrias',         fn: d => /porta|janela|batente|marco|caixilho|esquadria|grade|fechadura|macaneta|trinco|puxador|dobradica|dobradiça|vidro|box|portao|basculante|veneziana/i.test(d) },
@@ -1118,7 +1136,7 @@ const CATS_ESTOQUE = [
   { key:'granito',    lb:'🪨 Granito / Pedra',    fn: d => /granito|marmore|quartzito|pedra natural|bancada|soleira|peitoril|rodape em ped|escada em ped/i.test(d) },
   { key:'gesso',      lb:'⬜ Gesso',              fn: d => /gesso|dry.?wall|drywall|placa de gesso|perfil de gesso|massa de gesso|forro de gesso|gesseiro/i.test(d) },
   { key:'pintura',    lb:'🖌 Pintura',            fn: d => /tinta|massa corrida|selador|primer|textura|massa acrilica|verniz|esmalte|tinta latex|tinta acrilica|lixa|rolo|trincha/i.test(d) },
-  { key:'ferramenta', lb:'🔨 Ferramentas',        fn: d => /enxada|picareta|pa |pá |marreta|martelo|colher de ped|desempenadeira|broxa|pincel|disco de corte|disco bomcorte|trena|nivel de bolha|prumo|espatula|ponteiro|talhadeira|formao|serrote|arco de serra|furadeira|esmerilhadeira|betoneira|vibrador|compactador/i.test(d) },
+  { key:'ferramenta', lb:'🔨 Ferramentas',        fn: d => /enxada|picareta|pa |pá |marreta|martelo|colher de ped|desempenadeira|broxa|pincel|disco de corte|disco bomcorte|disco de serra|disco p.mad|serrote|arco de serra|trena|nivel de bolha|prumo|espatula|ponteiro|talhadeira|formao|furadeira|esmerilhadeira|betoneira|vibrador|compactador/i.test(d) },
   { key:'epi',        lb:'🦺 EPI / Segurança',    fn: d => /epi|capacete|bota de seg|luva de seg|oculos de prot|cinto de seg|uniforme|colete|protetor|abafador|crachá/i.test(d) },
   { key:'limpeza',    lb:'🧹 Limpeza',            fn: d => /limpeza|vassoura|rodo|pano|detergente|desinfet|inseticida|raid|balde|saco de lixo|luva de borr|esponja|sabao/i.test(d) },
   { key:'alimentacao',lb:'🍽 Alimentação',        fn: d => /alimenta|refeicao|marmita|lanche|cafe|agua mineral|pacoca|bolacha|biscoito|refrigerante|suco|quentinha/i.test(d) },
@@ -1816,8 +1834,10 @@ function renderUsuarios() {
 // ══════════════════════════════════════════
 function renderCatalogo() {
   const busca = norm(document.getElementById('catalogo-busca')?.value || '');
+  const catFiltro = document.getElementById('catalogo-cat-filtro')?.value || '';
   let lista = [...catalogoMateriais];
   if (busca) lista = lista.filter(m => norm(m.nome).includes(busca) || m.codigo.includes(busca));
+  if (catFiltro) lista = lista.filter(m => (m.categoria||'outros') === catFiltro);
   const el = document.getElementById('catalogo-lista');
   const stats = document.getElementById('catalogo-stats');
   if (stats) stats.textContent = `${lista.length} material(is) cadastrado(s)`;
