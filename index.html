@@ -600,8 +600,10 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
       <select id="catalogo-cat-filtro" onchange="renderCatalogo()" style="flex:1;min-width:140px;background:var(--bg2);border:1px solid var(--borda2);border-radius:10px;padding:10px 14px;color:var(--branco);font-size:13px;font-family:inherit;">
         <option value="">📂 Todas categorias</option>
         <option value="alvenaria">🧱 Alvenaria</option>
+        <option value="forma">🪵 Forma e Madeira</option>
         <option value="aco">⚙ Aço/Ferro</option>
         <option value="hidraulica">🚿 Hidráulica</option>
+        <option value="loucas">🛁 Louças e Metais</option>
         <option value="esgoto">🪠 Esgoto</option>
         <option value="eletrica">⚡ Elétrica</option>
         <option value="cobertura">🏠 Cobertura</option>
@@ -650,7 +652,7 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
       <div class="field" style="flex:2"><label>CATEGORIA</label>
         <select id="mat-categoria" style="background:var(--bg3);border:1px solid var(--borda2);border-radius:8px;padding:8px;color:var(--branco);font-family:inherit;width:100%;">
           <option value="">— Selecione —</option>
-          <option>Cimento/Areia</option><option>Ferro/Aço</option><option>Hidráulica</option><option>Esgoto</option><option>Elétrica</option><option>Acabamento</option><option>Esquadrias</option><option>Ferramentas</option><option>Combustível</option><option>Mão de Obra</option><option>Documentação</option><option>Escritório</option><option>Alimentação</option><option>Limpeza</option><option>Outros</option>
+          <option>Cimento/Areia</option><option>Forma e Madeira</option><option>Ferro/Aço</option><option>Hidráulica</option><option>Louças e Metais</option><option>Esgoto</option><option>Elétrica</option><option>Acabamento</option><option>Esquadrias</option><option>Ferramentas</option><option>Combustível</option><option>Mão de Obra</option><option>Documentação</option><option>Escritório</option><option>Alimentação</option><option>Limpeza</option><option>Outros</option>
         </select>
       </div>
     </div>
@@ -1123,11 +1125,12 @@ const CATS_ESTOQUE = [
   { key:'fundacao',   lb:'🏗 Fundação',           fn: d => /sapata|estaca|bloco de fundc|baldrame|radier|viga baldr|cinta|fundac|brocas|microestaca/i.test(d) },
   { key:'estrutura',  lb:'🔩 Estrutura',          fn: d => /pontalete|escore|cimbramento|forma |madeira|caibro|viga|ripa|sarrafo|compensado|mdf|compensado/i.test(d) },
   { key:'aco',        lb:'⚙ Aço / Ferro',        fn: d => /ferro|vergalh|estribo|tela sold|malha pop|arame recoz|aco ca|aco cp|barra chata|cantoneira|perfil met/i.test(d) },
-  { key:'forma',      lb:'🪵 Formas',             fn: d => /forma |chapa resinada|sarrafo|gravata|espaçad|arame recozido|desmoldante|pontalete|escora/i.test(d) },
+  { key:'forma',      lb:'🪵 Forma e Madeira',   fn: d => /forma |chapa resinada|sarrafo|gravata|espaçad|arame recozido|desmoldante|pontalete|escora|madeira|caibro|viga|ripa|tabua|ripao|regua|prego|pino de aco|porta madeira|porta de mad/i.test(d) },
   { key:'alvenaria',  lb:'🧱 Alvenaria',          fn: d => /cimento|areia|brita|tijolo|bloco|reboco|chapisco|argamassa|cal|saibro|pedrisco|concreto|concreto usinado/i.test(d) },
   { key:'eletrica',   lb:'⚡ Elétrica',           fn: d => /fio |cabo flex|eletroduto|conduite|disjuntor|quadro el|barramento|interruptor|tomada|espelho el|bocal|lampada|luminaria|led|painel led|downlight|plafon|refletor|haste|dps|idr|spda|para.raio|cx luz|caixa de luz|cx 4x2|cx 4x4|pontalete plas/i.test(d) },
   { key:'impermeab',  lb:'💧 Impermeabilização',  fn: d => /impermeab|manta asf|manta bidin|primer betum|aditivo imperm|cristaliz|neutrol|vedacit|sika|manta flex/i.test(d) },
-  { key:'hidraulica', lb:'🚿 Hidráulica',         fn: d => /tubo pvc agua|cano agua|joelho agua|luva agua|cotovelo agua|registro|valvula|conex.*agua|cola pvc|torneira|sifao|caixa d.?agua|pia|cuba|tanque|lavat|ducha|chuveiro|aquecedor|engate|joelho krona|joelho plast|joelho sold|joelho bch|joelho lt|joelho pvc|tubo sold|tubo krona|tubo plast|tubo pvc|bacia sanit|vaso sanit|kit complet|caixa acoplada|torneira centr|registro de pressao/i.test(d) },
+  { key:'hidraulica', lb:'🚿 Hidráulica',         fn: d => /tubo pvc agua|cano agua|joelho agua|luva agua|cotovelo agua|valvula|conex.*agua|cola pvc|sifao|caixa d.?agua|engate|joelho krona|joelho plast|joelho sold|joelho bch|joelho lt|joelho pvc|tubo sold|tubo krona|tubo plast|tubo pvc|eletroduto pvc|eletroduto corrugado/i.test(d) },
+  { key:'loucas',     lb:'🛁 Louças e Metais',   fn: d => /bacia sanit|vaso sanit|cuba|tanque|lavatorio|lavat|pia|torneira|registro|chuveiro|ducha|aquecedor|misturador|kit complet|caixa acoplada|assento|kit banheiro|conjunto sanit/i.test(d) },
   { key:'esgoto',     lb:'🪠 Esgoto',            fn: d => /esg|juncao|caixa sifonada|caixa de inspe|grelha|caixa gordura|fossa|pluvial|calha|canalete|boca de lobo|ralo/i.test(d) },
   { key:'cobertura',  lb:'🏠 Cobertura',          fn: d => /telha|cumeeira|rufo|telhado|fibrocimento|zinco|metalica|isopanel|madeiramento|frechal|terça|linha|pendural/i.test(d) },
   { key:'esquadria',  lb:'🪟 Esquadrias',         fn: d => /porta|janela|batente|marco|caixilho|esquadria|grade|fechadura|macaneta|trinco|puxador|dobradica|dobradiça|vidro|box|portao|basculante|veneziana/i.test(d) },
