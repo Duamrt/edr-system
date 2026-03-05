@@ -632,7 +632,7 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
       <div class="field" style="flex:2"><label>CATEGORIA</label>
         <select id="mat-categoria" style="background:var(--bg3);border:1px solid var(--borda2);border-radius:8px;padding:8px;color:var(--branco);font-family:inherit;width:100%;">
           <option value="">— Selecione —</option>
-          <option>Cimento/Areia</option><option>Ferro/Aço</option><option>Hidráulica</option><option>Elétrica</option><option>Acabamento</option><option>Esquadrias</option><option>Mão de Obra</option><option>Documentação</option><option>Escritório</option><option>Alimentação</option><option>Limpeza</option><option>Outros</option>
+          <option>Cimento/Areia</option><option>Ferro/Aço</option><option>Hidráulica</option><option>Esgoto</option><option>Elétrica</option><option>Acabamento</option><option>Esquadrias</option><option>Ferramentas</option><option>Combustível</option><option>Mão de Obra</option><option>Documentação</option><option>Escritório</option><option>Alimentação</option><option>Limpeza</option><option>Outros</option>
         </select>
       </div>
     </div>
@@ -1108,8 +1108,8 @@ const CATS_ESTOQUE = [
   { key:'forma',      lb:'🪵 Formas',             fn: d => /forma |chapa resinada|sarrafo|gravata|espaçad|arame recozido|desmoldante|pontalete|escora/i.test(d) },
   { key:'alvenaria',  lb:'🧱 Alvenaria',          fn: d => /cimento|areia|brita|tijolo|bloco|reboco|chapisco|argamassa|cal|saibro|pedrisco|concreto|concreto usinado/i.test(d) },
   { key:'impermeab',  lb:'💧 Impermeabilização',  fn: d => /impermeab|manta asf|manta bidin|primer betum|aditivo imperm|cristaliz|neutrol|vedacit|sika|flex/i.test(d) },
-  { key:'hidraulica', lb:'🚿 Hidráulica',         fn: d => /tubo pvc agua|cano agua|joelho agua|luva agua|cotovelo agua|registro|valvula|conex.*agua|cola pvc|torneira|sifao|ralo|caixa d.?agua|pia|cuba|tanque|lavat|ducha|chuveiro|aquecedor/i.test(d) },
-  { key:'esgoto',     lb:'🪠 Esgoto / Pluvial',  fn: d => /esgoto|fossa|caixa de inspe|caixa sifonada|grelha|caixa gordura|tubo pvc esg|joelho esg|te esg|luva esg|cano esg|pluvial|calha|canalete|boca de lobo/i.test(d) },
+  { key:'hidraulica', lb:'🚿 Hidráulica',         fn: d => /tubo pvc agua|cano agua|joelho agua|luva agua|cotovelo agua|registro|valvula|conex.*agua|cola pvc|torneira|sifao|caixa d.?agua|pia|cuba|tanque|lavat|ducha|chuveiro|aquecedor|engate|joelho krona|joelho plast|joelho sold|joelho bch|joelho lt|joelho pvc|tubo sold|tubo krona|tubo plast|tubo pvc/i.test(d) },
+  { key:'esgoto',     lb:'🪠 Esgoto',            fn: d => /esg|juncao|caixa sifonada|caixa de inspe|grelha|caixa gordura|fossa|pluvial|calha|canalete|boca de lobo|ralo/i.test(d) },
   { key:'eletrica',   lb:'⚡ Elétrica',           fn: d => /fio|cabo flex|eletroduto|conduite|disjuntor|quadro el|barramento|interruptor|tomada|espelho el|bocal|lampada|luminaria|led|painel led|downlight|plafon|refletor|haste|dps|idr|spda|para.raio/i.test(d) },
   { key:'cobertura',  lb:'🏠 Cobertura',          fn: d => /telha|cumeeira|rufo|telhado|fibrocimento|zinco|metalica|isopanel|madeiramento|frechal|terça|linha|pendural/i.test(d) },
   { key:'esquadria',  lb:'🪟 Esquadrias',         fn: d => /porta|janela|batente|marco|caixilho|esquadria|grade|fechadura|macaneta|trinco|puxador|dobradica|dobradiça|vidro|box|portao|basculante|veneziana/i.test(d) },
@@ -1117,7 +1117,8 @@ const CATS_ESTOQUE = [
   { key:'rev_cer',    lb:'🟫 Revest. Cerâmico',   fn: d => /ceramica|porcelanato|revestimento|azulejo|rejunte|pastilha|pedra|granito|marmore|travertino|ardosia|pedra miracema/i.test(d) },
   { key:'granito',    lb:'🪨 Granito / Pedra',    fn: d => /granito|marmore|quartzito|pedra natural|bancada|soleira|peitoril|rodape em ped|escada em ped/i.test(d) },
   { key:'gesso',      lb:'⬜ Gesso',              fn: d => /gesso|dry.?wall|drywall|placa de gesso|perfil de gesso|massa de gesso|forro de gesso|gesseiro/i.test(d) },
-  { key:'pintura',    lb:'🖌 Pintura',            fn: d => /tinta|massa corrida|selador|primer|textura|massa acrilica|verniz|esmalte|tinta latex|tinta acrilica|lixa|rolo|trincha|broxa/i.test(d) },
+  { key:'pintura',    lb:'🖌 Pintura',            fn: d => /tinta|massa corrida|selador|primer|textura|massa acrilica|verniz|esmalte|tinta latex|tinta acrilica|lixa|rolo|trincha/i.test(d) },
+  { key:'ferramenta', lb:'🔨 Ferramentas',        fn: d => /enxada|picareta|pa |pá |marreta|martelo|colher de ped|desempenadeira|broxa|pincel|disco de corte|disco bomcorte|trena|nivel de bolha|prumo|espatula|ponteiro|talhadeira|formao|serrote|arco de serra|furadeira|esmerilhadeira|betoneira|vibrador|compactador/i.test(d) },
   { key:'epi',        lb:'🦺 EPI / Segurança',    fn: d => /epi|capacete|bota de seg|luva de seg|oculos de prot|cinto de seg|uniforme|colete|protetor|abafador|crachá/i.test(d) },
   { key:'limpeza',    lb:'🧹 Limpeza',            fn: d => /limpeza|vassoura|rodo|pano|detergente|desinfet|inseticida|raid|balde|saco de lixo|luva de borr|esponja|sabao/i.test(d) },
   { key:'alimentacao',lb:'🍽 Alimentação',        fn: d => /alimenta|refeicao|marmita|lanche|cafe|agua mineral|pacoca|bolacha|biscoito|refrigerante|suco|quentinha/i.test(d) },
