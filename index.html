@@ -1219,7 +1219,7 @@ async function iniciarApp() {
   renderDashboard();
   renderEstoque();
   renderNotas();
-  renderObrasView();
+  // renderObrasView é chamado pelo setView quando o usuário abre a aba
   setToday();
   setupEnterNav();
   setupKeyboardShortcuts();
@@ -1408,13 +1408,14 @@ const CATS = {
 };
 
 function renderObrasView() {
-  document.getElementById('obras-loading').classList.add('hidden');
-  document.getElementById('obras-lista').classList.remove('hidden');
+  document.getElementById('obras-loading')?.classList.add('hidden');
   // Chips de categoria
   const chipsEl = document.getElementById('obras-chips');
-  chipsEl.innerHTML = Object.entries(CATS).map(([k,v]) =>
-    `<div class="cat-chip ${catFiltroAtual===k?'ativo':''}" onclick="toggleCat('${k}')">${v.lb}</div>`
-  ).join('') + `<div class="cat-chip ${catFiltroAtual===null?'':'ativo'}" onclick="toggleCat(null)" style="background:var(--cinza-bg);">✕ Limpar</div>`;
+  if (chipsEl) {
+    chipsEl.innerHTML = Object.entries(CATS).map(([k,v]) =>
+      `<div class="cat-chip ${catFiltroAtual===k?'ativo':''}" onclick="toggleCat('${k}')">${v.lb}</div>`
+    ).join('') + `<div class="cat-chip ${catFiltroAtual===null?'':'ativo'}" onclick="toggleCat(null)">✕ Limpar</div>`;
+  }
   aplicarPerfil();
   filtrarLanc();
 }
@@ -1500,19 +1501,22 @@ function filtrarLancCat() {
 }
 
 function filtrarLanc() {
-  const busca = norm(document.getElementById('obras-busca').value || '');
+  // Se os elementos da aba não existem no DOM ainda, sai sem erro
+  if (!document.getElementById('obras-lanc-lista')) return;
+  const busca = norm(document.getElementById('obras-busca')?.value || '');
   // Pool correto conforme modo (ativas ou concluídas)
   const obraPool = mostandoArquivadas ? obrasArquivadas : obras;
   const obraIds = new Set(obraPool.map(o => o.id));
-  const obraId = document.getElementById('obras-filtro-obra').value;
+  const obraId = document.getElementById('obras-filtro-obra')?.value || '';
   // SEMPRE filtrar pelo pool — nunca misturar ativas com concluídas
   let lista = lancamentos.filter(l => obraIds.has(l.obra_id));
   if (busca) lista = lista.filter(l => norm(l.descricao||'').includes(busca));
   if (obraId) lista = lista.filter(l => l.obra_id === obraId);
   if (catFiltroAtual) lista = lista.filter(l => CATS[catFiltroAtual]?.fn(l));
   const el = document.getElementById('obras-lanc-lista'), empty = document.getElementById('obras-empty');
+  if (!el || !empty) return;
   if (!lista.length) { el.innerHTML = ''; empty.classList.remove('hidden');
-    document.getElementById('obras-total-filtro').classList.add('hidden'); return; }
+    document.getElementById('obras-total-filtro')?.classList.add('hidden'); return; }
   empty.classList.add('hidden');
   const totalFiltrado = lista.reduce((s,l) => s + Number(l.total||0), 0);
   const totalEl = document.getElementById('obras-total-filtro');
