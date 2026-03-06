@@ -597,58 +597,80 @@ body::before {
     <div id="dash-loading" class="loading">Carregando...</div>
     <div id="dash-content" class="hidden">
 
-      <!-- LOGO EDR -->
-      <div style="text-align:center;padding:18px 0 10px 0;">
-        <div style="display:inline-flex;align-items:center;gap:12px;">
-          <div style="width:48px;height:48px;background:var(--verde3);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:900;color:#fff;font-family:monospace;letter-spacing:-2px;">E</div>
-          <div style="text-align:left;">
-            <div style="font-size:22px;font-weight:900;color:var(--verde-hl);letter-spacing:2px;">EDR</div>
-            <div style="font-size:10px;color:var(--texto3);letter-spacing:3px;text-transform:uppercase;">Engenharia</div>
+      <!-- HEADER DASHBOARD -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-top:4px;">
+        <div style="display:flex;align-items:center;gap:14px;">
+          <div style="width:44px;height:44px;border:1px solid rgba(46,204,113,0.35);border-radius:12px;display:flex;align-items:center;justify-content:center;background:rgba(46,204,113,0.07);box-shadow:0 0 20px rgba(46,204,113,0.12);">
+            <span style="font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:700;color:var(--verde3);">EDR</span>
+          </div>
+          <div>
+            <div style="font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:700;color:var(--branco);letter-spacing:2px;">EDR SYSTEM</div>
+            <div style="font-size:10px;color:var(--texto3);letter-spacing:3px;font-family:'JetBrains Mono',monospace;">GESTÃO DE OBRAS</div>
           </div>
         </div>
-        <div style="font-size:10px;color:var(--texto3);margin-top:6px;letter-spacing:2px;">GESTÃO INTEGRADA DE OBRAS</div>
+        <div id="dash-data" style="font-size:10px;color:var(--texto3);font-family:'JetBrains Mono',monospace;letter-spacing:1px;text-align:right;"></div>
       </div>
 
-      <!-- CARDS ADMIN -->
-      <div class="card-grid admin-only">
-        <div class="stat-card"><div class="stat-label">TOTAL OBRAS</div><div class="stat-value" id="d-total-obras" style="color:var(--verde)"></div><div class="stat-sub">lançamentos</div></div>
-        <div class="stat-card"><div class="stat-label">CRÉDITOS IBS/CBS</div><div class="stat-value" id="d-creditos" style="color:var(--verde)"></div><div class="stat-sub">Reforma 2027</div></div>
-        <div class="stat-card"><div class="stat-label">EM ESTOQUE</div><div class="stat-value" id="d-estoque" style="color:var(--roxo)"></div><div class="stat-sub">aguard. distribuição</div></div>
-        <div class="stat-card"><div class="stat-label">NOTAS FISCAIS</div><div class="stat-value" id="d-qtd" style="color:var(--azul)"></div><div class="stat-sub">lançadas</div></div>
-      </div>
-
-      <!-- GRÁFICOS ADMIN -->
-      <div class="admin-only" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;" id="dash-graficos">
-        <div class="card" style="padding:16px;">
-          <div class="section-title" style="margin-bottom:12px;">🥧 Gastos por Categoria</div>
-          <canvas id="chart-pizza" height="220"></canvas>
+      <!-- 4 CARDS — uma cor distinta por card -->
+      <div class="admin-only" style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-bottom:14px;">
+        <div class="stat-card" style="border-top-color:rgba(46,204,113,0.6);">
+          <div class="stat-label">TOTAL OBRAS</div>
+          <div class="stat-value" id="d-total-obras" style="color:var(--verde-hl);"></div>
+          <div class="stat-sub">investido</div>
         </div>
-        <div class="card" style="padding:16px;">
-          <div class="section-title" style="margin-bottom:12px;">🏗 Custo por Obra</div>
-          <canvas id="chart-barras" height="220"></canvas>
+        <div class="stat-card" style="border-top-color:rgba(59,130,246,0.6);">
+          <div class="stat-label">NOTAS FISCAIS</div>
+          <div class="stat-value" id="d-qtd" style="color:#60a5fa;"></div>
+          <div class="stat-sub">lançadas</div>
+        </div>
+        <div class="stat-card" style="border-top-color:rgba(139,92,246,0.6);">
+          <div class="stat-label">EM ESTOQUE</div>
+          <div class="stat-value" id="d-estoque" style="color:#a78bfa;"></div>
+          <div class="stat-sub">aguard. distribuição</div>
+        </div>
+        <div class="stat-card" style="border-top-color:rgba(245,158,11,0.6);">
+          <div class="stat-label">CRÉDITOS IBS/CBS</div>
+          <div class="stat-value" id="d-creditos" style="color:#fbbf24;"></div>
+          <div class="stat-sub">reforma 2027</div>
         </div>
       </div>
 
-      <div class="alert-box alert-verde admin-only"><div class="alert-title">⚡ REFORMA TRIBUTÁRIA 2027</div><div class="alert-text" id="dash-alert"></div></div>
+      <!-- GRÁFICOS — barras maior, pizza menor -->
+      <div class="admin-only" style="display:grid;grid-template-columns:3fr 2fr;gap:12px;margin-bottom:12px;" id="dash-graficos">
+        <div class="card" style="padding:18px 16px;">
+          <div class="section-title" style="margin-bottom:14px;font-size:12px;color:var(--texto2);">CUSTO POR OBRA</div>
+          <canvas id="chart-barras" height="170"></canvas>
+        </div>
+        <div class="card" style="padding:18px 16px;">
+          <div class="section-title" style="margin-bottom:14px;font-size:12px;color:var(--texto2);">GASTOS POR CATEGORIA</div>
+          <canvas id="chart-pizza" height="170"></canvas>
+        </div>
+      </div>
+
+      <div class="alert-box alert-verde admin-only" style="margin-bottom:8px;">
+        <div class="alert-title">⚡ REFORMA TRIBUTÁRIA 2027</div>
+        <div class="alert-text" id="dash-alert"></div>
+      </div>
       <div id="dash-obras" class="hidden"></div>
 
       <!-- Operacional -->
-      <div class="card hidden" id="oper-welcome" style="text-align:center;padding:24px 16px;">
-        <div style="font-size:40px;margin-bottom:8px;">👷</div>
-        <div class="section-title">Bem-vindo ao EDR System</div>
-        <p style="font-size:13px;color:var(--texto3);line-height:1.7;margin-top:6px;">Use o menu lateral para <strong>lançar notas fiscais</strong> ou <strong>registrar materiais no estoque</strong>.</p>
+      <div class="card hidden" id="oper-welcome" style="text-align:center;padding:32px 16px;">
+        <div style="font-size:48px;margin-bottom:12px;">👷</div>
+        <div class="section-title" style="justify-content:center;">Bem-vindo ao EDR System</div>
+        <p style="font-size:14px;color:var(--texto2);line-height:1.8;margin-top:8px;">Use o menu lateral para <strong style="color:var(--verde-hl);">lançar notas fiscais</strong> ou <strong style="color:var(--verde-hl);">registrar materiais</strong>.</p>
       </div>
 
       <!-- Atalhos -->
-      <div class="shortcut-hint" style="margin-top:8px;">
-        <div class="shortcut-title">⌨ ATALHOS</div>
+      <div class="shortcut-hint admin-only" style="margin-top:8px;">
+        <div class="shortcut-title">⌨ ATALHOS DE TECLADO</div>
         <div class="shortcut-grid">
           <div class="shortcut-item"><span class="shortcut-key">F1</span> Resumo</div>
           <div class="shortcut-item"><span class="shortcut-key">F2</span> Obras</div>
           <div class="shortcut-item"><span class="shortcut-key">F3</span> Estoque</div>
           <div class="shortcut-item"><span class="shortcut-key">F4</span> Notas</div>
           <div class="shortcut-item"><span class="shortcut-key">F5</span> Lançar NF</div>
-          <div class="shortcut-item"><span class="shortcut-key">F7</span> C.Custo</div><div class="shortcut-item"><span class="shortcut-key">Ctrl+S</span> Salvar</div>
+          <div class="shortcut-item"><span class="shortcut-key">F7</span> C.Custo</div>
+          <div class="shortcut-item"><span class="shortcut-key">Ctrl+S</span> Salvar</div>
         </div>
       </div>
     </div>
@@ -1257,11 +1279,63 @@ function renderDashboard() {
   const catEntries = Object.entries(catMap).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).slice(0,8);
 
   // Carregar Chart.js se necessário e renderizar
-  function renderCharts() {
-    const cores = ['#22c55e','#64748b','#3b82f6','#f59e0b','#8b5cf6','#06b6d4','#ef4444','#10b981'];
-    const coresBarra = ['#22c55e','#3b82f6','#f59e0b','#8b5cf6','#06b6d4','#ef4444','#64748b','#10b981'];
+  // Data atual no header
+  const dEl = document.getElementById('dash-data');
+  if (dEl) { const now = new Date(); dEl.textContent = now.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'short',year:'numeric'}).toUpperCase(); }
 
-    // Gráfico Pizza
+  function renderCharts() {
+    // Paleta: verde principal, depois tons neutros/frios — sem repetir verde
+    const coresPizza = [
+      'rgba(46,204,113,0.75)',   // verde — categoria top
+      'rgba(100,116,139,0.7)',   // slate
+      'rgba(59,130,246,0.7)',    // azul
+      'rgba(245,158,11,0.7)',    // âmbar
+      'rgba(139,92,246,0.7)',    // roxo
+      'rgba(6,182,212,0.65)',    // ciano
+      'rgba(239,68,68,0.65)',    // vermelho
+      'rgba(156,163,175,0.55)',  // cinza
+    ];
+    // Barras: cor única neutra, obra com maior valor fica verde
+    const maxIdx = porObra.indexOf(porObra.reduce((a,b)=>a.total>b.total?a:b, porObra[0]||{total:0}));
+    const coresBarra = porObra.map((_,i) =>
+      i === maxIdx ? 'rgba(46,204,113,0.75)' : 'rgba(100,116,139,0.45)'
+    );
+
+    // Chart.js defaults
+    Chart.defaults.color = '#6a8a6a';
+    Chart.defaults.font.family = "'Barlow', sans-serif";
+
+    // Gráfico Barras (maior — 5 colunas)
+    const ctxB = document.getElementById('chart-barras')?.getContext('2d');
+    if (ctxB) {
+      if (chartBarras) chartBarras.destroy();
+      chartBarras = new Chart(ctxB, {
+        type: 'bar',
+        data: {
+          labels: porObra.map(o => o.nome.length > 16 ? o.nome.substring(0,14)+'…' : o.nome),
+          datasets: [{
+            data: porObra.map(o=>o.total),
+            backgroundColor: coresBarra,
+            borderRadius: 8, borderWidth: 0,
+            hoverBackgroundColor: porObra.map((_,i) =>
+              i === maxIdx ? 'rgba(74,222,128,0.85)' : 'rgba(148,163,184,0.6)'
+            )
+          }]
+        },
+        options: {
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: { label: ctx => '  ' + fmt(ctx.raw) }, backgroundColor: 'rgba(6,12,6,0.9)', borderColor: 'rgba(46,204,113,0.3)', borderWidth: 1, titleColor: '#ddeadd', bodyColor: '#9ab89a', padding: 10 }
+          },
+          scales: {
+            x: { ticks: { color: '#6a8a6a', font: { size: 10 } }, grid: { display: false }, border: { color: 'rgba(46,204,113,0.1)' } },
+            y: { ticks: { color: '#6a8a6a', font: { size: 10 }, callback: v => v>=1000?(v/1000).toFixed(0)+'k':''+v }, grid: { color: 'rgba(46,204,113,0.05)' }, border: { display: false } }
+          }
+        }
+      });
+    }
+
+    // Gráfico Pizza (menor — ao lado)
     const ctxP = document.getElementById('chart-pizza')?.getContext('2d');
     if (ctxP) {
       if (chartPizza) chartPizza.destroy();
@@ -1269,34 +1343,14 @@ function renderDashboard() {
         type: 'doughnut',
         data: {
           labels: catEntries.map(([k])=>k),
-          datasets: [{ data: catEntries.map(([,v])=>v), backgroundColor: cores, borderWidth: 0 }]
+          datasets: [{ data: catEntries.map(([,v])=>v), backgroundColor: coresPizza, borderWidth: 0, hoverOffset: 6 }]
         },
         options: {
           plugins: {
-            legend: { position: 'bottom', labels: { color: '#9ca3af', font: { size: 10 }, boxWidth: 12, padding: 8 } },
-            tooltip: { callbacks: { label: ctx => ` ${fmt(ctx.raw)}` } }
+            legend: { position: 'bottom', labels: { color: '#6a8a6a', font: { size: 10 }, boxWidth: 10, padding: 7 } },
+            tooltip: { callbacks: { label: ctx => '  ' + fmt(ctx.raw) }, backgroundColor: 'rgba(6,12,6,0.9)', borderColor: 'rgba(46,204,113,0.3)', borderWidth: 1, titleColor: '#ddeadd', bodyColor: '#9ab89a', padding: 10 }
           },
-          cutout: '55%'
-        }
-      });
-    }
-
-    // Gráfico Barras
-    const ctxB = document.getElementById('chart-barras')?.getContext('2d');
-    if (ctxB) {
-      if (chartBarras) chartBarras.destroy();
-      chartBarras = new Chart(ctxB, {
-        type: 'bar',
-        data: {
-          labels: porObra.map(o => o.nome.length > 14 ? o.nome.substring(0,12)+'…' : o.nome),
-          datasets: [{ data: porObra.map(o=>o.total), backgroundColor: coresBarra, borderRadius: 6, borderWidth: 0 }]
-        },
-        options: {
-          plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${fmt(ctx.raw)}` } } },
-          scales: {
-            x: { ticks: { color: '#9ca3af', font: { size: 9 } }, grid: { display: false } },
-            y: { ticks: { color: '#9ca3af', font: { size: 9 }, callback: v => 'R$'+( v>=1000?(v/1000).toFixed(0)+'k':v) }, grid: { color: '#1f2937' } }
-          }
+          cutout: '60%'
         }
       });
     }
