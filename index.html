@@ -681,7 +681,7 @@ body::before {
     <div id="obras-sticky" style="position:sticky;top:0;z-index:90;background:var(--bg);padding:10px 0 8px 0;border-bottom:1px solid var(--borda);margin-bottom:8px;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
         <div class="modulo-badge" style="margin-bottom:0;">🏗 EDR OBRAS</div>
-        <button onclick="toggleObrasArquivadas()" id="btn-ver-arquivadas" style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);color:#fbbf24;border-radius:8px;padding:4px 12px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;cursor:pointer;transition:all .2s;" class="admin-only">📦 VER ARQUIVADAS</button>
+        <button onclick="toggleObrasArquivadas()" id="btn-ver-arquivadas" style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);color:#fbbf24;border-radius:8px;padding:4px 12px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;cursor:pointer;transition:all .2s;" class="admin-only">📋 VER CONCLUÍDAS</button>
       </div>
       <div class="filter-row">
         <input type="text" id="obras-busca" placeholder="🔍 Buscar lançamento..." oninput="filtrarLanc()">
@@ -1425,10 +1425,10 @@ function onChangeObraFiltro() {
   const sel = document.getElementById('obras-filtro-obra');
   const btn = document.getElementById('btn-arquivar-obra');
   if (btn) {
-    if (sel.value && usuarioAtual?.perfil === 'admin') {
+    if (sel.value && usuarioAtual?.perfil === 'admin') {  // só admin vê botão
       btn.style.display = 'block';
       // Se mostrando arquivadas, botão vira "reativar"
-      btn.textContent = mostandoArquivadas ? '🏗 REATIVAR' : '📦 ARQUIVAR';
+      btn.textContent = mostandoArquivadas ? '🏗 REATIVAR' : '✅ CONCLUÍDA';
       btn.style.color = mostandoArquivadas ? '#4ade80' : '#fbbf24';
       btn.style.borderColor = mostandoArquivadas ? 'rgba(46,204,113,0.3)' : 'rgba(245,158,11,0.2)';
       btn.style.background = mostandoArquivadas ? 'rgba(46,204,113,0.08)' : 'rgba(245,158,11,0.08)';
@@ -1440,6 +1440,7 @@ function onChangeObraFiltro() {
 }
 
 function onClickArquivarObra() {
+  if (usuarioAtual?.perfil !== 'admin') return;
   const obraId = document.getElementById('obras-filtro-obra').value;
   if (!obraId) return;
   arquivarObra(obraId, !mostandoArquivadas);
@@ -1448,6 +1449,7 @@ function onClickArquivarObra() {
 }
 
 function toggleObrasArquivadas() {
+  if (usuarioAtual?.perfil !== 'admin') return;
   mostandoArquivadas = !mostandoArquivadas;
   const btn = document.getElementById('btn-ver-arquivadas');
   if (mostandoArquivadas) {
@@ -1455,7 +1457,7 @@ function toggleObrasArquivadas() {
     btn.textContent = '🏗 VER ATIVAS';
   } else {
     btn.style.background = 'rgba(245,158,11,0.08)';
-    btn.textContent = '📦 VER ARQUIVADAS';
+    btn.textContent = '📋 VER CONCLUÍDAS';
   }
   // Resetar select e recarregar opções
   document.getElementById('obras-filtro-obra').value = '';
@@ -1465,7 +1467,8 @@ function toggleObrasArquivadas() {
 }
 
 async function arquivarObra(obraId, arquivar) {
-  const acao = arquivar ? 'arquivar' : 'reativar';
+  if (usuarioAtual?.perfil !== 'admin') return;
+  const acao = arquivar ? 'marcar como concluída' : 'reabrir';
   if (!confirm(`Deseja ${acao} esta obra?`)) return;
   try {
     await sbPatch('obras', `?id=eq.${obraId}`, { arquivada: arquivar });
@@ -1474,7 +1477,7 @@ async function arquivarObra(obraId, arquivar) {
     populateSelects();
     filtrarLanc();
     renderDashboard();
-    showToast(arquivar ? '📦 OBRA ARQUIVADA!' : '🏗 OBRA REATIVADA!');
+    showToast(arquivar ? '✅ OBRA CONCLUÍDA!' : '🔄 OBRA REABERTA!');
   } catch(e) { showToast('ERRO AO ATUALIZAR OBRA.'); }
 }
 
@@ -1498,11 +1501,12 @@ function filtrarLancCat() {
 
 function filtrarLanc() {
   const busca = norm(document.getElementById('obras-busca').value || '');
-  // Definir pool de obras e lançamentos conforme modo
+  // Pool correto conforme modo (ativas ou concluídas)
   const obraPool = mostandoArquivadas ? obrasArquivadas : obras;
   const obraIds = new Set(obraPool.map(o => o.id));
   const obraId = document.getElementById('obras-filtro-obra').value;
-  let lista = [...lancamentos];
+  // SEMPRE filtrar pelo pool — nunca misturar ativas com concluídas
+  let lista = lancamentos.filter(l => obraIds.has(l.obra_id));
   if (busca) lista = lista.filter(l => norm(l.descricao||'').includes(busca));
   if (obraId) lista = lista.filter(l => l.obra_id === obraId);
   if (catFiltroAtual) lista = lista.filter(l => CATS[catFiltroAtual]?.fn(l));
@@ -1510,7 +1514,6 @@ function filtrarLanc() {
   if (!lista.length) { el.innerHTML = ''; empty.classList.remove('hidden');
     document.getElementById('obras-total-filtro').classList.add('hidden'); return; }
   empty.classList.add('hidden');
-  // Somatório dos lançamentos filtrados
   const totalFiltrado = lista.reduce((s,l) => s + Number(l.total||0), 0);
   const totalEl = document.getElementById('obras-total-filtro');
   const nFiltros = (obraId ? 1 : 0) + (catFiltroAtual ? 1 : 0) + (busca ? 1 : 0);
@@ -1524,8 +1527,9 @@ function filtrarLanc() {
       <span style="font-size:12px;color:var(--texto3);">Qtd: <strong style="color:var(--branco);">${totalQtd % 1 === 0 ? totalQtd : totalQtd.toFixed(2)} ${unStr}</strong></span>
       ${usuarioAtual?.perfil==='admin' ? `<span style="font-size:15px;font-weight:800;color:var(--verde-hl);">${fmt(totalFiltrado)}</span>` : ''}
     </div>`;
+  // obraMap inclui ativas + arquivadas para exibir nome corretamente
   const obraMap = {};
-  obras.forEach(o => obraMap[o.id] = o.nome);
+  [...obras, ...obrasArquivadas].forEach(o => obraMap[o.id] = o.nome);
   el.innerHTML = lista.map(l => `
     <div class="lanc-item">
       <div class="lanc-top">
