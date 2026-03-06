@@ -46,10 +46,10 @@ if ("serviceWorker" in navigator) {
   --verde-hl: #4ade80;
   --verde-bg: rgba(46,204,113,0.08);
   --verde-bd: rgba(46,204,113,0.25);
-  --branco:   #f0f4f0;
-  --texto:    #c8d4c8;
-  --texto2:   #7a9a7a;
-  --texto3:   #4a6a4a;
+  --branco:   #eef5ee;
+  --texto:    #ddeadd;
+  --texto2:   #9ab89a;
+  --texto3:   #6a8a6a;
   --vermelho: #ef4444;
   --verm-bg:  rgba(239,68,68,.12);
   --verm-bd:  rgba(239,68,68,.25);
@@ -72,6 +72,7 @@ body {
   height: 100vh;
   overflow: hidden;
   color: var(--texto);
+  font-size: 15px;
   background-image:
     linear-gradient(rgba(46,204,113,0.025) 1px, transparent 1px),
     linear-gradient(90deg, rgba(46,204,113,0.025) 1px, transparent 1px),
@@ -202,7 +203,8 @@ body::before {
 }
 .nav-btn:hover:not(.active) { color: var(--texto2); background: rgba(46,204,113,0.04); border-color: rgba(46,204,113,0.1); }
 .nav-key { font-size: 7px; color: var(--texto3); font-weight: 400; background: rgba(46,204,113,0.06); border-radius: 3px; padding: 1px 4px; font-family: 'JetBrains Mono', monospace; border: 1px solid rgba(46,204,113,0.1); }
-@media (max-width: 768px) { .nav-key { display: none !important; } .shortcut-hint { display: none !important; } }
+.nav-key { display: none !important; }
+@media (max-width: 768px) { .shortcut-hint { display: none !important; } }
 .nav-btn.active .nav-key { color: var(--verde3); background: rgba(46,204,113,0.12); border-color: rgba(46,204,113,0.25); }
 .nav-divider { width: 36px; height: 1px; background: rgba(46,204,113,0.08); margin: 6px 0; }
 .sidebar-bottom { margin-top: auto; padding-bottom: 8px; }
@@ -255,13 +257,13 @@ body::before {
   transition: box-shadow .2s;
 }
 .stat-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.3), 0 0 30px rgba(46,204,113,0.1); }
-.stat-label { font-size: 9px; color: var(--texto3); margin-bottom: 8px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; font-family: 'JetBrains Mono', monospace; }
-.stat-value { font-weight: 800; font-size: 22px; color: var(--branco); font-family: 'Barlow', sans-serif; }
+.stat-label { font-size: 10px; color: var(--texto3); margin-bottom: 8px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; font-family: 'JetBrains Mono', monospace; }
+.stat-value { font-weight: 800; font-size: 24px; color: var(--branco); font-family: 'Barlow', sans-serif; }
 .stat-sub { font-size: 10px; color: var(--texto3); margin-top: 4px; font-family: 'JetBrains Mono', monospace; letter-spacing: 1px; }
 .section-title { font-family: 'Rajdhani', sans-serif; font-weight: 700; color: var(--branco); margin-bottom: 14px; font-size: 14px; display: flex; align-items: center; gap: 8px; letter-spacing: 2px; text-transform: uppercase; }
 
 /* ── MODULO BADGE ── */
-.modulo-badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(46,204,113,0.06); color: var(--verde-hl); border: 1px solid rgba(46,204,113,0.2); border-radius: 6px; padding: 5px 12px; font-size: 9px; font-weight: 700; letter-spacing: 2px; margin-bottom: 16px; text-transform: uppercase; font-family: 'Rajdhani', sans-serif; box-shadow: 0 0 12px rgba(46,204,113,0.06); }
+.modulo-badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(46,204,113,0.06); color: var(--verde-hl); border: 1px solid rgba(46,204,113,0.2); border-radius: 6px; padding: 5px 12px; font-size: 11px; font-weight: 700; letter-spacing: 2px; margin-bottom: 16px; text-transform: uppercase; font-family: 'Rajdhani', sans-serif; box-shadow: 0 0 12px rgba(46,204,113,0.06); }
 
 /* ── ALERT ── */
 .alert-box { background: rgba(245,158,11,.06); border: 1px solid rgba(245,158,11,.2); border-radius: 12px; padding: 14px 16px; margin-bottom: 12px; backdrop-filter: blur(8px); }
@@ -291,10 +293,10 @@ body::before {
 .nota-card.estoque { border-left-color: rgba(139,92,246,0.5); }
 .nota-card.misto { border-left-color: rgba(245,158,11,0.5); }
 .nota-top { display: flex; justify-content: space-between; margin-bottom: 4px; }
-.nota-fornecedor { font-weight: 700; font-size: 14px; color: var(--branco); font-family: 'Barlow', sans-serif; }
+.nota-fornecedor { font-weight: 700; font-size: 15px; color: var(--branco); font-family: 'Barlow', sans-serif; }
 .nota-valor { font-weight: 700; color: var(--verde-hl); font-family: 'Barlow', sans-serif; }
 .nota-desc { font-size: 12px; color: var(--texto2); margin-bottom: 7px; }
-.nota-meta { font-size: 10px; color: var(--texto3); margin-top: 6px; font-family: 'JetBrains Mono', monospace; }
+.nota-meta { font-size: 11px; color: var(--texto3); margin-top: 6px; font-family: 'JetBrains Mono', monospace; }
 
 /* ── ESTOQUE ── */
 .estoque-item-info { flex: 1; }
@@ -319,9 +321,9 @@ body::before {
 .lanc-item { background: rgba(8,14,8,0.6); border: 1px solid rgba(46,204,113,0.08); border-radius: 10px; padding: 11px 14px; margin-bottom: 5px; border-left: 2px solid transparent; transition: all .15s; backdrop-filter: blur(6px); }
 .lanc-item:hover { border-left-color: rgba(46,204,113,0.3); background: rgba(46,204,113,0.03); }
 .lanc-top { display: flex; justify-content: space-between; align-items: flex-start; }
-.lanc-desc { font-weight: 600; font-size: 13px; flex: 1; margin-right: 8px; color: var(--branco); font-family: 'Barlow', sans-serif; }
-.lanc-val { font-weight: 700; font-size: 13px; color: var(--verde-hl); white-space: nowrap; font-family: 'Barlow', sans-serif; }
-.lanc-meta { font-size: 10px; color: var(--texto3); margin-top: 3px; font-family: 'JetBrains Mono', monospace; }
+.lanc-desc { font-weight: 600; font-size: 14px; flex: 1; margin-right: 8px; color: var(--branco); font-family: 'Barlow', sans-serif; }
+.lanc-val { font-weight: 700; font-size: 14px; color: var(--verde-hl); white-space: nowrap; font-family: 'Barlow', sans-serif; }
+.lanc-meta { font-size: 11px; color: var(--texto3); margin-top: 3px; font-family: 'JetBrains Mono', monospace; }
 .lanc-del { background: none; border: none; color: var(--texto3); cursor: pointer; font-size: 13px; padding: 2px; margin-left: 4px; transition: color .15s; }
 .lanc-del:hover { color: var(--vermelho); }
 .filter-row { display: flex; gap: 8px; margin-bottom: 12px; }
@@ -659,8 +661,29 @@ body::before {
       <div class="filter-row">
         <input type="text" id="obras-busca" placeholder="🔍 Buscar lançamento..." oninput="filtrarLanc()">
         <select id="obras-filtro-obra" onchange="filtrarLanc()"><option value="">Todas as obras</option></select>
+        <select id="obras-filtro-cat" onchange="filtrarLancCat()" style="min-width:160px;">
+          <option value="">Todas categorias</option>
+          <option value="mao">👷 Mão de Obra</option>
+          <option value="alvenaria">🧱 Alvenaria</option>
+          <option value="forma">🪵 Forma e Madeira</option>
+          <option value="ferro">⚙ Aço / Ferro</option>
+          <option value="eletrica">⚡ Elétrica</option>
+          <option value="hidro">🚿 Hidráulica</option>
+          <option value="loucas">🛁 Louças e Metais</option>
+          <option value="esgoto">🪠 Esgoto</option>
+          <option value="cobertura">🏠 Cobertura</option>
+          <option value="esquad">🪟 Esquadrias</option>
+          <option value="rev_cer">🟫 Revest. Cerâmico</option>
+          <option value="pintura">🖌 Pintura</option>
+          <option value="impermeab">💧 Impermeab.</option>
+          <option value="ferramenta">🔨 Ferramentas</option>
+          <option value="epi">🦺 EPI</option>
+          <option value="combustivel">⛽ Combustível</option>
+          <option value="limpeza">🧹 Limpeza</option>
+          <option value="alimentacao">🍽 Alimentação</option>
+          <option value="doc">📋 Documentação</option>
+        </select>
       </div>
-      <div class="chips-wrap" id="obras-chips"></div>
     </div>
     <div id="obras-detalhe" class="hidden"></div>
     <div id="obras-lista" class="hidden"></div>
@@ -1155,13 +1178,13 @@ function aplicarPerfil() {
 // INIT
 // ══════════════════════════════════════════
 async function iniciarApp() {
-  document.getElementById('sql-box').textContent = SQL_SETUP;
   await loadObras();
   populateSelects();
   renderTabelaCreditos();
   renderUsuarios();
   await Promise.all([loadNotas(), loadLancamentos(), loadDistribuicoes(), loadEntradasDiretas(), loadMateriais()]);
   const mc = document.getElementById("main-content-inner"); if(mc) mc.style.visibility="visible";
+  document.getElementById('sql-box').textContent = SQL_SETUP;
   renderDashboard();
   renderEstoque();
   renderNotas();
@@ -1331,7 +1354,23 @@ function renderObrasView() {
   aplicarPerfil();
 }
 
-function toggleCat(k) { catFiltroAtual = catFiltroAtual === k ? null : k; renderObrasView(); }
+function toggleCat(k) {
+  catFiltroAtual = catFiltroAtual === k ? null : k;
+  // Sincronizar com o select
+  const sel = document.getElementById('obras-filtro-cat');
+  if (sel) sel.value = catFiltroAtual || '';
+  renderObrasView();
+}
+function filtrarLancCat() {
+  const sel = document.getElementById('obras-filtro-cat');
+  catFiltroAtual = sel?.value || null;
+  // Sincronizar chips
+  document.querySelectorAll('#obras-chips .cat-chip').forEach(el => {
+    const k = el.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];
+    if (k) el.classList.toggle('ativo', k === catFiltroAtual);
+  });
+  filtrarLanc();
+}
 
 function filtrarLanc() {
   const busca = norm(document.getElementById('obras-busca').value || '');
