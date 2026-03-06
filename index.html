@@ -708,7 +708,9 @@ body::before {
       </div>
     </div>
     <div id="obras-detalhe" class="hidden"></div>
-    <div id="obras-lista" class="hidden"></div>
+    <div style="margin-bottom:10px;">
+      <button class="btn-save" style="padding:10px 18px;width:auto;font-size:12px;" onclick="abrirModalLanc()">➕ Novo Lançamento</button>
+    </div>
     <div id="obras-total-filtro" class="hidden" style="display:flex;justify-content:space-between;align-items:center;background:var(--bg2);border:1px solid var(--verde-bd);border-radius:10px;padding:10px 14px;margin-bottom:10px;"></div>
     <div id="obras-lanc-lista"></div>
     <div id="obras-empty" class="empty hidden">Nenhum lançamento encontrado.</div>
@@ -1399,13 +1401,8 @@ function renderObrasView() {
   chipsEl.innerHTML = Object.entries(CATS).map(([k,v]) =>
     `<div class="cat-chip ${catFiltroAtual===k?'ativo':''}" onclick="toggleCat('${k}')">${v.lb}</div>`
   ).join('') + `<div class="cat-chip ${catFiltroAtual===null?'':'ativo'}" onclick="toggleCat(null)" style="background:var(--cinza-bg);">✕ Limpar</div>`;
-  filtrarLanc();
-  // Botões de ação
-  document.getElementById('obras-lista').innerHTML = `
-    <div style="display:flex;gap:8px;margin-bottom:12px;">
-      <button class="btn-save" style="flex:1;padding:10px;" onclick="abrirModalLanc()">➕ Novo Lançamento</button>
-    </div>`;
   aplicarPerfil();
+  filtrarLanc();
 }
 
 function toggleCat(k) {
