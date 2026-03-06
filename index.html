@@ -876,7 +876,10 @@ body::before {
       <div class="sql-box" id="sql-box"></div>
     </div>
     <div class="card">
-      <div class="section-title">👤 Usuários do Sistema</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <div class="section-title" style="margin-bottom:0;">👤 Usuários do Sistema</div>
+        <button onclick="abrirModalNovoUsuario()" style="background:rgba(46,204,113,0.08);border:1px solid rgba(46,204,113,0.25);color:var(--verde-hl);border-radius:8px;padding:7px 14px;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;letter-spacing:1px;cursor:pointer;transition:all .2s;">➕ NOVO USUÁRIO</button>
+      </div>
       <div id="usuarios-lista"></div>
     </div>
     <div class="alert-box alert-verde">
@@ -930,6 +933,38 @@ body::before {
 </div><!-- /app -->
 
 <!-- MODAL NOVO MATERIAL -->
+<!-- Modal Novo/Editar Usuário -->
+<div id="modal-usuario" class="modal-overlay hidden" onclick="closeModalOutside(event,'usuario')">
+  <div class="modal" style="max-width:400px;">
+    <div class="modal-title">
+      <span id="modal-usuario-titulo">NOVO USUÁRIO</span>
+      <button class="modal-close" onclick="fecharModal('usuario')">✕</button>
+    </div>
+    <input type="hidden" id="usr-id">
+    <div class="field" style="margin-bottom:12px;">
+      <label>NOME COMPLETO</label>
+      <input type="text" id="usr-nome" placeholder="Ex: João Silva" style="width:100%;padding:10px 14px;background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.15);border-radius:10px;color:var(--branco);font-size:14px;outline:none;font-family:inherit;">
+    </div>
+    <div class="field" style="margin-bottom:12px;">
+      <label>USUÁRIO (login)</label>
+      <input type="text" id="usr-usuario" placeholder="Ex: joao.silva" style="width:100%;padding:10px 14px;background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.15);border-radius:10px;color:var(--branco);font-size:14px;outline:none;font-family:inherit;" autocomplete="off">
+    </div>
+    <div class="field" style="margin-bottom:12px;">
+      <label>SENHA</label>
+      <input type="password" id="usr-senha" placeholder="Mínimo 4 caracteres" style="width:100%;padding:10px 14px;background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.15);border-radius:10px;color:var(--branco);font-size:14px;outline:none;font-family:inherit;" autocomplete="new-password">
+    </div>
+    <div class="field" style="margin-bottom:16px;">
+      <label>PERFIL DE ACESSO</label>
+      <select id="usr-perfil" style="width:100%;padding:10px 14px;background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.15);border-radius:10px;color:var(--branco);font-size:14px;outline:none;font-family:inherit;">
+        <option value="operacional">👷 Operacional — lança NF e materiais</option>
+        <option value="admin">👑 Administrador — acesso total</option>
+      </select>
+    </div>
+    <button class="btn-save" onclick="salvarUsuario()">SALVAR USUÁRIO</button>
+    <button class="btn-outline" style="margin-top:8px;" onclick="fecharModal('usuario')">CANCELAR</button>
+  </div>
+</div>
+
 <div id="modal-material" class="modal-overlay hidden" onclick="closeModalOutside(event,'material')">
   <div class="modal" style="max-width:420px;">
     <div class="modal-title">🏷 MATERIAL <button class="modal-close" onclick="fecharModal('material')">✕</button></div>
@@ -1070,10 +1105,12 @@ const SUPABASE_URL = 'https://mepzoxoahpwcvvlymlfh.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_Z9E8KLU8ZIMcWjD-bMG5gg_eM585qWq';
 
 // USUÁRIOS (admin gerencia aqui)
-const USUARIOS = [
-  { usuario: 'duamrt',  senha: 'duanxdzin20',  perfil: 'admin',      nome: 'Duamrt' },
-  { usuario: 'elydart', senha: '1202elyd@',   perfil: 'admin',      nome: 'Elyda' },
-  { usuario: 'operador', senha: 'edr123',     perfil: 'operacional', nome: 'Operador' },
+// Usuários carregados do Supabase — fallback local para emergência
+let USUARIOS = [
+  { usuario: 'duamrt',  senha: 'duanxdzin20', perfil: 'admin',       nome: 'Duamrt' },
+  { usuario: 'elydart', senha: '1202elyd@',   perfil: 'admin',       nome: 'Elyda' },
+  { usuario: 'admin',   senha: 'admin123',    perfil: 'admin',       nome: 'Administrador' },
+  { usuario: 'operador',senha: 'op123',       perfil: 'operacional', nome: 'Operador' },
 ];
 
 const SQL_SETUP = `-- EDR System · Setup completo
@@ -1104,6 +1141,24 @@ alter table distribuicoes disable row level security;
 
 -- Arquivamento de obras concluídas
 alter table obras add column if not exists arquivada boolean default false;
+
+-- Tabela de usuários do sistema
+create table if not exists usuarios (
+  id uuid default gen_random_uuid() primary key,
+  usuario text not null unique,
+  senha text not null,
+  nome text not null,
+  perfil text not null default 'operacional',
+  ativo boolean default true,
+  criado_em timestamptz default now()
+);
+alter table usuarios disable row level security;
+
+-- Usuários padrão (inserir apenas se não existirem)
+insert into usuarios (usuario, senha, nome, perfil) values
+  ('admin',    'admin123',  'Administrador', 'admin'),
+  ('operador', 'op123',     'Operador',      'operacional')
+on conflict (usuario) do nothing;
 
 -- ENTRADAS DIRETAS (material fiado / sem nota)
 create table if not exists entradas_diretas (
@@ -1143,8 +1198,10 @@ async function sbDelete(t, q) { const r = await fetch(`${SUPABASE_URL}/rest/v1/$
 function fazerLogin() {
   const u = document.getElementById('login-user').value.trim().toLowerCase();
   const s = document.getElementById('login-pass').value;
-  const user = USUARIOS.find(x => x.usuario === u && x.senha === s);
-  if (!user) { document.getElementById('login-error').textContent = 'Usuário ou senha incorretos.'; return; }
+  const user = USUARIOS.find(x => x.usuario === u && x.senha === s && x.ativo !== false);
+  if (!user) { document.getElementById('login-error').textContent = 'Usuário ou senha incorretos ou acesso desativado.'; return; }
+  // Bloquear linha abaixo sobrescrevendo o erro:
+  // verificação feita acima
   usuarioAtual = user;
   if (user.perfil === 'admin') {
     try { localStorage.setItem('edr_session', JSON.stringify({ usuario: user.usuario, ts: Date.now() })); } catch(e) {}
@@ -1181,7 +1238,7 @@ function verificarSessao() {
     const { usuario, ts } = JSON.parse(s);
     const dias30 = 30 * 24 * 60 * 60 * 1000;
     if (Date.now() - ts > dias30) { localStorage.removeItem('edr_session'); return false; }
-    const user = USUARIOS.find(x => x.usuario === usuario && x.perfil === 'admin');
+    const user = USUARIOS.find(x => x.usuario === usuario && x.perfil === 'admin' && x.ativo !== false);
     if (!user) return false;
     usuarioAtual = user;
     return true;
@@ -1205,6 +1262,7 @@ function aplicarPerfil() {
 // INIT
 // ══════════════════════════════════════════
 async function iniciarApp() {
+  await loadUsuarios();
   await loadObras();
   populateSelects();
   renderTabelaCreditos();
@@ -1221,6 +1279,13 @@ async function iniciarApp() {
   setupKeyboardShortcuts();
   setupClickOutside();
 }
+async function loadUsuarios() {
+  try {
+    const rows = await sbGet('usuarios', '?select=*&order=criado_em');
+    if (Array.isArray(rows) && rows.length) USUARIOS = rows;
+  } catch(e) { /* usa fallback local */ }
+}
+
 async function loadObras() {
   try {
     const todas = await sbGet('obras', '?select=*&order=nome');
@@ -2433,10 +2498,91 @@ const TABELA_CREDITOS = [
 function renderTabelaCreditos() { document.getElementById('creditos-tbody').innerHTML = TABELA_CREDITOS.map(c => { if (c.credito === null) return `<tr><td colspan="2" style="color:#94a3b8;font-size:11px;padding:4px 10px;">${c.cat}</td></tr>`; return `<tr><td>${c.cat}</td><td><span class="${c.credito?'badge-sim':'badge-nao'}">${c.credito?'✓ SIM':'✗ NÃO'}</span></td></tr>`; }).join(''); }
 
 function renderUsuarios() {
-  document.getElementById('usuarios-lista').innerHTML = USUARIOS.map(u => `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f1f5f9;">
-    <div><div style="font-weight:700;">${u.nome}</div><div style="font-size:11px;color:var(--cinza-texto);">@${u.usuario} · ${u.perfil}</div></div>
-    <span class="tag ${u.perfil==='admin'?'tag-credito':'tag-obra'}">${u.perfil.toUpperCase()}</span>
-  </div>`).join('') + `<p style="font-size:11px;color:#94a3b8;margin-top:10px;">Para alterar usuários/senhas, edite o array USUARIOS no código-fonte.</p>`;
+  const el = document.getElementById('usuarios-lista');
+  if (!el) return;
+  if (!USUARIOS.length) { el.innerHTML = '<div class="empty">Nenhum usuário. Clique em + Novo Usuário.</div>'; return; }
+  el.innerHTML = USUARIOS.map(u => {
+    const isAtivo = u.ativo !== false;
+    const isSelf = u.usuario === usuarioAtual?.usuario;
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(46,204,113,0.07);gap:10px;${!isAtivo?'opacity:0.45':''}">
+      <div style="flex:1;">
+        <div style="font-weight:700;font-size:14px;color:var(--branco);">${u.nome} ${isSelf?'<span style="font-size:10px;color:var(--verde3);">(você)</span>':''}</div>
+        <div style="font-size:11px;color:var(--texto3);margin-top:2px;font-family:'JetBrains Mono',monospace;">@${u.usuario}</div>
+      </div>
+      <span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;${u.perfil==='admin'?'background:rgba(46,204,113,0.1);color:var(--verde-hl);border:1px solid rgba(46,204,113,0.25);':'background:rgba(59,130,246,0.1);color:#60a5fa;border:1px solid rgba(59,130,246,0.2);'}">${u.perfil==='admin'?'👑 ADMIN':'👷 OPERACIONAL'}</span>
+      <div style="display:flex;gap:6px;">
+        <button onclick="abrirModalEditarUsuario('${u.id||u.usuario}')" style="background:rgba(46,204,113,0.07);border:1px solid rgba(46,204,113,0.15);color:var(--verde3);border-radius:7px;padding:5px 10px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;cursor:pointer;letter-spacing:1px;" title="Editar">✏ EDITAR</button>
+        ${!isSelf ? `<button onclick="toggleAtivoUsuario('${u.id||u.usuario}',${!isAtivo})" style="background:${isAtivo?'rgba(239,68,68,0.07)':'rgba(46,204,113,0.07)'};border:1px solid ${isAtivo?'rgba(239,68,68,0.2)':'rgba(46,204,113,0.2)'};color:${isAtivo?'#f87171':'var(--verde3)'};border-radius:7px;padding:5px 10px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;cursor:pointer;letter-spacing:1px;">${isAtivo?'🚫 DESATIVAR':'✅ ATIVAR'}</button>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function abrirModalNovoUsuario() {
+  document.getElementById('modal-usuario-titulo').textContent = 'NOVO USUÁRIO';
+  document.getElementById('usr-id').value = '';
+  document.getElementById('usr-nome').value = '';
+  document.getElementById('usr-usuario').value = '';
+  document.getElementById('usr-senha').value = '';
+  document.getElementById('usr-perfil').value = 'operacional';
+  document.getElementById('usr-usuario').disabled = false;
+  document.getElementById('modal-usuario').classList.remove('hidden');
+}
+
+function abrirModalEditarUsuario(idOrUsuario) {
+  const u = USUARIOS.find(x => (x.id||x.usuario) === idOrUsuario);
+  if (!u) return;
+  document.getElementById('modal-usuario-titulo').textContent = 'EDITAR USUÁRIO';
+  document.getElementById('usr-id').value = u.id || '';
+  document.getElementById('usr-nome').value = u.nome;
+  document.getElementById('usr-usuario').value = u.usuario;
+  document.getElementById('usr-senha').value = '';
+  document.getElementById('usr-perfil').value = u.perfil;
+  document.getElementById('usr-usuario').disabled = !!u.id; // não edita login se veio do Supabase
+  document.getElementById('modal-usuario').classList.remove('hidden');
+}
+
+async function salvarUsuario() {
+  const id = document.getElementById('usr-id').value;
+  const nome = document.getElementById('usr-nome').value.trim();
+  const usuario = document.getElementById('usr-usuario').value.trim().toLowerCase();
+  const senha = document.getElementById('usr-senha').value;
+  const perfil = document.getElementById('usr-perfil').value;
+  if (!nome) { showToast('⚠ INFORME O NOME.'); return; }
+  if (!usuario) { showToast('⚠ INFORME O USUÁRIO.'); return; }
+  if (!id && !senha) { showToast('⚠ INFORME A SENHA.'); return; }
+  if (senha && senha.length < 4) { showToast('⚠ SENHA MÍNIMO 4 CARACTERES.'); return; }
+  try {
+    if (id) {
+      // Editar existente
+      const payload = { nome, perfil };
+      if (senha) payload.senha = senha;
+      await sbPatch('usuarios', `?id=eq.${id}`, payload);
+      const idx = USUARIOS.findIndex(x => x.id === id);
+      if (idx >= 0) Object.assign(USUARIOS[idx], payload);
+    } else {
+      // Novo usuário
+      if (USUARIOS.find(x => x.usuario === usuario)) { showToast('⚠ USUÁRIO JÁ EXISTE.'); return; }
+      const [novo] = await sbPost('usuarios', { nome, usuario, senha, perfil, ativo: true });
+      USUARIOS.push(novo);
+    }
+    fecharModal('usuario');
+    renderUsuarios();
+    showToast('✅ USUÁRIO SALVO!');
+  } catch(e) { showToast('ERRO AO SALVAR USUÁRIO.'); }
+}
+
+async function toggleAtivoUsuario(idOrUsuario, ativar) {
+  const u = USUARIOS.find(x => (x.id||x.usuario) === idOrUsuario);
+  if (!u) return;
+  const acao = ativar ? 'ativar' : 'desativar';
+  if (!confirm(`Deseja ${acao} o usuário "${u.nome}"?`)) return;
+  try {
+    if (u.id) await sbPatch('usuarios', `?id=eq.${u.id}`, { ativo: ativar });
+    u.ativo = ativar;
+    renderUsuarios();
+    showToast(ativar ? '✅ USUÁRIO ATIVADO!' : '🚫 USUÁRIO DESATIVADO!');
+  } catch(e) { showToast('ERRO AO ATUALIZAR.'); }
 }
 
 // ══════════════════════════════════════════
