@@ -1066,6 +1066,7 @@ body::before {
     <div id="dist-valor-preview" style="background:var(--verde-bg);border:1px solid var(--verde-borda);border-radius:8px;padding:10px;margin-bottom:12px;font-size:13px;color:#15803d;font-weight:700;display:none;">
       💰 VALOR PROPORCIONAL: <span id="dist-valor-val">R$ 0,00</span>
     </div>
+    <div class="field"><label>ETAPA DA OBRA</label><select id="dist-etapa" style="width:100%;padding:10px 14px;background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.15);border-radius:10px;color:var(--branco);font-size:13px;font-family:inherit;"></select></div>
     <div class="field"><label>OBSERVAÇÃO</label><input type="text" id="dist-obs" placeholder="EX: BLOCO A, SUITE..."></div>
     <div id="dist-historico" class="dist-historico hidden">
       <div class="dist-historico-title">DISTRIBUIÇÕES ANTERIORES DESTE ITEM:</div>
@@ -1089,6 +1090,7 @@ body::before {
       <div class="field"><label>QTD</label><input type="number" id="lanc-qtd" value="1" min="0" step="0.01" style="text-transform:none;"></div>
       <div class="field"><label>VALOR UNIT (R$) *</label><input type="number" id="lanc-preco" placeholder="0,00" min="0" step="0.01" style="text-transform:none;"></div>
     </div>
+    <div class="field"><label>ETAPA DA OBRA</label><select id="lanc-etapa" style="width:100%;padding:10px 14px;background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.15);border-radius:10px;color:var(--branco);font-size:13px;font-family:inherit;"></select></div>
     <div class="field"><label>DATA</label><input type="date" id="lanc-data" style="text-transform:none;"></div>
     <div class="field"><label>OBSERVAÇÃO</label><input type="text" id="lanc-obs" placeholder="OPCIONAL"></div>
     <button class="btn-save" onclick="salvarLancamento()">💾 SALVAR LANÇAMENTO</button>
@@ -1173,6 +1175,10 @@ alter table distribuicoes disable row level security;
 
 -- Coluna para identificar materiais auto-cadastrados pela NF
 alter table materiais add column if not exists auto boolean default false;
+
+-- Etapa construtiva nos lançamentos e distribuições
+alter table lancamentos add column if not exists etapa text default '';
+alter table distribuicoes add column if not exists etapa text default '';
 
 -- Arquivamento de obras concluídas
 alter table obras add column if not exists arquivada boolean default false;
@@ -1738,6 +1744,48 @@ function filtrarLanc() {
   // obraMap inclui ativas + arquivadas para exibir nome corretamente
   const obraMap = {};
   [...obras, ...obrasArquivadas].forEach(o => obraMap[o.id] = o.nome);
+
+  // DRE por etapa — só mostra quando uma obra específica está selecionada (admin)
+  const detEl = document.getElementById('obras-detalhe');
+  if (detEl && obraId && usuarioAtual?.perfil === 'admin') {
+    const porEtapa = {};
+    lista.forEach(l => {
+      const k = l.etapa || '00_outros';
+      porEtapa[k] = (porEtapa[k] || 0) + Number(l.total || 0);
+    });
+    const totalObra = Object.values(porEtapa).reduce((s,v) => s+v, 0);
+    const etapasComValor = ETAPAS.filter(e => porEtapa[e.key] > 0)
+      .sort((a,b) => porEtapa[b.key] - porEtapa[a.key]);
+    if (etapasComValor.length > 0) {
+      detEl.classList.remove('hidden');
+      detEl.innerHTML = `
+        <div style="background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.15);border-radius:12px;padding:14px 16px;margin-bottom:12px;">
+          <div style="font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;color:var(--verde-hl);letter-spacing:2px;margin-bottom:10px;">📊 CUSTO POR ETAPA — ${obraMap[obraId]||''}</div>
+          ${etapasComValor.map(e => {
+            const val = porEtapa[e.key];
+            const pct = totalObra > 0 ? (val/totalObra*100).toFixed(1) : 0;
+            return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(46,204,113,0.06);">
+              <span style="flex:1;font-size:12px;color:var(--texto);">${e.lb}</span>
+              <div style="width:80px;height:4px;background:rgba(46,204,113,0.1);border-radius:2px;overflow:hidden;">
+                <div style="width:${pct}%;height:100%;background:var(--verde3);border-radius:2px;"></div>
+              </div>
+              <span style="font-size:11px;color:var(--texto3);width:36px;text-align:right;">${pct}%</span>
+              <span style="font-size:13px;font-weight:700;color:var(--branco);width:90px;text-align:right;font-family:'JetBrains Mono',monospace;">${fmt(val)}</span>
+            </div>`;
+          }).join('')}
+          <div style="display:flex;justify-content:space-between;padding-top:8px;margin-top:4px;">
+            <span style="font-size:11px;color:var(--texto3);">TOTAL CLASSIFICADO</span>
+            <span style="font-size:14px;font-weight:800;color:var(--verde-hl);font-family:'JetBrains Mono',monospace;">${fmt(totalObra)}</span>
+          </div>
+          ${porEtapa['00_outros'] > 0 ? `<div style="font-size:10px;color:var(--texto3);margin-top:6px;">⚠ ${fmt(porEtapa['00_outros'])} ainda sem etapa classificada.</div>` : ''}
+        </div>`;
+    } else {
+      detEl.classList.remove('hidden');
+      detEl.innerHTML = `<div style="font-size:12px;color:var(--texto3);padding:10px 0 8px 0;">Nenhum lançamento com etapa classificada ainda. Selecione a etapa ao lançar ou distribuir materiais.</div>`;
+    }
+  } else if (detEl) {
+    detEl.classList.add('hidden');
+  }
   el.innerHTML = lista.map(l => `
     <div class="lanc-item">
       <div class="lanc-top">
@@ -1747,9 +1795,40 @@ function filtrarLanc() {
           <button class="lanc-del admin-only" onclick="excluirLanc('${l.id}')">🗑</button>
         </div>
       </div>
+      ${l.etapa ? `<div style="margin-bottom:3px;"><span style="font-size:9px;font-weight:700;background:rgba(46,204,113,0.08);color:var(--verde3);border:1px solid rgba(46,204,113,0.2);border-radius:4px;padding:1px 6px;font-family:'JetBrains Mono',monospace;">${etapaLabel(l.etapa)}</span></div>` : ''}
       <div class="lanc-meta">${obraMap[l.obra_id]||'—'} · ${(()=>{ const q=Number(l.qtd||1); const oNome=(obraMap[l.obra_id]||'').toUpperCase(); if(oNome.includes('ESCRIT')||q<=0||String(l.qtd).includes('e')||q!==Math.round(q*100)/100) return l.data||''; return q+' un · '+(l.data||''); })()}</div>
     </div>`).join('');
   aplicarPerfil();
+}
+
+// ══════════════════════════════════════════
+// ETAPAS CONSTRUTIVAS — Centro de Custo
+// ══════════════════════════════════════════
+const ETAPAS = [
+  { key:'01_terreno',    lb:'🏛 01 · Terreno' },
+  { key:'02_doc',        lb:'📋 02 · Documentação / Licenças' },
+  { key:'03_prelim',     lb:'⛏ 03 · Serviços Preliminares' },
+  { key:'04_terra',      lb:'🌍 04 · Movimento de Terra' },
+  { key:'05_fund',       lb:'🏗 05 · Fundação' },
+  { key:'06_estrut',     lb:'🔩 06 · Estrutura' },
+  { key:'07_alven',      lb:'🧱 07 · Alvenaria' },
+  { key:'08_cobr',       lb:'🏠 08 · Cobertura' },
+  { key:'09_elet',       lb:'⚡ 09 · Elétrica' },
+  { key:'10_hidro',      lb:'🚿 10 · Hidráulica / Esgoto' },
+  { key:'11_esquad',     lb:'🪟 11 · Esquadrias' },
+  { key:'12_revestc',    lb:'🟫 12 · Revestimento Cerâmico' },
+  { key:'13_pintura',    lb:'🖌 13 · Pintura' },
+  { key:'14_acab',       lb:'✨ 14 · Acabamento Final' },
+  { key:'15_locacao',    lb:'🏗 15 · Locação / Máq. / Equip.' },
+  { key:'16_externo',    lb:'🌿 16 · Área Externa' },
+  { key:'00_outros',     lb:'📦 Não classificado' },
+];
+function etapaLabel(key) {
+  return ETAPAS.find(e => e.key === key)?.lb || key || '—';
+}
+function etapaSelectOpts(selected='', incluiVazio=true) {
+  const vazio = incluiVazio ? '<option value="">— Etapa (opcional) —</option>' : '';
+  return vazio + ETAPAS.map(e => `<option value="${e.key}" ${selected===e.key?'selected':''}>${e.lb}</option>`).join('');
 }
 
 async function salvarLancamento() {
@@ -1759,12 +1838,13 @@ async function salvarLancamento() {
   const preco = parseFloat(document.getElementById('lanc-preco').value)||0;
   const data = document.getElementById('lanc-data').value;
   const obs = document.getElementById('lanc-obs').value.toUpperCase();
+  const etapa = document.getElementById('lanc-etapa')?.value || '';
   const total = qtd * preco;
   if (!descricao) { showToast('⚠ INFORME A DESCRIÇÃO.'); return; }
   if (!obra_id) { showToast('⚠ SELECIONE A OBRA.'); return; }
   if (!preco || preco <= 0) { showToast('⚠ VALOR UNITÁRIO OBRIGATÓRIO — não é permitido lançar com valor zero.'); document.getElementById('lanc-preco').focus(); return; }
   try {
-    const [novo] = await sbPost('lancamentos', { obra_id, descricao, qtd, preco, total, data, obs });
+    const [novo] = await sbPost('lancamentos', { obra_id, descricao, qtd, preco, total, data, obs, etapa });
     lancamentos.unshift(novo);
     showToast('✅ LANÇAMENTO SALVO!');
     fecharModal('lanc');
@@ -1817,6 +1897,8 @@ function abrirModalLanc() {
   document.getElementById('lanc-qtd').value = '1';
   document.getElementById('lanc-preco').value = '';
   document.getElementById('lanc-obs').value = '';
+  const selEtapa = document.getElementById('lanc-etapa');
+  if (selEtapa) selEtapa.innerHTML = etapaSelectOpts();
   setToday();
   document.getElementById('modal-lanc').classList.remove('hidden');
   setTimeout(() => document.getElementById('lanc-desc').focus(), 100);
@@ -2031,6 +2113,8 @@ function abrirSaidaMaterial(idx) {
       `<div class="dist-historico-row"><span>${d.obra_nome}</span><span>${d.qtd} ${m.unidade} · ${fmt(d.valor)}</span></div>`).join('');
     histEl.classList.remove('hidden');
   } else histEl.classList.add('hidden');
+  const selDistEtapa = document.getElementById('dist-etapa');
+  if (selDistEtapa) selDistEtapa.innerHTML = etapaSelectOpts();
   document.getElementById('modal-dist').classList.remove('hidden');
 }
 
@@ -2093,7 +2177,8 @@ async function confirmarDistribuicaoItem() {
     for (const lote of lotesUsados) {
       const [dist] = await sbPost('distribuicoes', {
         nota_id: lote.notaId, item_desc: m.desc, item_idx: lote.itemIdx,
-        obra_id: obraId, obra_nome: obraNome, qtd: lote.usar, valor: lote.valor, data: hoje
+        obra_id: obraId, obra_nome: obraNome, qtd: lote.usar, valor: lote.valor, data: hoje,
+        etapa: document.getElementById('dist-etapa')?.value || ''
       });
       distribuicoes.push({ ...dist, obra_nome: obraNome });
     }
@@ -2102,6 +2187,7 @@ async function confirmarDistribuicaoItem() {
     const [lanc] = await sbPost('lancamentos', {
       obra_id: obraId, descricao: descLanc,
       qtd, preco: precoMedio, total: totalValor, data: hoje,
+      etapa: document.getElementById('dist-etapa')?.value || '',
       obs: `Estoque EDR · ${lotesUsados.length} lote${lotesUsados.length!==1?'s':''}`
     });
     if (lanc) lancamentos.unshift(lanc);
