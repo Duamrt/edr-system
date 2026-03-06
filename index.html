@@ -527,7 +527,7 @@ body::before {
     </div>
     <div class="login-field">
       <label>SENHA</label>
-      <input type="password" id="login-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')fazerLogin()">
+      <input type="password" id="login-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter') fazerLogin()">
     </div>
     <button class="btn-login" onclick="fazerLogin()">ENTRAR</button>
     <div class="login-error" id="login-error"></div>
@@ -1201,19 +1201,32 @@ async function sbDelete(t, q) { const r = await fetch(`${SUPABASE_URL}/rest/v1/$
 // ══════════════════════════════════════════
 // LOGIN
 // ══════════════════════════════════════════
-async function fazerLogin() {
+function fazerLogin() {
   const u = document.getElementById('login-user').value.trim().toLowerCase();
   const s = document.getElementById('login-pass').value;
-  // Garantir que usuários foram carregados do Supabase
-  if (USUARIOS.length <= 1) await loadUsuarios();
-  const user = USUARIOS.find(x => x.usuario === u && x.senha === s && x.ativo !== false);
-  if (!user) { document.getElementById('login-error').textContent = 'Usuário ou senha incorretos ou acesso desativado.'; return; }
-  usuarioAtual = user;
-  try {
-    const ttl = user.perfil === 'admin' ? 30 : 0.33;
-    localStorage.setItem('edr_session', JSON.stringify({ usuario: user.usuario, perfil: user.perfil, ts: Date.now(), ttl_dias: ttl }));
-  } catch(e) {}
-  entrarNoApp();
+  const btn = document.querySelector('.btn-login');
+  if (btn) { btn.disabled = true; btn.textContent = 'AGUARDE...'; }
+  // Tentar login com usuários já carregados
+  const tentarLogin = () => {
+    const user = USUARIOS.find(x => x.usuario === u && x.senha === s && x.ativo !== false);
+    if (btn) { btn.disabled = false; btn.textContent = 'ENTRAR'; }
+    if (!user) {
+      document.getElementById('login-error').textContent = 'Usuário ou senha incorretos ou acesso desativado.';
+      return;
+    }
+    usuarioAtual = user;
+    try {
+      const ttl = user.perfil === 'admin' ? 30 : 0.33;
+      localStorage.setItem('edr_session', JSON.stringify({ usuario: user.usuario, perfil: user.perfil, ts: Date.now(), ttl_dias: ttl }));
+    } catch(e) {}
+    entrarNoApp();
+  };
+  // Se Supabase ainda não foi carregado, tentar carregar primeiro
+  if (USUARIOS.length <= 1) {
+    loadUsuarios().then(tentarLogin).catch(tentarLogin);
+  } else {
+    tentarLogin();
+  }
 }
 function entrarNoApp() {
   document.getElementById('login-screen').classList.add('hidden');
@@ -2793,9 +2806,8 @@ async function editarCategoriaMaterial(id, categoria, selEl) {
   if (!categoria) return;
   try {
     await sbPatch('materiais', `?id=eq.${id}`, { categoria, auto: false });
-    const m = catalogoMateriais.find(x => x.id === id); if (m) { m.categoria = categoria; m.auto = false; }
     const m = catalogoMateriais.find(x => x.id === id);
-    if (m) m.categoria = categoria;
+    if (m) { m.categoria = categoria; m.auto = false; }
     showToast('✅ CATEGORIA ATUALIZADA!');
   } catch(e) { showToast('ERRO AO ATUALIZAR CATEGORIA.'); }
 }
