@@ -1660,7 +1660,7 @@ function initCATS() {
   const keyMap = { 'aco':'ferro' }; // aco→ferro para manter compatibilidade com dados existentes
   CATS_ESTOQUE.forEach(cat => {
     const key = keyMap[cat.key] || cat.key;
-    if (key === 'prelim' || key === 'fundacao' || key === 'estrutura' || key === 'rev_arg' || key === 'granito' || key === 'gesso' || key === 'expediente') return;
+    if (key === 'prelim' || key === 'fundacao' || key === 'estrutura' || key === 'rev_arg' || key === 'gesso' || key === 'expediente') return;
     CATS[key] = { lb: cat.lb, fn: r => cat.fn((r.descricao||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')) };
   });
 }
@@ -1981,7 +1981,7 @@ const CATS_ESTOQUE = [
   { key:'esquadria',  lb:'🪟 Esquadrias',         fn: d => /porta|janela|batente|marco|caixilho|esquadria|grade|fechadura|macaneta|trinco|puxador|dobradica|dobradiça|vidro|box|portao|basculante|veneziana/i.test(d) },
   { key:'rev_arg',    lb:'🪣 Revest. Argamassa',  fn: d => /reboco|chapisco|emboço|gesso projetado|gesso em placa|contra piso|regularizac|argamassa ac|argamassa ret|argamassa col/i.test(d) },
   { key:'rev_cer',    lb:'🟫 Revest. Cerâmico',   fn: d => /ceramica|porcelanato|revestimento|azulejo|rejunte|pastilha|pedra|granito|marmore|travertino|ardosia|pedra miracema/i.test(d) },
-  { key:'granito',    lb:'🪨 Granito / Pedra',    fn: d => /granito|marmore|quartzito|pedra natural|bancada|soleira|peitoril|rodape em ped|escada em ped/i.test(d) },
+  { key:'granito',    lb:'🪨 Granito / Pedra',    fn: d => /granito|marmore|quartzito|pedra natural|bancada|soleira|peitoril|rodape em ped|escada em ped|marmoraria|servico granito/i.test(d) },
   { key:'gesso',      lb:'⬜ Gesso',              fn: d => /gesso|dry.?wall|drywall|placa de gesso|perfil de gesso|massa de gesso|forro de gesso|gesseiro/i.test(d) },
   { key:'pintura',    lb:'🖌 Pintura',            fn: d => /tinta|massa corrida|selador|primer|textura|massa acrilica|verniz|esmalte|tinta latex|tinta acrilica|lixa|rolo|trincha/i.test(d) },
   { key:'ferramenta', lb:'🔨 Ferramentas',        fn: d => /enxada|picareta|pa |pá |marreta|martelo|colher de ped|desempenadeira|broxa|pincel|disco de corte|disco bomcorte|disco de serra|disco p.mad|serrote|arco de serra|trena|nivel de bolha|prumo|espatula|ponteiro|talhadeira|formao|furadeira|esmerilhadeira|betoneira|vibrador|compactador/i.test(d) },
