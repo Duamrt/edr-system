@@ -571,7 +571,7 @@ body::before {
   </button>
   <div class="nav-divider"></div>
   <button class="nav-btn" id="nav-creditos" onclick="setView('creditos')">
-    <span class="nav-icon">📖</span>FISCAL<span class="nav-key">F6</span>
+    <span class="nav-icon">📖</span>NF FISCAL<span class="nav-key">F6</span>
   </button>
   <div class="nav-divider"></div>
   <button class="nav-btn" id="nav-catalogo" onclick="setView('catalogo')">
@@ -609,17 +609,12 @@ body::before {
         <div id="dash-data" style="font-size:10px;color:var(--texto3);font-family:'JetBrains Mono',monospace;letter-spacing:1px;text-align:right;"></div>
       </div>
 
-      <!-- 4 CARDS — uma cor distinta por card -->
-      <div class="admin-only" style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-bottom:14px;">
+      <!-- 3 CARDS -->
+      <div class="admin-only" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px;">
         <div class="stat-card" style="border-top-color:rgba(46,204,113,0.6);">
           <div class="stat-label">TOTAL OBRAS</div>
           <div class="stat-value" id="d-total-obras" style="color:var(--verde-hl);"></div>
           <div class="stat-sub">investido</div>
-        </div>
-        <div class="stat-card" style="border-top-color:rgba(59,130,246,0.6);">
-          <div class="stat-label">NOTAS FISCAIS</div>
-          <div class="stat-value" id="d-qtd" style="color:#60a5fa;"></div>
-          <div class="stat-sub">lançadas</div>
         </div>
         <div class="stat-card" style="border-top-color:rgba(139,92,246,0.6);">
           <div class="stat-label">EM ESTOQUE</div>
@@ -636,7 +631,10 @@ body::before {
       <!-- GRÁFICOS — barras maior, pizza menor -->
       <div class="admin-only" style="display:grid;grid-template-columns:3fr 2fr;gap:12px;margin-bottom:12px;" id="dash-graficos">
         <div class="card" style="padding:18px 16px;">
-          <div class="section-title" style="margin-bottom:14px;font-size:12px;color:var(--texto2);">CUSTO POR OBRA</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+            <div class="section-title" style="font-size:12px;color:var(--texto2);">CUSTO POR OBRA</div>
+            <div style="font-size:9px;color:var(--texto3);font-family:'JetBrains Mono',monospace;letter-spacing:.5px;">duplo clique → abre obra</div>
+          </div>
           <canvas id="chart-barras" height="170"></canvas>
         </div>
         <div class="card" style="padding:18px 16px;">
@@ -1373,6 +1371,7 @@ function parseItens(n) { try { return JSON.parse(n.itens||'[]'); } catch { retur
 function populateSelects() {
   const pool = mostandoArquivadas ? obrasArquivadas : obras;
   const opts = pool.map(o => `<option value="${o.id}">${o.nome}</option>`).join('');
+  // Obras ativas apenas (arquivadas nunca aparecem no form NF, distrib ou lanç)
   const optsNome = obras.map(o => `<option value="${o.nome}">${o.nome}</option>`).join('');
   document.getElementById('f-obra').innerHTML = `<option value="EDR">📦 EDR ENGENHARIA (ESTOQUE)</option><option value="EDR_ESCRITORIO">🏢 EDR ESCRITÓRIO (CONSUMO DIRETO)</option>${optsNome}`;
   document.getElementById('filtro-obra').innerHTML = `<option value="">TODAS AS OBRAS</option><option value="EDR">EDR ENGENHARIA</option>${optsNome}`;
@@ -1484,24 +1483,28 @@ function renderDashboard() {
     return;
   }
 
-  const totalObras = lancamentos.reduce((s,l) => s + Number(l.total||0), 0);
+  // IDs de obras ATIVAS apenas — arquivadas ficam fora da contabilidade corrente
+  const obraAtivaIds = new Set(obras.map(o => o.id));
+  const lancAtivos = lancamentos.filter(l => obraAtivaIds.has(l.obra_id));
+
+  const totalObras = lancAtivos.reduce((s,l) => s + Number(l.total||0), 0);
   const creditos = notas.filter(n=>n.gera_credito).reduce((s,n) => s + Number(n.imposto||0), 0);
   const estoque = notas.filter(n=>n.obra==='EDR').reduce((s,n) => s + Number(n.valor_bruto||0), 0);
   document.getElementById('d-total-obras').textContent = fmt(totalObras);
   document.getElementById('d-creditos').textContent = fmt(creditos);
   document.getElementById('d-estoque').textContent = fmt(estoque);
-  document.getElementById('d-qtd').textContent = notas.length;
+  // d-qtd removido — contagem de NFs não exibida no dashboard
   document.getElementById('dash-alert').innerHTML = `CRÉDITOS IBS/CBS ACUMULADOS: <strong>${fmt(creditos)}</strong>. Controle garantido para aproveitar cada crédito a partir de 2027.`;
 
-  // Dados por obra
+  // Dados por obra — apenas obras ativas
   const porObra = obras.map(o => {
-    const ls = lancamentos.filter(l => l.obra_id === o.id);
-    return { nome: o.nome, total: ls.reduce((s,l)=>s+Number(l.total||0),0), qtd: ls.length };
+    const ls = lancAtivos.filter(l => l.obra_id === o.id);
+    return { nome: o.nome, id: o.id, total: ls.reduce((s,l)=>s+Number(l.total||0),0), qtd: ls.length };
   }).filter(o => o.qtd > 0).sort((a,b) => b.total - a.total);
 
-  // Dados por categoria (usando CATS_ESTOQUE labels)
+  // Dados por categoria — apenas obras ativas
   const catMap = {};
-  lancamentos.forEach(l => {
+  lancAtivos.forEach(l => {
     const cat = getCatEstoque(l.descricao);
     const lb = CATS_ESTOQUE.find(c=>c.key===cat)?.lb || '📦 Outros';
     catMap[lb] = (catMap[lb]||0) + Number(l.total||0);
@@ -1555,11 +1558,45 @@ function renderDashboard() {
         options: {
           plugins: {
             legend: { display: false },
-            tooltip: { callbacks: { label: ctx => '  ' + fmt(ctx.raw) }, backgroundColor: 'rgba(6,12,6,0.9)', borderColor: 'rgba(46,204,113,0.3)', borderWidth: 1, titleColor: '#ddeadd', bodyColor: '#9ab89a', padding: 10 }
+            tooltip: {
+              callbacks: {
+                label: ctx => '  ' + fmt(ctx.raw),
+                footer: () => '  Duplo clique para abrir a obra'
+              },
+              backgroundColor: 'rgba(6,12,6,0.9)', borderColor: 'rgba(46,204,113,0.3)', borderWidth: 1, titleColor: '#ddeadd', bodyColor: '#9ab89a', footerColor: '#6a8a6a', footerFont: { size: 9 }, padding: 10
+            }
           },
           scales: {
             x: { ticks: { color: '#6a8a6a', font: { size: 10 } }, grid: { display: false }, border: { color: 'rgba(46,204,113,0.1)' } },
             y: { ticks: { color: '#6a8a6a', font: { size: 10 }, callback: v => v>=1000?(v/1000).toFixed(0)+'k':''+v }, grid: { color: 'rgba(46,204,113,0.05)' }, border: { display: false } }
+          },
+          onClick: (evt, elements) => {
+            if (!elements.length) return;
+            const idx = elements[0].index;
+            const obra = porObra[idx];
+            if (!obra) return;
+            // Duplo clique: verifica se foi clicado 2x em menos de 400ms
+            const now = Date.now();
+            if (chartBarras._lastClick && (now - chartBarras._lastClick) < 400 && chartBarras._lastClickIdx === idx) {
+              // Navega para Obras filtrando pela obra clicada
+              setView('obras');
+              setTimeout(() => {
+                const sel = document.getElementById('obras-filtro-obra');
+                if (sel) {
+                  // Encontra a option com o id da obra
+                  const opt = Array.from(sel.options).find(o => o.value === obra.id);
+                  if (opt) {
+                    sel.value = obra.id;
+                    onChangeObraFiltro();
+                    showToast(`📂 ${obra.nome}`);
+                  }
+                }
+              }, 80);
+              chartBarras._lastClick = 0;
+            } else {
+              chartBarras._lastClick = now;
+              chartBarras._lastClickIdx = idx;
+            }
           }
         }
       });
@@ -2575,6 +2612,20 @@ async function salvarNota() {
   const emissao = document.getElementById('f-emissao').value;
   if (!fornecedor || !emissao || !numero) { showToast('PREENCHA FORNECEDOR, Nº DA NOTA E DATA.'); return; }
   if (!itensForm.length) { showToast('ADICIONE PELO MENOS UM ITEM.'); return; }
+
+  // ── VERIFICAÇÃO DE DUPLICIDADE ────────────────────────────
+  const nfDup = notas.find(n =>
+    n.numero_nf && n.numero_nf.toUpperCase() === numero.toUpperCase() &&
+    norm(n.fornecedor) === norm(fornecedor)
+  );
+  if (nfDup) {
+    const dataLanc = nfDup.data ? new Date(nfDup.data+'T12:00:00').toLocaleDateString('pt-BR') : '—';
+    const confirmar = confirm(
+      `⚠ NOTA DUPLICADA DETECTADA!\n\nA NF Nº ${numero} do fornecedor ${fornecedor} já foi lançada em ${dataLanc}.\n\nSalvar mesmo assim causará duplicidade no estoque.\n\nClique CANCELAR para revisar ou OK apenas se tiver certeza de que são notas diferentes.`
+    );
+    if (!confirmar) return;
+  }
+  // ─────────────────────────────────────────────────────────
   const btn = document.getElementById('btn-salvar'); btn.disabled = true; btn.textContent = 'SALVANDO...';
   const subtotal = itensForm.reduce((s,i) => s+i.total, 0);
   const frete = parseFloat(document.getElementById('f-frete').value)||0;
