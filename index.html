@@ -679,10 +679,14 @@ body::before {
   <!-- OBRAS (módulo EDR Obras) -->
   <div id="view-obras" class="hidden" style="min-height:0;">
     <div id="obras-sticky" style="position:sticky;top:0;z-index:90;background:var(--bg);padding:10px 0 8px 0;border-bottom:1px solid var(--borda);margin-bottom:8px;">
-      <div class="modulo-badge">🏗 EDR OBRAS</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <div class="modulo-badge" style="margin-bottom:0;">🏗 EDR OBRAS</div>
+        <button onclick="toggleObrasArquivadas()" id="btn-ver-arquivadas" style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);color:#fbbf24;border-radius:8px;padding:4px 12px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;cursor:pointer;transition:all .2s;" class="admin-only">📦 VER ARQUIVADAS</button>
+      </div>
       <div class="filter-row">
         <input type="text" id="obras-busca" placeholder="🔍 Buscar lançamento..." oninput="filtrarLanc()">
-        <select id="obras-filtro-obra" onchange="filtrarLanc()"><option value="">Todas as obras</option></select>
+        <select id="obras-filtro-obra" onchange="onChangeObraFiltro()"><option value="">Todas as obras</option></select>
+        <button id="btn-arquivar-obra" onclick="onClickArquivarObra()" class="admin-only" style="display:none;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);color:#fbbf24;border-radius:8px;padding:9px 14px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;cursor:pointer;white-space:nowrap;transition:all .2s;" title="Arquivar obra selecionada">📦 ARQUIVAR</button>
         <select id="obras-filtro-cat" onchange="filtrarLancCat()" style="min-width:160px;">
           <option value="">Todas categorias</option>
           <option value="mao">👷 Mão de Obra</option>
@@ -1102,6 +1106,9 @@ create table if not exists distribuicoes (
 );
 alter table distribuicoes disable row level security;
 
+-- Arquivamento de obras concluídas
+alter table obras add column if not exists arquivada boolean default false;
+
 -- ENTRADAS DIRETAS (material fiado / sem nota)
 create table if not exists entradas_diretas (
   id uuid default gen_random_uuid() primary key,
@@ -1123,7 +1130,7 @@ let usuarioAtual = null;
 let obras = [], notas = [], lancamentos = [], distribuicoes = [], entradasDiretas = [], catalogoMateriais = [];
 let itensForm = [], distItemAtual = null, currentCredito = null;
 let acSelectedIdx = -1, acFornIdx = -1, cachedFornecedores = [], cachedItens = [];
-let obraFiltroAtual = null, catFiltroAtual = null;
+let obraFiltroAtual = null, catFiltroAtual = null, obrasArquivadas = [];
 
 // ══════════════════════════════════════════
 // SUPABASE
@@ -1218,7 +1225,13 @@ async function iniciarApp() {
   setupKeyboardShortcuts();
   setupClickOutside();
 }
-async function loadObras() { try { obras = await sbGet('obras', '?select=*&order=nome'); if (!Array.isArray(obras)) obras = []; } catch(e) { obras = []; } }
+async function loadObras() {
+  try {
+    const todas = await sbGet('obras', '?select=*&order=nome');
+    obrasArquivadas = Array.isArray(todas) ? todas.filter(o => o.arquivada) : [];
+    obras = Array.isArray(todas) ? todas.filter(o => !o.arquivada) : [];
+  } catch(e) { obras = []; obrasArquivadas = []; }
+}
 async function loadMateriais() { try { const r = await sbGet('materiais', '?order=codigo'); catalogoMateriais = Array.isArray(r) ? r : []; } catch(e) { catalogoMateriais = []; } }
 async function loadNotas() { try { notas = await sbGet('notas_fiscais', '?order=criado_em.desc'); if (!Array.isArray(notas)) { notas = []; showToast('⚠ Execute o SQL no SETUP.'); } } catch(e) { notas = []; } }
 async function loadLancamentos() { try { lancamentos = await sbGet('lancamentos', '?select=id,obra_id,descricao,qtd,preco,total,data,obs&order=data.desc'); if (!Array.isArray(lancamentos)) lancamentos = []; } catch(e) { lancamentos = []; } }
@@ -1232,7 +1245,8 @@ function norm(s) { return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u03
 function parseItens(n) { try { return JSON.parse(n.itens||'[]'); } catch { return []; } }
 
 function populateSelects() {
-  const opts = obras.map(o => `<option value="${o.id}">${o.nome}</option>`).join('');
+  const pool = mostandoArquivadas ? obrasArquivadas : obras;
+  const opts = pool.map(o => `<option value="${o.id}">${o.nome}</option>`).join('');
   const optsNome = obras.map(o => `<option value="${o.nome}">${o.nome}</option>`).join('');
   document.getElementById('f-obra').innerHTML = `<option value="EDR">📦 EDR ENGENHARIA (ESTOQUE)</option><option value="EDR_ESCRITORIO">🏢 EDR ESCRITÓRIO (CONSUMO DIRETO)</option>${optsNome}`;
   document.getElementById('filtro-obra').innerHTML = `<option value="">TODAS AS OBRAS</option><option value="EDR">EDR ENGENHARIA</option>${optsNome}`;
@@ -1405,6 +1419,65 @@ function renderObrasView() {
   filtrarLanc();
 }
 
+let mostandoArquivadas = false;
+
+function onChangeObraFiltro() {
+  const sel = document.getElementById('obras-filtro-obra');
+  const btn = document.getElementById('btn-arquivar-obra');
+  if (btn) {
+    if (sel.value && usuarioAtual?.perfil === 'admin') {
+      btn.style.display = 'block';
+      // Se mostrando arquivadas, botão vira "reativar"
+      btn.textContent = mostandoArquivadas ? '🏗 REATIVAR' : '📦 ARQUIVAR';
+      btn.style.color = mostandoArquivadas ? '#4ade80' : '#fbbf24';
+      btn.style.borderColor = mostandoArquivadas ? 'rgba(46,204,113,0.3)' : 'rgba(245,158,11,0.2)';
+      btn.style.background = mostandoArquivadas ? 'rgba(46,204,113,0.08)' : 'rgba(245,158,11,0.08)';
+    } else {
+      btn.style.display = 'none';
+    }
+  }
+  filtrarLanc();
+}
+
+function onClickArquivarObra() {
+  const obraId = document.getElementById('obras-filtro-obra').value;
+  if (!obraId) return;
+  arquivarObra(obraId, !mostandoArquivadas);
+  document.getElementById('obras-filtro-obra').value = '';
+  document.getElementById('btn-arquivar-obra').style.display = 'none';
+}
+
+function toggleObrasArquivadas() {
+  mostandoArquivadas = !mostandoArquivadas;
+  const btn = document.getElementById('btn-ver-arquivadas');
+  if (mostandoArquivadas) {
+    btn.style.background = 'rgba(245,158,11,0.18)';
+    btn.textContent = '🏗 VER ATIVAS';
+  } else {
+    btn.style.background = 'rgba(245,158,11,0.08)';
+    btn.textContent = '📦 VER ARQUIVADAS';
+  }
+  // Resetar select e recarregar opções
+  document.getElementById('obras-filtro-obra').value = '';
+  document.getElementById('btn-arquivar-obra').style.display = 'none';
+  populateSelects();
+  filtrarLanc();
+}
+
+async function arquivarObra(obraId, arquivar) {
+  const acao = arquivar ? 'arquivar' : 'reativar';
+  if (!confirm(`Deseja ${acao} esta obra?`)) return;
+  try {
+    await sbPatch('obras', `?id=eq.${obraId}`, { arquivada: arquivar });
+    // Atualizar localmente
+    await loadObras();
+    populateSelects();
+    filtrarLanc();
+    renderDashboard();
+    showToast(arquivar ? '📦 OBRA ARQUIVADA!' : '🏗 OBRA REATIVADA!');
+  } catch(e) { showToast('ERRO AO ATUALIZAR OBRA.'); }
+}
+
 function toggleCat(k) {
   catFiltroAtual = catFiltroAtual === k ? null : k;
   // Sincronizar com o select
@@ -1425,6 +1498,9 @@ function filtrarLancCat() {
 
 function filtrarLanc() {
   const busca = norm(document.getElementById('obras-busca').value || '');
+  // Definir pool de obras e lançamentos conforme modo
+  const obraPool = mostandoArquivadas ? obrasArquivadas : obras;
+  const obraIds = new Set(obraPool.map(o => o.id));
   const obraId = document.getElementById('obras-filtro-obra').value;
   let lista = [...lancamentos];
   if (busca) lista = lista.filter(l => norm(l.descricao||'').includes(busca));
