@@ -701,6 +701,7 @@ body::before {
           <option value="combustivel">⛽ Combustível</option>
           <option value="limpeza">🧹 Limpeza</option>
           <option value="alimentacao">🍽 Alimentação</option>
+          <option value="locacao">🏗 Locação de Equip.</option>
           <option value="doc">📋 Documentação</option>
         </select>
       </div>
@@ -910,6 +911,8 @@ body::before {
           <option value="limpeza">🧹 Limpeza</option>
           <option value="alimentacao">🍽 Alimentação</option>
           <option value="expediente">📎 Expediente</option>
+              <option value="locacao">🏗 Locação de Equip.</option>
+          <option value="locacao">🏗 Locação de Equip.</option>
           <option value="outros">📦 Outros</option>
         </select>
         <button class="btn-save" style="padding:10px 18px;white-space:nowrap;" onclick="abrirModalNovoMaterial()">➕ Novo Material</button>
@@ -1796,6 +1799,7 @@ const CATS_ESTOQUE = [
   { key:'limpeza',    lb:'🧹 Limpeza',            fn: d => /limpeza|vassoura|rodo|pano|detergente|desinfet|inseticida|raid|balde|saco de lixo|luva de borr|esponja|sabao/i.test(d) },
   { key:'alimentacao',lb:'🍽 Alimentação',        fn: d => /alimenta|refeicao|marmita|lanche|cafe|agua mineral|pacoca|bolacha|biscoito|refrigerante|suco|quentinha/i.test(d) },
   { key:'expediente', lb:'📎 Expediente',         fn: d => /papel|caneta|impressao|toner|cartucho|clips|grampeador|fita adesiva|envelope|pasta|agenda|caderno/i.test(d) },
+  { key:'locacao',    lb:'🏗 Locação de Equip.',  fn: d => /locac|locaç|aluguel|andaime|betoneira alug|compactador alug|vibrador alug|escora alug|bomba alug|grua|guindaste|caçamba|cacamba|retroescavadeira|pa carregadeira|rolo compactador|mini retro|bobcat/i.test(d) },
 ];
 let catEstoqueFiltro = null;
 // Inicializar CATS unificado após CATS_ESTOQUE estar disponível
