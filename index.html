@@ -2427,7 +2427,7 @@ function showLancAutocomplete(val) {
   const items = [];
   catMatches.forEach(m => {
     items.push(`<div class="autocomplete-item" onmousedown="selectLancDesc('${m.nome.replace(/'/g,"\\'")}')">
-      <span class="ac-codigo">${m.codigo}</span>
+      ${m.codigo?`<span class="ac-codigo">${m.codigo}</span>`:''}
       <span class="ac-label">${m.nome}</span>
       <span style="font-size:10px;color:var(--texto3);">${m.unidade||'UN'}</span>
     </div>`);
