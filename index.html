@@ -3269,12 +3269,17 @@ function onEntradaDescInput() {
   const list = document.getElementById('ac-entrada-list');
   if (!val || val.length < 2) { list.classList.add('hidden'); return; }
   const v = norm(val), seen = new Set(), matches = [];
-  // Sugerir do histórico de entradas diretas e notas
-  entradasDiretas.forEach(e => { const k = e.item_desc; if (norm(k).includes(v) && !seen.has(k)) { seen.add(k); matches.push({ desc: k, unidade: e.unidade||'UN' }); } });
-  notas.forEach(n => { parseItens(n).forEach(it => { if (norm(it.desc).includes(v) && !seen.has(it.desc)) { seen.add(it.desc); matches.push({ desc: it.desc, unidade: it.unidade||'UN' }); } }); });
+  // 1. Catálogo de materiais — busca por nome E por código
+  catalogoMateriais.filter(m => norm(m.nome).includes(v) || (m.codigo||'').includes(val.replace(/\D/g,''))).slice(0,8).forEach(m => {
+    if (!seen.has(m.nome)) { seen.add(m.nome); matches.push({ desc: m.nome, unidade: m.unidade||'UN', codigo: m.codigo||'' }); }
+  });
+  // 2. Histórico de entradas diretas
+  entradasDiretas.forEach(e => { const k = e.item_desc; if (norm(k).includes(v) && !seen.has(k)) { seen.add(k); matches.push({ desc: k, unidade: e.unidade||'UN', codigo: '' }); } });
+  // 3. Itens de NFs anteriores
+  notas.forEach(n => { parseItens(n).forEach(it => { if (norm(it.desc).includes(v) && !seen.has(it.desc)) { seen.add(it.desc); matches.push({ desc: it.desc, unidade: it.unidade||'UN', codigo: '' }); } }); });
   if (!matches.length) { list.classList.add('hidden'); return; }
-  const top = matches.slice(0,6);
-  list.innerHTML = top.map(m => `<div class="autocomplete-item" onmousedown="e=>{e.preventDefault();document.getElementById('entrada-desc').value='${m.desc}';document.getElementById('entrada-unidade').value='${m.unidade}';document.getElementById('ac-entrada-list').classList.add('hidden');}(event)"><span class="ac-label">${m.desc}</span><span style="font-size:10px;color:var(--texto3);">${m.unidade}</span></div>`).join('');
+  const top = matches.slice(0,8);
+  list.innerHTML = top.map((m,i) => `<div class="autocomplete-item" data-ed-idx="${i}">${m.codigo?`<span class="ac-codigo">${m.codigo}</span>`:''}<span class="ac-label">${m.desc}</span><span style="font-size:10px;color:var(--texto3);">${m.unidade}</span></div>`).join('');
   list.querySelectorAll('.autocomplete-item').forEach((el, i) => {
     el.addEventListener('mousedown', ev => {
       ev.preventDefault();
