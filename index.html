@@ -1107,8 +1107,13 @@ const SUPABASE_KEY = 'sb_publishable_Z9E8KLU8ZIMcWjD-bMG5gg_eM585qWq';
 
 // USUÁRIOS (admin gerencia aqui)
 // Usuários carregados do Supabase — fallback mínimo de emergência
+// Fallback completo — usado se Supabase não tiver tabela 'usuarios' ainda
+// Após rodar o SQL de setup, os usuários ficam no Supabase e este array é substituído
 let USUARIOS = [
-  { usuario: 'admin', senha: 'admin123', perfil: 'admin', nome: 'Administrador' },
+  { usuario: 'duamrt',   senha: 'duanxdzin20', perfil: 'admin',       nome: 'Duamrt',        ativo: true },
+  { usuario: 'elydart',  senha: '1202elyd@',   perfil: 'admin',       nome: 'Elyda',         ativo: true },
+  { usuario: 'admin',    senha: 'admin123',    perfil: 'admin',       nome: 'Administrador', ativo: true },
+  { usuario: 'operador', senha: 'op123',       perfil: 'operacional', nome: 'Operador',      ativo: true },
 ];
 
 const SQL_SETUP = `-- EDR System · Setup completo
@@ -1196,14 +1201,16 @@ async function sbDelete(t, q) { const r = await fetch(`${SUPABASE_URL}/rest/v1/$
 // ══════════════════════════════════════════
 // LOGIN
 // ══════════════════════════════════════════
-function fazerLogin() {
+async function fazerLogin() {
   const u = document.getElementById('login-user').value.trim().toLowerCase();
   const s = document.getElementById('login-pass').value;
+  // Garantir que usuários foram carregados do Supabase
+  if (USUARIOS.length <= 1) await loadUsuarios();
   const user = USUARIOS.find(x => x.usuario === u && x.senha === s && x.ativo !== false);
   if (!user) { document.getElementById('login-error').textContent = 'Usuário ou senha incorretos ou acesso desativado.'; return; }
   usuarioAtual = user;
   try {
-    const ttl = user.perfil === 'admin' ? 30 : 0.33; // admin 30 dias, operador 8h
+    const ttl = user.perfil === 'admin' ? 30 : 0.33;
     localStorage.setItem('edr_session', JSON.stringify({ usuario: user.usuario, perfil: user.perfil, ts: Date.now(), ttl_dias: ttl }));
   } catch(e) {}
   entrarNoApp();
@@ -1248,7 +1255,12 @@ function verificarSessao() {
 // Auto-login ao abrir o app
 window.addEventListener('DOMContentLoaded', async () => {
   await loadUsuarios(); // carrega usuários do Supabase antes de validar sessão
-  if (verificarSessao()) entrarNoApp();
+  try {
+    if (verificarSessao()) entrarNoApp();
+  } catch(e) {
+    // Sessão corrompida — limpa e mostra login normal
+    try { localStorage.removeItem('edr_session'); } catch(e2) {}
+  }
 });
 function aplicarPerfil() {
   const isAdmin = usuarioAtual.perfil === 'admin';
@@ -1284,8 +1296,11 @@ async function iniciarApp() {
 async function loadUsuarios() {
   try {
     const rows = await sbGet('usuarios', '?select=*&order=criado_em');
-    if (Array.isArray(rows) && rows.length) USUARIOS = rows;
-  } catch(e) { /* usa fallback local */ }
+    if (Array.isArray(rows) && rows.length) {
+      USUARIOS = rows;
+    }
+    // Se tabela não existe ainda, mantém fallback completo
+  } catch(e) { /* mantém USUARIOS fallback */ }
 }
 
 async function loadObras() {
