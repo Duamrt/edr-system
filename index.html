@@ -65,13 +65,13 @@ if ("serviceWorker" in navigator) {
 body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); height: 100vh; overflow: hidden; color: var(--texto); }
 
 /* ── LOGIN ── */
-.login-screen { position: fixed; inset: 0; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 999; padding: 24px; }
+.login-screen { position: fixed; inset: 0; background: radial-gradient(ellipse at 50% 0%, #0d2d1a 0%, #050a05 60%); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 999; padding: 24px; }
 .login-logo { margin-bottom: 36px; text-align: center; }
 .login-logo-mark { width: 88px; height: 88px; border: 2px solid var(--verde3); border-radius: 6px; display: flex; align-items: center; justify-content: center; margin: 0 auto 14px; box-shadow: 0 0 24px rgba(26,92,42,.4), inset 0 0 24px rgba(26,92,42,.1); }
 .login-logo-er { font-size: 38px; font-weight: 900; color: var(--branco); letter-spacing: -2px; }
 .login-logo-name { color: var(--branco); font-size: 16px; font-weight: 800; letter-spacing: 5px; }
 .login-logo-sub { color: var(--texto3); font-size: 10px; letter-spacing: 2px; margin-top: 5px; text-transform: uppercase; }
-.login-card { background: var(--bg2); border: 1px solid var(--borda2); border-radius: 16px; padding: 28px 24px; width: 100%; max-width: 380px; box-shadow: 0 24px 48px rgba(0,0,0,.5); }
+.login-card { background: rgba(20,30,22,0.85); border: 1px solid #2d9e5044; border-radius: 20px; padding: 32px 28px; width: 100%; max-width: 380px; box-shadow: 0 32px 64px rgba(0,0,0,.7), 0 0 0 1px #2d9e5022; backdrop-filter: blur(12px); }
 .login-title { color: var(--branco); font-weight: 700; font-size: 15px; margin-bottom: 20px; text-align: center; letter-spacing: .5px; }
 .login-field { margin-bottom: 14px; }
 .login-field label { display: block; color: var(--texto3); font-size: 10px; font-weight: 700; margin-bottom: 6px; letter-spacing: 1px; text-transform: uppercase; }
@@ -104,6 +104,7 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
 .nav-btn.active { color: var(--verde-hl); background: var(--verde-bg); border-color: var(--verde-bd); }
 .nav-btn:hover:not(.active) { color: var(--texto2); background: var(--bg3); border-color: var(--borda); }
 .nav-key { font-size: 8px; color: var(--texto3); font-weight: 400; background: var(--bg4); border-radius: 3px; padding: 1px 4px; }
+@media (max-width: 768px) { .nav-key { display: none !important; } .shortcut-hint { display: none !important; } }
 .nav-btn.active .nav-key { color: var(--verde3); background: rgba(45,158,80,.15); }
 .nav-divider { width: 40px; height: 1px; background: var(--borda); margin: 4px 0; }
 .sidebar-bottom { margin-top: 8px; padding-bottom: 8px; }
@@ -335,15 +336,15 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
 
 <!-- ── TELA DE LOGIN ─────────────────────────────── -->
 <div class="login-screen" id="login-screen">
-  <div class="login-logo">
-    <div class="login-logo-mark">
-      <span class="login-logo-er">EDR</span>
+  <div class="login-logo" style="margin-bottom:32px;text-align:center;">
+    <div style="width:72px;height:72px;background:linear-gradient(135deg,#1a5c2a,#2d9e50);border-radius:18px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;box-shadow:0 8px 32px rgba(45,158,80,.4);">
+      <span style="font-size:36px;font-weight:900;color:#fff;font-family:monospace;letter-spacing:-2px;">E</span>
     </div>
-    <div class="login-logo-name">EDR ENGENHARIA</div>
-    <div class="login-logo-sub">SISTEMA INTEGRADO DE GESTÃO DE OBRAS</div>
+    <div style="font-size:22px;font-weight:900;color:#4ade80;letter-spacing:3px;">EDR</div>
+    <div style="font-size:11px;color:#6b7280;letter-spacing:4px;margin-top:4px;text-transform:uppercase;">Engenharia</div>
   </div>
   <div class="login-card">
-    <div class="login-title">Acesso ao Sistema</div>
+    <div class="login-title" style="text-align:center;margin-bottom:20px;font-size:14px;color:#9ca3af;font-weight:500;letter-spacing:1px;">ACESSO AO SISTEMA</div>
     <div class="login-field">
       <label>USUÁRIO</label>
       <input type="text" id="login-user" placeholder="seu usuário" autocomplete="off">
@@ -722,7 +723,7 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
       <div class="field" style="flex:2"><label>CATEGORIA</label>
         <select id="mat-categoria" style="background:var(--bg3);border:1px solid var(--borda2);border-radius:8px;padding:8px;color:var(--branco);font-family:inherit;width:100%;">
           <option value="">— Selecione —</option>
-          <option>Cimento/Areia</option><option>Forma e Madeira</option><option>Ferro/Aço</option><option>Hidráulica</option><option>Louças e Metais</option><option>Esgoto</option><option>Elétrica</option><option>Acabamento</option><option>Esquadrias</option><option>Ferramentas</option><option>Combustível</option><option>Mão de Obra</option><option>Documentação</option><option>Escritório</option><option>Alimentação</option><option>Limpeza</option><option>Outros</option>
+          <option>Cimento/Areia</option><option>Forma e Madeira</option><option>Genérico</option><option>Ferro/Aço</option><option>Hidráulica</option><option>Louças e Metais</option><option>Esgoto</option><option>Elétrica</option><option>Acabamento</option><option>Esquadrias</option><option>Ferramentas</option><option>Combustível</option><option>Mão de Obra</option><option>Documentação</option><option>Escritório</option><option>Alimentação</option><option>Limpeza</option><option>Outros</option>
         </select>
       </div>
     </div>
@@ -925,6 +926,13 @@ function fazerLogin() {
 }
 function entrarNoApp() {
   document.getElementById('login-screen').classList.add('hidden');
+  // Garantir que só o dashboard aparece — evita flash de SQL ou outras abas
+  ['obras','estoque','notas','form','creditos','setup','catalogo','banco'].forEach(name => {
+    const el = document.getElementById('view-'+name);
+    if (el) el.classList.add('hidden');
+  });
+  const dash = document.getElementById('view-dashboard');
+  if (dash) dash.classList.remove('hidden');
   document.getElementById('app').classList.remove('hidden');
   document.getElementById('user-nome-badge').textContent = usuarioAtual.nome;
   aplicarPerfil();
@@ -1164,7 +1172,15 @@ function filtrarLanc() {
   const totalEl = document.getElementById('obras-total-filtro');
   const nFiltros = (obraId ? 1 : 0) + (catFiltroAtual ? 1 : 0) + (busca ? 1 : 0);
   totalEl.classList.remove('hidden');
-  totalEl.innerHTML = `<span style="color:var(--texto2);font-size:11px;">${lista.length} lançamento${lista.length!==1?'s':''} ${nFiltros>0?'filtrados':'no total'}</span>${usuarioAtual?.perfil==='admin' ? `<span style="font-size:15px;font-weight:800;color:var(--verde-hl);">${fmt(totalFiltrado)}</span>` : ''}`;
+  const totalQtd = lista.reduce((s,l) => s + Number(l.qtd||0), 0);
+  const unidades = [...new Set(lista.map(l => l.unidade).filter(Boolean))];
+  const unStr = unidades.length === 1 ? unidades[0] : unidades.length > 1 ? 'un. mistas' : 'un.';
+  totalEl.innerHTML = `
+    <span style="color:var(--texto2);font-size:11px;">${lista.length} lançamento${lista.length!==1?'s':''} ${nFiltros>0?'filtrados':'no total'}</span>
+    <div style="display:flex;gap:12px;align-items:center;">
+      <span style="font-size:12px;color:var(--texto3);">Qtd: <strong style="color:var(--branco);">${totalQtd % 1 === 0 ? totalQtd : totalQtd.toFixed(2)} ${unStr}</strong></span>
+      ${usuarioAtual?.perfil==='admin' ? `<span style="font-size:15px;font-weight:800;color:var(--verde-hl);">${fmt(totalFiltrado)}</span>` : ''}
+    </div>`;
   const obraMap = {};
   obras.forEach(o => obraMap[o.id] = o.nome);
   el.innerHTML = lista.map(l => `
@@ -1991,10 +2007,10 @@ function renderCatalogo() {
   if (!lista.length) { el.innerHTML = '<div class="empty">Nenhum material encontrado. Clique em "+ Novo Material" para cadastrar.</div>'; return; }
   el.innerHTML = lista.map(m => `
     <div class="catalogo-item">
-      <span class="catalogo-codigo">${m.codigo}</span>
+      <span class="catalogo-codigo">${m.codigo || "S/COD"}</span>
       <span class="catalogo-nome">${m.nome}</span>
       <span class="catalogo-un">${m.unidade||'UN'}</span>
-      ${m.categoria ? `<span class="catalogo-cat">${m.categoria}</span>` : ''}
+      ${usuarioAtual?.perfil==='admin' ? `<select onchange="editarCategoriaMaterial('${m.id}',this.value)" style="background:var(--bg3);border:1px solid var(--borda2);border-radius:6px;padding:3px 6px;color:var(--branco);font-size:10px;font-family:inherit;cursor:pointer;" title="Editar categoria"><option value="">— cat —</option><option value="alvenaria">alvenaria</option><option value="forma">forma</option><option value="aco">aco</option><option value="hidraulica">hidraulica</option><option value="loucas">loucas</option><option value="esgoto">esgoto</option><option value="eletrica">eletrica</option><option value="cobertura">cobertura</option><option value="esquadria">esquadria</option><option value="rev_cer">rev_cer</option><option value="pintura">pintura</option><option value="impermeab">impermeab</option><option value="ferramenta">ferramenta</option><option value="epi">epi</option><option value="combustivel">combustivel</option><option value="limpeza">limpeza</option><option value="alimentacao">alimentacao</option><option value="expediente">expediente</option><option value="generico">generico</option><option value="outros">outros</option></select>` : m.categoria ? `<span class="catalogo-cat">${m.categoria}</span>` : ''}
       ${usuarioAtual?.perfil==='admin' ? `<button onclick="excluirMaterial('${m.id}')" style="background:none;border:none;color:var(--texto3);cursor:pointer;font-size:14px;padding:4px;" title="Excluir">🗑</button>` : ''}
     </div>`).join('');
 }
@@ -2103,6 +2119,16 @@ async function migrarMateriaisExistentes() {
   catalogoMateriais.sort((a,b) => a.codigo.localeCompare(b.codigo));
   renderCatalogo();
   showToast(`✅ ${criados} MATERIAL(IS) MIGRADO(S) PARA O CATÁLOGO!`);
+}
+
+async function editarCategoriaMaterial(id, categoria) {
+  if (!categoria) return;
+  try {
+    await sbPatch('materiais', `?id=eq.${id}`, { categoria });
+    const m = catalogoMateriais.find(x => x.id === id);
+    if (m) m.categoria = categoria;
+    showToast('✅ CATEGORIA ATUALIZADA!');
+  } catch(e) { showToast('ERRO AO ATUALIZAR CATEGORIA.'); }
 }
 
 async function recalcularCategorias() {
