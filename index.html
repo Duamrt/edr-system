@@ -653,12 +653,8 @@ body::before {
       </div>
       <div id="dash-obras" class="hidden"></div>
 
-      <!-- Operacional -->
-      <div class="card hidden" id="oper-welcome" style="text-align:center;padding:32px 16px;">
-        <div style="font-size:48px;margin-bottom:12px;">👷</div>
-        <div class="section-title" style="justify-content:center;">Bem-vindo ao EDR System</div>
-        <p style="font-size:14px;color:var(--texto2);line-height:1.8;margin-top:8px;">Use o menu lateral para <strong style="color:var(--verde-hl);">lançar notas fiscais</strong> ou <strong style="color:var(--verde-hl);">registrar materiais</strong>.</p>
-      </div>
+      <!-- Operacional Dashboard -->
+      <div id="oper-welcome" class="hidden"></div>
 
       <!-- Atalhos -->
       <div class="shortcut-hint admin-only" style="margin-top:8px;">
@@ -1260,13 +1256,113 @@ function populateSelects() {
 // ══════════════════════════════════════════
 let chartPizza = null, chartBarras = null;
 
+function renderDashboardOperador() {
+  const el = document.getElementById('oper-welcome');
+  el.classList.remove('hidden');
+
+  // Data e hora
+  const now = new Date();
+  const dataStr = now.toLocaleDateString('pt-BR', { weekday:'long', day:'2-digit', month:'long' });
+  const horaStr = now.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
+
+  // Obras ativas com contagem de lançamentos
+  const obrasAtivas = obras.map(o => {
+    const ls = lancamentos.filter(l => l.obra_id === o.id);
+    return { ...o, qtd: ls.length };
+  }).filter(o => o.qtd > 0).sort((a,b) => b.qtd - a.qtd);
+
+  // Estoque disponível (saldo > 0)
+  const estoqueDisp = (() => {
+    const saldos = {};
+    notas.filter(n => n.obra === 'EDR').forEach(n => {
+      try { JSON.parse(n.itens||'[]').forEach(it => {
+        const k = it.descricao?.toUpperCase();
+        if (!k) return;
+        if (!saldos[k]) saldos[k] = { qtd: 0, un: it.unidade||'UN' };
+        saldos[k].qtd += Number(it.quantidade||0);
+      }); } catch(e) {}
+    });
+    // Descontar distribuídos
+    distribuicoes.forEach(d => {
+      const k = d.item_desc?.toUpperCase();
+      if (saldos[k]) saldos[k].qtd -= Number(d.qtd||0);
+    });
+    return Object.entries(saldos).filter(([,v]) => v.qtd > 0.01)
+      .sort((a,b) => b[1].qtd - a[1].qtd).slice(0, 8);
+  })();
+
+  // Últimos 8 lançamentos
+  const obraMap = {};
+  obras.forEach(o => obraMap[o.id] = o.nome);
+  const ultimos = [...lancamentos]
+    .sort((a,b) => new Date(b.data||0) - new Date(a.data||0))
+    .slice(0, 8);
+
+  el.innerHTML = `
+    <!-- Saudação -->
+    <div class="card" style="margin-bottom:12px;padding:18px 20px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div>
+          <div style="font-family:'Rajdhani',sans-serif;font-size:20px;font-weight:700;color:var(--branco);">Olá, ${usuarioAtual.nome}! 👷</div>
+          <div style="font-size:11px;color:var(--texto3);margin-top:4px;font-family:'JetBrains Mono',monospace;text-transform:capitalize;">${dataStr} · ${horaStr}</div>
+        </div>
+        <div style="display:flex;gap:10px;">
+          <button onclick="setView('form')" style="background:rgba(46,204,113,0.1);border:1px solid rgba(46,204,113,0.3);color:var(--verde-hl);border-radius:10px;padding:10px 16px;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:12px;letter-spacing:1px;cursor:pointer;transition:all .2s;" onmouseover="this.style.background='rgba(46,204,113,0.18)'" onmouseout="this.style.background='rgba(46,204,113,0.1)'">➕ LANÇAR NF</button>
+          <button onclick="setView('estoque')" style="background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.25);color:#a78bfa;border-radius:10px;padding:10px 16px;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:12px;letter-spacing:1px;cursor:pointer;transition:all .2s;" onmouseover="this.style.background='rgba(139,92,246,0.18)'" onmouseout="this.style.background='rgba(139,92,246,0.1)'">📦 ESTOQUE</button>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+
+      <!-- Obras em andamento -->
+      <div class="card" style="padding:16px;">
+        <div style="font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;color:var(--verde-hl);letter-spacing:2px;margin-bottom:12px;text-transform:uppercase;">🏗 Obras em Andamento</div>
+        ${obrasAtivas.length ? obrasAtivas.map(o => `
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(46,204,113,0.07);">
+            <span style="font-size:13px;color:var(--branco);font-weight:600;">${o.nome}</span>
+            <span style="font-size:10px;color:var(--texto3);font-family:'JetBrains Mono',monospace;background:rgba(46,204,113,0.07);padding:2px 8px;border-radius:10px;">${o.qtd} lanç.</span>
+          </div>`).join('') :
+          '<div style="color:var(--texto3);font-size:12px;padding:8px 0;">Nenhuma obra ativa.</div>'
+        }
+      </div>
+
+      <!-- Estoque disponível -->
+      <div class="card" style="padding:16px;">
+        <div style="font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;color:#a78bfa;letter-spacing:2px;margin-bottom:12px;text-transform:uppercase;">📦 Estoque Disponível</div>
+        ${estoqueDisp.length ? estoqueDisp.map(([nome, v]) => `
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(139,92,246,0.07);">
+            <span style="font-size:12px;color:var(--texto);font-weight:500;">${nome}</span>
+            <span style="font-size:11px;font-weight:700;color:#a78bfa;font-family:'JetBrains Mono',monospace;">${v.qtd % 1 === 0 ? v.qtd : v.qtd.toFixed(2)} ${v.un}</span>
+          </div>`).join('') :
+          '<div style="color:var(--texto3);font-size:12px;padding:8px 0;">Sem estoque disponível.</div>'
+        }
+      </div>
+    </div>
+
+    <!-- Últimos lançamentos -->
+    <div class="card" style="padding:16px;">
+      <div style="font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;color:#60a5fa;letter-spacing:2px;margin-bottom:12px;text-transform:uppercase;">🕐 Últimos Lançamentos</div>
+      ${ultimos.length ? ultimos.map(l => `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid rgba(59,130,246,0.07);">
+          <div>
+            <div style="font-size:13px;color:var(--branco);font-weight:600;">${l.descricao}</div>
+            <div style="font-size:10px;color:var(--texto3);margin-top:2px;font-family:'JetBrains Mono',monospace;">${obraMap[l.obra_id]||'—'} · ${l.data||''}</div>
+          </div>
+          <span style="font-size:10px;color:var(--texto3);background:rgba(59,130,246,0.07);padding:2px 8px;border-radius:10px;font-family:'JetBrains Mono',monospace;white-space:nowrap;">${Number(l.qtd||1) % 1 === 0 ? Number(l.qtd||1) : Number(l.qtd||1).toFixed(2)} ${l.unidade||'UN'}</span>
+        </div>`).join('') :
+        '<div style="color:var(--texto3);font-size:12px;padding:8px 0;">Nenhum lançamento registrado.</div>'
+      }
+    </div>`;
+}
+
 function renderDashboard() {
   document.getElementById('dash-loading').classList.add('hidden');
   document.getElementById('dash-content').classList.remove('hidden');
 
-  // Operacional
+  // Operacional — dashboard próprio
   if (usuarioAtual?.perfil !== 'admin') {
-    document.getElementById('oper-welcome').classList.remove('hidden');
+    renderDashboardOperador();
     return;
   }
 
