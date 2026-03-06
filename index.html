@@ -1333,24 +1333,12 @@ function renderDashboardOperador() {
   }).filter(o => o.qtd > 0).sort((a,b) => b.qtd - a.qtd);
 
   // Estoque disponível (saldo > 0)
-  const estoqueDisp = (() => {
-    const saldos = {};
-    notas.filter(n => n.obra === 'EDR').forEach(n => {
-      try { JSON.parse(n.itens||'[]').forEach(it => {
-        const k = it.descricao?.toUpperCase();
-        if (!k) return;
-        if (!saldos[k]) saldos[k] = { qtd: 0, un: it.unidade||'UN' };
-        saldos[k].qtd += Number(it.quantidade||0);
-      }); } catch(e) {}
-    });
-    // Descontar distribuídos
-    distribuicoes.forEach(d => {
-      const k = d.item_desc?.toUpperCase();
-      if (saldos[k]) saldos[k].qtd -= Number(d.qtd||0);
-    });
-    return Object.entries(saldos).filter(([,v]) => v.qtd > 0.01)
-      .sort((a,b) => b[1].qtd - a[1].qtd).slice(0, 8);
-  })();
+  // Usar consolidarEstoque() — mesma lógica FIFO do módulo Estoque
+  const estoqueDisp = consolidarEstoque()
+    .filter(m => m.saldoTotal > 0.01)
+    .sort((a, b) => b.saldoTotal - a.saldoTotal)
+    .slice(0, 8)
+    .map(m => [m.desc, { qtd: m.saldoTotal, un: m.unidade }]);
 
   // Últimos 8 lançamentos
   const obraMap = {};
