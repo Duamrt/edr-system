@@ -688,21 +688,24 @@ body::before {
           <option value="forma">🪵 Forma e Madeira</option>
           <option value="ferro">⚙ Aço / Ferro</option>
           <option value="eletrica">⚡ Elétrica</option>
-          <option value="hidro">🚿 Hidráulica</option>
+          <option value="hidraulica">🚿 Hidráulica</option>
           <option value="loucas">🛁 Louças e Metais</option>
           <option value="esgoto">🪠 Esgoto</option>
           <option value="cobertura">🏠 Cobertura</option>
-          <option value="esquad">🪟 Esquadrias</option>
+          <option value="esquadria">🪟 Esquadrias</option>
           <option value="rev_cer">🟫 Revest. Cerâmico</option>
           <option value="pintura">🖌 Pintura</option>
-          <option value="impermeab">💧 Impermeab.</option>
+          <option value="impermeab">💧 Impermeabilização</option>
           <option value="ferramenta">🔨 Ferramentas</option>
-          <option value="epi">🦺 EPI</option>
+          <option value="epi">🦺 EPI / Segurança</option>
           <option value="combustivel">⛽ Combustível</option>
           <option value="limpeza">🧹 Limpeza</option>
           <option value="alimentacao">🍽 Alimentação</option>
           <option value="locacao">🏗 Locação de Equip.</option>
           <option value="doc">📋 Documentação</option>
+          <option value="expediente">📎 Expediente</option>
+          <option value="generico">❓ Genérico</option>
+          <option value="outros">📦 Outros</option>
         </select>
       </div>
     </div>
@@ -897,22 +900,26 @@ body::before {
           <option value="">📂 Todas categorias</option>
           <option value="alvenaria">🧱 Alvenaria</option>
           <option value="forma">🪵 Forma e Madeira</option>
-          <option value="aco">⚙ Aço/Ferro</option>
+          <option value="ferro">⚙ Aço / Ferro</option>
+          <option value="eletrica">⚡ Elétrica</option>
           <option value="hidraulica">🚿 Hidráulica</option>
           <option value="loucas">🛁 Louças e Metais</option>
           <option value="esgoto">🪠 Esgoto</option>
-          <option value="eletrica">⚡ Elétrica</option>
           <option value="cobertura">🏠 Cobertura</option>
           <option value="esquadria">🪟 Esquadrias</option>
+          <option value="rev_cer">🟫 Revest. Cerâmico</option>
           <option value="pintura">🖌 Pintura</option>
-          <option value="impermeab">💧 Impermeab.</option>
+          <option value="impermeab">💧 Impermeabilização</option>
           <option value="ferramenta">🔨 Ferramentas</option>
+          <option value="epi">🦺 EPI / Segurança</option>
           <option value="combustivel">⛽ Combustível</option>
           <option value="limpeza">🧹 Limpeza</option>
           <option value="alimentacao">🍽 Alimentação</option>
-          <option value="expediente">📎 Expediente</option>
-              <option value="locacao">🏗 Locação de Equip.</option>
           <option value="locacao">🏗 Locação de Equip.</option>
+          <option value="mao">👷 Mão de Obra</option>
+          <option value="doc">📋 Documentação</option>
+          <option value="expediente">📎 Expediente</option>
+          <option value="generico">❓ Genérico</option>
           <option value="outros">📦 Outros</option>
         </select>
         <button class="btn-save" style="padding:10px 18px;white-space:nowrap;" onclick="abrirModalNovoMaterial()">➕ Novo Material</button>
@@ -983,7 +990,29 @@ body::before {
       <div class="field" style="flex:2"><label>CATEGORIA</label>
         <select id="mat-categoria" style="background:var(--bg3);border:1px solid var(--borda2);border-radius:8px;padding:8px;color:var(--branco);font-family:inherit;width:100%;">
           <option value="">— Selecione —</option>
-          <option>Cimento/Areia</option><option>Forma e Madeira</option><option>Genérico</option><option>Ferro/Aço</option><option>Hidráulica</option><option>Louças e Metais</option><option>Esgoto</option><option>Elétrica</option><option>Acabamento</option><option>Esquadrias</option><option>Ferramentas</option><option>Combustível</option><option>Mão de Obra</option><option>Documentação</option><option>Escritório</option><option>Alimentação</option><option>Limpeza</option><option>Outros</option>
+          <option value="alvenaria">🧱 Alvenaria</option>
+          <option value="forma">🪵 Forma e Madeira</option>
+          <option value="ferro">⚙ Aço / Ferro</option>
+          <option value="eletrica">⚡ Elétrica</option>
+          <option value="hidraulica">🚿 Hidráulica</option>
+          <option value="loucas">🛁 Louças e Metais</option>
+          <option value="esgoto">🪠 Esgoto</option>
+          <option value="cobertura">🏠 Cobertura</option>
+          <option value="esquadria">🪟 Esquadrias</option>
+          <option value="rev_cer">🟫 Revest. Cerâmico</option>
+          <option value="pintura">🖌 Pintura</option>
+          <option value="impermeab">💧 Impermeabilização</option>
+          <option value="ferramenta">🔨 Ferramentas</option>
+          <option value="epi">🦺 EPI / Segurança</option>
+          <option value="combustivel">⛽ Combustível</option>
+          <option value="limpeza">🧹 Limpeza</option>
+          <option value="alimentacao">🍽 Alimentação</option>
+          <option value="locacao">🏗 Locação de Equip.</option>
+          <option value="mao">👷 Mão de Obra</option>
+          <option value="doc">📋 Documentação</option>
+          <option value="expediente">📎 Expediente</option>
+          <option value="generico">❓ Genérico</option>
+          <option value="outros">📦 Outros</option>
         </select>
       </div>
     </div>
@@ -1574,7 +1603,7 @@ function initCATS() {
   CATS['mao'] = { lb: '👷 Mão de Obra', fn: r => /m[aã]o[\s\-]de[\s\-]obra|armador|eletricista|pintor|pedreiro|servente|mestre de obras|encanador|azulejista/i.test(r.descricao) };
   CATS['doc'] = { lb: '📋 Documentação', fn: r => /contrato|documento|art |anotac|registro de contrato|orcamento|alvara|licenca|projeto|vistoria|escritura|terreno/i.test(r.descricao) };
   // Demais categorias espelham CATS_ESTOQUE com chave normalizada
-  const keyMap = { 'aco':'ferro', 'hidraulica':'hidro', 'esquadria':'esquad' };
+  const keyMap = { 'aco':'ferro' }; // aco→ferro para manter compatibilidade com dados existentes
   CATS_ESTOQUE.forEach(cat => {
     const key = keyMap[cat.key] || cat.key;
     if (key === 'prelim' || key === 'fundacao' || key === 'estrutura' || key === 'rev_arg' || key === 'granito' || key === 'gesso' || key === 'expediente') return;
@@ -2665,10 +2694,10 @@ function renderCatalogo() {
   const autoCount = catalogoMateriais.filter(m => m.auto === true || m.auto === 'true').length;
   if (stats) stats.innerHTML = `${lista.length} material(is) cadastrado(s)${autoCount > 0 && usuarioAtual?.perfil==='admin' ? ` &nbsp;<span style="background:rgba(245,158,11,0.12);color:#fbbf24;border:1px solid rgba(245,158,11,0.3);border-radius:4px;padding:1px 7px;font-size:10px;font-family:'JetBrains Mono',monospace;cursor:pointer;" onclick="filtrarSoAuto()" title="Ver apenas pendentes de revisão">⚠ ${autoCount} pendente${autoCount>1?'s':''} AUTO</span>` : ''}`;
   if (!lista.length) { el.innerHTML = '<div class="empty">Nenhum material encontrado. Clique em "+ Novo Material" para cadastrar.</div>'; return; }
-  const CATS_OPTS = ['alvenaria','forma','ferro','eletrica','hidraulica','loucas','esgoto','cobertura','esquadria','rev_cer','pintura','impermeab','ferramenta','epi','combustivel','limpeza','alimentacao','expediente','locacao','mao','doc','generico','outros'];
+  const CATS_OPTS = [['alvenaria','🧱 Alvenaria'],['forma','🪵 Forma e Madeira'],['ferro','⚙ Aço / Ferro'],['eletrica','⚡ Elétrica'],['hidraulica','🚿 Hidráulica'],['loucas','🛁 Louças e Metais'],['esgoto','🪠 Esgoto'],['cobertura','🏠 Cobertura'],['esquadria','🪟 Esquadrias'],['rev_cer','🟫 Revest. Cerâmico'],['pintura','🖌 Pintura'],['impermeab','💧 Impermeabilização'],['ferramenta','🔨 Ferramentas'],['epi','🦺 EPI / Segurança'],['combustivel','⛽ Combustível'],['limpeza','🧹 Limpeza'],['alimentacao','🍽 Alimentação'],['locacao','🏗 Locação de Equip.'],['mao','👷 Mão de Obra'],['doc','📋 Documentação'],['expediente','📎 Expediente'],['generico','❓ Genérico'],['outros','📦 Outros']];
   el.innerHTML = lista.map(m => {
     const isAuto = m.auto === true || m.auto === 'true';
-    const catSelect = CATS_OPTS.map(k => `<option value="${k}" ${m.categoria===k?'selected':''}>${k}</option>`).join('');
+    const catSelect = CATS_OPTS.map(([k,lb]) => `<option value="${k}" ${m.categoria===k?'selected':''}>${lb}</option>`).join('');
     return `
     <div class="catalogo-item" style="${isAuto ? 'border-color:rgba(245,158,11,0.35);' : ''}">
       <span class="catalogo-codigo">${m.codigo || "S/COD"}</span>
