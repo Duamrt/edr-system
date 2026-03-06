@@ -1042,9 +1042,7 @@ body::before {
 <div id="modal-entrada" class="modal-overlay hidden" onclick="closeModalOutside(event,'entrada')">
   <div class="modal">
     <div class="modal-title">📥 ENTRADA DIRETA (SEM NOTA) <button class="modal-close" onclick="fecharModal('entrada')">✕</button></div>
-    <div class="modal-info" style="background:var(--amar-bg);border-color:rgba(245,158,11,.3);color:var(--amarelo);">
-      ⏳ Use para material que chegou sem nota fiscal. O saldo será ajustado automaticamente quando a NF for lançada.
-    </div>
+
     <div class="field autocomplete-wrap">
       <label>MATERIAL *</label>
       <input type="text" id="entrada-desc" placeholder="EX: CIMENTO, AREIA..." oninput="onEntradaDescInput()" autocomplete="off">
@@ -1054,10 +1052,27 @@ body::before {
       <div class="field"><label>QUANTIDADE *</label><input type="number" id="entrada-qtd" placeholder="0" min="0.01" step="0.01" style="text-transform:none;"></div>
       <div class="field"><label>UNIDADE</label><input type="text" id="entrada-unidade" placeholder="SC, M², UN..."></div>
     </div>
-    <div class="field"><label>FORNECEDOR</label><input type="text" id="entrada-fornecedor" placeholder="EX: DEPÓSITO LOCAL"></div>
+    <div class="field-row">
+      <div class="field"><label>VALOR UNIT. (R$)</label><input type="number" id="entrada-preco" placeholder="0,00" min="0" step="0.01" style="text-transform:none;"></div>
+      <div class="field"><label>FORNECEDOR</label><input type="text" id="entrada-fornecedor" placeholder="EX: DEPÓSITO LOCAL"></div>
+    </div>
     <div class="field"><label>DATA</label><input type="date" id="entrada-data" style="text-transform:none;"></div>
-    <div class="field"><label>OBSERVAÇÃO</label><input type="text" id="entrada-obs" placeholder="EX: FIADO, AGUARDANDO NF..."></div>
-    <button class="btn-save" onclick="salvarEntradaDireta()">💾 REGISTRAR ENTRADA</button>
+
+    <!-- DESTINO -->
+    <div style="border:1px solid rgba(46,204,113,0.15);border-radius:10px;padding:12px;margin:10px 0;background:rgba(46,204,113,0.03);">
+      <div style="font-size:11px;font-weight:700;color:var(--verde-hl);letter-spacing:1.5px;margin-bottom:10px;">DESTINO DO MATERIAL</div>
+      <div style="display:flex;gap:8px;margin-bottom:10px;">
+        <button id="btn-destino-estoque" onclick="setDestinoEntrada('estoque')" style="flex:1;padding:8px;border-radius:8px;font-size:11px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;cursor:pointer;border:1px solid rgba(139,92,246,0.4);background:rgba(139,92,246,0.15);color:#a78bfa;">📦 ESTOQUE</button>
+        <button id="btn-destino-obra" onclick="setDestinoEntrada('obra')" style="flex:1;padding:8px;border-radius:8px;font-size:11px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;cursor:pointer;border:1px solid rgba(46,204,113,0.2);background:transparent;color:var(--texto3);">🏗 DIRETO NA OBRA</button>
+      </div>
+      <div id="entrada-estoque-info" style="font-size:11px;color:var(--texto3);">Material entra no estoque. Distribua para a obra depois pelo F3.</div>
+      <div id="entrada-obra-wrap" class="hidden">
+        <div class="field" style="margin:0;"><label>OBRA DE DESTINO *</label><select id="entrada-obra-id"></select></div>
+      </div>
+    </div>
+
+    <div class="field"><label>OBSERVAÇÃO</label><input type="text" id="entrada-obs" placeholder="EX: COMPRADO E APLICADO NO DIA..."></div>
+    <button class="btn-save" onclick="salvarEntradaDireta()">💾 REGISTRAR</button>
     <button class="btn-outline" onclick="fecharModal('entrada')">CANCELAR</button>
   </div>
 </div>
@@ -3220,11 +3235,33 @@ function abrirEntradaDireta() {
   document.getElementById('entrada-desc').value = '';
   document.getElementById('entrada-qtd').value = '';
   document.getElementById('entrada-unidade').value = '';
+  document.getElementById('entrada-preco').value = '';
   document.getElementById('entrada-fornecedor').value = '';
   document.getElementById('entrada-data').value = hoje;
   document.getElementById('entrada-obs').value = '';
+  const sel = document.getElementById('entrada-obra-id');
+  sel.innerHTML = obras.map(o => `<option value="${o.id}">${o.nome}</option>`).join('');
+  setDestinoEntrada('estoque');
   document.getElementById('modal-entrada').classList.remove('hidden');
   setTimeout(() => document.getElementById('entrada-desc').focus(), 100);
+}
+
+function setDestinoEntrada(tipo) {
+  const btnEst = document.getElementById('btn-destino-estoque');
+  const btnObra = document.getElementById('btn-destino-obra');
+  const infoEst = document.getElementById('entrada-estoque-info');
+  const wrapObra = document.getElementById('entrada-obra-wrap');
+  if (tipo === 'estoque') {
+    btnEst.style.background = 'rgba(139,92,246,0.15)'; btnEst.style.color = '#a78bfa'; btnEst.style.borderColor = 'rgba(139,92,246,0.4)';
+    btnObra.style.background = 'transparent'; btnObra.style.color = 'var(--texto3)'; btnObra.style.borderColor = 'rgba(46,204,113,0.2)';
+    infoEst.classList.remove('hidden'); wrapObra.classList.add('hidden');
+    btnEst.dataset.ativo = '1';
+  } else {
+    btnObra.style.background = 'rgba(46,204,113,0.12)'; btnObra.style.color = 'var(--verde-hl)'; btnObra.style.borderColor = 'rgba(46,204,113,0.4)';
+    btnEst.style.background = 'transparent'; btnEst.style.color = 'var(--texto3)'; btnEst.style.borderColor = 'rgba(139,92,246,0.2)';
+    infoEst.classList.add('hidden'); wrapObra.classList.remove('hidden');
+    btnEst.dataset.ativo = '';
+  }
 }
 
 function onEntradaDescInput() {
@@ -3253,17 +3290,32 @@ async function salvarEntradaDireta() {
   const desc = (document.getElementById('entrada-desc').value||'').toUpperCase().trim();
   const qtd = parseFloat(document.getElementById('entrada-qtd').value)||0;
   const unidade = (document.getElementById('entrada-unidade').value||'UN').toUpperCase();
+  const preco = parseFloat(document.getElementById('entrada-preco').value)||0;
   const fornecedor = (document.getElementById('entrada-fornecedor').value||'').toUpperCase();
   const data = document.getElementById('entrada-data').value;
   const obs = (document.getElementById('entrada-obs').value||'').toUpperCase();
+  const destinoObra = document.getElementById('btn-destino-estoque').dataset.ativo !== '1';
+  const obraId = document.getElementById('entrada-obra-id').value;
+  const obraObj = obras.find(o => o.id === obraId);
   if (!desc) { showToast('⚠ INFORME O MATERIAL.'); return; }
   if (qtd <= 0) { showToast('⚠ INFORME A QUANTIDADE.'); return; }
+  if (destinoObra && !obraId) { showToast('⚠ SELECIONE A OBRA.'); return; }
   try {
-    const [nova] = await sbPost('entradas_diretas', { item_desc: desc, unidade, qtd, preco: 0, fornecedor, data, obs });
+    const [nova] = await sbPost('entradas_diretas', { item_desc: desc, unidade, qtd, preco, fornecedor, data, obs });
     entradasDiretas.unshift(nova);
-    showToast(`✅ ${qtd} ${unidade} de ${desc} registrado!`);
+    if (destinoObra && obraObj) {
+      const valor = qtd * preco;
+      await sbPost('distribuicoes', { nota_id: null, item_desc: desc, item_idx: 0, obra_id: obraId, obra_nome: obraObj.nome, qtd, valor, data });
+      const [lanc] = await sbPost('lancamentos', { obra_id: obraId, descricao: desc + (fornecedor ? ` · ${fornecedor}` : ''), qtd, preco, total: valor, data, obs: obs || 'ENTRADA DIRETA SEM NF' });
+      lancamentos.unshift(lanc);
+      showToast(`✅ ${qtd} ${unidade} de ${desc} → ${obraObj.nome}!`);
+    } else {
+      showToast(`✅ ${qtd} ${unidade} de ${desc} no estoque!`);
+    }
     fecharModal('entrada');
     renderEstoque();
+    renderDashboard();
+    filtrarLanc();
   } catch(e) { console.error(e); showToast('ERRO AO REGISTRAR. Execute o SQL no SETUP.'); }
 }
 function closeModalOutside(e, w) { if (e.target === document.getElementById(`modal-${w}`)) fecharModal(w); }
