@@ -1137,6 +1137,9 @@ create table if not exists distribuicoes (
 );
 alter table distribuicoes disable row level security;
 
+-- Coluna para identificar materiais auto-cadastrados pela NF
+alter table materiais add column if not exists auto boolean default false;
+
 -- Arquivamento de obras concluídas
 alter table obras add column if not exists arquivada boolean default false;
 
@@ -2387,6 +2390,42 @@ function renderItensForm() {
 }
 
 // SALVAR NOTA
+// ══════════════════════════════════════════
+// AUTO-CADASTRO DE MATERIAIS NO C.CUSTO
+// ══════════════════════════════════════════
+async function autocadastrarMateriais(itens) {
+  const novos = [];
+  for (const it of itens) {
+    const nomeNorm = norm(it.desc);
+    if (!nomeNorm) continue;
+    // Verificar se já existe no catálogo
+    const existe = catalogoMateriais.find(m => norm(m.nome) === nomeNorm);
+    if (existe) continue;
+    // Gerar próximo código
+    const proxNum = catalogoMateriais.length > 0
+      ? Math.max(...catalogoMateriais.map(m => parseInt(m.codigo)||0)) + 1
+      : 1;
+    const codigo = String(proxNum).padStart(6, '0');
+    const categoria = getCatEstoque(it.desc);
+    const unidade = it.unidade || 'UN';
+    try {
+      const [saved] = await sbPost('materiais', {
+        codigo,
+        nome: it.desc.toUpperCase().trim(),
+        unidade,
+        categoria,
+        auto: true  // flag para tag AUTO no C.Custo
+      });
+      if (saved) {
+        catalogoMateriais.push(saved);
+        catalogoMateriais.sort((a,b) => a.codigo.localeCompare(b.codigo));
+        novos.push(saved.nome);
+      }
+    } catch(e) { /* silencioso — não bloqueia o lançamento */ }
+  }
+  return novos;
+}
+
 async function salvarNota() {
   const numero = document.getElementById('f-numero').value.trim();
   const fornecedor = document.getElementById('f-fornecedor').value.trim().toUpperCase();
@@ -2406,6 +2445,12 @@ async function salvarNota() {
     const [saved] = await sbPost('notas_fiscais', payload);
     const notaSalva = { ...saved, valor_bruto: totalBruto, frete };
     notas.unshift(notaSalva);
+
+    // Auto-cadastrar materiais novos no C.Custo
+    const novosMatsCat = await autocadastrarMateriais(itensForm);
+    if (novosMatsCat.length > 0) {
+      console.log(`[EDR] Auto-cadastrado(s) no C.Custo: ${novosMatsCat.join(', ')}`);
+    }
 
     // Baixa automática para itens de escritório (limpeza/alimentação/expediente)
     if (destino === 'EDR') {
@@ -2574,24 +2619,43 @@ async function toggleAtivoUsuario(idOrUsuario, ativar) {
 // ══════════════════════════════════════════
 // CATÁLOGO DE MATERIAIS
 // ══════════════════════════════════════════
+let filtroAuto = false;
+function filtrarSoAuto() {
+  filtroAuto = !filtroAuto;
+  renderCatalogo();
+}
+
 function renderCatalogo() {
   const busca = norm(document.getElementById('catalogo-busca')?.value || '');
   const catFiltro = document.getElementById('catalogo-cat-filtro')?.value || '';
   let lista = [...catalogoMateriais];
   if (busca) lista = lista.filter(m => norm(m.nome).includes(busca) || m.codigo.includes(busca));
   if (catFiltro) lista = lista.filter(m => (m.categoria||'outros') === catFiltro);
+  if (filtroAuto) lista = lista.filter(m => m.auto === true || m.auto === 'true');
   const el = document.getElementById('catalogo-lista');
   const stats = document.getElementById('catalogo-stats');
-  if (stats) stats.textContent = `${lista.length} material(is) cadastrado(s)`;
+  const autoCount = catalogoMateriais.filter(m => m.auto === true || m.auto === 'true').length;
+  if (stats) stats.innerHTML = `${lista.length} material(is) cadastrado(s)${autoCount > 0 && usuarioAtual?.perfil==='admin' ? ` &nbsp;<span style="background:rgba(245,158,11,0.12);color:#fbbf24;border:1px solid rgba(245,158,11,0.3);border-radius:4px;padding:1px 7px;font-size:10px;font-family:'JetBrains Mono',monospace;cursor:pointer;" onclick="filtrarSoAuto()" title="Ver apenas pendentes de revisão">⚠ ${autoCount} pendente${autoCount>1?'s':''} AUTO</span>` : ''}`;
   if (!lista.length) { el.innerHTML = '<div class="empty">Nenhum material encontrado. Clique em "+ Novo Material" para cadastrar.</div>'; return; }
-  el.innerHTML = lista.map(m => `
-    <div class="catalogo-item">
+  const CATS_OPTS = ['alvenaria','forma','ferro','eletrica','hidraulica','loucas','esgoto','cobertura','esquadria','rev_cer','pintura','impermeab','ferramenta','epi','combustivel','limpeza','alimentacao','expediente','locacao','mao','doc','generico','outros'];
+  el.innerHTML = lista.map(m => {
+    const isAuto = m.auto === true || m.auto === 'true';
+    const catSelect = CATS_OPTS.map(k => `<option value="${k}" ${m.categoria===k?'selected':''}>${k}</option>`).join('');
+    return `
+    <div class="catalogo-item" style="${isAuto ? 'border-color:rgba(245,158,11,0.35);' : ''}">
       <span class="catalogo-codigo">${m.codigo || "S/COD"}</span>
+      ${isAuto ? `<span style="font-size:9px;font-weight:800;background:rgba(245,158,11,0.12);color:#fbbf24;border:1px solid rgba(245,158,11,0.3);border-radius:4px;padding:1px 5px;font-family:'JetBrains Mono',monospace;white-space:nowrap;">AUTO</span>` : ''}
       <span class="catalogo-nome">${m.nome}</span>
       <span class="catalogo-un">${m.unidade||'UN'}</span>
-      ${usuarioAtual?.perfil==='admin' ? `<select onchange="editarCategoriaMaterial('${m.id}',this.value)" style="background:var(--bg3);border:1px solid var(--borda2);border-radius:6px;padding:3px 6px;color:var(--branco);font-size:10px;font-family:inherit;cursor:pointer;" title="Editar categoria"><option value="">— cat —</option><option value="alvenaria">alvenaria</option><option value="forma">forma</option><option value="aco">aco</option><option value="hidraulica">hidraulica</option><option value="loucas">loucas</option><option value="esgoto">esgoto</option><option value="eletrica">eletrica</option><option value="cobertura">cobertura</option><option value="esquadria">esquadria</option><option value="rev_cer">rev_cer</option><option value="pintura">pintura</option><option value="impermeab">impermeab</option><option value="ferramenta">ferramenta</option><option value="epi">epi</option><option value="combustivel">combustivel</option><option value="limpeza">limpeza</option><option value="alimentacao">alimentacao</option><option value="expediente">expediente</option><option value="generico">generico</option><option value="outros">outros</option></select>` : m.categoria ? `<span class="catalogo-cat">${m.categoria}</span>` : ''}
-      ${usuarioAtual?.perfil==='admin' ? `<button onclick="excluirMaterial('${m.id}')" style="background:none;border:none;color:var(--texto3);cursor:pointer;font-size:14px;padding:4px;" title="Excluir">🗑</button>` : ''}
-    </div>`).join('');
+      ${usuarioAtual?.perfil==='admin' ? `
+        <select onchange="editarCategoriaMaterial('${m.id}',this.value,this)" style="background:var(--bg3);border:1px solid ${isAuto?'rgba(245,158,11,0.3)':'var(--borda2)'};border-radius:6px;padding:3px 6px;color:${isAuto?'#fbbf24':'var(--branco)'};font-size:10px;font-family:inherit;cursor:pointer;" title="Editar categoria">
+          <option value="">— cat —</option>${catSelect}
+        </select>
+        ${isAuto ? `<button onclick="confirmarAutoMaterial('${m.id}')" style="background:rgba(46,204,113,0.08);border:1px solid rgba(46,204,113,0.2);color:var(--verde-hl);border-radius:6px;padding:3px 8px;font-size:9px;font-family:'Rajdhani',sans-serif;font-weight:700;cursor:pointer;white-space:nowrap;" title="Confirmar revisão">✓ OK</button>` : ''}
+        <button onclick="excluirMaterial('${m.id}')" style="background:none;border:none;color:var(--texto3);cursor:pointer;font-size:14px;padding:4px;" title="Excluir">🗑</button>
+      ` : m.categoria ? `<span class="catalogo-cat">${m.categoria}</span>` : ''}
+    </div>`;
+  }).join('');
 }
 
 function abrirModalNovoMaterial() {
@@ -2672,6 +2736,16 @@ async function salvarMaterial() {
   btn.disabled = false; btn.textContent = '💾 SALVAR MATERIAL';
 }
 
+async function confirmarAutoMaterial(id) {
+  try {
+    await sbPatch('materiais', `?id=eq.${id}`, { auto: false });
+    const m = catalogoMateriais.find(x => x.id === id);
+    if (m) m.auto = false;
+    renderCatalogo();
+    showToast('✅ MATERIAL CONFIRMADO!');
+  } catch(e) { showToast('ERRO AO CONFIRMAR.'); }
+}
+
 async function excluirMaterial(id) {
   if (!confirm('Excluir este material do catálogo?')) return;
   await sbDelete('materiais', `?id=eq.${id}`);
@@ -2700,10 +2774,11 @@ async function migrarMateriaisExistentes() {
   showToast(`✅ ${criados} MATERIAL(IS) MIGRADO(S) PARA O CATÁLOGO!`);
 }
 
-async function editarCategoriaMaterial(id, categoria) {
+async function editarCategoriaMaterial(id, categoria, selEl) {
   if (!categoria) return;
   try {
-    await sbPatch('materiais', `?id=eq.${id}`, { categoria });
+    await sbPatch('materiais', `?id=eq.${id}`, { categoria, auto: false });
+    const m = catalogoMateriais.find(x => x.id === id); if (m) { m.categoria = categoria; m.auto = false; }
     const m = catalogoMateriais.find(x => x.id === id);
     if (m) m.categoria = categoria;
     showToast('✅ CATEGORIA ATUALIZADA!');
