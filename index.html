@@ -907,27 +907,28 @@ body::before {
         <input type="text" id="catalogo-busca" placeholder="🔍 Buscar por código ou nome..." oninput="renderCatalogo()" style="flex:2;min-width:200px;background:var(--bg2);border:1px solid var(--borda2);border-radius:10px;padding:10px 14px;color:var(--branco);font-size:13px;font-family:inherit;">
         <select id="catalogo-cat-filtro" onchange="renderCatalogo()" style="flex:1;min-width:140px;background:var(--bg2);border:1px solid var(--borda2);border-radius:10px;padding:10px 14px;color:var(--branco);font-size:13px;font-family:inherit;">
           <option value="">📂 Todas categorias</option>
-          <option value="alvenaria">🧱 Alvenaria</option>
-          <option value="forma">🪵 Forma e Madeira</option>
-          <option value="ferro">⚙ Aço / Ferro</option>
-          <option value="eletrica">⚡ Elétrica</option>
-          <option value="hidraulica">🚿 Hidráulica</option>
-          <option value="loucas">🛁 Louças e Metais</option>
-          <option value="esgoto">🪠 Esgoto</option>
-          <option value="cobertura">🏠 Cobertura</option>
-          <option value="esquadria">🪟 Esquadrias</option>
-          <option value="rev_cer">🟫 Revest. Cerâmico</option>
-          <option value="pintura">🖌 Pintura</option>
-          <option value="impermeab">💧 Impermeabilização</option>
-          <option value="ferramenta">🔨 Ferramentas</option>
-          <option value="epi">🦺 EPI / Segurança</option>
-          <option value="combustivel">⛽ Combustível</option>
-          <option value="limpeza">🧹 Limpeza</option>
           <option value="alimentacao">🍽 Alimentação</option>
-          <option value="locacao">🏗 Locação de Equip.</option>
-          <option value="mao">👷 Mão de Obra</option>
+          <option value="alvenaria">🧱 Alvenaria</option>
+          <option value="cobertura">🏠 Cobertura</option>
+          <option value="combustivel">⛽ Combustível</option>
           <option value="doc">📋 Documentação</option>
+          <option value="eletrica">⚡ Elétrica</option>
+          <option value="epi">🦺 EPI / Segurança</option>
+          <option value="esgoto">🪠 Esgoto</option>
+          <option value="esquadria">🪟 Esquadrias</option>
           <option value="expediente">📎 Expediente</option>
+          <option value="ferro">⚙ Aço / Ferro</option>
+          <option value="ferramenta">🔨 Ferramentas</option>
+          <option value="forma">🪵 Forma e Madeira</option>
+          <option value="granito">🪨 Granito / Pedra</option>
+          <option value="hidraulica">🚿 Hidráulica</option>
+          <option value="impermeab">💧 Impermeabilização</option>
+          <option value="limpeza">🧹 Limpeza</option>
+          <option value="locacao">🏗 Locação de Equip.</option>
+          <option value="loucas">🛁 Louças e Metais</option>
+          <option value="mao">👷 Mão de Obra</option>
+          <option value="pintura">🖌 Pintura</option>
+          <option value="rev_cer">🟫 Revest. Cerâmico</option>
           <option value="generico">❓ Genérico</option>
           <option value="outros">📦 Outros</option>
         </select>
@@ -1980,8 +1981,8 @@ const CATS_ESTOQUE = [
   { key:'cobertura',  lb:'🏠 Cobertura',          fn: d => /telha|cumeeira|rufo|telhado|fibrocimento|zinco|metalica|isopanel|madeiramento|frechal|terça|linha|pendural/i.test(d) },
   { key:'esquadria',  lb:'🪟 Esquadrias',         fn: d => /porta|janela|batente|marco|caixilho|esquadria|grade|fechadura|macaneta|trinco|puxador|dobradica|dobradiça|vidro|box|portao|basculante|veneziana/i.test(d) },
   { key:'rev_arg',    lb:'🪣 Revest. Argamassa',  fn: d => /reboco|chapisco|emboço|gesso projetado|gesso em placa|contra piso|regularizac|argamassa ac|argamassa ret|argamassa col/i.test(d) },
-  { key:'rev_cer',    lb:'🟫 Revest. Cerâmico',   fn: d => /ceramica|porcelanato|revestimento|azulejo|rejunte|pastilha|pedra|granito|marmore|travertino|ardosia|pedra miracema/i.test(d) },
   { key:'granito',    lb:'🪨 Granito / Pedra',    fn: d => /granito|marmore|quartzito|pedra natural|bancada|soleira|peitoril|rodape em ped|escada em ped|marmoraria|servico granito/i.test(d) },
+  { key:'rev_cer',    lb:'🟫 Revest. Cerâmico',   fn: d => /ceramica|porcelanato|revestimento|azulejo|rejunte|pastilha|pedra|travertino|ardosia|pedra miracema/i.test(d) },
   { key:'gesso',      lb:'⬜ Gesso',              fn: d => /gesso|dry.?wall|drywall|placa de gesso|perfil de gesso|massa de gesso|forro de gesso|gesseiro/i.test(d) },
   { key:'pintura',    lb:'🖌 Pintura',            fn: d => /tinta|massa corrida|selador|primer|textura|massa acrilica|verniz|esmalte|tinta latex|tinta acrilica|lixa|rolo|trincha/i.test(d) },
   { key:'ferramenta', lb:'🔨 Ferramentas',        fn: d => /enxada|picareta|pa |pá |marreta|martelo|colher de ped|desempenadeira|broxa|pincel|disco de corte|disco bomcorte|disco de serra|disco p.mad|serrote|arco de serra|trena|nivel de bolha|prumo|espatula|ponteiro|talhadeira|formao|furadeira|esmerilhadeira|betoneira|vibrador|compactador/i.test(d) },
@@ -2842,7 +2843,16 @@ function renderCatalogo() {
   const autoCount = catalogoMateriais.filter(m => m.auto === true || m.auto === 'true').length;
   if (stats) stats.innerHTML = `${lista.length} material(is) cadastrado(s)${autoCount > 0 && usuarioAtual?.perfil==='admin' ? ` &nbsp;<span style="background:rgba(245,158,11,0.12);color:#fbbf24;border:1px solid rgba(245,158,11,0.3);border-radius:4px;padding:1px 7px;font-size:10px;font-family:'JetBrains Mono',monospace;cursor:pointer;" onclick="filtrarSoAuto()" title="Ver apenas pendentes de revisão">⚠ ${autoCount} pendente${autoCount>1?'s':''} AUTO</span>` : ''}`;
   if (!lista.length) { el.innerHTML = '<div class="empty">Nenhum material encontrado. Clique em "+ Novo Material" para cadastrar.</div>'; return; }
-  const CATS_OPTS = [['alvenaria','🧱 Alvenaria'],['forma','🪵 Forma e Madeira'],['ferro','⚙ Aço / Ferro'],['eletrica','⚡ Elétrica'],['hidraulica','🚿 Hidráulica'],['loucas','🛁 Louças e Metais'],['esgoto','🪠 Esgoto'],['cobertura','🏠 Cobertura'],['esquadria','🪟 Esquadrias'],['rev_cer','🟫 Revest. Cerâmico'],['pintura','🖌 Pintura'],['impermeab','💧 Impermeabilização'],['ferramenta','🔨 Ferramentas'],['epi','🦺 EPI / Segurança'],['combustivel','⛽ Combustível'],['limpeza','🧹 Limpeza'],['alimentacao','🍽 Alimentação'],['locacao','🏗 Locação de Equip.'],['mao','👷 Mão de Obra'],['doc','📋 Documentação'],['expediente','📎 Expediente'],['generico','❓ Genérico'],['outros','📦 Outros']];
+  const CATS_OPTS = [
+    ['alimentacao','🍽 Alimentação'],['alvenaria','🧱 Alvenaria'],['cobertura','🏠 Cobertura'],
+    ['combustivel','⛽ Combustível'],['doc','📋 Documentação'],['eletrica','⚡ Elétrica'],
+    ['epi','🦺 EPI / Segurança'],['esgoto','🪠 Esgoto'],['esquadria','🪟 Esquadrias'],
+    ['expediente','📎 Expediente'],['ferro','⚙ Aço / Ferro'],['ferramenta','🔨 Ferramentas'],
+    ['forma','🪵 Forma e Madeira'],['granito','🪨 Granito / Pedra'],['hidraulica','🚿 Hidráulica'],
+    ['impermeab','💧 Impermeabilização'],['limpeza','🧹 Limpeza'],['locacao','🏗 Locação de Equip.'],
+    ['loucas','🛁 Louças e Metais'],['mao','👷 Mão de Obra'],['pintura','🖌 Pintura'],
+    ['rev_cer','🟫 Revest. Cerâmico'],['generico','❓ Genérico'],['outros','📦 Outros']
+  ];
   el.innerHTML = lista.map(m => {
     const isAuto = m.auto === true || m.auto === 'true';
     const catSelect = CATS_OPTS.map(([k,lb]) => `<option value="${k}" ${m.categoria===k?'selected':''}>${lb}</option>`).join('');
