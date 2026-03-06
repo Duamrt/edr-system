@@ -2474,7 +2474,7 @@ function onFornecedorInput() {
   cachedFornecedores = Object.values(map).slice(0, 6);
   if (!cachedFornecedores.length) { list.classList.add('hidden'); return; }
   list.innerHTML = cachedFornecedores.map((m, i) => `<div class="autocomplete-item" data-forn-idx="${i}"><span class="ac-label">${m.nome}</span><span class="ac-forn-cnpj">${m.cnpj||'SEM CNPJ'}</span></div>`).join('');
-  list.querySelectorAll('.autocomplete-item').forEach(el => el.addEventListener('mousedown', e => { e.preventDefault(); selectFornecedor(parseInt(el.dataset.fornIdx)); }));
+  list.querySelectorAll('.autocomplete-item').forEach(el => { const fn = e => { e.preventDefault(); selectFornecedor(parseInt(el.dataset.fornIdx)); }; el.addEventListener('mousedown', fn); el.addEventListener('touchstart', fn, {passive:false}); });
   list.classList.remove('hidden');
 }
 function selectFornecedor(idx) {
@@ -2628,7 +2628,7 @@ function showAutocomplete(val) {
     <span class="ac-label">${m.fromCatalogo?`<span class="ac-codigo">${m.codigo}</span>`:''}${m.label}${m.anterior?'<span class="ac-anterior">ANTERIOR</span>':''}</span>
     <span class="ac-credito ${m.credito===true?'ac-sim':m.credito===false?'ac-nao':''}">${m.credito===true?'✓ CRÉDITO':m.credito===false?'✗ SEM CRÉDITO':'—'}</span>
   </div>`).join('');
-  list.querySelectorAll('.autocomplete-item').forEach(el => el.addEventListener('mousedown', e => { e.preventDefault(); selectAC(parseInt(el.dataset.acIdx)); }));
+  list.querySelectorAll('.autocomplete-item').forEach(el => { const fn = e => { e.preventDefault(); selectAC(parseInt(el.dataset.acIdx)); }; el.addEventListener('mousedown', fn); el.addEventListener('touchstart', fn, {passive:false}); });
   list.classList.remove('hidden');
 }
 
@@ -3457,12 +3457,14 @@ function onEntradaDescInput() {
   const top = matches.slice(0,8);
   list.innerHTML = top.map((m,i) => `<div class="autocomplete-item" data-ed-idx="${i}">${m.codigo?`<span class="ac-codigo">${m.codigo}</span>`:''}<span class="ac-label">${m.desc}</span><span style="font-size:10px;color:var(--texto3);">${m.unidade}</span></div>`).join('');
   list.querySelectorAll('.autocomplete-item').forEach((el, i) => {
-    el.addEventListener('mousedown', ev => {
+    const selectItem = ev => {
       ev.preventDefault();
       document.getElementById('entrada-desc').value = top[i].desc;
       document.getElementById('entrada-unidade').value = top[i].unidade;
       list.classList.add('hidden');
-    });
+    };
+    el.addEventListener('mousedown', selectItem);
+    el.addEventListener('touchstart', selectItem, { passive: false });
   });
   list.classList.remove('hidden');
 }
