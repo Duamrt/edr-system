@@ -2094,9 +2094,19 @@ function getCatFromLanc_UNUSED(l) {
 
 
 function verCategoriaEmObras(cat) {
+  // Carregar obra que estava selecionada no relatório
+  const relObraId = document.getElementById('rel-obra')?.value || '';
   catFiltroAtual = cat;
   setView('obras');
-  // Atualizar o select de categoria na view obras se existir
+  // Aplicar filtro de obra igual ao do relatório
+  const selObra = document.getElementById('filtro-obra-lanc') || document.getElementById('sel-obra-lanc');
+  if (selObra && relObraId) selObra.value = relObraId;
+  // Aplicar filtro de obra — atualiza o select e dispara onChangeObraFiltro
+  if (relObraId) {
+    const selObraLanc = document.getElementById('obras-filtro-obra');
+    if (selObraLanc) { selObraLanc.value = relObraId; onChangeObraFiltro(); }
+  }
+  // Atualizar select de categoria
   const sel = document.getElementById('filtro-cat');
   if (sel) sel.value = cat;
   filtrarLanc();
@@ -2105,7 +2115,8 @@ function verCategoriaEmObras(cat) {
     const k = el.getAttribute('onclick')?.match(/toggleCat\('(.+?)'\)/)?.[1];
     if (k) el.classList.toggle('ativo', k === cat);
   });
-  showToast(`📂 Filtrando: ${getCatLabel(cat)}`);
+  const obraNome = relObraId ? (obras.find(o=>o.id===relObraId)?.nome || '') : '';
+  showToast(`📂 ${obraNome ? obraNome+' · ' : ''}${getCatLabel(cat)}`);
 }
 function initRelatorio() {
   // Popular filtro de obras
