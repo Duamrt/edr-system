@@ -652,6 +652,12 @@ body::before {
     </div>
     <button class="btn-login" onclick="fazerLogin()">ENTRAR</button>
     <div class="login-error" id="login-error"></div>
+    <div style="margin-top:18px;text-align:center;">
+      <button onclick="entrarModoDemo()" style="background:transparent;border:1px solid rgba(46,204,113,0.3);border-radius:8px;padding:9px 20px;color:rgba(46,204,113,0.75);font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;cursor:pointer;transition:all .2s;" onmouseover="this.style.borderColor='rgba(46,204,113,0.7)';this.style.color='#2ecc71'" onmouseout="this.style.borderColor='rgba(46,204,113,0.3)';this.style.color='rgba(46,204,113,0.75)'">
+        &#9654; VER DEMONSTRAÇÃO
+      </button>
+      <div style="font-size:10px;color:var(--texto3);margin-top:6px;letter-spacing:1px;">dados fictícios · sem afetar o sistema real</div>
+    </div>
   </div>
   <div class="login-footer">Powered by EDR Engenharia</div>
 </div>
@@ -1614,9 +1620,11 @@ function fazerLogin() {
     } catch(e) {}
     entrarNoApp();
   };
-  // Se Supabase ainda não foi carregado, tentar carregar primeiro
+  // Tentar login imediatamente com usuarios carregados
+  // Se só tem o fallback, tenta Supabase com timeout curto
   if (USUARIOS.length <= 1) {
-    loadUsuarios().then(tentarLogin).catch(tentarLogin);
+    const timeoutPromise = new Promise(res => setTimeout(res, 3000));
+    Promise.race([loadUsuarios(), timeoutPromise]).then(tentarLogin).catch(tentarLogin);
   } else {
     tentarLogin();
   }
@@ -1660,13 +1668,21 @@ function verificarSessao() {
 }
 // Auto-login ao abrir o app
 window.addEventListener('DOMContentLoaded', async () => {
-  await loadUsuarios(); // carrega usuários do Supabase antes de validar sessão
+  // Verificar sessão imediatamente com fallback local
+  // loadUsuarios em paralelo — se Supabase responder, atualiza USUARIOS em bg
   try {
-    if (verificarSessao()) entrarNoApp();
+    if (verificarSessao()) { entrarNoApp(); loadUsuarios(); return; }
   } catch(e) {
-    // Sessão corrompida — limpa e mostra login normal
     try { localStorage.removeItem('edr_session'); } catch(e2) {}
   }
+  // Sem sessão — tentar carregar usuários do Supabase com timeout de 5s
+  // Se falhar, login ainda funciona com fallback embutido
+  try {
+    await Promise.race([
+      loadUsuarios(),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 5000))
+    ]);
+  } catch(e) { /* mantém fallback */ }
 });
 function aplicarPerfil() {
   const isAdmin = usuarioAtual.perfil === 'admin';
