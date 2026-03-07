@@ -576,6 +576,10 @@ body::before {
 
   #dash-cards { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
   .stat-card { padding: 12px 10px !important; border-radius: 12px !important; }
+  #stat-cards-grid { grid-template-columns: 1fr 1fr !important; }
+  #stat-cards-grid .stat-card:last-child { grid-column: 1 / -1; padding: 6px 10px !important; display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  #stat-cards-grid .stat-card:last-child .stat-label { margin-bottom:0; }
+  #stat-cards-grid .stat-card:last-child .stat-value { font-size: 14px !important; }
   .stat-sub { font-size: 9px !important; letter-spacing: 0.5px !important; }
 
   .chips-wrap { flex-wrap: nowrap !important; overflow-x: auto !important; -webkit-overflow-scrolling: touch; padding-bottom: 6px; }
@@ -830,7 +834,7 @@ body::before {
       </div>
 
       <!-- 3 CARDS -->
-      <div class="admin-only" style="display:grid;grid-template-columns:5fr 5fr 3fr;gap:8px;margin-bottom:14px;">
+      <div class="admin-only" id="stat-cards-grid" style="display:grid;grid-template-columns:5fr 5fr 3fr;gap:8px;margin-bottom:14px;">
         <div class="stat-card" style="border-top-color:rgba(46,204,113,0.6);">
           <div class="stat-label">TOTAL OBRAS</div>
           <div class="stat-value" id="d-total-obras" style="color:var(--verde-hl);"></div>
@@ -1491,6 +1495,9 @@ function entrarModoDemo() {
       b.innerHTML = '&#127916; <strong>MODO DEMO</strong> &mdash; dados fictícios &nbsp;&middot;&nbsp; 4 obras residenciais &nbsp;&middot;&nbsp; nenhuma alteração é salva';
       b.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#0d2b16;color:#7bed9f;text-align:center;padding:7px 12px;font-size:11px;letter-spacing:1px;z-index:9999;border-top:1px solid rgba(46,204,113,0.4);font-family:inherit;';
       document.body.appendChild(b);
+      // Empurra conteúdo pra não ficar atrás do banner
+      const mc = document.getElementById('main-content');
+      if (mc) mc.style.paddingBottom = (window.innerWidth <= 768 ? '120px' : '40px');
     }
   }, 600);
 }
