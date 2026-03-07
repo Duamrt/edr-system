@@ -1880,11 +1880,13 @@ function getCatLabel(key) {
 }
 
 function getCatFromLanc(l) {
-  // Usa o CATS já definido no sistema (mesma lógica das obras)
-  for (const [key, cat] of Object.entries(CATS)) {
-    if (cat.fn && cat.fn(l)) return key;
-  }
-  return 'outros';
+  const desc = l.descricao || '';
+  // Checar mao/doc/terreno que não estão no CATS_ESTOQUE
+  if (/m[aã]o[\s\-]de[\s\-]obra|armador|eletricista|pintor|pedreiro|servente|mestre de obras|encanador|azulejista/i.test(desc)) return 'mao';
+  if (/terreno|aquisicao de terreno|compra de terreno/i.test(desc)) return 'terreno';
+  if (/contrato|documento|art |anotac|registro de contrato|orcamento|alvara|licenca|projeto|vistoria|escritura/i.test(desc)) return 'doc';
+  // Usar getCatEstoque que cobre todas as demais categorias
+  return getCatEstoque(desc) || 'outros';
 }
 
 function initRelatorio() {
