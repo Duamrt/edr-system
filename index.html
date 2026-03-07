@@ -1528,7 +1528,7 @@ async function loadObras() {
     obras = Array.isArray(todas) ? todas.filter(o => !o.arquivada) : [];
   } catch(e) { obras = []; obrasArquivadas = []; }
 }
-async function loadMateriais() { try { const r = await sbGet('materiais', '?order=codigo'); catalogoMateriais = Array.isArray(r) ? r : []; } catch(e) { catalogoMateriais = []; } }
+async function loadMateriais() { try { const r = await sbGet('materiais', '?order=codigo&limit=1000'); catalogoMateriais = Array.isArray(r) ? r : []; console.log('Materiais carregados:', catalogoMateriais.length); } catch(e) { catalogoMateriais = []; } }
 async function loadNotas() { try { notas = await sbGet('notas_fiscais', '?order=criado_em.desc'); if (!Array.isArray(notas)) { notas = []; showToast('⚠ Execute o SQL no SETUP.'); } } catch(e) { notas = []; } }
 async function loadLancamentos() { try { lancamentos = await sbGet('lancamentos', '?select=id,obra_id,descricao,qtd,preco,total,data,obs&order=data.desc'); if (!Array.isArray(lancamentos)) lancamentos = []; } catch(e) { lancamentos = []; } }
 async function loadDistribuicoes() { try { const r = await sbGet('distribuicoes', '?order=criado_em.desc'); distribuicoes = Array.isArray(r) ? r : []; } catch(e) { distribuicoes = []; } }
@@ -3433,16 +3433,26 @@ function onEntradaDescInput() {
   const list = document.getElementById('ac-entrada-list');
   if (!val || val.length < 2) { list.classList.add('hidden'); return; }
   const v = norm(val), seen = new Set(), matches = [];
-  // 1. Catálogo de materiais — busca por nome E por código
-  catalogoMateriais.filter(m => norm(m.nome).includes(v) || (m.codigo||'').includes(val.replace(/\D/g,''))).slice(0,8).forEach(m => {
-    if (!seen.has(m.nome)) { seen.add(m.nome); matches.push({ desc: m.nome, unidade: m.unidade||'UN', codigo: m.codigo||'' }); }
-  });
+  // 1. Catálogo de materiais — busca por nome E por código (sem limite, ordena por relevância)
+  const numVal = val.replace(/\D/g,'');
+  catalogoMateriais
+    .filter(m => norm(m.nome).includes(v) || (numVal && (m.codigo||'').includes(numVal)))
+    .sort((a,b) => {
+      // Prioriza: começa com o termo > contém no início da palavra > contém em qualquer lugar
+      const na = norm(a.nome), nb = norm(b.nome);
+      const aStart = na.startsWith(v) ? 0 : na.includes(' '+v) ? 1 : 2;
+      const bStart = nb.startsWith(v) ? 0 : nb.includes(' '+v) ? 1 : 2;
+      return aStart - bStart;
+    })
+    .forEach(m => {
+      if (!seen.has(m.nome)) { seen.add(m.nome); matches.push({ desc: m.nome, unidade: m.unidade||'UN', codigo: m.codigo||'' }); }
+    });
   // 2. Histórico de entradas diretas
   entradasDiretas.forEach(e => { const k = e.item_desc; if (norm(k).includes(v) && !seen.has(k)) { seen.add(k); matches.push({ desc: k, unidade: e.unidade||'UN', codigo: '' }); } });
   // 3. Itens de NFs anteriores
   notas.forEach(n => { parseItens(n).forEach(it => { if (norm(it.desc).includes(v) && !seen.has(it.desc)) { seen.add(it.desc); matches.push({ desc: it.desc, unidade: it.unidade||'UN', codigo: '' }); } }); });
   if (!matches.length) { list.classList.add('hidden'); return; }
-  const top = matches.slice(0,8);
+  const top = matches.slice(0,15);
   list.innerHTML = top.map((m,i) => `<div class="autocomplete-item" data-ed-idx="${i}">${m.codigo?`<span class="ac-codigo">${m.codigo}</span>`:''}<span class="ac-label">${m.desc}</span><span style="font-size:10px;color:var(--texto3);">${m.unidade}</span></div>`).join('');
   list.querySelectorAll('.autocomplete-item').forEach((el, i) => {
     const selectItem = ev => {
