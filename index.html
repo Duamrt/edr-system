@@ -3013,33 +3013,15 @@ function renderCatalogo() {
     ['loucas','🛁 Louças e Metais'],['mao','👷 Mão de Obra'],['pintura','🖌 Pintura'],
     ['rev_cer','🟫 Revest. Cerâmico'],['generico','❓ Genérico'],['outros','📦 Outros']
   ];
-  // Monta índice de preços por nome de item a partir dos lançamentos
-  const precoIdx = {};
-  lancamentos.forEach(l => {
-    const k = (l.descricao||'').toUpperCase().trim();
-    if (!l.preco || l.preco <= 0) return;
-    if (!precoIdx[k]) precoIdx[k] = { precos: [], ultima: null, obras: new Set() };
-    precoIdx[k].precos.push(l.preco);
-    precoIdx[k].obras.add(l.obra_id);
-    if (!precoIdx[k].ultima || l.data > precoIdx[k].ultima.data)
-      precoIdx[k].ultima = { preco: l.preco, data: l.data };
-  });
-
   el.innerHTML = lista.map(m => {
     const isAuto = m.auto === true || m.auto === 'true';
     const catSelect = CATS_OPTS.map(([k,lb]) => `<option value="${k}" ${m.categoria===k?'selected':''}>${lb}</option>`).join('');
-    const ref = precoIdx[m.nome.toUpperCase().trim()];
-    const precoMedio = ref ? (ref.precos.reduce((a,b)=>a+b,0)/ref.precos.length) : null;
-    const precoTag = ref
-      ? `<span style="font-size:10px;color:var(--verde-hl);font-family:'JetBrains Mono',monospace;white-space:nowrap;" title="Último: R$ ${ref.ultima.preco.toFixed(2)} em ${ref.ultima.data||'?'} · ${ref.obras.size} obra(s)">R$ ${precoMedio.toFixed(2)}</span>`
-      : `<span style="font-size:10px;color:var(--texto3);white-space:nowrap;">—</span>`;
     return `
     <div class="catalogo-item" style="${isAuto ? 'border-color:rgba(245,158,11,0.35);' : ''}">
       <span class="catalogo-codigo">${m.codigo || "S/COD"}</span>
       ${isAuto ? `<span style="font-size:9px;font-weight:800;background:rgba(245,158,11,0.12);color:#fbbf24;border:1px solid rgba(245,158,11,0.3);border-radius:4px;padding:1px 5px;font-family:'JetBrains Mono',monospace;white-space:nowrap;">AUTO</span>` : ''}
       <span class="catalogo-nome">${m.nome}</span>
       <span class="catalogo-un">${m.unidade||'UN'}</span>
-      ${precoTag}
       ${usuarioAtual?.perfil==='admin' ? `
         <select onchange="editarCategoriaMaterial('${m.id}',this.value,this)" style="background:var(--bg3);border:1px solid ${isAuto?'rgba(245,158,11,0.3)':'var(--borda2)'};border-radius:6px;padding:3px 6px;color:${isAuto?'#fbbf24':'var(--branco)'};font-size:10px;font-family:inherit;cursor:pointer;" title="Editar categoria">
           <option value="">— cat —</option>${catSelect}
