@@ -2022,18 +2022,30 @@ function getCatLabel(key) {
     ['alimentacao','🍽 Alimentação'],['alvenaria','🧱 Alvenaria'],['cobertura','🏠 Cobertura'],
     ['combustivel','⛽ Combustível'],['doc','📋 Documentação'],['eletrica','⚡ Elétrica'],
     ['epi','🦺 EPI / Segurança'],['esgoto','🪠 Esgoto'],['esquadria','🪟 Esquadrias'],
-    ['expediente','📎 Expediente'],['ferro','⚙ Aço / Ferro'],['ferramenta','🔨 Ferramentas'],
+    ['expediente','📎 Expediente'],['ferro','⚙ Aço / Ferro'],['aco','⚙ Aço / Ferro'],['ferramenta','🔨 Ferramentas'],
     ['forma','🪵 Forma e Madeira'],['gesso','⬜ Gesso'],['granito','🪨 Granito / Pedra'],
     ['hidraulica','🚿 Hidráulica'],['impermeab','💧 Impermeabilização'],['limpeza','🧹 Limpeza'],
     ['locacao','🏗 Locação de Equip.'],['loucas','🛁 Louças e Metais'],['mao','👷 Mão de Obra'],
-    ['pintura','🖌 Pintura'],['rev_cer','🟫 Revest. Cerâmico'],['terreno','🏡 Terreno'],
-    ['generico','❓ Genérico'],['outros','📦 Outros']
+    ['pintura','🖌 Pintura'],['rev_cer','🟫 Revest. Cerâmico'],['rev_arg','🟤 Revest. Argamassa'],
+    ['terreno','🏡 Terreno'],['generico','❓ Genérico'],['outros','📦 Outros']
   ];
   const found = CATS_OPTS.find(([k]) => k === key);
-  return found ? found[1] : '📦 ' + (key||'Outros');
+  if (found) return found[1];
+  // Tentar como etapa de obra (05_fund, 06_estrut, etc.)
+  if (typeof etapaLabel === 'function') {
+    const et = etapaLabel(key);
+    if (et && et !== key && et !== '—') return et;
+  }
+  return '📦 ' + (key||'Outros');
 }
 
 function getCatFromLanc(l) {
+  // PRIORIDADE 1: etapa salva no lançamento (centro de custo real)
+  if (l.etapa && l.etapa !== '00_outros') return l.etapa;
+  // PRIORIDADE 2: inferir pelo nome do material no catálogo
+  const mat = catalogoMateriais.find(m => norm(m.nome) === norm(l.descricao||''));
+  if (mat && mat.categoria) return mat.categoria;
+  // PRIORIDADE 3: inferir pela descrição
   const desc = l.descricao || "";
   const dn = desc.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
   const catEstoque = getCatEstoque(desc);
@@ -2085,15 +2097,6 @@ function renderRelatorio() {
   const totalGeral = ls.reduce((s,l) => s + Number(l.total||0), 0);
   const obraFiltrada = obraId ? obras.find(o => o.id === obraId) : null;
   const titulo = obraFiltrada ? obraFiltrada.nome : 'Todas as Obras';
-
-  // DEBUG — remover após correção
-  console.log('=== DEBUG RELATÓRIO ===');
-  console.log('Total lançamentos filtrados:', ls.length);
-  ls.slice(0,10).forEach(l => {
-    const cat = getCatFromLanc(l);
-    const catDireto = getCatEstoque(l.descricao);
-    console.log(`DESC: "${l.descricao}" → getCatFromLanc: ${cat} | getCatEstoque: ${catDireto}`);
-  });
 
   let html = `<div style="margin-bottom:16px;padding:14px 18px;background:rgba(46,204,113,0.07);border:1px solid rgba(46,204,113,0.2);border-radius:10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
     <div>
