@@ -856,6 +856,7 @@ body::before {
           <option value="alimentacao">🍽 Alimentação</option>
           <option value="locacao">🏗 Locação de Equip.</option>
           <option value="doc">📋 Documentação</option>
+          <option value="terreno">🏡 Terreno</option>
           <option value="expediente">📎 Expediente</option>
           <option value="generico">❓ Genérico</option>
           <option value="outros">📦 Outros</option>
@@ -1056,6 +1057,7 @@ body::before {
           <option value="cobertura">🏠 Cobertura</option>
           <option value="combustivel">⛽ Combustível</option>
           <option value="doc">📋 Documentação</option>
+          <option value="terreno">🏡 Terreno</option>
           <option value="eletrica">⚡ Elétrica</option>
           <option value="epi">🦺 EPI / Segurança</option>
           <option value="esgoto">🪠 Esgoto</option>
@@ -1165,6 +1167,7 @@ body::before {
           <option value="locacao">🏗 Locação de Equip.</option>
           <option value="mao">👷 Mão de Obra</option>
           <option value="doc">📋 Documentação</option>
+          <option value="terreno">🏡 Terreno</option>
           <option value="expediente">📎 Expediente</option>
           <option value="generico">❓ Genérico</option>
           <option value="outros">📦 Outros</option>
@@ -1816,7 +1819,8 @@ function initCATS() {
   CATS = {};
   // Mão de obra — separado pois não está no CATS_ESTOQUE
   CATS['mao'] = { lb: '👷 Mão de Obra', fn: r => /m[aã]o[\s\-]de[\s\-]obra|armador|eletricista|pintor|pedreiro|servente|mestre de obras|encanador|azulejista/i.test(r.descricao) };
-  CATS['doc'] = { lb: '📋 Documentação', fn: r => /contrato|documento|art |anotac|registro de contrato|orcamento|alvara|licenca|projeto|vistoria|escritura|terreno/i.test(r.descricao) };
+  CATS['doc'] = { lb: '📋 Documentação', fn: r => /contrato|documento|art |anotac|registro de contrato|orcamento|alvara|licenca|projeto|vistoria|escritura/i.test(r.descricao) };
+  CATS['terreno'] = { lb: '🏡 Terreno', fn: r => /terreno|aquisicao de terreno|compra de terreno|area|lote/i.test(r.descricao) };
   // Demais categorias espelham CATS_ESTOQUE com chave normalizada
   const keyMap = { 'aco':'ferro' }; // aco→ferro para manter compatibilidade com dados existentes
   CATS_ESTOQUE.forEach(cat => {
@@ -3011,7 +3015,7 @@ function renderCatalogo() {
     ['forma','🪵 Forma e Madeira'],['gesso','⬜ Gesso'],['granito','🪨 Granito / Pedra'],['hidraulica','🚿 Hidráulica'],
     ['impermeab','💧 Impermeabilização'],['limpeza','🧹 Limpeza'],['locacao','🏗 Locação de Equip.'],
     ['loucas','🛁 Louças e Metais'],['mao','👷 Mão de Obra'],['pintura','🖌 Pintura'],
-    ['rev_cer','🟫 Revest. Cerâmico'],['generico','❓ Genérico'],['outros','📦 Outros']
+    ['rev_cer','🟫 Revest. Cerâmico'],['terreno','🏡 Terreno'],['generico','❓ Genérico'],['outros','📦 Outros']
   ];
   el.innerHTML = lista.map(m => {
     const isAuto = m.auto === true || m.auto === 'true';
