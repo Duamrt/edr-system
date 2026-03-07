@@ -2042,33 +2042,42 @@ function getCatLabel(key) {
     ['hidraulica','🚿 Hidráulica'],['impermeab','💧 Impermeabilização'],['limpeza','🧹 Limpeza'],
     ['locacao','🏗 Locação de Equip.'],['loucas','🛁 Louças e Metais'],['mao','👷 Mão de Obra'],
     ['pintura','🖌 Pintura'],['rev_cer','🟫 Revest. Cerâmico'],['rev_arg','🟤 Revest. Argamassa'],
-    ['terreno','🏡 Terreno'],['generico','❓ Genérico'],['outros','📦 Outros']
+    ['terreno','🏡 Terreno'],['generico','❓ Genérico'],['outros','📦 Outros'],
+    // Etapas de obra — mapa embutido para não depender de etapaLabel
+    ['01_terreno','🏛 01 · Terreno'],['02_doc','📋 02 · Documentação'],
+    ['03_prelim','⛏ 03 · Serv. Preliminares'],['04_terra','🌍 04 · Mov. de Terra'],
+    ['05_fund','🏗 05 · Fundação'],['06_estrut','🔩 06 · Estrutura'],
+    ['07_alven','🧱 07 · Alvenaria'],['08_cobr','🏠 08 · Cobertura'],
+    ['09_elet','⚡ 09 · Elétrica'],['10_hidro','🚿 10 · Hidráulica'],
+    ['11_esquad','🪟 11 · Esquadrias'],['12_revestc','🟫 12 · Rev. Cerâmico'],
+    ['13_pintura','🖌 13 · Pintura'],['14_acab','✨ 14 · Acabamento'],
+    ['15_locacao','🏗 15 · Locação / Equip.'],['16_externo','🌿 16 · Área Externa'],
+    ['00_outros','📦 Não classificado']
   ];
   const found = CATS_OPTS.find(([k]) => k === key);
-  if (found) return found[1];
-  // Tentar como etapa de obra (05_fund, 06_estrut, etc.)
-  if (typeof etapaLabel === 'function') {
-    const et = etapaLabel(key);
-    if (et && et !== key && et !== '—') return et;
-  }
-  return '📦 ' + (key||'Outros');
+  return found ? found[1] : '📦 ' + (key||'Outros');
 }
 
 function getCatFromLanc(l) {
   // PRIORIDADE 1: etapa salva no lançamento (centro de custo real)
   if (l.etapa && l.etapa !== '00_outros') return l.etapa;
   // PRIORIDADE 2: inferir pelo nome do material no catálogo
-  const mat = catalogoMateriais.find(m => norm(m.nome) === norm(l.descricao||''));
+  // Tenta match exato, depois tenta sem código (ex: "000011 · Telha..." → "Telha...")
+  const descLimpa = (l.descricao||'').replace(/^\d{6}\s*·\s*/, '').trim();
+  const mat = catalogoMateriais.find(m =>
+    norm(m.nome) === norm(l.descricao||'') ||
+    norm(m.nome) === norm(descLimpa)
+  );
   if (mat && mat.categoria) return mat.categoria;
   // PRIORIDADE 3: inferir pela descrição
-  const desc = l.descricao || "";
+  const desc = descLimpa || l.descricao || "";
   const dn = desc.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
   const catEstoque = getCatEstoque(desc);
   if (catEstoque && catEstoque !== "outros") return catEstoque;
   if (/mao[\s\-]de[\s\-]obra|armador|eletricista|pintor|pedreiro|servente|mestre de obras|encanador|azulejista/.test(dn)) return "mao";
   if (/aquisicao de terreno|compra de terreno/.test(dn)) return "terreno";
   if (/contrato|documento|anotacao|alvara|licenca|vistoria|escritura/.test(dn)) return "doc";
-  return "outros";
+  return l.etapa || "outros";
 }
 function getCatFromLanc_UNUSED(l) {
   const desc = l.descricao || '';
