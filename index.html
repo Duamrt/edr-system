@@ -3971,7 +3971,7 @@ function buildSecaoCategoria(ls) {
   // Agrupa por categoria
   const map = {};
   ls.forEach(l => {
-    const cat = l.categoria || 'outros';
+    const cat = getCatFromLanc(l);
     if (!map[cat]) map[cat] = 0;
     map[cat] += Number(l.total || 0);
   });
@@ -4099,7 +4099,7 @@ async function exportarRelatorioPDF() {
   // Monta dados para PDF
   const map = {};
   ls.forEach(l => {
-    const cat = l.categoria || 'outros';
+    const cat = getCatFromLanc(l);
     if (!map[cat]) map[cat] = 0;
     map[cat] += Number(l.total || 0);
   });
