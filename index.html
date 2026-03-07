@@ -625,6 +625,8 @@ body::before {
 }
 .bnav-more-item:hover, .bnav-more-item.active { background: rgba(46,204,113,0.08); color: var(--verde-hl); }
 .bnav-more-icon { font-size: 16px; }
+.rel-card { background: var(--bg2); border: 1px solid var(--borda2); border-radius: 12px; padding: 18px; }
+.rel-card-title { font-family: 'Rajdhani', sans-serif; font-size: 13px; font-weight: 700; color: var(--verde3); letter-spacing: 2px; margin-bottom: 16px; }
 </style>
 </head>
 <body>
@@ -697,6 +699,10 @@ body::before {
     <span class="nav-icon">🏷</span>C.CUSTO<span class="nav-key">F7</span>
   </button>
   <div class="nav-divider"></div>
+  <button class="nav-btn" id="nav-relatorio" onclick="setView('relatorio')">
+    <span class="nav-icon">📈</span>RELATÓRIO<span class="nav-key">F8</span>
+  </button>
+  <div class="nav-divider"></div>
   <button class="nav-btn admin-only" id="nav-banco" onclick="setView('banco')">
     <span class="nav-icon">🗄</span>DADOS
   </button>
@@ -735,6 +741,9 @@ body::before {
   <button class="bnav-more-item" id="bnav-catalogo" onclick="setView('catalogo');closeBnavMore()">
     <span class="bnav-more-icon">🏷</span>C.CUSTO
   </button>
+  <button class="bnav-more-item" id="bnav-relatorio" onclick="setView('relatorio');closeBnavMore()">
+    <span class="bnav-more-icon">📈</span>RELATÓRIO
+  </button>
   <button class="bnav-more-item admin-only" id="bnav-banco" onclick="setView('banco');closeBnavMore()">
     <span class="bnav-more-icon">🗄</span>DADOS
   </button>
@@ -744,6 +753,44 @@ body::before {
 </div>
 <div class="main-content">
 <div class="content" id="main-content-inner" style="visibility:hidden;">
+
+  
+  <!-- RELATÓRIO F8 -->
+  <div id="view-relatorio" class="hidden">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-top:4px;flex-wrap:wrap;gap:10px;">
+      <div style="display:flex;align-items:center;gap:14px;">
+        <div style="width:44px;height:44px;border:1px solid rgba(46,204,113,0.35);border-radius:12px;display:flex;align-items:center;justify-content:center;background:rgba(46,204,113,0.07);">
+          <span style="font-size:20px;">📈</span>
+        </div>
+        <div>
+          <div style="font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:700;color:var(--branco);letter-spacing:2px;">RELATÓRIO DE OBRAS</div>
+          <div style="font-size:11px;color:var(--texto3);">Custo por categoria · Evolução mensal · Comparativo</div>
+        </div>
+      </div>
+      <button onclick="exportarRelatorioPDF()" style="background:rgba(46,204,113,0.15);border:1px solid rgba(46,204,113,0.4);color:var(--verde3);padding:8px 16px;border-radius:8px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:1px;">
+        ⬇ EXPORTAR PDF
+      </button>
+    </div>
+
+    <!-- Filtros -->
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;">
+      <select id="rel-obra" onchange="renderRelatorio()" style="background:var(--bg3);border:1px solid var(--borda2);border-radius:8px;padding:8px 12px;color:var(--branco);font-family:inherit;font-size:12px;flex:1;min-width:160px;">
+        <option value="">🏗 Todas as obras</option>
+      </select>
+      <select id="rel-ano" onchange="renderRelatorio()" style="background:var(--bg3);border:1px solid var(--borda2);border-radius:8px;padding:8px 12px;color:var(--branco);font-family:inherit;font-size:12px;">
+        <option value="">📅 Todos os anos</option>
+      </select>
+      <select id="rel-secao" onchange="renderRelatorio()" style="background:var(--bg3);border:1px solid var(--borda2);border-radius:8px;padding:8px 12px;color:var(--branco);font-family:inherit;font-size:12px;">
+        <option value="tudo">📊 Tudo</option>
+        <option value="categoria">🏷 Por Categoria</option>
+        <option value="mensal">📅 Evolução Mensal</option>
+        <option value="comparativo">⚖ Comparativo</option>
+      </select>
+    </div>
+
+    <!-- Conteúdo dinâmico -->
+    <div id="rel-content"></div>
+  </div>
 
   <!-- DASHBOARD -->
   <div id="view-dashboard" class="hidden">
@@ -1439,7 +1486,7 @@ function fazerLogin() {
 function entrarNoApp() {
   document.getElementById('login-screen').classList.add('hidden');
   // Garantir que só o dashboard aparece — evita flash de SQL ou outras abas
-  ['obras','estoque','notas','form','creditos','setup','catalogo','banco'].forEach(name => {
+  ['obras','estoque','notas','form','creditos','setup','catalogo','banco','relatorio'].forEach(name => {
     const el = document.getElementById('view-'+name);
     if (el) el.classList.add('hidden');
   });
@@ -1811,6 +1858,323 @@ function renderDashboard() {
 // ══════════════════════════════════════════
 // OBRAS (módulo EDR Obras integrado)
 // ══════════════════════════════════════════
+
+// ══════════════════════════════════════════════════════════
+// RELATÓRIO F8 — Custo por categoria, evolução mensal, comparativo
+// ══════════════════════════════════════════════════════════
+
+function getCatLabel(key) {
+  const CATS_OPTS = [
+    ['alimentacao','🍽 Alimentação'],['alvenaria','🧱 Alvenaria'],['cobertura','🏠 Cobertura'],
+    ['combustivel','⛽ Combustível'],['doc','📋 Documentação'],['eletrica','⚡ Elétrica'],
+    ['epi','🦺 EPI / Segurança'],['esgoto','🪠 Esgoto'],['esquadria','🪟 Esquadrias'],
+    ['expediente','📎 Expediente'],['ferro','⚙ Aço / Ferro'],['ferramenta','🔨 Ferramentas'],
+    ['forma','🪵 Forma e Madeira'],['gesso','⬜ Gesso'],['granito','🪨 Granito / Pedra'],
+    ['hidraulica','🚿 Hidráulica'],['impermeab','💧 Impermeabilização'],['limpeza','🧹 Limpeza'],
+    ['locacao','🏗 Locação de Equip.'],['loucas','🛁 Louças e Metais'],['mao','👷 Mão de Obra'],
+    ['pintura','🖌 Pintura'],['rev_cer','🟫 Revest. Cerâmico'],['terreno','🏡 Terreno'],
+    ['generico','❓ Genérico'],['outros','📦 Outros']
+  ];
+  const found = CATS_OPTS.find(([k]) => k === key);
+  return found ? found[1] : '📦 ' + (key||'Outros');
+}
+
+function getCatFromLanc(l) {
+  const desc = (l.descricao||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  const checkCats = [
+    ['terreno', /terreno|aquisicao de terreno|compra de terreno/],
+    ['mao', /mao de obra|pedreiro|servente|mestre|ajudante|mao-de-obra|m\.o\.|m\.o |diarista|operario/],
+    ['doc', /contrato|documento|art |anotac|registro de contrato|orcamento|alvara|licenca|projeto|vistoria|escritura/],
+    ['alimentacao', /alimenta|refeicao|marmita|lanche|cafe |capsula|agua mineral|pacoca|bolacha|biscoito|refrigerante|suco|quentinha|lanchinho|choco|bisc/],
+    ['alvenaria', /cimento|areia|brita|tijolo|bloco|chapisco|argamassa|cal |saibro|pedrisco|concreto/],
+    ['cobertura', /telha|cumeeira|rufo|telhado|fibrocimento|zinco|isopanel|madeiramento|frechal/],
+    ['combustivel', /gasolina|diesel|etanol|alcool|combustivel|arla/],
+    ['eletrica', /cabo flex|fio eletrico|eletroduto|conduite|disjuntor|quadro el|tomada|cx luz|caixa luz|lampada|luminaria|led|haste|spda/],
+    ['epi', /epi|capacete|bota de seg|luva de seg|oculos de prot|cinto de seg|uniforme|colete/],
+    ['esgoto', /esgoto|fossa|caixa de inspe|caixa sifonada|grelha|caixa gordura|pluvial|calha|canalete/],
+    ['esquadria', /porta|janela|batente|marco|caixilho|esquadria|grade|fechadura|macaneta|vidro|box|portao/],
+    ['expediente', /papel|caneta|impressao|toner|clips|grampeador|fita adesiva|cadeira escritorio/],
+    ['ferro', /ferro|vergalh|estribo|tela sold|malha pop|arame|aco ca|aco cp|barra chata|prego|parafuso/],
+    ['ferramenta', /enxada|picareta|marreta|martelo|colher de ped|desempenadeira|disco de corte|trena|furadeira|esmerilhadeira|betoneira/],
+    ['forma', /pontalete|escore|cimbramento|forma |madeira|caibro|viga|ripa|sarrafo|compensado|mdf/],
+    ['gesso', /gesso|dry.?wall|drywall|placa de gesso|forro de gesso/],
+    ['granito', /granito|marmore|quartzito|pedra natural|bancada|soleira|peitoril/],
+    ['hidraulica', /tubo pvc|cano agua|joelho|cola pvc|torneira|sifao|ralo|caixa d.?agua|bacia sanit|cuba|tanque|ducha|chuveiro|aquecedor/],
+    ['impermeab', /impermeab|manta asf|neutrol|vedacit|sika/],
+    ['limpeza', /limpeza|limpador|vassoura|rodo|detergente|desinfet|raid|balde|saco de lixo|agua sanitaria|veja/],
+    ['locacao', /locacao|aluguel de|aluguel maq|andaime|locac/],
+    ['loucas', /louça|loucas|torneira banheiro|espelho|acessorio banheiro/],
+    ['pintura', /tinta|massa corrida|selador|primer|textura|verniz|esmalte|lixa|rolo de pint|trincha/],
+    ['rev_cer', /ceramica|porcelanato|revestimento|azulejo|rejunte|pastilha/],
+  ];
+  for (const [key, re] of checkCats) {
+    if (re.test(desc)) return key;
+  }
+  return 'outros';
+}
+
+function initRelatorio() {
+  // Popular filtro de obras
+  const selObra = document.getElementById('rel-obra');
+  if (selObra) {
+    selObra.innerHTML = '<option value="">🏗 Todas as obras</option>' +
+      obras.map(o => `<option value="${o.id}">${o.nome}</option>`).join('');
+  }
+  // Popular filtro de anos
+  const anos = [...new Set(lancamentos.map(l => (l.data||'').substring(0,4)).filter(Boolean))].sort().reverse();
+  const selAno = document.getElementById('rel-ano');
+  if (selAno) {
+    selAno.innerHTML = '<option value="">📅 Todos os anos</option>' +
+      anos.map(a => `<option value="${a}">${a}</option>`).join('');
+  }
+  renderRelatorio();
+}
+
+function renderRelatorio() {
+  const obraId = document.getElementById('rel-obra')?.value || '';
+  const ano = document.getElementById('rel-ano')?.value || '';
+  const secao = document.getElementById('rel-secao')?.value || 'tudo';
+
+  // Filtrar lançamentos
+  let ls = lancamentos.filter(l => {
+    if (obraId && l.obra_id !== obraId) return false;
+    if (ano && !(l.data||'').startsWith(ano)) return false;
+    return true;
+  });
+
+  const totalGeral = ls.reduce((s,l) => s + Number(l.total||0), 0);
+  const obraFiltrada = obraId ? obras.find(o => o.id === obraId) : null;
+  const titulo = obraFiltrada ? obraFiltrada.nome : 'Todas as Obras';
+
+  let html = `<div style="margin-bottom:16px;padding:14px 18px;background:rgba(46,204,113,0.07);border:1px solid rgba(46,204,113,0.2);border-radius:10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+    <div>
+      <div style="font-size:12px;color:var(--texto3);margin-bottom:2px;">CUSTO TOTAL${ano?' · '+ano:''}</div>
+      <div style="font-family:'Rajdhani',sans-serif;font-size:28px;font-weight:700;color:var(--verde-hl);">${fmtR(totalGeral)}</div>
+      <div style="font-size:11px;color:var(--texto3);margin-top:2px;">${titulo} · ${ls.length} lançamentos</div>
+    </div>
+  </div>`;
+
+  const mostrarCat = secao === 'tudo' || secao === 'categoria';
+  const mostrarMensal = secao === 'tudo' || secao === 'mensal';
+  const mostrarComp = secao === 'tudo' || secao === 'comparativo';
+
+  // ── CUSTO POR CATEGORIA ──
+  if (mostrarCat) {
+    const catMap = {};
+    ls.forEach(l => {
+      const cat = getCatFromLanc(l);
+      catMap[cat] = (catMap[cat]||0) + Number(l.total||0);
+    });
+    const catSorted = Object.entries(catMap).sort((a,b) => b[1]-a[1]);
+    const maxVal = catSorted[0]?.[1] || 1;
+
+    html += `<div style="margin-bottom:24px;">
+      <div style="font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;letter-spacing:2px;color:var(--texto2);margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--borda2);">🏷 CUSTO POR CATEGORIA</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">`;
+
+    catSorted.forEach(([cat, val]) => {
+      const pct = (val / totalGeral * 100).toFixed(1);
+      const barPct = (val / maxVal * 100).toFixed(1);
+      html += `<div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+          <span style="font-size:12px;color:var(--branco);">${getCatLabel(cat)}</span>
+          <span style="font-size:12px;font-weight:700;color:var(--verde-hl);font-family:'JetBrains Mono',monospace;">${fmtR(val)} <span style="color:var(--texto3);font-weight:400;">${pct}%</span></span>
+        </div>
+        <div style="background:var(--bg3);border-radius:4px;height:6px;overflow:hidden;">
+          <div style="width:${barPct}%;height:100%;background:linear-gradient(90deg,rgba(46,204,113,0.8),rgba(46,204,113,0.4));border-radius:4px;transition:width 0.4s;"></div>
+        </div>
+      </div>`;
+    });
+    html += '</div></div>';
+  }
+
+  // ── EVOLUÇÃO MENSAL ──
+  if (mostrarMensal) {
+    // Mensal geral
+    const mesMap = {};
+    ls.forEach(l => {
+      const mes = (l.data||'').substring(0,7);
+      if (!mes) return;
+      mesMap[mes] = (mesMap[mes]||0) + Number(l.total||0);
+    });
+    const meses = Object.keys(mesMap).sort();
+    const maxMes = Math.max(...Object.values(mesMap), 1);
+    const nomesMes = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+    if (meses.length > 0) {
+      html += `<div style="margin-bottom:24px;">
+        <div style="font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;letter-spacing:2px;color:var(--texto2);margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--borda2);">📅 EVOLUÇÃO MENSAL${obraFiltrada?' — '+obraFiltrada.nome:' — TODAS AS OBRAS'}</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">`;
+
+      meses.forEach(mes => {
+        const val = mesMap[mes];
+        const [y, m] = mes.split('-');
+        const label = `${nomesMes[parseInt(m)-1]} ${y}`;
+        const barPct = (val / maxMes * 100).toFixed(1);
+        html += `<div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
+            <span style="font-size:11px;color:var(--texto3);min-width:70px;">${label}</span>
+            <span style="font-size:12px;font-weight:700;color:var(--verde-hl);font-family:'JetBrains Mono',monospace;">${fmtR(val)}</span>
+          </div>
+          <div style="background:var(--bg3);border-radius:4px;height:5px;overflow:hidden;">
+            <div style="width:${barPct}%;height:100%;background:linear-gradient(90deg,rgba(82,196,226,0.8),rgba(82,196,226,0.4));border-radius:4px;"></div>
+          </div>
+        </div>`;
+      });
+
+      html += '</div></div>';
+    }
+
+    // Se obra filtrada, mostrar também por obra mas com mensal por categoria
+    if (!obraFiltrada && obras.length > 1) {
+      // Mensal por obra (mini table)
+      const obrasMes = {};
+      ls.forEach(l => {
+        const mes = (l.data||'').substring(0,7);
+        const oid = l.obra_id;
+        if (!mes || !oid) return;
+        if (!obrasMes[mes]) obrasMes[mes] = {};
+        obrasMes[mes][oid] = (obrasMes[mes][oid]||0) + Number(l.total||0);
+      });
+    }
+  }
+
+  // ── COMPARATIVO ENTRE OBRAS ──
+  if (mostrarComp && obras.length > 0) {
+    // Custo total por obra
+    const obrasData = obras.map(o => {
+      const ls2 = lancamentos.filter(l => l.obra_id === o.id && (!ano || (l.data||'').startsWith(ano)));
+      const total = ls2.reduce((s,l) => s + Number(l.total||0), 0);
+      const catMap2 = {};
+      ls2.forEach(l => {
+        const cat = getCatFromLanc(l);
+        catMap2[cat] = (catMap2[cat]||0) + Number(l.total||0);
+      });
+      return { nome: o.nome, total, catMap: catMap2, count: ls2.length };
+    }).filter(o => o.total > 0).sort((a,b) => b.total - a.total);
+
+    if (obrasData.length > 0) {
+      const maxObra = obrasData[0].total;
+      html += `<div style="margin-bottom:24px;">
+        <div style="font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;letter-spacing:2px;color:var(--texto2);margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--borda2);">⚖ COMPARATIVO ENTRE OBRAS</div>
+        <div style="display:flex;flex-direction:column;gap:12px;">`;
+
+      obrasData.forEach(o => {
+        const barPct = (o.total / maxObra * 100).toFixed(1);
+        // Top 3 categorias desta obra
+        const topCats = Object.entries(o.catMap).sort((a,b)=>b[1]-a[1]).slice(0,3);
+        html += `<div style="padding:12px;background:var(--bg3);border-radius:8px;border:1px solid var(--borda2);">
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:4px;">
+            <span style="font-size:13px;font-weight:700;color:var(--branco);">🏗 ${o.nome}</span>
+            <span style="font-size:13px;font-weight:700;color:var(--verde-hl);font-family:'JetBrains Mono',monospace;">${fmtR(o.total)}</span>
+          </div>
+          <div style="background:var(--bg2);border-radius:4px;height:6px;overflow:hidden;margin-bottom:8px;">
+            <div style="width:${barPct}%;height:100%;background:linear-gradient(90deg,rgba(46,204,113,0.8),rgba(46,204,113,0.3));border-radius:4px;"></div>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            ${topCats.map(([cat, val]) => `<span style="font-size:10px;padding:2px 7px;background:rgba(46,204,113,0.1);border:1px solid rgba(46,204,113,0.2);border-radius:20px;color:var(--texto2);">${getCatLabel(cat)} ${fmtR(val)}</span>`).join('')}
+            <span style="font-size:10px;color:var(--texto3);padding:2px 4px;">${o.count} lançamentos</span>
+          </div>
+        </div>`;
+      });
+
+      html += '</div></div>';
+    }
+  }
+
+  document.getElementById('rel-content').innerHTML = html;
+}
+
+function exportarRelatorioPDF() {
+  const obraId = document.getElementById('rel-obra')?.value || '';
+  const ano = document.getElementById('rel-ano')?.value || '';
+  const obraFiltrada = obraId ? obras.find(o => o.id === obraId) : null;
+  const titulo = obraFiltrada ? obraFiltrada.nome : 'Todas as Obras';
+
+  let ls = lancamentos.filter(l => {
+    if (obraId && l.obra_id !== obraId) return false;
+    if (ano && !(l.data||'').startsWith(ano)) return false;
+    return true;
+  });
+
+  const totalGeral = ls.reduce((s,l) => s + Number(l.total||0), 0);
+  const catMap = {};
+  ls.forEach(l => { const cat = getCatFromLanc(l); catMap[cat] = (catMap[cat]||0) + Number(l.total||0); });
+  const catSorted = Object.entries(catMap).sort((a,b) => b[1]-a[1]);
+
+  const mesMap = {};
+  ls.forEach(l => { const mes = (l.data||'').substring(0,7); if (mes) mesMap[mes] = (mesMap[mes]||0) + Number(l.total||0); });
+  const meses = Object.keys(mesMap).sort();
+  const nomesMes = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+  const obrasData = obras.map(o => {
+    const ls2 = lancamentos.filter(l => l.obra_id === o.id && (!ano || (l.data||'').startsWith(ano)));
+    return { nome: o.nome, total: ls2.reduce((s,l) => s + Number(l.total||0), 0), count: ls2.length };
+  }).filter(o => o.total > 0).sort((a,b) => b.total - a.total);
+
+  const win = window.open('', '_blank');
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <title>Relatório EDR — ${titulo}</title>
+  <style>
+    * { margin:0;padding:0;box-sizing:border-box; }
+    body { font-family: Arial, sans-serif; color: #1a1a1a; background: #fff; padding: 30px; font-size: 12px; }
+    h1 { font-size:20px; color:#155724; margin-bottom:4px; }
+    .subtitle { font-size:11px; color:#666; margin-bottom:24px; }
+    .totais { background:#f0faf3; border:1px solid #c3e6cb; border-radius:8px; padding:16px; margin-bottom:24px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+    .total-val { font-size:26px; font-weight:700; color:#155724; }
+    .total-label { font-size:10px; color:#666; margin-bottom:4px; }
+    h2 { font-size:13px; font-weight:700; color:#155724; letter-spacing:1px; margin-bottom:12px; padding-bottom:6px; border-bottom:2px solid #c3e6cb; margin-top:24px; }
+    table { width:100%; border-collapse:collapse; margin-bottom:8px; }
+    th { background:#155724; color:#fff; padding:7px 10px; text-align:left; font-size:11px; }
+    th.right, td.right { text-align:right; }
+    td { padding:6px 10px; border-bottom:1px solid #e8f5e9; font-size:11px; }
+    tr:nth-child(even) td { background:#f9fefb; }
+    .bar-wrap { background:#e8f5e9; border-radius:3px; height:5px; margin-top:3px; }
+    .bar-fill { background:#2ecc71; height:5px; border-radius:3px; }
+    .footer { margin-top:32px; padding-top:12px; border-top:1px solid #e0e0e0; font-size:10px; color:#999; }
+    @media print { body { padding:15px; } }
+  </style></head><body>
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+    <div style="background:#155724;color:#fff;padding:4px 10px;border-radius:4px;font-weight:700;font-size:14px;">EDR</div>
+    <h1>RELATÓRIO DE OBRAS</h1>
+  </div>
+  <div class="subtitle">${titulo}${ano?' · '+ano:''} · Gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}</div>
+
+  <div class="totais">
+    <div><div class="total-label">CUSTO TOTAL</div><div class="total-val">${fmtR(totalGeral)}</div></div>
+    <div><div class="total-label">LANÇAMENTOS</div><div class="total-val" style="font-size:22px;">${ls.length}</div></div>
+    <div><div class="total-label">OBRAS</div><div class="total-val" style="font-size:22px;">${obraFiltrada ? 1 : obrasData.length}</div></div>
+  </div>
+
+  <h2>🏷 CUSTO POR CATEGORIA</h2>
+  <table><thead><tr><th>Categoria</th><th class="right">Valor</th><th class="right">%</th></tr></thead><tbody>
+  ${catSorted.map(([cat,val]) => {
+    const pct = (val/totalGeral*100).toFixed(1);
+    const barW = Math.round(val/catSorted[0][1]*100);
+    return `<tr><td>${getCatLabel(cat)}</td><td class="right" style="font-weight:700;color:#155724;">${fmtR(val)}</td><td class="right">${pct}%</td></tr>`;
+  }).join('')}
+  </tbody></table>
+
+  <h2>📅 EVOLUÇÃO MENSAL</h2>
+  <table><thead><tr><th>Mês</th><th class="right">Valor</th></tr></thead><tbody>
+  ${meses.map(mes => {
+    const [y,m] = mes.split('-');
+    return `<tr><td>${nomesMes[parseInt(m)-1]} ${y}</td><td class="right" style="font-weight:700;color:#155724;">${fmtR(mesMap[mes])}</td></tr>`;
+  }).join('')}
+  </tbody></table>
+
+  ${!obraFiltrada && obrasData.length > 1 ? `
+  <h2>⚖ COMPARATIVO ENTRE OBRAS</h2>
+  <table><thead><tr><th>Obra</th><th class="right">Custo Total</th><th class="right">Lançamentos</th></tr></thead><tbody>
+  ${obrasData.map(o => `<tr><td>${o.nome}</td><td class="right" style="font-weight:700;color:#155724;">${fmtR(o.total)}</td><td class="right">${o.count}</td></tr>`).join('')}
+  </tbody></table>` : ''}
+
+  <div class="footer">EDR System v9 · EDR Engenharia · sistema.edreng.com.br</div>
+  </body></html>`);
+  win.document.close();
+  setTimeout(() => win.print(), 400);
+}
+
 // ── CATS: fonte única de categorias ──────────────────────────────
 // Derivado do CATS_ESTOQUE (definido abaixo). Inicializado após CATS_ESTOQUE.
 // fn recebe o objeto lançamento (r) e testa r.descricao normalizado.
@@ -1952,7 +2316,7 @@ function filtrarLanc() {
     <span style="color:var(--texto2);font-size:11px;">${lista.length} lançamento${lista.length!==1?'s':''} ${nFiltros>0?'filtrados':'no total'}</span>
     <div style="display:flex;gap:12px;align-items:center;">
       <span style="font-size:12px;color:var(--texto3);">Qtd: <strong style="color:var(--branco);">${totalQtd % 1 === 0 ? totalQtd : totalQtd.toFixed(2)} ${unStr}</strong></span>
-      ${usuarioAtual?.perfil==='admin' ? `<span style="font-size:15px;font-weight:800;color:var(--verde-hl);">${fmt(totalFiltrado)}</span>` : ''}
+      ${usuarioAtual?.perfil==='admin' ? `<span style="font-size:15px;font-weight:800;color:var(--verde-hl);">${fmtR(totalFiltrado)}</span>` : ''}
     </div>`;
   // obraMap inclui ativas + arquivadas para exibir nome corretamente
   const obraMap = {};
@@ -1983,14 +2347,14 @@ function filtrarLanc() {
                 <div style="width:${pct}%;height:100%;background:var(--verde3);border-radius:2px;"></div>
               </div>
               <span style="font-size:11px;color:var(--texto3);width:36px;text-align:right;">${pct}%</span>
-              <span style="font-size:13px;font-weight:700;color:var(--branco);width:90px;text-align:right;font-family:'JetBrains Mono',monospace;">${fmt(val)}</span>
+              <span style="font-size:13px;font-weight:700;color:var(--branco);width:90px;text-align:right;font-family:'JetBrains Mono',monospace;">${fmtR(val)}</span>
             </div>`;
           }).join('')}
           <div style="display:flex;justify-content:space-between;padding-top:8px;margin-top:4px;">
             <span style="font-size:11px;color:var(--texto3);">TOTAL CLASSIFICADO</span>
-            <span style="font-size:14px;font-weight:800;color:var(--verde-hl);font-family:'JetBrains Mono',monospace;">${fmt(totalObra)}</span>
+            <span style="font-size:14px;font-weight:800;color:var(--verde-hl);font-family:'JetBrains Mono',monospace;">${fmtR(totalObra)}</span>
           </div>
-          ${porEtapa['00_outros'] > 0 ? `<div style="font-size:10px;color:var(--texto3);margin-top:6px;">⚠ ${fmt(porEtapa['00_outros'])} ainda sem etapa classificada.</div>` : ''}
+          ${porEtapa['00_outros'] > 0 ? `<div style="font-size:10px;color:var(--texto3);margin-top:6px;">⚠ ${fmtR(porEtapa['00_outros'])} ainda sem etapa classificada.</div>` : ''}
         </div>`;
     } else {
       detEl.classList.remove('hidden');
@@ -2004,7 +2368,7 @@ function filtrarLanc() {
       <div class="lanc-top">
         <div class="lanc-desc">${l.descricao}</div>
         <div style="display:flex;align-items:center;gap:4px;">
-          <span class="lanc-val admin-only">${fmt(l.total)}</span>
+          <span class="lanc-val admin-only">${fmtR(l.total)}</span>
           <button class="lanc-del admin-only" onclick="excluirLanc('${l.id}')">🗑</button>
         </div>
       </div>
@@ -2292,7 +2656,7 @@ function renderEstoque() {
         </div>
         <div style="font-size:11px;color:var(--texto2);margin-top:4px;">
           <span style="color:${m.credito?'var(--verde-hl)':'#f87171'};font-weight:700;">${m.credito?'✓ CRÉDITO':'✗ SEM CRÉDITO'}</span>
-          <span class="admin-only"> · ${fmt(m.valorMedio)}/un · Total: ${fmt(m.saldoTotal * m.valorMedio)}</span>
+          <span class="admin-only"> · ${fmtR(m.valorMedio)}/un · Total: ${fmtR(m.saldoTotal * m.valorMedio)}</span>
           ${m.lotes.length > 0 ? ` · ${m.lotes.length} lote${m.lotes.length!==1?'s':''}` : ''}
           ${m.qtdDireta > 0 ? ` · <span style="color:var(--amarelo);">+${m.qtdDireta} entrada direta</span>` : ''}
         </div>
@@ -2323,7 +2687,7 @@ function abrirSaidaMaterial(idx) {
   const histEl = document.getElementById('dist-historico');
   if (hist.length) {
     document.getElementById('dist-historico-lista').innerHTML = hist.slice(0,5).map(d =>
-      `<div class="dist-historico-row"><span>${d.obra_nome}</span><span>${d.qtd} ${m.unidade} · ${fmt(d.valor)}</span></div>`).join('');
+      `<div class="dist-historico-row"><span>${d.obra_nome}</span><span>${d.qtd} ${m.unidade} · ${fmtR(d.valor)}</span></div>`).join('');
     histEl.classList.remove('hidden');
   } else histEl.classList.add('hidden');
   const selDistEtapa = document.getElementById('dist-etapa');
@@ -2345,7 +2709,7 @@ function calcDistValor() {
   const qtd = parseFloat(document.getElementById('dist-qtd').value)||0;
   const valor = qtd * m.valorMedio;
   const prev = document.getElementById('dist-valor-preview');
-  if (qtd > 0) { document.getElementById('dist-valor-val').textContent = fmt(valor); prev.style.display = 'block'; }
+  if (qtd > 0) { document.getElementById('dist-valor-val').textContent = fmtR(valor); prev.style.display = 'block'; }
   else prev.style.display = 'none';
 }
 
@@ -2430,11 +2794,11 @@ function renderNotas() {
       <div class="nota-top">
         <span class="nota-fornecedor">${n.fornecedor} <span style="font-weight:400;font-size:11px;color:var(--texto3)">NF ${n.numero_nf||''}</span></span>
         <div style="display:flex;align-items:center;gap:8px;">
-          <span class="nota-valor admin-only">${fmt(n.valor_bruto)}</span>
+          <span class="nota-valor admin-only">${fmtR(n.valor_bruto)}</span>
           <span style="color:var(--texto3);font-size:16px;">›</span>
         </div>
       </div>
-      <div class="nota-desc">${n.natureza||''} · ${itens.length} ITEN${itens.length!==1?'S':''} · ${n.data}${n.frete>0?' · 🚚 '+fmt(n.frete):''}</div>
+      <div class="nota-desc">${n.natureza||''} · ${itens.length} ITEN${itens.length!==1?'S':''} · ${n.data}${n.frete>0?' · 🚚 '+fmtR(n.frete):''}</div>
       <div class="tags">
         <span class="tag ${n.obra==='EDR'?'tag-estoque':n.obra==='EDR_ESCRITORIO'?'tag-nat':'tag-obra'}">${n.obra==='EDR'?'📦 ESTOQUE':n.obra==='EDR_ESCRITORIO'?'🏢 ESCRITÓRIO':n.obra}</span>
         <span class="tag tag-nat">${n.natureza||''}</span>
@@ -2452,7 +2816,7 @@ function renderNotas() {
 function atualizarTotalComFrete() {
   const frete = parseFloat(document.getElementById('f-frete').value)||0;
   const frRow = document.getElementById('frete-total-row');
-  if (frete > 0) { document.getElementById('frete-total-val').textContent = fmt(frete); frRow.classList.remove('hidden'); }
+  if (frete > 0) { document.getElementById('frete-total-val').textContent = fmtR(frete); frRow.classList.remove('hidden'); }
   else frRow.classList.add('hidden');
 }
 
@@ -2741,8 +3105,8 @@ function renderItensForm() {
   const lista = document.getElementById('itens-lista'), totalRow = document.getElementById('item-total-row');
   if (!itensForm.length) { lista.innerHTML = ''; totalRow.classList.add('hidden'); return; }
   totalRow.classList.remove('hidden');
-  document.getElementById('item-total-val').textContent = fmt(itensForm.reduce((s,i) => s+i.total, 0));
-  lista.innerHTML = itensForm.map((item, idx) => `<div class="item-row"><div class="item-row-info"><div class="item-row-desc">${item.desc}</div><div class="item-row-meta">${Number(item.qtd)%1===0?item.qtd:Number(item.qtd).toFixed(3)} ${item.unidade} · ${fmt(item.preco)}/UN · <span style="color:${item.credito?'#15803d':'#dc2626'};font-weight:700;">${item.credito?'✓ CRÉDITO':'✗ SEM CRÉDITO'}</span></div></div><div class="item-row-val">${fmt(item.total)}</div><button class="item-row-del" onclick="removerItem(${idx})">🗑</button></div>`).join('');
+  document.getElementById('item-total-val').textContent = fmtR(itensForm.reduce((s,i) => s+i.total, 0));
+  lista.innerHTML = itensForm.map((item, idx) => `<div class="item-row"><div class="item-row-info"><div class="item-row-desc">${item.desc}</div><div class="item-row-meta">${Number(item.qtd)%1===0?item.qtd:Number(item.qtd).toFixed(3)} ${item.unidade} · ${fmtR(item.preco)}/UN · <span style="color:${item.credito?'#15803d':'#dc2626'};font-weight:700;">${item.credito?'✓ CRÉDITO':'✗ SEM CRÉDITO'}</span></div></div><div class="item-row-val">${fmtR(item.total)}</div><button class="item-row-del" onclick="removerItem(${idx})">🗑</button></div>`).join('');
 }
 
 // SALVAR NOTA
@@ -3190,7 +3554,7 @@ function copiarSQL() { navigator.clipboard.writeText(SQL_SETUP).then(() => showT
 // ══════════════════════════════════════════
 function setView(v) {
   syncBnav(v);
-  const views = ['dashboard','obras','estoque','notas','form','creditos','setup','catalogo','banco'];
+  const views = ['dashboard','obras','estoque','notas','form','creditos','setup','catalogo','banco','relatorio'];
   views.forEach(name => {
     document.getElementById(`view-${name}`)?.classList.toggle('hidden', name !== v);
     const nb = document.getElementById(`nav-${name}`);
@@ -3200,6 +3564,7 @@ function setView(v) {
   if (v === 'obras') renderObrasView();
   if (v === 'catalogo') renderCatalogo();
   if (v === 'banco') renderBanco();
+  if (v === 'relatorio') initRelatorio();
 }
 
 function renderBanco() {
@@ -3217,7 +3582,7 @@ function renderBanco() {
             <div style="font-size:11px;color:var(--texto3);margin-top:2px;">${ls.length} lançamento${ls.length!==1?'s':''}</div>
           </div>
           <div style="text-align:right;">
-            <div style="font-weight:700;color:var(--verde-hl);font-size:13px;">${fmt(total)}</div>
+            <div style="font-weight:700;color:var(--verde-hl);font-size:13px;">${fmtR(total)}</div>
             <div style="font-size:10px;color:var(--texto3);">ID: ${o.id?.substring(0,8)}…</div>
           </div>
         </div>`;
@@ -3246,7 +3611,7 @@ function renderBanco() {
             <div style="font-weight:700;font-size:13px;">${nome}</div>
             <div style="font-size:11px;color:var(--texto3);margin-top:2px;">${d.cnpj || 'CNPJ não informado'} · ${d.qtd} nota${d.qtd!==1?'s':''}</div>
           </div>
-          <div style="font-weight:700;color:var(--verde-hl);font-size:13px;">${fmt(d.total)}</div>
+          <div style="font-weight:700;color:var(--verde-hl);font-size:13px;">${fmtR(d.total)}</div>
         </div>`
       ).join('');
     }
@@ -3330,10 +3695,10 @@ function abrirNota(id) {
     <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--borda);">
       <div style="flex:1;">
         <div style="font-weight:600;font-size:13px;color:var(--branco);">${it.desc}</div>
-        <div style="font-size:11px;color:var(--texto2);margin-top:3px;">${(()=>{const q=Number(it.qtd);return q%1===0?q:q.toFixed(3);})()} ${it.unidade||'UN'} × ${fmt(it.preco||0)}/UN${it.desconto>0?' · Desc: '+fmt(it.desconto):''}</div>
+        <div style="font-size:11px;color:var(--texto2);margin-top:3px;">${(()=>{const q=Number(it.qtd);return q%1===0?q:q.toFixed(3);})()} ${it.unidade||'UN'} × ${fmtR(it.preco||0)}/UN${it.desconto>0?' · Desc: '+fmtR(it.desconto):''}</div>
       </div>
       <div style="text-align:right;flex-shrink:0;">
-        ${isAdmin ? `<div style="font-weight:700;color:var(--verde-hl);">${fmt(it.total||0)}</div>` : ''}
+        ${isAdmin ? `<div style="font-weight:700;color:var(--verde-hl);">${fmtR(it.total||0)}</div>` : ''}
         <div style="font-size:10px;margin-top:2px;"><span style="color:${it.credito?'var(--verde-hl)':'#f87171'};font-weight:700;">${it.credito?'✓ CRÉDITO':'✗ SEM CRÉDITO'}</span></div>
       </div>
     </div>`).join('') : '<div style="color:var(--texto3);font-size:13px;padding:12px 0;">Nenhum item registrado.</div>';
@@ -3357,7 +3722,7 @@ function abrirNota(id) {
         <div><div style="color:var(--texto3);font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">Natureza</div><div style="color:var(--branco);font-weight:600;">${n.natureza||'—'}</div></div>
         <div><div style="color:var(--texto3);font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">Destino</div><div style="color:var(--branco);font-weight:600;">${n.obra==='EDR'?'📦 Estoque':n.obra==='EDR_ESCRITORIO'?'🏢 Escritório':n.obra}</div></div>
         <div><div style="color:var(--texto3);font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">Crédito</div><div style="font-weight:700;color:${n.credito_status==='sim'?'var(--verde-hl)':n.credito_status==='misto'?'var(--amarelo)':'#f87171'};">${n.credito_status==='sim'?'✓ Sim':n.credito_status==='misto'?'⚡ Parcial':'✗ Não'}</div></div>
-        ${isAdmin ? `<div><div style="color:var(--texto3);font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">Total</div><div style="font-weight:800;color:var(--verde-hl);">${fmt(total)}</div></div>` : ''}
+        ${isAdmin ? `<div><div style="color:var(--texto3);font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">Total</div><div style="font-weight:800;color:var(--verde-hl);">${fmtR(total)}</div></div>` : ''}
       </div>
       ${n.obs ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--borda);font-size:12px;color:var(--texto2);">📝 ${n.obs}</div>` : ''}
     </div>
@@ -3371,9 +3736,9 @@ function abrirNota(id) {
     <!-- TOTAIS -->
     ${isAdmin && (frete > 0 || itens.length > 0) ? `
     <div style="margin-top:12px;border-top:1px solid var(--borda);padding-top:12px;">
-      ${itens.length > 1 ? `<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--texto2);margin-bottom:6px;"><span>Subtotal itens</span><span>${fmt(subtotal)}</span></div>` : ''}
-      ${frete > 0 ? `<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--verde-hl);margin-bottom:6px;"><span>🚚 Frete</span><span>${fmt(frete)}</span></div>` : ''}
-      <div style="display:flex;justify-content:space-between;font-weight:800;font-size:15px;color:var(--branco);"><span>TOTAL</span><span style="color:var(--verde-hl);">${fmt(total)}</span></div>
+      ${itens.length > 1 ? `<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--texto2);margin-bottom:6px;"><span>Subtotal itens</span><span>${fmtR(subtotal)}</span></div>` : ''}
+      ${frete > 0 ? `<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--verde-hl);margin-bottom:6px;"><span>🚚 Frete</span><span>${fmtR(frete)}</span></div>` : ''}
+      <div style="display:flex;justify-content:space-between;font-weight:800;font-size:15px;color:var(--branco);"><span>TOTAL</span><span style="color:var(--verde-hl);">${fmtR(total)}</span></div>
     </div>` : ''}
   `;
 
@@ -3498,7 +3863,7 @@ function syncBnav(v) {
     const btn = document.getElementById('bnav-' + id);
     if (btn) btn.classList.toggle('active', id === v);
   });
-  const moreActive = ['form','creditos','catalogo','banco','setup'].includes(v);
+  const moreActive = ['form','creditos','catalogo','banco','setup','relatorio'].includes(v);
   document.getElementById('bnav-more-btn')?.classList.toggle('active', moreActive);
   ['form','creditos','catalogo','banco','setup'].forEach(id => {
     const btn = document.getElementById('bnav-' + id);
@@ -3512,6 +3877,302 @@ document.addEventListener('click', e => {
 function closeModalOutside(e, w) { if (e.target === document.getElementById(`modal-${w}`)) fecharModal(w); }
 
 function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.remove('hidden'); setTimeout(() => t.classList.add('hidden'), 3000); }
+
+// ══════════════════════════════════════════
+// MÓDULO RELATÓRIO F8
+// ══════════════════════════════════════════
+
+const MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+const CAT_CORES = {
+  alimentacao:'#e67e22',alvenaria:'#95a5a6',cobertura:'#e74c3c',combustivel:'#f39c12',
+  doc:'#9b59b6',eletrica:'#f1c40f',epi:'#1abc9c',esgoto:'#7f8c8d',esquadria:'#3498db',
+  expediente:'#bdc3c7',ferro:'#7f8c8d',ferramenta:'#e67e22',forma:'#8e44ad',
+  gesso:'#ecf0f1',granito:'#95a5a6',hidraulica:'#2980b9',impermeab:'#16a085',
+  limpeza:'#27ae60',locacao:'#d35400',loucas:'#2ecc71',mao:'#e74c3c',
+  pintura:'#f39c12',rev_cer:'#c0392b',terreno:'#6d4c41',generico:'#7f8c8d',outros:'#546e7a'
+};
+
+function initRelatorio() {
+  // Preencher filtro de obras
+  const selObra = document.getElementById('rel-obra');
+  if (selObra) {
+    const cur = selObra.value;
+    selObra.innerHTML = '<option value="">🏗 Todas as obras</option>' +
+      obras.map(o => `<option value="${o.id}" ${o.id===cur?'selected':''}>${o.nome}</option>`).join('');
+  }
+  // Preencher filtro de anos
+  const selAno = document.getElementById('rel-ano');
+  if (selAno) {
+    const anos = [...new Set(lancamentos.map(l => l.data?.substring(0,4)).filter(Boolean))].sort().reverse();
+    const cur = selAno.value;
+    selAno.innerHTML = '<option value="">📅 Todos os anos</option>' +
+      anos.map(a => `<option value="${a}" ${a===cur?'selected':''}>${a}</option>`).join('');
+  }
+  renderRelatorio();
+}
+
+function filtrarLancamentos() {
+  const obraId = document.getElementById('rel-obra')?.value || '';
+  const ano    = document.getElementById('rel-ano')?.value  || '';
+  return lancamentos.filter(l => {
+    if (obraId && l.obra_id !== obraId) return false;
+    if (ano && (!l.data || !l.data.startsWith(ano))) return false;
+    return true;
+  });
+}
+
+function renderRelatorio() {
+  const secao = document.getElementById('rel-secao')?.value || 'tudo';
+  const ls = filtrarLancamentos();
+  const el = document.getElementById('rel-content');
+  if (!el) return;
+
+  if (!ls.length) {
+    el.innerHTML = `<div style="text-align:center;padding:60px 20px;color:var(--texto3);font-size:13px;">
+      Nenhum lançamento encontrado para os filtros selecionados.</div>`;
+    return;
+  }
+
+  let html = '';
+  if (secao === 'tudo' || secao === 'categoria') html += buildSecaoCategoria(ls);
+  if (secao === 'tudo' || secao === 'mensal')    html += buildSecaoMensal(ls);
+  if (secao === 'tudo' || secao === 'comparativo') html += buildSecaoComparativo();
+  el.innerHTML = html;
+}
+
+function buildSecaoCategoria(ls) {
+  // Agrupa por categoria
+  const map = {};
+  ls.forEach(l => {
+    const cat = l.categoria || 'outros';
+    if (!map[cat]) map[cat] = 0;
+    map[cat] += Number(l.total || 0);
+  });
+  const total = Object.values(map).reduce((s,v) => s+v, 0);
+  const itens = Object.entries(map).sort((a,b) => b[1]-a[1]);
+
+  const barras = itens.map(([cat, val]) => {
+    const pct = total > 0 ? (val/total*100).toFixed(1) : 0;
+    const cor = CAT_CORES[cat] || '#7f8c8d';
+    const lb  = getCatLabel(cat);
+    return `<div style="margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px;">
+        <span style="color:var(--branco);font-weight:600;">${lb}</span>
+        <span style="color:var(--texto2);">${fmtR(val)} <span style="color:var(--texto3);">(${pct}%)</span></span>
+      </div>
+      <div style="height:8px;background:rgba(255,255,255,0.07);border-radius:4px;overflow:hidden;">
+        <div style="height:100%;width:${pct}%;background:${cor};border-radius:4px;transition:width .5s;"></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  return `<div class="rel-card">
+    <div class="rel-card-title">🏷 CUSTO POR CATEGORIA</div>
+    <div style="margin-bottom:16px;">
+      <span style="font-size:24px;font-weight:700;color:var(--verde-hl);">${fmtR(total)}</span>
+      <span style="font-size:11px;color:var(--texto3);margin-left:8px;">total lançado</span>
+    </div>
+    ${barras}
+  </div>`;
+}
+
+function buildSecaoMensal(ls) {
+  // Agrupa por ano-mês
+  const map = {};
+  ls.forEach(l => {
+    if (!l.data) return;
+    const ym = l.data.substring(0,7); // "2024-03"
+    if (!map[ym]) map[ym] = 0;
+    map[ym] += Number(l.total || 0);
+  });
+  const chaves = Object.keys(map).sort();
+  if (!chaves.length) return '';
+  const maxVal = Math.max(...Object.values(map));
+
+  const colunas = chaves.map(ym => {
+    const [ano, mes] = ym.split('-');
+    const val = map[ym];
+    const pct = maxVal > 0 ? (val/maxVal*100) : 0;
+    return `<div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;min-width:40px;">
+      <div style="font-size:10px;color:var(--verde-hl);font-weight:700;">${fmtR(val,true)}</div>
+      <div style="width:100%;background:rgba(255,255,255,0.06);border-radius:4px 4px 0 0;height:100px;display:flex;align-items:flex-end;">
+        <div style="width:100%;height:${pct}%;background:linear-gradient(0deg,var(--verde2),var(--verde3));border-radius:4px 4px 0 0;transition:height .5s;min-height:4px;"></div>
+      </div>
+      <div style="font-size:10px;color:var(--texto3);text-align:center;line-height:1.2;">${MESES[parseInt(mes)-1]}<br><span style="color:var(--texto4);font-size:9px;">${ano}</span></div>
+    </div>`;
+  }).join('');
+
+  return `<div class="rel-card" style="margin-top:16px;">
+    <div class="rel-card-title">📅 EVOLUÇÃO MENSAL</div>
+    <div style="display:flex;gap:6px;align-items:flex-end;overflow-x:auto;padding-bottom:4px;">
+      ${colunas}
+    </div>
+  </div>`;
+}
+
+function buildSecaoComparativo() {
+  if (obras.length < 2) return '';
+  // Cada obra → total gasto
+  const dados = obras.map(o => {
+    const total = lancamentos.filter(l => l.obra_id === o.id).reduce((s,l) => s+Number(l.total||0), 0);
+    return { nome: o.nome, total };
+  }).filter(d => d.total > 0).sort((a,b) => b.total - a.total);
+
+  if (!dados.length) return '';
+  const maxVal = dados[0].total;
+  const cores = ['#2ecc71','#3498db','#e67e22','#9b59b6','#e74c3c','#1abc9c','#f39c12','#27ae60'];
+
+  const linhas = dados.map((d, i) => {
+    const pct = maxVal > 0 ? (d.total/maxVal*100).toFixed(1) : 0;
+    const cor = cores[i % cores.length];
+    return `<div style="margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px;">
+        <span style="color:var(--branco);font-weight:600;max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${d.nome}</span>
+        <span style="color:var(--texto2);">${fmtR(d.total)}</span>
+      </div>
+      <div style="height:10px;background:rgba(255,255,255,0.07);border-radius:5px;overflow:hidden;">
+        <div style="height:100%;width:${pct}%;background:${cor};border-radius:5px;transition:width .5s;"></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  return `<div class="rel-card" style="margin-top:16px;">
+    <div class="rel-card-title">⚖ COMPARATIVO ENTRE OBRAS</div>
+    ${linhas}
+  </div>`;
+}
+
+function getCatLabel(cat) {
+  const CATS_OPTS_MAP = {
+    alimentacao:'🍽 Alimentação',alvenaria:'🧱 Alvenaria',cobertura:'🏠 Cobertura',
+    combustivel:'⛽ Combustível',doc:'📋 Documentação',eletrica:'⚡ Elétrica',
+    epi:'🦺 EPI/Segurança',esgoto:'🪠 Esgoto',esquadria:'🪟 Esquadrias',
+    expediente:'📎 Expediente',ferro:'⚙ Aço/Ferro',ferramenta:'🔨 Ferramentas',
+    forma:'🪵 Forma/Madeira',gesso:'⬜ Gesso',granito:'🪨 Granito/Pedra',
+    hidraulica:'🚿 Hidráulica',impermeab:'💧 Impermeabilização',limpeza:'🧹 Limpeza',
+    locacao:'🏗 Locação',loucas:'🛁 Louças',mao:'👷 Mão de Obra',
+    pintura:'🖌 Pintura',rev_cer:'🟫 Revest.Cerâmico',terreno:'🏡 Terreno',
+    generico:'❓ Genérico',outros:'📦 Outros'
+  };
+  return CATS_OPTS_MAP[cat] || cat;
+}
+
+function fmtR(v, abrev = false) {
+  const n = Number(v) || 0;
+  if (abrev && n >= 1000) return 'R$' + (n/1000).toFixed(1) + 'k';
+  return n.toLocaleString('pt-BR', { style:'currency', currency:'BRL' });
+}
+
+async function exportarRelatorioPDF() {
+  const obraId = document.getElementById('rel-obra')?.value || '';
+  const ano    = document.getElementById('rel-ano')?.value  || '';
+  const ls     = filtrarLancamentos();
+  const obraNome = obraId ? (obras.find(o=>o.id===obraId)?.nome || 'Todas') : 'Todas as Obras';
+
+  // Monta dados para PDF
+  const map = {};
+  ls.forEach(l => {
+    const cat = l.categoria || 'outros';
+    if (!map[cat]) map[cat] = 0;
+    map[cat] += Number(l.total || 0);
+  });
+  const totalGeral = Object.values(map).reduce((s,v)=>s+v,0);
+  const catItens = Object.entries(map).sort((a,b)=>b[1]-a[1]);
+
+  // Agrupa por mês
+  const mapMes = {};
+  ls.forEach(l => {
+    if (!l.data) return;
+    const ym = l.data.substring(0,7);
+    if (!mapMes[ym]) mapMes[ym] = 0;
+    mapMes[ym] += Number(l.total || 0);
+  });
+  const meses = Object.entries(mapMes).sort((a,b)=>a[0].localeCompare(b[0]));
+
+  const dataHoje = new Date().toLocaleDateString('pt-BR');
+  const periodoLabel = ano ? `Ano ${ano}` : 'Todo o período';
+
+  const linhasCategoria = catItens.map(([cat, val]) => {
+    const pct = totalGeral > 0 ? (val/totalGeral*100).toFixed(1) : '0.0';
+    return `<tr>
+      <td style="padding:6px 10px;font-size:11px;">${getCatLabel(cat)}</td>
+      <td style="padding:6px 10px;text-align:right;font-size:11px;">${fmtR(val)}</td>
+      <td style="padding:6px 10px;text-align:right;font-size:11px;">${pct}%</td>
+    </tr>`;
+  }).join('');
+
+  const linhasMensal = meses.map(([ym, val]) => {
+    const [a, m] = ym.split('-');
+    return `<tr>
+      <td style="padding:6px 10px;font-size:11px;">${MESES[parseInt(m)-1]} ${a}</td>
+      <td style="padding:6px 10px;text-align:right;font-size:11px;">${fmtR(val)}</td>
+    </tr>`;
+  }).join('');
+
+  const comparativo = obras.map(o => {
+    const tot = lancamentos.filter(l=>l.obra_id===o.id).reduce((s,l)=>s+Number(l.total||0),0);
+    if (!tot) return '';
+    return `<tr>
+      <td style="padding:6px 10px;font-size:11px;">${o.nome}</td>
+      <td style="padding:6px 10px;text-align:right;font-size:11px;">${fmtR(tot)}</td>
+    </tr>`;
+  }).filter(Boolean).join('');
+
+  const htmlPDF = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="UTF-8">
+<style>
+  body{font-family:Arial,sans-serif;color:#111;background:#fff;padding:24px;font-size:12px;}
+  h1{font-size:18px;margin:0 0 4px 0;color:#1a1a1a;}
+  .sub{font-size:11px;color:#555;margin-bottom:20px;}
+  .section{margin-bottom:24px;}
+  .section-title{font-size:13px;font-weight:700;color:#1a1a1a;border-bottom:2px solid #2ecc71;padding-bottom:4px;margin-bottom:10px;}
+  table{width:100%;border-collapse:collapse;}
+  th{background:#f0f0f0;padding:7px 10px;text-align:left;font-size:11px;font-weight:700;}
+  th.r{text-align:right;}
+  tr:nth-child(even){background:#f9f9f9;}
+  .total-row td{font-weight:700;border-top:2px solid #2ecc71;background:#f0fff4;}
+  .footer{margin-top:30px;font-size:10px;color:#aaa;text-align:center;border-top:1px solid #eee;padding-top:10px;}
+</style>
+</head>
+<body>
+<h1>📈 RELATÓRIO DE OBRAS — EDR</h1>
+<div class="sub">Obra: <b>${obraNome}</b> · Período: <b>${periodoLabel}</b> · Emitido em ${dataHoje}</div>
+
+<div class="section">
+  <div class="section-title">CUSTO POR CATEGORIA</div>
+  <table>
+    <tr><th>Categoria</th><th class="r">Valor</th><th class="r">%</th></tr>
+    ${linhasCategoria}
+    <tr class="total-row"><td>TOTAL</td><td style="text-align:right">${fmtR(totalGeral)}</td><td style="text-align:right">100%</td></tr>
+  </table>
+</div>
+
+${meses.length ? `<div class="section">
+  <div class="section-title">EVOLUÇÃO MENSAL</div>
+  <table>
+    <tr><th>Mês</th><th class="r">Valor</th></tr>
+    ${linhasMensal}
+    <tr class="total-row"><td>TOTAL</td><td style="text-align:right">${fmtR(totalGeral)}</td></tr>
+  </table>
+</div>` : ''}
+
+${obras.length > 1 ? `<div class="section">
+  <div class="section-title">COMPARATIVO ENTRE OBRAS</div>
+  <table>
+    <tr><th>Obra</th><th class="r">Total Gasto</th></tr>
+    ${comparativo}
+  </table>
+</div>` : ''}
+
+<div class="footer">EDR System · ${dataHoje}</div>
+</body></html>`;
+
+  const w = window.open('', '_blank');
+  w.document.write(htmlPDF);
+  w.document.close();
+  setTimeout(() => { w.print(); }, 400);
+}
 </script>
 </body>
 </html>
