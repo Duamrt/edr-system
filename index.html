@@ -1152,7 +1152,7 @@ body::before {
 
 <!-- MODAL NOVO MATERIAL -->
 <!-- Modal Novo/Editar Usuário -->
-<div id="modal-usuario" class="modal-overlay hidden" onclick="closeModalOutside(event,'usuario')">
+<div id="modal-usuario" class="modal-overlay hidden">
   <div class="modal" style="max-width:400px;">
     <div class="modal-title">
       <span id="modal-usuario-titulo">NOVO USUÁRIO</span>
@@ -1183,7 +1183,7 @@ body::before {
   </div>
 </div>
 
-<div id="modal-material" class="modal-overlay hidden" onclick="closeModalOutside(event,'material')">
+<div id="modal-material" class="modal-overlay hidden">
   <div class="modal" style="max-width:420px;">
     <div class="modal-title">🏷 MATERIAL <button class="modal-close" onclick="fecharModal('material')">✕</button></div>
     <div id="modal-material-aviso" class="hidden" style="background:#fef3c7;border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:12px;color:#92400e;"></div>
@@ -1232,7 +1232,7 @@ body::before {
 </div>
 
 <!-- MODAL DETALHE DA NOTA -->
-<div id="modal-nota" class="modal-overlay hidden" onclick="closeModalOutside(event,'nota')">
+<div id="modal-nota" class="modal-overlay hidden">
   <div class="modal" style="max-height:92vh;">
     <div class="modal-title">🧾 NOTA FISCAL <button class="modal-close" onclick="fecharModal('nota')">✕</button></div>
     <div id="modal-nota-body"></div>
@@ -1240,7 +1240,7 @@ body::before {
 </div>
 
 <!-- MODAL ENTRADA DIRETA -->
-<div id="modal-entrada" class="modal-overlay hidden" onclick="closeModalOutside(event,'entrada')">
+<div id="modal-entrada" class="modal-overlay hidden">
   <div class="modal">
     <div class="modal-title">📥 ENTRADA DIRETA (SEM NOTA) <button class="modal-close" onclick="fecharModal('entrada')">✕</button></div>
 
@@ -1279,7 +1279,7 @@ body::before {
 </div>
 
 <!-- MODAL DISTRIBUIÇÃO POR ITEM -->
-<div id="modal-dist" class="modal-overlay hidden" onclick="closeModalOutside(event,'dist')">
+<div id="modal-dist" class="modal-overlay hidden">
   <div class="modal">
     <div class="modal-title">📤 DISTRIBUIR PARA OBRA <button class="modal-close" onclick="fecharModal('dist')">✕</button></div>
     <div class="modal-info" id="modal-nota-info"></div>
@@ -1304,7 +1304,7 @@ body::before {
 </div>
 
 <!-- MODAL NOVO LANÇAMENTO OBRA -->
-<div id="modal-lanc" class="modal-overlay hidden" onclick="closeModalOutside(event,'lanc')">
+<div id="modal-lanc" class="modal-overlay hidden">
   <div class="modal">
     <div class="modal-title">➕ LANÇAMENTO NA OBRA <button class="modal-close" onclick="fecharModal('lanc')">✕</button></div>
     <div class="field"><label>OBRA *</label><select id="lanc-obra"></select></div>
@@ -1325,7 +1325,7 @@ body::before {
 </div>
 
 <!-- MODAL NOVA OBRA -->
-<div id="modal-obra" class="modal-overlay hidden" onclick="closeModalOutside(event,'obra')">
+<div id="modal-obra" class="modal-overlay hidden">
   <div class="modal">
     <div class="modal-title">🏗 NOVA OBRA <button class="modal-close" onclick="fecharModal('obra')">✕</button></div>
     <div class="field"><label>NOME DA OBRA *</label><input type="text" id="nova-obra-nome" placeholder="EX: RESIDENCIAL SILVA"></div>
