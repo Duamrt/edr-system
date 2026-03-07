@@ -1268,7 +1268,8 @@ body::before {
       </div>
       <div id="entrada-estoque-info" style="font-size:11px;color:var(--texto3);">Material entra no estoque. Distribua para a obra depois pelo F3.</div>
       <div id="entrada-obra-wrap" class="hidden">
-        <div class="field" style="margin:0;"><label>OBRA DE DESTINO *</label><select id="entrada-obra-id" style="min-height:44px;font-size:14px;"></select></div>
+        <div class="field" style="margin:0;margin-bottom:10px;"><label>OBRA DE DESTINO *</label><select id="entrada-obra-id" style="min-height:44px;font-size:14px;"></select></div>
+        <div class="field" style="margin:0;"><label>ETAPA / CENTRO DE CUSTO</label><select id="entrada-etapa" style="min-height:44px;font-size:14px;width:100%;background:var(--bg3);border:1px solid var(--borda2);border-radius:8px;padding:10px 12px;color:var(--branco);font-family:inherit;"></select></div>
       </div>
     </div>
 
@@ -4046,6 +4047,8 @@ function abrirEntradaDireta() {
   document.getElementById('entrada-obs').value = '';
   const sel = document.getElementById('entrada-obra-id');
   sel.innerHTML = obras.map(o => `<option value="${o.id}">${o.nome}</option>`).join('');
+  const selEt = document.getElementById('entrada-etapa');
+  if (selEt) selEt.innerHTML = etapaSelectOpts('', true);
   setDestinoEntrada('estoque');
   document.getElementById('modal-entrada').classList.remove('hidden');
   setTimeout(() => document.getElementById('entrada-desc').focus(), 100);
@@ -4128,15 +4131,17 @@ async function salvarEntradaDireta() {
   if (qtd <= 0) { showToast('⚠ INFORME A QUANTIDADE.'); return; }
   if (destinoObra && !obraId) { showToast('⚠ SELECIONE A OBRA.'); return; }
   try {
-    const [nova] = await sbPost('entradas_diretas', { item_desc: desc, unidade, qtd, preco, fornecedor, data, obs });
-    entradasDiretas.unshift(nova);
     if (destinoObra && obraObj) {
+      // DIRETO NA OBRA — não gera estoque, só lançamento de custo
       const valor = qtd * preco;
-      await sbPost('distribuicoes', { nota_id: null, item_desc: desc, item_idx: 0, obra_id: obraId, obra_nome: obraObj.nome, qtd, valor, data });
-      const [lanc] = await sbPost('lancamentos', { obra_id: obraId, descricao: desc + (fornecedor ? ` · ${fornecedor}` : ''), qtd, preco, total: valor, data, obs: obs || 'ENTRADA DIRETA SEM NF' });
+      const etapa = document.getElementById('entrada-etapa')?.value || '';
+      const [lanc] = await sbPost('lancamentos', { obra_id: obraId, descricao: desc + (fornecedor ? ` · ${fornecedor}` : ''), qtd, preco, total: valor, data, obs: obs || 'ENTRADA DIRETA SEM NF', etapa });
       lancamentos.unshift(lanc);
       showToast(`✅ ${qtd} ${unidade} de ${desc} → ${obraObj.nome}!`);
     } else {
+      // ESTOQUE — entra no estoque, distribui depois
+      const [nova] = await sbPost('entradas_diretas', { item_desc: desc, unidade, qtd, preco, fornecedor, data, obs, obra: 'EDR' });
+      entradasDiretas.unshift(nova);
       showToast(`✅ ${qtd} ${unidade} de ${desc} no estoque!`);
     }
     fecharModal('entrada');
