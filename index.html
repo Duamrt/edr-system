@@ -3982,10 +3982,10 @@ function buildSecaoCategoria(ls) {
     const pct = total > 0 ? (val/total*100).toFixed(1) : 0;
     const cor = CAT_CORES[cat] || '#7f8c8d';
     const lb  = getCatLabel(cat);
-    return `<div style="margin-bottom:10px;">
-      <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px;">
+    return `<div onclick="abrirDrilldownCategoria('${cat}')" style="margin-bottom:4px;cursor:pointer;padding:8px;border-radius:8px;transition:background .15s;" onmouseover="this.style.background='rgba(255,255,255,0.04)'" onmouseout="this.style.background='transparent'">
+      <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px;align-items:center;">
         <span style="color:var(--branco);font-weight:600;">${lb}</span>
-        <span style="color:var(--texto2);">${fmtR(val)} <span style="color:var(--texto3);">(${pct}%)</span></span>
+        <span style="color:var(--texto2);">${fmtR(val)} <span style="color:var(--texto3);">(${pct}%)</span> <span style="color:var(--texto3);font-size:10px;margin-left:4px;">🔍</span></span>
       </div>
       <div style="height:8px;background:rgba(255,255,255,0.07);border-radius:4px;overflow:hidden;">
         <div style="height:100%;width:${pct}%;background:${cor};border-radius:4px;transition:width .5s;"></div>
@@ -3999,9 +3999,82 @@ function buildSecaoCategoria(ls) {
       <span style="font-size:24px;font-weight:700;color:var(--verde-hl);">${fmtR(total)}</span>
       <span style="font-size:11px;color:var(--texto3);margin-left:8px;">total lançado</span>
     </div>
+    <div style="font-size:10px;color:var(--texto3);margin-bottom:8px;">💡 Clique em qualquer categoria para ver os lançamentos</div>
     ${barras}
   </div>`;
 }
+
+function abrirDrilldownCategoria(cat) {
+  const ls = filtrarLancamentos();
+  const itens = ls.filter(l => getCatFromLanc(l) === cat)
+                  .sort((a,b) => Number(b.total||0) - Number(a.total||0));
+  const total = itens.reduce((s,l) => s + Number(l.total||0), 0);
+  const lb = getCatLabel(cat);
+  const cor = CAT_CORES[cat] || '#7f8c8d';
+
+  // Buscar nome da obra
+  const obraMap = {};
+  obras.forEach(o => obraMap[o.id] = o.nome);
+
+  const linhas = itens.map(l => {
+    const obraNome = obraMap[l.obra_id] || '—';
+    const data = l.data ? l.data.substring(0,10).split('-').reverse().join('/') : '—';
+    return `<tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+      <td style="padding:8px 10px;font-size:11px;color:var(--texto3);">${data}</td>
+      <td style="padding:8px 10px;font-size:11px;color:var(--branco);">${l.descricao || '—'}</td>
+      <td style="padding:8px 10px;font-size:11px;color:var(--texto2);">${obraNome}</td>
+      <td style="padding:8px 10px;font-size:11px;color:var(--verde-hl);text-align:right;font-weight:700;">${fmtR(l.total)}</td>
+    </tr>`;
+  }).join('');
+
+  const html = `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;">
+      <div style="width:12px;height:12px;border-radius:50%;background:${cor};flex-shrink:0;"></div>
+      <div>
+        <div style="font-size:18px;font-weight:700;color:var(--branco);">${lb}</div>
+        <div style="font-size:12px;color:var(--texto3);">${itens.length} lançamento${itens.length!==1?'s':''}</div>
+      </div>
+      <div style="margin-left:auto;text-align:right;">
+        <div style="font-size:20px;font-weight:700;color:var(--verde-hl);">${fmtR(total)}</div>
+        <div style="font-size:10px;color:var(--texto3);">total da categoria</div>
+      </div>
+    </div>
+    <div style="overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;">
+        <thead>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.1);">
+            <th style="padding:6px 10px;font-size:10px;color:var(--texto3);text-align:left;letter-spacing:1px;">DATA</th>
+            <th style="padding:6px 10px;font-size:10px;color:var(--texto3);text-align:left;letter-spacing:1px;">DESCRIÇÃO</th>
+            <th style="padding:6px 10px;font-size:10px;color:var(--texto3);text-align:left;letter-spacing:1px;">OBRA</th>
+            <th style="padding:6px 10px;font-size:10px;color:var(--texto3);text-align:right;letter-spacing:1px;">VALOR</th>
+          </tr>
+        </thead>
+        <tbody>${linhas}</tbody>
+      </table>
+    </div>
+    ${itens.length === 0 ? '<div style="text-align:center;padding:40px;color:var(--texto3);">Nenhum lançamento nesta categoria.</div>' : ''}
+  `;
+
+  // Criar modal
+  let overlay = document.getElementById('drilldown-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'drilldown-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+    overlay.onclick = e => { if(e.target===overlay) overlay.remove(); };
+    document.body.appendChild(overlay);
+  }
+  overlay.innerHTML = `
+    <div style="background:var(--bg2);border:1px solid var(--borda);border-radius:14px;width:100%;max-width:700px;max-height:85vh;display:flex;flex-direction:column;overflow:hidden;">
+      <div style="padding:16px 20px;border-bottom:1px solid var(--borda);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;">
+        <span style="font-size:13px;font-weight:700;color:var(--texto2);letter-spacing:1px;">LANÇAMENTOS POR CATEGORIA</span>
+        <button onclick="document.getElementById('drilldown-overlay').remove()" style="background:none;border:none;color:var(--texto3);font-size:20px;cursor:pointer;line-height:1;">×</button>
+      </div>
+      <div style="padding:20px;overflow-y:auto;">${html}</div>
+    </div>
+  `;
+}
+
 
 function buildSecaoMensal(ls) {
   // Agrupa por ano-mês
