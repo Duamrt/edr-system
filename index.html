@@ -1293,7 +1293,7 @@ body::before {
     <div id="dist-valor-preview" style="background:var(--verde-bg);border:1px solid var(--verde-borda);border-radius:8px;padding:10px;margin-bottom:12px;font-size:13px;color:#15803d;font-weight:700;display:none;">
       💰 VALOR PROPORCIONAL: <span id="dist-valor-val">R$ 0,00</span>
     </div>
-    <div class="field"><label>ETAPA DA OBRA</label><select id="dist-etapa" style="width:100%;padding:10px 14px;background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.15);border-radius:10px;color:var(--branco);font-size:13px;font-family:inherit;"></select></div>
+    <div class="field"><label>ETAPA DA OBRA *</label><select id="dist-etapa" style="width:100%;padding:10px 14px;background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.15);border-radius:10px;color:var(--branco);font-size:13px;font-family:inherit;"></select></div>
     <div class="field"><label>OBSERVAÇÃO</label><input type="text" id="dist-obs" placeholder="EX: BLOCO A, SUITE..."></div>
     <div id="dist-historico" class="dist-historico hidden">
       <div class="dist-historico-title">DISTRIBUIÇÕES ANTERIORES DESTE ITEM:</div>
@@ -1317,7 +1317,7 @@ body::before {
       <div class="field"><label>QTD</label><input type="number" id="lanc-qtd" value="1" min="0" step="0.01" style="text-transform:none;"></div>
       <div class="field"><label>VALOR UNIT (R$) *</label><input type="number" id="lanc-preco" placeholder="0,00" min="0" step="0.01" style="text-transform:none;"></div>
     </div>
-    <div class="field"><label>ETAPA DA OBRA</label><select id="lanc-etapa" style="width:100%;padding:10px 14px;background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.15);border-radius:10px;color:var(--branco);font-size:13px;font-family:inherit;"></select></div>
+    <div class="field"><label>ETAPA DA OBRA *</label><select id="lanc-etapa" style="width:100%;padding:10px 14px;background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.15);border-radius:10px;color:var(--branco);font-size:13px;font-family:inherit;"></select></div>
     <div class="field"><label>DATA</label><input type="date" id="lanc-data" style="text-transform:none;"></div>
     <div class="field"><label>OBSERVAÇÃO</label><input type="text" id="lanc-obs" placeholder="OPCIONAL"></div>
     <button class="btn-save" onclick="salvarLancamento()">💾 SALVAR LANÇAMENTO</button>
@@ -2573,6 +2573,7 @@ async function salvarLancamento() {
   if (!descricao) { showToast('⚠ INFORME A DESCRIÇÃO.'); return; }
   if (!obra_id) { showToast('⚠ SELECIONE A OBRA.'); return; }
   if (!preco || preco <= 0) { showToast('⚠ VALOR UNITÁRIO OBRIGATÓRIO — não é permitido lançar com valor zero.'); document.getElementById('lanc-preco').focus(); return; }
+  if (!etapa) { showToast('⚠ SELECIONE O CENTRO DE CUSTO (ETAPA).'); document.getElementById('lanc-etapa')?.focus(); return; }
   try {
     const [novo] = await sbPost('lancamentos', { obra_id, descricao, qtd, preco, total, data, obs, etapa });
     lancamentos.unshift(novo);
@@ -2875,6 +2876,8 @@ async function confirmarDistribuicaoItem() {
   const obs = document.getElementById('dist-obs').value.toUpperCase();
   if (!obraId) { showToast('SELECIONE A OBRA.'); return; }
   if (qtd <= 0) { showToast('INFORME A QUANTIDADE.'); return; }
+  const etapaDistVal = document.getElementById('dist-etapa')?.value || '';
+  if (!etapaDistVal) { showToast('⚠ SELECIONE O CENTRO DE CUSTO (ETAPA).'); document.getElementById('dist-etapa')?.focus(); return; }
   // Permite saldo negativo (material fiado)
   if (m.saldoTotal <= 0 && !m.temNFPendente && m.qtdDireta === 0) {
     if (!confirm(`Saldo atual: ${m.saldoTotal} ${m.unidade}. Confirma saída mesmo assim? (Material fiado)`)) return;
