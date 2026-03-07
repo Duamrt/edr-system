@@ -556,7 +556,15 @@ body::before {
 @media (max-width: 768px) {
 
   .sidebar { display: none !important; }
-  #bottom-nav { display: flex !important; }
+  #demo-banner {
+  bottom: 0 !important;
+}
+@media (max-width: 768px) {
+  #demo-banner {
+    bottom: 64px !important;
+  }
+}
+#bottom-nav { display: flex !important; }
 
   .app-shell { flex-direction: column; }
   .main-content { height: calc(100vh - 48px - 64px); padding-bottom: 80px; }
@@ -1493,8 +1501,7 @@ function entrarModoDemo() {
       const b = document.createElement('div');
       b.id = 'demo-banner';
       b.innerHTML = '&#127916; <strong>MODO DEMO</strong> &mdash; dados fictícios &nbsp;&middot;&nbsp; 4 obras residenciais &nbsp;&middot;&nbsp; nenhuma alteração é salva';
-      const isMobile = window.innerWidth <= 768;
-      b.style.cssText = `position:fixed;bottom:${isMobile?'64px':'0'};left:0;right:0;background:#0d2b16;color:#7bed9f;text-align:center;padding:7px 12px;font-size:11px;letter-spacing:1px;z-index:201;border-top:1px solid rgba(46,204,113,0.4);font-family:inherit;`;
+      b.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#0d2b16;color:#7bed9f;text-align:center;padding:7px 12px;font-size:11px;letter-spacing:1px;z-index:201;border-top:1px solid rgba(46,204,113,0.4);font-family:inherit;';
       document.body.appendChild(b);
       // Empurra conteúdo pra não ficar atrás do banner
       const mc = document.getElementById('main-content');
