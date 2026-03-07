@@ -1880,6 +1880,16 @@ function getCatLabel(key) {
 }
 
 function getCatFromLanc(l) {
+  const desc = l.descricao || "";
+  const dn = desc.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+  const catEstoque = getCatEstoque(desc);
+  if (catEstoque && catEstoque !== "outros") return catEstoque;
+  if (/mao[\s\-]de[\s\-]obra|armador|eletricista|pintor|pedreiro|servente|mestre de obras|encanador|azulejista/.test(dn)) return "mao";
+  if (/aquisicao de terreno|compra de terreno/.test(dn)) return "terreno";
+  if (/contrato|documento|anotacao|alvara|licenca|vistoria|escritura/.test(dn)) return "doc";
+  return "outros";
+}
+function getCatFromLanc_UNUSED(l) {
   const desc = l.descricao || '';
   // Checar mao/doc/terreno que não estão no CATS_ESTOQUE
   if (/m[aã]o[\s\-]de[\s\-]obra|armador|eletricista|pintor|pedreiro|servente|mestre de obras|encanador|azulejista/i.test(desc)) return 'mao';
