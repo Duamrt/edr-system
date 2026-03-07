@@ -1880,23 +1880,55 @@ function getCatLabel(key) {
 }
 
 function getCatFromLanc(l) {
-  const desc = l.descricao || "";
-  const dn = desc.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
-  const catEstoque = getCatEstoque(desc);
-  if (catEstoque && catEstoque !== "outros") return catEstoque;
-  if (/mao[\s\-]de[\s\-]obra|armador|eletricista|pintor|pedreiro|servente|mestre de obras|encanador|azulejista/.test(dn)) return "mao";
-  if (/aquisicao de terreno|compra de terreno/.test(dn)) return "terreno";
-  if (/contrato|documento|anotacao|alvara|licenca|vistoria|escritura/.test(dn)) return "doc";
-  return "outros";
+  // 1. Tentar pela descricao direta do lançamento
+  const desc = (l.descricao || '').trim();
+
+  if (desc) {
+    const cat = _catDeTexto(desc);
+    if (cat !== 'outros') return cat;
+  }
+
+  // 2. Fallback: buscar distribuição ligada a este lançamento
+  //    (lançamentos de estoque têm obs: "Estoque EDR · X lote(s)")
+  //    Encontrar distribuição do mesmo obra_id + data + valor
+  if (distribuicoes && distribuicoes.length) {
+    const distMatch = distribuicoes.find(d =>
+      d.obra_id === l.obra_id &&
+      d.data === l.data &&
+      Math.abs(Number(d.valor) - Number(l.total)) < 0.01
+    );
+    if (distMatch && distMatch.item_desc) {
+      const cat2 = _catDeTexto(distMatch.item_desc);
+      if (cat2 !== 'outros') return cat2;
+    }
+  }
+
+  // 3. Fallback: extrair da obs (ex: "NF 123 · Fornecedor · Baixa automática")
+  const obs = (l.obs || '').trim();
+  if (obs) {
+    const cat3 = _catDeTexto(obs);
+    if (cat3 !== 'outros') return cat3;
+  }
+
+  return 'outros';
 }
-function getCatFromLanc_UNUSED(l) {
-  const desc = l.descricao || '';
-  // Checar mao/doc/terreno que não estão no CATS_ESTOQUE
-  if (/m[aã]o[\s\-]de[\s\-]obra|armador|eletricista|pintor|pedreiro|servente|mestre de obras|encanador|azulejista/i.test(desc)) return 'mao';
-  if (/terreno|aquisicao de terreno|compra de terreno/i.test(desc)) return 'terreno';
-  if (/contrato|documento|art |anotac|registro de contrato|orcamento|alvara|licenca|projeto|vistoria|escritura/i.test(desc)) return 'doc';
-  // Usar getCatEstoque que cobre todas as demais categorias
-  return getCatEstoque(desc) || 'outros';
+
+// Classifica um texto qualquer numa categoria
+function _catDeTexto(texto) {
+  if (!texto) return 'outros';
+  // Limpar separadores comuns ("CIMENTO CP II · Fornecedor" → pegar antes do ·)
+  const partes = texto.split(/[·\|\/]/).map(p => p.trim()).filter(Boolean);
+  for (const parte of partes) {
+    const cat = getCatEstoque(parte);
+    if (cat !== 'outros') return cat;
+  }
+  // Checar categorias que não estão no CATS_ESTOQUE
+  const dn = texto.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  if (/\bmao\b.*\bobra\b|mao-de-obra|m\.?o\.?\b|armador|eletricista|pintor|pedreiro|servente|mestre.*obra|encanador|azulejista|gesseiro|marceneiro|carpinteiro|serralheiro|impermeabilizador|vidraceiro|soldador|operador/.test(dn)) return 'mao';
+  if (/aquisicao.*terreno|compra.*terreno/.test(dn)) return 'terreno';
+  if (/\bart\b|anotacao.*responsab|registro.*contrato|contrato.*obra|alvara|licenca|escritura|vistoria|projeto arq|projeto est/.test(dn)) return 'doc';
+  // Tentar o texto completo
+  return getCatEstoque(texto);
 }
 
 function initRelatorio() {
@@ -1932,13 +1964,13 @@ function renderRelatorio() {
   const obraFiltrada = obraId ? obras.find(o => o.id === obraId) : null;
   const titulo = obraFiltrada ? obraFiltrada.nome : 'Todas as Obras';
 
-  // DEBUG — remover após correção
+  // DEBUG — remover após confirmar correção
   console.log('=== DEBUG RELATÓRIO ===');
-  console.log('Total lançamentos filtrados:', ls.length);
-  ls.slice(0,10).forEach(l => {
+  console.log('Total lançamentos:', ls.length);
+  if (ls.length > 0) console.log('Campos do 1º lançamento:', Object.keys(ls[0]), '| descricao=', JSON.stringify(ls[0].descricao), '| obs=', JSON.stringify(ls[0].obs));
+  ls.slice(0,15).forEach((l,i) => {
     const cat = getCatFromLanc(l);
-    const catDireto = getCatEstoque(l.descricao);
-    console.log(`DESC: "${l.descricao}" → getCatFromLanc: ${cat} | getCatEstoque: ${catDireto}`);
+    console.log(`[${i}] desc=${JSON.stringify(l.descricao)} | obs=${JSON.stringify((l.obs||'').substring(0,50))} | → ${cat}`);
   });
 
   let html = `<div style="margin-bottom:16px;padding:14px 18px;background:rgba(46,204,113,0.07);border:1px solid rgba(46,204,113,0.2);border-radius:10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
