@@ -1966,7 +1966,7 @@ function renderRelatorio() {
 
   // DEBUG — remover após confirmar correção
   console.log('=== DEBUG RELATÓRIO ===');
-  console.log('Total lançamentos:', ls.length);
+  console.log('Total lançamentos:', ls.length, '| Distribuições:', distribuicoes.length);
   if (ls.length > 0) console.log('Campos do 1º lançamento:', Object.keys(ls[0]), '| descricao=', JSON.stringify(ls[0].descricao), '| obs=', JSON.stringify(ls[0].obs));
   ls.slice(0,15).forEach((l,i) => {
     const cat = getCatFromLanc(l);
