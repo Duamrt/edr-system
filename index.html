@@ -1731,10 +1731,10 @@ async function iniciarApp() {
 async function loadUsuarios() {
   try {
     const rows = await sbGet('usuarios', '?select=*&order=criado_em');
-    if (Array.isArray(rows) && rows.length) {
+    // Só substitui se vier array válido — ignora erros do Supabase (ex: tabela inexistente)
+    if (Array.isArray(rows) && rows.length && rows[0]?.usuario) {
       USUARIOS = rows;
     }
-    // Se tabela não existe ainda, mantém fallback completo
   } catch(e) { /* mantém USUARIOS fallback */ }
 }
 
@@ -1747,7 +1747,7 @@ async function loadObras() {
 }
 async function loadMateriais() { try { const r = await sbGet('materiais', '?order=codigo&limit=1000'); catalogoMateriais = Array.isArray(r) ? r : []; console.log('Materiais carregados:', catalogoMateriais.length); } catch(e) { catalogoMateriais = []; } }
 async function loadNotas() { try { notas = await sbGet('notas_fiscais', '?order=criado_em.desc'); if (!Array.isArray(notas)) { notas = []; showToast('⚠ Execute o SQL no SETUP.'); } } catch(e) { notas = []; } }
-async function loadLancamentos() { try { lancamentos = await sbGet('lancamentos', '?select=id,obra_id,descricao,qtd,preco,total,data,obs&order=data.desc'); if (!Array.isArray(lancamentos)) lancamentos = []; } catch(e) { lancamentos = []; } }
+async function loadLancamentos() { try { lancamentos = await sbGet('lancamentos', '?select=id,obra_id,descricao,qtd,preco,total,data,obs,etapa&order=data.desc'); if (!Array.isArray(lancamentos)) lancamentos = []; } catch(e) { lancamentos = []; } }
 async function loadDistribuicoes() { try { const r = await sbGet('distribuicoes', '?order=criado_em.desc'); distribuicoes = Array.isArray(r) ? r : []; } catch(e) { distribuicoes = []; } }
 async function loadEntradasDiretas() { try { const r = await sbGet('entradas_diretas', '?order=criado_em.desc'); entradasDiretas = Array.isArray(r) ? r : []; } catch(e) { entradasDiretas = []; } }
 
@@ -2061,23 +2061,26 @@ function getCatLabel(key) {
 function getCatFromLanc(l) {
   // PRIORIDADE 1: etapa salva no lançamento (centro de custo real)
   if (l.etapa && l.etapa !== '00_outros') return l.etapa;
-  // PRIORIDADE 2: inferir pelo nome do material no catálogo
-  // Tenta match exato, depois tenta sem código (ex: "000011 · Telha..." → "Telha...")
+  // PRIORIDADE 2: match no catálogo — exato, sem código, ou parcial (lançamentos antigos)
   const descLimpa = (l.descricao||'').replace(/^\d{6}\s*·\s*/, '').trim();
-  const mat = catalogoMateriais.find(m =>
-    norm(m.nome) === norm(l.descricao||'') ||
-    norm(m.nome) === norm(descLimpa)
-  );
+  const dn = descLimpa.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  const mat = catalogoMateriais.find(m => {
+    const mn = norm(m.nome);
+    return mn === norm(l.descricao||'') ||  // match exato com código
+           mn === norm(descLimpa) ||          // match exato sem código
+           mn.includes(dn) ||                 // catálogo contém a desc (ex: "cimento cp-ii" inclui "cimento")
+           dn.includes(mn.split(' ')[0]);      // desc começa com primeira palavra do catálogo
+  });
   if (mat && mat.categoria) return mat.categoria;
   // PRIORIDADE 3: inferir pela descrição
   const desc = descLimpa || l.descricao || "";
-  const dn = desc.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+  const dnn = desc.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
   const catEstoque = getCatEstoque(desc);
   if (catEstoque && catEstoque !== "outros") return catEstoque;
-  if (/mao[\s\-]de[\s\-]obra|armador|eletricista|pintor|pedreiro|servente|mestre de obras|encanador|azulejista/.test(dn)) return "mao";
-  if (/aquisicao de terreno|compra de terreno/.test(dn)) return "terreno";
-  if (/contrato|documento|anotacao|alvara|licenca|vistoria|escritura/.test(dn)) return "doc";
-  return l.etapa || "outros";
+  if (/mao[\s\-]de[\s\-]obra|armador|eletricista|pintor|pedreiro|servente|mestre de obras|encanador|azulejista/.test(dnn)) return "mao";
+  if (/aquisicao de terreno|compra de terreno/.test(dnn)) return "terreno";
+  if (/contrato|documento|anotacao|alvara|licenca|vistoria|escritura/.test(dnn)) return "doc";
+  return "outros";
 }
 function getCatFromLanc_UNUSED(l) {
   const desc = l.descricao || '';
@@ -4274,10 +4277,10 @@ function renderRelatorio() {
 }
 
 function buildSecaoCategoria(ls) {
-  // Agrupa por categoria
+  // Agrupa por categoria — usa getCatFromLanc para suportar dados históricos sem etapa
   const map = {};
   ls.forEach(l => {
-    const cat = l.categoria || 'outros';
+    const cat = getCatFromLanc(l);
     if (!map[cat]) map[cat] = 0;
     map[cat] += Number(l.total || 0);
   });
@@ -4405,7 +4408,7 @@ async function exportarRelatorioPDF() {
   // Monta dados para PDF
   const map = {};
   ls.forEach(l => {
-    const cat = l.categoria || 'outros';
+    const cat = getCatFromLanc(l);
     if (!map[cat]) map[cat] = 0;
     map[cat] += Number(l.total || 0);
   });
