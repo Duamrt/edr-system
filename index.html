@@ -1922,6 +1922,15 @@ function renderRelatorio() {
   const obraFiltrada = obraId ? obras.find(o => o.id === obraId) : null;
   const titulo = obraFiltrada ? obraFiltrada.nome : 'Todas as Obras';
 
+  // DEBUG — remover após correção
+  console.log('=== DEBUG RELATÓRIO ===');
+  console.log('Total lançamentos filtrados:', ls.length);
+  ls.slice(0,10).forEach(l => {
+    const cat = getCatFromLanc(l);
+    const catDireto = getCatEstoque(l.descricao);
+    console.log(`DESC: "${l.descricao}" → getCatFromLanc: ${cat} | getCatEstoque: ${catDireto}`);
+  });
+
   let html = `<div style="margin-bottom:16px;padding:14px 18px;background:rgba(46,204,113,0.07);border:1px solid rgba(46,204,113,0.2);border-radius:10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
     <div>
       <div style="font-size:12px;color:var(--texto3);margin-bottom:2px;">CUSTO TOTAL${ano?' · '+ano:''}</div>
