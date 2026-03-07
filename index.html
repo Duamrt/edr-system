@@ -1269,7 +1269,7 @@ body::before {
       <div id="entrada-estoque-info" style="font-size:11px;color:var(--texto3);">Material entra no estoque. Distribua para a obra depois pelo F3.</div>
       <div id="entrada-obra-wrap" class="hidden">
         <div class="field" style="margin:0;margin-bottom:10px;"><label>OBRA DE DESTINO *</label><select id="entrada-obra-id" style="min-height:44px;font-size:14px;"></select></div>
-        <div class="field" style="margin:0;"><label>ETAPA / CENTRO DE CUSTO</label><select id="entrada-etapa" style="min-height:44px;font-size:14px;width:100%;background:var(--bg3);border:1px solid var(--borda2);border-radius:8px;padding:10px 12px;color:var(--branco);font-family:inherit;"></select></div>
+        <div class="field" style="margin:0;"><label>ETAPA / CENTRO DE CUSTO *</label><select id="entrada-etapa" style="min-height:44px;font-size:14px;width:100%;background:var(--bg3);border:1px solid var(--borda2);border-radius:8px;padding:10px 12px;color:var(--branco);font-family:inherit;"></select></div>
       </div>
     </div>
 
@@ -4130,6 +4130,8 @@ async function salvarEntradaDireta() {
   if (!desc) { showToast('⚠ INFORME O MATERIAL.'); return; }
   if (qtd <= 0) { showToast('⚠ INFORME A QUANTIDADE.'); return; }
   if (destinoObra && !obraId) { showToast('⚠ SELECIONE A OBRA.'); return; }
+  const etapaVal = document.getElementById('entrada-etapa')?.value || '';
+  if (destinoObra && !etapaVal) { showToast('⚠ SELECIONE O CENTRO DE CUSTO (ETAPA).'); document.getElementById('entrada-etapa')?.focus(); return; }
   try {
     if (destinoObra && obraObj) {
       // DIRETO NA OBRA — não gera estoque, só lançamento de custo
