@@ -3317,6 +3317,11 @@ async function salvarNota() {
   const emissao = document.getElementById('f-emissao').value;
   if (!fornecedor || !emissao || !numero) { showToast('PREENCHA FORNECEDOR, Nº DA NOTA E DATA.'); return; }
   if (!itensForm.length) { showToast('ADICIONE PELO MENOS UM ITEM.'); return; }
+  const cnpjVal = document.getElementById('f-cnpj').value.trim();
+  if (!cnpjVal) {
+    const prosseguir = confirm('⚠ CNPJ não informado.\n\nSem CNPJ o lançamento fica incompleto para fins fiscais.\n\nDeseja salvar mesmo assim?');
+    if (!prosseguir) { document.getElementById('f-cnpj').focus(); return; }
+  }
 
   // ── VERIFICAÇÃO DE DUPLICIDADE ────────────────────────────
   const nfDup = notas.find(n =>
