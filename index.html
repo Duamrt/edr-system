@@ -41,6 +41,45 @@ if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register(URL.createObjectURL(blob));
   });
 }
+function buildSecaoFaltas() {
+  const regs = diarGetRegistrosQuinzena();
+  if (!regs.length) return '<div class="rel-card" style="margin-top:16px;"><div class="rel-card-title">⚠ FALTAS — QUINZENA ATUAL</div><div style="color:var(--texto3);font-size:12px;">Nenhum registro de diárias na quinzena ativa.</div></div>';
+
+  const diasLancados = [...new Set(regs.map(r => r.data))].sort();
+  const faltas = diarGetFaltasQuinzena();
+  const totalDias = diasLancados.length;
+
+  const linhas = DIAR_TEAM.map(nome => {
+    const f = faltas[nome] || 0;
+    const presencas = totalDias - f;
+    const pct = totalDias > 0 ? Math.round(presencas/totalDias*100) : 100;
+    const cor = f === 0 ? 'var(--verde-hl)' : f <= 1 ? '#fbbf24' : '#f87171';
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--borda);">
+      <span style="font-weight:600;font-size:13px;">${nome}</span>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span style="font-size:11px;color:var(--texto3);">${presencas}/${totalDias} dias</span>
+        ${f > 0 ? `<span style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);color:#f87171;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;">⚠ ${f} falta${f>1?'s':''}</span>` : '<span style="color:var(--verde-hl);font-size:11px;font-weight:700;">✓ Sem faltas</span>'}
+        <div style="width:60px;height:6px;background:rgba(255,255,255,0.07);border-radius:3px;overflow:hidden;"><div style="height:100%;width:${pct}%;background:${cor};border-radius:3px;"></div></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  const diasHtml = diasLancados.map(dia => {
+    const itens = regs.filter(r => r.data === dia);
+    const faltasDia = diarGetFaltasDia(dia, itens);
+    const df = new Date(dia + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' }).toUpperCase();
+    return faltasDia.length ? `<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.05);font-size:11px;">
+      <span style="color:var(--texto2);">${df}</span>
+      <span style="color:#fca5a5;">${faltasDia.join(', ')}</span>
+    </div>` : '';
+  }).filter(Boolean).join('');
+
+  return `<div class="rel-card" style="margin-top:16px;">
+    <div class="rel-card-title">⚠ FALTAS — ${diarQuinzenaAtiva?.label||'QUINZENA ATUAL'}</div>
+    <div style="margin-bottom:16px;">${linhas}</div>
+    ${diasHtml ? `<div style="margin-top:12px;"><div style="font-size:10px;font-weight:700;letter-spacing:1px;color:var(--texto3);margin-bottom:8px;font-family:'Rajdhani',sans-serif;">DETALHE POR DIA</div>${diasHtml}</div>` : ''}
+  </div>`;
+}
 </script>
 <title>EDR System</title>
 <style>
@@ -816,6 +855,7 @@ body::before {
         <option value="categoria">🏷 Por Categoria</option>
         <option value="mensal">📅 Evolução Mensal</option>
         <option value="comparativo">⚖ Comparativo</option>
+          <option value="faltas">⚠ Faltas</option>
       </select>
     </div>
 
@@ -4786,6 +4826,7 @@ function renderRelatorio() {
   if (secao === 'tudo' || secao === 'categoria') html += buildSecaoCategoria(ls);
   if (secao === 'tudo' || secao === 'mensal')    html += buildSecaoMensal(ls);
   if (secao === 'tudo' || secao === 'comparativo') html += buildSecaoComparativo();
+  if (secao === 'tudo' || secao === 'faltas')    html += buildSecaoFaltas();
   el.innerHTML = html;
 }
 
@@ -5853,6 +5894,30 @@ async function diarConfirmarLancamento() {
 // ────────────────────────────────────────────
 // RENDER REGISTROS
 // ────────────────────────────────────────────
+
+// ────────────────────────────────────────────
+// FALTAS
+// ────────────────────────────────────────────
+const DIAR_TEAM = ['Anderson','Josimar','Nego','Adeilton','Heleno','Val','Rosinaldo'];
+
+function diarGetFaltasDia(dia, regs) {
+  const presentes = new Set(regs.map(r => r.funcionario));
+  return DIAR_TEAM.filter(n => !presentes.has(n));
+}
+
+function diarGetFaltasQuinzena() {
+  // Retorna { funcionario, totalFaltas } para cada membro do time
+  const regs = diarGetRegistrosQuinzena();
+  const diasLancados = [...new Set(regs.map(r => r.data))];
+  const faltas = {};
+  DIAR_TEAM.forEach(n => { faltas[n] = 0; });
+  diasLancados.forEach(dia => {
+    const presentes = new Set(regs.filter(r => r.data === dia).map(r => r.funcionario));
+    DIAR_TEAM.forEach(n => { if (!presentes.has(n)) faltas[n]++; });
+  });
+  return faltas; // { Anderson: 0, Josimar: 2, ... }
+}
+
 function diarRenderRegistros() {
   const container = document.getElementById('diar-registrosContainer');
   if (!container) return;
@@ -5878,15 +5943,23 @@ function diarRenderRegistros() {
         <div class="diarias-rr-val">R$ ${r.valor.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
       </div>`;
     }).join('');
+    const faltas = diarGetFaltasDia(dia, items);
+    const faltasHtml = faltas.length
+      ? `<div style="margin-top:6px;padding:5px 10px;background:rgba(239,68,68,0.07);border-radius:6px;border:1px solid rgba(239,68,68,0.15);">
+           <span style="font-size:9px;font-weight:700;letter-spacing:1px;color:#f87171;font-family:'Rajdhani',sans-serif;">⚠ FALTOU: </span>
+           <span style="font-size:11px;color:#fca5a5;">${faltas.join(', ')}</span>
+         </div>` : '';
     return `<div class="diarias-registro-dia">
       <div class="diarias-registro-header">
         <span class="diarias-registro-data">${df}</span>
         <div style="display:flex;align-items:center;gap:10px">
           <span class="diarias-registro-count">${items.length} func.</span>
+          ${faltas.length ? `<span style="font-size:9px;font-weight:700;color:#f87171;font-family:'Rajdhani',sans-serif;">⚠ ${faltas.length} falta(s)</span>` : ''}
           <button class="diarias-btn-del" onclick="diarDeletarDia('${dia}')" title="Remover dia">✕</button>
         </div>
       </div>
       <div>${rows}</div>
+      ${faltasHtml}
     </div>`;
   }).join('');
   diarRenderFolha();
@@ -5941,6 +6014,7 @@ function diarRenderFolha() {
       <td style="font-size:10px;color:var(--texto3)">${f.cargo||'-'}</td>
       ${isMestre ? '' : `<td style="color:var(--texto2);font-size:11px">R$ ${f.diaria} × ${f.fracoes.toFixed(1)}d</td>`}
       <td>${f.fracoes.toFixed(1)}d</td>
+      ${isMestre ? '' : `<td style="text-align:center;font-weight:700;color:${(faltas[f.nome]||0)>0?'#f87171':'var(--texto3)'};">${faltas[f.nome]||0}</td>`}
       <td><div class="diarias-obras-breakdown">${Object.keys(f.obras).map(o => `<span class="diarias-obra-tag">${o}</span>`).join('')}</div></td>
       ${isMestre ? '' : `<td class="diarias-td-val">R$ ${f.valor.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>`}
       ${isMestre ? '' : `<td class="diarias-td-val" style="color:${extra>0?'#fbbf24':'var(--texto3)'};">${extra>0 ? `R$ ${extra.toLocaleString('pt-BR',{minimumFractionDigits:2})}` : '—'}</td>`}
@@ -5953,20 +6027,24 @@ function diarRenderFolha() {
   const obraLinhas = Object.entries(custoPorObra).sort((a,b)=>b[1]-a[1]).map(([o,v]) =>
     `<tr><td style="padding:7px 10px;font-weight:600">${o}</td>${isMestre ? '' : `<td style="padding:7px 10px;color:var(--verde-hl);font-family:'JetBrains Mono',monospace;text-align:right">R$ ${v.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>`}</tr>`).join('');
   const totalObras = Object.values(custoPorObra).reduce((s,v)=>s+v,0);
+  // Calcular faltas por funcionário
+  const faltas = diarGetFaltasQuinzena();
+  const diasLancados = [...new Set(regs.map(r => r.data))].length;
   const thDiaria  = isMestre ? '' : '<th>Diária × Dias</th>';
+  const thFaltas  = isMestre ? '' : '<th style="text-align:center;color:#f87171">Faltas</th>';
   const thDiarias = isMestre ? '' : '<th style="text-align:right">Diárias</th>';
   const thExtra   = isMestre ? '' : '<th style="text-align:right;color:#fbbf24">Extra</th>';
   const thTotal   = isMestre ? '' : '<th style="text-align:right;color:var(--verde-hl)">Total</th>';
   const trTotal   = isMestre ? '' : `
     <tr class="diarias-folha-total-row">
-      <td colspan="4" style="font-weight:700">TOTAL QUINZENA</td>
+      <td colspan="5" style="font-weight:700">TOTAL QUINZENA</td>
       <td class="diarias-td-val">R$ ${totalDiarias.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
       <td class="diarias-td-val" style="color:#fbbf24">R$ ${totalExtras.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
       <td class="diarias-td-val" style="font-size:15px;color:var(--verde-hl)">R$ ${totalGeral.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
     </tr>`;
   container.innerHTML = `
     <table class="diarias-folha-table">
-      <thead><tr><th>Funcionário</th><th>Função</th>${thDiaria}<th>Dias</th><th>Obras</th>${thDiarias}${thExtra}${thTotal}</tr></thead>
+      <thead><tr><th>Funcionário</th><th>Função</th>${thDiaria}<th>Dias</th>${thFaltas}<th>Obras</th>${thDiarias}${thExtra}${thTotal}</tr></thead>
       <tbody>${rows}${trTotal}</tbody>
     </table>
     ${!isMestre && obraLinhas ? `<div style="margin-top:16px;background:var(--bg2);border:1px solid var(--borda);border-radius:10px;overflow:hidden">
