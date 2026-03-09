@@ -691,6 +691,7 @@ body::before {
     </div>
   </div>
   <div class="header-right">
+    <div id="demo-mode-badge" style="display:none;background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.4);color:#fbbf24;font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;letter-spacing:1px;font-family:'JetBrains Mono',monospace;">👁 MODO VISITANTE</div>
     <div class="user-badge" id="user-badge">⬤ <strong id="user-nome-badge"></strong></div>
     <button class="btn-logout" onclick="fazerLogout()">Sair</button>
   </div>
@@ -1263,6 +1264,7 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
       <select id="usr-perfil" style="width:100%;padding:10px 14px;background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.15);border-radius:10px;color:var(--branco);font-size:14px;outline:none;font-family:inherit;">
         <option value="operacional">👷 Operacional — lança NF e materiais</option>
         <option value="mestre">🔨 Mestre — somente visualiza diárias</option>
+        <option value="visitante">👁 Visitante — visualização e simulação</option>
         <option value="admin">👑 Administrador — acesso total</option>
       </select>
     </div>
@@ -1642,6 +1644,7 @@ let USUARIOS = [
   { usuario: 'admin',    senha: 'admin123',    perfil: 'admin',       nome: 'Administrador', ativo: true },
   { usuario: 'operador', senha: 'op123',       perfil: 'operacional', nome: 'Operador',      ativo: true },
   { usuario: 'anderson', senha: 'mestre123',   perfil: 'mestre',      nome: 'Anderson',      ativo: true },
+  { usuario: 'visitante',senha: 'edr2024',     perfil: 'visitante',   nome: 'Visitante',     ativo: true },
 ];
 
 const SQL_SETUP = `-- EDR System · Setup completo
@@ -1765,11 +1768,15 @@ function entrarNoApp() {
   if (dash) dash.classList.remove('hidden');
   document.getElementById('app').classList.remove('hidden');
   document.getElementById('user-nome-badge').textContent = usuarioAtual.nome;
+  // Badge modo visitante
+  const demoBadge = document.getElementById('demo-mode-badge');
+  if (demoBadge) demoBadge.style.display = isVisitante ? 'block' : 'none';
   aplicarPerfil();
   iniciarApp();
 }
 function fazerLogout() {
   try { localStorage.removeItem('edr_session'); } catch(e) {}
+  MODO_DEMO = false;
   usuarioAtual = null;
   document.getElementById('app').classList.add('hidden');
   document.getElementById('login-screen').classList.remove('hidden');
@@ -1812,6 +1819,10 @@ window.addEventListener('DOMContentLoaded', async () => {
 function aplicarPerfil() {
   const isAdmin = usuarioAtual.perfil === 'admin';
   const isMestre = usuarioAtual.perfil === 'mestre';
+  const isVisitante = usuarioAtual.perfil === 'visitante';
+
+  // Visitante: ativa modo demo (nenhuma escrita vai ao Supabase)
+  MODO_DEMO = isVisitante;
 
   // Resetar sidebar — mostrar tudo antes de aplicar restrições
   ['nav-dashboard','nav-obras','nav-estoque','nav-notas','nav-form','nav-creditos',
@@ -4473,18 +4484,29 @@ async function salvarSaidaMaterial() {
   }
 
   try {
-    // Registrar como distribuição (baixa do estoque) — reutiliza tabela distribuicoes
+    const valorUnit = estoqueItem?.valorMedio || 0;
+    const valor = qtd * valorUnit;
     const [nova] = await sbPost('distribuicoes', {
-      item_desc: desc, unidade, qtd,
+      item_desc: desc, item_idx: -1,
       obra_id: obraId, obra_nome: obraObj?.nome || '',
-      data, obs: obs || 'SAÍDA MANUAL DE ESTOQUE', etapa,
-      tipo: 'saida_manual'
+      qtd, valor, data,
+      etapa: etapa || ''
     });
     distribuicoes.unshift(nova);
+    // Também gera lançamento de custo na obra se tiver valor
+    if (valor > 0) {
+      const [lanc] = await sbPost('lancamentos', {
+        obra_id: obraId, descricao: desc,
+        qtd, preco: valorUnit, total: valor, data,
+        obs: obs || 'SAÍDA MANUAL DE ESTOQUE', etapa: etapa || ''
+      });
+      lancamentos.unshift(lanc);
+    }
     showToast(`✅ Baixa de ${qtd} ${unidade} de ${desc} registrada!`);
     fecharModal('saida');
     renderEstoque();
     renderDashboard();
+    filtrarLanc();
   } catch(e) { console.error(e); showToast('ERRO AO REGISTRAR SAÍDA.'); }
 }
 function toggleBnavMore() {
