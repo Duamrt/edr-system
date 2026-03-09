@@ -1182,7 +1182,10 @@ body::before {
     </div>
     <div class="diarias-main">
       <!-- PAINEL ESQUERDO: ENTRADA -->
-      <div class="diarias-panel-left">
+      <div class="diarias-panel-left" id="diar-panelLeft">
+        <!-- Botão toggle -->
+        <button id="diar-togglePanel" onclick="diarTogglePanel()" title="Recolher painel" style="align-self:flex-end;background:rgba(46,204,113,0.07);border:1px solid rgba(46,204,113,0.18);color:var(--verde-hl);border-radius:7px;padding:4px 9px;font-size:13px;cursor:pointer;line-height:1;flex-shrink:0;">◀</button>
+        <div id="diar-panelContent">
         <div class="diarias-panel-title">// LANÇAR DIÁRIAS</div>
         <div>
           <div class="diarias-panel-title" style="margin-bottom:6px">DATA</div>
@@ -1210,6 +1213,7 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
         <button class="btn-diarias-confirmar" id="diar-btnConfirmar" onclick="diarConfirmarLancamento()" disabled>
           ✓ CONFIRMAR E SALVAR
         </button>
+        </div><!-- /diar-panelContent -->
       </div>
       <!-- PAINEL DIREITO: REGISTROS / FOLHA -->
       <div class="diarias-panel-right">
@@ -1232,6 +1236,7 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
           <div class="diarias-folha-header">
             <div class="diarias-folha-title">Folha de Pagamento</div>
             <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <button id="btn-diar-extra" class="btn-diarias-exportar" style="background:rgba(245,158,11,0.12);border-color:rgba(245,158,11,0.3);color:#fbbf24;" onclick="diarAbrirModalExtra()">➕ Extra</button>
               <button class="btn-diarias-exportar" onclick="diarExportarFolha()">⬇ Exportar PDF</button>
               <button class="btn-diarias-exportar" style="background:var(--verde2)" onclick="diarAbrirModalEDR()">💰 Lançar Custo por Obra</button>
             </div>
@@ -1242,18 +1247,8 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
               <div class="diarias-empty-text">Nenhum dado ainda</div>
             </div>
           </div>
-
-          <!-- SEÇÃO EXTRAS — oculta para mestre -->
-          <div id="diar-extras-section" style="margin-top:18px;">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-              <div style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;letter-spacing:.1em;color:var(--verde-hl)">➕ EXTRAS / BONIFICAÇÕES</div>
-              <button onclick="diarAbrirModalExtra()" style="background:rgba(46,204,113,0.1);border:1px solid rgba(46,204,113,0.25);color:var(--verde-hl);border-radius:8px;padding:5px 14px;font-size:11px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;cursor:pointer;">+ ADICIONAR</button>
-            </div>
-            <div id="diar-extras-lista">
-              <div style="font-size:11px;color:var(--texto3);padding:8px 0;">Nenhum extra lançado nesta quinzena.</div>
-            </div>
-          </div>
-        </div>
+          <div id="diar-extras-lista" style="margin-top:12px;"></div>
+        </div><!-- /diar-tabFolha -->
       </div>
     </div>
   </div>
@@ -4975,7 +4970,7 @@ window.addEventListener('resize', () => {
 /* DIÁRIAS — Layout principal */
 #view-diarias .diarias-main {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: auto 1fr;
   gap: 0;
   min-height: calc(100vh - 120px);
 }
@@ -4985,6 +4980,14 @@ window.addEventListener('resize', () => {
   display: flex;
   flex-direction: column;
   gap: 18px;
+  width: 340px;
+  transition: width 0.25s ease, padding 0.25s ease, opacity 0.2s ease;
+  overflow: hidden;
+}
+#view-diarias .diarias-panel-left.recolhido {
+  width: 48px;
+  padding: 12px 8px;
+  gap: 0;
 }
 #view-diarias .diarias-panel-right {
   padding: 24px;
@@ -5217,6 +5220,9 @@ body.perfil-mestre .diarias-rr-val,
 body.perfil-mestre .diarias-td-val,
 body.perfil-mestre .btn-diarias-exportar,
 body.perfil-mestre #diar-extras-section,
+body.perfil-mestre #btn-diar-extra,
+body.perfil-mestre #diar-extras-lista,
+body.perfil-mestre #diar-togglePanel,
 body.perfil-mestre th:last-child,
 body.perfil-mestre td:last-child { display: none !important; }
 </style>
@@ -5315,6 +5321,27 @@ let diarInterpretado = null;
 let _diarObrasCache = null;
 
 // Init — chamado ao abrir a view
+let diarPanelRecolhido = false;
+function diarTogglePanel() {
+  diarPanelRecolhido = !diarPanelRecolhido;
+  const panel   = document.getElementById('diar-panelLeft');
+  const content = document.getElementById('diar-panelContent');
+  const btn     = document.getElementById('diar-togglePanel');
+  if (diarPanelRecolhido) {
+    panel.classList.add('recolhido');
+    content.style.display = 'none';
+    btn.textContent = '▶';
+    btn.title = 'Expandir painel';
+  } else {
+    panel.classList.remove('recolhido');
+    content.style.display = 'flex';
+    content.style.flexDirection = 'column';
+    content.style.gap = '18px';
+    btn.textContent = '◀';
+    btn.title = 'Recolher painel';
+  }
+}
+
 function initDiarias() {
   if (!document.getElementById('diar-dataInput').value) {
     document.getElementById('diar-dataInput').value = new Date().toISOString().split('T')[0];
