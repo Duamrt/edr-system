@@ -5051,18 +5051,28 @@ function diarParseMensagem(msgOriginal) {
     return 'dia';
   };
 
-  // Extrair nome da obra de um trecho "casa di X" / "obra X" / "casa de X"
+  // Nomes das obras cadastradas (normalizado para matching)
+  const obrasNomes = obras.map(o => ({ original: o.nome, norm: norm(o.nome) }));
+
+  // Extrair nome da obra de um trecho "casa di X" / "obra X"
+  // Primeiro tenta cruzar com obras cadastradas, depois usa o texto literal
   const extrairObra = (trecho) => {
-    const m = trecho.match(/cas[ao]\s+d[eio]\s+([a-z]+)/i)
-           || trecho.match(/obra\s+([a-z]+)/i)
-           || trecho.match(/na?\s+([a-z]+)\s*$/i);
+    // Tentar match direto com obras cadastradas no trecho
+    for (const o of obrasNomes) {
+      // Pega só o primeiro nome da obra para matching (ex: "Josenaldo Junior" → "josenaldo")
+      const primeiroNome = o.norm.split(' ')[0];
+      if (primeiroNome.length >= 4 && trecho.includes(primeiroNome)) {
+        return o.original;
+      }
+    }
+    // Fallback: pegar o que vem depois de "casa di/de/do"
+    const m = trecho.match(/cas[ao]\s+d[eio]\s+([a-záéíóúãõâêôàü\s]+?)(?:\s+\d|\s*$)/i)
+           || trecho.match(/obra\s+([a-záéíóúãõâêôàü]+)/i);
     if (!m) return null;
     const palavra = m[1].trim();
-    // Ignorar se for material ou palavra genérica
-    if (MATERIAIS.includes(palavra)) return null;
-    if (['a','o','e','de','da','do','na','no','um','uma'].includes(palavra)) return null;
-    // Capitalizar
-    return palavra.charAt(0).toUpperCase() + palavra.slice(1);
+    if (MATERIAIS.includes(norm(palavra))) return null;
+    if (['a','o','e','de','da','do','na','no','um','uma'].includes(norm(palavra))) return null;
+    return palavra.charAt(0).toUpperCase() + palavra.slice(1).toLowerCase();
   };
 
   // Mapa de apelidos → funcionário
