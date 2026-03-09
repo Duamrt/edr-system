@@ -1768,9 +1768,9 @@ function fazerLogin() {
     } catch(e) {}
     entrarNoApp();
   };
-  // Tentar login imediatamente com usuarios carregados
-  // Se só tem o fallback, tenta Supabase com timeout curto
-  if (USUARIOS.length <= 1) {
+  // Sempre tenta Supabase primeiro para garantir senhas atualizadas
+  // Se demorar mais de 3s, usa fallback local
+  if (USUARIOS.length <= 6) {
     const timeoutPromise = new Promise(res => setTimeout(res, 3000));
     Promise.race([loadUsuarios(), timeoutPromise]).then(tentarLogin).catch(tentarLogin);
   } else {
