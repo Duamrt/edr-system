@@ -6394,7 +6394,7 @@ function diarGerarPDF(regs) {
 async function diarBuscarObras() {
   if (_diarObrasCache) return _diarObrasCache;
   try {
-    const resp = await fetch(`${SUPABASE_URL}/rest/v1/obras?select=id,nome&concluida=eq.false&order=nome.asc`,
+    const resp = await fetch(`${SUPABASE_URL}/rest/v1/obras?select=id,nome&arquivada=eq.false&order=nome.asc`,
       { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const lista = await resp.json();
