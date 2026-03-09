@@ -5429,9 +5429,34 @@ function diarParseMensagem(msgOriginal) {
   // Nomes das obras cadastradas (normalizado para matching)
   const obrasNomes = obras.map(o => ({ original: o.nome, norm: norm(o.nome) }));
 
+  // Aliases de obras — variações e erros comuns do mestre
+  const OBRAS_ALIASES = {
+    'josenaldo junior': ['jr', 'junior', 'junio', 'josenaldo jr', 'josenaldo junio', 'josenaldo junior'],
+    'leonardo':         ['leonado', 'leanardo', 'leonaldo', 'loenardo', 'leoarndo'],
+    'dayana':           ['daiana'],
+  };
+  // Resolver alias → nome original da obra cadastrada
+  const resolverAliasObra = (trecho) => {
+    const t = trecho.toLowerCase().trim();
+    for (const [nomeObra, aliases] of Object.entries(OBRAS_ALIASES)) {
+      for (const alias of aliases) {
+        if (t.includes(alias)) {
+          // Confirmar que existe obra cadastrada com esse nome
+          const obraReal = obras.find(o => norm(o.nome) === norm(nomeObra));
+          if (obraReal) return obraReal.nome;
+        }
+      }
+    }
+    return null;
+  };
+
   // Extrair nome da obra de um trecho "casa di X" / "obra X"
   // Primeiro tenta cruzar com obras cadastradas, depois usa o texto literal
   const extrairObra = (trecho) => {
+    // Tentar alias primeiro
+    const aliasMatch = resolverAliasObra(trecho);
+    if (aliasMatch) return aliasMatch;
+
     // Tentar match direto com obras cadastradas no trecho
     for (const o of obrasNomes) {
       // Pega só o primeiro nome da obra para matching (ex: "Josenaldo Junior" → "josenaldo")
