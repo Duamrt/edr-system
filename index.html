@@ -4972,67 +4972,159 @@ function diarGetRegistrosQuinzena() {
 }
 
 // ────────────────────────────────────────────
-// INTERPRETAÇÃO
+// INTERPRETAÇÃO LOCAL (regex, sem API)
 // ────────────────────────────────────────────
 function diarInterpretar() {
   const msg = document.getElementById('diar-msgInput').value.trim();
   const data = document.getElementById('diar-dataInput').value;
   if (!msg) { showToast('Cole uma mensagem primeiro!'); return; }
   if (!data) { showToast('Selecione a data!'); return; }
-  document.getElementById('diar-previewBox').innerHTML =
-    '<div style="text-align:center;padding:20px"><div class="diarias-loading"><span>●</span><span>●</span><span>●</span></div></div>';
-  diarInterpretarComIA(msg, data);
-}
-
-async function diarInterpretarComIA(msg, data) {
-  const funcNomes = [...new Set(Object.values(DIAR_FUNCIONARIOS).map(f => f.nome))];
-  const prompt = `Você é um assistente que interpreta mensagens de WhatsApp de um mestre de obras brasileiro para registrar onde cada funcionário trabalhou.
-
-FUNCIONÁRIOS CONHECIDOS: ${funcNomes.join(', ')}
-
-REGRAS:
-- "até meio-dia" ou "até meio dia" = período MANHA (0.5 diária)
-- "à tarde" ou "atarde" ou "i atarde" = período TARDE (0.5 diária)
-- Se não menciona turno = dia inteiro (1.0 diária)
-- "casa di X" ou "casa de X" = obra X
-- Ignore menções de material (cimento, argamassa, etc)
-- Apelidos: Zezao/Zezão=Anderson, Binlade/Binladem/Bin Laden=Josimar, Seu Nego/Rochedo=Nego, Eleno=Heleno, Adeilto=Adeilton, Tana=Rosinaldo
-- "i" = "e" (conector)
-
-MENSAGEM: "${msg}"
-
-Responda SOMENTE com JSON válido, sem markdown:
-{
-  "registros": [
-    {
-      "funcionario": "Nome exato",
-      "cargo": "Mestre|Pedreiro|Betoneiro|Servente",
-      "diaria_base": 80,
-      "periodos": [{"turno": "manha|tarde|dia", "obra": "Nome da obra", "fracao": 0.5}],
-      "total_fracoes": 1.0
-    }
-  ]
-}
-
-Diárias: Anderson=170, Josimar=90, Nego=130, Adeilton=130, Heleno=80, Val=80, Rosinaldo=80`;
 
   try {
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1000, messages: [{ role: 'user', content: prompt }] })
-    });
-    const d = await resp.json();
-    const text = d.content[0].text.trim().replace(/```json|```/g, '').trim();
-    const parsed = JSON.parse(text);
-    diarInterpretado = { data, registros: parsed.registros };
-    diarRenderPreview(parsed.registros);
+    const regs = diarParseMensagem(msg);
+    if (!regs.length) {
+      document.getElementById('diar-previewBox').innerHTML =
+        '<div class="diarias-empty"><div class="diarias-empty-icon">🤔</div><div class="diarias-empty-text diarias-error-text">Nenhum funcionário identificado. Verifique a mensagem.</div></div>';
+      document.getElementById('diar-btnConfirmar').disabled = true;
+      return;
+    }
+    diarInterpretado = { data, registros: regs };
+    diarRenderPreview(regs);
     document.getElementById('diar-btnConfirmar').disabled = false;
   } catch(err) {
     document.getElementById('diar-previewBox').innerHTML =
-      '<div class="diarias-empty"><div class="diarias-empty-icon">⚠️</div><div class="diarias-empty-text diarias-error-text">Erro ao interpretar. Tente novamente.</div></div>';
+      '<div class="diarias-empty"><div class="diarias-empty-icon">⚠️</div><div class="diarias-empty-text diarias-error-text">Erro ao interpretar. Verifique a mensagem.</div></div>';
     console.error(err);
   }
+}
+
+// ────────────────────────────────────────────
+// PARSER LOCAL DE MENSAGENS
+// ────────────────────────────────────────────
+function diarParseMensagem(msgOriginal) {
+  // Normalizar: minúsculas, remover acentos para matching, "i " → "e "
+  const norm = s => s.toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/\bi\b/g, 'e'); // "i" isolado → "e" (conector nordestino)
+
+  const msg = norm(msgOriginal);
+
+  // MATERIAIS a ignorar (não são obras nem pessoas)
+  const MATERIAIS = ['cimento', 'argamassa', 'areia', 'brita', 'tijolo', 'ferro', 'vergalhao',
+    'madeira', 'prego', 'parafuso', 'tinta', 'cal', 'saco', 'sacos', 'bloco', 'telha'];
+
+  // Detectar turno global da mensagem (se houver)
+  // Padrões: "ate meio-dia", "manha", "tarde", "atarde", "i atarde"
+  const detectarTurno = (texto) => {
+    if (/ate meio.?dia|ate o meio.?dia|manha|de manha/.test(texto)) return 'manha';
+    if (/a tarde|atarde|de tarde|tarde/.test(texto)) return 'tarde';
+    return 'dia';
+  };
+
+  // Extrair nome da obra de um trecho "casa di X" / "obra X" / "casa de X"
+  const extrairObra = (trecho) => {
+    const m = trecho.match(/cas[ao]\s+d[eio]\s+([a-z]+)/i)
+           || trecho.match(/obra\s+([a-z]+)/i)
+           || trecho.match(/na?\s+([a-z]+)\s*$/i);
+    if (!m) return null;
+    const palavra = m[1].trim();
+    // Ignorar se for material ou palavra genérica
+    if (MATERIAIS.includes(palavra)) return null;
+    if (['a','o','e','de','da','do','na','no','um','uma'].includes(palavra)) return null;
+    // Capitalizar
+    return palavra.charAt(0).toUpperCase() + palavra.slice(1);
+  };
+
+  // Mapa de apelidos → funcionário
+  // Chave = regex pattern, valor = chave em DIAR_FUNCIONARIOS
+  const ALIAS_PATTERNS = [
+    { re: /seu\s+nego|rochedo/, key: 'nego' },
+    { re: /bin\s+lad[ea]m?|binlad[ea]m?/, key: 'binlade' },
+    { re: /zez[aã]o/, key: 'zezao' },
+    { re: /adeilto\b/, key: 'adeilton' },
+    { re: /eleno\b/, key: 'heleno' },
+    { re: /tana\b/, key: 'tana' },
+    { re: /anderson/, key: 'anderson' },
+    { re: /josimar/, key: 'josimar' },
+    { re: /\bneg[oa]\b/, key: 'nego' },
+    { re: /adeilton/, key: 'adeilton' },
+    { re: /heleno/, key: 'heleno' },
+    { re: /rosinaldo/, key: 'rosinaldo' },
+    { re: /\bval\b/, key: 'val' },
+  ];
+
+  // Encontrar todos os funcionários mencionados no texto
+  const encontrarFuncionarios = (texto) => {
+    const encontrados = [];
+    for (const { re, key } of ALIAS_PATTERNS) {
+      if (re.test(texto)) {
+        const func = DIAR_FUNCIONARIOS[key];
+        if (func && !encontrados.find(f => f.nome === func.nome)) {
+          encontrados.push({ ...func });
+        }
+      }
+    }
+    return encontrados;
+  };
+
+  // ── ESTRATÉGIA DE PARSE ──────────────────────────────────────
+  // A mensagem pode ter múltiplos blocos separados por "." ou "\n"
+  // Cada bloco pode ter: [funcionários] + [turno] + [obra]
+  // Ex: "Anderson e Josimar até meio-dia casa di Leonardo. I atarde casa di Pedro"
+  //     "Seu nego i val casa di Junior 3 cimento"
+
+  // Dividir em frases/blocos
+  const blocos = msg.split(/[.\n]+/).map(s => s.trim()).filter(Boolean);
+
+  // Resultado final agrupado por funcionário
+  const resultMap = {}; // nome → { funcionario, cargo, diaria_base, periodos }
+
+  const addPeriodo = (func, turno, obra) => {
+    if (!resultMap[func.nome]) {
+      resultMap[func.nome] = {
+        funcionario: func.nome,
+        cargo: func.cargo,
+        diaria_base: func.diaria,
+        periodos: [],
+        total_fracoes: 0
+      };
+    }
+    // Evitar duplicar mesmo turno+obra
+    const already = resultMap[func.nome].periodos.find(p => p.turno === turno && p.obra === obra);
+    if (already) return;
+    const fracao = (turno === 'dia') ? 1.0 : 0.5;
+    resultMap[func.nome].periodos.push({ turno, obra, fracao });
+    resultMap[func.nome].total_fracoes += fracao;
+  };
+
+  // Processar bloco a bloco
+  let ultimosFuncs = []; // funcionários do último bloco com nomes
+  for (const bloco of blocos) {
+    if (!bloco) continue;
+
+    const turno = detectarTurno(bloco);
+    const obra = extrairObra(bloco) || 'Não especificada';
+    const funcs = encontrarFuncionarios(bloco);
+
+    if (funcs.length) {
+      ultimosFuncs = funcs;
+      funcs.forEach(f => addPeriodo(f, turno, obra));
+    } else if (obra !== 'Não especificada' && ultimosFuncs.length) {
+      // Bloco sem nome mas com obra — aplica ao mesmo grupo do bloco anterior
+      // Ex: "I atarde casa di Pedro" — mesmos funcionários, turno tarde, obra Pedro
+      ultimosFuncs.forEach(f => addPeriodo(f, turno, obra));
+    }
+  }
+
+  // Se não encontrou nada com blocos, tentar parse único na mensagem toda
+  if (!Object.keys(resultMap).length) {
+    const turno = detectarTurno(msg);
+    const obra = extrairObra(msg) || 'Não especificada';
+    const funcs = encontrarFuncionarios(msg);
+    funcs.forEach(f => addPeriodo(f, turno, obra));
+  }
+
+  return Object.values(resultMap);
 }
 
 function diarRenderPreview(regs) {
