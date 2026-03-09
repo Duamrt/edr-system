@@ -1232,7 +1232,7 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
           <div class="diarias-folha-header">
             <div class="diarias-folha-title">Folha de Pagamento</div>
             <div style="display:flex;gap:6px;flex-wrap:wrap">
-              <button class="btn-diarias-exportar" onclick="diarExportarFolha()">⬇ Exportar CSV</button>
+              <button class="btn-diarias-exportar" onclick="diarExportarFolha()">⬇ Exportar PDF</button>
               <button class="btn-diarias-exportar" style="background:var(--verde2)" onclick="diarAbrirModalEDR()">🚀 Lançar no EDR</button>
             </div>
           </div>
@@ -5636,18 +5636,173 @@ function diarSwitchTab(tab, el) {
 function diarExportarFolha() {
   const regs = diarGetRegistrosQuinzena();
   if (!regs.length) { showToast('Nenhum dado para exportar'); return; }
+
+  // Carregar jsPDF dinamicamente se não estiver disponível
+  if (!window.jspdf) {
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+    script.onload = () => diarGerarPDF(regs);
+    script.onerror = () => { showToast('Erro ao carregar gerador de PDF. Tente novamente.'); };
+    document.head.appendChild(script);
+  } else {
+    diarGerarPDF(regs);
+  }
+}
+
+function diarGerarPDF(regs) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const W = 210, margem = 14;
+  const quinzena = diarGetQuinzenaLabel();
+  const hoje = new Date().toLocaleDateString('pt-BR');
+
+  // ── Cores
+  const VERDE  = [10, 61, 24];   // #0a3d18
+  const BRANCO = [255, 255, 255];
+  const CINZA1 = [30, 30, 30];
+  const CINZA2 = [60, 60, 60];
+  const CINZA3 = [120, 120, 120];
+  const LINHA  = [220, 220, 220];
+  const VERDE_CL = [232, 245, 233];
+
+  let y = 0;
+
+  // ── CABEÇALHO
+  doc.setFillColor(...VERDE);
+  doc.rect(0, 0, W, 28, 'F');
+  doc.setTextColor(...BRANCO);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(18);
+  doc.text('EDR ENGENHARIA', margem, 12);
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.text('GESTÃO INTEGRADA DE OBRAS', margem, 18);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.text('FOLHA DE PAGAMENTO — DIÁRIAS', W - margem, 12, { align: 'right' });
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.text(quinzena, W - margem, 18, { align: 'right' });
+  doc.text(`Emitido em: ${hoje}`, W - margem, 23, { align: 'right' });
+  y = 36;
+
+  // ── SEÇÃO RESUMO POR FUNCIONÁRIO
+  doc.setTextColor(...CINZA1);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.text('RESUMO POR FUNCIONÁRIO', margem, y);
+  y += 5;
+
+  // Cabeçalho da tabela
+  const colW = [62, 28, 22, 28, 28, 28]; // Funcionário, Cargo, Dias, Diária, Total
+  const colX = [margem];
+  colW.forEach((w, i) => colX.push(colX[i] + colW[i]));
+
+  doc.setFillColor(...VERDE);
+  doc.rect(margem, y, W - margem * 2, 7, 'F');
+  doc.setTextColor(...BRANCO);
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'bold');
+  const headers = ['FUNCIONÁRIO', 'CARGO', 'DIAS', 'DIÁRIA (R$)', 'TOTAL (R$)'];
+  const aligns  = ['left', 'left', 'center', 'right', 'right'];
+  headers.forEach((h, i) => {
+    const x = aligns[i] === 'right' ? colX[i] + colW[i] - 2
+            : aligns[i] === 'center' ? colX[i] + colW[i] / 2 : colX[i] + 2;
+    doc.text(h, x, y + 5, { align: aligns[i] });
+  });
+  y += 7;
+
+  // Montar dados resumo
+  const ordem = { 'Mestre': 1, 'Pedreiro': 2, 'Betoneiro': 3, 'Servente': 4 };
   const porFunc = {};
   regs.forEach(r => {
-    if (!porFunc[r.funcionario]) porFunc[r.funcionario] = { nome: r.funcionario, diaria: r.diaria_base, fracoes: 0, valor: 0 };
+    if (!porFunc[r.funcionario]) porFunc[r.funcionario] = { nome: r.funcionario, cargo: r.cargo || '', diaria: r.diaria_base, fracoes: 0, valor: 0, obras: {} };
     porFunc[r.funcionario].fracoes += r.total_fracoes;
     porFunc[r.funcionario].valor += r.valor;
+    r.periodos.forEach(p => { porFunc[r.funcionario].obras[p.obra] = (porFunc[r.funcionario].obras[p.obra] || 0) + p.fracao; });
   });
-  let csv = 'Funcionário;Diária Base;Dias Trabalhados;Total\n';
-  Object.values(porFunc).forEach(f => { csv += `${f.nome};${f.diaria.toFixed(2)};${f.fracoes.toFixed(1)};${f.valor.toFixed(2)}\n`; });
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href = url; a.download = `EDR_Folha_${diarGetQuinzenaAtual()}.csv`; a.click();
-  showToast('CSV exportado!');
+  const funcs = Object.values(porFunc).sort((a, b) => (ordem[a.cargo] || 9) - (ordem[b.cargo] || 9));
+  const totalGeral = funcs.reduce((s, f) => s + f.valor, 0);
+
+  funcs.forEach((f, idx) => {
+    if (idx % 2 === 0) {
+      doc.setFillColor(248, 248, 248);
+      doc.rect(margem, y, W - margem * 2, 7, 'F');
+    }
+    doc.setTextColor(...CINZA1);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8.5);
+    doc.text(f.nome, colX[0] + 2, y + 5);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(...CINZA2);
+    doc.text(f.cargo, colX[1] + 2, y + 5);
+    doc.text(f.fracoes.toFixed(1), colX[2] + colW[2] / 2, y + 5, { align: 'center' });
+    doc.text(`R$ ${f.diaria.toFixed(2)}`, colX[3] + colW[3] - 2, y + 5, { align: 'right' });
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...VERDE);
+    doc.text(`R$ ${f.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, colX[4] + colW[4] - 2, y + 5, { align: 'right' });
+    y += 7;
+  });
+
+  // Linha total
+  doc.setFillColor(...VERDE_CL);
+  doc.rect(margem, y, W - margem * 2, 8, 'F');
+  doc.setTextColor(...CINZA1);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.text('TOTAL QUINZENA', colX[0] + 2, y + 5.5);
+  doc.setTextColor(...VERDE);
+  doc.text(`R$ ${totalGeral.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, colX[4] + colW[4] - 2, y + 5.5, { align: 'right' });
+  y += 14;
+
+  // ── SEÇÃO CUSTO POR OBRA
+  const custoPorObra = diarCalcCustoObra();
+  if (Object.keys(custoPorObra).length) {
+    doc.setTextColor(...CINZA1);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.text('CUSTO DE MÃO DE OBRA POR OBRA', margem, y);
+    y += 5;
+
+    doc.setFillColor(...VERDE);
+    doc.rect(margem, y, W - margem * 2, 7, 'F');
+    doc.setTextColor(...BRANCO);
+    doc.setFontSize(8);
+    doc.text('OBRA', margem + 2, y + 5);
+    doc.text('TOTAL (R$)', W - margem - 2, y + 5, { align: 'right' });
+    y += 7;
+
+    const obrasOrdenadas = Object.entries(custoPorObra).sort((a, b) => b[1] - a[1]);
+    obrasOrdenadas.forEach(([obra, val], idx) => {
+      if (idx % 2 === 0) { doc.setFillColor(248, 248, 248); doc.rect(margem, y, W - margem * 2, 7, 'F'); }
+      doc.setTextColor(...CINZA1);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.text(obra, margem + 2, y + 5);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...VERDE);
+      doc.text(`R$ ${val.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, W - margem - 2, y + 5, { align: 'right' });
+      y += 7;
+    });
+    y += 6;
+  }
+
+  // ── RODAPÉ
+  y = Math.max(y + 10, 255);
+  if (y > 270) { doc.addPage(); y = 240; }
+  doc.setDrawColor(...LINHA);
+  doc.line(margem, y, W - margem, y);
+  y += 6;
+  doc.setTextColor(...CINZA3);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7.5);
+  doc.text('EDR Engenharia — Documento gerado pelo EDR System', margem, y);
+  doc.text(`Página 1`, W - margem, y, { align: 'right' });
+
+  // Salvar
+  doc.save(`EDR_Folha_${diarGetQuinzenaAtual()}.pdf`);
+  showToast('✅ PDF gerado!');
 }
 
 // ────────────────────────────────────────────
