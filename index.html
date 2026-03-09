@@ -1607,6 +1607,7 @@ let USUARIOS = [
   { usuario: 'elydart',  senha: '1202elyd@',   perfil: 'admin',       nome: 'Elyda',         ativo: true },
   { usuario: 'admin',    senha: 'admin123',    perfil: 'admin',       nome: 'Administrador', ativo: true },
   { usuario: 'operador', senha: 'op123',       perfil: 'operacional', nome: 'Operador',      ativo: true },
+  { usuario: 'anderson', senha: 'mestre123',   perfil: 'operacional', nome: 'Anderson',      ativo: true },
 ];
 
 const SQL_SETUP = `-- EDR System · Setup completo
@@ -4053,6 +4054,7 @@ function renderBanco() {
       { login: 'duamrt', perfil: 'Admin', nome: 'Duam — Operações' },
       { login: 'elydart', perfil: 'Admin', nome: 'Elyda — Financeiro' },
       { login: 'operador', perfil: 'Operacional', nome: 'Equipe de Campo' },
+      { login: 'anderson', perfil: 'Operacional', nome: 'Anderson — Mestre de Obras' },
     ];
     usersEl.innerHTML = usuarios.map(u =>
       `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--borda2);">
