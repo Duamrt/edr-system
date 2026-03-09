@@ -1751,7 +1751,7 @@ create table if not exists entradas_diretas (
 alter table entradas_diretas disable row level security;
 
 -- Itens fiscais / encargos no catálogo
-insert into materiais (codigo, descricao, unidade, preco_medio, categoria) values
+insert into materiais (codigo, nome, unidade, preco_medio, categoria) values
   ('000090', 'INSS - Contribuição Previdenciária', 'VB', 0, 'imposto'),
   ('000091', 'DARF - Documento de Arrecadação Federal', 'VB', 0, 'imposto'),
   ('000092', 'ISS - Imposto Sobre Serviços', 'VB', 0, 'imposto'),
