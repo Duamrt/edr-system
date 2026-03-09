@@ -724,7 +724,7 @@ body::before {
   </button>
   <div class="nav-divider"></div>
   <button class="nav-btn" id="nav-catalogo" onclick="setView('catalogo')">
-    <span class="nav-icon">🏷</span>C.CUSTO<span class="nav-key">F8</span>
+    <span class="nav-icon">📂</span>CATÁLOGO<span class="nav-key">F8</span>
   </button>
   <div class="nav-divider"></div>
   <button class="nav-btn" class="nav-btn admin-only" id="nav-relatorio" onclick="setView('relatorio')">
@@ -770,7 +770,7 @@ body::before {
     <span class="bnav-more-icon">👷</span>DIÁRIAS
   </button>
   <button class="bnav-more-item" id="bnav-catalogo" onclick="setView('catalogo');closeBnavMore()">
-    <span class="bnav-more-icon">🏷</span>C.CUSTO
+    <span class="bnav-more-icon">📂</span>CATÁLOGO
   </button>
   <button class="bnav-more-item" class="bnav-more-item admin-only" id="bnav-relatorio" onclick="setView('relatorio');closeBnavMore()">
     <span class="bnav-more-icon">📈</span>RELATÓRIO
@@ -901,7 +901,7 @@ body::before {
         <select id="obras-filtro-obra" onchange="onChangeObraFiltro()"><option value="">Todas as obras</option></select>
         <button id="btn-arquivar-obra" onclick="onClickArquivarObra()" class="admin-only" style="display:none;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);color:#fbbf24;border-radius:8px;padding:9px 14px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;cursor:pointer;white-space:nowrap;transition:all .2s;" title="Arquivar obra selecionada">📦 ARQUIVAR</button>
         <select id="obras-filtro-cat" onchange="filtrarLancCat()" style="min-width:160px;">
-          <option value="">Todas categorias</option>
+          <option value="">Todos centros de custo</option>
           <option value="mao">👷 Mão de Obra</option>
           <option value="alvenaria">🧱 Alvenaria</option>
           <option value="forma">🪵 Forma e Madeira</option>
@@ -1080,7 +1080,7 @@ body::before {
   <!-- BANCO DE DADOS (admin only) -->
   <div id="view-banco" class="hidden">
     <div style="position:sticky;top:53px;z-index:90;background:var(--bg);padding:10px 0 4px 0;">
-      <div class="modulo-badge">🗄 BANCO DE DADOS</div>
+      <div class="modulo-badge">📂 CATÁLOGO</div>
     </div>
 
     <!-- OBRAS CADASTRADAS -->
@@ -1134,7 +1134,7 @@ body::before {
       <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
         <input type="text" id="catalogo-busca" placeholder="🔍 Buscar por código ou nome..." oninput="renderCatalogo()" style="flex:2;min-width:200px;background:var(--bg2);border:1px solid var(--borda2);border-radius:10px;padding:10px 14px;color:var(--branco);font-size:13px;font-family:inherit;">
         <select id="catalogo-cat-filtro" onchange="renderCatalogo()" style="flex:1;min-width:140px;background:var(--bg2);border:1px solid var(--borda2);border-radius:10px;padding:10px 14px;color:var(--branco);font-size:13px;font-family:inherit;">
-          <option value="">📂 Todas categorias</option>
+          <option value="">📂 Todos centros de custo</option>
           <option value="alimentacao">🍽 Alimentação</option>
           <option value="alvenaria">🧱 Alvenaria</option>
           <option value="cobertura">🏠 Cobertura</option>
@@ -1309,7 +1309,7 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
           <option>UN</option><option>KG</option><option>M</option><option>M2</option><option>M3</option><option>L</option><option>SC</option><option>RL</option><option>CX</option><option>PC</option><option>BAR</option><option>TON</option>
         </select>
       </div>
-      <div class="field" style="flex:2"><label>CATEGORIA</label>
+      <div class="field" style="flex:2"><label>CENTRO DE CUSTO</label>
         <select id="mat-categoria" style="background:var(--bg3);border:1px solid var(--borda2);border-radius:8px;padding:8px;color:var(--branco);font-family:inherit;width:100%;">
           <option value="">— Selecione —</option>
           <option value="alvenaria">🧱 Alvenaria</option>
@@ -2357,7 +2357,7 @@ function renderRelatorio() {
   const mostrarMensal = secao === 'tudo' || secao === 'mensal';
   const mostrarComp = secao === 'tudo' || secao === 'comparativo';
 
-  // ── CUSTO POR CATEGORIA ──
+  // ── CUSTO POR CENTRO DE CUSTO ──
   if (mostrarCat) {
     const catMap = {};
     ls.forEach(l => {
@@ -2368,7 +2368,7 @@ function renderRelatorio() {
     const maxVal = catSorted[0]?.[1] || 1;
 
     html += `<div style="margin-bottom:24px;">
-      <div style="font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;letter-spacing:2px;color:var(--texto2);margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--borda2);">🏷 CUSTO POR CATEGORIA</div>
+      <div style="font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;letter-spacing:2px;color:var(--texto2);margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--borda2);">🏷 CUSTO POR CENTRO DE CUSTO</div>
       <div style="display:flex;flex-direction:column;gap:8px;">`;
 
     catSorted.forEach(([cat, val]) => {
@@ -2545,7 +2545,7 @@ function exportarRelatorioPDF() {
     <div><div class="total-label">OBRAS</div><div class="total-val" style="font-size:22px;">${obraFiltrada ? 1 : obrasData.length}</div></div>
   </div>
 
-  <h2>🏷 CUSTO POR CATEGORIA</h2>
+  <h2>🏷 CUSTO POR CENTRO DE CUSTO</h2>
   <table><thead><tr><th>Categoria</th><th class="right">Valor</th><th class="right">%</th></tr></thead><tbody>
   ${catSorted.map(([cat,val]) => {
     const pct = (val/totalGeral*100).toFixed(1);
@@ -3429,7 +3429,7 @@ function showLancAutocomplete(val) {
   });
   const txt = val.trim().toUpperCase();
   items.push(`<div class="autocomplete-item" style="border-top:1px solid rgba(46,204,113,0.2);margin-top:2px;" onmousedown="cadastroRapidoMaterial('${txt.replace(/'/g,"\\'")}','lanc')">
-    <span style="color:var(--verde-hl);font-weight:700;font-size:12px;">+ CADASTRAR \"${txt}\" NO C.CUSTO</span>
+    <span style="color:var(--verde-hl);font-weight:700;font-size:12px;">+ CADASTRAR \"${txt}\" NO CATÁLOGO</span>
     <span style="font-size:10px;color:var(--texto3);">e usar aqui</span>
   </div>`);
   list.innerHTML = items.join('');
@@ -3457,7 +3457,7 @@ function showAutocomplete(val) {
   cachedItens = matches;
   list.innerHTML = matches.map((m, i) => m.cadastroRapido
     ? `<div class="autocomplete-item" data-ac-idx="${i}" style="border-top:1px solid rgba(46,204,113,0.2);margin-top:2px;">
-        <span style="color:var(--verde-hl);font-weight:700;font-size:12px;">+ CADASTRAR "${m.label}" NO C.CUSTO</span>
+        <span style="color:var(--verde-hl);font-weight:700;font-size:12px;">+ CADASTRAR "${m.label}" NO CATÁLOGO</span>
         <span style="font-size:10px;color:var(--texto3);">e usar aqui</span>
        </div>`
     : `<div class="autocomplete-item" data-ac-idx="${i}">
@@ -3593,7 +3593,7 @@ function renderItensForm() {
 
 // SALVAR NOTA
 // ══════════════════════════════════════════
-// AUTO-CADASTRO DE MATERIAIS NO C.CUSTO
+// AUTO-CADASTRO DE MATERIAIS NO CATÁLOGO
 // ══════════════════════════════════════════
 async function autocadastrarMateriais(itens) {
   const novos = [];
@@ -4153,7 +4153,7 @@ async function editarCategoriaMaterial(id, categoria, selEl) {
     await sbPatch('materiais', `?id=eq.${id}`, { categoria, auto: false });
     const m = catalogoMateriais.find(x => x.id === id);
     if (m) { m.categoria = categoria; m.auto = false; }
-    showToast('✅ CATEGORIA ATUALIZADA!');
+    showToast('✅ CENTRO DE CUSTO ATUALIZADO!');
   } catch(e) { showToast('ERRO AO ATUALIZAR CATEGORIA.'); }
 }
 
@@ -4174,7 +4174,7 @@ async function recalcularCategorias() {
     }
   }
   renderCatalogo();
-  showToast(`✅ ${atualizados} CATEGORIA(S) ATUALIZADA(S)!`);
+  showToast(`✅ ${atualizados} CENTRO(S) DE CUSTO ATUALIZADO(S)!`);
 }
 
 function copiarSQL() { navigator.clipboard.writeText(SQL_SETUP).then(() => showToast('SQL COPIADO!')).catch(() => showToast('SELECIONE E COPIE MANUALMENTE.')); }
@@ -4456,7 +4456,7 @@ function onEntradaDescInput() {
   const top = matches.slice(0,15);
   list.innerHTML = top.map((m,i) => m.cadastroRapido
     ? `<div class="autocomplete-item" data-ed-idx="${i}" style="border-top:1px solid rgba(46,204,113,0.2);margin-top:2px;">
-        <span style="color:var(--verde-hl);font-weight:700;font-size:12px;">+ CADASTRAR "${m.desc}" NO C.CUSTO</span>
+        <span style="color:var(--verde-hl);font-weight:700;font-size:12px;">+ CADASTRAR "${m.desc}" NO CATÁLOGO</span>
         <span style="font-size:10px;color:var(--texto3);">e usar aqui</span>
        </div>`
     : `<div class="autocomplete-item" data-ed-idx="${i}">${m.codigo?`<span class="ac-codigo">${m.codigo}</span>`:''}<span class="ac-label">${m.desc}</span><span style="font-size:10px;color:var(--texto3);">${m.unidade}</span></div>`
@@ -4749,7 +4749,7 @@ function buildSecaoCategoria(ls) {
   }).join('');
 
   return `<div class="rel-card">
-    <div class="rel-card-title">🏷 CUSTO POR CATEGORIA</div>
+    <div class="rel-card-title">🏷 CUSTO POR CENTRO DE CUSTO</div>
     <div style="margin-bottom:16px;">
       <span style="font-size:24px;font-weight:700;color:var(--verde-hl);">${fmtR(total)}</span>
       <span style="font-size:11px;color:var(--texto3);margin-left:8px;">total lançado</span>
@@ -4922,7 +4922,7 @@ async function exportarRelatorioPDF() {
 <div class="sub">Obra: <b>${obraNome}</b> · Período: <b>${periodoLabel}</b> · Emitido em ${dataHoje}</div>
 
 <div class="section">
-  <div class="section-title">CUSTO POR CATEGORIA</div>
+  <div class="section-title">CUSTO POR CENTRO DE CUSTO</div>
   <table>
     <tr><th>Categoria</th><th class="r">Valor</th><th class="r">%</th></tr>
     ${linhasCategoria}
