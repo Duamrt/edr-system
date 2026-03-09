@@ -1607,7 +1607,7 @@ let USUARIOS = [
   { usuario: 'elydart',  senha: '1202elyd@',   perfil: 'admin',       nome: 'Elyda',         ativo: true },
   { usuario: 'admin',    senha: 'admin123',    perfil: 'admin',       nome: 'Administrador', ativo: true },
   { usuario: 'operador', senha: 'op123',       perfil: 'operacional', nome: 'Operador',      ativo: true },
-  { usuario: 'anderson', senha: 'mestre123',   perfil: 'operacional', nome: 'Anderson',      ativo: true },
+  { usuario: 'anderson', senha: 'mestre123',   perfil: 'mestre',      nome: 'Anderson',      ativo: true },
 ];
 
 const SQL_SETUP = `-- EDR System · Setup completo
@@ -1777,13 +1777,31 @@ window.addEventListener('DOMContentLoaded', async () => {
 });
 function aplicarPerfil() {
   const isAdmin = usuarioAtual.perfil === 'admin';
+  const isMestre = usuarioAtual.perfil === 'mestre';
+
+  // Classe no body para CSS condicional
+  document.body.classList.toggle('perfil-mestre', isMestre);
+
   document.querySelectorAll('.admin-only').forEach(el => el.classList.toggle('hidden', !isAdmin));
   document.querySelectorAll('.operacional-info').forEach(el => el.classList.toggle('hidden', isAdmin));
-  // Operacional não vê setup
+
+  // Operacional e Mestre não veem setup
   if (!isAdmin) {
     document.getElementById('nav-setup').classList.add('hidden');
   }
-}
+
+  // Mestre: só vê diárias — oculta tudo mais na sidebar e vai direto pra F7
+  if (isMestre) {
+    ['nav-dashboard','nav-obras','nav-estoque','nav-notas','nav-form','nav-creditos','nav-catalogo','nav-relatorio','nav-banco'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.add('hidden');
+    });
+    // Ocultar bottom nav inteiro exceto diárias
+    const bnav = document.querySelector('.bottom-nav');
+    if (bnav) bnav.style.display = 'none';
+    // Ir direto pra diárias
+    setTimeout(() => setView('diarias'), 100);
+  }
 
 // ══════════════════════════════════════════
 // INIT
@@ -4054,7 +4072,7 @@ function renderBanco() {
       { login: 'duamrt', perfil: 'Admin', nome: 'Duam — Operações' },
       { login: 'elydart', perfil: 'Admin', nome: 'Elyda — Financeiro' },
       { login: 'operador', perfil: 'Operacional', nome: 'Equipe de Campo' },
-      { login: 'anderson', perfil: 'Operacional', nome: 'Anderson — Mestre de Obras' },
+      { login: 'anderson', perfil: 'Mestre', nome: 'Anderson — Mestre de Obras' },
     ];
     usersEl.innerHTML = usuarios.map(u =>
       `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--borda2);">
@@ -4889,6 +4907,14 @@ window.addEventListener('resize', () => {
   #view-diarias .diarias-main { grid-template-columns: 1fr; }
   #view-diarias .diarias-panel-left { border-right: none; border-bottom: 1px solid var(--borda); }
 }
+/* Perfil Mestre: sem valores, sem lançar no EDR, sem exportar */
+body.perfil-mestre .diarias-func-val,
+body.perfil-mestre .diarias-rr-val,
+body.perfil-mestre .diarias-td-val,
+body.perfil-mestre #diar-btnConfirmar,
+body.perfil-mestre .btn-diarias-exportar,
+body.perfil-mestre th:last-child,
+body.perfil-mestre td:last-child { display: none !important; }
 </style>
 
 <!-- MODAL LANÇAR NO EDR -->
