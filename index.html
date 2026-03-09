@@ -1342,7 +1342,14 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
       <div class="field"><label>UNIDADE</label><input type="text" id="entrada-unidade" placeholder="SC, M², UN..."></div>
     </div>
     <div class="field-row">
-      <div class="field"><label>VALOR UNIT. (R$)</label><input type="number" id="entrada-preco" placeholder="0,00" min="0" step="0.01" style="text-transform:none;font-size:16px;"></div>
+      <div class="field">
+        <label>VALOR UNIT. (R$)</label>
+        <input type="number" id="entrada-preco" placeholder="0,00" min="0" step="0.01" style="text-transform:none;font-size:16px;" oninput="onEntradaPrecoInput()">
+        <div id="entrada-preco-alerta" class="hidden" style="margin-top:6px;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.35);border-radius:8px;padding:8px 10px;font-size:11px;color:#fbbf24;font-weight:600;display:flex;align-items:center;justify-content:space-between;gap:8px;">
+          <span>⚠ Valor zerado — consulte o preço:</span>
+          <button onclick="buscarPrecoFC()" style="background:rgba(245,158,11,0.2);border:1px solid rgba(245,158,11,0.4);color:#fbbf24;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">🔍 Ferreira Costa</button>
+        </div>
+      </div>
       <div class="field"><label>FORNECEDOR</label><input type="text" id="entrada-fornecedor" placeholder="EX: DEPÓSITO LOCAL"></div>
     </div>
     <div class="field"><label>DATA</label><input type="date" id="entrada-data" style="text-transform:none;"></div>
@@ -4243,6 +4250,7 @@ function abrirEntradaDireta() {
   document.getElementById('entrada-fornecedor').value = '';
   document.getElementById('entrada-data').value = hoje;
   document.getElementById('entrada-obs').value = '';
+  document.getElementById('entrada-preco-alerta').classList.add('hidden');
   const sel = document.getElementById('entrada-obra-id');
   sel.innerHTML = obras.map(o => `<option value="${o.id}">${o.nome}</option>`).join('');
   const selEt = document.getElementById('entrada-etapa');
@@ -4250,6 +4258,23 @@ function abrirEntradaDireta() {
   setDestinoEntrada('estoque');
   document.getElementById('modal-entrada').classList.remove('hidden');
   setTimeout(() => document.getElementById('entrada-desc').focus(), 100);
+}
+
+function onEntradaPrecoInput() {
+  const preco = parseFloat(document.getElementById('entrada-preco').value) || 0;
+  const alerta = document.getElementById('entrada-preco-alerta');
+  if (preco <= 0) {
+    alerta.style.display = 'flex';
+    alerta.classList.remove('hidden');
+  } else {
+    alerta.style.display = 'none';
+  }
+}
+
+function buscarPrecoFC() {
+  const desc = document.getElementById('entrada-desc').value.trim();
+  const query = encodeURIComponent(desc || 'material construção');
+  window.open(`https://www.ferreiracosta.com/busca?q=${query}`, '_blank');
 }
 
 function setDestinoEntrada(tipo) {
