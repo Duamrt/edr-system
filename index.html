@@ -5774,8 +5774,21 @@ function diarParseMensagem(msgOriginal) {
   // Ex: "Anderson e Josimar até meio-dia casa di Leonardo. I atarde casa di Pedro"
   //     "Seu nego i val casa di Junior 3 cimento"
 
-  // Dividir em frases/blocos
-  const blocos = msg.split(/[.\n]+/).map(s => s.trim()).filter(Boolean);
+  // Dividir em sub-blocos por "." ou "\n" primeiro,
+  // depois subdividir cada bloco por marcador de turno (manha/tarde/dia todo)
+  // para suportar: "Adeilto i val ate meio-dia casa di Junior i atarde casa di Mikael"
+  const splitPorTurno = (bloco) => {
+    // Substitui marcadores de turno por separador "|" para depois dividir
+    // Suporta: "i atarde", "e atarde", "i manha", "e de tarde", etc.
+    const marcado = bloco
+      .replace(/\b(e|i)\s+(ate meio.?dia|de manha|a tarde|atarde|de tarde)/g, '|$2')
+      .replace(/\b(e|i)\s+(manha)\b/g, '|$2');
+    const partes = marcado.split('|').map(s => s.trim()).filter(Boolean);
+    return partes.length > 1 ? partes : [bloco];
+  };
+
+  const brutos = msg.split(/[.\n]+/).map(s => s.trim()).filter(Boolean);
+  const blocos = brutos.flatMap(b => splitPorTurno(b));
 
   // Resultado final agrupado por funcionário
   const resultMap = {}; // nome → { funcionario, cargo, diaria_base, periodos }
