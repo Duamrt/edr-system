@@ -6158,6 +6158,7 @@ function diarSwitchTab(tab, el) {
   el.classList.add('active');
   document.getElementById('diar-tabRegistros').style.display = tab === 'registros' ? 'block' : 'none';
   document.getElementById('diar-tabFolha').style.display = tab === 'folha' ? 'block' : 'none';
+  if (tab === 'folha') { diarRenderFolha(); diarRenderExtras(); }
 }
 
 // ────────────────────────────────────────────
