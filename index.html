@@ -1770,7 +1770,7 @@ function entrarNoApp() {
   document.getElementById('user-nome-badge').textContent = usuarioAtual.nome;
   // Badge modo visitante
   const demoBadge = document.getElementById('demo-mode-badge');
-  if (demoBadge) demoBadge.style.display = isVisitante ? 'block' : 'none';
+  if (demoBadge) demoBadge.style.display = usuarioAtual.perfil === 'visitante' ? 'block' : 'none';
   aplicarPerfil();
   iniciarApp();
 }
