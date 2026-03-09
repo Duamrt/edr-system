@@ -921,6 +921,8 @@ body::before {
           <option value="limpeza">🧹 Limpeza</option>
           <option value="alimentacao">🍽 Alimentação</option>
           <option value="locacao">🏗 Locação de Equip.</option>
+          <option value="imposto">🧾 Impostos / Encargos</option>
+          <option value="imobilizado">🖥 Imobilizado</option>
           <option value="doc">📋 Documentação</option>
           <option value="terreno">🏡 Terreno</option>
           <option value="expediente">📎 Expediente</option>
@@ -1733,7 +1735,22 @@ create table if not exists entradas_diretas (
   obs text default '',
   criado_em timestamptz default now()
 );
-alter table entradas_diretas disable row level security;`;
+alter table entradas_diretas disable row level security;
+
+-- Itens fiscais / encargos no catálogo
+insert into materiais (codigo, descricao, unidade, preco_medio, categoria) values
+  ('000090', 'INSS - Contribuição Previdenciária', 'VB', 0, 'imposto'),
+  ('000091', 'DARF - Documento de Arrecadação Federal', 'VB', 0, 'imposto'),
+  ('000092', 'ISS - Imposto Sobre Serviços', 'VB', 0, 'imposto'),
+  ('000093', 'FGTS - Fundo de Garantia', 'VB', 0, 'imposto'),
+  ('000094', 'IRRF - Imposto de Renda Retido na Fonte', 'VB', 0, 'imposto'),
+  ('000095', 'DAS - Simples Nacional', 'VB', 0, 'imposto'),
+  ('000096', 'CSLL - Contribuição Social sobre Lucro', 'VB', 0, 'imposto'),
+  ('000097', 'COFINS - Contribuição para Financiamento', 'VB', 0, 'imposto')
+  ('000098', 'IMOBILIZADO - Equipamento de Escritório', 'UN', 0, 'imobilizado'),
+  ('000099', 'IMOBILIZADO - Mobiliário', 'UN', 0, 'imobilizado'),
+  ('000100', 'IMOBILIZADO - Equipamento de TI', 'UN', 0, 'imobilizado')
+on conflict (codigo) do nothing;`;
 
 // ══════════════════════════════════════════
 // ESTADO
@@ -2216,7 +2233,8 @@ function getCatLabel(key) {
     ['forma','🪵 Forma e Madeira'],['gesso','⬜ Gesso'],['granito','🪨 Granito / Pedra'],
     ['hidraulica','🚿 Hidráulica'],['impermeab','💧 Impermeabilização'],['limpeza','🧹 Limpeza'],
     ['locacao','🏗 Locação de Equip.'],['loucas','🛁 Louças e Metais'],['mao','👷 Mão de Obra'],
-    ['pintura','🖌 Pintura'],['rev_cer','🟫 Revest. Cerâmico'],['rev_arg','🟤 Revest. Argamassa'],
+    ['imposto','🧾 Impostos / Encargos'],
+    ['imobilizado','🖥 Imobilizado'],['pintura','🖌 Pintura'],['rev_cer','🟫 Revest. Cerâmico'],['rev_arg','🟤 Revest. Argamassa'],
     ['terreno','🏡 Terreno'],['generico','❓ Genérico'],['outros','📦 Outros'],
     // Etapas de obra — mapa embutido para não depender de etapaLabel
     ['01_terreno','🏛 01 · Terreno'],['02_doc','📋 02 · Documentação'],
@@ -2984,6 +3002,8 @@ const CATS_ESTOQUE = [
   { key:'alimentacao',lb:'🍽 Alimentação',        fn: d => /alimenta|refeicao|marmita|lanche|cafe|agua mineral|pacoca|bolacha|biscoito|refrigerante|suco|quentinha/i.test(d) },
   { key:'expediente', lb:'📎 Expediente',         fn: d => /papel|caneta|impressao|toner|cartucho|clips|grampeador|fita adesiva|envelope|pasta|agenda|caderno/i.test(d) },
   { key:'locacao',    lb:'🏗 Locação de Equip.',  fn: d => /locac|locaç|aluguel|andaime|betoneira alug|compactador alug|vibrador alug|escora alug|bomba alug|grua|guindaste|caçamba|cacamba|retroescavadeira|pa carregadeira|rolo compactador|mini retro|bobcat/i.test(d) },
+  { key:'imobilizado', lb:'🖥 Imobilizado',          fn: d => /computador|notebook|monitor|impressora|scanner|tablet|celular|smartphone|tv |televisao|televisor|camera|projetor|ar.condicionado|frigobar|geladeira|mesa|cadeira|armario|estante|servidor|nobreak|roteador|switch|telefone|aparelho|maquina|equipamento escritorio/i.test(d) },
+  { key:'imposto',    lb:'🧾 Impostos / Encargos', fn: d => /inss|darf|iss |fgts|irrf|imposto|encargo|contribuicao|tributo|csll|cofins|pis |simples nacional|das |gps |gfip|caged|esocial/i.test(d) },
 ];
 let catEstoqueFiltro = null;
 // Inicializar CATS unificado após CATS_ESTOQUE estar disponível
