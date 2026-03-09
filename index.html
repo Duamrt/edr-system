@@ -4196,6 +4196,8 @@ function copiarSQL() { navigator.clipboard.writeText(SQL_SETUP).then(() => showT
 // NAVEGAÇÃO
 // ══════════════════════════════════════════
 function setView(v) {
+  // Mestre só pode acessar diárias
+  if (usuarioAtual?.perfil === 'mestre' && v !== 'diarias') return;
   syncBnav(v);
   const views = ['dashboard','obras','estoque','notas','form','creditos','setup','catalogo','banco','relatorio','diarias'];
   views.forEach(name => {
