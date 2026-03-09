@@ -1230,6 +1230,7 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
               <option value="">Carregando...</option>
             </select>
             <button onclick="diarAbrirModalNovaQuinzena()" title="Nova quinzena" style="background:rgba(46,204,113,0.07);border:1px solid rgba(46,204,113,0.2);color:var(--verde-hl);border-radius:7px;padding:4px 9px;font-size:12px;cursor:pointer;" id="btn-diar-nova-quinzena">＋</button>
+            <button onclick="diarExcluirQuinzena()" title="Excluir quinzena" style="background:rgba(239,68,68,0.07);border:1px solid rgba(239,68,68,0.2);color:#f87171;border-radius:7px;padding:4px 9px;font-size:12px;cursor:pointer;" id="btn-diar-del-quinzena" class="admin-only">🗑</button>
           </div>
           <div class="diarias-tabs">
             <button class="diarias-tab active" onclick="diarSwitchTab('registros', this)">Registros</button>
@@ -5493,6 +5494,22 @@ function diarAtualizarSelectQuinzena() {
   ).join('');
   const badge = document.getElementById('diar-quinzena-badge');
   if (badge && diarQuinzenaAtiva) badge.textContent = diarQuinzenaAtiva.label;
+}
+
+async function diarExcluirQuinzena() {
+  if (!diarQuinzenaAtiva) return;
+  if (!confirm(`Excluir a quinzena "${diarQuinzenaAtiva.label}" e TODOS os registros?
+
+Essa ação não pode ser desfeita.`)) return;
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/diarias_quinzenas?id=eq.${diarQuinzenaAtiva.id}`, { method: 'DELETE', headers: hdrs });
+    diarQuinzenas = diarQuinzenas.filter(q => q.id !== diarQuinzenaAtiva.id);
+    diarQuinzenaAtiva = diarQuinzenas[0] || null;
+    diarRegistros = []; diarExtras = [];
+    diarAtualizarSelectQuinzena();
+    diarRenderRegistros(); diarRenderExtras();
+    showToast('Quinzena excluída.');
+  } catch(e) { showToast('Erro ao excluir quinzena'); }
 }
 
 async function diarTrocarQuinzena(id) {
