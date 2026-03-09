@@ -928,15 +928,29 @@ body::before {
           <option value="outros">📦 Outros</option>
         </select>
       </div>
+      <!-- Abas — dentro do sticky para ficarem sempre visíveis -->
+      <div style="display:flex;gap:6px;border-bottom:1px solid var(--borda);margin-top:8px;">
+        <button id="obras-tab-lanc" onclick="obrasSwitchTab('lanc')" style="padding:7px 16px;font-size:12px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;background:transparent;border:none;border-bottom:2px solid var(--verde-hl);color:var(--verde-hl);cursor:pointer;margin-bottom:-1px;">📋 LANÇAMENTOS</button>
+        <button id="obras-tab-mat" onclick="obrasSwitchTab('mat')" style="padding:7px 16px;font-size:12px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;background:transparent;border:none;border-bottom:2px solid transparent;color:var(--texto3);cursor:pointer;margin-bottom:-1px;">📦 MATERIAIS USADOS</button>
+      </div>
     </div>
     <div id="obras-detalhe" class="hidden"></div>
-    <div style="margin-bottom:10px;">
-      <button class="btn-save" style="padding:10px 18px;width:auto;font-size:12px;" onclick="abrirModalLanc()">➕ Novo Lançamento</button>
+
+    <!-- Aba Lançamentos -->
+    <div id="obras-tab-content-lanc">
+      <div style="margin-bottom:10px;">
+        <button class="btn-save" style="padding:10px 18px;width:auto;font-size:12px;" onclick="abrirModalLanc()">➕ Novo Lançamento</button>
+      </div>
+      <div id="obras-total-filtro" class="hidden" style="display:flex;justify-content:space-between;align-items:center;background:var(--bg2);border:1px solid var(--verde-bd);border-radius:10px;padding:10px 14px;margin-bottom:10px;"></div>
+      <div id="obras-lanc-lista"></div>
+      <div id="obras-empty" class="empty hidden">Nenhum lançamento encontrado.</div>
+      <div id="obras-loading" class="loading">Carregando...</div>
     </div>
-    <div id="obras-total-filtro" class="hidden" style="display:flex;justify-content:space-between;align-items:center;background:var(--bg2);border:1px solid var(--verde-bd);border-radius:10px;padding:10px 14px;margin-bottom:10px;"></div>
-    <div id="obras-lanc-lista"></div>
-    <div id="obras-empty" class="empty hidden">Nenhum lançamento encontrado.</div>
-    <div id="obras-loading" class="loading">Carregando...</div>
+
+    <!-- Aba Materiais Usados -->
+    <div id="obras-tab-content-mat" style="display:none;">
+      <div id="obras-mat-lista"></div>
+    </div>
   </div>
 
   <!-- ESTOQUE -->
@@ -2571,9 +2585,8 @@ function onChangeObraFiltro() {
   const sel = document.getElementById('obras-filtro-obra');
   const btn = document.getElementById('btn-arquivar-obra');
   if (btn) {
-    if (sel.value && usuarioAtual?.perfil === 'admin') {  // só admin vê botão
+    if (sel.value && usuarioAtual?.perfil === 'admin') {
       btn.style.display = 'block';
-      // Se mostrando arquivadas, botão vira "reativar"
       btn.textContent = mostandoArquivadas ? '🏗 REATIVAR' : '✅ CONCLUÍDA';
       btn.style.color = mostandoArquivadas ? '#4ade80' : '#fbbf24';
       btn.style.borderColor = mostandoArquivadas ? 'rgba(46,204,113,0.3)' : 'rgba(245,158,11,0.2)';
@@ -2582,7 +2595,8 @@ function onChangeObraFiltro() {
       btn.style.display = 'none';
     }
   }
-  filtrarLanc();
+  if (obraTabAtual === 'mat') renderObrasMateriais();
+  else filtrarLanc();
 }
 
 function onClickArquivarObra() {
@@ -2625,6 +2639,87 @@ async function arquivarObra(obraId, arquivar) {
     renderDashboard();
     showToast(arquivar ? '✅ OBRA CONCLUÍDA!' : '🔄 OBRA REABERTA!');
   } catch(e) { showToast('ERRO AO ATUALIZAR OBRA.'); }
+}
+
+let obraTabAtual = 'lanc';
+function obrasSwitchTab(tab) {
+  obraTabAtual = tab;
+  const tabLanc = document.getElementById('obras-tab-lanc');
+  const tabMat  = document.getElementById('obras-tab-mat');
+  const contLanc = document.getElementById('obras-tab-content-lanc');
+  const contMat  = document.getElementById('obras-tab-content-mat');
+  if (tab === 'lanc') {
+    tabLanc.style.borderBottomColor = 'var(--verde-hl)'; tabLanc.style.color = 'var(--verde-hl)';
+    tabMat.style.borderBottomColor  = 'transparent';     tabMat.style.color  = 'var(--texto3)';
+    contLanc.style.display = 'block'; contMat.style.display = 'none';
+  } else {
+    tabMat.style.borderBottomColor  = 'var(--verde-hl)'; tabMat.style.color  = 'var(--verde-hl)';
+    tabLanc.style.borderBottomColor = 'transparent';     tabLanc.style.color = 'var(--texto3)';
+    contLanc.style.display = 'none'; contMat.style.display = 'block';
+    renderObrasMateriais();
+  }
+}
+
+function renderObrasMateriais() {
+  const obraId = document.getElementById('obras-filtro-obra').value;
+  const el = document.getElementById('obras-mat-lista');
+  if (!el) return;
+
+  // Filtrar distribuições da obra selecionada
+  const dists = distribuicoes.filter(d => !obraId || d.obra_id === obraId);
+
+  if (!dists.length) {
+    el.innerHTML = `<div class="empty">Nenhuma movimentação de material encontrada${obraId ? ' nesta obra' : ''}.</div>`;
+    return;
+  }
+
+  // Agrupar por material
+  const porMat = {};
+  dists.forEach(d => {
+    const key = (d.item_desc||'').toUpperCase();
+    if (!porMat[key]) porMat[key] = { desc: d.item_desc, registros: [] };
+    porMat[key].registros.push(d);
+  });
+
+  const isAdmin = usuarioAtual?.perfil === 'admin';
+
+  el.innerHTML = Object.values(porMat)
+    .sort((a,b) => a.desc.localeCompare(b.desc))
+    .map(m => {
+      const totalQtd = m.registros.reduce((s,d) => s + Number(d.qtd), 0);
+      const totalVal = m.registros.reduce((s,d) => s + Number(d.valor||0), 0);
+      const rows = m.registros
+        .sort((a,b) => (b.data||'').localeCompare(a.data||''))
+        .map(d => {
+          const obra = obraId ? '' : `<span style="font-size:10px;color:var(--verde3);background:rgba(46,204,113,0.08);border:1px solid rgba(46,204,113,0.15);border-radius:4px;padding:1px 6px;">${d.obra_nome||'—'}</span>`;
+          const etiqueta = d.item_idx === -1
+            ? `<span style="font-size:9px;color:#fbbf24;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.25);border-radius:4px;padding:1px 5px;">SAÍDA MANUAL</span>`
+            : `<span style="font-size:9px;color:#60a5fa;background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);border-radius:4px;padding:1px 5px;">DISTRIBUÇÃO</span>`;
+          return `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 12px;border-top:1px solid var(--borda);gap:8px;flex-wrap:wrap;">
+            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+              <span style="font-size:11px;color:var(--texto2)">${d.data||'—'}</span>
+              ${etiqueta} ${obra}
+              ${d.etapa ? `<span style="font-size:9px;color:var(--texto3)">${etapaLabel(d.etapa)}</span>` : ''}
+            </div>
+            <div style="display:flex;gap:12px;align-items:center;">
+              <span style="font-weight:700;color:var(--branco)">${Number(d.qtd).toFixed(2)}</span>
+              ${isAdmin && d.valor > 0 ? `<span style="color:var(--verde-hl);font-family:'JetBrains Mono',monospace;font-size:11px">${fmtR(d.valor)}</span>` : ''}
+            </div>
+          </div>`;
+        }).join('');
+
+      return `<div style="background:var(--bg2);border:1px solid var(--borda);border-radius:10px;margin-bottom:10px;overflow:hidden;">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:rgba(46,204,113,0.04);">
+          <span style="font-weight:700;color:var(--branco);font-size:13px;">${m.desc}</span>
+          <div style="display:flex;gap:12px;align-items:center;">
+            <span style="font-size:11px;color:var(--texto3)">${m.registros.length} mov.</span>
+            <span style="font-weight:800;color:var(--roxo)">${totalQtd.toFixed(2)}</span>
+            ${isAdmin && totalVal > 0 ? `<span style="color:var(--verde-hl);font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700">${fmtR(totalVal)}</span>` : ''}
+          </div>
+        </div>
+        ${rows}
+      </div>`;
+    }).join('');
 }
 
 function toggleCat(k) {
@@ -2680,11 +2775,12 @@ function filtrarLanc() {
   const obraMap = {};
   [...obras, ...obrasArquivadas].forEach(o => obraMap[o.id] = o.nome);
 
-  // DRE por etapa — só mostra quando uma obra específica está selecionada (admin)
+  // DRE por etapa — usa TODOS os lançamentos da obra (ignora filtro de categoria)
   const detEl = document.getElementById('obras-detalhe');
   if (detEl && obraId && usuarioAtual?.perfil === 'admin') {
+    const todosLancObra = lancamentos.filter(l => l.obra_id === obraId);
     const porEtapa = {};
-    lista.forEach(l => {
+    todosLancObra.forEach(l => {
       const k = l.etapa || '00_outros';
       porEtapa[k] = (porEtapa[k] || 0) + Number(l.total || 0);
     });
