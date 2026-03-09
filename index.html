@@ -5625,16 +5625,19 @@ async function diarSalvarNovaQuinzena() {
   try {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/diarias_quinzenas`, {
       method: 'POST', headers: { ...hdrs, 'Prefer': 'return=representation' },
-      body: JSON.stringify({ label, data_inicio: inicio, data_fim: fim })
+      body: JSON.stringify({ label, data_inicio: inicio, data_fim: fim, fechada: false })
     });
-    const [nova] = await res.json();
+    const data = await res.json();
+    if (!res.ok) { console.error('Erro Supabase:', data); showToast('Erro: ' + (data?.message || data?.hint || JSON.stringify(data))); return; }
+    const nova = Array.isArray(data) ? data[0] : data;
+    if (!nova?.id) { showToast('Erro: resposta inválida do servidor'); return; }
     document.getElementById('diar-modalNQ')?.remove();
     diarQuinzenas.unshift(nova); diarQuinzenaAtiva = nova;
     diarAtualizarSelectQuinzena();
     await diarCarregarRegistros();
     diarRenderRegistros(); diarRenderExtras();
     showToast('\u2705 Quinzena criada!');
-  } catch(e) { showToast('Erro ao criar quinzena'); }
+  } catch(e) { console.error(e); showToast('Erro ao criar quinzena: ' + e.message); }
 }
 
 // ────────────────────────────────────────────
