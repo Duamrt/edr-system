@@ -5901,6 +5901,8 @@ async function diarConfirmarLancamento() {
 const DIAR_TEAM = ['Anderson','Josimar','Nego','Adeilton','Heleno','Val','Rosinaldo'];
 
 function diarGetFaltasDia(dia, regs) {
+  // normalizar periodos (pode vir como string do Supabase)
+  regs = regs.map(r => ({ ...r, periodos: typeof r.periodos === 'string' ? JSON.parse(r.periodos||'[]') : (r.periodos||[]) }));
   const presentes = new Set(regs.map(r => r.funcionario));
   return DIAR_TEAM.filter(n => !presentes.has(n));
 }
@@ -5933,7 +5935,8 @@ function diarRenderRegistros() {
     const items = porDia[dia];
     const df = new Date(dia + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' }).toUpperCase();
     const rows = items.map(r => {
-      const obrasTexto = r.periodos.map(p => {
+      const periodos = typeof r.periodos === 'string' ? JSON.parse(r.periodos||'[]') : (r.periodos||[]);
+      const obrasTexto = periodos.map(p => {
         const t = p.turno === 'manha' ? '☀' : p.turno === 'tarde' ? '🌤' : '📅';
         return `${t} ${p.obra}`;
       }).join(' · ');
@@ -5988,10 +5991,11 @@ function diarRenderFolha() {
   }
   const porFunc = {};
   regs.forEach(r => {
+    const periodos = typeof r.periodos === 'string' ? JSON.parse(r.periodos||'[]') : (r.periodos||[]);
     if (!porFunc[r.funcionario]) porFunc[r.funcionario] = { nome: r.funcionario, cargo: r.cargo||'', diaria: r.diaria_base, fracoes: 0, valor: 0, obras: {} };
-    porFunc[r.funcionario].fracoes += r.total_fracoes;
-    porFunc[r.funcionario].valor += r.valor;
-    r.periodos.forEach(p => { porFunc[r.funcionario].obras[p.obra] = (porFunc[r.funcionario].obras[p.obra]||0) + p.fracao; });
+    porFunc[r.funcionario].fracoes += Number(r.total_fracoes||0);
+    porFunc[r.funcionario].valor += Number(r.valor||0);
+    periodos.forEach(p => { porFunc[r.funcionario].obras[p.obra] = (porFunc[r.funcionario].obras[p.obra]||0) + (p.fracao||0); });
   });
   const ordem = { 'Mestre':1, 'Pedreiro':2, 'Betoneiro':3, 'Servente':4 };
   const funcs = Object.values(porFunc).sort((a,b) => (ordem[a.cargo]||9) - (ordem[b.cargo]||9));
