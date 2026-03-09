@@ -5798,7 +5798,8 @@ function diarRenderPreview(regs) {
 // SALVAR
 // ────────────────────────────────────────────
 async function diarConfirmarLancamento() {
-  if (!diarInterpretado || !diarQuinzenaAtiva) return;
+  if (!diarInterpretado) return;
+  if (!diarQuinzenaAtiva) { showToast('Nenhuma quinzena ativa! Crie uma quinzena primeiro.'); return; }
   const btn = document.getElementById('diar-btnConfirmar');
   if (btn) { btn.disabled = true; btn.textContent = 'SALVANDO...'; }
   try {
@@ -5827,7 +5828,7 @@ async function diarConfirmarLancamento() {
     await diarCarregarRegistros();
     diarRenderRegistros();
     showToast('✓ Diárias salvas!');
-  } catch(e) { showToast('Erro ao salvar diárias'); }
+  } catch(e) { showToast('Erro: ' + (e.message || JSON.stringify(e))); console.error('diarSalvar',e); }
   if (btn) { btn.disabled = false; btn.textContent = '✓ CONFIRMAR E SALVAR'; }
 }
 
