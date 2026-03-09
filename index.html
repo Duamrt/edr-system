@@ -922,6 +922,7 @@ body::before {
           <option value="alimentacao">🍽 Alimentação</option>
           <option value="locacao">🏗 Locação de Equip.</option>
           <option value="imposto">🧾 Impostos / Encargos</option>
+          <option value="tecnologia">💻 Tecnologia / Assinaturas</option>
           <option value="imobilizado">🖥 Imobilizado</option>
           <option value="doc">📋 Documentação</option>
           <option value="terreno">🏡 Terreno</option>
@@ -1159,6 +1160,7 @@ body::before {
           <option value="mao">👷 Mão de Obra</option>
           <option value="imposto">🧾 Impostos / Encargos</option>
           <option value="imobilizado">🖥 Imobilizado</option>
+          <option value="tecnologia">💻 Tecnologia / Assinaturas</option>
           <option value="pintura">🖌 Pintura</option>
           <option value="rev_cer">🟫 Revest. Cerâmico</option>
           <option value="generico">❓ Genérico</option>
@@ -1335,6 +1337,7 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
           <option value="mao">👷 Mão de Obra</option>
           <option value="imposto">🧾 Impostos / Encargos</option>
           <option value="imobilizado">🖥 Imobilizado</option>
+          <option value="tecnologia">💻 Tecnologia / Assinaturas</option>
           <option value="doc">📋 Documentação</option>
           <option value="terreno">🏡 Terreno</option>
           <option value="expediente">📎 Expediente</option>
@@ -1754,6 +1757,10 @@ insert into materiais (codigo, descricao, unidade, preco_medio, categoria) value
   ('000098', 'IMOBILIZADO - Equipamento de Escritório', 'UN', 0, 'imobilizado'),
   ('000099', 'IMOBILIZADO - Mobiliário', 'UN', 0, 'imobilizado'),
   ('000100', 'IMOBILIZADO - Equipamento de TI', 'UN', 0, 'imobilizado')
+  ('000101', 'ASSINATURA DE SOFTWARE / SaaS', 'MÊS', 0, 'tecnologia'),
+  ('000102', 'ASSINATURA IA / Ferramentas de IA', 'MÊS', 0, 'tecnologia'),
+  ('000103', 'CURSO / CAPACITAÇÃO', 'UN', 0, 'tecnologia'),
+  ('000104', 'HOSPEDAGEM / DOMÍNIO WEB', 'MÊS', 0, 'tecnologia')
 on conflict (codigo) do nothing;`;
 
 // ══════════════════════════════════════════
@@ -3006,6 +3013,7 @@ const CATS_ESTOQUE = [
   { key:'alimentacao',lb:'🍽 Alimentação',        fn: d => /alimenta|refeicao|marmita|lanche|cafe|agua mineral|pacoca|bolacha|biscoito|refrigerante|suco|quentinha/i.test(d) },
   { key:'expediente', lb:'📎 Expediente',         fn: d => /papel|caneta|impressao|toner|cartucho|clips|grampeador|fita adesiva|envelope|pasta|agenda|caderno/i.test(d) },
   { key:'locacao',    lb:'🏗 Locação de Equip.',  fn: d => /locac|locaç|aluguel|andaime|betoneira alug|compactador alug|vibrador alug|escora alug|bomba alug|grua|guindaste|caçamba|cacamba|retroescavadeira|pa carregadeira|rolo compactador|mini retro|bobcat/i.test(d) },
+  { key:'tecnologia',  lb:'💻 Tecnologia / Assinaturas', fn: d => /assinatura|software|sistema|plataforma|aplicativo|app |saas|cloud|hospedagem|dominio|ia |inteligencia artificial|curso|treinamento|capacitacao|licenca de software|antivirus|office|google workspace|adobe|autocad|sketchup|chatgpt|claude|openai/i.test(d) },
   { key:'imobilizado', lb:'🖥 Imobilizado',          fn: d => /computador|notebook|monitor|impressora|scanner|tablet|celular|smartphone|tv |televisao|televisor|camera|projetor|ar.condicionado|frigobar|geladeira|mesa|cadeira|armario|estante|servidor|nobreak|roteador|switch|telefone|aparelho|maquina|equipamento escritorio/i.test(d) },
   { key:'imposto',    lb:'🧾 Impostos / Encargos', fn: d => /inss|darf|iss |fgts|irrf|imposto|encargo|contribuicao|tributo|csll|cofins|pis |simples nacional|das |gps |gfip|caged|esocial/i.test(d) },
 ];
@@ -3868,7 +3876,7 @@ function renderCatalogo() {
     ['epi','🦺 EPI / Segurança'],['esgoto','🪠 Esgoto'],['esquadria','🪟 Esquadrias'],
     ['expediente','📎 Expediente'],['ferro','⚙ Aço / Ferro'],['ferramenta','🔨 Ferramentas'],
     ['forma','🪵 Forma e Madeira'],['gesso','⬜ Gesso'],['granito','🪨 Granito / Pedra'],['hidraulica','🚿 Hidráulica'],
-    ['impermeab','💧 Impermeabilização'],['imobilizado','🖥 Imobilizado'],['imposto','🧾 Impostos / Encargos'],
+    ['impermeab','💧 Impermeabilização'],['imobilizado','🖥 Imobilizado'],['imposto','🧾 Impostos / Encargos'],['tecnologia','💻 Tecnologia / Assinaturas'],
     ['limpeza','🧹 Limpeza'],['locacao','🏗 Locação de Equip.'],
     ['loucas','🛁 Louças e Metais'],['mao','👷 Mão de Obra'],['pintura','🖌 Pintura'],
     ['rev_cer','🟫 Revest. Cerâmico'],['terreno','🏡 Terreno'],['generico','❓ Genérico'],['outros','📦 Outros']
@@ -3929,7 +3937,7 @@ function cadastroRapidoMaterial(nomeDigitado, origem) {
             <label style="font-size:10px;letter-spacing:1px;color:var(--texto3);font-family:'Rajdhani',sans-serif;">CATEGORIA</label>
             <select id="cr-categoria" style="width:100%;background:var(--bg3);border:1px solid var(--borda2);border-radius:8px;padding:10px 8px;color:var(--branco);font-size:13px;margin-top:4px;">
               <option value="">— selecione —</option>
-              <option value="alvenaria">🧱 Alvenaria</option><option value="ferro">⚙ Aço / Ferro</option><option value="eletrica">⚡ Elétrica</option><option value="hidraulica">🚿 Hidráulica</option><option value="loucas">🛁 Louças e Metais</option><option value="esgoto">🪠 Esgoto</option><option value="cobertura">🏠 Cobertura</option><option value="esquadria">🪟 Esquadrias</option><option value="rev_cer">🟫 Revest. Cerâmico</option><option value="rev_arg">🟤 Revest. Argamassa</option><option value="pintura">🖌 Pintura</option><option value="impermeab">💧 Impermeabilização</option><option value="gesso">⬜ Gesso</option><option value="forma">🪵 Forma e Madeira</option><option value="ferramenta">🔨 Ferramentas</option><option value="epi">🦺 EPI / Segurança</option><option value="combustivel">⛽ Combustível</option><option value="limpeza">🧹 Limpeza</option><option value="alimentacao">🍽 Alimentação</option><option value="locacao">🏗 Locação de Equip.</option><option value="mao">👷 Mão de Obra</option><option value="imposto">🧾 Impostos / Encargos</option><option value="imobilizado">🖥 Imobilizado</option><option value="doc">📋 Documentação</option><option value="terreno">🏡 Terreno</option><option value="expediente">📎 Expediente</option><option value="generico">❓ Genérico</option><option value="outros">📦 Outros</option>
+              <option value="alvenaria">🧱 Alvenaria</option><option value="ferro">⚙ Aço / Ferro</option><option value="eletrica">⚡ Elétrica</option><option value="hidraulica">🚿 Hidráulica</option><option value="loucas">🛁 Louças e Metais</option><option value="esgoto">🪠 Esgoto</option><option value="cobertura">🏠 Cobertura</option><option value="esquadria">🪟 Esquadrias</option><option value="rev_cer">🟫 Revest. Cerâmico</option><option value="rev_arg">🟤 Revest. Argamassa</option><option value="pintura">🖌 Pintura</option><option value="impermeab">💧 Impermeabilização</option><option value="gesso">⬜ Gesso</option><option value="forma">🪵 Forma e Madeira</option><option value="ferramenta">🔨 Ferramentas</option><option value="epi">🦺 EPI / Segurança</option><option value="combustivel">⛽ Combustível</option><option value="limpeza">🧹 Limpeza</option><option value="alimentacao">🍽 Alimentação</option><option value="locacao">🏗 Locação de Equip.</option><option value="mao">👷 Mão de Obra</option><option value="imposto">🧾 Impostos / Encargos</option><option value="imobilizado">🖥 Imobilizado</option><option value="tecnologia">💻 Tecnologia / Assinaturas</option><option value="doc">📋 Documentação</option><option value="terreno">🏡 Terreno</option><option value="expediente">📎 Expediente</option><option value="generico">❓ Genérico</option><option value="outros">📦 Outros</option>
             </select>
           </div>
         </div>
@@ -4838,7 +4846,7 @@ function getCatLabel(cat) {
     forma:'🪵 Forma/Madeira',gesso:'⬜ Gesso',granito:'🪨 Granito/Pedra',
     hidraulica:'🚿 Hidráulica',impermeab:'💧 Impermeabilização',limpeza:'🧹 Limpeza',
     locacao:'🏗 Locação',loucas:'🛁 Louças',mao:'👷 Mão de Obra',
-    imposto:'🧾 Impostos/Encargos',imobilizado:'🖥 Imobilizado',
+    imposto:'🧾 Impostos/Encargos',imobilizado:'🖥 Imobilizado',tecnologia:'💻 Tecnologia/Assinaturas',
     pintura:'🖌 Pintura',rev_cer:'🟫 Revest.Cerâmico',terreno:'🏡 Terreno',
     generico:'❓ Genérico',outros:'📦 Outros'
   };
