@@ -6009,6 +6009,9 @@ function diarRenderFolha() {
   const totalExtras = Object.values(extrasPorFunc).reduce((s,v)=>s+v,0);
   const totalGeral  = totalDiarias + totalExtras;
 
+  // Faltas por funcionário — deve vir antes de rows
+  const faltas = diarGetFaltasQuinzena();
+  const diasLancados = [...new Set(regs.map(r => r.data))].length;
   const rows = funcs.map(f => {
     const extra     = extrasPorFunc[f.nome] || 0;
     const totalFunc = f.valor + extra;
@@ -6031,9 +6034,6 @@ function diarRenderFolha() {
   const obraLinhas = Object.entries(custoPorObra).sort((a,b)=>b[1]-a[1]).map(([o,v]) =>
     `<tr><td style="padding:7px 10px;font-weight:600">${o}</td>${isMestre ? '' : `<td style="padding:7px 10px;color:var(--verde-hl);font-family:'JetBrains Mono',monospace;text-align:right">R$ ${v.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>`}</tr>`).join('');
   const totalObras = Object.values(custoPorObra).reduce((s,v)=>s+v,0);
-  // Calcular faltas por funcionário
-  const faltas = diarGetFaltasQuinzena();
-  const diasLancados = [...new Set(regs.map(r => r.data))].length;
   const thDiaria  = isMestre ? '' : '<th>Diária × Dias</th>';
   const thFaltas  = isMestre ? '' : '<th style="text-align:center;color:#f87171">Faltas</th>';
   const thDiarias = isMestre ? '' : '<th style="text-align:right">Diárias</th>';
