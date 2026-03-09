@@ -1242,6 +1242,17 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
               <div class="diarias-empty-text">Nenhum dado ainda</div>
             </div>
           </div>
+
+          <!-- SEÇÃO EXTRAS — oculta para mestre -->
+          <div id="diar-extras-section" style="margin-top:18px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+              <div style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;letter-spacing:.1em;color:var(--verde-hl)">➕ EXTRAS / BONIFICAÇÕES</div>
+              <button onclick="diarAbrirModalExtra()" style="background:rgba(46,204,113,0.1);border:1px solid rgba(46,204,113,0.25);color:var(--verde-hl);border-radius:8px;padding:5px 14px;font-size:11px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;cursor:pointer;">+ ADICIONAR</button>
+            </div>
+            <div id="diar-extras-lista">
+              <div style="font-size:11px;color:var(--texto3);padding:8px 0;">Nenhum extra lançado nesta quinzena.</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -5205,6 +5216,7 @@ body.perfil-mestre .diarias-func-val,
 body.perfil-mestre .diarias-rr-val,
 body.perfil-mestre .diarias-td-val,
 body.perfil-mestre .btn-diarias-exportar,
+body.perfil-mestre #diar-extras-section,
 body.perfil-mestre th:last-child,
 body.perfil-mestre td:last-child { display: none !important; }
 </style>
@@ -5228,6 +5240,47 @@ body.perfil-mestre td:last-child { display: none !important; }
   </div>
 </div>
 
+
+<!-- MODAL EXTRA / BONIFICAÇÃO -->
+<div id="diar-modalExtra" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:9999;align-items:center;justify-content:center;padding:16px">
+  <div style="background:var(--bg2);border:1px solid var(--borda);border-radius:14px;width:100%;max-width:420px;padding:22px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+      <div style="font-weight:800;font-size:15px;letter-spacing:.05em;color:var(--branco)">➕ EXTRA / BONIFICAÇÃO</div>
+      <button onclick="diarFecharModalExtra()" style="background:none;border:none;color:var(--texto3);font-size:18px;cursor:pointer;padding:4px 8px">✕</button>
+    </div>
+    <div class="field" style="margin-bottom:12px">
+      <label>FUNCIONÁRIO</label>
+      <select id="diar-extra-func" style="width:100%;padding:10px 14px;background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.15);border-radius:10px;color:var(--branco);font-size:14px;outline:none;font-family:inherit;">
+        <option value="">Selecionar...</option>
+        <option value="Anderson">Anderson</option>
+        <option value="Nego">Nego</option>
+        <option value="Adeilton">Adeilton</option>
+        <option value="Josimar">Josimar</option>
+        <option value="Heleno">Heleno</option>
+        <option value="Val">Val</option>
+        <option value="Rosinaldo">Rosinaldo</option>
+      </select>
+    </div>
+    <div class="field" style="margin-bottom:12px">
+      <label>DESCRIÇÃO</label>
+      <input type="text" id="diar-extra-desc" placeholder="Ex: Bonificação produtividade, Vale transporte..." style="width:100%;padding:10px 14px;background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.15);border-radius:10px;color:var(--branco);font-size:14px;outline:none;font-family:inherit;">
+    </div>
+    <div class="field" style="margin-bottom:12px">
+      <label>VALOR (R$)</label>
+      <input type="number" id="diar-extra-valor" placeholder="0,00" min="0" step="0.01" style="width:100%;padding:10px 14px;background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.15);border-radius:10px;color:var(--branco);font-size:14px;outline:none;font-family:inherit;">
+    </div>
+    <div class="field" style="margin-bottom:18px">
+      <label>ALOCAR CUSTO NA OBRA</label>
+      <select id="diar-extra-obra" style="width:100%;padding:10px 14px;background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.15);border-radius:10px;color:var(--branco);font-size:14px;outline:none;font-family:inherit;">
+        <option value="">Selecionar obra...</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button onclick="diarSalvarExtra()" style="flex:1;padding:12px;background:var(--verde);color:var(--verde-hl);border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;letter-spacing:.05em">✅ Salvar</button>
+      <button onclick="diarFecharModalExtra()" style="padding:12px 18px;background:var(--bg3);color:var(--texto2);border:1px solid var(--borda);border-radius:8px;cursor:pointer">Cancelar</button>
+    </div>
+  </div>
+</div>
 <!-- ════════════════════════════════════════════
      MÓDULO DIÁRIAS — JAVASCRIPT
      ════════════════════════════════════════════ -->
@@ -5257,6 +5310,7 @@ const DIAR_FUNCIONARIOS = {
 
 // State
 let diarRegistros = JSON.parse(localStorage.getItem('edr_diarias') || '[]');
+let diarExtras = JSON.parse(localStorage.getItem('edr_diarias_extras') || '[]');
 let diarInterpretado = null;
 let _diarObrasCache = null;
 
@@ -5267,6 +5321,7 @@ function initDiarias() {
   }
   diarAtualizarBadge();
   diarRenderRegistros();
+  diarRenderExtras();
 }
 
 // ────────────────────────────────────────────
@@ -5613,10 +5668,98 @@ function diarRenderFolha() {
     </div>` : ''}`;
 }
 
+// ────────────────────────────────────────────
+// EXTRAS / BONIFICAÇÕES
+// ────────────────────────────────────────────
+function diarGetExtrasQuinzena() {
+  const q = diarGetQuinzenaAtual();
+  return diarExtras.filter(e => e.quinzena === q);
+}
+
+function diarSalvarExtraStorage() {
+  localStorage.setItem('edr_diarias_extras', JSON.stringify(diarExtras));
+}
+
+function diarAbrirModalExtra() {
+  // Popular select de obras
+  const sel = document.getElementById('diar-extra-obra');
+  sel.innerHTML = '<option value="">Selecionar obra...</option>';
+  [...obras, ...obrasArquivadas].forEach(o => {
+    sel.innerHTML += `<option value="${o.nome}">${o.nome}</option>`;
+  });
+  // Limpar campos
+  document.getElementById('diar-extra-func').value = '';
+  document.getElementById('diar-extra-desc').value = '';
+  document.getElementById('diar-extra-valor').value = '';
+  document.getElementById('diar-modalExtra').style.display = 'flex';
+}
+
+function diarFecharModalExtra() {
+  document.getElementById('diar-modalExtra').style.display = 'none';
+}
+
+function diarSalvarExtra() {
+  const func  = document.getElementById('diar-extra-func').value.trim();
+  const desc  = document.getElementById('diar-extra-desc').value.trim();
+  const valor = parseFloat(document.getElementById('diar-extra-valor').value);
+  const obra  = document.getElementById('diar-extra-obra').value;
+  if (!func)            { showToast('Selecione o funcionário'); return; }
+  if (!desc)            { showToast('Informe a descrição'); return; }
+  if (!valor || valor <= 0) { showToast('Informe um valor válido'); return; }
+  if (!obra)            { showToast('Selecione a obra'); return; }
+  const q = diarGetQuinzenaAtual();
+  diarExtras.push({ id: Date.now().toString(), quinzena: q, funcionario: func, desc, valor, obra });
+  diarSalvarExtraStorage();
+  diarFecharModalExtra();
+  diarRenderExtras();
+  diarRenderFolha();
+  showToast('✅ Extra registrado!');
+}
+
+function diarExcluirExtra(id) {
+  if (!confirm('Remover este extra?')) return;
+  diarExtras = diarExtras.filter(e => e.id !== id);
+  diarSalvarExtraStorage();
+  diarRenderExtras();
+  diarRenderFolha();
+  showToast('Extra removido.');
+}
+
+function diarRenderExtras() {
+  const el = document.getElementById('diar-extras-lista');
+  if (!el) return;
+  const extras = diarGetExtrasQuinzena();
+  if (!extras.length) {
+    el.innerHTML = '<div style="font-size:11px;color:var(--texto3);padding:8px 0;">Nenhum extra lançado nesta quinzena.</div>';
+    return;
+  }
+  const totalExtras = extras.reduce((s, e) => s + e.valor, 0);
+  el.innerHTML = `
+    <div style="background:var(--bg2);border:1px solid var(--borda);border-radius:10px;overflow:hidden;margin-bottom:8px;">
+      ${extras.map(e => `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border-bottom:1px solid var(--borda);gap:8px;flex-wrap:wrap;">
+          <div style="display:flex;flex-direction:column;gap:2px;flex:1;">
+            <span style="font-weight:700;color:var(--branco);font-size:12px;">${e.funcionario}</span>
+            <span style="font-size:10px;color:var(--texto3);">${e.desc} · <span style="color:var(--verde3)">${e.obra}</span></span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="font-weight:700;color:var(--verde-hl);font-family:'JetBrains Mono',monospace;font-size:13px;">R$ ${e.valor.toLocaleString('pt-BR',{minimumFractionDigits:2})}</span>
+            <button onclick="diarExcluirExtra('${e.id}')" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);color:#f87171;border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;">✕</button>
+          </div>
+        </div>`).join('')}
+      <div style="padding:9px 12px;display:flex;justify-content:space-between;align-items:center;background:rgba(46,204,113,0.04);">
+        <span style="font-size:11px;font-weight:700;color:var(--texto2);">TOTAL EXTRAS</span>
+        <span style="font-weight:800;color:var(--verde-hl);font-family:'JetBrains Mono',monospace;">R$ ${totalExtras.toLocaleString('pt-BR',{minimumFractionDigits:2})}</span>
+      </div>
+    </div>`;
+}
+
 function diarCalcCustoObra() {
   const regs = diarGetRegistrosQuinzena();
   const porObra = {};
   regs.forEach(r => { r.periodos.forEach(p => { porObra[p.obra] = (porObra[p.obra]||0) + r.diaria_base * p.fracao; }); });
+  // Somar extras por obra
+  diarGetExtrasQuinzena().forEach(e => { porObra[e.obra] = (porObra[e.obra]||0) + e.valor; });
   return porObra;
 }
 
@@ -5751,10 +5894,58 @@ function diarGerarPDF(regs) {
   doc.setTextColor(...CINZA1);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9);
-  doc.text('TOTAL QUINZENA', colX[0] + 2, y + 5.5);
+  doc.text('TOTAL DIÁRIAS', colX[0] + 2, y + 5.5);
   doc.setTextColor(...VERDE);
   doc.text(`R$ ${totalGeral.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, colX[4] + colW[4] - 2, y + 5.5, { align: 'right' });
-  y += 14;
+  y += 10;
+
+  // Extras
+  const extras = diarGetExtrasQuinzena();
+  if (extras.length) {
+    doc.setTextColor(...CINZA1);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.text('EXTRAS / BONIFICAÇÕES', margem, y);
+    y += 5;
+    doc.setFillColor(...VERDE);
+    doc.rect(margem, y, W - margem * 2, 7, 'F');
+    doc.setTextColor(...BRANCO);
+    doc.setFontSize(8);
+    doc.text('FUNCIONÁRIO', margem + 2, y + 5);
+    doc.text('DESCRIÇÃO', colX[1] + 2, y + 5);
+    doc.text('OBRA', colX[3] + 2, y + 5);
+    doc.text('VALOR (R$)', W - margem - 2, y + 5, { align: 'right' });
+    y += 7;
+    const totalExtras = extras.reduce((s,e) => s + e.valor, 0);
+    extras.forEach((e, idx) => {
+      if (idx % 2 === 0) { doc.setFillColor(248,248,248); doc.rect(margem, y, W-margem*2, 7, 'F'); }
+      doc.setTextColor(...CINZA1); doc.setFont('helvetica','bold'); doc.setFontSize(8.5);
+      doc.text(e.funcionario, margem + 2, y + 5);
+      doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(...CINZA2);
+      doc.text(e.desc.substring(0,28), colX[1]+2, y+5);
+      doc.text(e.obra.substring(0,18), colX[3]+2, y+5);
+      doc.setFont('helvetica','bold'); doc.setTextColor(...VERDE);
+      doc.text(`R$ ${e.valor.toLocaleString('pt-BR',{minimumFractionDigits:2})}`, W-margem-2, y+5, {align:'right'});
+      y += 7;
+    });
+    doc.setFillColor(...VERDE_CL);
+    doc.rect(margem, y, W-margem*2, 8, 'F');
+    doc.setTextColor(...CINZA1); doc.setFont('helvetica','bold'); doc.setFontSize(9);
+    doc.text('TOTAL EXTRAS', colX[0]+2, y+5.5);
+    doc.setTextColor(...VERDE);
+    doc.text(`R$ ${totalExtras.toLocaleString('pt-BR',{minimumFractionDigits:2})}`, W-margem-2, y+5.5, {align:'right'});
+    y += 10;
+    // Total geral (diárias + extras)
+    const totalFinal = totalGeral + totalExtras;
+    doc.setFillColor(...VERDE);
+    doc.rect(margem, y, W-margem*2, 9, 'F');
+    doc.setTextColor(...BRANCO); doc.setFont('helvetica','bold'); doc.setFontSize(10);
+    doc.text('TOTAL GERAL (DIÁRIAS + EXTRAS)', margem+2, y+6.2);
+    doc.text(`R$ ${totalFinal.toLocaleString('pt-BR',{minimumFractionDigits:2})}`, W-margem-2, y+6.2, {align:'right'});
+    y += 14;
+  } else {
+    y += 4;
+  }
 
   // ── SEÇÃO CUSTO POR OBRA
   const custoPorObra = diarCalcCustoObra();
