@@ -4397,17 +4397,15 @@ function abrirSaidaMaterial() {
 }
 
 function onSaidaDescInput() {
-  const val = document.getElementById('saida-desc').value.toUpperCase();
+  const val = document.getElementById('saida-desc').value.toUpperCase().trim();
   const list = document.getElementById('ac-saida-list');
   if (val.length < 2) { list.classList.add('hidden'); return; }
-  // Buscar no estoque atual (materiais com saldo > 0)
-  const estoqueAtual = calcEstoqueAtual();
-  const matches = Object.entries(estoqueAtual)
-    .filter(([desc, saldo]) => desc.includes(val) && saldo.qtd > 0)
-    .slice(0, 6);
+  // Usar o estoque consolidado real (NF + entradas diretas - distribuições)
+  const estoque = consolidarEstoque().filter(m => m.saldoTotal > 0);
+  const matches = estoque.filter(m => m.desc.toUpperCase().includes(val)).slice(0, 6);
   if (!matches.length) { list.classList.add('hidden'); return; }
-  list.innerHTML = matches.map(([desc, saldo]) =>
-    `<div class="autocomplete-item" onclick="selecionarSaidaItem('${desc.replace(/'/g,"\\'")}','${saldo.unidade||'UN'}')">${desc} <span style="color:var(--texto3);font-size:10px">(${saldo.qtd.toFixed(2)} ${saldo.unidade||'UN'} em estoque)</span></div>`
+  list.innerHTML = matches.map(m =>
+    `<div class="autocomplete-item" onclick="selecionarSaidaItem('${m.desc.replace(/'/g,"\\'")}','${m.unidade||'UN'}')">${m.desc} <span style="color:var(--texto3);font-size:10px">(${m.saldoTotal.toFixed(2)} ${m.unidade||'UN'} em estoque)</span></div>`
   ).join('');
   list.classList.remove('hidden');
 }
@@ -4453,8 +4451,8 @@ async function salvarSaidaMaterial() {
   if (!etapa) { showToast('⚠ SELECIONE O CENTRO DE CUSTO.'); document.getElementById('saida-etapa').focus(); return; }
 
   // Verificar saldo disponível
-  const estoqueAtual = calcEstoqueAtual();
-  const saldo = estoqueAtual[(desc||'').toUpperCase()]?.qtd || 0;
+  const estoqueItem = consolidarEstoque().find(m => m.desc.toUpperCase() === desc);
+  const saldo = estoqueItem?.saldoTotal || 0;
   if (saldo < qtd) {
     if (!confirm(`⚠ Saldo em estoque: ${saldo.toFixed(2)} ${unidade}. Deseja registrar saída de ${qtd} mesmo assim?`)) return;
   }
