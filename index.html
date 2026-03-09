@@ -1223,8 +1223,14 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
       </div>
       <!-- PAINEL DIREITO: REGISTROS / FOLHA -->
       <div class="diarias-panel-right">
-        <div style="display:flex;align-items:center;justify-content:space-between">
-          <div class="diarias-panel-title">// QUINZENA</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <div class="diarias-panel-title" style="margin:0">// QUINZENA</div>
+            <select id="diar-quinzena-select" onchange="diarTrocarQuinzena(this.value)" style="background:var(--bg3);border:1px solid rgba(46,204,113,0.25);border-radius:8px;padding:5px 10px;color:var(--verde-hl);font-size:11px;font-family:'Rajdhani',sans-serif;font-weight:700;cursor:pointer;">
+              <option value="">Carregando...</option>
+            </select>
+            <button onclick="diarAbrirModalNovaQuinzena()" title="Nova quinzena" style="background:rgba(46,204,113,0.07);border:1px solid rgba(46,204,113,0.2);color:var(--verde-hl);border-radius:7px;padding:4px 9px;font-size:12px;cursor:pointer;" class="admin-only">＋</button>
+          </div>
           <div class="diarias-tabs">
             <button class="diarias-tab active" onclick="diarSwitchTab('registros', this)">Registros</button>
             <button class="diarias-tab" onclick="diarSwitchTab('folha', this)">Folha de Pagamento</button>
@@ -1753,15 +1759,54 @@ insert into materiais (codigo, descricao, unidade, preco_medio, categoria) value
   ('000094', 'IRRF - Imposto de Renda Retido na Fonte', 'VB', 0, 'imposto'),
   ('000095', 'DAS - Simples Nacional', 'VB', 0, 'imposto'),
   ('000096', 'CSLL - Contribuição Social sobre Lucro', 'VB', 0, 'imposto'),
-  ('000097', 'COFINS - Contribuição para Financiamento', 'VB', 0, 'imposto')
+  ('000097', 'COFINS - Contribuição para Financiamento', 'VB', 0, 'imposto'),
   ('000098', 'IMOBILIZADO - Equipamento de Escritório', 'UN', 0, 'imobilizado'),
   ('000099', 'IMOBILIZADO - Mobiliário', 'UN', 0, 'imobilizado'),
-  ('000100', 'IMOBILIZADO - Equipamento de TI', 'UN', 0, 'imobilizado')
+  ('000100', 'IMOBILIZADO - Equipamento de TI', 'UN', 0, 'imobilizado'),
   ('000101', 'ASSINATURA DE SOFTWARE / SaaS', 'MÊS', 0, 'tecnologia'),
   ('000102', 'ASSINATURA IA / Ferramentas de IA', 'MÊS', 0, 'tecnologia'),
   ('000103', 'CURSO / CAPACITAÇÃO', 'UN', 0, 'tecnologia'),
   ('000104', 'HOSPEDAGEM / DOMÍNIO WEB', 'MÊS', 0, 'tecnologia')
-on conflict (codigo) do nothing;`;
+on conflict (codigo) do nothing;
+
+-- Tabela de quinzenas (períodos customizáveis)
+create table if not exists diarias_quinzenas (
+  id uuid default gen_random_uuid() primary key,
+  label text not null,
+  data_inicio date not null,
+  data_fim date not null,
+  fechada boolean default false,
+  criado_em timestamptz default now()
+);
+alter table diarias_quinzenas disable row level security;
+
+-- Tabela de registros de diárias
+create table if not exists diarias (
+  id uuid default gen_random_uuid() primary key,
+  quinzena_id uuid references diarias_quinzenas(id) on delete cascade,
+  data date not null,
+  funcionario text not null,
+  cargo text default '',
+  diaria_base numeric default 0,
+  periodos jsonb default '[]',
+  total_fracoes numeric default 1,
+  valor numeric default 0,
+  criado_por text default '',
+  criado_em timestamptz default now()
+);
+alter table diarias disable row level security;
+
+-- Tabela de extras/bonificações
+create table if not exists diarias_extras (
+  id uuid default gen_random_uuid() primary key,
+  quinzena_id uuid references diarias_quinzenas(id) on delete cascade,
+  funcionario text not null,
+  descricao text default '',
+  valor numeric default 0,
+  obra text default '',
+  criado_em timestamptz default now()
+);
+alter table diarias_extras disable row level security;`;
 
 // ══════════════════════════════════════════
 // ESTADO
@@ -1771,6 +1816,8 @@ let obras = [], notas = [], lancamentos = [], distribuicoes = [], entradasDireta
 let itensForm = [], distItemAtual = null, currentCredito = null;
 let acSelectedIdx = -1, acFornIdx = -1, cachedFornecedores = [], cachedItens = [];
 let obraFiltroAtual = null, catFiltroAtual = null, obrasArquivadas = [];
+let diarQuinzenas = [];        // lista de quinzenas do Supabase
+let diarQuinzenaAtiva = null;  // quinzena selecionada atualmente
 
 
 // ══════════════════════════════════════════
@@ -1879,7 +1926,7 @@ function aplicarPerfil() {
     if (el) el.classList.remove('hidden');
   });
   // Resetar bottom nav
-  const bnav = document.querySelector('.bottom-nav');
+  const bnav = document.getElementById('bottom-nav');
   if (bnav) bnav.style.display = '';
   // Resetar classe de perfil no body
   document.body.classList.remove('perfil-mestre');
@@ -1901,9 +1948,13 @@ function aplicarPerfil() {
       const el = document.getElementById(id);
       if (el) el.classList.add('hidden');
     });
-    const bnav = document.querySelector('.bottom-nav');
+    const bnav = document.getElementById('bottom-nav');
     if (bnav) bnav.style.display = 'none';
     setTimeout(() => setView('diarias'), 100);
+    // Garantir painel esquerdo expandido no mestre
+    diarPanelRecolhido = false;
+    const pl = document.getElementById('diar-panelLeft');
+    if (pl) pl.classList.remove('recolhido');
   }
 }
 
@@ -5251,7 +5302,9 @@ window.addEventListener('resize', () => {
 /* Responsive */
 @media (max-width: 768px) {
   #view-diarias .diarias-main { grid-template-columns: 1fr; }
-  #view-diarias .diarias-panel-left { border-right: none; border-bottom: 1px solid var(--borda); }
+  #view-diarias .diarias-panel-left { border-right: none; border-bottom: 1px solid var(--borda); width: 100% !important; padding: 16px !important; overflow: visible !important; }
+  #view-diarias .diarias-panel-left.recolhido { width: 100% !important; padding: 16px !important; }
+  #view-diarias .diarias-panel-right { padding: 16px !important; }
 }
 /* Perfil Mestre: sem valores, sem lançar no EDR, sem exportar */
 body.perfil-mestre .diarias-func-val,
@@ -5264,6 +5317,9 @@ body.perfil-mestre #diar-extras-lista,
 body.perfil-mestre #diar-togglePanel,
 body.perfil-mestre th:last-child,
 body.perfil-mestre td:last-child { display: none !important; }
+/* Mestre mobile: painel esquerdo sempre visível e expandido */
+body.perfil-mestre #view-diarias .diarias-panel-left { width: auto !important; min-width: 0 !important; overflow: visible !important; }
+body.perfil-mestre #view-diarias .diarias-panel-left > *:not(.diarias-panel-toggle) { display: block !important; }
 </style>
 
 <!-- MODAL LANÇAR NO EDR -->
@@ -5354,8 +5410,8 @@ const DIAR_FUNCIONARIOS = {
 };
 
 // State
-let diarRegistros = JSON.parse(localStorage.getItem('edr_diarias') || '[]');
-let diarExtras = JSON.parse(localStorage.getItem('edr_diarias_extras') || '[]');
+let diarRegistros = [];        // carregado do Supabase
+let diarExtras = [];           // carregado do Supabase
 let diarInterpretado = null;
 let _diarObrasCache = null;
 
@@ -5381,35 +5437,145 @@ function diarTogglePanel() {
   }
 }
 
-function initDiarias() {
+async function initDiarias() {
   if (!document.getElementById('diar-dataInput').value) {
     document.getElementById('diar-dataInput').value = new Date().toISOString().split('T')[0];
   }
-  diarAtualizarBadge();
+  await diarCarregarQuinzenas();
   diarRenderRegistros();
   diarRenderExtras();
 }
 
 // ────────────────────────────────────────────
-// QUINZENA
+// QUINZENA — Supabase
 // ────────────────────────────────────────────
-function diarGetQuinzenaAtual() {
+async function diarCarregarQuinzenas() {
+  try {
+    const res = await fetch(`${SUPA_URL}/rest/v1/diarias_quinzenas?order=data_inicio.desc&limit=20`, { headers: SUPA_HEADERS });
+    diarQuinzenas = await res.json();
+    if (!Array.isArray(diarQuinzenas)) diarQuinzenas = [];
+  } catch(e) { diarQuinzenas = []; }
+  if (!diarQuinzenas.length) { await diarCriarQuinzenaAuto(); return; }
+  if (!diarQuinzenaAtiva) {
+    diarQuinzenaAtiva = diarQuinzenas.find(q => !q.fechada) || diarQuinzenas[0];
+  } else {
+    diarQuinzenaAtiva = diarQuinzenas.find(q => q.id === diarQuinzenaAtiva.id) || diarQuinzenas[0];
+  }
+  diarAtualizarSelectQuinzena();
+  await diarCarregarRegistros();
+}
+
+async function diarCriarQuinzenaAuto() {
   const h = new Date();
+  const ano = h.getFullYear(), mes = h.getMonth() + 1;
+  const mesStr = h.toLocaleString('pt-BR', { month: 'long' }).toUpperCase();
   const q = h.getDate() <= 15 ? 1 : 2;
-  return `${h.getFullYear()}-${String(h.getMonth()+1).padStart(2,'0')}-Q${q}`;
+  const label  = `${q===1?'1\xaa':'2\xaa'} QUINZENA \xb7 ${mesStr} ${ano}`;
+  const inicio = q===1 ? `${ano}-${String(mes).padStart(2,'0')}-01` : `${ano}-${String(mes).padStart(2,'0')}-16`;
+  const fim    = q===1 ? `${ano}-${String(mes).padStart(2,'0')}-15` : new Date(ano,mes,0).toISOString().split('T')[0];
+  try {
+    const res = await fetch(`${SUPA_URL}/rest/v1/diarias_quinzenas`, {
+      method: 'POST', headers: { ...SUPA_HEADERS, 'Prefer': 'return=representation' },
+      body: JSON.stringify({ label, data_inicio: inicio, data_fim: fim })
+    });
+    const [nova] = await res.json();
+    diarQuinzenas = [nova]; diarQuinzenaAtiva = nova;
+  } catch(e) {}
+  diarAtualizarSelectQuinzena();
+  await diarCarregarRegistros();
 }
-function diarGetQuinzenaLabel() {
-  const h = new Date();
-  const mes = h.toLocaleString('pt-BR', { month: 'long' }).toUpperCase();
-  return `${h.getDate() <= 15 ? '1ª' : '2ª'} QUINZENA · ${mes} ${h.getFullYear()}`;
+
+function diarAtualizarSelectQuinzena() {
+  const sel = document.getElementById('diar-quinzena-select');
+  if (sel) sel.innerHTML = diarQuinzenas.map(q =>
+    `<option value="${q.id}" ${diarQuinzenaAtiva?.id===q.id?'selected':''}>${q.label}${q.fechada?' \u2713':''}</option>`
+  ).join('');
+  const badge = document.getElementById('diar-quinzena-badge');
+  if (badge && diarQuinzenaAtiva) badge.textContent = diarQuinzenaAtiva.label;
 }
-function diarAtualizarBadge() {
-  const el = document.getElementById('diar-quinzena-badge');
-  if (el) el.textContent = diarGetQuinzenaLabel();
+
+async function diarTrocarQuinzena(id) {
+  diarQuinzenaAtiva = diarQuinzenas.find(q => q.id === id);
+  const badge = document.getElementById('diar-quinzena-badge');
+  if (badge && diarQuinzenaAtiva) badge.textContent = diarQuinzenaAtiva.label;
+  await diarCarregarRegistros();
+  diarRenderRegistros(); diarRenderExtras();
 }
-function diarGetRegistrosQuinzena() {
-  const q = diarGetQuinzenaAtual();
-  return diarRegistros.filter(r => r.quinzena === q);
+
+async function diarCarregarRegistros() {
+  if (!diarQuinzenaAtiva) return;
+  try {
+    const [r1, r2] = await Promise.all([
+      fetch(`${SUPA_URL}/rest/v1/diarias?quinzena_id=eq.${diarQuinzenaAtiva.id}&order=data.desc`, { headers: SUPA_HEADERS }),
+      fetch(`${SUPA_URL}/rest/v1/diarias_extras?quinzena_id=eq.${diarQuinzenaAtiva.id}`, { headers: SUPA_HEADERS })
+    ]);
+    diarRegistros = await r1.json(); diarExtras = await r2.json();
+    if (!Array.isArray(diarRegistros)) diarRegistros = [];
+    if (!Array.isArray(diarExtras))    diarExtras = [];
+  } catch(e) { diarRegistros = []; diarExtras = []; }
+}
+
+function diarGetRegistrosQuinzena() { return diarRegistros; }
+
+function diarAbrirModalNovaQuinzena() {
+  const hoje = new Date().toISOString().split('T')[0];
+  document.body.insertAdjacentHTML('beforeend', `
+  <div id="diar-modalNQ" style="position:fixed;inset:0;background:rgba(0,0,0,0.82);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px">
+    <div style="background:var(--bg2);border:1px solid rgba(46,204,113,0.3);border-radius:14px;padding:22px;width:min(400px,94vw)">
+      <div style="font-family:'Rajdhani',sans-serif;font-weight:800;font-size:14px;letter-spacing:2px;color:var(--verde-hl);margin-bottom:16px">+ NOVA QUINZENA</div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div>
+          <label style="font-size:10px;letter-spacing:1px;color:var(--texto3);font-family:'Rajdhani',sans-serif">NOME</label>
+          <input id="nq-label" type="text" placeholder="Ex: 2\xaa QUINZENA \xb7 MAR\xc7O 2026"
+            style="width:100%;box-sizing:border-box;background:var(--bg3);border:1px solid var(--borda2);border-radius:8px;padding:10px 12px;color:var(--branco);font-size:13px;margin-top:4px">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div>
+            <label style="font-size:10px;letter-spacing:1px;color:var(--texto3);font-family:'Rajdhani',sans-serif">DATA IN\xcdCIO</label>
+            <input id="nq-inicio" type="date" value="${hoje}" onchange="diarSugerirLabelNQ()"
+              style="width:100%;box-sizing:border-box;background:var(--bg3);border:1px solid var(--borda2);border-radius:8px;padding:10px 8px;color:var(--branco);font-size:13px;margin-top:4px">
+          </div>
+          <div>
+            <label style="font-size:10px;letter-spacing:1px;color:var(--texto3);font-family:'Rajdhani',sans-serif">DATA FIM</label>
+            <input id="nq-fim" type="date" value="${hoje}"
+              style="width:100%;box-sizing:border-box;background:var(--bg3);border:1px solid var(--borda2);border-radius:8px;padding:10px 8px;color:var(--branco);font-size:13px;margin-top:4px">
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:18px">
+        <button onclick="document.getElementById('diar-modalNQ').remove()" style="flex:1;background:var(--bg3);border:1px solid var(--borda2);border-radius:8px;padding:10px;color:var(--texto2);font-family:'Rajdhani',sans-serif;font-weight:700;font-size:12px;cursor:pointer">CANCELAR</button>
+        <button onclick="diarSalvarNovaQuinzena()" style="flex:2;background:var(--verde-hl);border:none;border-radius:8px;padding:10px;color:#000;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:800;cursor:pointer">CRIAR</button>
+      </div>
+    </div>
+  </div>`);
+}
+
+function diarSugerirLabelNQ() {
+  const v = document.getElementById('nq-inicio')?.value; if (!v) return;
+  const d = new Date(v + 'T12:00:00');
+  const mes = d.toLocaleString('pt-BR', { month: 'long' }).toUpperCase();
+  const q = d.getDate() <= 15 ? '1\xaa' : '2\xaa';
+  document.getElementById('nq-label').value = `${q} QUINZENA \xb7 ${mes} ${d.getFullYear()}`;
+}
+
+async function diarSalvarNovaQuinzena() {
+  const label  = (document.getElementById('nq-label')?.value||'').trim();
+  const inicio = document.getElementById('nq-inicio')?.value;
+  const fim    = document.getElementById('nq-fim')?.value;
+  if (!label||!inicio||!fim) { showToast('Preencha todos os campos'); return; }
+  try {
+    const res = await fetch(`${SUPA_URL}/rest/v1/diarias_quinzenas`, {
+      method: 'POST', headers: { ...SUPA_HEADERS, 'Prefer': 'return=representation' },
+      body: JSON.stringify({ label, data_inicio: inicio, data_fim: fim })
+    });
+    const [nova] = await res.json();
+    document.getElementById('diar-modalNQ')?.remove();
+    diarQuinzenas.unshift(nova); diarQuinzenaAtiva = nova;
+    diarAtualizarSelectQuinzena();
+    await diarCarregarRegistros();
+    diarRenderRegistros(); diarRenderExtras();
+    showToast('\u2705 Quinzena criada!');
+  } catch(e) { showToast('Erro ao criar quinzena'); }
 }
 
 // ────────────────────────────────────────────
@@ -5631,26 +5797,38 @@ function diarRenderPreview(regs) {
 // ────────────────────────────────────────────
 // SALVAR
 // ────────────────────────────────────────────
-function diarConfirmarLancamento() {
-  if (!diarInterpretado) return;
-  const quinzena = diarGetQuinzenaAtual();
-  diarRegistros = diarRegistros.filter(r => !(r.data === diarInterpretado.data && r.quinzena === quinzena));
-  diarInterpretado.registros.forEach(r => {
-    diarRegistros.push({
-      data: diarInterpretado.data, quinzena,
+async function diarConfirmarLancamento() {
+  if (!diarInterpretado || !diarQuinzenaAtiva) return;
+  const btn = document.getElementById('diar-btnConfirmar');
+  if (btn) { btn.disabled = true; btn.textContent = 'SALVANDO...'; }
+  try {
+    // Remover registros do mesmo dia nessa quinzena
+    const existentes = diarRegistros.filter(r => r.data === diarInterpretado.data);
+    for (const r of existentes) {
+      await fetch(`${SUPA_URL}/rest/v1/diarias?id=eq.${r.id}`, { method: 'DELETE', headers: SUPA_HEADERS });
+    }
+    // Inserir novos
+    const novos = diarInterpretado.registros.map(r => ({
+      quinzena_id: diarQuinzenaAtiva.id,
+      data: diarInterpretado.data,
       funcionario: r.funcionario, cargo: r.cargo || '',
       diaria_base: r.diaria_base, periodos: r.periodos,
-      total_fracoes: r.total_fracoes, valor: r.diaria_base * r.total_fracoes
+      total_fracoes: r.total_fracoes, valor: r.diaria_base * r.total_fracoes,
+      criado_por: usuarioAtual?.nome || ''
+    }));
+    await fetch(`${SUPA_URL}/rest/v1/diarias`, {
+      method: 'POST', headers: { ...SUPA_HEADERS, 'Prefer': 'return=minimal' },
+      body: JSON.stringify(novos)
     });
-  });
-  localStorage.setItem('edr_diarias', JSON.stringify(diarRegistros));
-  diarInterpretado = null;
-  document.getElementById('diar-msgInput').value = '';
-  document.getElementById('diar-btnConfirmar').disabled = true;
-  document.getElementById('diar-previewBox').innerHTML =
-    '<div class="diarias-empty"><div class="diarias-empty-icon">💬</div><div class="diarias-empty-text">Cole uma mensagem e clique em interpretar</div></div>';
-  diarRenderRegistros();
-  showToast('✓ Diárias salvas!');
+    diarInterpretado = null;
+    document.getElementById('diar-msgInput').value = '';
+    document.getElementById('diar-previewBox').innerHTML =
+      '<div class="diarias-empty"><div class="diarias-empty-icon">💬</div><div class="diarias-empty-text">Cole uma mensagem e clique em interpretar</div></div>';
+    await diarCarregarRegistros();
+    diarRenderRegistros();
+    showToast('✓ Diárias salvas!');
+  } catch(e) { showToast('Erro ao salvar diárias'); }
+  if (btn) { btn.disabled = false; btn.textContent = '✓ CONFIRMAR E SALVAR'; }
 }
 
 // ────────────────────────────────────────────
@@ -5695,13 +5873,14 @@ function diarRenderRegistros() {
   diarRenderFolha();
 }
 
-function diarDeletarDia(data) {
+async function diarDeletarDia(data) {
   if (!confirm(`Remover todos os registros de ${data}?`)) return;
-  const q = diarGetQuinzenaAtual();
-  diarRegistros = diarRegistros.filter(r => !(r.data === data && r.quinzena === q));
-  localStorage.setItem('edr_diarias', JSON.stringify(diarRegistros));
-  diarRenderRegistros();
-  showToast('Registros removidos');
+  try {
+    await fetch(`${SUPA_URL}/rest/v1/diarias?quinzena_id=eq.${diarQuinzenaAtiva.id}&data=eq.${data}`, { method: 'DELETE', headers: SUPA_HEADERS });
+    await diarCarregarRegistros();
+    diarRenderRegistros();
+    showToast('Registros removidos');
+  } catch(e) { showToast('Erro ao remover'); }
 }
 
 // ────────────────────────────────────────────
@@ -5785,14 +5964,7 @@ function diarRenderFolha() {
 // ────────────────────────────────────────────
 // EXTRAS / BONIFICAÇÕES
 // ────────────────────────────────────────────
-function diarGetExtrasQuinzena() {
-  const q = diarGetQuinzenaAtual();
-  return diarExtras.filter(e => e.quinzena === q);
-}
-
-function diarSalvarExtraStorage() {
-  localStorage.setItem('edr_diarias_extras', JSON.stringify(diarExtras));
-}
+function diarGetExtrasQuinzena() { return diarExtras; }
 
 function diarAbrirModalExtra() {
   // Popular select de obras
@@ -5812,31 +5984,35 @@ function diarFecharModalExtra() {
   document.getElementById('diar-modalExtra').style.display = 'none';
 }
 
-function diarSalvarExtra() {
+async function diarSalvarExtra() {
   const func  = document.getElementById('diar-extra-func').value.trim();
   const desc  = document.getElementById('diar-extra-desc').value.trim();
   const valor = parseFloat(document.getElementById('diar-extra-valor').value);
   const obra  = document.getElementById('diar-extra-obra').value;
-  if (!func)            { showToast('Selecione o funcionário'); return; }
-  if (!desc)            { showToast('Informe a descrição'); return; }
-  if (!valor || valor <= 0) { showToast('Informe um valor válido'); return; }
-  if (!obra)            { showToast('Selecione a obra'); return; }
-  const q = diarGetQuinzenaAtual();
-  diarExtras.push({ id: Date.now().toString(), quinzena: q, funcionario: func, desc, valor, obra });
-  diarSalvarExtraStorage();
-  diarFecharModalExtra();
-  diarRenderExtras();
-  diarRenderFolha();
-  showToast('✅ Extra registrado!');
+  if (!func)  { showToast('Selecione o funcionário'); return; }
+  if (!desc)  { showToast('Informe a descrição'); return; }
+  if (!valor||valor<=0) { showToast('Informe um valor válido'); return; }
+  if (!obra)  { showToast('Selecione a obra'); return; }
+  try {
+    const res = await fetch(`${SUPA_URL}/rest/v1/diarias_extras`, {
+      method: 'POST', headers: { ...SUPA_HEADERS, 'Prefer': 'return=representation' },
+      body: JSON.stringify({ quinzena_id: diarQuinzenaAtiva.id, funcionario: func, descricao: desc, valor, obra })
+    });
+    const [novo] = await res.json();
+    diarExtras.push(novo);
+    diarFecharModalExtra(); diarRenderExtras(); diarRenderFolha();
+    showToast('✅ Extra registrado!');
+  } catch(e) { showToast('Erro ao salvar extra'); }
 }
 
-function diarExcluirExtra(id) {
+async function diarExcluirExtra(id) {
   if (!confirm('Remover este extra?')) return;
-  diarExtras = diarExtras.filter(e => e.id !== id);
-  diarSalvarExtraStorage();
-  diarRenderExtras();
-  diarRenderFolha();
-  showToast('Extra removido.');
+  try {
+    await fetch(`${SUPA_URL}/rest/v1/diarias_extras?id=eq.${id}`, { method: 'DELETE', headers: SUPA_HEADERS });
+    diarExtras = diarExtras.filter(e => e.id !== id);
+    diarRenderExtras(); diarRenderFolha();
+    showToast('Extra removido.');
+  } catch(e) { showToast('Erro ao remover extra'); }
 }
 
 function diarRenderExtras() {
@@ -5854,7 +6030,7 @@ function diarRenderExtras() {
         <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border-bottom:1px solid var(--borda);gap:8px;flex-wrap:wrap;">
           <div style="display:flex;flex-direction:column;gap:2px;flex:1;">
             <span style="font-weight:700;color:var(--branco);font-size:12px;">${e.funcionario}</span>
-            <span style="font-size:10px;color:var(--texto3);">${e.desc} · <span style="color:var(--verde3)">${e.obra}</span></span>
+            <span style="font-size:10px;color:var(--texto3);">${e.descricao||e.desc||''} · <span style="color:var(--verde3)">${e.obra}</span></span>
           </div>
           <div style="display:flex;align-items:center;gap:10px;">
             <span style="font-weight:700;color:var(--verde-hl);font-family:'JetBrains Mono',monospace;font-size:13px;">R$ ${e.valor.toLocaleString('pt-BR',{minimumFractionDigits:2})}</span>
@@ -5910,7 +6086,7 @@ function diarGerarPDF(regs) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const W = 210, margem = 14;
-  const quinzena = diarGetQuinzenaLabel();
+  const quinzena = (diarQuinzenaAtiva?.label||'Quinzena');
   const hoje = new Date().toLocaleDateString('pt-BR');
 
   // ── Cores
@@ -6106,7 +6282,7 @@ function diarGerarPDF(regs) {
   doc.text(`Página 1`, W - margem, y, { align: 'right' });
 
   // Salvar
-  doc.save(`EDR_Folha_${diarGetQuinzenaAtual()}.pdf`);
+  doc.save(`EDR_Folha_${(diarQuinzenaAtiva?.label||'quinzena').replace(/[^a-zA-Z0-9]/g,'_')}.pdf`);
   showToast('✅ PDF gerado!');
 }
 
@@ -6129,7 +6305,7 @@ async function diarBuscarObras() {
 async function diarAbrirModalEDR() {
   const custoPorObra = diarCalcCustoObra();
   if (!Object.keys(custoPorObra).length) { showToast('Nenhum dado na quinzena atual'); return; }
-  const obs = `Folha quinzenal · ${diarGetQuinzenaLabel()}`;
+  const obs = `Folha quinzenal · ${(diarQuinzenaAtiva?.label||'Quinzena')}`;
   const modal = document.getElementById('diar-modalEDR');
   modal.style.display = 'flex';
   document.getElementById('diar-modalEDRBody').innerHTML =
