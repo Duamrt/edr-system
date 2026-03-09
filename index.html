@@ -944,6 +944,7 @@ body::before {
       <div class="modulo-badge">📦 ESTOQUE EDR</div>
       <div style="display:flex;gap:8px;margin-bottom:8px;">
         <button class="btn-save" style="flex:1;padding:10px;font-size:13px;" onclick="abrirEntradaDireta()">📥 ENTRADA DIRETA</button>
+        <button class="btn-save" style="flex:1;padding:10px;font-size:13px;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);color:#f87171;" onclick="abrirSaidaMaterial()">📤 SAÍDA / BAIXA</button>
       </div>
       <div class="filter-row" style="margin-bottom:4px;">
         <input type="text" id="estoque-busca" placeholder="🔍 Buscar material..." oninput="renderEstoque()" style="text-transform:none;">
@@ -1366,6 +1367,31 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
   </div>
 </div>
 
+<!-- MODAL SAÍDA / BAIXA DE ESTOQUE -->
+<div id="modal-saida" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-title">📤 SAÍDA / BAIXA DE ESTOQUE <button class="modal-close" onclick="fecharModal('saida')">✕</button></div>
+    <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:11px;color:#f87171;font-weight:600;">
+      ⚠ Baixa definitiva do estoque. Use apenas para material consumido/retirado sem lançamento anterior.
+    </div>
+    <div class="field autocomplete-wrap">
+      <label>MATERIAL *</label>
+      <input type="text" id="saida-desc" placeholder="BUSCAR MATERIAL DO ESTOQUE..." oninput="onSaidaDescInput()" autocomplete="off">
+      <div class="autocomplete-list hidden" id="ac-saida-list"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>QUANTIDADE *</label><input type="number" id="saida-qtd" placeholder="0" min="0.01" step="0.01" style="text-transform:none;font-size:16px;"></div>
+      <div class="field"><label>UNIDADE</label><select id="saida-unidade"><option>UN</option><option>SC</option><option>KG</option><option>M</option><option>M²</option><option>M³</option><option>L</option><option>PC</option><option>CX</option><option>BR</option><option>GL</option><option>VB</option></select></div>
+    </div>
+    <div class="field"><label>DATA *</label><input type="date" id="saida-data" style="text-transform:none;"></div>
+    <div class="field"><label>OBRA / DESTINO *</label><select id="saida-obra"></select></div>
+    <div class="field"><label>ETAPA / CENTRO DE CUSTO *</label><select id="saida-etapa" style="min-height:44px;font-size:14px;width:100%;background:var(--bg3);border:1px solid var(--borda2);border-radius:8px;padding:10px 12px;color:var(--branco);font-family:inherit;"></select></div>
+    <div class="field"><label>MOTIVO / OBSERVAÇÃO</label><input type="text" id="saida-obs" placeholder="EX: APLICADO NA LAJE, SOBRA DE ESTOQUE..."></div>
+    <button class="btn-save" style="background:rgba(239,68,68,0.2);border:1px solid rgba(239,68,68,0.4);color:#f87171;" onclick="salvarSaidaMaterial()">📤 CONFIRMAR SAÍDA</button>
+    <button class="btn-outline" onclick="fecharModal('saida')">CANCELAR</button>
+  </div>
+</div>
+
 <!-- MODAL DISTRIBUIÇÃO POR ITEM -->
 <div id="modal-dist" class="modal-overlay hidden">
   <div class="modal">
@@ -1723,8 +1749,8 @@ function fazerLogin() {
 }
 function entrarNoApp() {
   document.getElementById('login-screen').classList.add('hidden');
-  // Garantir que só o dashboard aparece — evita flash de SQL ou outras abas
-  ['obras','estoque','notas','form','creditos','setup','catalogo','banco','relatorio'].forEach(name => {
+  // Esconder todas as views
+  ['obras','estoque','notas','form','creditos','setup','catalogo','banco','relatorio','diarias'].forEach(name => {
     const el = document.getElementById('view-'+name);
     if (el) el.classList.add('hidden');
   });
@@ -1780,6 +1806,18 @@ function aplicarPerfil() {
   const isAdmin = usuarioAtual.perfil === 'admin';
   const isMestre = usuarioAtual.perfil === 'mestre';
 
+  // Resetar sidebar — mostrar tudo antes de aplicar restrições
+  ['nav-dashboard','nav-obras','nav-estoque','nav-notas','nav-form','nav-creditos',
+   'nav-catalogo','nav-relatorio','nav-banco','nav-setup','nav-diarias'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('hidden');
+  });
+  // Resetar bottom nav
+  const bnav = document.querySelector('.bottom-nav');
+  if (bnav) bnav.style.display = '';
+  // Resetar classe de perfil no body
+  document.body.classList.remove('perfil-mestre');
+
   // Classe no body para CSS condicional
   document.body.classList.toggle('perfil-mestre', isMestre);
 
@@ -1797,10 +1835,8 @@ function aplicarPerfil() {
       const el = document.getElementById(id);
       if (el) el.classList.add('hidden');
     });
-    // Ocultar bottom nav inteiro exceto diárias
     const bnav = document.querySelector('.bottom-nav');
     if (bnav) bnav.style.display = 'none';
-    // Ir direto pra diárias
     setTimeout(() => setView('diarias'), 100);
   }
 }
@@ -2150,6 +2186,7 @@ function getCatLabel(key) {
     ['11_esquad','🪟 11 · Esquadrias'],['12_revestc','🟫 12 · Rev. Cerâmico'],
     ['13_pintura','🖌 13 · Pintura'],['14_acab','✨ 14 · Acabamento'],
     ['15_locacao','🏗 15 · Locação / Equip.'],['16_externo','🌿 16 · Área Externa'],
+    ['17_limpeza','🧹 17 · Limpeza Final'],
     ['00_outros','📦 Não classificado']
   ];
   const found = CATS_OPTS.find(([k]) => k === key);
@@ -2701,6 +2738,7 @@ const ETAPAS = [
   { key:'14_acab',       lb:'✨ 14 · Acabamento Final' },
   { key:'15_locacao',    lb:'🏗 15 · Locação / Máq. / Equip.' },
   { key:'16_externo',    lb:'🌿 16 · Área Externa' },
+  { key:'17_limpeza',    lb:'🧹 17 · Limpeza Final' },
   { key:'00_outros',     lb:'📦 Não classificado' },
 ];
 function etapaLabel(key) {
@@ -4289,6 +4327,7 @@ async function salvarEntradaDireta() {
   const obraObj = obras.find(o => o.id === obraId);
   if (!desc) { showToast('⚠ INFORME O MATERIAL.'); return; }
   if (qtd <= 0) { showToast('⚠ INFORME A QUANTIDADE.'); return; }
+  if (destinoObra && (!preco || preco <= 0)) { showToast('⚠ VALOR UNITÁRIO OBRIGATÓRIO para lançamento em obra.'); document.getElementById('entrada-preco').focus(); return; }
   if (destinoObra && !obraId) { showToast('⚠ SELECIONE A OBRA.'); return; }
   const etapaVal = document.getElementById('entrada-etapa')?.value || '';
   if (destinoObra && !etapaVal) { showToast('⚠ SELECIONE O CENTRO DE CUSTO (ETAPA).'); document.getElementById('entrada-etapa')?.focus(); return; }
@@ -4313,7 +4352,103 @@ async function salvarEntradaDireta() {
   } catch(e) { console.error(e); showToast('ERRO AO REGISTRAR. Execute o SQL no SETUP.'); }
 }
 
-// ── BOTTOM NAV MOBILE ──────────────────────────────
+// ── SAÍDA / BAIXA DE ESTOQUE ──────────────────────────────
+function abrirSaidaMaterial() {
+  // Popular selects
+  const obraSelect = document.getElementById('saida-obra');
+  obraSelect.innerHTML = '<option value="">— Selecione a obra —</option>' +
+    obras.map(o => `<option value="${o.id}">${o.nome}</option>`).join('');
+  document.getElementById('saida-etapa').innerHTML = etapaSelectOpts('', false);
+  // Data de hoje
+  const hoje = new Date().toISOString().split('T')[0];
+  document.getElementById('saida-data').value = hoje;
+  // Limpar campos
+  document.getElementById('saida-desc').value = '';
+  document.getElementById('saida-qtd').value = '';
+  document.getElementById('saida-obs').value = '';
+  document.getElementById('ac-saida-list').classList.add('hidden');
+  document.getElementById('modal-saida').classList.remove('hidden');
+  setTimeout(() => document.getElementById('saida-desc').focus(), 100);
+}
+
+function onSaidaDescInput() {
+  const val = document.getElementById('saida-desc').value.toUpperCase();
+  const list = document.getElementById('ac-saida-list');
+  if (val.length < 2) { list.classList.add('hidden'); return; }
+  // Buscar no estoque atual (materiais com saldo > 0)
+  const estoqueAtual = calcEstoqueAtual();
+  const matches = Object.entries(estoqueAtual)
+    .filter(([desc, saldo]) => desc.includes(val) && saldo.qtd > 0)
+    .slice(0, 6);
+  if (!matches.length) { list.classList.add('hidden'); return; }
+  list.innerHTML = matches.map(([desc, saldo]) =>
+    `<div class="autocomplete-item" onclick="selecionarSaidaItem('${desc.replace(/'/g,"\\'")}','${saldo.unidade||'UN'}')">${desc} <span style="color:var(--texto3);font-size:10px">(${saldo.qtd.toFixed(2)} ${saldo.unidade||'UN'} em estoque)</span></div>`
+  ).join('');
+  list.classList.remove('hidden');
+}
+
+function selecionarSaidaItem(desc, unidade) {
+  document.getElementById('saida-desc').value = desc;
+  document.getElementById('saida-unidade').value = unidade;
+  document.getElementById('ac-saida-list').classList.add('hidden');
+  document.getElementById('saida-qtd').focus();
+}
+
+// Calcular saldo atual do estoque por item
+function calcEstoqueAtual() {
+  const mapa = {};
+  // Entradas: NF + entradas diretas para estoque
+  entradasDiretas.forEach(e => {
+    const k = (e.item_desc||'').toUpperCase();
+    if (!mapa[k]) mapa[k] = { qtd: 0, unidade: e.unidade||'UN' };
+    mapa[k].qtd += parseFloat(e.qtd)||0;
+  });
+  // Saídas: distribuições
+  distribuicoes.forEach(d => {
+    const k = (d.item_desc||'').toUpperCase();
+    if (!mapa[k]) mapa[k] = { qtd: 0, unidade: 'UN' };
+    mapa[k].qtd -= parseFloat(d.qtd)||0;
+  });
+  return mapa;
+}
+
+async function salvarSaidaMaterial() {
+  const desc = (document.getElementById('saida-desc').value||'').toUpperCase().trim();
+  const qtd = parseFloat(document.getElementById('saida-qtd').value)||0;
+  const unidade = document.getElementById('saida-unidade').value||'UN';
+  const data = document.getElementById('saida-data').value;
+  const obraId = document.getElementById('saida-obra').value;
+  const etapa = document.getElementById('saida-etapa').value;
+  const obs = (document.getElementById('saida-obs').value||'').toUpperCase();
+  const obraObj = obras.find(o => o.id === obraId);
+
+  if (!desc) { showToast('⚠ INFORME O MATERIAL.'); return; }
+  if (qtd <= 0) { showToast('⚠ INFORME A QUANTIDADE.'); return; }
+  if (!obraId) { showToast('⚠ SELECIONE A OBRA DESTINO.'); return; }
+  if (!etapa) { showToast('⚠ SELECIONE O CENTRO DE CUSTO.'); document.getElementById('saida-etapa').focus(); return; }
+
+  // Verificar saldo disponível
+  const estoqueAtual = calcEstoqueAtual();
+  const saldo = estoqueAtual[(desc||'').toUpperCase()]?.qtd || 0;
+  if (saldo < qtd) {
+    if (!confirm(`⚠ Saldo em estoque: ${saldo.toFixed(2)} ${unidade}. Deseja registrar saída de ${qtd} mesmo assim?`)) return;
+  }
+
+  try {
+    // Registrar como distribuição (baixa do estoque) — reutiliza tabela distribuicoes
+    const [nova] = await sbPost('distribuicoes', {
+      item_desc: desc, unidade, qtd,
+      obra_id: obraId, obra_nome: obraObj?.nome || '',
+      data, obs: obs || 'SAÍDA MANUAL DE ESTOQUE', etapa,
+      tipo: 'saida_manual'
+    });
+    distribuicoes.unshift(nova);
+    showToast(`✅ Baixa de ${qtd} ${unidade} de ${desc} registrada!`);
+    fecharModal('saida');
+    renderEstoque();
+    renderDashboard();
+  } catch(e) { console.error(e); showToast('ERRO AO REGISTRAR SAÍDA.'); }
+}
 function toggleBnavMore() {
   document.getElementById('bnav-more-menu').classList.toggle('open');
 }
