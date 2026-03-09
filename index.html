@@ -5633,9 +5633,20 @@ function diarRenderFolha() {
   });
   const ordem = { 'Mestre':1, 'Pedreiro':2, 'Betoneiro':3, 'Servente':4 };
   const funcs = Object.values(porFunc).sort((a,b) => (ordem[a.cargo]||9) - (ordem[b.cargo]||9));
-  const totalGeral = funcs.reduce((s,f) => s + f.valor, 0);
+  const totalDiarias = funcs.reduce((s,f) => s + f.valor, 0);
   const isMestre = usuarioAtual?.perfil === 'mestre';
-  const rows = funcs.map(f => `
+
+  // Mapear extras por funcionário
+  const extras = diarGetExtrasQuinzena();
+  const extrasPorFunc = {};
+  extras.forEach(e => { extrasPorFunc[e.funcionario] = (extrasPorFunc[e.funcionario]||0) + e.valor; });
+  const totalExtras = Object.values(extrasPorFunc).reduce((s,v)=>s+v,0);
+  const totalGeral  = totalDiarias + totalExtras;
+
+  const rows = funcs.map(f => {
+    const extra     = extrasPorFunc[f.nome] || 0;
+    const totalFunc = f.valor + extra;
+    return `
     <tr>
       <td class="diarias-td-nome">${f.nome}</td>
       <td style="font-size:10px;color:var(--texto3)">${f.cargo||'-'}</td>
@@ -5643,18 +5654,30 @@ function diarRenderFolha() {
       <td>${f.fracoes.toFixed(1)}d</td>
       <td><div class="diarias-obras-breakdown">${Object.keys(f.obras).map(o => `<span class="diarias-obra-tag">${o}</span>`).join('')}</div></td>
       ${isMestre ? '' : `<td class="diarias-td-val">R$ ${f.valor.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>`}
-    </tr>`).join('');
+      ${isMestre ? '' : `<td class="diarias-td-val" style="color:${extra>0?'#fbbf24':'var(--texto3)'};">${extra>0 ? `R$ ${extra.toLocaleString('pt-BR',{minimumFractionDigits:2})}` : '—'}</td>`}
+      ${isMestre ? '' : `<td class="diarias-td-val" style="font-size:14px;font-weight:800;color:var(--verde-hl)">R$ ${totalFunc.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>`}
+    </tr>`;
+  }).join('');
+
   // Custo por obra
   const custoPorObra = diarCalcCustoObra();
   const obraLinhas = Object.entries(custoPorObra).sort((a,b)=>b[1]-a[1]).map(([o,v]) =>
     `<tr><td style="padding:7px 10px;font-weight:600">${o}</td>${isMestre ? '' : `<td style="padding:7px 10px;color:var(--verde-hl);font-family:'JetBrains Mono',monospace;text-align:right">R$ ${v.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>`}</tr>`).join('');
   const totalObras = Object.values(custoPorObra).reduce((s,v)=>s+v,0);
-  const thDiaria = isMestre ? '' : '<th>Diária × Dias</th>';
-  const thTotal  = isMestre ? '' : '<th>Total</th>';
-  const trTotal  = isMestre ? '' : `<tr class="diarias-folha-total-row"><td colspan="4" style="font-weight:700">TOTAL QUINZENA</td><td class="diarias-td-val" style="font-size:15px">R$ ${totalGeral.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td></tr>`;
+  const thDiaria  = isMestre ? '' : '<th>Diária × Dias</th>';
+  const thDiarias = isMestre ? '' : '<th style="text-align:right">Diárias</th>';
+  const thExtra   = isMestre ? '' : '<th style="text-align:right;color:#fbbf24">Extra</th>';
+  const thTotal   = isMestre ? '' : '<th style="text-align:right;color:var(--verde-hl)">Total</th>';
+  const trTotal   = isMestre ? '' : `
+    <tr class="diarias-folha-total-row">
+      <td colspan="4" style="font-weight:700">TOTAL QUINZENA</td>
+      <td class="diarias-td-val">R$ ${totalDiarias.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
+      <td class="diarias-td-val" style="color:#fbbf24">R$ ${totalExtras.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
+      <td class="diarias-td-val" style="font-size:15px;color:var(--verde-hl)">R$ ${totalGeral.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
+    </tr>`;
   container.innerHTML = `
     <table class="diarias-folha-table">
-      <thead><tr><th>Funcionário</th><th>Função</th>${thDiaria}<th>Dias</th><th>Obras</th>${thTotal}</tr></thead>
+      <thead><tr><th>Funcionário</th><th>Função</th>${thDiaria}<th>Dias</th><th>Obras</th>${thDiarias}${thExtra}${thTotal}</tr></thead>
       <tbody>${rows}${trTotal}</tbody>
     </table>
     ${!isMestre && obraLinhas ? `<div style="margin-top:16px;background:var(--bg2);border:1px solid var(--borda);border-radius:10px;overflow:hidden">
