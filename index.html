@@ -5451,7 +5451,7 @@ async function initDiarias() {
 // ────────────────────────────────────────────
 async function diarCarregarQuinzenas() {
   try {
-    const res = await fetch(`${SUPA_URL}/rest/v1/diarias_quinzenas?order=data_inicio.desc&limit=20`, { headers: SUPA_HEADERS });
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/diarias_quinzenas?order=data_inicio.desc&limit=20`, { headers: hdrs });
     diarQuinzenas = await res.json();
     if (!Array.isArray(diarQuinzenas)) diarQuinzenas = [];
   } catch(e) { diarQuinzenas = []; }
@@ -5474,8 +5474,8 @@ async function diarCriarQuinzenaAuto() {
   const inicio = q===1 ? `${ano}-${String(mes).padStart(2,'0')}-01` : `${ano}-${String(mes).padStart(2,'0')}-16`;
   const fim    = q===1 ? `${ano}-${String(mes).padStart(2,'0')}-15` : new Date(ano,mes,0).toISOString().split('T')[0];
   try {
-    const res = await fetch(`${SUPA_URL}/rest/v1/diarias_quinzenas`, {
-      method: 'POST', headers: { ...SUPA_HEADERS, 'Prefer': 'return=representation' },
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/diarias_quinzenas`, {
+      method: 'POST', headers: { ...hdrs, 'Prefer': 'return=representation' },
       body: JSON.stringify({ label, data_inicio: inicio, data_fim: fim })
     });
     const [nova] = await res.json();
@@ -5506,8 +5506,8 @@ async function diarCarregarRegistros() {
   if (!diarQuinzenaAtiva) return;
   try {
     const [r1, r2] = await Promise.all([
-      fetch(`${SUPA_URL}/rest/v1/diarias?quinzena_id=eq.${diarQuinzenaAtiva.id}&order=data.desc`, { headers: SUPA_HEADERS }),
-      fetch(`${SUPA_URL}/rest/v1/diarias_extras?quinzena_id=eq.${diarQuinzenaAtiva.id}`, { headers: SUPA_HEADERS })
+      fetch(`${SUPABASE_URL}/rest/v1/diarias?quinzena_id=eq.${diarQuinzenaAtiva.id}&order=data.desc`, { headers: hdrs }),
+      fetch(`${SUPABASE_URL}/rest/v1/diarias_extras?quinzena_id=eq.${diarQuinzenaAtiva.id}`, { headers: hdrs })
     ]);
     diarRegistros = await r1.json(); diarExtras = await r2.json();
     if (!Array.isArray(diarRegistros)) diarRegistros = [];
@@ -5564,8 +5564,8 @@ async function diarSalvarNovaQuinzena() {
   const fim    = document.getElementById('nq-fim')?.value;
   if (!label||!inicio||!fim) { showToast('Preencha todos os campos'); return; }
   try {
-    const res = await fetch(`${SUPA_URL}/rest/v1/diarias_quinzenas`, {
-      method: 'POST', headers: { ...SUPA_HEADERS, 'Prefer': 'return=representation' },
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/diarias_quinzenas`, {
+      method: 'POST', headers: { ...hdrs, 'Prefer': 'return=representation' },
       body: JSON.stringify({ label, data_inicio: inicio, data_fim: fim })
     });
     const [nova] = await res.json();
@@ -5805,7 +5805,7 @@ async function diarConfirmarLancamento() {
     // Remover registros do mesmo dia nessa quinzena
     const existentes = diarRegistros.filter(r => r.data === diarInterpretado.data);
     for (const r of existentes) {
-      await fetch(`${SUPA_URL}/rest/v1/diarias?id=eq.${r.id}`, { method: 'DELETE', headers: SUPA_HEADERS });
+      await fetch(`${SUPABASE_URL}/rest/v1/diarias?id=eq.${r.id}`, { method: 'DELETE', headers: hdrs });
     }
     // Inserir novos
     const novos = diarInterpretado.registros.map(r => ({
@@ -5816,8 +5816,8 @@ async function diarConfirmarLancamento() {
       total_fracoes: r.total_fracoes, valor: r.diaria_base * r.total_fracoes,
       criado_por: usuarioAtual?.nome || ''
     }));
-    await fetch(`${SUPA_URL}/rest/v1/diarias`, {
-      method: 'POST', headers: { ...SUPA_HEADERS, 'Prefer': 'return=minimal' },
+    await fetch(`${SUPABASE_URL}/rest/v1/diarias`, {
+      method: 'POST', headers: { ...hdrs, 'Prefer': 'return=minimal' },
       body: JSON.stringify(novos)
     });
     diarInterpretado = null;
@@ -5876,7 +5876,7 @@ function diarRenderRegistros() {
 async function diarDeletarDia(data) {
   if (!confirm(`Remover todos os registros de ${data}?`)) return;
   try {
-    await fetch(`${SUPA_URL}/rest/v1/diarias?quinzena_id=eq.${diarQuinzenaAtiva.id}&data=eq.${data}`, { method: 'DELETE', headers: SUPA_HEADERS });
+    await fetch(`${SUPABASE_URL}/rest/v1/diarias?quinzena_id=eq.${diarQuinzenaAtiva.id}&data=eq.${data}`, { method: 'DELETE', headers: hdrs });
     await diarCarregarRegistros();
     diarRenderRegistros();
     showToast('Registros removidos');
@@ -5994,8 +5994,8 @@ async function diarSalvarExtra() {
   if (!valor||valor<=0) { showToast('Informe um valor válido'); return; }
   if (!obra)  { showToast('Selecione a obra'); return; }
   try {
-    const res = await fetch(`${SUPA_URL}/rest/v1/diarias_extras`, {
-      method: 'POST', headers: { ...SUPA_HEADERS, 'Prefer': 'return=representation' },
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/diarias_extras`, {
+      method: 'POST', headers: { ...hdrs, 'Prefer': 'return=representation' },
       body: JSON.stringify({ quinzena_id: diarQuinzenaAtiva.id, funcionario: func, descricao: desc, valor, obra })
     });
     const [novo] = await res.json();
@@ -6008,7 +6008,7 @@ async function diarSalvarExtra() {
 async function diarExcluirExtra(id) {
   if (!confirm('Remover este extra?')) return;
   try {
-    await fetch(`${SUPA_URL}/rest/v1/diarias_extras?id=eq.${id}`, { method: 'DELETE', headers: SUPA_HEADERS });
+    await fetch(`${SUPABASE_URL}/rest/v1/diarias_extras?id=eq.${id}`, { method: 'DELETE', headers: hdrs });
     diarExtras = diarExtras.filter(e => e.id !== id);
     diarRenderExtras(); diarRenderFolha();
     showToast('Extra removido.');
