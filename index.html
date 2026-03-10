@@ -866,6 +866,10 @@ body::before {
     <span class="nav-icon">📈</span>RELATÓRIO<span class="nav-key">F9</span>
   </button>
   <div class="nav-divider"></div>
+  <button class="nav-btn admin-only" id="nav-custos" onclick="setView('custos')">
+    <span class="nav-icon">💰</span>CUSTOS CEF
+  </button>
+  <div class="nav-divider"></div>
   <button class="nav-btn admin-only" id="nav-banco" onclick="setView('banco')">
     <span class="nav-icon">🗄</span>DADOS
   </button>
@@ -909,6 +913,9 @@ body::before {
   </button>
   <button class="bnav-more-item" class="bnav-more-item admin-only" id="bnav-relatorio" onclick="setView('relatorio');closeBnavMore()">
     <span class="bnav-more-icon">📈</span>RELATÓRIO
+  </button>
+  <button class="bnav-more-item admin-only" id="bnav-custos" onclick="setView('custos');closeBnavMore()">
+    <span class="bnav-more-icon">💰</span>CUSTOS CEF
   </button>
   <button class="bnav-more-item admin-only" id="bnav-banco" onclick="setView('banco');closeBnavMore()">
     <span class="bnav-more-icon">🗄</span>DADOS
@@ -1027,9 +1034,22 @@ body::before {
 
   <!-- OBRAS (módulo EDR Obras) -->
   <div id="view-obras" class="hidden" style="min-height:0;">
-    <div id="obras-sticky" style="position:sticky;top:0;z-index:90;background:var(--bg);padding:10px 0 8px 0;border-bottom:1px solid var(--borda);margin-bottom:8px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+    <!-- VISÃO GERAL DE OBRAS (cards) -->
+    <div id="obras-cards-overview">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding-top:4px;">
         <div class="modulo-badge" style="margin-bottom:0;">🏗 EDR OBRAS</div>
+        <div style="display:flex;gap:8px;">
+          <button onclick="toggleObrasArquivadas()" id="btn-ver-arquivadas2" style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);color:#fbbf24;border-radius:8px;padding:4px 12px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;cursor:pointer;" class="admin-only">📋 VER CONCLUÍDAS</button>
+        </div>
+      </div>
+      <div id="obras-cards-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;"></div>
+    </div>
+    <div id="obras-sticky" style="position:sticky;top:0;z-index:90;background:var(--bg);padding:10px 0 8px 0;border-bottom:1px solid var(--borda);margin-bottom:8px;display:none;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <div style="display:flex;align-items:center;">
+          <button onclick="obrasVoltarCards()" style="background:rgba(46,204,113,0.08);border:1px solid rgba(46,204,113,0.15);color:var(--verde-hl);border-radius:8px;padding:5px 14px;font-size:11px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;cursor:pointer;margin-right:8px;">← VOLTAR</button>
+          <div class="modulo-badge" style="margin-bottom:0;">🏗 EDR OBRAS</div>
+        </div>
         <button onclick="toggleObrasArquivadas()" id="btn-ver-arquivadas" style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);color:#fbbf24;border-radius:8px;padding:4px 12px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;cursor:pointer;transition:all .2s;" class="admin-only">📋 VER CONCLUÍDAS</button>
       </div>
       <div class="filter-row">
@@ -1212,6 +1232,71 @@ body::before {
       </table>
     </div>
     <div class="alert-box"><div class="alert-title">⚠️ ATENÇÃO</div><div class="alert-text">Consulte seu contador para casos específicos.</div></div>
+  </div>
+
+  <!-- CUSTOS CEF (admin only) -->
+  <div id="view-custos" class="hidden">
+    <div style="position:sticky;top:53px;z-index:90;background:var(--bg);padding:10px 0 4px 0;">
+      <div class="modulo-badge">💰 CUSTOS CEF</div>
+    </div>
+
+    <!-- RESUMO GERAL -->
+    <div id="custos-resumo" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:16px;"></div>
+
+    <!-- FILTRO POR OBRA -->
+    <div class="card" style="padding:14px;margin-bottom:14px;">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <div class="section-title" style="margin:0;font-size:13px;">🏗 FILTRAR POR OBRA</div>
+        <select id="custos-filtro-obra" onchange="renderCustos()" style="flex:1;min-width:180px;padding:8px 12px;background:#1a1a2e;border:1px solid rgba(46,204,113,0.15);border-radius:10px;color:var(--branco);font-size:13px;font-family:inherit;">
+          <option value="" style="background:#1a1a2e;color:#fff;">TODAS AS OBRAS</option>
+        </select>
+        <button class="btn-save" style="padding:8px 16px;font-size:12px;" onclick="abrirModalRepasse()">+ NOVO REPASSE</button>
+        <button class="btn-outline" style="padding:8px 16px;font-size:12px;" onclick="gerarRelatorioCustos()">🖨 RELATÓRIO</button>
+      </div>
+    </div>
+
+    <!-- DETALHES / TABELA DE REPASSES -->
+    <div id="custos-detalhes"></div>
+
+    <!-- HISTÓRICO MENSAL -->
+    <div id="custos-historico-mensal" style="margin-top:16px;"></div>
+  </div>
+
+  <!-- MODAL NOVO REPASSE CEF -->
+  <div id="modal-repasse" class="modal-overlay hidden">
+    <div class="modal" style="max-width:440px;">
+      <div class="modal-title">
+        <span>💰 NOVO REPASSE CEF</span>
+        <button class="modal-close" onclick="fecharModal('repasse')">✕</button>
+      </div>
+      <input type="hidden" id="repasse-id">
+      <div class="field" style="margin-bottom:12px;">
+        <label>OBRA *</label>
+        <select id="repasse-obra" style="width:100%;padding:10px 14px;background:#1a1a2e;border:1px solid rgba(46,204,113,0.15);border-radius:10px;color:var(--branco);font-size:14px;outline:none;font-family:inherit;">
+          <option value="" style="background:#1a1a2e;color:#fff;">Selecione...</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <div class="field" style="flex:1;margin-bottom:12px;">
+          <label>MEDIÇÃO Nº *</label>
+          <input type="number" id="repasse-medicao" min="1" placeholder="Ex: 1" style="width:100%;padding:10px 14px;background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.15);border-radius:10px;color:var(--branco);font-size:14px;outline:none;font-family:inherit;">
+        </div>
+        <div class="field" style="flex:1;margin-bottom:12px;">
+          <label>VALOR (R$) *</label>
+          <input type="number" id="repasse-valor" min="0" step="0.01" placeholder="0,00" style="width:100%;padding:10px 14px;background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.15);border-radius:10px;color:var(--branco);font-size:14px;outline:none;font-family:inherit;">
+        </div>
+      </div>
+      <div class="field" style="margin-bottom:12px;">
+        <label>DATA DO CRÉDITO *</label>
+        <input type="date" id="repasse-data" style="width:100%;padding:10px 14px;background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.15);border-radius:10px;color:var(--branco);font-size:14px;outline:none;font-family:inherit;">
+      </div>
+      <div class="field" style="margin-bottom:16px;">
+        <label>OBSERVAÇÃO</label>
+        <input type="text" id="repasse-obs" placeholder="Ex: Medição aprovada pela CEF" style="width:100%;padding:10px 14px;background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.15);border-radius:10px;color:var(--branco);font-size:14px;outline:none;font-family:inherit;">
+      </div>
+      <button class="btn-save" onclick="salvarRepasse()">SALVAR REPASSE</button>
+      <button class="btn-outline" style="margin-top:8px;" onclick="fecharModal('repasse')">CANCELAR</button>
+    </div>
   </div>
 
   <!-- BANCO DE DADOS (admin only) -->
@@ -1622,9 +1707,11 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
 <!-- MODAL NOVA OBRA -->
 <div id="modal-obra" class="modal-overlay hidden">
   <div class="modal">
-    <div class="modal-title">🏗 NOVA OBRA <button class="modal-close" onclick="fecharModal('obra')">✕</button></div>
+    <div class="modal-title"><span id="modal-obra-titulo">🏗 NOVA OBRA</span> <button class="modal-close" onclick="fecharModal('obra')">✕</button></div>
+    <input type="hidden" id="obra-edit-id">
     <div class="field"><label>NOME DA OBRA *</label><input type="text" id="nova-obra-nome" placeholder="EX: RESIDENCIAL SILVA"></div>
-    <button class="btn-save" onclick="salvarNovaObra()">CADASTRAR OBRA</button>
+    <div class="field"><label>CIDADE</label><input type="text" id="nova-obra-cidade" placeholder="EX: RECIFE"></div>
+    <button class="btn-save" onclick="salvarNovaObra()">SALVAR</button>
     <button class="btn-outline" onclick="fecharModal('obra')">CANCELAR</button>
   </div>
 </div>
@@ -1715,6 +1802,18 @@ const DEMO_DATA = {
     {id:'demo-lanc-0033',obra_id:'demo-obra-3',descricao:'000002 · Areia grossa m³',qtd:4,preco:95.0,total:380.0,data:'2025-02-12',obs:'NF NF-1091 · Alvenaria'},
     {id:'demo-lanc-0034',obra_id:'demo-obra-4',descricao:'000019 · Argamassa colante ACIII 20kg',qtd:8,preco:29.0,total:232.0,data:'2025-02-20',obs:'NF NF-1092 · Revestimento'},
     {id:'demo-lanc-0035',obra_id:'demo-obra-1',descricao:'000006 · Vergalhão CA-50 12mm',qtd:6,preco:68.0,total:408.0,data:'2025-03-01',obs:'NF NF-1100 · Estrutura'}
+  ],
+  repasses_cef: [
+    {id:'demo-rep-1',obra_id:'demo-obra-1',medicao_numero:1,valor:45000.00,data_credito:'2024-04-15',observacao:'1ª medição aprovada',criado_em:'2024-04-15T10:00:00'},
+    {id:'demo-rep-2',obra_id:'demo-obra-1',medicao_numero:2,valor:62000.00,data_credito:'2024-06-20',observacao:'2ª medição - estrutura',criado_em:'2024-06-20T10:00:00'},
+    {id:'demo-rep-3',obra_id:'demo-obra-1',medicao_numero:3,valor:38500.00,data_credito:'2024-09-10',observacao:'3ª medição - alvenaria',criado_em:'2024-09-10T10:00:00'},
+    {id:'demo-rep-4',obra_id:'demo-obra-2',medicao_numero:1,valor:55000.00,data_credito:'2024-05-22',observacao:'1ª medição aprovada',criado_em:'2024-05-22T10:00:00'},
+    {id:'demo-rep-5',obra_id:'demo-obra-2',medicao_numero:2,valor:72000.00,data_credito:'2024-08-15',observacao:'2ª medição - cobertura',criado_em:'2024-08-15T10:00:00'},
+    {id:'demo-rep-6',obra_id:'demo-obra-3',medicao_numero:1,valor:48000.00,data_credito:'2024-07-05',observacao:'1ª medição aprovada',criado_em:'2024-07-05T10:00:00'},
+    {id:'demo-rep-7',obra_id:'demo-obra-3',medicao_numero:2,valor:51000.00,data_credito:'2024-10-18',observacao:'2ª medição - elétrica',criado_em:'2024-10-18T10:00:00'},
+    {id:'demo-rep-8',obra_id:'demo-obra-4',medicao_numero:1,valor:35000.00,data_credito:'2024-08-30',observacao:'1ª medição aprovada',criado_em:'2024-08-30T10:00:00'},
+    {id:'demo-rep-9',obra_id:'demo-obra-1',medicao_numero:4,valor:41000.00,data_credito:'2024-12-05',observacao:'4ª medição - acabamento',criado_em:'2024-12-05T10:00:00'},
+    {id:'demo-rep-10',obra_id:'demo-obra-2',medicao_numero:3,valor:43000.00,data_credito:'2024-11-20',observacao:'3ª medição - pintura',criado_em:'2024-11-20T10:00:00'}
   ],
   distribuicoes: [],
   entradas_diretas: [],
@@ -1855,6 +1954,9 @@ alter table distribuicoes add column if not exists etapa text default '';
 -- Arquivamento de obras concluídas
 alter table obras add column if not exists arquivada boolean default false;
 
+-- Cidade da obra
+alter table obras add column if not exists cidade text default '';
+
 -- Tabela de usuários do sistema
 create table if not exists usuarios (
   id uuid default gen_random_uuid() primary key,
@@ -1943,13 +2045,26 @@ create table if not exists diarias_extras (
   obra text default '',
   criado_em timestamptz default now()
 );
-alter table diarias_extras disable row level security;`;
+alter table diarias_extras disable row level security;
+
+-- Repasses CEF (controle de custos)
+create table if not exists repasses_cef (
+  id uuid default gen_random_uuid() primary key,
+  obra_id uuid references obras(id),
+  medicao_numero integer not null,
+  valor decimal(12,2) not null,
+  data_credito date not null,
+  observacao text default '',
+  criado_em timestamptz default now()
+);
+alter table repasses_cef enable row level security;
+create policy "repasses_cef_all" on repasses_cef for all using (true) with check (true);`;
 
 // ══════════════════════════════════════════
 // ESTADO
 // ══════════════════════════════════════════
 let usuarioAtual = null;
-let obras = [], notas = [], lancamentos = [], distribuicoes = [], entradasDiretas = [], catalogoMateriais = [];
+let obras = [], notas = [], lancamentos = [], distribuicoes = [], entradasDiretas = [], catalogoMateriais = [], repassesCef = [];
 let itensForm = [], distItemAtual = null, currentCredito = null;
 let acSelectedIdx = -1, acFornIdx = -1, cachedFornecedores = [], cachedItens = [];
 let obraFiltroAtual = null, catFiltroAtual = null, obrasArquivadas = [];
@@ -2054,11 +2169,12 @@ function aplicarPerfil() {
   const isVisitante = usuarioAtual.perfil === 'visitante';
 
   // Visitante: ativa modo demo (nenhuma escrita vai ao Supabase)
-  MODO_DEMO = isVisitante;
+  // Não desativar MODO_DEMO se já foi ativado por entrarModoDemo()
+  if (isVisitante) MODO_DEMO = true;
 
   // Resetar sidebar — mostrar tudo antes de aplicar restrições
   ['nav-dashboard','nav-obras','nav-estoque','nav-notas','nav-form','nav-creditos',
-   'nav-catalogo','nav-relatorio','nav-banco','nav-setup','nav-diarias'].forEach(id => {
+   'nav-catalogo','nav-relatorio','nav-banco','nav-setup','nav-diarias','nav-custos'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.classList.remove('hidden');
   });
@@ -2104,7 +2220,7 @@ async function iniciarApp() {
   populateSelects();
   renderTabelaCreditos();
   renderUsuarios();
-  await Promise.all([loadNotas(), loadLancamentos(), loadDistribuicoes(), loadEntradasDiretas(), loadMateriais()]);
+  await Promise.all([loadNotas(), loadLancamentos(), loadDistribuicoes(), loadEntradasDiretas(), loadMateriais(), loadRepassesCef()]);
   const mc = document.getElementById("main-content-inner"); if(mc) mc.style.visibility="visible";
   document.getElementById('sql-box').textContent = SQL_SETUP;
   renderDashboard();
@@ -2801,8 +2917,13 @@ function renderObrasView() {
       `<div class="cat-chip ${catFiltroAtual===k?'ativo':''}" onclick="toggleCat('${k}')">${v.lb}</div>`
     ).join('') + `<div class="cat-chip ${catFiltroAtual===null?'':'ativo'}" onclick="toggleCat(null)">✕ Limpar</div>`;
   }
+  // Mostrar visão de cards por padrão, esconder detalhe
+  document.getElementById('obras-cards-overview').style.display = '';
+  document.getElementById('obras-sticky').style.display = 'none';
+  document.getElementById('obras-tab-content-lanc').style.display = 'none';
+  document.getElementById('obras-tab-content-mat').style.display = 'none';
+  renderObrasCards();
   aplicarPerfil();
-  filtrarLanc();
 }
 
 let mostandoArquivadas = false;
@@ -2845,11 +2966,116 @@ function toggleObrasArquivadas() {
     btn.style.background = 'rgba(245,158,11,0.08)';
     btn.textContent = '📋 VER CONCLUÍDAS';
   }
+  // Sincronizar botão da visão de cards
+  const btn2 = document.getElementById('btn-ver-arquivadas2');
+  if (btn2) {
+    if (mostandoArquivadas) {
+      btn2.style.background = 'rgba(245,158,11,0.18)';
+      btn2.textContent = '🏗 VER ATIVAS';
+    } else {
+      btn2.style.background = 'rgba(245,158,11,0.08)';
+      btn2.textContent = '📋 VER CONCLUÍDAS';
+    }
+  }
   // Resetar select e recarregar opções
   document.getElementById('obras-filtro-obra').value = '';
   document.getElementById('btn-arquivar-obra').style.display = 'none';
   populateSelects();
+  renderObrasCards();
   filtrarLanc();
+}
+
+// Renderiza os cards de visão geral das obras
+function renderObrasCards() {
+  const el = document.getElementById('obras-cards-grid');
+  if (!el) return;
+  const pool = mostandoArquivadas ? obrasArquivadas : obras;
+
+  if (!pool.length) {
+    el.innerHTML = '<div class="empty" style="grid-column:1/-1;">Nenhuma obra ' + (mostandoArquivadas ? 'concluída' : 'ativa') + '.</div>';
+    return;
+  }
+
+  el.innerHTML = pool.map(o => {
+    const ls = lancamentos.filter(l => l.obra_id === o.id);
+    const total = ls.reduce((s, l) => s + Number(l.total || 0), 0);
+    const ultimaData = ls.length ? ls.sort((a, b) => (b.data || '').localeCompare(a.data || ''))[0]?.data : null;
+    const ultimaStr = ultimaData ? new Date(ultimaData + 'T12:00:00').toLocaleDateString('pt-BR') : 'Sem lançamentos';
+
+    // Top 3 etapas por valor
+    const porEtapa = {};
+    ls.forEach(l => {
+      const k = l.etapa || '00_outros';
+      porEtapa[k] = (porEtapa[k] || 0) + Number(l.total || 0);
+    });
+    const topEtapas = Object.entries(porEtapa)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3);
+
+    // Valor só visível para admin
+    const valorHtml = usuarioAtual?.perfil === 'admin'
+      ? `<div style="font-size:16px;font-weight:800;color:var(--verde-hl);font-family:'JetBrains Mono',monospace;">${fmtR(total)}</div>`
+      : '';
+
+    return `<div class="card" style="padding:16px;cursor:pointer;transition:all .2s;border:1px solid var(--borda);"
+                 onclick="obrasAbrirDetalhe('${o.id}')"
+                 onmouseover="this.style.borderColor='rgba(46,204,113,0.4)'"
+                 onmouseout="this.style.borderColor='var(--borda)'">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+        <div>
+          <div style="font-size:15px;font-weight:700;color:var(--branco);font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;">${o.nome}</div>
+          <div style="font-size:11px;color:var(--texto3);margin-top:2px;">📍 ${o.cidade || 'Sem cidade'}</div>
+        </div>
+        <div style="text-align:right;">
+          ${valorHtml}
+          <div style="font-size:10px;color:var(--texto3);margin-top:2px;">${ls.length} lançamento${ls.length !== 1 ? 's' : ''}</div>
+        </div>
+      </div>
+      ${topEtapas.length > 0 ? `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px;">
+        ${topEtapas.map(([k, v]) => {
+          const pct = total > 0 ? (v / total * 100).toFixed(0) : 0;
+          const lbl = ETAPAS.find(e => e.key === k)?.lb || '📦 Outros';
+          return `<span style="font-size:9px;background:rgba(46,204,113,0.08);color:var(--verde3);border:1px solid rgba(46,204,113,0.15);border-radius:4px;padding:2px 6px;">${lbl.split(' ').slice(0, 2).join(' ')} ${pct}%</span>`;
+        }).join('')}
+      </div>` : ''}
+      <div style="display:flex;justify-content:space-between;align-items:center;padding-top:8px;border-top:1px solid rgba(46,204,113,0.06);">
+        <span style="font-size:10px;color:var(--texto3);">📅 Último: ${ultimaStr}</span>
+        <div style="display:flex;align-items:center;gap:8px;">
+          ${usuarioAtual?.perfil === 'admin' ? `<button onclick="event.stopPropagation();abrirModalObra('${o.id}')" style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);color:#60a5fa;border-radius:6px;padding:3px 10px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;cursor:pointer;">✏ EDITAR</button>` : ''}
+          ${usuarioAtual?.perfil === 'admin' ? (mostandoArquivadas
+            ? `<button onclick="event.stopPropagation();arquivarObraCard('${o.id}',false)" style="background:rgba(46,204,113,0.08);border:1px solid rgba(46,204,113,0.2);color:#4ade80;border-radius:6px;padding:3px 10px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;cursor:pointer;">🏗 REATIVAR</button>`
+            : `<button onclick="event.stopPropagation();arquivarObraCard('${o.id}',true)" style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);color:#fbbf24;border-radius:6px;padding:3px 10px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;cursor:pointer;">✅ CONCLUIR</button>`
+          ) : ''}
+          <span style="font-size:10px;color:var(--verde-hl);font-weight:600;">DETALHES →</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// Abre a visão detalhada de uma obra específica
+function obrasAbrirDetalhe(obraId) {
+  document.getElementById('obras-cards-overview').style.display = 'none';
+  document.getElementById('obras-sticky').style.display = '';
+  document.getElementById('obras-tab-content-lanc').style.display = '';
+  // Selecionar a obra no filtro
+  const sel = document.getElementById('obras-filtro-obra');
+  if (sel) sel.value = obraId;
+  onChangeObraFiltro();
+  if (obraTabAtual === 'mat') renderObrasMateriais();
+  else filtrarLanc();
+}
+
+// Volta para a visão de cards (overview)
+function obrasVoltarCards() {
+  document.getElementById('obras-cards-overview').style.display = '';
+  document.getElementById('obras-sticky').style.display = 'none';
+  document.getElementById('obras-tab-content-lanc').style.display = 'none';
+  document.getElementById('obras-tab-content-mat').style.display = 'none';
+  document.getElementById('obras-detalhe').classList.add('hidden');
+  const sel = document.getElementById('obras-filtro-obra');
+  if (sel) sel.value = '';
+  renderObrasCards();
 }
 
 async function arquivarObra(obraId, arquivar) {
@@ -2864,6 +3090,22 @@ async function arquivarObra(obraId, arquivar) {
     filtrarLanc();
     renderDashboard();
     showToast(arquivar ? '✅ OBRA CONCLUÍDA!' : '🔄 OBRA REABERTA!');
+  } catch(e) { showToast('ERRO AO ATUALIZAR OBRA.'); }
+}
+
+async function arquivarObraCard(obraId, arquivar) {
+  if (usuarioAtual?.perfil !== 'admin') return;
+  const obra = [...obras, ...obrasArquivadas].find(o => o.id === obraId);
+  const nome = obra?.nome || 'esta obra';
+  const acao = arquivar ? `Concluir "${nome}" e arquivar?` : `Reativar "${nome}"?`;
+  if (!confirm(acao)) return;
+  try {
+    await sbPatch('obras', `?id=eq.${obraId}`, { arquivada: arquivar });
+    await loadObras();
+    populateSelects();
+    renderObrasCards();
+    renderDashboard();
+    showToast(arquivar ? `✅ "${nome}" concluída e arquivada!` : `🔄 "${nome}" reativada!`);
   } catch(e) { showToast('ERRO AO ATUALIZAR OBRA.'); }
 }
 
@@ -3001,28 +3243,34 @@ function filtrarLanc() {
   const obraMap = {};
   [...obras, ...obrasArquivadas].forEach(o => obraMap[o.id] = o.nome);
 
-  // DRE por etapa — usa TODOS os lançamentos da obra (ignora filtro de categoria)
+  // DRE por centro de custo — baseado na descrição do lançamento
   const detEl = document.getElementById('obras-detalhe');
   if (detEl && obraId && usuarioAtual?.perfil === 'admin') {
     const todosLancObra = lancamentos.filter(l => l.obra_id === obraId);
-    const porEtapa = {};
+    const porCat = {};
     todosLancObra.forEach(l => {
-      const k = l.etapa || '00_outros';
-      porEtapa[k] = (porEtapa[k] || 0) + Number(l.total || 0);
+      const cat = getCatEstoque(l.descricao);
+      const lb = CATS_ESTOQUE.find(c => c.key === cat)?.lb || '📦 Outros';
+      porCat[lb] = (porCat[lb] || 0) + Number(l.total || 0);
     });
-    const totalObra = Object.values(porEtapa).reduce((s,v) => s+v, 0);
-    const etapasComValor = ETAPAS.filter(e => porEtapa[e.key] > 0)
-      .sort((a,b) => porEtapa[b.key] - porEtapa[a.key]);
-    if (etapasComValor.length > 0) {
+    const totalObra = Object.values(porCat).reduce((s,v) => s+v, 0);
+    const catsComValor = Object.entries(porCat).sort((a,b) => b[1] - a[1]);
+    if (catsComValor.length > 0) {
       detEl.classList.remove('hidden');
       detEl.innerHTML = `
         <div style="background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.15);border-radius:12px;padding:14px 16px;margin-bottom:12px;">
-          <div style="font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;color:var(--verde-hl);letter-spacing:2px;margin-bottom:10px;">📊 CUSTO POR ETAPA — ${obraMap[obraId]||''}</div>
-          ${etapasComValor.map(e => {
-            const val = porEtapa[e.key];
+          <div onclick="this.parentElement.querySelector('.dre-body').classList.toggle('hidden');this.querySelector('.dre-toggle').textContent=this.parentElement.querySelector('.dre-body').classList.contains('hidden')?'▶':'▼'" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;">
+            <div style="font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;color:var(--verde-hl);letter-spacing:2px;">📊 CUSTO POR CATEGORIA — ${obraMap[obraId]||''}</div>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="font-size:14px;font-weight:800;color:var(--verde-hl);font-family:'JetBrains Mono',monospace;">${fmtR(totalObra)}</span>
+              <span class="dre-toggle" style="font-size:10px;color:var(--texto3);">▼</span>
+            </div>
+          </div>
+          <div class="dre-body" style="margin-top:10px;">
+          ${catsComValor.map(([lb, val]) => {
             const pct = totalObra > 0 ? (val/totalObra*100).toFixed(1) : 0;
             return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(46,204,113,0.06);">
-              <span style="flex:1;font-size:12px;color:var(--texto);">${e.lb}</span>
+              <span style="flex:1;font-size:12px;color:var(--texto);">${lb}</span>
               <div style="width:80px;height:4px;background:rgba(46,204,113,0.1);border-radius:2px;overflow:hidden;">
                 <div style="width:${pct}%;height:100%;background:var(--verde3);border-radius:2px;"></div>
               </div>
@@ -3030,15 +3278,10 @@ function filtrarLanc() {
               <span style="font-size:13px;font-weight:700;color:var(--branco);width:90px;text-align:right;font-family:'JetBrains Mono',monospace;">${fmtR(val)}</span>
             </div>`;
           }).join('')}
-          <div style="display:flex;justify-content:space-between;padding-top:8px;margin-top:4px;">
-            <span style="font-size:11px;color:var(--texto3);">TOTAL CLASSIFICADO</span>
-            <span style="font-size:14px;font-weight:800;color:var(--verde-hl);font-family:'JetBrains Mono',monospace;">${fmtR(totalObra)}</span>
           </div>
-          ${porEtapa['00_outros'] > 0 ? `<div style="font-size:10px;color:var(--texto3);margin-top:6px;">⚠ ${fmtR(porEtapa['00_outros'])} ainda sem etapa classificada.</div>` : ''}
         </div>`;
     } else {
-      detEl.classList.remove('hidden');
-      detEl.innerHTML = `<div style="font-size:12px;color:var(--texto3);padding:10px 0 8px 0;">Nenhum lançamento com etapa classificada ainda. Selecione a etapa ao lançar ou distribuir materiais.</div>`;
+      detEl.classList.add('hidden');
     }
   } else if (detEl) {
     detEl.classList.add('hidden');
@@ -3141,14 +3384,23 @@ async function excluirLanc(id) {
 
 async function salvarNovaObra() {
   const nome = (document.getElementById('nova-obra-nome').value||'').toUpperCase().trim();
+  const cidade = (document.getElementById('nova-obra-cidade').value||'').trim();
+  const editId = document.getElementById('obra-edit-id').value;
   if (!nome) { showToast('INFORME O NOME DA OBRA.'); return; }
   try {
-    const [nova] = await sbPost('obras', { nome });
-    obras.push(nova); obras.sort((a,b)=>a.nome.localeCompare(b.nome));
-    populateSelects(); renderDashboard();
-    showToast(`✅ OBRA ${nome} CADASTRADA!`);
+    if (editId) {
+      await sbPatch('obras', `?id=eq.${editId}`, { nome, cidade });
+      await loadObras();
+      populateSelects(); renderDashboard(); renderObrasCards();
+      showToast(`✅ OBRA "${nome}" ATUALIZADA!`);
+    } else {
+      const [nova] = await sbPost('obras', { nome, cidade });
+      obras.push(nova); obras.sort((a,b)=>a.nome.localeCompare(b.nome));
+      populateSelects(); renderDashboard(); renderObrasCards();
+      showToast(`✅ OBRA ${nome} CADASTRADA!`);
+    }
     fecharModal('obra');
-  } catch(e) { showToast('ERRO AO CADASTRAR.'); }
+  } catch(e) { showToast('ERRO AO SALVAR.'); }
 }
 
 function abrirModalLanc() {
@@ -3162,8 +3414,12 @@ function abrirModalLanc() {
   document.getElementById('modal-lanc').classList.remove('hidden');
   setTimeout(() => document.getElementById('lanc-desc').focus(), 100);
 }
-function abrirModalObra() {
-  document.getElementById('nova-obra-nome').value = '';
+function abrirModalObra(obraId) {
+  const obra = obraId ? [...obras, ...obrasArquivadas].find(o => o.id === obraId) : null;
+  document.getElementById('obra-edit-id').value = obra ? obra.id : '';
+  document.getElementById('nova-obra-nome').value = obra ? obra.nome : '';
+  document.getElementById('nova-obra-cidade').value = obra ? (obra.cidade || '') : '';
+  document.getElementById('modal-obra-titulo').textContent = obra ? '🏗 EDITAR OBRA' : '🏗 NOVA OBRA';
   document.getElementById('modal-obra').classList.remove('hidden');
   setTimeout(() => document.getElementById('nova-obra-nome').focus(), 100);
 }
@@ -3222,16 +3478,44 @@ function getSaldoEntradaDireta(desc) {
     .reduce((s,e) => s + Number(e.qtd), 0);
 }
 
-// Busca o material do catálogo pelo nome (match exato ou normalizado)
+// Busca o material do catálogo pelo nome (match exato, código, ou nome base)
 function getMaterialCatalogo(descricao) {
   const n = norm(descricao);
-  return catalogoMateriais.find(m => norm(m.nome) === n) || null;
+  // 1. Match exato normalizado
+  const exato = catalogoMateriais.find(m => norm(m.nome) === n);
+  if (exato) return exato;
+  // 2. Match por código no início (ex: "000001 · Cimento CP-II 50kg")
+  const codMatch = n.match(/^(\d{4,6})\s/);
+  if (codMatch) {
+    const porCodigo = catalogoMateriais.find(m => m.codigo === codMatch[1]);
+    if (porCodigo) return porCodigo;
+  }
+  // 3. Descrição curta (1-2 palavras) que é início exato do nome no catálogo
+  //    Ex: "CIMENTO" casa com "CIMENTO CPIIZ 50KG"
+  const palavras = n.split(/\s+/);
+  if (palavras.length <= 2 && n.length >= 5) {
+    const candidatos = catalogoMateriais.filter(m => norm(m.nome).startsWith(n + ' ') || norm(m.nome) === n);
+    if (candidatos.length === 1) return candidatos[0];
+  }
+  return null;
 }
 
-// Chave de consolidação: código do catálogo se existir, senão texto normalizado
+// Chave de consolidação inteligente: agrupa variações do mesmo material
+function getEstoqueKeyNorm(descricao) {
+  let d = norm(descricao);
+  // Remove código numérico do início (ex: "000001 · ")
+  d = d.replace(/^\d{4,6}\s*[·\-]?\s*/, '');
+  // Remove especificações comuns que não mudam o material base
+  d = d.replace(/\b(cp\s*-?\s*ii[iz]?|cp\s*-?\s*iv|cp\s*-?\s*v|50\s*kg|25\s*kg|20\s*kg|18\s*l|saco|sc|un|ml|m2|m3|m³|pct|cx|pc|rolo|galao|gl|barra|metro|kg)\b/g, '');
+  // Colapsa espaços
+  d = d.replace(/\s+/g, ' ').trim();
+  return d;
+}
+
+// Chave de consolidação: código do catálogo se existir, senão normalização inteligente
 function getEstoqueKey(descricao) {
   const mat = getMaterialCatalogo(descricao);
-  return mat ? `CAT:${mat.codigo}` : `DESC:${norm(descricao)}`;
+  return mat ? `CAT:${mat.codigo}` : `DESC:${getEstoqueKeyNorm(descricao)}`;
 }
 
 function consolidarEstoque() {
@@ -4387,7 +4671,7 @@ function setView(v) {
   // Mestre só pode acessar diárias
   if (usuarioAtual?.perfil === 'mestre' && v !== 'diarias') return;
   syncBnav(v);
-  const views = ['dashboard','obras','estoque','notas','form','creditos','setup','catalogo','banco','relatorio','diarias'];
+  const views = ['dashboard','obras','estoque','notas','form','creditos','setup','catalogo','banco','relatorio','diarias','custos'];
   views.forEach(name => {
     document.getElementById(`view-${name}`)?.classList.toggle('hidden', name !== v);
     const nb = document.getElementById(`nav-${name}`);
@@ -4399,6 +4683,7 @@ function setView(v) {
   if (v === 'banco') renderBanco();
   if (v === 'relatorio') initRelatorio();
   if (v === 'diarias') initDiarias();
+  if (v === 'custos') renderCustos();
 }
 
 function renderBanco() {
@@ -4517,6 +4802,13 @@ function setupKeyboardShortcuts() {
 }
 
 function fecharModal(w) { document.getElementById(`modal-${w}`).classList.add('hidden'); if (w === 'dist') distItemAtual = null; }
+
+// ESC fecha qualquer modal aberto
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  const modais = document.querySelectorAll('.modal-overlay:not(.hidden)');
+  if (modais.length) { modais.forEach(m => { const id = m.id.replace('modal-',''); fecharModal(id); }); e.preventDefault(); }
+});
 
 function abrirNota(id) {
   const n = notas.find(x => x.id === id); if (!n) return;
@@ -6605,6 +6897,278 @@ function diarFecharModalEDR() {
   document.getElementById('diar-modalEDR').style.display = 'none';
   const btn = document.getElementById('diar-btnConfirmarEDR');
   btn.disabled = false; btn.textContent = '🚀 Confirmar e Lançar Tudo';
+}
+// ══════════════════════════════════════════
+// CUSTOS CEF — REPASSES
+// ══════════════════════════════════════════
+async function loadRepassesCef() {
+  try {
+    const r = await sbGet('repasses_cef', '?order=data_credito.desc');
+    repassesCef = Array.isArray(r) ? r : [];
+  } catch(e) { repassesCef = []; }
+}
+
+function renderCustos() {
+  renderCustosResumo();
+  const filtro = document.getElementById('custos-filtro-obra');
+  if (filtro) {
+    const val = filtro.value;
+    const todasObras = [...obras, ...obrasArquivadas];
+    filtro.innerHTML = '<option value="" style="background:#1a1a2e;color:#fff;">TODAS AS OBRAS</option>' +
+      todasObras.map(o => `<option value="${o.id}" style="background:#1a1a2e;color:#fff;" ${o.id === val ? 'selected' : ''}>${o.nome}${o.arquivada ? ' (arquivada)' : ''}</option>`).join('');
+  }
+  const obraId = filtro?.value || '';
+  renderCustosDetalhes(obraId);
+  renderCustosHistoricoMensal(obraId);
+}
+
+function renderCustosResumo() {
+  const el = document.getElementById('custos-resumo');
+  if (!el) return;
+  const todasObras = [...obras, ...obrasArquivadas];
+  const totalGeral = repassesCef.reduce((s, r) => s + Number(r.valor || 0), 0);
+  const totalMedicoes = repassesCef.length;
+
+  // Total por obra ativa
+  const obrasAtivas = obras.filter(o => !o.arquivada);
+  const totalAtivas = repassesCef
+    .filter(r => obrasAtivas.some(o => o.id === r.obra_id))
+    .reduce((s, r) => s + Number(r.valor || 0), 0);
+
+  // Qtd obras com repasses
+  const obrasComRepasse = new Set(repassesCef.map(r => r.obra_id)).size;
+
+  el.innerHTML = `
+    <div class="card" style="padding:16px;text-align:center;">
+      <div style="font-size:11px;color:var(--texto3);letter-spacing:1px;margin-bottom:6px;">TOTAL GERAL REPASSES</div>
+      <div style="font-size:22px;font-weight:700;color:var(--verde-hl);font-family:'Rajdhani',sans-serif;">${fmt(totalGeral)}</div>
+      <div style="font-size:11px;color:var(--texto3);margin-top:4px;">${totalMedicoes} medição(ões)</div>
+    </div>
+    <div class="card" style="padding:16px;text-align:center;">
+      <div style="font-size:11px;color:var(--texto3);letter-spacing:1px;margin-bottom:6px;">OBRAS ATIVAS</div>
+      <div style="font-size:22px;font-weight:700;color:var(--branco);font-family:'Rajdhani',sans-serif;">${fmt(totalAtivas)}</div>
+      <div style="font-size:11px;color:var(--texto3);margin-top:4px;">${obrasAtivas.length} obra(s) ativa(s)</div>
+    </div>
+    <div class="card" style="padding:16px;text-align:center;">
+      <div style="font-size:11px;color:var(--texto3);letter-spacing:1px;margin-bottom:6px;">OBRAS C/ REPASSE</div>
+      <div style="font-size:22px;font-weight:700;color:var(--branco);font-family:'Rajdhani',sans-serif;">${obrasComRepasse}</div>
+      <div style="font-size:11px;color:var(--texto3);margin-top:4px;">de ${todasObras.length} cadastrada(s)</div>
+    </div>
+  `;
+}
+
+function renderCustosDetalhes(obraId) {
+  const el = document.getElementById('custos-detalhes');
+  if (!el) return;
+  const todasObras = [...obras, ...obrasArquivadas];
+  const getNome = id => todasObras.find(o => o.id === id)?.nome || 'Obra removida';
+
+  let lista = [...repassesCef].sort((a, b) => (b.data_credito || '').localeCompare(a.data_credito || ''));
+  if (obraId) lista = lista.filter(r => r.obra_id === obraId);
+
+  if (!lista.length) {
+    el.innerHTML = '<div class="card" style="padding:24px;text-align:center;color:var(--texto3);">Nenhum repasse CEF registrado' + (obraId ? ' para esta obra.' : '.') + '</div>';
+    return;
+  }
+
+  // Agrupar por obra
+  const porObra = {};
+  lista.forEach(r => {
+    if (!porObra[r.obra_id]) porObra[r.obra_id] = [];
+    porObra[r.obra_id].push(r);
+  });
+
+  let html = '';
+  for (const [oid, reps] of Object.entries(porObra)) {
+    const total = reps.reduce((s, r) => s + Number(r.valor || 0), 0);
+    const nomeObra = getNome(oid);
+    html += `<div class="card" style="padding:16px;margin-bottom:12px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+        <div class="section-title" style="margin:0;font-size:13px;">🏗 ${nomeObra}</div>
+        <div style="font-size:13px;font-weight:700;color:var(--verde-hl);">${fmt(total)} — ${reps.length} medição(ões)</div>
+      </div>
+      <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:12px;">
+          <thead>
+            <tr style="border-bottom:1px solid var(--borda);color:var(--texto3);text-align:left;">
+              <th style="padding:8px 6px;">MED. Nº</th>
+              <th style="padding:8px 6px;">VALOR</th>
+              <th style="padding:8px 6px;">DATA CRÉDITO</th>
+              <th style="padding:8px 6px;">OBS</th>
+              <th style="padding:8px 6px;text-align:center;">AÇÃO</th>
+            </tr>
+          </thead>
+          <tbody>`;
+    let acum = 0;
+    const sorted = [...reps].sort((a, b) => a.medicao_numero - b.medicao_numero);
+    sorted.forEach(r => {
+      acum += Number(r.valor || 0);
+      const dt = r.data_credito ? new Date(r.data_credito + 'T12:00:00').toLocaleDateString('pt-BR') : '-';
+      html += `<tr style="border-bottom:1px solid rgba(46,204,113,0.06);">
+        <td style="padding:8px 6px;font-weight:700;color:var(--branco);">#${r.medicao_numero}</td>
+        <td style="padding:8px 6px;color:var(--verde-hl);font-weight:600;">${fmt(r.valor)}</td>
+        <td style="padding:8px 6px;color:var(--texto);">${dt}</td>
+        <td style="padding:8px 6px;color:var(--texto3);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.observacao || '-'}</td>
+        <td style="padding:8px 6px;text-align:center;">
+          <button onclick="excluirRepasse('${r.id}')" style="background:rgba(220,38,38,0.1);border:1px solid rgba(220,38,38,0.2);border-radius:6px;padding:4px 10px;color:#ef4444;font-size:11px;cursor:pointer;" title="Excluir">✕</button>
+        </td>
+      </tr>`;
+    });
+    html += `</tbody></table></div></div>`;
+  }
+  el.innerHTML = html;
+}
+
+function renderCustosHistoricoMensal(obraId) {
+  const el = document.getElementById('custos-historico-mensal');
+  if (!el) return;
+  const todasObras = [...obras, ...obrasArquivadas];
+  const getNome = id => todasObras.find(o => o.id === id)?.nome || 'Obra removida';
+
+  let lista = [...repassesCef];
+  if (obraId) lista = lista.filter(r => r.obra_id === obraId);
+  if (!lista.length) { el.innerHTML = ''; return; }
+
+  // Agrupar por mês
+  const porMes = {};
+  lista.forEach(r => {
+    const mes = r.data_credito ? r.data_credito.substring(0, 7) : 'sem-data';
+    if (!porMes[mes]) porMes[mes] = [];
+    porMes[mes].push(r);
+  });
+
+  const meses = Object.keys(porMes).sort().reverse();
+  let html = `<div class="card" style="padding:16px;">
+    <div class="section-title" style="font-size:13px;margin-bottom:12px;">📅 HISTÓRICO MENSAL</div>`;
+
+  meses.forEach(mes => {
+    const reps = porMes[mes];
+    const totalMes = reps.reduce((s, r) => s + Number(r.valor || 0), 0);
+    const label = mes !== 'sem-data' ? new Date(mes + '-15').toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }) : 'Sem data';
+    html += `<div style="margin-bottom:12px;padding:10px;background:rgba(46,204,113,0.03);border:1px solid rgba(46,204,113,0.08);border-radius:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <span style="font-size:12px;font-weight:600;color:var(--branco);text-transform:capitalize;">${label}</span>
+        <span style="font-size:13px;font-weight:700;color:var(--verde-hl);">${fmt(totalMes)}</span>
+      </div>`;
+    reps.sort((a, b) => a.medicao_numero - b.medicao_numero).forEach(r => {
+      const nomeObra = getNome(r.obra_id);
+      html += `<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:11px;color:var(--texto3);">
+        <span>${nomeObra} — Med. #${r.medicao_numero}</span>
+        <span style="color:var(--verde-hl);">${fmt(r.valor)}</span>
+      </div>`;
+    });
+    html += `</div>`;
+  });
+
+  html += `</div>`;
+  el.innerHTML = html;
+}
+
+function abrirModalRepasse(obraId) {
+  const todasObras = [...obras, ...obrasArquivadas];
+  const sel = document.getElementById('repasse-obra');
+  sel.innerHTML = '<option value="" style="background:#1a1a2e;color:#fff;">Selecione...</option>' +
+    todasObras.map(o => `<option value="${o.id}" style="background:#1a1a2e;color:#fff;" ${o.id === obraId ? 'selected' : ''}>${o.nome}</option>`).join('');
+  document.getElementById('repasse-id').value = '';
+  document.getElementById('repasse-medicao').value = '';
+  document.getElementById('repasse-valor').value = '';
+  document.getElementById('repasse-data').value = new Date().toISOString().split('T')[0];
+  document.getElementById('repasse-obs').value = '';
+  // Auto-incrementar medição
+  if (obraId) {
+    const existentes = repassesCef.filter(r => r.obra_id === obraId);
+    const maxMed = existentes.reduce((m, r) => Math.max(m, r.medicao_numero || 0), 0);
+    document.getElementById('repasse-medicao').value = maxMed + 1;
+  }
+  document.getElementById('modal-repasse').classList.remove('hidden');
+}
+
+async function salvarRepasse() {
+  const obraId = document.getElementById('repasse-obra').value;
+  const medicao = parseInt(document.getElementById('repasse-medicao').value);
+  const valor = parseFloat(document.getElementById('repasse-valor').value);
+  const data = document.getElementById('repasse-data').value;
+  const obs = document.getElementById('repasse-obs').value.trim();
+
+  if (!obraId) return showToast('Selecione uma obra.');
+  if (!medicao || medicao < 1) return showToast('Informe o número da medição.');
+  if (!valor || valor <= 0) return showToast('Informe o valor do repasse.');
+  if (!data) return showToast('Informe a data do crédito.');
+
+  const body = { obra_id: obraId, medicao_numero: medicao, valor, data_credito: data, observacao: obs };
+
+  try {
+    await sbPost('repasses_cef', body);
+    showToast('Repasse CEF salvo!');
+    fecharModal('repasse');
+    await loadRepassesCef();
+    renderCustos();
+  } catch(e) {
+    showToast('Erro ao salvar repasse.');
+    console.error(e);
+  }
+}
+
+async function excluirRepasse(id) {
+  if (!confirm('Excluir este repasse CEF?')) return;
+  try {
+    await sbDelete('repasses_cef', `?id=eq.${id}`);
+    showToast('Repasse excluído.');
+    await loadRepassesCef();
+    renderCustos();
+  } catch(e) {
+    showToast('Erro ao excluir.');
+    console.error(e);
+  }
+}
+
+function gerarRelatorioCustos() {
+  const todasObras = [...obras, ...obrasArquivadas];
+  const getNome = id => todasObras.find(o => o.id === id)?.nome || 'Obra removida';
+  const obraId = document.getElementById('custos-filtro-obra')?.value || '';
+  let lista = [...repassesCef].sort((a, b) => (a.data_credito || '').localeCompare(b.data_credito || ''));
+  if (obraId) lista = lista.filter(r => r.obra_id === obraId);
+
+  const totalGeral = lista.reduce((s, r) => s + Number(r.valor || 0), 0);
+
+  // Agrupar por obra
+  const porObra = {};
+  lista.forEach(r => {
+    if (!porObra[r.obra_id]) porObra[r.obra_id] = { nome: getNome(r.obra_id), reps: [] };
+    porObra[r.obra_id].reps.push(r);
+  });
+
+  let html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Relatório Custos CEF</title>
+    <style>
+      body{font-family:Arial,sans-serif;padding:30px;color:#222;font-size:12px;}
+      h1{font-size:18px;margin-bottom:4px;}
+      h2{font-size:14px;margin-top:20px;border-bottom:2px solid #2ecc71;padding-bottom:4px;}
+      table{width:100%;border-collapse:collapse;margin-top:8px;}
+      th,td{border:1px solid #ddd;padding:6px 8px;text-align:left;}
+      th{background:#f5f5f5;font-weight:700;}
+      .total{font-weight:700;color:#2ecc71;}
+      .right{text-align:right;}
+      @media print{body{padding:10px;}}
+    </style></head><body>
+    <h1>RELATÓRIO DE REPASSES CEF</h1>
+    <p>Gerado em: ${new Date().toLocaleDateString('pt-BR')} — Total geral: <strong class="total">${fmt(totalGeral)}</strong></p>`;
+
+  for (const [oid, data] of Object.entries(porObra)) {
+    const totalObra = data.reps.reduce((s, r) => s + Number(r.valor || 0), 0);
+    html += `<h2>${data.nome} — Total: ${fmt(totalObra)}</h2>
+      <table><thead><tr><th>Med. Nº</th><th>Valor</th><th>Data Crédito</th><th>Observação</th></tr></thead><tbody>`;
+    data.reps.sort((a, b) => a.medicao_numero - b.medicao_numero).forEach(r => {
+      const dt = r.data_credito ? new Date(r.data_credito + 'T12:00:00').toLocaleDateString('pt-BR') : '-';
+      html += `<tr><td>#${r.medicao_numero}</td><td class="right total">${fmt(r.valor)}</td><td>${dt}</td><td>${r.observacao || '-'}</td></tr>`;
+    });
+    html += `</tbody></table>`;
+  }
+
+  html += `</body></html>`;
+  const w = window.open('', '_blank');
+  w.document.write(html);
+  w.document.close();
+  w.print();
 }
 </script>
 </body>
