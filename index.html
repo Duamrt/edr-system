@@ -359,11 +359,16 @@
     </div>
     <div class="form-section">
       <div class="form-title"><span class="form-step">2</span> ITENS DA NOTA</div>
+      <div style="display:flex;gap:8px;margin-bottom:14px;">
+        <button onclick="abrirImportRapida()" style="flex:1;padding:12px 16px;background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.3);border-radius:8px;color:#a78bfa;font-size:13px;font-weight:700;font-family:'Barlow',sans-serif;cursor:pointer;letter-spacing:0.5px;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:8px;">
+          📋 IMPORTAÇÃO RÁPIDA<span style="font-size:10px;opacity:0.7;font-weight:400;">Cola os itens da nota</span>
+        </button>
+      </div>
       <div class="itens-lista" id="itens-lista"></div>
       <div id="item-total-row" class="item-total-row hidden"><span>SUBTOTAL ITENS</span><span id="item-total-val">R$ 0,00</span></div>
       <div id="frete-total-row" class="frete-total-row hidden"><span>🚚 FRETE</span><span id="frete-total-val">R$ 0,00</span></div>
       <div class="item-form">
-        <div class="item-form-title">➕ ADICIONAR ITEM</div>
+        <div class="item-form-title">➕ ADICIONAR ITEM MANUAL</div>
         <div class="field autocomplete-wrap">
           <label>DESCRIÇÃO DO ITEM *</label>
           <input type="text" id="i-desc" data-next="i-qtd" placeholder="EX: CIMENTO, AREIA, MAO DE OBRA..." oninput="onDescInput()" autocomplete="off">
@@ -1011,6 +1016,54 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
   </div>
 </div>
 
+<!-- MODAL IMPORTAÇÃO RÁPIDA -->
+<div class="modal-overlay hidden" id="modal-import" onclick="closeModalOutside(event,'import')">
+  <div class="modal-box" style="max-width:700px;width:95vw;max-height:90vh;overflow-y:auto;">
+    <div class="modal-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div>
+        <div style="font-size:16px;font-weight:800;color:var(--branco);letter-spacing:1px;">📋 IMPORTAÇÃO RÁPIDA</div>
+        <div style="font-size:11px;color:var(--texto3);margin-top:2px;">Cole os itens da nota fiscal abaixo</div>
+      </div>
+      <button onclick="fecharModal('import')" style="background:none;border:none;color:var(--texto3);font-size:20px;cursor:pointer;padding:4px;">✕</button>
+    </div>
+
+    <div style="margin-bottom:14px;">
+      <textarea id="import-texto" placeholder="Cole aqui os itens da nota. Formatos aceitos:
+
+CIMENTO CP-II 50KG    20    32,50
+AREIA GROSSA M3    5    95,00
+VERGALHAO CA50 10MM    15    48,50
+
+Ou separado por ; ou TAB:
+CIMENTO CP-II 50KG;20;32,50
+
+Ou apenas as descrições (você preenche qtd e preço depois):
+CIMENTO CP-II 50KG
+AREIA GROSSA
+VERGALHAO CA50" style="width:100%;min-height:140px;padding:14px;background:var(--bg2);border:1px solid var(--borda);border-radius:8px;color:var(--branco);font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.7;resize:vertical;outline:none;"></textarea>
+    </div>
+
+    <button onclick="interpretarImport()" style="width:100%;padding:12px;background:rgba(139,92,246,0.15);border:1px solid rgba(139,92,246,0.4);border-radius:8px;color:#a78bfa;font-size:14px;font-weight:700;font-family:'Barlow',sans-serif;cursor:pointer;letter-spacing:1px;margin-bottom:16px;transition:all 0.2s;">
+      🔍 INTERPRETAR ITENS
+    </button>
+
+    <div id="import-instrucoes" style="text-align:center;padding:20px;color:var(--texto3);font-size:12px;">
+      <div style="font-size:24px;margin-bottom:8px;">📋</div>
+      <div>Cole os itens acima e clique em <strong style="color:#a78bfa;">INTERPRETAR</strong></div>
+      <div style="margin-top:6px;font-size:11px;">O sistema vai identificar cada item e fazer match com seu catálogo</div>
+    </div>
+
+    <div id="import-preview-wrap" class="hidden">
+      <div style="font-size:10px;font-weight:700;color:var(--texto3);letter-spacing:2px;margin-bottom:10px;">PREVIEW — REVISE ANTES DE CONFIRMAR</div>
+      <div id="import-preview"></div>
+    </div>
+
+    <button id="import-btn-confirmar" class="hidden" onclick="confirmarImport()" style="width:100%;padding:14px;background:var(--verde);border:1px solid var(--verde3);border-radius:8px;color:var(--verde-hl);font-size:14px;font-weight:800;font-family:'Barlow',sans-serif;cursor:pointer;letter-spacing:1px;margin-top:12px;transition:all 0.2s;">
+      ✅ CONFIRMAR E ADICIONAR AO FORM
+    </button>
+  </div>
+</div>
+
 <!-- JS Modules -->
 <script src="js/config.js"></script>
 <script src="js/demo.js"></script>
@@ -1021,6 +1074,7 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
 <script src="js/estoque.js"></script>
 <script src="js/obras.js"></script>
 <script src="js/notas.js"></script>
+<script src="js/importar.js"></script>
 <script src="js/fiscal.js"></script>
 <script src="js/banco.js"></script>
 <script src="js/catalogo.js"></script>

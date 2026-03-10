@@ -17,6 +17,7 @@ if ("serviceWorker" in navigator) {
 }
 
 async function iniciarApp() {
+  initCATS();
   await loadUsuarios();
   await loadObras();
   populateSelects();

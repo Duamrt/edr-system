@@ -36,8 +36,6 @@ const CATS_ESTOQUE = [
   { key:'imposto',    lb:'🧾 Impostos / Encargos', fn: d => /inss|darf|iss |fgts|irrf|imposto|encargo|contribuicao|tributo|csll|cofins|pis |simples nacional|das |gps |gfip|caged|esocial/i.test(d) },
 ];
 let catEstoqueFiltro = null;
-// Inicializar CATS unificado após CATS_ESTOQUE estar disponível
-initCATS();
 
 function getCatEstoque(desc) {
   const d = (desc||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
