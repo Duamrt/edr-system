@@ -3266,14 +3266,13 @@ function filtrarLanc() {
   const obraMap = {};
   [...obras, ...obrasArquivadas].forEach(o => obraMap[o.id] = o.nome);
 
-  // DRE por centro de custo — baseado na descrição do lançamento
+  // DRE por centro de custo — baseado na etapa construtiva do lançamento
   const detEl = document.getElementById('obras-detalhe');
   if (detEl && obraId && usuarioAtual?.perfil === 'admin') {
     const todosLancObra = lancamentos.filter(l => l.obra_id === obraId);
     const porCat = {};
     todosLancObra.forEach(l => {
-      const cat = getCatEstoque(l.descricao);
-      const lb = CATS_ESTOQUE.find(c => c.key === cat)?.lb || '📦 Outros';
+      const lb = etapaLabel(l.etapa || '00_outros');
       porCat[lb] = (porCat[lb] || 0) + Number(l.total || 0);
     });
     const totalObra = Object.values(porCat).reduce((s,v) => s+v, 0);
@@ -3283,7 +3282,7 @@ function filtrarLanc() {
       detEl.innerHTML = `
         <div style="background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.15);border-radius:12px;padding:14px 16px;margin-bottom:12px;">
           <div onclick="this.parentElement.querySelector('.dre-body').classList.toggle('hidden');this.querySelector('.dre-toggle').textContent=this.parentElement.querySelector('.dre-body').classList.contains('hidden')?'▶':'▼'" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;">
-            <div style="font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;color:var(--verde-hl);letter-spacing:2px;">📊 CUSTO POR CATEGORIA — ${obraMap[obraId]||''}</div>
+            <div style="font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;color:var(--verde-hl);letter-spacing:2px;">📊 CUSTO POR CENTRO DE CUSTO — ${obraMap[obraId]||''}</div>
             <div style="display:flex;align-items:center;gap:10px;">
               <span style="font-size:14px;font-weight:800;color:var(--verde-hl);font-family:'JetBrains Mono',monospace;">${fmtR(totalObra)}</span>
               <span class="dre-toggle" style="font-size:10px;color:var(--texto3);">▼</span>
