@@ -869,4 +869,3 @@ body.perfil-mestre td:last-child { display: none !important; }
 /* Mestre mobile: painel esquerdo sempre visível e expandido */
 body.perfil-mestre #view-diarias .diarias-panel-left { width: auto !important; min-width: 0 !important; overflow: visible !important; }
 body.perfil-mestre #view-diarias .diarias-panel-left > *:not(.diarias-panel-toggle) { display: block !important; }
-</style>
