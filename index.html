@@ -1236,30 +1236,36 @@ body::before {
 
   <!-- CUSTOS CEF (admin only) -->
   <div id="view-custos" class="hidden">
-    <div style="position:sticky;top:53px;z-index:90;background:var(--bg);padding:10px 0 4px 0;">
-      <div class="modulo-badge">💰 CUSTOS CEF</div>
-    </div>
-
-    <!-- RESUMO GERAL -->
-    <div id="custos-resumo" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:16px;"></div>
-
-    <!-- FILTRO POR OBRA -->
-    <div class="card" style="padding:14px;margin-bottom:14px;">
-      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-        <div class="section-title" style="margin:0;font-size:13px;">🏗 FILTRAR POR OBRA</div>
-        <select id="custos-filtro-obra" onchange="renderCustos()" style="flex:1;min-width:180px;padding:8px 12px;background:#1a1a2e;border:1px solid rgba(46,204,113,0.15);border-radius:10px;color:var(--branco);font-size:13px;font-family:inherit;">
-          <option value="" style="background:#1a1a2e;color:#fff;">TODAS AS OBRAS</option>
-        </select>
-        <button class="btn-save" style="padding:8px 16px;font-size:12px;" onclick="abrirModalRepasse()">+ NOVO REPASSE</button>
-        <button class="btn-outline" style="padding:8px 16px;font-size:12px;" onclick="gerarRelatorioCustos()">🖨 RELATÓRIO</button>
+    <!-- VISÃO CARDS (padrão) -->
+    <div id="custos-cards-overview">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding-top:4px;">
+        <div class="modulo-badge" style="margin-bottom:0;">💰 CUSTOS CEF</div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn-save" style="padding:6px 14px;font-size:11px;" onclick="abrirModalRepasse()">+ NOVO REPASSE</button>
+          <button class="btn-outline" style="padding:6px 14px;font-size:11px;" onclick="gerarRelatorioCustos()">🖨 RELATÓRIO</button>
+        </div>
       </div>
+      <div id="custos-cards-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;"></div>
     </div>
 
-    <!-- DETALHES / TABELA DE REPASSES -->
-    <div id="custos-detalhes"></div>
-
-    <!-- HISTÓRICO MENSAL -->
-    <div id="custos-historico-mensal" style="margin-top:16px;"></div>
+    <!-- DETALHE POR OBRA (oculto por padrão) -->
+    <div id="custos-detalhe-view" style="display:none;">
+      <div style="position:sticky;top:53px;z-index:90;background:var(--bg);padding:10px 0 4px 0;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <div style="display:flex;align-items:center;">
+            <button onclick="custosVoltarCards()" style="background:rgba(46,204,113,0.08);border:1px solid rgba(46,204,113,0.15);color:var(--verde-hl);border-radius:8px;padding:5px 14px;font-size:11px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;cursor:pointer;margin-right:8px;">← VOLTAR</button>
+            <div class="modulo-badge" style="margin-bottom:0;">💰 CUSTOS CEF</div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn-save" style="padding:6px 14px;font-size:11px;" onclick="abrirModalRepasse(custoObraAtual)">+ NOVO REPASSE</button>
+          </div>
+        </div>
+      </div>
+      <input type="hidden" id="custos-filtro-obra" value="">
+      <div id="custos-resumo"></div>
+      <div id="custos-detalhes"></div>
+      <div id="custos-historico-mensal" style="margin-top:16px;"></div>
+    </div>
   </div>
 
   <!-- MODAL NOVO REPASSE CEF -->
@@ -6923,54 +6929,103 @@ async function loadRepassesCef() {
   } catch(e) { repassesCef = []; }
 }
 
+let custoObraAtual = '';
+
 function renderCustos() {
+  // Mostrar cards overview por padrão
+  document.getElementById('custos-cards-overview').style.display = '';
+  document.getElementById('custos-detalhe-view').style.display = 'none';
+  custoObraAtual = '';
+  renderCustosCards();
+}
+
+function renderCustosCards() {
+  const el = document.getElementById('custos-cards-grid');
+  if (!el) return;
+  const todasObras = [...obras, ...obrasArquivadas].filter(o => !o.arquivada);
+
+  if (!todasObras.length) { el.innerHTML = '<div class="empty" style="grid-column:1/-1;">Nenhuma obra cadastrada.</div>'; return; }
+
+  el.innerHTML = todasObras.map(o => {
+    const reps = repassesCef.filter(r => r.obra_id === o.id);
+    const totalPls = reps.filter(r => (r.tipo||'pls') === 'pls').reduce((s,r) => s + Number(r.valor||0), 0);
+    const totalEntrada = reps.filter(r => (r.tipo||'pls') === 'entrada').reduce((s,r) => s + Number(r.valor||0), 0);
+    const totalRecebido = totalPls + totalEntrada;
+    const valorVenda = Number(o.valor_venda || 0);
+    const custoTotal = lancamentos.filter(l => l.obra_id === o.id).reduce((s,l) => s + Number(l.total||0), 0);
+    const lucro = valorVenda > 0 ? valorVenda - custoTotal : 0;
+    const pctRecebido = valorVenda > 0 ? Math.min((totalRecebido/valorVenda*100), 100) : 0;
+    const corLucro = lucro >= 0 ? 'var(--verde-hl)' : '#ef4444';
+
+    return `<div class="card" style="padding:16px;cursor:pointer;transition:all .2s;border:1px solid var(--borda);"
+                 onclick="custosAbrirDetalhe('${o.id}')"
+                 onmouseover="this.style.borderColor='rgba(46,204,113,0.4)'"
+                 onmouseout="this.style.borderColor='var(--borda)'">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+        <div>
+          <div style="font-size:15px;font-weight:700;color:var(--branco);font-family:'Rajdhani',sans-serif;">${o.nome}</div>
+          <div style="font-size:11px;color:var(--texto3);margin-top:2px;">📍 ${o.cidade || 'Sem cidade'}</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:16px;font-weight:800;color:var(--verde-hl);font-family:'JetBrains Mono',monospace;">${valorVenda > 0 ? fmt(valorVenda) : '-'}</div>
+          <div style="font-size:9px;color:var(--texto3);">VALOR IMÓVEL</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">
+        <div style="text-align:center;padding:6px;background:rgba(46,204,113,0.04);border-radius:8px;">
+          <div style="font-size:9px;color:var(--texto3);">📄 PLS</div>
+          <div style="font-size:12px;font-weight:700;color:var(--verde-hl);">${fmt(totalPls)}</div>
+        </div>
+        <div style="text-align:center;padding:6px;background:rgba(59,130,246,0.04);border-radius:8px;">
+          <div style="font-size:9px;color:var(--texto3);">💵 ENTRADAS</div>
+          <div style="font-size:12px;font-weight:700;color:#60a5fa;">${fmt(totalEntrada)}</div>
+        </div>
+        <div style="text-align:center;padding:6px;background:rgba(245,158,11,0.04);border-radius:8px;">
+          <div style="font-size:9px;color:var(--texto3);">💸 CUSTO</div>
+          <div style="font-size:12px;font-weight:700;color:#f59e0b;">${fmt(custoTotal)}</div>
+        </div>
+      </div>
+      ${valorVenda > 0 ? `<div style="margin-bottom:8px;">
+        <div style="height:6px;background:rgba(46,204,113,0.1);border-radius:3px;overflow:hidden;">
+          <div style="width:${pctRecebido}%;height:100%;background:var(--verde3);border-radius:3px;"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--texto3);margin-top:3px;">
+          <span>Recebido: ${pctRecebido.toFixed(0)}%</span>
+          <span style="font-weight:700;color:${corLucro};">Lucro: ${fmt(lucro)}</span>
+        </div>
+      </div>` : ''}
+      <div style="display:flex;justify-content:space-between;align-items:center;padding-top:8px;border-top:1px solid rgba(46,204,113,0.06);">
+        <span style="font-size:10px;color:var(--texto3);">${reps.length} lançamento(s)</span>
+        <span style="font-size:10px;color:var(--verde-hl);font-weight:600;">VER DETALHES →</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function custosAbrirDetalhe(obraId) {
+  custoObraAtual = obraId;
+  document.getElementById('custos-cards-overview').style.display = 'none';
+  document.getElementById('custos-detalhe-view').style.display = '';
+  document.getElementById('custos-filtro-obra').value = obraId;
   renderCustosResumo();
-  const filtro = document.getElementById('custos-filtro-obra');
-  if (filtro) {
-    const val = filtro.value;
-    const todasObras = [...obras, ...obrasArquivadas];
-    filtro.innerHTML = '<option value="" style="background:#1a1a2e;color:#fff;">TODAS AS OBRAS</option>' +
-      todasObras.map(o => `<option value="${o.id}" style="background:#1a1a2e;color:#fff;" ${o.id === val ? 'selected' : ''}>${o.nome}${o.arquivada ? ' (arquivada)' : ''}</option>`).join('');
-  }
-  const obraId = filtro?.value || '';
   renderCustosDetalhes(obraId);
   renderCustosHistoricoMensal(obraId);
+}
+
+function custosVoltarCards() {
+  custoObraAtual = '';
+  document.getElementById('custos-cards-overview').style.display = '';
+  document.getElementById('custos-detalhe-view').style.display = 'none';
+  renderCustosCards();
 }
 
 function renderCustosResumo() {
   const el = document.getElementById('custos-resumo');
   if (!el) return;
   const todasObras = [...obras, ...obrasArquivadas];
-  const totalGeral = repassesCef.reduce((s, r) => s + Number(r.valor || 0), 0);
-  const totalMedicoes = repassesCef.length;
-  const obraFiltro = document.getElementById('custos-filtro-obra')?.value || '';
+  const obraFiltro = custoObraAtual || '';
 
-  // Total por obra ativa
-  const obrasAtivas = obras.filter(o => !o.arquivada);
-  const totalAtivas = repassesCef
-    .filter(r => obrasAtivas.some(o => o.id === r.obra_id))
-    .reduce((s, r) => s + Number(r.valor || 0), 0);
-
-  // Qtd obras com repasses
-  const obrasComRepasse = new Set(repassesCef.map(r => r.obra_id)).size;
-
-  let html = `
-    <div class="card" style="padding:16px;text-align:center;">
-      <div style="font-size:11px;color:var(--texto3);letter-spacing:1px;margin-bottom:6px;">TOTAL GERAL REPASSES</div>
-      <div style="font-size:22px;font-weight:700;color:var(--verde-hl);font-family:'Rajdhani',sans-serif;">${fmt(totalGeral)}</div>
-      <div style="font-size:11px;color:var(--texto3);margin-top:4px;">${totalMedicoes} lançamento(s)</div>
-    </div>
-    <div class="card" style="padding:16px;text-align:center;">
-      <div style="font-size:11px;color:var(--texto3);letter-spacing:1px;margin-bottom:6px;">OBRAS ATIVAS</div>
-      <div style="font-size:22px;font-weight:700;color:var(--branco);font-family:'Rajdhani',sans-serif;">${fmt(totalAtivas)}</div>
-      <div style="font-size:11px;color:var(--texto3);margin-top:4px;">${obrasAtivas.length} obra(s) ativa(s)</div>
-    </div>
-    <div class="card" style="padding:16px;text-align:center;">
-      <div style="font-size:11px;color:var(--texto3);letter-spacing:1px;margin-bottom:6px;">OBRAS C/ REPASSE</div>
-      <div style="font-size:22px;font-weight:700;color:var(--branco);font-family:'Rajdhani',sans-serif;">${obrasComRepasse}</div>
-      <div style="font-size:11px;color:var(--texto3);margin-top:4px;">de ${todasObras.length} cadastrada(s)</div>
-    </div>
-  `;
+  let html = '';
 
   // Painel financeiro por obra quando filtrada
   if (obraFiltro) {
@@ -7206,7 +7261,7 @@ async function salvarRepasse() {
     showToast('Repasse CEF salvo!');
     fecharModal('repasse');
     await loadRepassesCef();
-    renderCustos();
+    if (custoObraAtual) custosAbrirDetalhe(custoObraAtual); else renderCustos();
   } catch(e) {
     showToast('Erro ao salvar repasse.');
     console.error(e);
@@ -7219,7 +7274,7 @@ async function excluirRepasse(id) {
     await sbDelete('repasses_cef', `?id=eq.${id}`);
     showToast('Repasse excluído.');
     await loadRepassesCef();
-    renderCustos();
+    if (custoObraAtual) custosAbrirDetalhe(custoObraAtual); else renderCustos();
   } catch(e) {
     showToast('Erro ao excluir.');
     console.error(e);
