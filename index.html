@@ -844,10 +844,10 @@ body::before {
     <span class="nav-icon">📦</span>ESTOQUE<span class="nav-key">F3</span>
   </button>
   <button class="nav-btn" id="nav-notas" onclick="setView('notas')">
-    <span class="nav-icon">🧾</span>NOTAS<span class="nav-key">F4</span>
+    <span class="nav-icon">🧾</span>HISTÓRICO<span class="nav-key">F4</span>
   </button>
   <button class="nav-btn" id="nav-form" onclick="setView('form')">
-    <span class="nav-icon">➕</span>NF FISCAL<span class="nav-key">F5</span>
+    <span class="nav-icon">➕</span>LANÇAR NF<span class="nav-key">F5</span>
   </button>
   <div class="nav-divider"></div>
   <button class="nav-btn" id="nav-creditos" onclick="setView('creditos')">
@@ -892,7 +892,7 @@ body::before {
     <span class="bnav-icon">📦</span>ESTOQUE
   </button>
   <button class="bnav-btn" id="bnav-notas" onclick="setView('notas');closeBnavMore()">
-    <span class="bnav-icon">🧾</span>NOTAS
+    <span class="bnav-icon">🧾</span>HISTÓRICO
   </button>
   <button class="bnav-btn" id="bnav-more-btn" onclick="toggleBnavMore()">
     <span class="bnav-icon">⋯</span>MAIS
@@ -900,7 +900,7 @@ body::before {
 </div>
 <div id="bnav-more-menu">
   <button class="bnav-more-item" id="bnav-form" onclick="setView('form');closeBnavMore()">
-    <span class="bnav-more-icon">➕</span>NF FISCAL
+    <span class="bnav-more-icon">➕</span>LANÇAR NF
   </button>
   <button class="bnav-more-item" id="bnav-creditos" onclick="setView('creditos');closeBnavMore()">
     <span class="bnav-more-icon">📖</span>GUIA NF
@@ -1133,7 +1133,7 @@ body::before {
   <!-- NOTAS -->
   <div id="view-notas" class="hidden">
     <div id="notas-sticky" style="position:sticky;top:0;z-index:90;background:var(--bg);padding:10px 0 8px 0;border-bottom:1px solid var(--borda);margin-bottom:8px;">
-      <div class="modulo-badge">🧾 NOTAS FISCAIS</div>
+      <div class="modulo-badge">🧾 HISTÓRICO DE NFs</div>
       <div class="filter-row">
         <select id="filtro-obra" onchange="renderNotas()"><option value="">TODAS AS OBRAS</option></select>
         <select id="filtro-credito" onchange="renderNotas()">
