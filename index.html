@@ -1266,10 +1266,17 @@ body::before {
   <div id="modal-repasse" class="modal-overlay hidden">
     <div class="modal" style="max-width:440px;">
       <div class="modal-title">
-        <span>💰 NOVO REPASSE CEF</span>
+        <span>💰 NOVO REPASSE / ENTRADA</span>
         <button class="modal-close" onclick="fecharModal('repasse')">✕</button>
       </div>
       <input type="hidden" id="repasse-id">
+      <div class="field" style="margin-bottom:12px;">
+        <label>TIPO *</label>
+        <select id="repasse-tipo" onchange="onRepasseTipoChange()" style="width:100%;padding:10px 14px;background:#1a1a2e;border:1px solid rgba(46,204,113,0.15);border-radius:10px;color:var(--branco);font-size:14px;outline:none;font-family:inherit;">
+          <option value="pls" style="background:#1a1a2e;color:#fff;">📄 PLS CEF (Medição)</option>
+          <option value="entrada" style="background:#1a1a2e;color:#fff;">💵 ENTRADA CLIENTE</option>
+        </select>
+      </div>
       <div class="field" style="margin-bottom:12px;">
         <label>OBRA *</label>
         <select id="repasse-obra" style="width:100%;padding:10px 14px;background:#1a1a2e;border:1px solid rgba(46,204,113,0.15);border-radius:10px;color:var(--branco);font-size:14px;outline:none;font-family:inherit;">
@@ -1277,7 +1284,7 @@ body::before {
         </select>
       </div>
       <div style="display:flex;gap:8px;">
-        <div class="field" style="flex:1;margin-bottom:12px;">
+        <div id="repasse-medicao-wrap" class="field" style="flex:1;margin-bottom:12px;">
           <label>MEDIÇÃO Nº *</label>
           <input type="number" id="repasse-medicao" min="1" placeholder="Ex: 1" style="width:100%;padding:10px 14px;background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.15);border-radius:10px;color:var(--branco);font-size:14px;outline:none;font-family:inherit;">
         </div>
@@ -1711,6 +1718,7 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
     <input type="hidden" id="obra-edit-id">
     <div class="field"><label>NOME DA OBRA *</label><input type="text" id="nova-obra-nome" placeholder="EX: RESIDENCIAL SILVA"></div>
     <div class="field"><label>CIDADE</label><input type="text" id="nova-obra-cidade" placeholder="EX: RECIFE"></div>
+    <div class="field"><label>VALOR DE VENDA (R$)</label><input type="number" id="nova-obra-valor-venda" min="0" step="0.01" placeholder="0,00"></div>
     <button class="btn-save" onclick="salvarNovaObra()">SALVAR</button>
     <button class="btn-outline" onclick="fecharModal('obra')">CANCELAR</button>
   </div>
@@ -1755,11 +1763,11 @@ const DEMO_DATA = {
     {id:'d2',usuario:'demo_op',senha:'demo_op',perfil:'operacional',nome:'Carlos Operador',ativo:true}
   ],
   obras: [
-    {id:'demo-obra-1',nome:'Vila das Flores',cidade:'Recife',status:'em_andamento',arquivada:false,criado_em:'2024-01-10T00:00:00'},
-    {id:'demo-obra-2',nome:'Jardim Primavera',cidade:'Caruaru',status:'em_andamento',arquivada:false,criado_em:'2024-02-15T00:00:00'},
-    {id:'demo-obra-3',nome:'Bosque Sereno',cidade:'Olinda',status:'em_andamento',arquivada:false,criado_em:'2024-03-01T00:00:00'},
-    {id:'demo-obra-4',nome:'Alto da Serra',cidade:'Garanhuns',status:'em_andamento',arquivada:false,criado_em:'2024-03-20T00:00:00'},
-    {id:'demo-obra-5',nome:'Costa Dourada',cidade:'Porto de Galinhas',status:'concluida',arquivada:true,criado_em:'2024-01-05T00:00:00'}
+    {id:'demo-obra-1',nome:'Vila das Flores',cidade:'Recife',status:'em_andamento',arquivada:false,valor_venda:350000,criado_em:'2024-01-10T00:00:00'},
+    {id:'demo-obra-2',nome:'Jardim Primavera',cidade:'Caruaru',status:'em_andamento',arquivada:false,valor_venda:420000,criado_em:'2024-02-15T00:00:00'},
+    {id:'demo-obra-3',nome:'Bosque Sereno',cidade:'Olinda',status:'em_andamento',arquivada:false,valor_venda:280000,criado_em:'2024-03-01T00:00:00'},
+    {id:'demo-obra-4',nome:'Alto da Serra',cidade:'Garanhuns',status:'em_andamento',arquivada:false,valor_venda:195000,criado_em:'2024-03-20T00:00:00'},
+    {id:'demo-obra-5',nome:'Costa Dourada',cidade:'Porto de Galinhas',status:'concluida',arquivada:true,valor_venda:510000,criado_em:'2024-01-05T00:00:00'}
   ],
   notas_fiscais: [
     {id:'demo-nf-1',numero:'NF-1001',fornecedor:'Leroy Merlin',valor:4850.00,data:'2024-03-15',obra_id:'demo-obra-1',itens:JSON.stringify([{desc:'000001 · Cimento CP-II 50kg',qtd:20,preco:32.50,total:650},{desc:'000002 · Areia grossa m³',qtd:5,preco:95,total:475},{desc:'000016 · Gesso projetado 20kg',qtd:10,preco:35,total:350}]),criado_em:'2024-03-15T10:00:00'},
@@ -1804,16 +1812,20 @@ const DEMO_DATA = {
     {id:'demo-lanc-0035',obra_id:'demo-obra-1',descricao:'000006 · Vergalhão CA-50 12mm',qtd:6,preco:68.0,total:408.0,data:'2025-03-01',obs:'NF NF-1100 · Estrutura'}
   ],
   repasses_cef: [
-    {id:'demo-rep-1',obra_id:'demo-obra-1',medicao_numero:1,valor:45000.00,data_credito:'2024-04-15',observacao:'1ª medição aprovada',criado_em:'2024-04-15T10:00:00'},
-    {id:'demo-rep-2',obra_id:'demo-obra-1',medicao_numero:2,valor:62000.00,data_credito:'2024-06-20',observacao:'2ª medição - estrutura',criado_em:'2024-06-20T10:00:00'},
-    {id:'demo-rep-3',obra_id:'demo-obra-1',medicao_numero:3,valor:38500.00,data_credito:'2024-09-10',observacao:'3ª medição - alvenaria',criado_em:'2024-09-10T10:00:00'},
-    {id:'demo-rep-4',obra_id:'demo-obra-2',medicao_numero:1,valor:55000.00,data_credito:'2024-05-22',observacao:'1ª medição aprovada',criado_em:'2024-05-22T10:00:00'},
-    {id:'demo-rep-5',obra_id:'demo-obra-2',medicao_numero:2,valor:72000.00,data_credito:'2024-08-15',observacao:'2ª medição - cobertura',criado_em:'2024-08-15T10:00:00'},
-    {id:'demo-rep-6',obra_id:'demo-obra-3',medicao_numero:1,valor:48000.00,data_credito:'2024-07-05',observacao:'1ª medição aprovada',criado_em:'2024-07-05T10:00:00'},
-    {id:'demo-rep-7',obra_id:'demo-obra-3',medicao_numero:2,valor:51000.00,data_credito:'2024-10-18',observacao:'2ª medição - elétrica',criado_em:'2024-10-18T10:00:00'},
-    {id:'demo-rep-8',obra_id:'demo-obra-4',medicao_numero:1,valor:35000.00,data_credito:'2024-08-30',observacao:'1ª medição aprovada',criado_em:'2024-08-30T10:00:00'},
-    {id:'demo-rep-9',obra_id:'demo-obra-1',medicao_numero:4,valor:41000.00,data_credito:'2024-12-05',observacao:'4ª medição - acabamento',criado_em:'2024-12-05T10:00:00'},
-    {id:'demo-rep-10',obra_id:'demo-obra-2',medicao_numero:3,valor:43000.00,data_credito:'2024-11-20',observacao:'3ª medição - pintura',criado_em:'2024-11-20T10:00:00'}
+    {id:'demo-rep-1',obra_id:'demo-obra-1',medicao_numero:1,valor:45000.00,data_credito:'2024-04-15',observacao:'1ª medição aprovada',tipo:'pls',criado_em:'2024-04-15T10:00:00'},
+    {id:'demo-rep-2',obra_id:'demo-obra-1',medicao_numero:2,valor:62000.00,data_credito:'2024-06-20',observacao:'2ª medição - estrutura',tipo:'pls',criado_em:'2024-06-20T10:00:00'},
+    {id:'demo-rep-3',obra_id:'demo-obra-1',medicao_numero:3,valor:38500.00,data_credito:'2024-09-10',observacao:'3ª medição - alvenaria',tipo:'pls',criado_em:'2024-09-10T10:00:00'},
+    {id:'demo-rep-4',obra_id:'demo-obra-2',medicao_numero:1,valor:55000.00,data_credito:'2024-05-22',observacao:'1ª medição aprovada',tipo:'pls',criado_em:'2024-05-22T10:00:00'},
+    {id:'demo-rep-5',obra_id:'demo-obra-2',medicao_numero:2,valor:72000.00,data_credito:'2024-08-15',observacao:'2ª medição - cobertura',tipo:'pls',criado_em:'2024-08-15T10:00:00'},
+    {id:'demo-rep-6',obra_id:'demo-obra-3',medicao_numero:1,valor:48000.00,data_credito:'2024-07-05',observacao:'1ª medição aprovada',tipo:'pls',criado_em:'2024-07-05T10:00:00'},
+    {id:'demo-rep-7',obra_id:'demo-obra-3',medicao_numero:2,valor:51000.00,data_credito:'2024-10-18',observacao:'2ª medição - elétrica',tipo:'pls',criado_em:'2024-10-18T10:00:00'},
+    {id:'demo-rep-8',obra_id:'demo-obra-4',medicao_numero:1,valor:35000.00,data_credito:'2024-08-30',observacao:'1ª medição aprovada',tipo:'pls',criado_em:'2024-08-30T10:00:00'},
+    {id:'demo-rep-9',obra_id:'demo-obra-1',medicao_numero:4,valor:41000.00,data_credito:'2024-12-05',observacao:'4ª medição - acabamento',tipo:'pls',criado_em:'2024-12-05T10:00:00'},
+    {id:'demo-rep-10',obra_id:'demo-obra-2',medicao_numero:3,valor:43000.00,data_credito:'2024-11-20',observacao:'3ª medição - pintura',tipo:'pls',criado_em:'2024-11-20T10:00:00'},
+    {id:'demo-rep-11',obra_id:'demo-obra-1',medicao_numero:0,valor:25000.00,data_credito:'2024-03-01',observacao:'Entrada do cliente - sinal',tipo:'entrada',criado_em:'2024-03-01T10:00:00'},
+    {id:'demo-rep-12',obra_id:'demo-obra-2',medicao_numero:0,valor:30000.00,data_credito:'2024-04-10',observacao:'Entrada do cliente',tipo:'entrada',criado_em:'2024-04-10T10:00:00'},
+    {id:'demo-rep-13',obra_id:'demo-obra-3',medicao_numero:0,valor:20000.00,data_credito:'2024-06-01',observacao:'Sinal do comprador',tipo:'entrada',criado_em:'2024-06-01T10:00:00'},
+    {id:'demo-rep-14',obra_id:'demo-obra-4',medicao_numero:0,valor:15000.00,data_credito:'2024-07-15',observacao:'Entrada parcial',tipo:'entrada',criado_em:'2024-07-15T10:00:00'}
   ],
   distribuicoes: [],
   entradas_diretas: [],
@@ -2055,6 +2067,7 @@ create table if not exists repasses_cef (
   valor decimal(12,2) not null,
   data_credito date not null,
   observacao text default '',
+  tipo text default 'pls',
   criado_em timestamptz default now()
 );
 alter table repasses_cef enable row level security;
@@ -3385,16 +3398,17 @@ async function excluirLanc(id) {
 async function salvarNovaObra() {
   const nome = (document.getElementById('nova-obra-nome').value||'').toUpperCase().trim();
   const cidade = (document.getElementById('nova-obra-cidade').value||'').trim();
+  const valorVenda = parseFloat(document.getElementById('nova-obra-valor-venda').value) || 0;
   const editId = document.getElementById('obra-edit-id').value;
   if (!nome) { showToast('INFORME O NOME DA OBRA.'); return; }
   try {
     if (editId) {
-      await sbPatch('obras', `?id=eq.${editId}`, { nome, cidade });
+      await sbPatch('obras', `?id=eq.${editId}`, { nome, cidade, valor_venda: valorVenda });
       await loadObras();
       populateSelects(); renderDashboard(); renderObrasCards();
       showToast(`✅ OBRA "${nome}" ATUALIZADA!`);
     } else {
-      const [nova] = await sbPost('obras', { nome, cidade });
+      const [nova] = await sbPost('obras', { nome, cidade, valor_venda: valorVenda });
       obras.push(nova); obras.sort((a,b)=>a.nome.localeCompare(b.nome));
       populateSelects(); renderDashboard(); renderObrasCards();
       showToast(`✅ OBRA ${nome} CADASTRADA!`);
@@ -3419,6 +3433,7 @@ function abrirModalObra(obraId) {
   document.getElementById('obra-edit-id').value = obra ? obra.id : '';
   document.getElementById('nova-obra-nome').value = obra ? obra.nome : '';
   document.getElementById('nova-obra-cidade').value = obra ? (obra.cidade || '') : '';
+  document.getElementById('nova-obra-valor-venda').value = obra ? (obra.valor_venda || '') : '';
   document.getElementById('modal-obra-titulo').textContent = obra ? '🏗 EDITAR OBRA' : '🏗 NOVA OBRA';
   document.getElementById('modal-obra').classList.remove('hidden');
   setTimeout(() => document.getElementById('nova-obra-nome').focus(), 100);
@@ -6928,6 +6943,7 @@ function renderCustosResumo() {
   const todasObras = [...obras, ...obrasArquivadas];
   const totalGeral = repassesCef.reduce((s, r) => s + Number(r.valor || 0), 0);
   const totalMedicoes = repassesCef.length;
+  const obraFiltro = document.getElementById('custos-filtro-obra')?.value || '';
 
   // Total por obra ativa
   const obrasAtivas = obras.filter(o => !o.arquivada);
@@ -6938,11 +6954,11 @@ function renderCustosResumo() {
   // Qtd obras com repasses
   const obrasComRepasse = new Set(repassesCef.map(r => r.obra_id)).size;
 
-  el.innerHTML = `
+  let html = `
     <div class="card" style="padding:16px;text-align:center;">
       <div style="font-size:11px;color:var(--texto3);letter-spacing:1px;margin-bottom:6px;">TOTAL GERAL REPASSES</div>
       <div style="font-size:22px;font-weight:700;color:var(--verde-hl);font-family:'Rajdhani',sans-serif;">${fmt(totalGeral)}</div>
-      <div style="font-size:11px;color:var(--texto3);margin-top:4px;">${totalMedicoes} medição(ões)</div>
+      <div style="font-size:11px;color:var(--texto3);margin-top:4px;">${totalMedicoes} lançamento(s)</div>
     </div>
     <div class="card" style="padding:16px;text-align:center;">
       <div style="font-size:11px;color:var(--texto3);letter-spacing:1px;margin-bottom:6px;">OBRAS ATIVAS</div>
@@ -6955,6 +6971,70 @@ function renderCustosResumo() {
       <div style="font-size:11px;color:var(--texto3);margin-top:4px;">de ${todasObras.length} cadastrada(s)</div>
     </div>
   `;
+
+  // Painel financeiro por obra quando filtrada
+  if (obraFiltro) {
+    const obra = todasObras.find(o => o.id === obraFiltro);
+    if (obra) {
+      const valorVenda = Number(obra.valor_venda || 0);
+      const repassesObra = repassesCef.filter(r => r.obra_id === obraFiltro);
+      const totalPls = repassesObra.filter(r => (r.tipo || 'pls') === 'pls').reduce((s, r) => s + Number(r.valor || 0), 0);
+      const totalEntrada = repassesObra.filter(r => (r.tipo || 'pls') === 'entrada').reduce((s, r) => s + Number(r.valor || 0), 0);
+      const totalRecebido = totalPls + totalEntrada;
+      const saldoReceber = valorVenda - totalRecebido;
+      const custoTotal = lancamentos.filter(l => l.obra_id === obraFiltro).reduce((s, l) => s + Number(l.total || 0), 0);
+      const lucro = valorVenda - custoTotal;
+      const margem = valorVenda > 0 ? (lucro / valorVenda * 100) : 0;
+      const pctRecebido = valorVenda > 0 ? Math.min((totalRecebido / valorVenda * 100), 100) : 0;
+
+      const corSaldo = saldoReceber >= 0 ? 'var(--verde-hl)' : '#ef4444';
+      const corLucro = lucro >= 0 ? 'var(--verde-hl)' : '#ef4444';
+      const corMargem = margem >= 15 ? 'var(--verde-hl)' : margem >= 0 ? '#f59e0b' : '#ef4444';
+
+      html += `
+      <div class="card" style="padding:18px;grid-column:1/-1;">
+        <div class="section-title" style="font-size:13px;margin-bottom:14px;">📊 RESUMO FINANCEIRO — ${obra.nome}</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:14px;">
+          <div style="text-align:center;padding:10px;background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.1);border-radius:10px;">
+            <div style="font-size:10px;color:var(--texto3);letter-spacing:1px;margin-bottom:4px;">VALOR DO IMÓVEL</div>
+            <div style="font-size:18px;font-weight:700;color:var(--branco);font-family:'Rajdhani',sans-serif;">${valorVenda > 0 ? fmt(valorVenda) : 'Não informado'}</div>
+          </div>
+          <div style="text-align:center;padding:10px;background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.1);border-radius:10px;">
+            <div style="font-size:10px;color:var(--texto3);letter-spacing:1px;margin-bottom:4px;">TOTAL RECEBIDO</div>
+            <div style="font-size:18px;font-weight:700;color:var(--verde-hl);font-family:'Rajdhani',sans-serif;">${fmt(totalRecebido)}</div>
+            <div style="font-size:10px;color:var(--texto3);margin-top:2px;">📄 PLS: ${fmt(totalPls)} &nbsp;|&nbsp; 💵 Entradas: ${fmt(totalEntrada)}</div>
+          </div>
+          <div style="text-align:center;padding:10px;background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.1);border-radius:10px;">
+            <div style="font-size:10px;color:var(--texto3);letter-spacing:1px;margin-bottom:4px;">SALDO A RECEBER</div>
+            <div style="font-size:18px;font-weight:700;color:${corSaldo};font-family:'Rajdhani',sans-serif;">${valorVenda > 0 ? fmt(saldoReceber) : '-'}</div>
+          </div>
+          <div style="text-align:center;padding:10px;background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.1);border-radius:10px;">
+            <div style="font-size:10px;color:var(--texto3);letter-spacing:1px;margin-bottom:4px;">CUSTO TOTAL</div>
+            <div style="font-size:18px;font-weight:700;color:#f59e0b;font-family:'Rajdhani',sans-serif;">${fmt(custoTotal)}</div>
+          </div>
+          <div style="text-align:center;padding:10px;background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.1);border-radius:10px;">
+            <div style="font-size:10px;color:var(--texto3);letter-spacing:1px;margin-bottom:4px;">LUCRO ESTIMADO</div>
+            <div style="font-size:18px;font-weight:700;color:${corLucro};font-family:'Rajdhani',sans-serif;">${valorVenda > 0 ? fmt(lucro) : '-'}</div>
+          </div>
+          <div style="text-align:center;padding:10px;background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.1);border-radius:10px;">
+            <div style="font-size:10px;color:var(--texto3);letter-spacing:1px;margin-bottom:4px;">MARGEM</div>
+            <div style="font-size:18px;font-weight:700;color:${corMargem};font-family:'Rajdhani',sans-serif;">${valorVenda > 0 ? margem.toFixed(1) + '%' : '-'}</div>
+          </div>
+        </div>
+        ${valorVenda > 0 ? `<div style="margin-top:4px;">
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--texto3);margin-bottom:4px;">
+            <span>RECEBIDO vs VALOR VENDA</span>
+            <span style="font-weight:600;color:var(--verde-hl);">${pctRecebido.toFixed(1)}%</span>
+          </div>
+          <div style="width:100%;height:10px;background:rgba(255,255,255,0.06);border-radius:6px;overflow:hidden;">
+            <div style="width:${pctRecebido}%;height:100%;background:linear-gradient(90deg,var(--verde-hl),#27ae60);border-radius:6px;transition:width 0.4s;"></div>
+          </div>
+        </div>` : ''}
+      </div>`;
+    }
+  }
+
+  el.innerHTML = html;
 }
 
 function renderCustosDetalhes(obraId) {
@@ -6985,12 +7065,13 @@ function renderCustosDetalhes(obraId) {
     html += `<div class="card" style="padding:16px;margin-bottom:12px;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
         <div class="section-title" style="margin:0;font-size:13px;">🏗 ${nomeObra}</div>
-        <div style="font-size:13px;font-weight:700;color:var(--verde-hl);">${fmt(total)} — ${reps.length} medição(ões)</div>
+        <div style="font-size:13px;font-weight:700;color:var(--verde-hl);">${fmt(total)} — ${reps.length} lançamento(s)</div>
       </div>
       <div style="overflow-x:auto;">
         <table style="width:100%;border-collapse:collapse;font-size:12px;">
           <thead>
             <tr style="border-bottom:1px solid var(--borda);color:var(--texto3);text-align:left;">
+              <th style="padding:8px 6px;">TIPO</th>
               <th style="padding:8px 6px;">MED. Nº</th>
               <th style="padding:8px 6px;">VALOR</th>
               <th style="padding:8px 6px;">DATA CRÉDITO</th>
@@ -7004,9 +7085,14 @@ function renderCustosDetalhes(obraId) {
     sorted.forEach(r => {
       acum += Number(r.valor || 0);
       const dt = r.data_credito ? new Date(r.data_credito + 'T12:00:00').toLocaleDateString('pt-BR') : '-';
+      const tipoR = (r.tipo || 'pls');
+      const tipoLabel = tipoR === 'entrada' ? '💵 ENTRADA' : '📄 PLS';
+      const tipoColor = tipoR === 'entrada' ? '#3b82f6' : 'var(--verde-hl)';
+      const medLabel = tipoR === 'entrada' ? '-' : '#' + r.medicao_numero;
       html += `<tr style="border-bottom:1px solid rgba(46,204,113,0.06);">
-        <td style="padding:8px 6px;font-weight:700;color:var(--branco);">#${r.medicao_numero}</td>
-        <td style="padding:8px 6px;color:var(--verde-hl);font-weight:600;">${fmt(r.valor)}</td>
+        <td style="padding:8px 6px;font-size:11px;font-weight:600;color:${tipoColor};">${tipoLabel}</td>
+        <td style="padding:8px 6px;font-weight:700;color:var(--branco);">${medLabel}</td>
+        <td style="padding:8px 6px;color:${tipoColor};font-weight:600;">${fmt(r.valor)}</td>
         <td style="padding:8px 6px;color:var(--texto);">${dt}</td>
         <td style="padding:8px 6px;color:var(--texto3);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.observacao || '-'}</td>
         <td style="padding:8px 6px;text-align:center;">
@@ -7052,9 +7138,12 @@ function renderCustosHistoricoMensal(obraId) {
       </div>`;
     reps.sort((a, b) => a.medicao_numero - b.medicao_numero).forEach(r => {
       const nomeObra = getNome(r.obra_id);
+      const tipoR = (r.tipo || 'pls');
+      const tipoTag = tipoR === 'entrada' ? '<span style="color:#3b82f6;font-weight:600;">ENTRADA</span>' : '<span style="color:var(--verde-hl);font-weight:600;">PLS</span>';
+      const medInfo = tipoR === 'entrada' ? '' : ` — Med. #${r.medicao_numero}`;
       html += `<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:11px;color:var(--texto3);">
-        <span>${nomeObra} — Med. #${r.medicao_numero}</span>
-        <span style="color:var(--verde-hl);">${fmt(r.valor)}</span>
+        <span>${tipoTag} ${nomeObra}${medInfo}</span>
+        <span style="color:${tipoR === 'entrada' ? '#3b82f6' : 'var(--verde-hl)'};">${fmt(r.valor)}</span>
       </div>`;
     });
     html += `</div>`;
@@ -7070,32 +7159,47 @@ function abrirModalRepasse(obraId) {
   sel.innerHTML = '<option value="" style="background:#1a1a2e;color:#fff;">Selecione...</option>' +
     todasObras.map(o => `<option value="${o.id}" style="background:#1a1a2e;color:#fff;" ${o.id === obraId ? 'selected' : ''}>${o.nome}</option>`).join('');
   document.getElementById('repasse-id').value = '';
+  document.getElementById('repasse-tipo').value = 'pls';
   document.getElementById('repasse-medicao').value = '';
   document.getElementById('repasse-valor').value = '';
   document.getElementById('repasse-data').value = new Date().toISOString().split('T')[0];
   document.getElementById('repasse-obs').value = '';
+  document.getElementById('repasse-medicao-wrap').style.display = '';
   // Auto-incrementar medição
   if (obraId) {
-    const existentes = repassesCef.filter(r => r.obra_id === obraId);
+    const existentes = repassesCef.filter(r => r.obra_id === obraId && (r.tipo || 'pls') === 'pls');
     const maxMed = existentes.reduce((m, r) => Math.max(m, r.medicao_numero || 0), 0);
     document.getElementById('repasse-medicao').value = maxMed + 1;
   }
   document.getElementById('modal-repasse').classList.remove('hidden');
 }
 
+function onRepasseTipoChange() {
+  const tipo = document.getElementById('repasse-tipo').value;
+  const wrap = document.getElementById('repasse-medicao-wrap');
+  if (tipo === 'entrada') {
+    wrap.style.display = 'none';
+    document.getElementById('repasse-medicao').value = '';
+  } else {
+    wrap.style.display = '';
+  }
+}
+
 async function salvarRepasse() {
   const obraId = document.getElementById('repasse-obra').value;
-  const medicao = parseInt(document.getElementById('repasse-medicao').value);
+  const tipo = document.getElementById('repasse-tipo').value;
+  const medicaoRaw = parseInt(document.getElementById('repasse-medicao').value);
+  const medicao = tipo === 'entrada' ? (medicaoRaw || 0) : medicaoRaw;
   const valor = parseFloat(document.getElementById('repasse-valor').value);
   const data = document.getElementById('repasse-data').value;
   const obs = document.getElementById('repasse-obs').value.trim();
 
   if (!obraId) return showToast('Selecione uma obra.');
-  if (!medicao || medicao < 1) return showToast('Informe o número da medição.');
+  if (tipo === 'pls' && (!medicao || medicao < 1)) return showToast('Informe o número da medição.');
   if (!valor || valor <= 0) return showToast('Informe o valor do repasse.');
   if (!data) return showToast('Informe a data do crédito.');
 
-  const body = { obra_id: obraId, medicao_numero: medicao, valor, data_credito: data, observacao: obs };
+  const body = { obra_id: obraId, medicao_numero: medicao, valor, data_credito: data, observacao: obs, tipo };
 
   try {
     await sbPost('repasses_cef', body);
@@ -7155,11 +7259,33 @@ function gerarRelatorioCustos() {
 
   for (const [oid, data] of Object.entries(porObra)) {
     const totalObra = data.reps.reduce((s, r) => s + Number(r.valor || 0), 0);
-    html += `<h2>${data.nome} — Total: ${fmt(totalObra)}</h2>
-      <table><thead><tr><th>Med. Nº</th><th>Valor</th><th>Data Crédito</th><th>Observação</th></tr></thead><tbody>`;
+    const totalPlsObra = data.reps.filter(r => (r.tipo||'pls')==='pls').reduce((s,r) => s + Number(r.valor||0), 0);
+    const totalEntradaObra = data.reps.filter(r => (r.tipo||'pls')==='entrada').reduce((s,r) => s + Number(r.valor||0), 0);
+    const obraObj = todasObras.find(o => o.id === oid);
+    const valorVenda = Number(obraObj?.valor_venda || 0);
+    const custoObra = lancamentos.filter(l => l.obra_id === oid).reduce((s,l) => s + Number(l.total||0), 0);
+    const lucroObra = valorVenda - custoObra;
+    const margemObra = valorVenda > 0 ? (lucroObra / valorVenda * 100) : 0;
+
+    html += `<h2>${data.nome} — Total Recebido: ${fmt(totalObra)}</h2>`;
+    if (valorVenda > 0) {
+      html += `<table style="margin-bottom:8px;"><tbody>
+        <tr><td><strong>Valor do Imóvel</strong></td><td class="right">${fmt(valorVenda)}</td></tr>
+        <tr><td>PLS CEF</td><td class="right total">${fmt(totalPlsObra)}</td></tr>
+        <tr><td>Entradas Cliente</td><td class="right" style="color:#3b82f6;font-weight:700;">${fmt(totalEntradaObra)}</td></tr>
+        <tr><td>Saldo a Receber</td><td class="right">${fmt(valorVenda - totalObra)}</td></tr>
+        <tr><td>Custo Total</td><td class="right" style="color:#d97706;font-weight:700;">${fmt(custoObra)}</td></tr>
+        <tr><td><strong>Lucro Estimado</strong></td><td class="right total">${fmt(lucroObra)}</td></tr>
+        <tr><td><strong>Margem</strong></td><td class="right total">${margemObra.toFixed(1)}%</td></tr>
+      </tbody></table>`;
+    }
+    html += `<table><thead><tr><th>Tipo</th><th>Med. Nº</th><th>Valor</th><th>Data Crédito</th><th>Observação</th></tr></thead><tbody>`;
     data.reps.sort((a, b) => a.medicao_numero - b.medicao_numero).forEach(r => {
       const dt = r.data_credito ? new Date(r.data_credito + 'T12:00:00').toLocaleDateString('pt-BR') : '-';
-      html += `<tr><td>#${r.medicao_numero}</td><td class="right total">${fmt(r.valor)}</td><td>${dt}</td><td>${r.observacao || '-'}</td></tr>`;
+      const tipoR = (r.tipo || 'pls');
+      const tipoLb = tipoR === 'entrada' ? 'ENTRADA' : 'PLS CEF';
+      const medLb = tipoR === 'entrada' ? '-' : '#' + r.medicao_numero;
+      html += `<tr><td>${tipoLb}</td><td>${medLb}</td><td class="right total">${fmt(r.valor)}</td><td>${dt}</td><td>${r.observacao || '-'}</td></tr>`;
     });
     html += `</tbody></table>`;
   }
