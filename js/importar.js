@@ -139,6 +139,35 @@ function limparParaMatch(str) {
   return s;
 }
 
+// Extrai números/medidas de uma string (ex: "50mm", "3/4", "25", "100mm")
+function extrairMedidas(str) {
+  const medidas = [];
+  // Padrões: 50mm, 50MM, 50 mm, 3/4, 1/2, 20x20, 10.0, etc.
+  const regex = /(\d+[.,]?\d*)\s*(mm|cm|m|pol|kg|"|''|g|l|ml|m2|m3|m²|m³)?/gi;
+  let m;
+  while ((m = regex.exec(str)) !== null) {
+    medidas.push(m[1].replace(',', '.'));
+  }
+  // Frações: 3/4, 1/2
+  const fracoes = str.match(/\d+\/\d+/g);
+  if (fracoes) medidas.push(...fracoes);
+  return medidas;
+}
+
+// Compara medidas entre dois textos — retorna penalidade (0 = ok, -30 = medidas diferentes)
+function penalizarMedidasDiferentes(strA, strB) {
+  const medA = extrairMedidas(strA);
+  const medB = extrairMedidas(strB);
+  if (!medA.length || !medB.length) return 0; // sem medidas, sem penalidade
+  // Se ambos têm medidas, verificar se as medidas batem
+  const medASet = new Set(medA);
+  const medBSet = new Set(medB);
+  const emComum = [...medASet].filter(m => medBSet.has(m)).length;
+  if (emComum === 0) return -30; // medidas totalmente diferentes → penalidade pesada
+  if (emComum < Math.max(medASet.size, medBSet.size)) return -15; // algumas diferentes
+  return 0; // medidas batem
+}
+
 function matchCatalogo(descOriginal) {
   const inputLimpo = limparParaMatch(descOriginal);
   if (!inputLimpo) return null;
@@ -155,37 +184,53 @@ function matchCatalogo(descOriginal) {
       return { material: mat, score: 100, tipo: 'exato' };
     }
 
-    // 2. Um contém o outro por inteiro
-    if (catLimpo.includes(inputLimpo) || inputLimpo.includes(catLimpo)) {
-      const ratio = Math.min(catLimpo.length, inputLimpo.length) / Math.max(catLimpo.length, inputLimpo.length);
-      const score = Math.round(82 + ratio * 15);
-      if (score > melhorScore) {
-        melhorScore = score;
-        melhorMatch = { material: mat, score, tipo: 'contem' };
+    // Penalidade por medidas/bitolas diferentes (ex: 50mm vs 25mm)
+    const penalidade = penalizarMedidasDiferentes(inputLimpo, catLimpo);
+
+    // 2. Um contém o outro por inteiro (mínimo 5 chars pra evitar matches curtos)
+    const menorLen = Math.min(catLimpo.length, inputLimpo.length);
+    if (menorLen >= 5 && (catLimpo.includes(inputLimpo) || inputLimpo.includes(catLimpo))) {
+      const ratio = menorLen / Math.max(catLimpo.length, inputLimpo.length);
+      if (ratio >= 0.3) {
+        const score = Math.max(0, Math.round(82 + ratio * 15) + penalidade);
+        if (score > melhorScore) {
+          melhorScore = score;
+          melhorMatch = { material: mat, score, tipo: 'contem' };
+        }
       }
       continue;
     }
 
-    // 3. Similaridade por bigramas
-    const score = calcSimilaridade(inputLimpo, catLimpo);
-    if (score > melhorScore && score >= 35) {
+    // 3. Similaridade por bigramas (mínimo 55% pra evitar falsos positivos)
+    let score = calcSimilaridade(inputLimpo, catLimpo);
+    score = Math.max(0, score + penalidade);
+    if (score > melhorScore && score >= 55) {
       melhorScore = score;
       melhorMatch = { material: mat, score, tipo: 'similar' };
     }
   }
 
-  // 4. Fallback: primeira palavra significativa em comum (ex: "tinta" casa com "tinta acrilica")
+  // 4. Fallback: palavras significativas em comum
+  // Exige que a 1ª palavra do input (tipo do material) bata com alguma do catálogo
   if (!melhorMatch || melhorScore < 70) {
-    const palavrasInput = inputLimpo.split(/\s+/).filter(p => p.length >= 4);
+    const todasPalavrasInput = inputLimpo.split(/\s+/).filter(p => p.length >= 3);
+    const palavrasInput = todasPalavrasInput.filter(p => p.length >= 4);
+    const primeiraPalavra = todasPalavrasInput[0] || '';
     if (palavrasInput.length) {
       for (const mat of catalogoMateriais) {
         const catLimpo = limparParaMatch(mat.nome);
-        const palavrasCat = catLimpo.split(/\s+/).filter(p => p.length >= 4);
-        // Contar quantas palavras significativas batem
-        const hits = palavrasInput.filter(pi => palavrasCat.some(pc => pi === pc || pc.startsWith(pi) || pi.startsWith(pc))).length;
-        if (hits > 0) {
-          const ratio = hits / Math.max(palavrasInput.length, palavrasCat.length);
-          const scoreFinal = Math.round(70 + ratio * 20); // 70-90
+        const palavrasCat = catLimpo.split(/\s+/).filter(p => p.length >= 3);
+        // A 1ª palavra do input deve bater com alguma palavra do catálogo
+        const primeiraBate = primeiraPalavra.length >= 3 && palavrasCat.some(pc =>
+          pc === primeiraPalavra || pc.startsWith(primeiraPalavra) || primeiraPalavra.startsWith(pc)
+        );
+        if (!primeiraBate) continue; // tipo do material diferente, pular
+        const hits = palavrasInput.filter(pi => palavrasCat.some(pc => pi === pc || pc.startsWith(pi) || pi.startsWith(pc)));
+        const numHits = hits.length;
+        if (numHits >= 2 || (numHits === 1 && hits[0].length >= 6)) {
+          const penalidade = penalizarMedidasDiferentes(inputLimpo, catLimpo);
+          const ratio = numHits / Math.max(palavrasInput.length, palavrasCat.length);
+          const scoreFinal = Math.max(0, Math.round(60 + ratio * 25) + penalidade);
           if (scoreFinal > melhorScore) {
             melhorScore = scoreFinal;
             melhorMatch = { material: mat, score: scoreFinal, tipo: 'palavra-chave' };
@@ -287,16 +332,17 @@ function renderImportPreview() {
     const scoreLabel = !item.match ? 'SEM MATCH' : item.match.score >= 80 ? 'MATCH FORTE' : item.match.score >= 60 ? 'MATCH PARCIAL' : 'MATCH FRACO';
     const borderColor = hasMatch ? 'rgba(46,204,113,0.2)' : 'rgba(245,158,11,0.3)';
 
-    // Select do catálogo para itens sem match ou match fraco
+    // Input com busca no catálogo
     const selectCatalogo = `
-      <select onchange="importSelecionarCatalogo(${i}, this.value)" style="width:100%;padding:6px 8px;background:var(--bg3);border:1px solid ${borderColor};border-radius:6px;color:var(--branco);font-size:11px;font-family:inherit;outline:none;margin-top:4px;">
-        <option value="">— Selecionar do catálogo —</option>
-        ${hasMatch ? `<option value="${item.codigoCat}" selected>${item.codigoCat} · ${item.descFinal}</option>` : ''}
-        ${catalogoMateriais.slice(0, 200).map(m =>
-          (hasMatch && m.codigo === item.codigoCat) ? '' :
-          `<option value="${m.codigo}">${m.codigo} · ${m.nome}</option>`
-        ).join('')}
-      </select>
+      <div style="position:relative;">
+        <input type="text" id="import-cat-input-${i}" placeholder="${hasMatch ? item.codigoCat+' · '+item.descFinal : '🔍 Buscar no catálogo...'}"
+          value="${hasMatch ? item.codigoCat+' · '+item.descFinal : ''}"
+          oninput="importBuscarCatInput(${i})" onfocus="importBuscarCatInput(${i})"
+          autocomplete="off"
+          style="width:100%;padding:8px 10px;background:var(--bg3);border:1px solid ${borderColor};border-radius:6px;color:${hasMatch ? 'var(--branco)' : 'var(--texto3)'};font-size:11px;font-family:inherit;outline:none;margin-top:4px;box-sizing:border-box;">
+        ${hasMatch ? `<button onclick="importSelecionarCatalogo(${i},'')" style="position:absolute;right:6px;top:8px;background:none;border:none;color:var(--texto3);cursor:pointer;font-size:12px;" title="Limpar">✕</button>` : ''}
+        <div id="import-cat-list-${i}" class="hidden" style="position:absolute;left:0;right:0;top:100%;z-index:100;max-height:200px;overflow-y:auto;background:var(--bg2);border:1px solid var(--verde-bd);border-radius:0 0 8px 8px;box-shadow:0 8px 24px rgba(0,0,0,0.5);"></div>
+      </div>
     `;
 
     return `
@@ -466,18 +512,204 @@ function confirmarImport() {
   importItensPreview = [];
 }
 
-// ── Busca no catálogo dentro do select ───────────────────────
-function importBuscarCatalogo(idx) {
-  const input = document.getElementById(`import-busca-cat-${idx}`);
-  if (!input) return;
-  const val = norm(input.value);
-  const select = input.closest('.import-item-row')?.querySelector('select');
-  if (!select) return;
+// ── Busca no catálogo com autocomplete ───────────────────────
+function importBuscarCatInput(idx) {
+  const input = document.getElementById(`import-cat-input-${idx}`);
+  const list = document.getElementById(`import-cat-list-${idx}`);
+  if (!input || !list) return;
+  const val = input.value.trim();
+  if (val.length < 2) { list.classList.add('hidden'); return; }
+  const q = norm(val);
+  const numVal = val.replace(/\D/g, '');
+  const matches = catalogoMateriais
+    .filter(m => norm(m.nome).includes(q) || (numVal && (m.codigo || '').includes(numVal)))
+    .sort((a, b) => {
+      const na = norm(a.nome), nb = norm(b.nome);
+      const aStart = na.startsWith(q) ? 0 : na.includes(' ' + q) ? 1 : 2;
+      const bStart = nb.startsWith(q) ? 0 : nb.includes(' ' + q) ? 1 : 2;
+      return aStart - bStart;
+    })
+    .slice(0, 20);
 
-  const opts = catalogoMateriais
-    .filter(m => norm(m.nome).includes(val) || m.codigo.includes(val))
-    .slice(0, 50);
+  if (!matches.length) {
+    list.innerHTML = `<div style="padding:8px 10px;font-size:11px;color:var(--texto3);">Nenhum item encontrado</div>`;
+    list.classList.remove('hidden');
+    return;
+  }
 
-  select.innerHTML = '<option value="">— Selecionar do catálogo —</option>' +
-    opts.map(m => `<option value="${m.codigo}">${m.codigo} · ${m.nome}</option>`).join('');
+  list.innerHTML = matches.map(m =>
+    `<div onmousedown="importSelecionarCatPorInput(${idx},'${m.codigo}')" style="padding:8px 10px;cursor:pointer;border-bottom:1px solid var(--borda);display:flex;gap:8px;align-items:center;transition:background 0.1s;" onmouseover="this.style.background='rgba(46,204,113,0.08)'" onmouseout="this.style.background='transparent'">
+      <span style="font-family:monospace;font-size:10px;color:var(--verde-hl);background:rgba(46,204,113,0.1);padding:2px 6px;border-radius:4px;white-space:nowrap;">${m.codigo}</span>
+      <span style="font-size:11px;color:var(--branco);flex:1;">${m.nome}</span>
+      <span style="font-size:10px;color:var(--texto3);">${m.unidade || 'UN'}</span>
+    </div>`
+  ).join('');
+  list.classList.remove('hidden');
+
+  // Fechar lista ao perder foco
+  input.onblur = () => setTimeout(() => list.classList.add('hidden'), 150);
+}
+
+function importSelecionarCatPorInput(idx, codigo) {
+  importSelecionarCatalogo(idx, codigo);
+}
+
+// ══════════════════════════════════════════
+// IMPORTAÇÃO VIA XML (NF-e)
+// ══════════════════════════════════════════
+function abrirImportXML() {
+  document.getElementById('input-xml-nfe').value = '';
+  document.getElementById('input-xml-nfe').click();
+}
+
+function processarXMLNFe(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (!file.name.toLowerCase().endsWith('.xml')) {
+    showToast('⚠ Selecione um arquivo .xml'); return;
+  }
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const parser = new DOMParser();
+      const xml = parser.parseFromString(e.target.result, 'text/xml');
+      const parseError = xml.querySelector('parsererror');
+      if (parseError) { showToast('⚠ XML inválido — verifique o arquivo.'); return; }
+      const nfe = extrairDadosNFe(xml);
+      if (!nfe) { showToast('⚠ Não foi possível ler a NF-e. Verifique se é um XML de nota fiscal.'); return; }
+      preencherFormComXML(nfe);
+    } catch (err) {
+      console.error('Erro ao processar XML:', err);
+      showToast('⚠ Erro ao processar o XML.');
+    }
+  };
+  reader.readAsText(file);
+}
+
+function extrairDadosNFe(xml) {
+  // NF-e pode ter namespace ou não — busca flexível
+  const getTag = (parent, tag) => {
+    // Tenta sem namespace primeiro, depois com namespace
+    let el = parent.getElementsByTagName(tag)[0];
+    if (!el) el = parent.getElementsByTagName('nfe:' + tag)[0];
+    if (!el) el = parent.getElementsByTagNameNS('*', tag)[0];
+    return el;
+  };
+  const getVal = (parent, tag) => {
+    const el = getTag(parent, tag);
+    return el ? el.textContent.trim() : '';
+  };
+  const getAllTag = (parent, tag) => {
+    let els = parent.getElementsByTagName(tag);
+    if (!els.length) els = parent.getElementsByTagName('nfe:' + tag);
+    if (!els.length) els = parent.getElementsByTagNameNS('*', tag);
+    return els;
+  };
+
+  // Dados do emitente (fornecedor)
+  const emit = getTag(xml, 'emit');
+  const fornecedor = emit ? getVal(emit, 'xNome') : '';
+  const cnpj = emit ? getVal(emit, 'CNPJ') : '';
+
+  // Dados da nota
+  const ide = getTag(xml, 'ide');
+  const numero = ide ? getVal(ide, 'nNF') : '';
+  const natureza = ide ? getVal(ide, 'natOp') : '';
+  const dataEmissao = ide ? (getVal(ide, 'dhEmi') || getVal(ide, 'dEmi')) : '';
+
+  // Totais
+  const total = getTag(xml, 'ICMSTot');
+  const valorBruto = total ? parseFloat(getVal(total, 'vProd')) || 0 : 0;
+  const frete = total ? parseFloat(getVal(total, 'vFrete')) || 0 : 0;
+
+  // Itens (produtos)
+  const dets = getAllTag(xml, 'det');
+  if (!dets.length) return null;
+
+  const itens = [];
+  for (let i = 0; i < dets.length; i++) {
+    const det = dets[i];
+    const prod = getTag(det, 'prod');
+    if (!prod) continue;
+    const desc = getVal(prod, 'xProd').toUpperCase();
+    const qtd = parseFloat(getVal(prod, 'qCom')) || parseFloat(getVal(prod, 'qTrib')) || 0;
+    const preco = parseFloat(getVal(prod, 'vUnCom')) || parseFloat(getVal(prod, 'vUnTrib')) || 0;
+    const unidade = (getVal(prod, 'uCom') || getVal(prod, 'uTrib') || 'UN').toUpperCase();
+    const totalItem = parseFloat(getVal(prod, 'vProd')) || qtd * preco;
+    if (desc) {
+      itens.push({ descOriginal: desc, qtd, preco, unidade, total: totalItem });
+    }
+  }
+
+  // Formatar data (dhEmi = "2024-01-15T10:30:00-03:00" → "2024-01-15")
+  let dataFormatada = '';
+  if (dataEmissao) {
+    dataFormatada = dataEmissao.substring(0, 10);
+  }
+
+  return { fornecedor, cnpj, numero, natureza, dataEmissao: dataFormatada, valorBruto, frete, itens };
+}
+
+function preencherFormComXML(nfe) {
+  // Preencher cabeçalho da NF
+  const numEl = document.getElementById('f-numero');
+  if (numEl && nfe.numero) numEl.value = nfe.numero;
+
+  const fornEl = document.getElementById('f-fornecedor');
+  if (fornEl && nfe.fornecedor) fornEl.value = nfe.fornecedor;
+
+  const cnpjEl = document.getElementById('f-cnpj');
+  if (cnpjEl && nfe.cnpj) {
+    // Formatar CNPJ
+    let c = nfe.cnpj.replace(/\D/g, '');
+    if (c.length === 14) c = c.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
+    cnpjEl.value = c;
+  }
+
+  const emissaoEl = document.getElementById('f-emissao');
+  if (emissaoEl && nfe.dataEmissao) emissaoEl.value = nfe.dataEmissao;
+
+  const recebEl = document.getElementById('f-recebimento');
+  if (recebEl) recebEl.value = new Date().toISOString().split('T')[0];
+
+  const freteEl = document.getElementById('f-frete');
+  if (freteEl && nfe.frete > 0) freteEl.value = nfe.frete;
+
+  // Natureza — mapear pra select do form
+  const natEl = document.getElementById('f-natureza');
+  if (natEl && nfe.natureza) {
+    const natNorm = nfe.natureza.toLowerCase();
+    if (natNorm.includes('venda')) natEl.value = 'VENDA';
+    else if (natNorm.includes('bonif')) natEl.value = 'BONIFICACAO';
+    else if (natNorm.includes('devol')) natEl.value = 'DEVOLUCAO';
+    else if (natNorm.includes('transf')) natEl.value = 'TRANSFERENCIA';
+  }
+
+  // Processar itens com match do catálogo (reutiliza o mesmo motor)
+  importItensPreview = nfe.itens.map((item, idx) => {
+    const match = matchCatalogo(item.descOriginal);
+    const credito = classificarItem(match ? match.material.nome : item.descOriginal);
+    return {
+      idx,
+      descOriginal: item.descOriginal,
+      qtd: item.qtd,
+      unidade: match ? (match.material.unidade || item.unidade) : item.unidade,
+      preco: item.preco,
+      total: item.total || item.qtd * item.preco,
+      match,
+      descFinal: match ? match.material.nome : item.descOriginal,
+      codigoCat: match ? match.material.codigo : null,
+      credito: credito ? credito.credito : null,
+      creditoCat: credito ? credito.cat : '',
+      confirmado: !!match && match.score >= 60
+    };
+  });
+
+  // Abrir modal de preview pra revisar os itens
+  document.getElementById('import-texto').value = `[Importado do XML] ${nfe.fornecedor} — NF ${nfe.numero}\n${nfe.itens.length} itens extraídos automaticamente`;
+  document.getElementById('modal-import').classList.remove('hidden');
+  document.getElementById('import-instrucoes').classList.add('hidden');
+  renderImportPreview();
+
+  showToast(`📄 XML importado! ${nfe.itens.length} itens · ${nfe.fornecedor} · NF ${nfe.numero}`);
 }
