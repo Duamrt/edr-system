@@ -53,7 +53,9 @@ function renderCustosCards() {
     const totalRecebido = totalPls + totalEntrada + totalTerreno;
     const valorVenda = Number(o.valor_venda || 0);
     const custoTotal = lancamentos.filter(l => l.obra_id === o.id).reduce((s,l) => s + Number(l.total||0), 0);
-    const lucro = valorVenda > 0 ? valorVenda - custoTotal : 0;
+    const adds = typeof getAdicionaisObra === 'function' ? getAdicionaisObra(o.id) : { qtd:0, valorTotal:0 };
+    const receitaObra = valorVenda + adds.valorTotal;
+    const lucro = receitaObra > 0 ? receitaObra - custoTotal : 0;
     const pctRecebido = valorVenda > 0 ? Math.min((totalRecebido/valorVenda*100), 100) : 0;
     const corLucro = lucro >= 0 ? 'var(--verde-hl)' : '#ef4444';
 
@@ -89,6 +91,10 @@ function renderCustosCards() {
           <div style="font-size:11px;font-weight:700;color:#f59e0b;">${fmt(custoTotal)}</div>
         </div>
       </div>
+      ${adds.qtd > 0 ? `<div style="padding:4px 8px;margin-bottom:8px;background:rgba(139,92,246,0.06);border:1px solid rgba(139,92,246,0.15);border-radius:6px;display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:10px;color:#a78bfa;">📝 ${adds.qtd} adicional(is)</span>
+        <span style="font-size:11px;font-weight:700;color:#a78bfa;">${fmt(adds.valorTotal)}</span>
+      </div>` : ''}
       ${valorVenda > 0 ? `<div style="margin-bottom:8px;">
         <div style="height:6px;background:rgba(46,204,113,0.1);border-radius:3px;overflow:hidden;">
           <div style="width:${pctRecebido}%;height:100%;background:var(--verde3);border-radius:3px;"></div>
@@ -143,8 +149,10 @@ function renderCustosResumo() {
       const totalRecebido = totalPls + totalEntrada + totalTerreno;
       const saldoReceber = valorVenda - totalRecebido;
       const custoTotal = lancamentos.filter(l => l.obra_id === obraFiltro).reduce((s, l) => s + Number(l.total || 0), 0);
-      const lucro = valorVenda - custoTotal;
-      const margem = valorVenda > 0 ? (lucro / valorVenda * 100) : 0;
+      const adds = typeof getAdicionaisObra === 'function' ? getAdicionaisObra(obraFiltro) : { qtd:0, valorTotal:0, totalRecebido:0, saldo:0 };
+      const receitaObra = valorVenda + adds.valorTotal;
+      const lucro = receitaObra - custoTotal;
+      const margem = receitaObra > 0 ? (lucro / receitaObra * 100) : 0;
       const pctRecebido = valorVenda > 0 ? Math.min((totalRecebido / valorVenda * 100), 100) : 0;
 
       const corSaldo = saldoReceber >= 0 ? 'var(--verde-hl)' : '#ef4444';
@@ -172,13 +180,18 @@ function renderCustosResumo() {
             <div style="font-size:10px;color:var(--texto3);letter-spacing:1px;margin-bottom:4px;">CUSTO TOTAL</div>
             <div style="font-size:18px;font-weight:700;color:#f59e0b;font-family:'Rajdhani',sans-serif;">${fmt(custoTotal)}</div>
           </div>
+          ${adds.qtd > 0 ? `<div style="text-align:center;padding:10px;background:rgba(139,92,246,0.04);border:1px solid rgba(139,92,246,0.15);border-radius:10px;">
+            <div style="font-size:10px;color:#a78bfa;letter-spacing:1px;margin-bottom:4px;">📝 ADICIONAIS (${adds.qtd})</div>
+            <div style="font-size:18px;font-weight:700;color:#a78bfa;font-family:'Rajdhani',sans-serif;">${fmt(adds.valorTotal)}</div>
+            <div style="font-size:10px;color:var(--texto3);margin-top:2px;">Recebido: ${fmt(adds.totalRecebido)} · Saldo: ${fmt(adds.saldo)}</div>
+          </div>` : ''}
           <div style="text-align:center;padding:10px;background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.1);border-radius:10px;">
             <div style="font-size:10px;color:var(--texto3);letter-spacing:1px;margin-bottom:4px;">LUCRO ESTIMADO</div>
-            <div style="font-size:18px;font-weight:700;color:${corLucro};font-family:'Rajdhani',sans-serif;">${valorVenda > 0 ? fmt(lucro) : '-'}</div>
+            <div style="font-size:18px;font-weight:700;color:${corLucro};font-family:'Rajdhani',sans-serif;">${receitaObra > 0 ? fmt(lucro) : '-'}</div>
           </div>
           <div style="text-align:center;padding:10px;background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.1);border-radius:10px;">
             <div style="font-size:10px;color:var(--texto3);letter-spacing:1px;margin-bottom:4px;">MARGEM</div>
-            <div style="font-size:18px;font-weight:700;color:${corMargem};font-family:'Rajdhani',sans-serif;">${valorVenda > 0 ? margem.toFixed(1) + '%' : '-'}</div>
+            <div style="font-size:18px;font-weight:700;color:${corMargem};font-family:'Rajdhani',sans-serif;">${receitaObra > 0 ? margem.toFixed(1) + '%' : '-'}</div>
           </div>
         </div>
         ${valorVenda > 0 ? `<div style="margin-top:4px;">

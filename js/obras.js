@@ -52,6 +52,7 @@ function onChangeObraFiltro() {
     }
   }
   if (obraTabAtual === 'mat') renderObrasMateriais();
+  else if (obraTabAtual === 'add' && typeof renderAdicionais === 'function') renderAdicionais();
   else filtrarLanc();
 }
 
@@ -110,6 +111,7 @@ function renderObrasCards() {
     const total = ls.reduce((s, l) => s + Number(l.total || 0), 0);
     const ultimaData = ls.length ? ls.sort((a, b) => (b.data || '').localeCompare(a.data || ''))[0]?.data : null;
     const ultimaStr = ultimaData ? new Date(ultimaData + 'T12:00:00').toLocaleDateString('pt-BR') : 'Sem lançamentos';
+    const adds = typeof getAdicionaisObra === 'function' ? getAdicionaisObra(o.id) : { qtd:0, valorTotal:0, totalRecebido:0, saldo:0 };
 
     // Top 3 etapas por valor
     const porEtapa = {};
@@ -125,6 +127,9 @@ function renderObrasCards() {
     const valorHtml = usuarioAtual?.perfil === 'admin'
       ? `<div style="font-size:16px;font-weight:800;color:var(--verde-hl);font-family:'JetBrains Mono',monospace;">${fmtR(total)}</div>`
       : '';
+    const addHtml = usuarioAtual?.perfil === 'admin' && adds.qtd > 0
+      ? `<div style="font-size:10px;color:#a78bfa;margin-top:2px;">📝 ${adds.qtd} adicional(is): ${fmtR(adds.valorTotal)}</div>`
+      : '';
 
     return `<div class="card" style="padding:16px;cursor:pointer;transition:all .2s;border:1px solid var(--borda);"
                  onclick="obrasAbrirDetalhe('${o.id}')"
@@ -137,6 +142,7 @@ function renderObrasCards() {
         </div>
         <div style="text-align:right;">
           ${valorHtml}
+          ${addHtml}
           <div style="font-size:10px;color:var(--texto3);margin-top:2px;">${ls.length} lançamento${ls.length !== 1 ? 's' : ''}</div>
         </div>
       </div>
@@ -181,6 +187,8 @@ function obrasVoltarCards() {
   document.getElementById('obras-sticky').style.display = 'none';
   document.getElementById('obras-tab-content-lanc').style.display = 'none';
   document.getElementById('obras-tab-content-mat').style.display = 'none';
+  const addTab = document.getElementById('obras-tab-content-add');
+  if (addTab) addTab.style.display = 'none';
   document.getElementById('obras-detalhe').classList.add('hidden');
   const sel = document.getElementById('obras-filtro-obra');
   if (sel) sel.value = '';
@@ -221,20 +229,15 @@ async function arquivarObraCard(obraId, arquivar) {
 let obraTabAtual = 'lanc';
 function obrasSwitchTab(tab) {
   obraTabAtual = tab;
-  const tabLanc = document.getElementById('obras-tab-lanc');
-  const tabMat  = document.getElementById('obras-tab-mat');
-  const contLanc = document.getElementById('obras-tab-content-lanc');
-  const contMat  = document.getElementById('obras-tab-content-mat');
-  if (tab === 'lanc') {
-    tabLanc.style.borderBottomColor = 'var(--verde-hl)'; tabLanc.style.color = 'var(--verde-hl)';
-    tabMat.style.borderBottomColor  = 'transparent';     tabMat.style.color  = 'var(--texto3)';
-    contLanc.style.display = 'block'; contMat.style.display = 'none';
-  } else {
-    tabMat.style.borderBottomColor  = 'var(--verde-hl)'; tabMat.style.color  = 'var(--verde-hl)';
-    tabLanc.style.borderBottomColor = 'transparent';     tabLanc.style.color = 'var(--texto3)';
-    contLanc.style.display = 'none'; contMat.style.display = 'block';
-    renderObrasMateriais();
-  }
+  const tabs = ['lanc','mat','add'];
+  tabs.forEach(t => {
+    const btn = document.getElementById('obras-tab-' + t);
+    const cont = document.getElementById('obras-tab-content-' + t);
+    if (btn) { btn.style.borderBottomColor = t === tab ? 'var(--verde-hl)' : 'transparent'; btn.style.color = t === tab ? 'var(--verde-hl)' : 'var(--texto3)'; }
+    if (cont) cont.style.display = t === tab ? 'block' : 'none';
+  });
+  if (tab === 'mat') renderObrasMateriais();
+  if (tab === 'add' && typeof renderAdicionais === 'function') renderAdicionais();
 }
 
 function renderObrasMateriais() {
@@ -363,12 +366,16 @@ function filtrarLanc() {
     });
     const totalObra = Object.values(porCat).reduce((s,v) => s+v, 0);
     const catsComValor = Object.entries(porCat).sort((a,b) => b[1] - a[1]);
-    if (catsComValor.length > 0) {
+
+    // Adicionais da obra
+    const adds = typeof getAdicionaisObra === 'function' ? getAdicionaisObra(obraId) : { qtd:0, valorTotal:0, totalRecebido:0, saldo:0 };
+
+    if (catsComValor.length > 0 || adds.qtd > 0) {
       detEl.classList.remove('hidden');
       detEl.innerHTML = `
         <div style="background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.15);border-radius:12px;padding:14px 16px;margin-bottom:12px;">
           <div onclick="this.parentElement.querySelector('.dre-body').classList.toggle('hidden');this.querySelector('.dre-toggle').textContent=this.parentElement.querySelector('.dre-body').classList.contains('hidden')?'▶':'▼'" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;">
-            <div style="font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;color:var(--verde-hl);letter-spacing:2px;">📊 CUSTO POR CENTRO DE CUSTO — ${obraMap[obraId]||''}</div>
+            <div style="font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;color:var(--verde-hl);letter-spacing:2px;">📊 RESUMO FINANCEIRO — ${obraMap[obraId]||''}</div>
             <div style="display:flex;align-items:center;gap:10px;">
               <span style="font-size:14px;font-weight:800;color:var(--verde-hl);font-family:'JetBrains Mono',monospace;">${fmtR(totalObra)}</span>
               <span class="dre-toggle" style="font-size:10px;color:var(--texto3);">▼</span>
@@ -386,6 +393,17 @@ function filtrarLanc() {
               <span style="font-size:13px;font-weight:700;color:var(--branco);width:90px;text-align:right;font-family:'JetBrains Mono',monospace;">${fmtR(val)}</span>
             </div>`;
           }).join('')}
+          ${adds.qtd > 0 ? `
+          <div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(139,92,246,0.2);">
+            <div style="display:flex;align-items:center;gap:8px;padding:5px 0;">
+              <span style="flex:1;font-size:12px;color:#a78bfa;font-weight:700;">📝 Adicionais (${adds.qtd})</span>
+              <span style="font-size:13px;font-weight:700;color:#a78bfa;width:90px;text-align:right;font-family:'JetBrains Mono',monospace;">${fmtR(adds.valorTotal)}</span>
+            </div>
+            <div style="display:flex;gap:16px;font-size:10px;padding:2px 0;">
+              <span style="color:var(--verde-hl);">Recebido: ${fmtR(adds.totalRecebido)}</span>
+              <span style="color:${adds.saldo > 0 ? '#fbbf24' : 'var(--verde-hl)'};">Saldo: ${fmtR(adds.saldo)}</span>
+            </div>
+          </div>` : ''}
           </div>
         </div>`;
     } else {
@@ -485,16 +503,18 @@ async function salvarNovaObra() {
   const nome = (document.getElementById('nova-obra-nome').value||'').toUpperCase().trim();
   const cidade = (document.getElementById('nova-obra-cidade').value||'').trim();
   const valorVenda = parseFloat(document.getElementById('nova-obra-valor-venda').value) || 0;
+  const contratante = (document.getElementById('nova-obra-contratante').value||'').toUpperCase().trim();
+  const cpf_contratante = (document.getElementById('nova-obra-cpf').value||'').trim();
   const editId = document.getElementById('obra-edit-id').value;
   if (!nome) { showToast('INFORME O NOME DA OBRA.'); return; }
   try {
     if (editId) {
-      await sbPatch('obras', `?id=eq.${editId}`, { nome, cidade, valor_venda: valorVenda });
+      await sbPatch('obras', `?id=eq.${editId}`, { nome, cidade, valor_venda: valorVenda, contratante, cpf_contratante });
       await loadObras();
       populateSelects(); renderDashboard(); renderObrasCards();
       showToast(`✅ OBRA "${nome}" ATUALIZADA!`);
     } else {
-      const [nova] = await sbPost('obras', { nome, cidade, valor_venda: valorVenda });
+      const [nova] = await sbPost('obras', { nome, cidade, valor_venda: valorVenda, contratante, cpf_contratante });
       obras.push(nova); obras.sort((a,b)=>a.nome.localeCompare(b.nome));
       populateSelects(); renderDashboard(); renderObrasCards();
       showToast(`✅ OBRA ${nome} CADASTRADA!`);
@@ -509,6 +529,8 @@ function abrirModalObra(obraId) {
   document.getElementById('nova-obra-nome').value = obra ? obra.nome : '';
   document.getElementById('nova-obra-cidade').value = obra ? (obra.cidade || '') : '';
   document.getElementById('nova-obra-valor-venda').value = obra ? (obra.valor_venda || '') : '';
+  document.getElementById('nova-obra-contratante').value = obra ? (obra.contratante || '') : '';
+  document.getElementById('nova-obra-cpf').value = obra ? (obra.cpf_contratante || '') : '';
   document.getElementById('modal-obra-titulo').textContent = obra ? '🏗 EDITAR OBRA' : '🏗 NOVA OBRA';
   document.getElementById('modal-obra').classList.remove('hidden');
   setTimeout(() => document.getElementById('nova-obra-nome').focus(), 100);

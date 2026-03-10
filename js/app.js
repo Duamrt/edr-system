@@ -23,7 +23,7 @@ async function iniciarApp() {
   populateSelects();
   renderTabelaCreditos();
   renderUsuarios();
-  await Promise.all([loadNotas(), loadLancamentos(), loadDistribuicoes(), loadEntradasDiretas(), loadMateriais(), loadRepassesCef()]);
+  await Promise.all([loadNotas(), loadLancamentos(), loadDistribuicoes(), loadEntradasDiretas(), loadMateriais(), loadRepassesCef(), loadAdicionais()]);
   const mc = document.getElementById("main-content-inner"); if(mc) mc.style.visibility="visible";
   document.getElementById('sql-box').textContent = SQL_SETUP;
   renderDashboard();

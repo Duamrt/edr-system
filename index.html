@@ -266,7 +266,8 @@
       <!-- Abas — dentro do sticky para ficarem sempre visíveis -->
       <div style="display:flex;gap:6px;border-bottom:1px solid var(--borda);margin-top:8px;">
         <button id="obras-tab-lanc" onclick="obrasSwitchTab('lanc')" style="padding:7px 16px;font-size:12px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;background:transparent;border:none;border-bottom:2px solid var(--verde-hl);color:var(--verde-hl);cursor:pointer;margin-bottom:-1px;">📋 LANÇAMENTOS</button>
-        <button id="obras-tab-mat" onclick="obrasSwitchTab('mat')" style="padding:7px 16px;font-size:12px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;background:transparent;border:none;border-bottom:2px solid transparent;color:var(--texto3);cursor:pointer;margin-bottom:-1px;">📦 MATERIAIS USADOS</button>
+        <button id="obras-tab-mat" onclick="obrasSwitchTab('mat')" style="padding:7px 16px;font-size:12px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;background:transparent;border:none;border-bottom:2px solid transparent;color:var(--texto3);cursor:pointer;margin-bottom:-1px;">📦 MATERIAIS</button>
+        <button id="obras-tab-add" onclick="obrasSwitchTab('add')" style="padding:7px 16px;font-size:12px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;background:transparent;border:none;border-bottom:2px solid transparent;color:var(--texto3);cursor:pointer;margin-bottom:-1px;">📝 ADICIONAIS</button>
       </div>
     </div>
     <div id="obras-detalhe" class="hidden"></div>
@@ -285,6 +286,15 @@
     <!-- Aba Materiais Usados -->
     <div id="obras-tab-content-mat" style="display:none;">
       <div id="obras-mat-lista"></div>
+    </div>
+
+    <!-- Aba Adicionais -->
+    <div id="obras-tab-content-add" style="display:none;">
+      <div style="margin-bottom:10px;">
+        <button class="btn-save" style="padding:10px 18px;width:auto;font-size:12px;" onclick="abrirModalAdicional()">➕ Novo Adicional</button>
+      </div>
+      <div id="adicionais-lista"></div>
+      <div id="adicionais-empty" class="empty hidden">Nenhum serviço adicional registrado nesta obra.</div>
     </div>
   </div>
 
@@ -894,6 +904,37 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
 </div>
 
 
+<!-- MODAL ADICIONAL -->
+<div id="modal-adicional" class="modal-overlay hidden">
+  <div class="modal" style="max-width:500px;">
+    <div class="modal-title">📝 SERVIÇO ADICIONAL <button class="modal-close" onclick="fecharModal('adicional')">✕</button></div>
+    <input type="hidden" id="add-edit-id">
+    <div class="field"><label>DESCRIÇÃO DO SERVIÇO *</label><textarea id="add-descricao" rows="3" placeholder="EX: COBERTA DE GARAGEM EM ESTRUTURA METÁLICA COM TELHA SANDUÍCHE..." style="text-transform:uppercase;"></textarea></div>
+    <div class="field-row">
+      <div class="field"><label>VALOR TOTAL (R$) *</label><input type="number" id="add-valor" placeholder="0,00" min="0" step="0.01"></div>
+      <div class="field"><label>DATA DO ACORDO</label><input type="date" id="add-data"></div>
+    </div>
+    <div class="field"><label>CONDIÇÃO DE PAGAMENTO *</label><input type="text" id="add-condicao" placeholder="EX: 50% NA APROVAÇÃO + 50% NA CONCLUSÃO"></div>
+    <div class="field"><label>OBSERVAÇÕES</label><input type="text" id="add-obs" placeholder="COMBINADO POR WHATSAPP COM SR. JOÃO..."></div>
+    <button class="btn-save" onclick="salvarAdicional()">💾 SALVAR</button>
+    <button class="btn-outline" onclick="fecharModal('adicional')">CANCELAR</button>
+  </div>
+</div>
+
+<!-- MODAL PAGAMENTO ADICIONAL -->
+<div id="modal-add-pgto" class="modal-overlay hidden">
+  <div class="modal" style="max-width:400px;">
+    <div class="modal-title">💰 REGISTRAR PAGAMENTO <button class="modal-close" onclick="fecharModal('add-pgto')">✕</button></div>
+    <input type="hidden" id="pgto-add-id">
+    <div id="pgto-saldo-info" style="font-size:12px;color:var(--texto2);margin-bottom:12px;padding:8px 12px;background:var(--bg3);border-radius:8px;"></div>
+    <div class="field"><label>VALOR RECEBIDO (R$) *</label><input type="number" id="pgto-valor" placeholder="0,00" min="0" step="0.01"></div>
+    <div class="field"><label>DATA</label><input type="date" id="pgto-data"></div>
+    <div class="field"><label>FORMA</label><input type="text" id="pgto-forma" placeholder="EX: PIX, TRANSFERÊNCIA, DINHEIRO..."></div>
+    <button class="btn-save" onclick="salvarPgtoAdicional()">💾 REGISTRAR</button>
+    <button class="btn-outline" onclick="fecharModal('add-pgto')">CANCELAR</button>
+  </div>
+</div>
+
 <!-- MODAL NOVA OBRA -->
 <div id="modal-obra" class="modal-overlay hidden">
   <div class="modal">
@@ -902,6 +943,11 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
     <div class="field"><label>NOME DA OBRA *</label><input type="text" id="nova-obra-nome" placeholder="EX: RESIDENCIAL SILVA"></div>
     <div class="field"><label>CIDADE</label><input type="text" id="nova-obra-cidade" placeholder="EX: RECIFE"></div>
     <div class="field"><label>VALOR DE VENDA (R$)</label><input type="number" id="nova-obra-valor-venda" min="0" step="0.01" placeholder="0,00"></div>
+    <div style="border-top:1px solid var(--borda);margin:12px 0 8px;padding-top:10px;">
+      <div style="font-size:10px;color:var(--texto3);letter-spacing:2px;font-weight:700;margin-bottom:8px;">👤 DADOS DO CONTRATANTE (p/ contratos)</div>
+    </div>
+    <div class="field"><label>NOME DO CONTRATANTE</label><input type="text" id="nova-obra-contratante" placeholder="EX: JOÃO DA SILVA" style="text-transform:uppercase;"></div>
+    <div class="field"><label>CPF DO CONTRATANTE</label><input type="text" id="nova-obra-cpf" placeholder="000.000.000-00" maxlength="14"></div>
     <button class="btn-save" onclick="salvarNovaObra()">SALVAR</button>
     <button class="btn-outline" onclick="fecharModal('obra')">CANCELAR</button>
   </div>
@@ -1057,6 +1103,7 @@ VERGALHAO CA50" style="width:100%;min-height:140px;padding:14px;background:var(-
 <script src="js/relatorio.js"></script>
 <script src="js/estoque.js"></script>
 <script src="js/obras.js"></script>
+<script src="js/adicionais.js"></script>
 <script src="js/notas.js"></script>
 <script src="js/importar.js"></script>
 <script src="js/fiscal.js"></script>

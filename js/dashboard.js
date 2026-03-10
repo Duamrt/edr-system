@@ -112,8 +112,11 @@ function renderDashboard() {
   const totalTerreno = repassesCef.filter(r => obraAtivaIds.has(r.obra_id) && (r.tipo||'pls')==='terreno').reduce((s,r) => s + Number(r.valor||0), 0);
   const totalRecebido = totalPls + totalEntradas + totalTerreno;
   const valorVendaTotal = obras.reduce((s,o) => s + Number(o.valor_venda||0), 0);
-  const lucroGeral = valorVendaTotal - custoTotal;
-  const margemGeral = valorVendaTotal > 0 ? (lucroGeral / valorVendaTotal * 100) : 0;
+  // Adicionais — receita extra
+  const addGeral = typeof getAdicionaisGeral === 'function' ? getAdicionaisGeral(obraAtivaIds) : { valorTotal:0, totalRecebido:0, saldo:0 };
+  const receitaTotal = valorVendaTotal + addGeral.valorTotal;
+  const lucroGeral = receitaTotal - custoTotal;
+  const margemGeral = receitaTotal > 0 ? (lucroGeral / receitaTotal * 100) : 0;
   const corLucro = lucroGeral >= 0 ? 'var(--verde-hl)' : '#ef4444';
   const corMargem = margemGeral >= 15 ? 'var(--verde-hl)' : margemGeral >= 0 ? '#f59e0b' : '#ef4444';
 
@@ -122,11 +125,13 @@ function renderDashboard() {
     const ls = lancAtivos.filter(l => l.obra_id === o.id);
     const custo = ls.reduce((s,l) => s + Number(l.total||0), 0);
     const vv = Number(o.valor_venda||0);
+    const adds = typeof getAdicionaisObra === 'function' ? getAdicionaisObra(o.id) : { qtd:0, valorTotal:0, totalRecebido:0, saldo:0 };
+    const receitaObra = vv + adds.valorTotal;
     const reps = repassesCef.filter(r => r.obra_id === o.id);
     const receb = reps.reduce((s,r) => s + Number(r.valor||0), 0);
-    const lucro = vv - custo;
-    const margem = vv > 0 ? (lucro/vv*100) : 0;
-    return { nome: o.nome, id: o.id, custo, vv, receb, lucro, margem, qtd: ls.length };
+    const lucro = receitaObra - custo;
+    const margem = receitaObra > 0 ? (lucro/receitaObra*100) : 0;
+    return { nome: o.nome, id: o.id, custo, vv, receb, lucro, margem, qtd: ls.length, adds };
   }).filter(o => o.qtd > 0 || o.vv > 0).sort((a,b) => b.custo - a.custo);
 
   // Alertas — obras com margem negativa
@@ -163,11 +168,11 @@ function renderDashboard() {
       </div>
     </div>
 
-    <!-- CARD DESTAQUE — VALOR TOTAL IMÓVEIS -->
+    <!-- CARD DESTAQUE — RECEITA TOTAL -->
     <div class="stat-card" style="border-top-color:rgba(59,130,246,0.6);margin-bottom:10px;text-align:center;padding:16px;">
-      <div class="stat-label" style="font-size:10px;">VALOR TOTAL DOS IMÓVEIS</div>
-      <div class="stat-value" style="color:#60a5fa;font-size:clamp(20px,4vw,28px);">${valorVendaTotal > 0 ? fmt(valorVendaTotal) : 'Não informado'}</div>
-      <div class="stat-sub">${obras.length} imóvel(is) · soma dos valores de venda</div>
+      <div class="stat-label" style="font-size:10px;">RECEITA TOTAL</div>
+      <div class="stat-value" style="color:#60a5fa;font-size:clamp(20px,4vw,28px);">${receitaTotal > 0 ? fmt(receitaTotal) : 'Não informado'}</div>
+      <div class="stat-sub">${obras.length} imóvel(is)${addGeral.valorTotal > 0 ? ` · Venda: ${fmt(valorVendaTotal)} + Adicionais: ${fmt(addGeral.valorTotal)}` : ' · soma dos valores de venda'}</div>
     </div>
 
     <!-- 4 CARDS SECUNDÁRIOS -->
@@ -214,13 +219,15 @@ function renderDashboard() {
       ${porObra.map(o => {
         const pctReceb = o.vv > 0 ? Math.min((o.receb/o.vv*100),100) : 0;
         const corM = o.margem >= 15 ? 'var(--verde-hl)' : o.margem >= 0 ? '#f59e0b' : '#ef4444';
+        const addInfo = o.adds && o.adds.qtd > 0 ? `<span style="font-size:10px;color:#a78bfa;">📝 +${fmt(o.adds.valorTotal)}</span>` : '';
         return `
         <div style="padding:10px 0;border-bottom:1px solid rgba(46,204,113,0.06);cursor:pointer;" onclick="setView('custos');setTimeout(()=>custosAbrirDetalhe('${o.id}'),100)">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
             <span style="font-size:13px;color:var(--branco);font-weight:600;">${o.nome}</span>
             <div style="display:flex;gap:14px;align-items:center;">
               <span style="font-size:11px;color:#f59e0b;">Custo: ${fmt(o.custo)}</span>
-              ${o.vv > 0 ? `<span style="font-size:11px;font-weight:700;color:${corM};">Margem: ${o.margem.toFixed(1)}%</span>` : '<span style="font-size:10px;color:var(--texto3);">Sem valor de venda</span>'}
+              ${addInfo}
+              ${o.vv > 0 || (o.adds && o.adds.qtd > 0) ? `<span style="font-size:11px;font-weight:700;color:${corM};">Margem: ${o.margem.toFixed(1)}%</span>` : '<span style="font-size:10px;color:var(--texto3);">Sem valor de venda</span>'}
             </div>
           </div>
           ${o.vv > 0 ? `<div style="display:flex;align-items:center;gap:8px;">
