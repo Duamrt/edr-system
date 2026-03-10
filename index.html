@@ -1058,33 +1058,24 @@ body::before {
         <button id="btn-arquivar-obra" onclick="onClickArquivarObra()" class="admin-only" style="display:none;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);color:#fbbf24;border-radius:8px;padding:9px 14px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;cursor:pointer;white-space:nowrap;transition:all .2s;" title="Arquivar obra selecionada">📦 ARQUIVAR</button>
         <select id="obras-filtro-cat" onchange="filtrarLancCat()" style="min-width:160px;">
           <option value="">Todos centros de custo</option>
-          <option value="mao">👷 Mão de Obra</option>
-          <option value="alvenaria">🧱 Alvenaria</option>
-          <option value="forma">🪵 Forma e Madeira</option>
-          <option value="ferro">⚙ Aço / Ferro</option>
-          <option value="eletrica">⚡ Elétrica</option>
-          <option value="hidraulica">🚿 Hidráulica</option>
-          <option value="loucas">🛁 Louças e Metais</option>
-          <option value="esgoto">🪠 Esgoto</option>
-          <option value="cobertura">🏠 Cobertura</option>
-          <option value="esquadria">🪟 Esquadrias</option>
-          <option value="rev_cer">🟫 Revest. Cerâmico</option>
-          <option value="pintura">🖌 Pintura</option>
-          <option value="impermeab">💧 Impermeabilização</option>
-          <option value="ferramenta">🔨 Ferramentas</option>
-          <option value="epi">🦺 EPI / Segurança</option>
-          <option value="combustivel">⛽ Combustível</option>
-          <option value="limpeza">🧹 Limpeza</option>
-          <option value="alimentacao">🍽 Alimentação</option>
-          <option value="locacao">🏗 Locação de Equip.</option>
-          <option value="imposto">🧾 Impostos / Encargos</option>
-          <option value="tecnologia">💻 Tecnologia / Assinaturas</option>
-          <option value="imobilizado">🖥 Imobilizado</option>
-          <option value="doc">📋 Documentação</option>
-          <option value="terreno">🏡 Terreno</option>
-          <option value="expediente">📎 Expediente</option>
-          <option value="generico">❓ Genérico</option>
-          <option value="outros">📦 Outros</option>
+          <option value="01_terreno">🏛 01 · Terreno</option>
+          <option value="02_doc">📋 02 · Documentação / Licenças</option>
+          <option value="03_prelim">⛏ 03 · Serviços Preliminares</option>
+          <option value="04_terra">🌍 04 · Movimento de Terra</option>
+          <option value="05_fund">🏗 05 · Fundação</option>
+          <option value="06_estrut">🔩 06 · Estrutura</option>
+          <option value="07_alven">🧱 07 · Alvenaria</option>
+          <option value="08_cobr">🏠 08 · Cobertura</option>
+          <option value="09_elet">⚡ 09 · Elétrica</option>
+          <option value="10_hidro">🚿 10 · Hidráulica / Esgoto</option>
+          <option value="11_esquad">🪟 11 · Esquadrias</option>
+          <option value="12_revestc">🟫 12 · Revestimento Cerâmico</option>
+          <option value="13_pintura">🖌 13 · Pintura</option>
+          <option value="14_acab">✨ 14 · Acabamento Final</option>
+          <option value="15_locacao">🏗 15 · Locação / Máq. / Equip.</option>
+          <option value="16_externo">🌿 16 · Área Externa</option>
+          <option value="17_limpeza">🧹 17 · Limpeza Final</option>
+          <option value="00_outros">📦 Não classificado</option>
         </select>
       </div>
       <!-- Abas — dentro do sticky para ficarem sempre visíveis -->
@@ -3252,7 +3243,7 @@ function filtrarLanc() {
   let lista = lancamentos.filter(l => obraIds.has(l.obra_id));
   if (busca) lista = lista.filter(l => norm(l.descricao||'').includes(busca));
   if (obraId) lista = lista.filter(l => l.obra_id === obraId);
-  if (catFiltroAtual) lista = lista.filter(l => CATS[catFiltroAtual]?.fn(l));
+  if (catFiltroAtual) lista = lista.filter(l => (l.etapa || '00_outros') === catFiltroAtual);
   const el = document.getElementById('obras-lanc-lista'), empty = document.getElementById('obras-empty');
   if (!el || !empty) return;
   if (!lista.length) { el.innerHTML = ''; empty.classList.remove('hidden');
