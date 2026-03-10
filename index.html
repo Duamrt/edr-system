@@ -373,8 +373,12 @@ body::before {
 .nav-key { display: none !important; }
 @media (max-width: 768px) { .shortcut-hint { display: none !important; } }
 .nav-btn.active .nav-key { color: var(--verde3); background: rgba(46,204,113,0.12); border-color: rgba(46,204,113,0.25); }
-.nav-divider { width: 36px; height: 1px; background: rgba(46,204,113,0.08); margin: 6px 0; }
+.nav-divider { width: 36px; height: 1px; background: rgba(46,204,113,0.08); margin: 6px 0; display: none; }
 .sidebar-bottom { margin-top: auto; padding-bottom: 8px; }
+.nav-btn.dragging { opacity: 0.3; transform: scale(0.95); }
+.nav-btn.drag-over { border-color: var(--verde-hl) !important; box-shadow: 0 0 12px rgba(46,204,113,0.25); }
+.nav-btn-reset-order { width: 64px; padding: 6px 4px; border: 1px dashed rgba(46,204,113,0.15); background: transparent; font-size: 7px; color: var(--texto3); border-radius: 8px; cursor: pointer; font-family: 'Rajdhani', sans-serif; letter-spacing: 1px; text-transform: uppercase; transition: all .2s; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.nav-btn-reset-order:hover { color: var(--verde-hl); border-color: rgba(46,204,113,0.3); }
 .main-content { flex: 1; min-width: 0; overflow-x: hidden; overflow-y: auto; height: calc(100vh - 53px); }
 /* ── CATÁLOGO ── */
 .catalogo-item { background: var(--bg2); border: 1px solid var(--borda); border-radius: 10px; padding: 10px 14px; display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
@@ -834,48 +838,45 @@ body::before {
 
 <div class="app-shell">
 <nav class="sidebar" id="main-nav">
-  <button class="nav-btn active" id="nav-dashboard" onclick="setView('dashboard')">
-    <span class="nav-icon">📊</span>RESUMO<span class="nav-key">F1</span>
+  <button class="nav-btn active" id="nav-dashboard" data-view="dashboard" onclick="setView('dashboard')" draggable="true">
+    <span class="nav-icon">📊</span>RESUMO
   </button>
-  <button class="nav-btn" id="nav-obras" onclick="setView('obras')">
-    <span class="nav-icon">🏗</span>OBRAS<span class="nav-key">F2</span>
+  <button class="nav-btn" id="nav-obras" data-view="obras" onclick="setView('obras')" draggable="true">
+    <span class="nav-icon">🏗</span>OBRAS
   </button>
-  <button class="nav-btn" id="nav-estoque" onclick="setView('estoque')">
-    <span class="nav-icon">📦</span>ESTOQUE<span class="nav-key">F3</span>
+  <button class="nav-btn" id="nav-estoque" data-view="estoque" onclick="setView('estoque')" draggable="true">
+    <span class="nav-icon">📦</span>ESTOQUE
   </button>
-  <button class="nav-btn" id="nav-notas" onclick="setView('notas')">
-    <span class="nav-icon">🧾</span>HISTÓRICO<span class="nav-key">F4</span>
+  <button class="nav-btn" id="nav-notas" data-view="notas" onclick="setView('notas')" draggable="true">
+    <span class="nav-icon">🧾</span>HISTÓRICO
   </button>
-  <button class="nav-btn" id="nav-form" onclick="setView('form')">
-    <span class="nav-icon">➕</span>LANÇAR NF<span class="nav-key">F5</span>
+  <button class="nav-btn" id="nav-form" data-view="form" onclick="setView('form')" draggable="true">
+    <span class="nav-icon">➕</span>LANÇAR NF
   </button>
-  <div class="nav-divider"></div>
-  <button class="nav-btn" id="nav-creditos" onclick="setView('creditos')">
-    <span class="nav-icon">📖</span>GUIA NF<span class="nav-key">F6</span>
+  <button class="nav-btn" id="nav-creditos" data-view="creditos" onclick="setView('creditos')" draggable="true">
+    <span class="nav-icon">📖</span>GUIA NF
   </button>
-  <div class="nav-divider"></div>
-  <button class="nav-btn" id="nav-diarias" onclick="setView('diarias')">
-    <span class="nav-icon">👷</span>DIÁRIAS<span class="nav-key">F7</span>
+  <button class="nav-btn" id="nav-diarias" data-view="diarias" onclick="setView('diarias')" draggable="true">
+    <span class="nav-icon">👷</span>DIÁRIAS
   </button>
-  <div class="nav-divider"></div>
-  <button class="nav-btn" id="nav-catalogo" onclick="setView('catalogo')">
-    <span class="nav-icon">📂</span>CATÁLOGO<span class="nav-key">F8</span>
+  <button class="nav-btn" id="nav-catalogo" data-view="catalogo" onclick="setView('catalogo')" draggable="true">
+    <span class="nav-icon">📂</span>CATÁLOGO
   </button>
-  <div class="nav-divider"></div>
-  <button class="nav-btn" class="nav-btn admin-only" id="nav-relatorio" onclick="setView('relatorio')">
-    <span class="nav-icon">📈</span>RELATÓRIO<span class="nav-key">F9</span>
+  <button class="nav-btn admin-only" id="nav-relatorio" data-view="relatorio" onclick="setView('relatorio')" draggable="true">
+    <span class="nav-icon">📈</span>RELATÓRIO
   </button>
-  <div class="nav-divider"></div>
-  <button class="nav-btn admin-only" id="nav-custos" onclick="setView('custos')">
+  <button class="nav-btn admin-only" id="nav-custos" data-view="custos" onclick="setView('custos')" draggable="true">
     <span class="nav-icon">💰</span>CUSTOS CEF
   </button>
-  <div class="nav-divider"></div>
-  <button class="nav-btn admin-only" id="nav-banco" onclick="setView('banco')">
+  <button class="nav-btn admin-only" id="nav-banco" data-view="banco" onclick="setView('banco')" draggable="true">
     <span class="nav-icon">🗄</span>DADOS
   </button>
+  <button class="nav-btn admin-only" id="nav-setup" data-view="setup" onclick="setView('setup')" style="color:#dc2626;" draggable="true">
+    <span class="nav-icon">⚙</span>SETUP
+  </button>
   <div class="sidebar-bottom">
-    <button class="nav-btn admin-only" id="nav-setup" onclick="setView('setup')" style="color:#dc2626;">
-      <span class="nav-icon">⚙</span>SETUP
+    <button class="nav-btn-reset-order" onclick="resetarOrdemMenu()" title="Restaurar ordem padrão do menu">
+      <span style="font-size:14px;">↻</span>RESETAR
     </button>
   </div>
 </nav>
@@ -2142,6 +2143,7 @@ function entrarNoApp() {
   const demoBadge = document.getElementById('demo-mode-badge');
   if (demoBadge) demoBadge.style.display = usuarioAtual.perfil === 'visitante' ? 'block' : 'none';
   aplicarPerfil();
+  initMenuDragDrop();
   iniciarApp();
 }
 function fazerLogout() {
@@ -4691,6 +4693,141 @@ function copiarSQL() { navigator.clipboard.writeText(SQL_SETUP).then(() => showT
 // ══════════════════════════════════════════
 // NAVEGAÇÃO
 // ══════════════════════════════════════════
+// ══════════════════════════════════════════
+// MENU DRAG & DROP — Personalização do sidebar
+// ══════════════════════════════════════════
+function getMenuOrderKey() {
+  return 'edr_menu_order_' + (usuarioAtual?.id || 'default');
+}
+
+function salvarOrdemMenu() {
+  const nav = document.getElementById('main-nav');
+  const btns = [...nav.querySelectorAll('.nav-btn[data-view]')];
+  const ordem = btns.map(b => b.getAttribute('data-view'));
+  localStorage.setItem(getMenuOrderKey(), JSON.stringify(ordem));
+}
+
+function aplicarOrdemMenu() {
+  const saved = localStorage.getItem(getMenuOrderKey());
+  if (!saved) return;
+  try {
+    const ordem = JSON.parse(saved);
+    const nav = document.getElementById('main-nav');
+    const sidebarBottom = nav.querySelector('.sidebar-bottom');
+    ordem.forEach(view => {
+      const btn = nav.querySelector(`.nav-btn[data-view="${view}"]`);
+      if (btn) nav.insertBefore(btn, sidebarBottom);
+    });
+  } catch(e) { console.error('Erro ao aplicar ordem do menu:', e); }
+}
+
+function resetarOrdemMenu() {
+  localStorage.removeItem(getMenuOrderKey());
+  const nav = document.getElementById('main-nav');
+  const sidebarBottom = nav.querySelector('.sidebar-bottom');
+  const ordemPadrao = ['dashboard','obras','estoque','notas','form','creditos','diarias','catalogo','relatorio','custos','banco','setup'];
+  ordemPadrao.forEach(view => {
+    const btn = nav.querySelector(`.nav-btn[data-view="${view}"]`);
+    if (btn) nav.insertBefore(btn, sidebarBottom);
+  });
+  showToast('Menu restaurado!');
+}
+
+function initMenuDragDrop() {
+  const nav = document.getElementById('main-nav');
+  let draggedEl = null;
+
+  nav.querySelectorAll('.nav-btn[data-view]').forEach(btn => {
+    btn.addEventListener('dragstart', e => {
+      draggedEl = btn;
+      btn.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', btn.getAttribute('data-view'));
+    });
+
+    btn.addEventListener('dragend', () => {
+      btn.classList.remove('dragging');
+      nav.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('drag-over'));
+      draggedEl = null;
+      salvarOrdemMenu();
+    });
+
+    btn.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      if (btn !== draggedEl) btn.classList.add('drag-over');
+    });
+
+    btn.addEventListener('dragleave', () => {
+      btn.classList.remove('drag-over');
+    });
+
+    btn.addEventListener('drop', e => {
+      e.preventDefault();
+      btn.classList.remove('drag-over');
+      if (!draggedEl || draggedEl === btn) return;
+      const allBtns = [...nav.querySelectorAll('.nav-btn[data-view]')];
+      const dragIdx = allBtns.indexOf(draggedEl);
+      const dropIdx = allBtns.indexOf(btn);
+      if (dragIdx < dropIdx) {
+        btn.parentNode.insertBefore(draggedEl, btn.nextSibling);
+      } else {
+        btn.parentNode.insertBefore(draggedEl, btn);
+      }
+    });
+
+    // Touch support (mobile)
+    let touchStartY = 0;
+    let touchClone = null;
+    let touchMoving = false;
+
+    btn.addEventListener('touchstart', e => {
+      touchStartY = e.touches[0].clientY;
+      touchMoving = false;
+      draggedEl = btn;
+    }, { passive: true });
+
+    btn.addEventListener('touchmove', e => {
+      const dy = Math.abs(e.touches[0].clientY - touchStartY);
+      if (dy < 10 && !touchMoving) return;
+      touchMoving = true;
+      e.preventDefault();
+      btn.classList.add('dragging');
+      const touch = e.touches[0];
+      const target = document.elementFromPoint(touch.clientX, touch.clientY);
+      nav.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('drag-over'));
+      if (target && target.closest && target.closest('.nav-btn[data-view]') && target.closest('.nav-btn[data-view]') !== draggedEl) {
+        target.closest('.nav-btn[data-view]').classList.add('drag-over');
+      }
+    }, { passive: false });
+
+    btn.addEventListener('touchend', e => {
+      if (!touchMoving) { draggedEl = null; return; }
+      btn.classList.remove('dragging');
+      const touch = e.changedTouches[0];
+      const target = document.elementFromPoint(touch.clientX, touch.clientY);
+      const dropTarget = target?.closest?.('.nav-btn[data-view]');
+      nav.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('drag-over'));
+      if (dropTarget && dropTarget !== draggedEl) {
+        const allBtns = [...nav.querySelectorAll('.nav-btn[data-view]')];
+        const dragIdx = allBtns.indexOf(draggedEl);
+        const dropIdx = allBtns.indexOf(dropTarget);
+        if (dragIdx < dropIdx) {
+          dropTarget.parentNode.insertBefore(draggedEl, dropTarget.nextSibling);
+        } else {
+          dropTarget.parentNode.insertBefore(draggedEl, dropTarget);
+        }
+        salvarOrdemMenu();
+      }
+      draggedEl = null;
+      touchMoving = false;
+    });
+  });
+
+  // Aplicar ordem salva
+  aplicarOrdemMenu();
+}
+
 function setView(v) {
   // Mestre só pode acessar diárias
   if (usuarioAtual?.perfil === 'mestre' && v !== 'diarias') return;
