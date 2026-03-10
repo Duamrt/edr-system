@@ -970,65 +970,10 @@ body::before {
   <div id="view-dashboard" class="hidden">
     <div id="dash-loading" class="loading">Carregando...</div>
     <div id="dash-content" class="hidden">
-
-      <!-- HEADER DASHBOARD -->
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-top:4px;">
-        <div style="display:flex;align-items:center;gap:14px;">
-          <div style="width:44px;height:44px;border:1px solid rgba(46,204,113,0.35);border-radius:12px;display:flex;align-items:center;justify-content:center;background:rgba(46,204,113,0.07);box-shadow:0 0 20px rgba(46,204,113,0.12);">
-            <span style="font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:700;color:var(--verde3);">EDR</span>
-          </div>
-          <div>
-            <div style="font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:700;color:var(--branco);letter-spacing:2px;">EDR SYSTEM</div>
-            <div style="font-size:10px;color:var(--texto3);letter-spacing:3px;font-family:'JetBrains Mono',monospace;">GESTÃO DE OBRAS</div>
-          </div>
-        </div>
-        <div id="dash-data" style="font-size:10px;color:var(--texto3);font-family:'JetBrains Mono',monospace;letter-spacing:1px;text-align:right;"></div>
-      </div>
-
-      <!-- 3 CARDS -->
-      <div class="admin-only" id="stat-cards-grid" style="display:grid;grid-template-columns:5fr 5fr 3fr;gap:8px;margin-bottom:14px;">
-        <div class="stat-card" style="border-top-color:rgba(46,204,113,0.6);">
-          <div class="stat-label">TOTAL OBRAS</div>
-          <div class="stat-value" id="d-total-obras" style="color:var(--verde-hl);"></div>
-          <div class="stat-sub">investido</div>
-        </div>
-        <div class="stat-card" style="border-top-color:rgba(139,92,246,0.6);">
-          <div class="stat-label">EM ESTOQUE</div>
-          <div class="stat-value" id="d-estoque" style="color:#a78bfa;"></div>
-          <div class="stat-sub">aguard. distribuição</div>
-        </div>
-        <div class="stat-card" style="border-top-color:rgba(245,158,11,0.4);padding:10px 8px;">
-          <div class="stat-label" style="font-size:8px;letter-spacing:0.8px;">IBS/CBS</div>
-          <div class="stat-value" id="d-creditos" style="color:#fbbf24;font-size:clamp(10px,3vw,16px);"></div>
-          <div class="stat-sub" style="font-size:9px;color:rgba(251,191,36,0.5);">2027</div>
-        </div>
-      </div>
-
-      <!-- GRÁFICOS — barras maior, pizza menor -->
-      <div class="admin-only" style="display:grid;grid-template-columns:3fr 2fr;gap:12px;margin-bottom:12px;" id="dash-graficos">
-        <div class="card" style="padding:18px 16px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-            <div class="section-title" style="font-size:12px;color:var(--texto2);">CUSTO POR OBRA</div>
-            <div style="font-size:9px;color:var(--texto3);font-family:'JetBrains Mono',monospace;letter-spacing:.5px;">duplo clique → abre obra</div>
-          </div>
-          <canvas id="chart-barras" height="170"></canvas>
-        </div>
-        <div class="card" style="padding:18px 16px;">
-          <div class="section-title" style="margin-bottom:14px;font-size:12px;color:var(--texto2);">GASTOS POR CATEGORIA</div>
-          <canvas id="chart-pizza" height="170"></canvas>
-        </div>
-      </div>
-
-      <div class="alert-box alert-verde admin-only" style="margin-bottom:8px;">
-        <div class="alert-title">⚡ REFORMA TRIBUTÁRIA 2027</div>
-        <div class="alert-text" id="dash-alert"></div>
-      </div>
-      <div id="dash-obras" class="hidden"></div>
-
+      <!-- Dashboard admin renderizado via JS -->
+      <div id="dash-admin-content" class="admin-only"></div>
       <!-- Operacional Dashboard -->
       <div id="oper-welcome" class="hidden"></div>
-
-      <!-- Atalhos de teclado removidos do dashboard -->
     </div>
   </div>
 
@@ -2403,62 +2348,177 @@ function renderDashboard() {
     return;
   }
 
-  // IDs de obras ATIVAS apenas — arquivadas ficam fora da contabilidade corrente
+  const el = document.getElementById('dash-admin-content');
+  if (!el) return;
+
+  // IDs de obras ATIVAS
   const obraAtivaIds = new Set(obras.map(o => o.id));
   const lancAtivos = lancamentos.filter(l => obraAtivaIds.has(l.obra_id));
 
-  const totalObras = lancAtivos.reduce((s,l) => s + Number(l.total||0), 0);
-  const creditos = notas.filter(n=>n.gera_credito).reduce((s,n) => s + Number(n.imposto||0), 0);
-  const estoque = notas.filter(n=>n.obra==='EDR').reduce((s,n) => s + Number(n.valor_bruto||0), 0);
-  document.getElementById('d-total-obras').textContent = fmt(totalObras);
-  document.getElementById('d-creditos').textContent = fmt(creditos);
-  document.getElementById('d-estoque').textContent = fmt(estoque);
-  // d-qtd removido — contagem de NFs não exibida no dashboard
-  document.getElementById('dash-alert').innerHTML = `CRÉDITOS IBS/CBS ACUMULADOS: <strong>${fmt(creditos)}</strong>. Controle garantido para aproveitar cada crédito a partir de 2027.`;
+  // ── MÉTRICAS GERAIS ──
+  const custoTotal = lancAtivos.reduce((s,l) => s + Number(l.total||0), 0);
+  const totalPls = repassesCef.filter(r => obraAtivaIds.has(r.obra_id) && (r.tipo||'pls')==='pls').reduce((s,r) => s + Number(r.valor||0), 0);
+  const totalEntradas = repassesCef.filter(r => obraAtivaIds.has(r.obra_id) && (r.tipo||'pls')==='entrada').reduce((s,r) => s + Number(r.valor||0), 0);
+  const totalTerreno = repassesCef.filter(r => obraAtivaIds.has(r.obra_id) && (r.tipo||'pls')==='terreno').reduce((s,r) => s + Number(r.valor||0), 0);
+  const totalRecebido = totalPls + totalEntradas + totalTerreno;
+  const valorVendaTotal = obras.reduce((s,o) => s + Number(o.valor_venda||0), 0);
+  const lucroGeral = valorVendaTotal - custoTotal;
+  const margemGeral = valorVendaTotal > 0 ? (lucroGeral / valorVendaTotal * 100) : 0;
+  const corLucro = lucroGeral >= 0 ? 'var(--verde-hl)' : '#ef4444';
+  const corMargem = margemGeral >= 15 ? 'var(--verde-hl)' : margemGeral >= 0 ? '#f59e0b' : '#ef4444';
 
-  // Dados por obra — apenas obras ativas
+  // ── DADOS POR OBRA ──
   const porObra = obras.map(o => {
     const ls = lancAtivos.filter(l => l.obra_id === o.id);
-    return { nome: o.nome, id: o.id, total: ls.reduce((s,l)=>s+Number(l.total||0),0), qtd: ls.length };
-  }).filter(o => o.qtd > 0).sort((a,b) => b.total - a.total);
+    const custo = ls.reduce((s,l) => s + Number(l.total||0), 0);
+    const vv = Number(o.valor_venda||0);
+    const reps = repassesCef.filter(r => r.obra_id === o.id);
+    const receb = reps.reduce((s,r) => s + Number(r.valor||0), 0);
+    const lucro = vv - custo;
+    const margem = vv > 0 ? (lucro/vv*100) : 0;
+    return { nome: o.nome, id: o.id, custo, vv, receb, lucro, margem, qtd: ls.length };
+  }).filter(o => o.qtd > 0 || o.vv > 0).sort((a,b) => b.custo - a.custo);
 
-  // Dados por categoria — apenas obras ativas
-  const catMap = {};
+  // Alertas — obras com margem negativa
+  const alertas = porObra.filter(o => o.vv > 0 && o.margem < 0);
+
+  // ── DADOS POR ETAPA (Centro de Custo) ──
+  const etapaMap = {};
   lancAtivos.forEach(l => {
-    const cat = getCatEstoque(l.descricao);
-    const lb = CATS_ESTOQUE.find(c=>c.key===cat)?.lb || '📦 Outros';
-    catMap[lb] = (catMap[lb]||0) + Number(l.total||0);
+    const lb = etapaLabel(l.etapa || '00_outros');
+    etapaMap[lb] = (etapaMap[lb]||0) + Number(l.total||0);
   });
-  const catEntries = Object.entries(catMap).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const etapaEntries = Object.entries(etapaMap).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).slice(0,8);
 
-  // Carregar Chart.js se necessário e renderizar
-  // Data atual no header
-  const dEl = document.getElementById('dash-data');
-  if (dEl) { const now = new Date(); dEl.textContent = now.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'short',year:'numeric'}).toUpperCase(); }
+  // Últimos 5 lançamentos
+  const obraMap = {};
+  obras.forEach(o => obraMap[o.id] = o.nome);
+  const ultimos = [...lancAtivos].sort((a,b) => new Date(b.data||0) - new Date(a.data||0)).slice(0, 5);
 
+  // Data
+  const now = new Date();
+  const dataStr = now.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'short',year:'numeric'}).toUpperCase();
+
+  el.innerHTML = `
+    <!-- HEADER -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding-top:4px;">
+      <div style="display:flex;align-items:center;gap:14px;">
+        <div style="width:44px;height:44px;border:1px solid rgba(46,204,113,0.35);border-radius:12px;display:flex;align-items:center;justify-content:center;background:rgba(46,204,113,0.07);box-shadow:0 0 20px rgba(46,204,113,0.12);">
+          <span style="font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:700;color:var(--verde3);">EDR</span>
+        </div>
+        <div>
+          <div style="font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:700;color:var(--branco);letter-spacing:2px;">PAINEL DE CONTROLE</div>
+          <div style="font-size:10px;color:var(--texto3);letter-spacing:3px;font-family:'JetBrains Mono',monospace;">${dataStr}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4 CARDS PRINCIPAIS -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:14px;">
+      <div class="stat-card" style="border-top-color:rgba(245,158,11,0.6);">
+        <div class="stat-label">CUSTO TOTAL</div>
+        <div class="stat-value" style="color:#f59e0b;">${fmt(custoTotal)}</div>
+        <div class="stat-sub">${porObra.length} obra(s) ativa(s)</div>
+      </div>
+      <div class="stat-card" style="border-top-color:rgba(46,204,113,0.6);">
+        <div class="stat-label">TOTAL RECEBIDO</div>
+        <div class="stat-value" style="color:var(--verde-hl);">${fmt(totalRecebido)}</div>
+        <div class="stat-sub">PLS + Entradas + Terreno</div>
+      </div>
+      <div class="stat-card" style="border-top-color:${lucroGeral >= 0 ? 'rgba(46,204,113,0.6)' : 'rgba(239,68,68,0.6)'};">
+        <div class="stat-label">LUCRO GERAL</div>
+        <div class="stat-value" style="color:${corLucro};">${fmt(lucroGeral)}</div>
+        <div class="stat-sub">venda - custo</div>
+      </div>
+      <div class="stat-card" style="border-top-color:${margemGeral >= 15 ? 'rgba(46,204,113,0.6)' : margemGeral >= 0 ? 'rgba(245,158,11,0.6)' : 'rgba(239,68,68,0.6)'};">
+        <div class="stat-label">MARGEM GERAL</div>
+        <div class="stat-value" style="color:${corMargem};">${valorVendaTotal > 0 ? margemGeral.toFixed(1)+'%' : '-'}</div>
+        <div class="stat-sub">${margemGeral >= 15 ? 'saudável' : margemGeral >= 0 ? 'atenção' : 'prejuízo'}</div>
+      </div>
+    </div>
+
+    <!-- ALERTAS -->
+    ${alertas.length ? `
+    <div style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);border-radius:12px;padding:12px 16px;margin-bottom:14px;">
+      <div style="font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;color:#ef4444;letter-spacing:2px;margin-bottom:8px;">⚠ OBRAS COM MARGEM NEGATIVA</div>
+      ${alertas.map(o => `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(239,68,68,0.08);">
+          <span style="font-size:12px;color:var(--branco);font-weight:600;cursor:pointer;" onclick="setView('custos');setTimeout(()=>custosAbrirDetalhe('${o.id}'),100)">${o.nome}</span>
+          <div style="display:flex;gap:12px;align-items:center;">
+            <span style="font-size:11px;color:#ef4444;font-weight:700;">${o.margem.toFixed(1)}%</span>
+            <span style="font-size:11px;color:var(--texto3);">Prejuízo: ${fmt(Math.abs(o.lucro))}</span>
+          </div>
+        </div>`).join('')}
+    </div>` : ''}
+
+    <!-- OBRAS ATIVAS — mini cards -->
+    <div class="card" style="padding:16px;margin-bottom:14px;">
+      <div style="font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;color:var(--verde-hl);letter-spacing:2px;margin-bottom:12px;">🏗 SAÚDE DAS OBRAS</div>
+      ${porObra.map(o => {
+        const pctReceb = o.vv > 0 ? Math.min((o.receb/o.vv*100),100) : 0;
+        const corM = o.margem >= 15 ? 'var(--verde-hl)' : o.margem >= 0 ? '#f59e0b' : '#ef4444';
+        return `
+        <div style="padding:10px 0;border-bottom:1px solid rgba(46,204,113,0.06);cursor:pointer;" onclick="setView('custos');setTimeout(()=>custosAbrirDetalhe('${o.id}'),100)">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+            <span style="font-size:13px;color:var(--branco);font-weight:600;">${o.nome}</span>
+            <div style="display:flex;gap:14px;align-items:center;">
+              <span style="font-size:11px;color:#f59e0b;">Custo: ${fmt(o.custo)}</span>
+              ${o.vv > 0 ? `<span style="font-size:11px;font-weight:700;color:${corM};">Margem: ${o.margem.toFixed(1)}%</span>` : '<span style="font-size:10px;color:var(--texto3);">Sem valor de venda</span>'}
+            </div>
+          </div>
+          ${o.vv > 0 ? `<div style="display:flex;align-items:center;gap:8px;">
+            <div style="flex:1;height:4px;background:rgba(46,204,113,0.1);border-radius:2px;overflow:hidden;">
+              <div style="width:${pctReceb}%;height:100%;background:var(--verde3);border-radius:2px;"></div>
+            </div>
+            <span style="font-size:9px;color:var(--texto3);min-width:60px;text-align:right;">Receb. ${pctReceb.toFixed(0)}%</span>
+          </div>` : ''}
+        </div>`;
+      }).join('')}
+    </div>
+
+    <!-- GRÁFICOS -->
+    <div style="display:grid;grid-template-columns:3fr 2fr;gap:12px;margin-bottom:14px;" id="dash-graficos">
+      <div class="card" style="padding:18px 16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+          <div class="section-title" style="font-size:12px;color:var(--texto2);">CUSTO POR OBRA</div>
+          <div style="font-size:9px;color:var(--texto3);font-family:'JetBrains Mono',monospace;">duplo clique → abre obra</div>
+        </div>
+        <canvas id="chart-barras" height="170"></canvas>
+      </div>
+      <div class="card" style="padding:18px 16px;">
+        <div class="section-title" style="margin-bottom:14px;font-size:12px;color:var(--texto2);">CUSTO POR CENTRO DE CUSTO</div>
+        <canvas id="chart-pizza" height="170"></canvas>
+      </div>
+    </div>
+
+    <!-- ÚLTIMOS LANÇAMENTOS -->
+    ${ultimos.length ? `
+    <div class="card" style="padding:16px;">
+      <div style="font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;color:#60a5fa;letter-spacing:2px;margin-bottom:10px;">🕐 ÚLTIMOS LANÇAMENTOS</div>
+      ${ultimos.map(l => `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid rgba(59,130,246,0.06);">
+          <div>
+            <div style="font-size:12px;color:var(--branco);font-weight:600;">${l.descricao}</div>
+            <div style="font-size:10px;color:var(--texto3);margin-top:1px;">${obraMap[l.obra_id]||'—'} · ${l.data||''} ${l.etapa ? '· '+etapaLabel(l.etapa) : ''}</div>
+          </div>
+          <span style="font-size:12px;font-weight:700;color:#f59e0b;font-family:'JetBrains Mono',monospace;">${fmtR(l.total)}</span>
+        </div>`).join('')}
+    </div>` : ''}
+  `;
+
+  // ── GRÁFICOS ──
   function renderCharts() {
-    // Paleta: verde principal, depois tons neutros/frios — sem repetir verde
     const coresPizza = [
-      'rgba(46,204,113,0.75)',   // verde — categoria top
-      'rgba(100,116,139,0.7)',   // slate
-      'rgba(59,130,246,0.7)',    // azul
-      'rgba(245,158,11,0.7)',    // âmbar
-      'rgba(139,92,246,0.7)',    // roxo
-      'rgba(6,182,212,0.65)',    // ciano
-      'rgba(239,68,68,0.65)',    // vermelho
-      'rgba(156,163,175,0.55)',  // cinza
+      'rgba(46,204,113,0.75)','rgba(100,116,139,0.7)','rgba(59,130,246,0.7)',
+      'rgba(245,158,11,0.7)','rgba(139,92,246,0.7)','rgba(6,182,212,0.65)',
+      'rgba(239,68,68,0.65)','rgba(156,163,175,0.55)',
     ];
-    // Barras: cor única neutra, obra com maior valor fica verde
-    const maxIdx = porObra.indexOf(porObra.reduce((a,b)=>a.total>b.total?a:b, porObra[0]||{total:0}));
-    const coresBarra = porObra.map((_,i) =>
-      i === maxIdx ? 'rgba(46,204,113,0.75)' : 'rgba(100,116,139,0.45)'
-    );
+    const maxIdx = porObra.length ? porObra.indexOf(porObra.reduce((a,b)=>a.custo>b.custo?a:b, porObra[0])) : -1;
+    const coresBarra = porObra.map((_,i) => i === maxIdx ? 'rgba(46,204,113,0.75)' : 'rgba(100,116,139,0.45)');
 
-    // Chart.js defaults
     Chart.defaults.color = '#6a8a6a';
     Chart.defaults.font.family = "'Barlow', sans-serif";
 
-    // Gráfico Barras (maior — 5 colunas)
     const ctxB = document.getElementById('chart-barras')?.getContext('2d');
     if (ctxB) {
       if (chartBarras) chartBarras.destroy();
@@ -2466,25 +2526,13 @@ function renderDashboard() {
         type: 'bar',
         data: {
           labels: porObra.map(o => o.nome.length > 16 ? o.nome.substring(0,14)+'…' : o.nome),
-          datasets: [{
-            data: porObra.map(o=>o.total),
-            backgroundColor: coresBarra,
-            borderRadius: 8, borderWidth: 0,
-            hoverBackgroundColor: porObra.map((_,i) =>
-              i === maxIdx ? 'rgba(74,222,128,0.85)' : 'rgba(148,163,184,0.6)'
-            )
-          }]
+          datasets: [{ data: porObra.map(o=>o.custo), backgroundColor: coresBarra, borderRadius: 8, borderWidth: 0,
+            hoverBackgroundColor: porObra.map((_,i) => i === maxIdx ? 'rgba(74,222,128,0.85)' : 'rgba(148,163,184,0.6)') }]
         },
         options: {
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              callbacks: {
-                label: ctx => '  ' + fmt(ctx.raw),
-                footer: () => '  Duplo clique para abrir a obra'
-              },
-              backgroundColor: 'rgba(6,12,6,0.9)', borderColor: 'rgba(46,204,113,0.3)', borderWidth: 1, titleColor: '#ddeadd', bodyColor: '#9ab89a', footerColor: '#6a8a6a', footerFont: { size: 9 }, padding: 10
-            }
+          plugins: { legend: { display: false },
+            tooltip: { callbacks: { label: ctx => '  ' + fmt(ctx.raw), footer: () => '  Duplo clique para abrir a obra' },
+              backgroundColor: 'rgba(6,12,6,0.9)', borderColor: 'rgba(46,204,113,0.3)', borderWidth: 1, titleColor: '#ddeadd', bodyColor: '#9ab89a', footerColor: '#6a8a6a', footerFont: { size: 9 }, padding: 10 }
           },
           scales: {
             x: { ticks: { color: '#6a8a6a', font: { size: 10 } }, grid: { display: false }, border: { color: 'rgba(46,204,113,0.1)' } },
@@ -2495,26 +2543,13 @@ function renderDashboard() {
             const idx = elements[0].index;
             const obra = porObra[idx];
             if (!obra) return;
-            // Duplo clique: verifica se foi clicado 2x em menos de 400ms
-            const now = Date.now();
-            if (chartBarras._lastClick && (now - chartBarras._lastClick) < 400 && chartBarras._lastClickIdx === idx) {
-              // Navega para Obras filtrando pela obra clicada
-              setView('obras');
-              setTimeout(() => {
-                const sel = document.getElementById('obras-filtro-obra');
-                if (sel) {
-                  // Encontra a option com o id da obra
-                  const opt = Array.from(sel.options).find(o => o.value === obra.id);
-                  if (opt) {
-                    sel.value = obra.id;
-                    onChangeObraFiltro();
-                    showToast(`📂 ${obra.nome}`);
-                  }
-                }
-              }, 80);
+            const nowTs = Date.now();
+            if (chartBarras._lastClick && (nowTs - chartBarras._lastClick) < 400 && chartBarras._lastClickIdx === idx) {
+              setView('custos');
+              setTimeout(() => custosAbrirDetalhe(obra.id), 100);
               chartBarras._lastClick = 0;
             } else {
-              chartBarras._lastClick = now;
+              chartBarras._lastClick = nowTs;
               chartBarras._lastClickIdx = idx;
             }
           }
@@ -2522,15 +2557,14 @@ function renderDashboard() {
       });
     }
 
-    // Gráfico Pizza (menor — ao lado)
     const ctxP = document.getElementById('chart-pizza')?.getContext('2d');
     if (ctxP) {
       if (chartPizza) chartPizza.destroy();
       chartPizza = new Chart(ctxP, {
         type: 'doughnut',
         data: {
-          labels: catEntries.map(([k])=>k),
-          datasets: [{ data: catEntries.map(([,v])=>v), backgroundColor: coresPizza, borderWidth: 0, hoverOffset: 6 }]
+          labels: etapaEntries.map(([k])=>k),
+          datasets: [{ data: etapaEntries.map(([,v])=>v), backgroundColor: coresPizza, borderWidth: 0, hoverOffset: 6 }]
         },
         options: {
           plugins: {
@@ -2551,8 +2585,7 @@ function renderDashboard() {
   } else {
     renderCharts();
   }
-  autoFitStatValues();
-
+  setTimeout(autoFitStatValues, 50);
 }
 
 // ══════════════════════════════════════════
