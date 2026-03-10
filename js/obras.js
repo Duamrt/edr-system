@@ -440,27 +440,18 @@ function etapaSelectOpts(selected='', incluiVazio=true) {
   return vazio + ETAPAS.map(e => `<option value="${e.key}" ${selected===e.key?'selected':''}>${e.lb}</option>`).join('');
 }
 
-async function salvarLancamento() {
-  const obra_id = document.getElementById('lanc-obra').value;
-  const descricao = (document.getElementById('lanc-desc').value||'').toUpperCase().trim();
-  const qtd = parseFloat(document.getElementById('lanc-qtd').value)||1;
-  const preco = parseFloat(document.getElementById('lanc-preco').value)||0;
-  const data = document.getElementById('lanc-data').value;
-  const obs = document.getElementById('lanc-obs').value.toUpperCase();
-  const etapa = document.getElementById('lanc-etapa')?.value || '';
-  const total = qtd * preco;
-  if (!descricao) { showToast('⚠ INFORME A DESCRIÇÃO.'); return; }
-  if (!obra_id) { showToast('⚠ SELECIONE A OBRA.'); return; }
-  if (!preco || preco <= 0) { showToast('⚠ VALOR UNITÁRIO OBRIGATÓRIO — não é permitido lançar com valor zero.'); document.getElementById('lanc-preco').focus(); return; }
-  if (!etapa) { showToast('⚠ SELECIONE O CENTRO DE CUSTO (ETAPA).'); document.getElementById('lanc-etapa')?.focus(); return; }
-  try {
-    const [novo] = await sbPost('lancamentos', { obra_id, descricao, qtd, preco, total, data, obs, etapa });
-    lancamentos.unshift(novo);
-    showToast('✅ LANÇAMENTO SALVO!');
-    fecharModal('lanc');
-    filtrarLanc();
-    renderDashboard();
-  } catch(e) { showToast('ERRO AO SALVAR.'); }
+// Redireciona para F3 Entrada Direta com a obra pré-selecionada
+function irParaEntradaDireta() {
+  const obraId = document.getElementById('obras-filtro-obra')?.value || '';
+  setView('estoque');
+  setTimeout(() => {
+    abrirEntradaDireta();
+    if (obraId) {
+      setDestinoEntrada('obra');
+      const sel = document.getElementById('entrada-obra-id');
+      if (sel) sel.value = obraId;
+    }
+  }, 100);
 }
 
 async function excluirLanc(id) {
@@ -512,17 +503,6 @@ async function salvarNovaObra() {
   } catch(e) { showToast('ERRO AO SALVAR.'); }
 }
 
-function abrirModalLanc() {
-  document.getElementById('lanc-desc').value = '';
-  document.getElementById('lanc-qtd').value = '1';
-  document.getElementById('lanc-preco').value = '';
-  document.getElementById('lanc-obs').value = '';
-  const selEtapa = document.getElementById('lanc-etapa');
-  if (selEtapa) selEtapa.innerHTML = etapaSelectOpts();
-  setToday();
-  document.getElementById('modal-lanc').classList.remove('hidden');
-  setTimeout(() => document.getElementById('lanc-desc').focus(), 100);
-}
 function abrirModalObra(obraId) {
   const obra = obraId ? [...obras, ...obrasArquivadas].find(o => o.id === obraId) : null;
   document.getElementById('obra-edit-id').value = obra ? obra.id : '';

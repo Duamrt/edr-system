@@ -135,10 +135,7 @@ function crUsarExistente(nome, codigo) {
   fecharCadastroRapido();
   showToast('Usando ' + codigo + ' — ' + nome);
   const m = catalogoMateriais.find(x => x.codigo === codigo);
-  if (_crOrigem === 'lanc') {
-    document.getElementById('lanc-desc').value = nome;
-    setTimeout(() => document.getElementById('lanc-preco')?.focus(), 100);
-  } else if (_crOrigem === 'nf') {
+  if (_crOrigem === 'nf') {
     document.getElementById('i-desc').value = nome;
     const res = classificarItem(nome);
     currentCredito = res?.credito ?? null;
@@ -171,10 +168,7 @@ async function salvarCadastroRapido() {
     catalogoMateriais.sort((a,b) => a.codigo.localeCompare(b.codigo));
     fecharCadastroRapido();
     showToast(codigo + ' — ' + nome + ' CADASTRADO!');
-    if (_crOrigem === 'lanc') {
-      document.getElementById('lanc-desc').value = nome;
-      setTimeout(() => document.getElementById('lanc-preco')?.focus(), 100);
-    } else if (_crOrigem === 'nf') {
+    if (_crOrigem === 'nf') {
       document.getElementById('i-desc').value = nome;
       const res = classificarItem(nome);
       currentCredito = res?.credito ?? null;

@@ -145,40 +145,6 @@ function classificarManual(credito) {
   document.getElementById('i-manual-wrap').classList.add('hidden');
 }
 
-function onLancDescInput() {
-  const val = (document.getElementById('lanc-desc').value||'').toUpperCase();
-  document.getElementById('lanc-desc').value = val;
-  showLancAutocomplete(val);
-}
-
-function showLancAutocomplete(val) {
-  const list = document.getElementById('ac-lanc-list');
-  if (!val || val.length < 2) { list.classList.add('hidden'); return; }
-  const norm = s => (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-  const q = norm(val);
-  const catMatches = catalogoMateriais.filter(m => norm(m.nome).includes(q) || (m.codigo||'').includes(q)).slice(0, 8);
-  const items = [];
-  catMatches.forEach(m => {
-    items.push(`<div class="autocomplete-item" onmousedown="selectLancDesc('${m.nome.replace(/'/g,"\\'")}')">
-      ${m.codigo?`<span class="ac-codigo">${m.codigo}</span>`:''}
-      <span class="ac-label">${m.nome}</span>
-      <span style="font-size:10px;color:var(--texto3);">${m.unidade||'UN'}</span>
-    </div>`);
-  });
-  const txt = val.trim().toUpperCase();
-  items.push(`<div class="autocomplete-item" style="border-top:1px solid rgba(46,204,113,0.2);margin-top:2px;" onmousedown="cadastroRapidoMaterial('${txt.replace(/'/g,"\\'")}','lanc')">
-    <span style="color:var(--verde-hl);font-weight:700;font-size:12px;">+ CADASTRAR \"${txt}\" NO CATÁLOGO</span>
-    <span style="font-size:10px;color:var(--texto3);">e usar aqui</span>
-  </div>`);
-  list.innerHTML = items.join('');
-  list.classList.remove('hidden');
-}
-function selectLancDesc(nome) {
-  document.getElementById('lanc-desc').value = nome;
-  document.getElementById('ac-lanc-list').classList.add('hidden');
-  document.getElementById('lanc-preco').focus();
-}
-
 function showAutocomplete(val) {
   const list = document.getElementById('ac-list');
   if (!val || val.length < 2) { list.classList.add('hidden'); cachedItens = []; return; }
