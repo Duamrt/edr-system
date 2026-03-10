@@ -370,7 +370,7 @@ body::before {
 }
 .nav-btn:hover:not(.active) { color: var(--texto2); background: rgba(46,204,113,0.04); border-color: rgba(46,204,113,0.1); }
 .nav-key { font-size: 7px; color: var(--texto3); font-weight: 400; background: rgba(46,204,113,0.06); border-radius: 3px; padding: 1px 4px; font-family: 'JetBrains Mono', monospace; border: 1px solid rgba(46,204,113,0.1); margin-top: 1px; }
-@media (max-width: 768px) { .shortcut-hint { display: none !important; } }
+@media (max-width: 768px) { .shortcut-hint { display: none !important; } .nav-key { display: none !important; } }
 .nav-btn.active .nav-key { color: var(--verde3); background: rgba(46,204,113,0.12); border-color: rgba(46,204,113,0.25); }
 .nav-divider { width: 36px; height: 1px; background: rgba(46,204,113,0.08); margin: 6px 0; display: none; }
 .sidebar-bottom { margin-top: auto; padding-bottom: 8px; }
@@ -4704,6 +4704,7 @@ function salvarOrdemMenu() {
   const btns = [...nav.querySelectorAll('.nav-btn[data-view]')];
   const ordem = btns.map(b => b.getAttribute('data-view'));
   localStorage.setItem(getMenuOrderKey(), JSON.stringify(ordem));
+  atualizarAtalhosMenu();
 }
 
 function aplicarOrdemMenu() {
@@ -4717,6 +4718,7 @@ function aplicarOrdemMenu() {
       const btn = nav.querySelector(`.nav-btn[data-view="${view}"]`);
       if (btn) nav.insertBefore(btn, sidebarBottom);
     });
+    atualizarAtalhosMenu();
   } catch(e) { console.error('Erro ao aplicar ordem do menu:', e); }
 }
 
@@ -4729,6 +4731,7 @@ function resetarOrdemMenu() {
     const btn = nav.querySelector(`.nav-btn[data-view="${view}"]`);
     if (btn) nav.insertBefore(btn, sidebarBottom);
   });
+  atualizarAtalhosMenu();
   showToast('Menu restaurado!');
 }
 
@@ -4953,10 +4956,25 @@ function setupEnterNav() {
   });
 }
 
+let atalhoMenuMap = {};
+
+function atualizarAtalhosMenu() {
+  const nav = document.getElementById('main-nav');
+  const btns = [...nav.querySelectorAll('.nav-btn[data-view]')];
+  atalhoMenuMap = {};
+  btns.forEach((btn, i) => {
+    const fKey = 'F' + (i + 1);
+    const view = btn.getAttribute('data-view');
+    atalhoMenuMap[fKey] = view;
+    const keyEl = btn.querySelector('.nav-key');
+    if (keyEl) keyEl.textContent = fKey;
+  });
+}
+
 function setupKeyboardShortcuts() {
-  const map = { F1:'dashboard', F2:'obras', F3:'estoque', F4:'notas', F5:'form', F6:'creditos', F7:'diarias', F8:'catalogo', F9:'relatorio', F10:'custos', F11:'banco', F12:'setup' };
+  atualizarAtalhosMenu();
   document.addEventListener('keydown', e => {
-    if (map[e.key]) { e.preventDefault(); setView(map[e.key]); return; }
+    if (atalhoMenuMap[e.key]) { e.preventDefault(); setView(atalhoMenuMap[e.key]); return; }
     if (e.ctrlKey && e.key === 's') { e.preventDefault(); const v = document.getElementById('view-form'); if (v && !v.classList.contains('hidden')) salvarNota(); }
   }, true);
 }
