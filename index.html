@@ -4824,11 +4824,16 @@ function setupKeyboardShortcuts() {
 
 function fecharModal(w) { document.getElementById(`modal-${w}`).classList.add('hidden'); if (w === 'dist') distItemAtual = null; }
 
-// ESC fecha qualquer modal aberto
+// ESC fecha qualquer modal ou volta de tela de detalhe
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
+  // 1. Fecha modais abertos
   const modais = document.querySelectorAll('.modal-overlay:not(.hidden)');
-  if (modais.length) { modais.forEach(m => { const id = m.id.replace('modal-',''); fecharModal(id); }); e.preventDefault(); }
+  if (modais.length) { modais.forEach(m => { const id = m.id.replace('modal-',''); fecharModal(id); }); e.preventDefault(); return; }
+  // 2. Volta de detalhe para cards (CUSTOS CEF)
+  if (custoObraAtual && document.getElementById('custos-detalhe-view')?.style.display !== 'none') { custosVoltarCards(); e.preventDefault(); return; }
+  // 3. Volta de detalhe para cards (OBRAS F2)
+  if (document.getElementById('obras-sticky')?.style.display !== 'none' && document.getElementById('obras-cards-overview')?.style.display === 'none') { obrasVoltarCards(); e.preventDefault(); return; }
 });
 
 function abrirNota(id) {
