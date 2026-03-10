@@ -2413,7 +2413,14 @@ function renderDashboard() {
       </div>
     </div>
 
-    <!-- 4 CARDS PRINCIPAIS -->
+    <!-- CARD DESTAQUE — VALOR TOTAL IMÓVEIS -->
+    <div class="stat-card" style="border-top-color:rgba(59,130,246,0.6);margin-bottom:10px;text-align:center;padding:16px;">
+      <div class="stat-label" style="font-size:10px;">VALOR TOTAL DOS IMÓVEIS</div>
+      <div class="stat-value" style="color:#60a5fa;font-size:clamp(20px,4vw,28px);">${valorVendaTotal > 0 ? fmt(valorVendaTotal) : 'Não informado'}</div>
+      <div class="stat-sub">${obras.length} imóvel(is) · soma dos valores de venda</div>
+    </div>
+
+    <!-- 4 CARDS SECUNDÁRIOS -->
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:14px;">
       <div class="stat-card" style="border-top-color:rgba(245,158,11,0.6);">
         <div class="stat-label">CUSTO TOTAL</div>
