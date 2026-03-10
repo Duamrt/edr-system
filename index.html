@@ -1293,6 +1293,7 @@ body::before {
         <select id="repasse-tipo" onchange="onRepasseTipoChange()" style="width:100%;padding:10px 14px;background:#1a1a2e;border:1px solid rgba(46,204,113,0.15);border-radius:10px;color:var(--branco);font-size:14px;outline:none;font-family:inherit;">
           <option value="pls" style="background:#1a1a2e;color:#fff;">📄 PLS CEF (Medição)</option>
           <option value="entrada" style="background:#1a1a2e;color:#fff;">💵 ENTRADA CLIENTE</option>
+          <option value="terreno" style="background:#1a1a2e;color:#fff;">🏗 CEF TERRENO</option>
         </select>
       </div>
       <div class="field" style="margin-bottom:12px;">
@@ -6987,7 +6988,8 @@ function renderCustosCards() {
     if (dataLimite) reps = reps.filter(r => r.data_credito && new Date(r.data_credito + 'T12:00:00') >= dataLimite);
     const totalPls = reps.filter(r => (r.tipo||'pls') === 'pls').reduce((s,r) => s + Number(r.valor||0), 0);
     const totalEntrada = reps.filter(r => (r.tipo||'pls') === 'entrada').reduce((s,r) => s + Number(r.valor||0), 0);
-    const totalRecebido = totalPls + totalEntrada;
+    const totalTerreno = reps.filter(r => (r.tipo||'pls') === 'terreno').reduce((s,r) => s + Number(r.valor||0), 0);
+    const totalRecebido = totalPls + totalEntrada + totalTerreno;
     const valorVenda = Number(o.valor_venda || 0);
     const custoTotal = lancamentos.filter(l => l.obra_id === o.id).reduce((s,l) => s + Number(l.total||0), 0);
     const lucro = valorVenda > 0 ? valorVenda - custoTotal : 0;
@@ -7008,18 +7010,22 @@ function renderCustosCards() {
           <div style="font-size:9px;color:var(--texto3);">VALOR IMÓVEL</div>
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-bottom:10px;">
         <div style="text-align:center;padding:6px;background:rgba(46,204,113,0.04);border-radius:8px;">
           <div style="font-size:9px;color:var(--texto3);">📄 PLS</div>
-          <div style="font-size:12px;font-weight:700;color:var(--verde-hl);">${fmt(totalPls)}</div>
+          <div style="font-size:11px;font-weight:700;color:var(--verde-hl);">${fmt(totalPls)}</div>
         </div>
         <div style="text-align:center;padding:6px;background:rgba(59,130,246,0.04);border-radius:8px;">
-          <div style="font-size:9px;color:var(--texto3);">💵 ENTRADAS</div>
-          <div style="font-size:12px;font-weight:700;color:#60a5fa;">${fmt(totalEntrada)}</div>
+          <div style="font-size:9px;color:var(--texto3);">💵 ENTRADA</div>
+          <div style="font-size:11px;font-weight:700;color:#60a5fa;">${fmt(totalEntrada)}</div>
+        </div>
+        <div style="text-align:center;padding:6px;background:rgba(168,85,247,0.04);border-radius:8px;">
+          <div style="font-size:9px;color:var(--texto3);">🏗 TERRENO</div>
+          <div style="font-size:11px;font-weight:700;color:#a855f7;">${fmt(totalTerreno)}</div>
         </div>
         <div style="text-align:center;padding:6px;background:rgba(245,158,11,0.04);border-radius:8px;">
           <div style="font-size:9px;color:var(--texto3);">💸 CUSTO</div>
-          <div style="font-size:12px;font-weight:700;color:#f59e0b;">${fmt(custoTotal)}</div>
+          <div style="font-size:11px;font-weight:700;color:#f59e0b;">${fmt(custoTotal)}</div>
         </div>
       </div>
       ${valorVenda > 0 ? `<div style="margin-bottom:8px;">
@@ -7072,7 +7078,8 @@ function renderCustosResumo() {
       const repassesObra = repassesCef.filter(r => r.obra_id === obraFiltro);
       const totalPls = repassesObra.filter(r => (r.tipo || 'pls') === 'pls').reduce((s, r) => s + Number(r.valor || 0), 0);
       const totalEntrada = repassesObra.filter(r => (r.tipo || 'pls') === 'entrada').reduce((s, r) => s + Number(r.valor || 0), 0);
-      const totalRecebido = totalPls + totalEntrada;
+      const totalTerreno = repassesObra.filter(r => (r.tipo || 'pls') === 'terreno').reduce((s, r) => s + Number(r.valor || 0), 0);
+      const totalRecebido = totalPls + totalEntrada + totalTerreno;
       const saldoReceber = valorVenda - totalRecebido;
       const custoTotal = lancamentos.filter(l => l.obra_id === obraFiltro).reduce((s, l) => s + Number(l.total || 0), 0);
       const lucro = valorVenda - custoTotal;
@@ -7094,7 +7101,7 @@ function renderCustosResumo() {
           <div style="text-align:center;padding:10px;background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.1);border-radius:10px;">
             <div style="font-size:10px;color:var(--texto3);letter-spacing:1px;margin-bottom:4px;">TOTAL RECEBIDO</div>
             <div style="font-size:18px;font-weight:700;color:var(--verde-hl);font-family:'Rajdhani',sans-serif;">${fmt(totalRecebido)}</div>
-            <div style="font-size:10px;color:var(--texto3);margin-top:2px;">📄 PLS: ${fmt(totalPls)} &nbsp;|&nbsp; 💵 Entradas: ${fmt(totalEntrada)}</div>
+            <div style="font-size:10px;color:var(--texto3);margin-top:2px;">📄 PLS: ${fmt(totalPls)} &nbsp;|&nbsp; 💵 Entradas: ${fmt(totalEntrada)} &nbsp;|&nbsp; 🏗 Terreno: ${fmt(totalTerreno)}</div>
           </div>
           <div style="text-align:center;padding:10px;background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.1);border-radius:10px;">
             <div style="font-size:10px;color:var(--texto3);letter-spacing:1px;margin-bottom:4px;">SALDO A RECEBER</div>
@@ -7178,9 +7185,9 @@ function renderCustosDetalhes(obraId) {
       acum += Number(r.valor || 0);
       const dt = r.data_credito ? new Date(r.data_credito + 'T12:00:00').toLocaleDateString('pt-BR') : '-';
       const tipoR = (r.tipo || 'pls');
-      const tipoLabel = tipoR === 'entrada' ? '💵 ENTRADA' : '📄 PLS';
-      const tipoColor = tipoR === 'entrada' ? '#3b82f6' : 'var(--verde-hl)';
-      const medLabel = tipoR === 'entrada' ? '-' : '#' + r.medicao_numero;
+      const tipoLabel = tipoR === 'entrada' ? '💵 ENTRADA' : tipoR === 'terreno' ? '🏗 TERRENO' : '📄 PLS';
+      const tipoColor = tipoR === 'entrada' ? '#3b82f6' : tipoR === 'terreno' ? '#a855f7' : 'var(--verde-hl)';
+      const medLabel = (tipoR === 'entrada' || tipoR === 'terreno') ? '-' : '#' + r.medicao_numero;
       html += `<tr style="border-bottom:1px solid rgba(46,204,113,0.06);">
         <td style="padding:8px 6px;font-size:11px;font-weight:600;color:${tipoColor};">${tipoLabel}</td>
         <td style="padding:8px 6px;font-weight:700;color:var(--branco);">${medLabel}</td>
@@ -7231,11 +7238,11 @@ function renderCustosHistoricoMensal(obraId) {
     reps.sort((a, b) => a.medicao_numero - b.medicao_numero).forEach(r => {
       const nomeObra = getNome(r.obra_id);
       const tipoR = (r.tipo || 'pls');
-      const tipoTag = tipoR === 'entrada' ? '<span style="color:#3b82f6;font-weight:600;">ENTRADA</span>' : '<span style="color:var(--verde-hl);font-weight:600;">PLS</span>';
-      const medInfo = tipoR === 'entrada' ? '' : ` — Med. #${r.medicao_numero}`;
+      const tipoTag = tipoR === 'entrada' ? '<span style="color:#3b82f6;font-weight:600;">ENTRADA</span>' : tipoR === 'terreno' ? '<span style="color:#a855f7;font-weight:600;">TERRENO</span>' : '<span style="color:var(--verde-hl);font-weight:600;">PLS</span>';
+      const medInfo = (tipoR === 'entrada' || tipoR === 'terreno') ? '' : ` — Med. #${r.medicao_numero}`;
       html += `<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:11px;color:var(--texto3);">
         <span>${tipoTag} ${nomeObra}${medInfo}</span>
-        <span style="color:${tipoR === 'entrada' ? '#3b82f6' : 'var(--verde-hl)'};">${fmt(r.valor)}</span>
+        <span style="color:${tipoR === 'entrada' ? '#3b82f6' : tipoR === 'terreno' ? '#a855f7' : 'var(--verde-hl)'};">${fmt(r.valor)}</span>
       </div>`;
     });
     html += `</div>`;
@@ -7269,7 +7276,7 @@ function abrirModalRepasse(obraId) {
 function onRepasseTipoChange() {
   const tipo = document.getElementById('repasse-tipo').value;
   const wrap = document.getElementById('repasse-medicao-wrap');
-  if (tipo === 'entrada') {
+  if (tipo === 'entrada' || tipo === 'terreno') {
     wrap.style.display = 'none';
     document.getElementById('repasse-medicao').value = '';
   } else {
@@ -7281,7 +7288,7 @@ async function salvarRepasse() {
   const obraId = document.getElementById('repasse-obra').value;
   const tipo = document.getElementById('repasse-tipo').value;
   const medicaoRaw = parseInt(document.getElementById('repasse-medicao').value);
-  const medicao = tipo === 'entrada' ? (medicaoRaw || 0) : medicaoRaw;
+  const medicao = (tipo === 'entrada' || tipo === 'terreno') ? (medicaoRaw || 0) : medicaoRaw;
   const valor = parseFloat(document.getElementById('repasse-valor').value);
   const data = document.getElementById('repasse-data').value;
   const obs = document.getElementById('repasse-obs').value.trim();
@@ -7368,6 +7375,7 @@ function gerarRelatorioCustos(obraIdParam) {
     const totalObra = data.reps.reduce((s, r) => s + Number(r.valor || 0), 0);
     const totalPlsObra = data.reps.filter(r => (r.tipo||'pls')==='pls').reduce((s,r) => s + Number(r.valor||0), 0);
     const totalEntradaObra = data.reps.filter(r => (r.tipo||'pls')==='entrada').reduce((s,r) => s + Number(r.valor||0), 0);
+    const totalTerrenoObra = data.reps.filter(r => (r.tipo||'pls')==='terreno').reduce((s,r) => s + Number(r.valor||0), 0);
     const obraObj = todasObras.find(o => o.id === oid);
     const valorVenda = Number(obraObj?.valor_venda || 0);
     const custoObra = lancamentos.filter(l => l.obra_id === oid).reduce((s,l) => s + Number(l.total||0), 0);
@@ -7380,6 +7388,7 @@ function gerarRelatorioCustos(obraIdParam) {
         <tr><td><strong>Valor do Imóvel</strong></td><td class="right">${fmt(valorVenda)}</td></tr>
         <tr><td>PLS CEF</td><td class="right total">${fmt(totalPlsObra)}</td></tr>
         <tr><td>Entradas Cliente</td><td class="right" style="color:#3b82f6;font-weight:700;">${fmt(totalEntradaObra)}</td></tr>
+        <tr><td>CEF Terreno</td><td class="right" style="color:#7c3aed;font-weight:700;">${fmt(totalTerrenoObra)}</td></tr>
         <tr><td>Saldo a Receber</td><td class="right">${fmt(valorVenda - totalObra)}</td></tr>
         <tr><td>Custo Total</td><td class="right" style="color:#d97706;font-weight:700;">${fmt(custoObra)}</td></tr>
         <tr><td><strong>Lucro Estimado</strong></td><td class="right total">${fmt(lucroObra)}</td></tr>
@@ -7390,8 +7399,8 @@ function gerarRelatorioCustos(obraIdParam) {
     data.reps.sort((a, b) => a.medicao_numero - b.medicao_numero).forEach(r => {
       const dt = r.data_credito ? new Date(r.data_credito + 'T12:00:00').toLocaleDateString('pt-BR') : '-';
       const tipoR = (r.tipo || 'pls');
-      const tipoLb = tipoR === 'entrada' ? 'ENTRADA' : 'PLS CEF';
-      const medLb = tipoR === 'entrada' ? '-' : '#' + r.medicao_numero;
+      const tipoLb = tipoR === 'entrada' ? 'ENTRADA' : tipoR === 'terreno' ? 'CEF TERRENO' : 'PLS CEF';
+      const medLb = (tipoR === 'entrada' || tipoR === 'terreno') ? '-' : '#' + r.medicao_numero;
       html += `<tr><td>${tipoLb}</td><td>${medLb}</td><td class="right total">${fmt(r.valor)}</td><td>${dt}</td><td>${r.observacao || '-'}</td></tr>`;
     });
     html += `</tbody></table>`;
