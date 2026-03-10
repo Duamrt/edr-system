@@ -80,6 +80,101 @@ function buildSecaoFaltas() {
     ${diasHtml ? `<div style="margin-top:12px;"><div style="font-size:10px;font-weight:700;letter-spacing:1px;color:var(--texto3);margin-bottom:8px;font-family:'Rajdhani',sans-serif;">DETALHE POR DIA</div>${diasHtml}</div>` : ''}
   </div>`;
 }
+
+// ────────────────────────────────────────────
+// CALENDÁRIO DO FUNCIONÁRIO
+// ────────────────────────────────────────────
+function diarAbrirCalendarioFunc(nome) {
+  const modal = document.getElementById('diar-modalCalendario');
+  modal.style.display = 'flex';
+
+  const regs = diarGetRegistrosQuinzena();
+  const q = diarQuinzenaAtiva;
+  if (!q) return;
+
+  // Gerar todos os dias da quinzena
+  const inicio = new Date(q.data_inicio + 'T12:00:00');
+  const fim    = new Date(q.data_fim    + 'T12:00:00');
+  const dias = [];
+  for (let d = new Date(inicio); d <= fim; d.setDate(d.getDate()+1)) {
+    dias.push(d.toISOString().split('T')[0]);
+  }
+
+  // Registros deste funcionário
+  const regsFun = regs.filter(r => r.nome === nome || r.funcionario === nome);
+  const regsPorDia = {};
+  regsFun.forEach(r => { regsPorDia[r.data] = r; });
+
+  // Calcular cargo/diaria deste func
+  const qualquer = regsFun[0];
+  const cargo = qualquer?.cargo || '';
+  const diaria = qualquer?.diaria_base || 0;
+
+  // Contar presença
+  const totalDias = dias.filter(d => {
+    const dow = new Date(d + 'T12:00:00').getDay();
+    return dow !== 0 && dow !== 6; // ignorar fim de semana no count
+  }).length;
+  const diasTrabalhados = dias.filter(d => regsPorDia[d]).length;
+  const faltasDias = dias.filter(d => {
+    const dow = new Date(d + 'T12:00:00').getDay();
+    return dow !== 0 && dow !== 6 && !regsPorDia[d];
+  }).length;
+  const totalValor = regsFun.reduce((s,r) => s + Number(r.valor||0), 0);
+
+  // Header
+  document.getElementById('diar-calNome').innerHTML =
+    `📅 ${nome} <span style="font-size:11px;font-weight:400;color:var(--texto3)">${cargo}</span>`;
+  document.getElementById('diar-calResumo').innerHTML =
+    `<div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:4px;">
+      <span>✅ <strong style="color:var(--verde-hl)">${diasTrabalhados}</strong> dias trabalhados</span>
+      <span>❌ <strong style="color:#f87171">${faltasDias}</strong> falta(s)</span>
+      <span>💰 <strong style="color:var(--verde-hl)">R$ ${totalValor.toLocaleString('pt-BR',{minimumFractionDigits:2})}</strong></span>
+    </div>`;
+
+  // Grade de dias
+  const linhas = dias.map(dia => {
+    const dt = new Date(dia + 'T12:00:00');
+    const dow = dt.getDay();
+    const fds = dow === 0 || dow === 6;
+    const df = dt.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' }).toUpperCase();
+    const reg = regsPorDia[dia];
+
+    if (fds) {
+      return `<div style="display:flex;align-items:center;gap:10px;padding:7px 10px;border-bottom:1px solid rgba(255,255,255,0.04);opacity:0.35;">
+        <div style="width:8px;height:8px;border-radius:50%;background:#444;flex-shrink:0"></div>
+        <span style="font-size:11px;color:var(--texto3);width:110px">${df}</span>
+        <span style="font-size:10px;color:var(--texto3)">fim de semana</span>
+      </div>`;
+    }
+
+    if (reg) {
+      const periodos = typeof reg.periodos === 'string' ? JSON.parse(reg.periodos||'[]') : (reg.periodos||[]);
+      const obras = periodos.map(p => {
+        const t = p.turno === 'manha' ? '☀ manhã' : p.turno === 'tarde' ? '🌤 tarde' : '📅 dia todo';
+        return `<span style="font-size:10px;color:var(--texto2)">${t} <strong style="color:var(--branco)">${p.obra}</strong></span>`;
+      }).join(' · ');
+      const val = Number(reg.valor||0);
+      return `<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-bottom:1px solid rgba(255,255,255,0.04);background:rgba(46,204,113,0.04);">
+        <div style="width:8px;height:8px;border-radius:50%;background:#2ecc71;flex-shrink:0;box-shadow:0 0 6px #2ecc7188"></div>
+        <span style="font-size:11px;font-weight:600;color:var(--branco);width:110px">${df}</span>
+        <div style="flex:1;font-size:10px">${obras}</div>
+        <span style="font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--verde-hl);white-space:nowrap">R$ ${val.toLocaleString('pt-BR',{minimumFractionDigits:2})}</span>
+      </div>`;
+    }
+
+    // Falta
+    return `<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-bottom:1px solid rgba(255,255,255,0.04);background:rgba(239,68,68,0.04);">
+      <div style="width:8px;height:8px;border-radius:50%;background:#ef4444;flex-shrink:0;box-shadow:0 0 6px #ef444488"></div>
+      <span style="font-size:11px;font-weight:600;color:#f87171;width:110px">${df}</span>
+      <span style="font-size:11px;color:#f87171;font-style:italic">faltou</span>
+    </div>`;
+  }).join('');
+
+  document.getElementById('diar-calBody').innerHTML =
+    `<div style="border:1px solid var(--borda);border-radius:10px;overflow:hidden">${linhas}</div>`;
+}
+
 </script>
 <title>EDR System</title>
 <style>
@@ -5385,6 +5480,18 @@ body.perfil-mestre #view-diarias .diarias-panel-left > *:not(.diarias-panel-togg
 </div>
 
 
+<!-- MODAL CALENDÁRIO DO FUNCIONÁRIO -->
+<div id="diar-modalCalendario" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;align-items:center;justify-content:center;padding:16px">
+  <div style="background:var(--bg2);border:1px solid var(--borda);border-radius:14px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;padding:22px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <div id="diar-calNome" style="font-weight:800;font-size:16px;letter-spacing:.05em;color:var(--branco)"></div>
+      <button onclick="document.getElementById('diar-modalCalendario').style.display='none'" style="background:none;border:none;color:var(--texto3);font-size:20px;cursor:pointer;padding:4px 8px">✕</button>
+    </div>
+    <div id="diar-calResumo" style="margin-bottom:16px;font-size:11px;color:var(--texto3)"></div>
+    <div id="diar-calBody"></div>
+  </div>
+</div>
+
 <!-- MODAL EXTRA / BONIFICAÇÃO -->
 <div id="diar-modalExtra" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:9999;align-items:center;justify-content:center;padding:16px">
   <div style="background:var(--bg2);border:1px solid var(--borda);border-radius:14px;width:100%;max-width:420px;padding:22px">
@@ -6033,7 +6140,7 @@ function diarRenderFolha() {
     const totalFunc = f.valor + extra;
     return `
     <tr>
-      <td class="diarias-td-nome">${f.nome}</td>
+      <td class="diarias-td-nome" style="cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px;" onclick="diarAbrirCalendarioFunc('${f.nome}')" title="Ver calendário da quinzena">${f.nome} <span style="font-size:9px;color:var(--texto3)">📅</span></td>
       <td style="font-size:10px;color:var(--texto3)">${f.cargo||'-'}</td>
       ${isMestre ? '' : `<td style="color:var(--texto2);font-size:11px">R$ ${f.diaria} × ${f.fracoes.toFixed(1)}d</td>`}
       <td>${f.fracoes.toFixed(1)}d</td>
