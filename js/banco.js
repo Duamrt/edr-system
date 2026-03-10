@@ -1,0 +1,160 @@
+function renderUsuarios() {
+  const el = document.getElementById('usuarios-lista');
+  if (!el) return;
+  if (!USUARIOS.length) { el.innerHTML = '<div class="empty">Nenhum usuário. Clique em + Novo Usuário.</div>'; return; }
+  el.innerHTML = USUARIOS.map(u => {
+    const isAtivo = u.ativo !== false;
+    const isSelf = u.usuario === usuarioAtual?.usuario;
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(46,204,113,0.07);gap:10px;${!isAtivo?'opacity:0.45':''}">
+      <div style="flex:1;">
+        <div style="font-weight:700;font-size:14px;color:var(--branco);">${u.nome} ${isSelf?'<span style="font-size:10px;color:var(--verde3);">(você)</span>':''}</div>
+        <div style="font-size:11px;color:var(--texto3);margin-top:2px;font-family:'JetBrains Mono',monospace;">@${u.usuario}</div>
+      </div>
+      <span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;${u.perfil==='admin'?'background:rgba(46,204,113,0.1);color:var(--verde-hl);border:1px solid rgba(46,204,113,0.25);':'background:rgba(59,130,246,0.1);color:#60a5fa;border:1px solid rgba(59,130,246,0.2);'}">${u.perfil==='admin'?'👑 ADMIN':'👷 OPERACIONAL'}</span>
+      <div style="display:flex;gap:6px;">
+        <button onclick="abrirModalEditarUsuario('${u.id||u.usuario}')" style="background:rgba(46,204,113,0.07);border:1px solid rgba(46,204,113,0.15);color:var(--verde3);border-radius:7px;padding:5px 10px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;cursor:pointer;letter-spacing:1px;" title="Editar">✏ EDITAR</button>
+        ${!isSelf ? `<button onclick="toggleAtivoUsuario('${u.id||u.usuario}',${!isAtivo})" style="background:${isAtivo?'rgba(239,68,68,0.07)':'rgba(46,204,113,0.07)'};border:1px solid ${isAtivo?'rgba(239,68,68,0.2)':'rgba(46,204,113,0.2)'};color:${isAtivo?'#f87171':'var(--verde3)'};border-radius:7px;padding:5px 10px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;cursor:pointer;letter-spacing:1px;">${isAtivo?'🚫 DESATIVAR':'✅ ATIVAR'}</button>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function abrirModalNovoUsuario() {
+  document.getElementById('modal-usuario-titulo').textContent = 'NOVO USUÁRIO';
+  document.getElementById('usr-id').value = '';
+  document.getElementById('usr-nome').value = '';
+  document.getElementById('usr-usuario').value = '';
+  document.getElementById('usr-senha').value = '';
+  document.getElementById('usr-perfil').value = 'operacional';
+  document.getElementById('usr-usuario').disabled = false;
+  document.getElementById('modal-usuario').classList.remove('hidden');
+}
+
+function abrirModalEditarUsuario(idOrUsuario) {
+  const u = USUARIOS.find(x => (x.id||x.usuario) === idOrUsuario);
+  if (!u) return;
+  document.getElementById('modal-usuario-titulo').textContent = 'EDITAR USUÁRIO';
+  document.getElementById('usr-id').value = u.id || '';
+  document.getElementById('usr-nome').value = u.nome;
+  document.getElementById('usr-usuario').value = u.usuario;
+  document.getElementById('usr-senha').value = '';
+  document.getElementById('usr-perfil').value = u.perfil;
+  document.getElementById('usr-usuario').disabled = !!u.id; // não edita login se veio do Supabase
+  document.getElementById('modal-usuario').classList.remove('hidden');
+}
+
+async function salvarUsuario() {
+  const id = document.getElementById('usr-id').value;
+  const nome = document.getElementById('usr-nome').value.trim();
+  const usuario = document.getElementById('usr-usuario').value.trim().toLowerCase();
+  const senha = document.getElementById('usr-senha').value;
+  const perfil = document.getElementById('usr-perfil').value;
+  if (!nome) { showToast('⚠ INFORME O NOME.'); return; }
+  if (!usuario) { showToast('⚠ INFORME O USUÁRIO.'); return; }
+  if (!id && !senha) { showToast('⚠ INFORME A SENHA.'); return; }
+  if (senha && senha.length < 4) { showToast('⚠ SENHA MÍNIMO 4 CARACTERES.'); return; }
+  try {
+    if (id) {
+      // Editar existente
+      const payload = { nome, perfil };
+      if (senha) payload.senha = senha;
+      await sbPatch('usuarios', `?id=eq.${id}`, payload);
+      const idx = USUARIOS.findIndex(x => x.id === id);
+      if (idx >= 0) Object.assign(USUARIOS[idx], payload);
+    } else {
+      // Novo usuário
+      if (USUARIOS.find(x => x.usuario === usuario)) { showToast('⚠ USUÁRIO JÁ EXISTE.'); return; }
+      const [novo] = await sbPost('usuarios', { nome, usuario, senha, perfil, ativo: true });
+      USUARIOS.push(novo);
+    }
+    fecharModal('usuario');
+    renderUsuarios();
+    showToast('✅ USUÁRIO SALVO!');
+  } catch(e) { showToast('ERRO AO SALVAR USUÁRIO.'); }
+}
+
+async function toggleAtivoUsuario(idOrUsuario, ativar) {
+  const u = USUARIOS.find(x => (x.id||x.usuario) === idOrUsuario);
+  if (!u) return;
+  const acao = ativar ? 'ativar' : 'desativar';
+  if (!confirm(`Deseja ${acao} o usuário "${u.nome}"?`)) return;
+  try {
+    if (u.id) await sbPatch('usuarios', `?id=eq.${u.id}`, { ativo: ativar });
+    u.ativo = ativar;
+    renderUsuarios();
+    showToast(ativar ? '✅ USUÁRIO ATIVADO!' : '🚫 USUÁRIO DESATIVADO!');
+  } catch(e) { showToast('ERRO AO ATUALIZAR.'); }
+}
+
+// ══════════════════════════════════════════
+
+function renderBanco() {
+  // OBRAS
+  const obrasEl = document.getElementById('banco-obras-lista');
+  if (obrasEl) {
+    if (!obras.length) { obrasEl.innerHTML = '<div class="empty">Nenhuma obra cadastrada.</div>'; }
+    else {
+      obrasEl.innerHTML = obras.map(o => {
+        const ls = lancamentos.filter(l => l.obra_id === o.id);
+        const total = ls.reduce((s,l) => s + Number(l.total||0), 0);
+        return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--borda2);">
+          <div>
+            <div style="font-weight:700;font-size:13px;">${o.nome}</div>
+            <div style="font-size:11px;color:var(--texto3);margin-top:2px;">${ls.length} lançamento${ls.length!==1?'s':''}</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-weight:700;color:var(--verde-hl);font-size:13px;">${fmtR(total)}</div>
+            <div style="font-size:10px;color:var(--texto3);">ID: ${o.id?.substring(0,8)}…</div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  // FORNECEDORES — extraídos das notas
+  const fornEl = document.getElementById('banco-forn-lista');
+  if (fornEl) {
+    const fornMap = {};
+    notas.forEach(n => {
+      if (!n.fornecedor) return;
+      if (!fornMap[n.fornecedor]) fornMap[n.fornecedor] = { total: 0, qtd: 0, cnpj: n.cnpj || '' };
+      fornMap[n.fornecedor].total += Number(n.valor_bruto||0);
+      fornMap[n.fornecedor].qtd++;
+    });
+    const forns = Object.entries(fornMap).sort((a,b) => b[1].total - a[1].total);
+    const countEl = document.getElementById('banco-forn-count');
+    if (countEl) countEl.textContent = `(${forns.length})`;
+    if (!forns.length) { fornEl.innerHTML = '<div class="empty">Nenhum fornecedor ainda.</div>'; }
+    else {
+      fornEl.innerHTML = forns.map(([nome, d]) =>
+        `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--borda2);">
+          <div>
+            <div style="font-weight:700;font-size:13px;">${nome}</div>
+            <div style="font-size:11px;color:var(--texto3);margin-top:2px;">${d.cnpj || 'CNPJ não informado'} · ${d.qtd} nota${d.qtd!==1?'s':''}</div>
+          </div>
+          <div style="font-weight:700;color:var(--verde-hl);font-size:13px;">${fmtR(d.total)}</div>
+        </div>`
+      ).join('');
+    }
+  }
+
+  // USUÁRIOS
+  const usersEl = document.getElementById('banco-users-lista');
+  if (usersEl) {
+    const usuarios = [
+      { login: 'duamrt', perfil: 'Admin', nome: 'Duam — Operações' },
+      { login: 'elydart', perfil: 'Admin', nome: 'Elyda — Financeiro' },
+      { login: 'operador', perfil: 'Operacional', nome: 'Equipe de Campo' },
+      { login: 'anderson', perfil: 'Mestre', nome: 'Anderson — Mestre de Obras' },
+    ];
+    usersEl.innerHTML = usuarios.map(u =>
+      `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--borda2);">
+        <div style="width:36px;height:36px;border-radius:50%;background:var(--verde-bg);display:flex;align-items:center;justify-content:center;font-size:16px;">${u.perfil==='Admin'?'👑':'👷'}</div>
+        <div>
+          <div style="font-weight:700;font-size:13px;">${u.nome}</div>
+          <div style="font-size:11px;color:var(--texto3);">@${u.login} · ${u.perfil}</div>
+        </div>
+      </div>`
+    ).join('');
+  }
+}
