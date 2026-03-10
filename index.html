@@ -1238,12 +1238,23 @@ body::before {
   <div id="view-custos" class="hidden">
     <!-- VISÃO CARDS (padrão) -->
     <div id="custos-cards-overview">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding-top:4px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding-top:4px;flex-wrap:wrap;gap:8px;">
         <div class="modulo-badge" style="margin-bottom:0;">💰 CUSTOS CEF</div>
         <div style="display:flex;gap:8px;">
           <button class="btn-save" style="padding:6px 14px;font-size:11px;" onclick="abrirModalRepasse()">+ NOVO REPASSE</button>
           <button class="btn-outline" style="padding:6px 14px;font-size:11px;" onclick="gerarRelatorioCustos()">🖨 RELATÓRIO</button>
         </div>
+      </div>
+      <!-- Filtros -->
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+        <input type="text" id="custos-filtro-busca" placeholder="🔍 Buscar obra..." oninput="filtrarCustosCards()" style="flex:1;min-width:160px;padding:8px 12px;background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.15);border-radius:8px;color:var(--branco);font-size:12px;font-family:inherit;outline:none;">
+        <select id="custos-filtro-periodo" onchange="filtrarCustosCards()" style="padding:8px 12px;background:#1a1a2e;border:1px solid rgba(46,204,113,0.15);border-radius:8px;color:var(--branco);font-size:12px;font-family:inherit;outline:none;cursor:pointer;">
+          <option value="">Todos os períodos</option>
+          <option value="30">Últimos 30 dias</option>
+          <option value="90">Últimos 90 dias</option>
+          <option value="180">Últimos 6 meses</option>
+          <option value="365">Último ano</option>
+        </select>
       </div>
       <div id="custos-cards-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;"></div>
     </div>
@@ -1258,6 +1269,7 @@ body::before {
           </div>
           <div style="display:flex;gap:8px;">
             <button class="btn-save" style="padding:6px 14px;font-size:11px;" onclick="abrirModalRepasse(custoObraAtual)">+ NOVO REPASSE</button>
+            <button class="btn-outline" style="padding:6px 14px;font-size:11px;" onclick="gerarRelatorioCustos(custoObraAtual)">🖨 RELATÓRIO</button>
           </div>
         </div>
       </div>
@@ -6941,18 +6953,38 @@ function renderCustos() {
   document.getElementById('custos-cards-overview').style.display = '';
   document.getElementById('custos-detalhe-view').style.display = 'none';
   custoObraAtual = '';
+  // Resetar filtros
+  const buscaEl = document.getElementById('custos-filtro-busca');
+  const periodoEl = document.getElementById('custos-filtro-periodo');
+  if (buscaEl) buscaEl.value = '';
+  if (periodoEl) periodoEl.value = '';
   renderCustosCards();
 }
+
+function filtrarCustosCards() { renderCustosCards(); }
 
 function renderCustosCards() {
   const el = document.getElementById('custos-cards-grid');
   if (!el) return;
-  const todasObras = [...obras, ...obrasArquivadas].filter(o => !o.arquivada);
+  const busca = (document.getElementById('custos-filtro-busca')?.value || '').toLowerCase().trim();
+  const periodoVal = document.getElementById('custos-filtro-periodo')?.value || '';
+  let todasObras = [...obras, ...obrasArquivadas].filter(o => !o.arquivada);
 
-  if (!todasObras.length) { el.innerHTML = '<div class="empty" style="grid-column:1/-1;">Nenhuma obra cadastrada.</div>'; return; }
+  // Filtro por nome de obra
+  if (busca) todasObras = todasObras.filter(o => (o.nome||'').toLowerCase().includes(busca) || (o.cidade||'').toLowerCase().includes(busca));
+
+  // Filtro por período — filtra os repasses por data
+  let dataLimite = null;
+  if (periodoVal) {
+    dataLimite = new Date();
+    dataLimite.setDate(dataLimite.getDate() - parseInt(periodoVal));
+  }
+
+  if (!todasObras.length) { el.innerHTML = '<div class="empty" style="grid-column:1/-1;">Nenhuma obra encontrada.</div>'; return; }
 
   el.innerHTML = todasObras.map(o => {
-    const reps = repassesCef.filter(r => r.obra_id === o.id);
+    let reps = repassesCef.filter(r => r.obra_id === o.id);
+    if (dataLimite) reps = reps.filter(r => r.data_credito && new Date(r.data_credito + 'T12:00:00') >= dataLimite);
     const totalPls = reps.filter(r => (r.tipo||'pls') === 'pls').reduce((s,r) => s + Number(r.valor||0), 0);
     const totalEntrada = reps.filter(r => (r.tipo||'pls') === 'entrada').reduce((s,r) => s + Number(r.valor||0), 0);
     const totalRecebido = totalPls + totalEntrada;
@@ -7286,12 +7318,27 @@ async function excluirRepasse(id) {
   }
 }
 
-function gerarRelatorioCustos() {
+function gerarRelatorioCustos(obraIdParam) {
   const todasObras = [...obras, ...obrasArquivadas];
   const getNome = id => todasObras.find(o => o.id === id)?.nome || 'Obra removida';
-  const obraId = document.getElementById('custos-filtro-obra')?.value || '';
+  const obraId = obraIdParam || document.getElementById('custos-filtro-obra')?.value || '';
   let lista = [...repassesCef].sort((a, b) => (a.data_credito || '').localeCompare(b.data_credito || ''));
   if (obraId) lista = lista.filter(r => r.obra_id === obraId);
+
+  // Aplicar filtro de período se veio da visão cards (sem obraId fixo)
+  if (!obraId) {
+    const busca = (document.getElementById('custos-filtro-busca')?.value || '').toLowerCase().trim();
+    const periodoVal = document.getElementById('custos-filtro-periodo')?.value || '';
+    if (busca) {
+      const obrasMatch = todasObras.filter(o => (o.nome||'').toLowerCase().includes(busca) || (o.cidade||'').toLowerCase().includes(busca)).map(o => o.id);
+      lista = lista.filter(r => obrasMatch.includes(r.obra_id));
+    }
+    if (periodoVal) {
+      const dataLimite = new Date();
+      dataLimite.setDate(dataLimite.getDate() - parseInt(periodoVal));
+      lista = lista.filter(r => r.data_credito && new Date(r.data_credito + 'T12:00:00') >= dataLimite);
+    }
+  }
 
   const totalGeral = lista.reduce((s, r) => s + Number(r.valor || 0), 0);
 
