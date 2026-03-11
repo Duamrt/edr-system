@@ -8,6 +8,11 @@ function filtrarSoAuto() {
 }
 
 function renderCatalogo() {
+  // Popular filtro de categorias a partir do ETAPAS (fonte única)
+  const selCatFiltro = document.getElementById('catalogo-cat-filtro');
+  if (selCatFiltro && selCatFiltro.options.length <= 1 && typeof ETAPAS !== 'undefined') {
+    selCatFiltro.innerHTML = '<option value="">📂 Todos centros de custo</option>' + ETAPAS.map(e => `<option value="${e.key}">${e.lb}</option>`).join('');
+  }
   const busca = norm(document.getElementById('catalogo-busca')?.value || '');
   const catFiltro = document.getElementById('catalogo-cat-filtro')?.value || '';
   let lista = [...catalogoMateriais];
@@ -19,17 +24,10 @@ function renderCatalogo() {
   const autoCount = catalogoMateriais.filter(m => m.auto === true || m.auto === 'true').length;
   if (stats) stats.innerHTML = `${lista.length} material(is) cadastrado(s)${autoCount > 0 && usuarioAtual?.perfil==='admin' ? ` &nbsp;<span style="background:rgba(245,158,11,0.12);color:#fbbf24;border:1px solid rgba(245,158,11,0.3);border-radius:4px;padding:1px 7px;font-size:10px;font-family:'JetBrains Mono',monospace;cursor:pointer;" onclick="filtrarSoAuto()" title="Ver apenas pendentes de revisão">⚠ ${autoCount} pendente${autoCount>1?'s':''} AUTO</span>` : ''}`;
   if (!lista.length) { el.innerHTML = '<div class="empty">Nenhum material encontrado. Clique em "+ Novo Material" para cadastrar.</div>'; return; }
-  const CATS_OPTS = [
-    ['alimentacao','🍽 Alimentação'],['alvenaria','🧱 Alvenaria'],['cobertura','🏠 Cobertura'],
-    ['combustivel','⛽ Combustível'],['doc','📋 Documentação'],['eletrica','⚡ Elétrica'],
-    ['epi','🦺 EPI / Segurança'],['esgoto','🪠 Esgoto'],['esquadria','🪟 Esquadrias'],
-    ['expediente','📎 Expediente'],['ferro','⚙ Aço / Ferro'],['ferramenta','🔨 Ferramentas'],
-    ['forma','🪵 Forma e Madeira'],['gesso','⬜ Gesso'],['granito','🪨 Granito / Pedra'],['hidraulica','🚿 Hidráulica'],
-    ['impermeab','💧 Impermeabilização'],['imobilizado','🖥 Imobilizado'],['imposto','🧾 Impostos / Encargos'],['tecnologia','💻 Tecnologia / Assinaturas'],
-    ['limpeza','🧹 Limpeza'],['locacao','🏗 Locação de Equip.'],
-    ['loucas','🛁 Louças e Metais'],['mao','👷 Mão de Obra'],['pintura','🖌 Pintura'],
-    ['rev_cer','🟫 Revest. Cerâmico'],['terreno','🏡 Terreno'],['generico','❓ Genérico'],['outros','📦 Outros']
-  ];
+  // Gera CATS_OPTS a partir de ETAPAS (fonte única de verdade)
+  const CATS_OPTS = typeof ETAPAS !== 'undefined'
+    ? ETAPAS.filter(e => e.key !== '00_outros').map(e => [e.key, e.lb]).concat([['00_outros','📦 Não classificado']])
+    : [['00_outros','📦 Não classificado']];
   el.innerHTML = lista.map(m => {
     const isAuto = m.auto === true || m.auto === 'true';
     const catSelect = CATS_OPTS.map(([k,lb]) => `<option value="${k}" ${m.categoria===k?'selected':''}>${lb}</option>`).join('');
@@ -86,7 +84,7 @@ function cadastroRapidoMaterial(nomeDigitado, origem) {
             <label style="font-size:10px;letter-spacing:1px;color:var(--texto3);font-family:'Rajdhani',sans-serif;">CATEGORIA</label>
             <select id="cr-categoria" style="width:100%;background:var(--bg3);border:1px solid var(--borda2);border-radius:8px;padding:10px 8px;color:var(--branco);font-size:13px;margin-top:4px;">
               <option value="">— selecione —</option>
-              <option value="alvenaria">🧱 Alvenaria</option><option value="ferro">⚙ Aço / Ferro</option><option value="eletrica">⚡ Elétrica</option><option value="hidraulica">🚿 Hidráulica</option><option value="loucas">🛁 Louças e Metais</option><option value="esgoto">🪠 Esgoto</option><option value="cobertura">🏠 Cobertura</option><option value="esquadria">🪟 Esquadrias</option><option value="rev_cer">🟫 Revest. Cerâmico</option><option value="rev_arg">🟤 Revest. Argamassa</option><option value="pintura">🖌 Pintura</option><option value="impermeab">💧 Impermeabilização</option><option value="gesso">⬜ Gesso</option><option value="forma">🪵 Forma e Madeira</option><option value="ferramenta">🔨 Ferramentas</option><option value="epi">🦺 EPI / Segurança</option><option value="combustivel">⛽ Combustível</option><option value="limpeza">🧹 Limpeza</option><option value="alimentacao">🍽 Alimentação</option><option value="locacao">🏗 Locação de Equip.</option><option value="mao">👷 Mão de Obra</option><option value="imposto">🧾 Impostos / Encargos</option><option value="imobilizado">🖥 Imobilizado</option><option value="tecnologia">💻 Tecnologia / Assinaturas</option><option value="doc">📋 Documentação</option><option value="terreno">🏡 Terreno</option><option value="expediente">📎 Expediente</option><option value="generico">❓ Genérico</option><option value="outros">📦 Outros</option>
+              ${typeof ETAPAS !== 'undefined' ? ETAPAS.map(e => '<option value="'+e.key+'">'+e.lb+'</option>').join('') : ''}
             </select>
           </div>
         </div>
@@ -190,7 +188,12 @@ async function salvarCadastroRapido() {
 function abrirModalNovoMaterial() {
   document.getElementById('mat-nome').value = '';
   document.getElementById('mat-unidade').value = 'UN';
-  document.getElementById('mat-categoria').value = '';
+  // Popular select de categoria a partir do ETAPAS (fonte única)
+  const selCat = document.getElementById('mat-categoria');
+  if (selCat && typeof ETAPAS !== 'undefined') {
+    selCat.innerHTML = '<option value="">— Selecione —</option>' + ETAPAS.map(e => `<option value="${e.key}">${e.lb}</option>`).join('');
+  }
+  selCat.value = '';
   document.getElementById('modal-material-aviso').classList.add('hidden');
   document.getElementById('modal-material').classList.remove('hidden');
   setTimeout(() => document.getElementById('mat-nome').focus(), 100);
@@ -334,3 +337,377 @@ async function recalcularCategorias() {
 }
 
 function copiarSQL() { navigator.clipboard.writeText(SQL_SETUP).then(() => showToast('SQL COPIADO!')).catch(() => showToast('SELECIONE E COPIE MANUALMENTE.')); }
+
+// ══════════════════════════════════════════
+// RECONCILIAÇÃO DE ITENS ÓRFÃOS
+// ══════════════════════════════════════════
+let _orfaos = []; // lista de itens órfãos encontrados
+
+function abrirReconciliacao() {
+  document.getElementById('modal-reconciliar').classList.remove('hidden');
+  document.getElementById('reconciliar-loading').style.display = '';
+  document.getElementById('reconciliar-stats').style.display = 'none';
+  document.getElementById('reconciliar-lista').innerHTML = '';
+  document.getElementById('reconciliar-vazio').style.display = 'none';
+  setTimeout(escanearOrfaos, 100);
+}
+
+function escanearOrfaos() {
+  // Coletar TODAS as descrições de itens no sistema
+  const descMap = {}; // { descNorm: { desc, fontes: [{tipo, id, ...}], qtdTotal, valorTotal } }
+
+  function addDesc(descOriginal, tipo, ref) {
+    const n = norm(descOriginal);
+    if (!n || n.length < 2) return;
+    if (!descMap[n]) descMap[n] = { desc: descOriginal.toUpperCase(), fontes: [], qtdTotal: 0, valorTotal: 0 };
+    descMap[n].fontes.push({ tipo, ...ref });
+    descMap[n].qtdTotal += Number(ref.qtd || 0);
+    descMap[n].valorTotal += Number(ref.valor || 0);
+  }
+
+  // 1. Itens dentro das notas fiscais (JSON)
+  notas.forEach(n => {
+    const itens = parseItens(n);
+    itens.forEach((it, idx) => {
+      addDesc(it.desc, 'nf', { notaId: n.id, itemIdx: idx, nf: n.numero_nf, forn: n.fornecedor, qtd: it.qtd, valor: Number(it.qtd) * Number(it.preco) });
+    });
+  });
+
+  // 2. Entradas diretas
+  entradasDiretas.forEach(e => {
+    addDesc(e.item_desc, 'entrada', { id: e.id, qtd: e.qtd, valor: Number(e.qtd) * Number(e.preco) });
+  });
+
+  // 3. Distribuições
+  distribuicoes.forEach(d => {
+    addDesc(d.item_desc, 'dist', { id: d.id, obra: d.obra_nome, qtd: d.qtd, valor: d.valor });
+  });
+
+  // Filtrar: só os que NÃO têm match exato no catálogo
+  _orfaos = [];
+  for (const [nKey, item] of Object.entries(descMap)) {
+    const mat = getMaterialCatalogo(item.desc);
+    if (mat) continue; // tem match exato → não é órfão
+
+    // Tentar match fuzzy (reusar matchCatalogo do importar.js)
+    let sugestao = null;
+    if (typeof matchCatalogo === 'function') {
+      sugestao = matchCatalogo(item.desc);
+    }
+
+    _orfaos.push({
+      descNorm: nKey,
+      desc: item.desc,
+      fontes: item.fontes,
+      qtdTotal: item.qtdTotal,
+      valorTotal: item.valorTotal,
+      sugestao: sugestao, // { material, score, tipo } ou null
+    });
+  }
+
+  // Ordenar: com sugestão primeiro, depois por valor (maior impacto)
+  _orfaos.sort((a, b) => {
+    if (a.sugestao && !b.sugestao) return -1;
+    if (!a.sugestao && b.sugestao) return 1;
+    return b.valorTotal - a.valorTotal;
+  });
+
+  renderReconciliacao();
+}
+
+function renderReconciliacao() {
+  document.getElementById('reconciliar-loading').style.display = 'none';
+  const listaEl = document.getElementById('reconciliar-lista');
+  const statsEl = document.getElementById('reconciliar-stats');
+  const vazioEl = document.getElementById('reconciliar-vazio');
+
+  if (!_orfaos.length) {
+    listaEl.innerHTML = '';
+    statsEl.style.display = 'none';
+    vazioEl.style.display = '';
+    return;
+  }
+
+  vazioEl.style.display = 'none';
+  const comSugestao = _orfaos.filter(o => o.sugestao && o.sugestao.score >= 55).length;
+  const semSugestao = _orfaos.length - comSugestao;
+  const totalValor = _orfaos.reduce((s, o) => s + o.valorTotal, 0);
+
+  statsEl.style.display = '';
+  statsEl.innerHTML = `
+    <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;">
+      <div><span style="font-size:22px;font-weight:800;color:#fbbf24;">${_orfaos.length}</span> <span style="font-size:11px;color:var(--texto3);">itens órfãos</span></div>
+      <div><span style="font-size:14px;font-weight:700;color:var(--verde-hl);">${comSugestao}</span> <span style="font-size:11px;color:var(--texto3);">com sugestão</span></div>
+      <div><span style="font-size:14px;font-weight:700;color:var(--vermelho);">${semSugestao}</span> <span style="font-size:11px;color:var(--texto3);">sem match</span></div>
+      <div class="admin-only"><span style="font-size:11px;color:var(--texto3);">Valor total:</span> <span style="font-weight:700;color:var(--branco);">${fmtR(totalValor)}</span></div>
+    </div>
+    <div style="margin-top:8px;display:flex;gap:8px;">
+      <button onclick="reconciliarTodosComSugestao()" style="background:rgba(46,204,113,0.08);border:1px solid rgba(46,204,113,0.25);color:var(--verde-hl);border-radius:8px;padding:6px 14px;font-size:11px;font-weight:700;font-family:'Rajdhani',sans-serif;cursor:pointer;letter-spacing:1px;">✅ VINCULAR TODOS COM SCORE ≥ 80</button>
+    </div>`;
+
+  listaEl.innerHTML = _orfaos.map((o, i) => {
+    const nfs = o.fontes.filter(f => f.tipo === 'nf').length;
+    const entradas = o.fontes.filter(f => f.tipo === 'entrada').length;
+    const dists = o.fontes.filter(f => f.tipo === 'dist').length;
+    const fontesStr = [
+      nfs ? `${nfs} NF` : '',
+      entradas ? `${entradas} entrada${entradas > 1 ? 's' : ''}` : '',
+      dists ? `${dists} distrib.` : ''
+    ].filter(Boolean).join(' · ');
+
+    const sug = o.sugestao;
+    const scoreColor = sug ? (sug.score >= 80 ? 'var(--verde-hl)' : sug.score >= 60 ? '#fbbf24' : 'var(--vermelho)') : '';
+
+    return `<div class="reconciliar-item" id="orfao-${i}" style="background:var(--bg2);border:1px solid var(--borda);border-radius:12px;padding:14px;margin-bottom:8px;border-left:3px solid ${sug ? (sug.score >= 80 ? 'var(--verde-hl)' : '#fbbf24') : 'var(--vermelho)'};">
+      <div style="display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:200px;">
+          <div style="font-weight:700;font-size:14px;color:var(--branco);">${o.desc}</div>
+          <div style="font-size:10px;color:var(--texto3);margin-top:3px;">${fontesStr} · Qtd: ${o.qtdTotal % 1 === 0 ? o.qtdTotal : o.qtdTotal.toFixed(2)} · <span class="admin-only">${fmtR(o.valorTotal)}</span></div>
+        </div>
+        ${sug ? `
+          <div style="flex:1;min-width:200px;background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.12);border-radius:8px;padding:8px 10px;">
+            <div style="font-size:9px;font-weight:700;letter-spacing:1px;color:var(--texto3);margin-bottom:4px;">SUGESTÃO (${sug.tipo})</div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-family:monospace;font-size:10px;color:var(--verde-hl);background:rgba(46,204,113,0.1);padding:2px 6px;border-radius:4px;">${sug.material.codigo}</span>
+              <span style="font-size:12px;color:var(--branco);flex:1;">${sug.material.nome}</span>
+              <span style="font-size:11px;font-weight:800;color:${scoreColor};">${sug.score}%</span>
+            </div>
+          </div>` : `
+          <div style="flex:1;min-width:200px;background:rgba(239,68,68,0.04);border:1px solid rgba(239,68,68,0.15);border-radius:8px;padding:8px 10px;">
+            <div style="font-size:10px;color:var(--vermelho);font-weight:700;">Nenhum match encontrado</div>
+          </div>`}
+      </div>
+      <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;">
+        ${sug ? `<button onclick="reconciliarVincular(${i})" style="background:rgba(46,204,113,0.08);border:1px solid rgba(46,204,113,0.25);color:var(--verde-hl);border-radius:6px;padding:5px 12px;font-size:11px;font-weight:700;font-family:'Rajdhani',sans-serif;cursor:pointer;">✅ VINCULAR A ${sug.material.codigo}</button>` : ''}
+        <button onclick="reconciliarBuscar(${i})" style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.25);color:#60a5fa;border-radius:6px;padding:5px 12px;font-size:11px;font-weight:700;font-family:'Rajdhani',sans-serif;cursor:pointer;">🔍 BUSCAR MANUALMENTE</button>
+        <button onclick="reconciliarCadastrar(${i})" style="background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.25);color:#fbbf24;border-radius:6px;padding:5px 12px;font-size:11px;font-weight:700;font-family:'Rajdhani',sans-serif;cursor:pointer;">➕ CADASTRAR NOVO</button>
+        <button onclick="reconciliarExcluir(${i})" style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);color:#f87171;border-radius:6px;padding:5px 12px;font-size:11px;font-weight:700;font-family:'Rajdhani',sans-serif;cursor:pointer;">🗑 EXCLUIR</button>
+      </div>
+      <div id="orfao-busca-${i}" style="display:none;margin-top:10px;"></div>
+    </div>`;
+  }).join('');
+}
+
+// Vincular órfão a um material do catálogo
+async function reconciliarVincular(idx, matOverride) {
+  const o = _orfaos[idx];
+  if (!o) return;
+  const mat = matOverride || o.sugestao?.material;
+  if (!mat) { showToast('Sem material para vincular.'); return; }
+
+  const el = document.getElementById(`orfao-${idx}`);
+  if (el) el.style.opacity = '0.5';
+
+  const novoNome = mat.nome;
+  let atualizados = 0;
+
+  try {
+    // 1. Atualizar itens dentro das notas fiscais (JSON)
+    const notasAfetadas = new Set();
+    for (const f of o.fontes) {
+      if (f.tipo === 'nf') notasAfetadas.add(f.notaId);
+    }
+    for (const notaId of notasAfetadas) {
+      const nota = notas.find(n => n.id === notaId);
+      if (!nota) continue;
+      const itens = parseItens(nota);
+      let mudou = false;
+      itens.forEach(it => {
+        if (norm(it.desc) === o.descNorm) { it.desc = novoNome; mudou = true; }
+      });
+      if (mudou) {
+        const novoJson = JSON.stringify(itens);
+        await sbPatch('notas_fiscais', `?id=eq.${notaId}`, { itens: novoJson });
+        nota.itens = novoJson;
+        atualizados++;
+      }
+    }
+
+    // 2. Atualizar entradas_diretas
+    for (const f of o.fontes) {
+      if (f.tipo === 'entrada') {
+        await sbPatch('entradas_diretas', `?id=eq.${f.id}`, { item_desc: novoNome });
+        const ed = entradasDiretas.find(e => e.id === f.id);
+        if (ed) ed.item_desc = novoNome;
+        atualizados++;
+      }
+    }
+
+    // 3. Atualizar distribuições
+    for (const f of o.fontes) {
+      if (f.tipo === 'dist') {
+        await sbPatch('distribuicoes', `?id=eq.${f.id}`, { item_desc: novoNome });
+        const d = distribuicoes.find(x => x.id === f.id);
+        if (d) d.item_desc = novoNome;
+        atualizados++;
+      }
+    }
+
+    // Remover da lista de órfãos
+    _orfaos.splice(idx, 1);
+    renderReconciliacao();
+    showToast(`✅ "${o.desc}" → ${mat.codigo} · ${novoNome} (${atualizados} registro${atualizados !== 1 ? 's' : ''} atualizado${atualizados !== 1 ? 's' : ''})`);
+  } catch (e) {
+    console.error('Erro ao reconciliar:', e);
+    showToast('❌ ERRO AO VINCULAR. Tente novamente.');
+    if (el) el.style.opacity = '1';
+  }
+}
+
+// Vincular todos com score >= 80 de uma vez
+async function reconciliarTodosComSugestao() {
+  const candidatos = _orfaos.filter(o => o.sugestao && o.sugestao.score >= 80);
+  if (!candidatos.length) { showToast('Nenhum item com score >= 80.'); return; }
+  if (!confirm(`Vincular automaticamente ${candidatos.length} item(ns) com score ≥ 80%?\n\nIsso vai atualizar as descrições nas notas, entradas e distribuições.`)) return;
+
+  let ok = 0;
+  // Processar de trás pra frente pra não bagunçar os índices
+  for (let i = _orfaos.length - 1; i >= 0; i--) {
+    const o = _orfaos[i];
+    if (o.sugestao && o.sugestao.score >= 80) {
+      try {
+        await reconciliarVincular(i);
+        ok++;
+      } catch (e) {}
+    }
+  }
+  showToast(`✅ ${ok} item(ns) vinculado(s) automaticamente!`);
+}
+
+// Buscar manualmente no catálogo
+function reconciliarBuscar(idx) {
+  const o = _orfaos[idx];
+  const buscaEl = document.getElementById(`orfao-busca-${idx}`);
+  if (!buscaEl) return;
+
+  if (buscaEl.style.display !== 'none') { buscaEl.style.display = 'none'; return; }
+
+  buscaEl.style.display = '';
+  buscaEl.innerHTML = `
+    <div style="display:flex;gap:8px;align-items:center;">
+      <input type="text" id="orfao-busca-input-${idx}" placeholder="Buscar no catálogo..." value="${o.desc}"
+        style="flex:1;background:var(--bg3);border:1px solid var(--borda2);border-radius:8px;padding:8px 12px;color:var(--branco);font-size:12px;font-family:inherit;"
+        oninput="reconciliarFiltrar(${idx}, this.value)">
+    </div>
+    <div id="orfao-busca-resultados-${idx}" style="margin-top:8px;max-height:200px;overflow-y:auto;"></div>`;
+
+  setTimeout(() => {
+    const input = document.getElementById(`orfao-busca-input-${idx}`);
+    if (input) { input.focus(); input.select(); }
+    reconciliarFiltrar(idx, o.desc);
+  }, 50);
+}
+
+function reconciliarFiltrar(idx, busca) {
+  const resEl = document.getElementById(`orfao-busca-resultados-${idx}`);
+  if (!resEl) return;
+  const q = norm(busca);
+  if (!q || q.length < 2) { resEl.innerHTML = '<div style="font-size:11px;color:var(--texto3);padding:8px;">Digite pelo menos 2 caracteres...</div>'; return; }
+
+  // Buscar por nome e código
+  let resultados = catalogoMateriais.filter(m => norm(m.nome).includes(q) || m.codigo.includes(q)).slice(0, 10);
+
+  // Se poucos resultados, tentar match fuzzy
+  if (resultados.length < 3 && typeof calcSimilaridade === 'function') {
+    const scored = catalogoMateriais.map(m => ({ m, score: calcSimilaridade(limparParaMatch(busca), limparParaMatch(m.nome)) }))
+      .filter(x => x.score >= 40)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 8);
+    // Merge sem duplicatas
+    for (const s of scored) {
+      if (!resultados.find(r => r.id === s.m.id)) resultados.push(s.m);
+    }
+  }
+
+  if (!resultados.length) {
+    resEl.innerHTML = '<div style="font-size:11px;color:var(--texto3);padding:8px;">Nenhum resultado encontrado.</div>';
+    return;
+  }
+
+  resEl.innerHTML = resultados.map(m => `
+    <div onclick="reconciliarVincular(${idx}, catalogoMateriais.find(x=>x.codigo==='${m.codigo}'))"
+      style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:6px;cursor:pointer;background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.1);margin-bottom:4px;transition:background 0.15s;"
+      onmouseover="this.style.background='rgba(46,204,113,0.12)'" onmouseout="this.style.background='rgba(46,204,113,0.04)'">
+      <span style="font-family:monospace;font-size:10px;color:var(--verde-hl);background:rgba(46,204,113,0.1);padding:2px 6px;border-radius:4px;">${m.codigo}</span>
+      <span style="font-size:12px;color:var(--branco);flex:1;">${m.nome}</span>
+      <span style="font-size:10px;color:var(--verde-hl);font-weight:700;">VINCULAR →</span>
+    </div>`).join('');
+}
+
+// Cadastrar item órfão como novo no catálogo
+async function reconciliarCadastrar(idx) {
+  const o = _orfaos[idx];
+  if (!o) return;
+
+  // Gerar próximo código
+  const proxNum = catalogoMateriais.length > 0 ? Math.max(...catalogoMateriais.map(m => parseInt(m.codigo) || 0)) + 1 : 1;
+  const codigo = String(proxNum).padStart(6, '0');
+  const categoria = getCatEstoque(o.desc) || '';
+
+  try {
+    const [saved] = await sbPost('materiais', { codigo, nome: o.desc, unidade: 'UN', categoria });
+    catalogoMateriais.push(saved);
+    catalogoMateriais.sort((a, b) => a.codigo.localeCompare(b.codigo));
+
+    // Agora vincular automaticamente
+    await reconciliarVincular(idx, saved);
+    showToast(`✅ ${codigo} · ${o.desc} cadastrado e vinculado!`);
+  } catch (e) {
+    console.error(e);
+    showToast('❌ ERRO AO CADASTRAR.');
+  }
+}
+
+// Excluir todas as referências do item órfão
+async function reconciliarExcluir(idx) {
+  const o = _orfaos[idx];
+  if (!o) return;
+  const nfs = o.fontes.filter(f => f.tipo === 'nf');
+  const entradas = o.fontes.filter(f => f.tipo === 'entrada');
+  const dists = o.fontes.filter(f => f.tipo === 'dist');
+
+  const msg = `Excluir "${o.desc}" de TODOS os registros?\n\n` +
+    (nfs.length ? `• ${nfs.length} item(ns) em notas fiscais (será removido do JSON)\n` : '') +
+    (entradas.length ? `• ${entradas.length} entrada(s) direta(s) (será deletada)\n` : '') +
+    (dists.length ? `• ${dists.length} distribuição(ões) (será deletada)\n` : '') +
+    `\n⚠ Essa ação NÃO pode ser desfeita!`;
+  if (!confirm(msg)) return;
+
+  const el = document.getElementById(`orfao-${idx}`);
+  if (el) el.style.opacity = '0.5';
+
+  try {
+    // 1. Remover item do JSON das notas
+    const notasAfetadas = new Set();
+    for (const f of nfs) notasAfetadas.add(f.notaId);
+    for (const notaId of notasAfetadas) {
+      const nota = notas.find(n => n.id === notaId);
+      if (!nota) continue;
+      let itens = parseItens(nota);
+      itens = itens.filter(it => norm(it.desc) !== o.descNorm);
+      const novoJson = JSON.stringify(itens);
+      await sbPatch('notas_fiscais', `?id=eq.${notaId}`, { itens: novoJson });
+      nota.itens = novoJson;
+    }
+
+    // 2. Deletar entradas diretas
+    for (const f of entradas) {
+      await sbDelete('entradas_diretas', `?id=eq.${f.id}`);
+      entradasDiretas = entradasDiretas.filter(e => e.id !== f.id);
+    }
+
+    // 3. Deletar distribuições
+    for (const f of dists) {
+      await sbDelete('distribuicoes', `?id=eq.${f.id}`);
+      distribuicoes = distribuicoes.filter(d => d.id !== f.id);
+    }
+
+    _orfaos.splice(idx, 1);
+    renderReconciliacao();
+    showToast(`🗑 "${o.desc}" excluído de ${nfs.length + entradas.length + dists.length} registro(s).`);
+  } catch (e) {
+    console.error(e);
+    showToast('❌ ERRO AO EXCLUIR.');
+    if (el) el.style.opacity = '1';
+  }
+}

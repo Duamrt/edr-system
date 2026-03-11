@@ -1,31 +1,45 @@
 const MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 const MESES_FULL = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 const CAT_CORES = {
+  // Keys legadas (usadas em dados existentes)
   alimentacao:'#e67e22',alvenaria:'#95a5a6',cobertura:'#e74c3c',combustivel:'#f39c12',
   doc:'#9b59b6',eletrica:'#f1c40f',epi:'#1abc9c',esgoto:'#7f8c8d',esquadria:'#3498db',
   expediente:'#bdc3c7',ferro:'#7f8c8d',ferramenta:'#e67e22',forma:'#8e44ad',
   gesso:'#ecf0f1',granito:'#95a5a6',hidraulica:'#2980b9',impermeab:'#16a085',
   limpeza:'#27ae60',locacao:'#d35400',loucas:'#2ecc71',mao:'#e74c3c',
-  pintura:'#f39c12',rev_cer:'#c0392b',terreno:'#6d4c41',generico:'#7f8c8d',outros:'#546e7a'
+  pintura:'#f39c12',rev_cer:'#c0392b',terreno:'#6d4c41',generico:'#7f8c8d',outros:'#546e7a',
+  tecnologia:'#6366f1',imobilizado:'#64748b',imposto:'#a855f7',
+  // Keys numeradas do ETAPAS
+  '01_terreno':'#6d4c41','02_doc':'#9b59b6','03_prelim':'#78909c','04_terra':'#8d6e63',
+  '05_fund':'#455a64','06_estrut':'#546e7a','07_alven':'#95a5a6','08_cobr':'#e74c3c',
+  '09_elet':'#f1c40f','10_hidro':'#2980b9','10b_esgoto':'#7f8c8d','11_esquad':'#3498db',
+  '12_revestc':'#c0392b','12b_revarg':'#a1887f','13_pintura':'#f39c12','13b_gesso':'#ecf0f1',
+  '13c_impermeab':'#16a085','13d_granito':'#95a5a6','13e_loucas':'#2ecc71',
+  '14_acab':'#ff7043','15_locacao':'#d35400','16_externo':'#66bb6a','17_limpeza':'#27ae60',
+  '00_outros':'#546e7a'
 };
 
 function getCatLabel(key) {
-  // Fonte única: consulta ETAPAS (definido em obras.js) + extras do estoque
-  const extras = {
-    alvenaria:'🧱 Alvenaria',cobertura:'🏠 Cobertura',eletrica:'⚡ Elétrica',
-    esgoto:'🪠 Esgoto',esquadria:'🪟 Esquadrias',ferro:'⚙ Aço / Ferro',aco:'⚙ Aço / Ferro',
-    forma:'🪵 Forma e Madeira',gesso:'⬜ Gesso',granito:'🪨 Granito / Pedra',
-    hidraulica:'🚿 Hidráulica',impermeab:'💧 Impermeabilização',limpeza:'🧹 Limpeza',
-    locacao:'🏗 Locação de Equip.',loucas:'🛁 Louças e Metais',
-    pintura:'🖌 Pintura',rev_cer:'🟫 Revest. Cerâmico',rev_arg:'🟤 Revest. Argamassa',
-    terreno:'🏡 Terreno',generico:'❓ Genérico',outros:'📦 Outros'
+  // Fonte única: consulta ETAPAS (definido em obras.js)
+  // Mapa de aliases para keys legadas/do estoque → key oficial do ETAPAS
+  const ALIAS = {
+    alvenaria:'07_alven', cobertura:'08_cobr', eletrica:'09_elet',
+    esgoto:'10b_esgoto', esquadria:'11_esquad', aco:'ferro',
+    hidraulica:'10_hidro', limpeza:'17_limpeza', locacao:'15_locacao',
+    loucas:'13e_loucas', pintura:'13_pintura', rev_cer:'12_revestc',
+    rev_arg:'12b_revarg', gesso:'13b_gesso', granito:'13d_granito',
+    impermeab:'13c_impermeab', terreno:'01_terreno', prelim:'03_prelim',
+    fundacao:'05_fund', estrutura:'06_estrut', outros:'00_outros'
   };
-  // Primeiro tenta no ETAPAS (fonte principal, compartilhada)
+  const resolvedKey = ALIAS[key] || key;
   if (typeof ETAPAS !== 'undefined') {
-    const etapa = ETAPAS.find(e => e.key === key);
+    const etapa = ETAPAS.find(e => e.key === resolvedKey);
     if (etapa) return etapa.lb;
+    // Tentar key original caso alias não bata
+    const etapa2 = ETAPAS.find(e => e.key === key);
+    if (etapa2) return etapa2.lb;
   }
-  return extras[key] || '📦 ' + (key||'Outros');
+  return '📦 ' + (key||'Outros');
 }
 
 function getCatFromLanc(l) {

@@ -12,13 +12,17 @@ function initCATS() {
   const keyMap = { 'aco':'ferro' }; // aco→ferro para manter compatibilidade com dados existentes
   CATS_ESTOQUE.forEach(cat => {
     const key = keyMap[cat.key] || cat.key;
-    if (key === 'prelim' || key === 'fundacao' || key === 'estrutura' || key === 'rev_arg' || key === 'expediente') return;
     CATS[key] = { lb: cat.lb, fn: r => cat.fn((r.descricao||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')) };
   });
 }
 
 function renderObrasView() {
   document.getElementById('obras-loading')?.classList.add('hidden');
+  // Popular select de filtro de centro de custo a partir do ETAPAS
+  const selCatFiltro = document.getElementById('obras-filtro-cat');
+  if (selCatFiltro && selCatFiltro.options.length <= 1) {
+    selCatFiltro.innerHTML = '<option value="">Todos centros de custo</option>' + ETAPAS.map(e => `<option value="${e.key}">${e.lb}</option>`).join('');
+  }
   // Chips de categoria
   const chipsEl = document.getElementById('obras-chips');
   if (chipsEl) {
@@ -393,6 +397,7 @@ function filtrarLanc() {
 // ETAPAS CONSTRUTIVAS — Centro de Custo
 // ══════════════════════════════════════════
 const ETAPAS = [
+  // ── Etapas construtivas (numeradas) ──
   { key:'01_terreno',    lb:'🏛 01 · Terreno' },
   { key:'02_doc',        lb:'📋 02 · Documentação / Licenças' },
   { key:'03_prelim',     lb:'⛏ 03 · Serviços Preliminares' },
@@ -402,14 +407,23 @@ const ETAPAS = [
   { key:'07_alven',      lb:'🧱 07 · Alvenaria' },
   { key:'08_cobr',       lb:'🏠 08 · Cobertura' },
   { key:'09_elet',       lb:'⚡ 09 · Elétrica' },
-  { key:'10_hidro',      lb:'🚿 10 · Hidráulica / Esgoto' },
+  { key:'10_hidro',      lb:'🚿 10 · Hidráulica' },
+  { key:'10b_esgoto',    lb:'🪠 10b · Esgoto' },
   { key:'11_esquad',     lb:'🪟 11 · Esquadrias' },
   { key:'12_revestc',    lb:'🟫 12 · Revestimento Cerâmico' },
+  { key:'12b_revarg',    lb:'🪣 12b · Revestimento Argamassa' },
   { key:'13_pintura',    lb:'🖌 13 · Pintura' },
+  { key:'13b_gesso',     lb:'⬜ 13b · Gesso' },
+  { key:'13c_impermeab', lb:'💧 13c · Impermeabilização' },
+  { key:'13d_granito',   lb:'🪨 13d · Granito / Pedra' },
+  { key:'13e_loucas',    lb:'🛁 13e · Louças e Metais' },
   { key:'14_acab',       lb:'✨ 14 · Acabamento Final' },
   { key:'15_locacao',    lb:'🏗 15 · Locação / Máq. / Equip.' },
   { key:'16_externo',    lb:'🌿 16 · Área Externa' },
   { key:'17_limpeza',    lb:'🧹 17 · Limpeza Final' },
+  // ── Categorias gerais (sem numerar) ──
+  { key:'ferro',         lb:'⚙ Aço / Ferro' },
+  { key:'forma',         lb:'🪵 Forma e Madeira' },
   { key:'combustivel',   lb:'⛽ Combustível' },
   { key:'alimentacao',   lb:'🍽 Alimentação' },
   { key:'mao',           lb:'👷 Mão de Obra' },
@@ -418,7 +432,9 @@ const ETAPAS = [
   { key:'ferramenta',    lb:'🔨 Ferramentas' },
   { key:'expediente',    lb:'📎 Expediente' },
   { key:'imobilizado',   lb:'🖥 Imobilizado' },
+  { key:'tecnologia',    lb:'💻 Tecnologia / Assinaturas' },
   { key:'doc',           lb:'📋 Documentação' },
+  { key:'generico',      lb:'❓ Genérico' },
   { key:'00_outros',     lb:'📦 Não classificado' },
 ];
 function etapaLabel(key) {
