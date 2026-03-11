@@ -199,8 +199,7 @@ async function initDiarias() {
 // ────────────────────────────────────────────
 async function diarCarregarQuinzenas() {
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/diarias_quinzenas?order=data_inicio.desc&limit=20`, { headers: hdrs });
-    diarQuinzenas = await res.json();
+    diarQuinzenas = await sbGet('diarias_quinzenas', '?order=data_inicio.desc&limit=20');
     if (!Array.isArray(diarQuinzenas)) diarQuinzenas = [];
   } catch(e) { diarQuinzenas = []; }
   if (!diarQuinzenas.length) { await diarCriarQuinzenaAuto(); return; }
@@ -222,11 +221,7 @@ async function diarCriarQuinzenaAuto() {
   const inicio = q===1 ? `${ano}-${String(mes).padStart(2,'0')}-01` : `${ano}-${String(mes).padStart(2,'0')}-16`;
   const fim    = q===1 ? `${ano}-${String(mes).padStart(2,'0')}-15` : new Date(ano,mes,0).toISOString().split('T')[0];
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/diarias_quinzenas`, {
-      method: 'POST', headers: { ...hdrs, 'Prefer': 'return=representation' },
-      body: JSON.stringify({ label, data_inicio: inicio, data_fim: fim })
-    });
-    const [nova] = await res.json();
+    const [nova] = await sbPost('diarias_quinzenas', { label, data_inicio: inicio, data_fim: fim });
     diarQuinzenas = [nova]; diarQuinzenaAtiva = nova;
   } catch(e) {}
   diarAtualizarSelectQuinzena();
@@ -248,7 +243,7 @@ async function diarExcluirQuinzena() {
 
 Essa ação não pode ser desfeita.`)) return;
   try {
-    await fetch(`${SUPABASE_URL}/rest/v1/diarias_quinzenas?id=eq.${diarQuinzenaAtiva.id}`, { method: 'DELETE', headers: hdrs });
+    await sbDelete('diarias_quinzenas', `?id=eq.${diarQuinzenaAtiva.id}`);
     diarQuinzenas = diarQuinzenas.filter(q => q.id !== diarQuinzenaAtiva.id);
     diarQuinzenaAtiva = diarQuinzenas[0] || null;
     diarRegistros = []; diarExtras = [];
@@ -270,10 +265,10 @@ async function diarCarregarRegistros() {
   if (!diarQuinzenaAtiva) return;
   try {
     const [r1, r2] = await Promise.all([
-      fetch(`${SUPABASE_URL}/rest/v1/diarias?quinzena_id=eq.${diarQuinzenaAtiva.id}&order=data.desc`, { headers: hdrs }),
-      fetch(`${SUPABASE_URL}/rest/v1/diarias_extras?quinzena_id=eq.${diarQuinzenaAtiva.id}`, { headers: hdrs })
+      sbGet('diarias', `?quinzena_id=eq.${diarQuinzenaAtiva.id}&order=data.desc`),
+      sbGet('diarias_extras', `?quinzena_id=eq.${diarQuinzenaAtiva.id}`)
     ]);
-    diarRegistros = await r1.json(); diarExtras = await r2.json();
+    diarRegistros = r1; diarExtras = r2;
     if (!Array.isArray(diarRegistros)) diarRegistros = [];
     if (!Array.isArray(diarExtras))    diarExtras = [];
   } catch(e) { diarRegistros = []; diarExtras = []; }
@@ -328,13 +323,8 @@ async function diarSalvarNovaQuinzena() {
   const fim    = document.getElementById('nq-fim')?.value;
   if (!label||!inicio||!fim) { showToast('Preencha todos os campos'); return; }
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/diarias_quinzenas`, {
-      method: 'POST', headers: { ...hdrs, 'Prefer': 'return=representation' },
-      body: JSON.stringify({ label, data_inicio: inicio, data_fim: fim, fechada: false })
-    });
-    const data = await res.json();
-    if (!res.ok) { console.error('Erro Supabase:', data); showToast('Erro: ' + (data?.message || data?.hint || JSON.stringify(data))); return; }
-    const nova = Array.isArray(data) ? data[0] : data;
+    const result = await sbPost('diarias_quinzenas', { label, data_inicio: inicio, data_fim: fim, fechada: false });
+    const nova = Array.isArray(result) ? result[0] : result;
     if (!nova?.id) { showToast('Erro: resposta inválida do servidor'); return; }
     document.getElementById('diar-modalNQ')?.remove();
     diarQuinzenas.unshift(nova); diarQuinzenaAtiva = nova;
@@ -586,7 +576,7 @@ async function diarConfirmarLancamento() {
     // Remover registros do mesmo dia nessa quinzena
     const existentes = diarRegistros.filter(r => r.data === diarInterpretado.data);
     for (const r of existentes) {
-      await fetch(`${SUPABASE_URL}/rest/v1/diarias?id=eq.${r.id}`, { method: 'DELETE', headers: hdrs });
+      await sbDelete('diarias', `?id=eq.${r.id}`);
     }
     // Inserir novos
     const novos = diarInterpretado.registros.map(r => ({
@@ -597,10 +587,7 @@ async function diarConfirmarLancamento() {
       total_fracoes: r.total_fracoes, valor: r.diaria_base * r.total_fracoes,
       criado_por: usuarioAtual?.nome || ''
     }));
-    await fetch(`${SUPABASE_URL}/rest/v1/diarias`, {
-      method: 'POST', headers: { ...hdrs, 'Prefer': 'return=minimal' },
-      body: JSON.stringify(novos)
-    });
+    await sbPostMinimal('diarias', novos);
     diarInterpretado = null;
     document.getElementById('diar-msgInput').value = '';
     document.getElementById('diar-previewBox').innerHTML =
@@ -692,7 +679,7 @@ function diarRenderRegistros() {
 async function diarDeletarDia(data) {
   if (!confirm(`Remover todos os registros de ${data}?`)) return;
   try {
-    await fetch(`${SUPABASE_URL}/rest/v1/diarias?quinzena_id=eq.${diarQuinzenaAtiva.id}&data=eq.${data}`, { method: 'DELETE', headers: hdrs });
+    await sbDelete('diarias', `?quinzena_id=eq.${diarQuinzenaAtiva.id}&data=eq.${data}`);
     await diarCarregarRegistros();
     diarRenderRegistros();
     showToast('Registros removidos');
@@ -816,11 +803,7 @@ async function diarSalvarExtra() {
   if (!valor||valor<=0) { showToast('Informe um valor válido'); return; }
   if (!obra)  { showToast('Selecione a obra'); return; }
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/diarias_extras`, {
-      method: 'POST', headers: { ...hdrs, 'Prefer': 'return=representation' },
-      body: JSON.stringify({ quinzena_id: diarQuinzenaAtiva.id, funcionario: func, descricao: desc, valor, obra })
-    });
-    const [novo] = await res.json();
+    const [novo] = await sbPost('diarias_extras', { quinzena_id: diarQuinzenaAtiva.id, funcionario: func, descricao: desc, valor, obra });
     diarExtras.push(novo);
     diarFecharModalExtra(); diarRenderExtras(); diarRenderFolha();
     showToast('✅ Extra registrado!');
@@ -830,7 +813,7 @@ async function diarSalvarExtra() {
 async function diarExcluirExtra(id) {
   if (!confirm('Remover este extra?')) return;
   try {
-    await fetch(`${SUPABASE_URL}/rest/v1/diarias_extras?id=eq.${id}`, { method: 'DELETE', headers: hdrs });
+    await sbDelete('diarias_extras', `?id=eq.${id}`);
     diarExtras = diarExtras.filter(e => e.id !== id);
     diarRenderExtras(); diarRenderFolha();
     showToast('Extra removido.');
@@ -1115,10 +1098,7 @@ function diarGerarPDF(regs) {
 async function diarBuscarObras() {
   if (_diarObrasCache) return _diarObrasCache;
   try {
-    const resp = await fetch(`${SUPABASE_URL}/rest/v1/obras?select=id,nome&arquivada=eq.false&order=nome.asc`,
-      { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } });
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    const lista = await resp.json();
+    const lista = await sbGet('obras', '?select=id,nome&arquivada=eq.false&order=nome.asc');
     _diarObrasCache = {};
     lista.forEach(o => { _diarObrasCache[o.nome.toUpperCase()] = o.id; });
     return _diarObrasCache;
@@ -1183,15 +1163,9 @@ async function diarConfirmarLancamentosEDR() {
     const obra = row.dataset.obra; const valor = parseFloat(row.dataset.valor); const obraId = row.dataset.id;
     if (!obraId) { statusEl.innerHTML += `<div style="color:#f87171">⚠️ ${obra}: sem ID, pulando</div>`; erro++; continue; }
     try {
-      const resp = await fetch(`${SUPABASE_URL}/rest/v1/lancamentos`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Prefer': 'return=minimal' },
-        body: JSON.stringify({ obra_id: obraId, descricao: 'MAO DE OBRA', qtd: 1, preco: valor, total: valor, data: hoje, obs, etapa: '28_mao' })
-      });
-      if (resp.ok || resp.status === 201) {
-        statusEl.innerHTML += `<div style="color:var(--verde-hl)">✅ ${obra}: R$ ${valor.toLocaleString('pt-BR',{minimumFractionDigits:2})} lançado</div>`;
-        ok++;
-      } else { statusEl.innerHTML += `<div style="color:#f87171">❌ ${obra}: erro ${resp.status}</div>`; erro++; }
+      await sbPostMinimal('lancamentos', { obra_id: obraId, descricao: 'MAO DE OBRA', qtd: 1, preco: valor, total: valor, data: hoje, obs, etapa: '28_mao' });
+      statusEl.innerHTML += `<div style="color:var(--verde-hl)">✅ ${obra}: R$ ${valor.toLocaleString('pt-BR',{minimumFractionDigits:2})} lançado</div>`;
+      ok++;
     } catch(e) { statusEl.innerHTML += `<div style="color:#f87171">❌ ${obra}: ${e.message}</div>`; erro++; }
   }
   btn.textContent = ok > 0 ? `✅ ${ok} lançado(s)${erro > 0 ? ` / ⚠️ ${erro} erro(s)` : ''}` : '❌ Falhou';
