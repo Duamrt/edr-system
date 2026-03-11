@@ -10,10 +10,9 @@ const hdrs = { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`
 // Fallback completo — usado se Supabase não tiver tabela 'usuarios' ainda
 // Após rodar o SQL de setup, os usuários ficam no Supabase e este array é substituído
 let USUARIOS = [
-  { usuario: 'duamrt',   senha: 'duanxdzin20', perfil: 'admin',       nome: 'Duamrt',        ativo: true },
   { usuario: 'elydart',  senha: '1202elyd@',   perfil: 'admin',       nome: 'Elyda',         ativo: true },
-  { usuario: 'admin',    senha: 'admin123',    perfil: 'admin',       nome: 'Administrador', ativo: true },
-  { usuario: 'operador', senha: 'op123',       perfil: 'operacional', nome: 'Operador',      ativo: true },
+  { usuario: 'admin',    senha: 'admin321',    perfil: 'admin',       nome: 'Duam',          ativo: true },
+  { usuario: 'mikael',   senha: 'op123',       perfil: 'operacional', nome: 'Mikael',        ativo: true },
   { usuario: 'anderson', senha: 'mestre123',   perfil: 'mestre',      nome: 'Anderson',      ativo: true },
   { usuario: 'visitante',senha: 'edr2024',     perfil: 'visitante',   nome: 'Visitante',     ativo: true },
 ];
@@ -159,7 +158,16 @@ create table if not exists repasses_cef (
   criado_em timestamptz default now()
 );
 alter table repasses_cef enable row level security;
-create policy "repasses_cef_all" on repasses_cef for all using (true) with check (true);`;
+create policy "repasses_cef_all" on repasses_cef for all using (true) with check (true);
+
+-- Rastreamento: quem fez cada lançamento
+alter table lancamentos add column if not exists criado_por text default '';
+alter table notas_fiscais add column if not exists criado_por text default '';
+alter table distribuicoes add column if not exists criado_por text default '';
+alter table entradas_diretas add column if not exists criado_por text default '';
+alter table repasses_cef add column if not exists criado_por text default '';
+alter table obra_adicionais add column if not exists criado_por text default '';
+alter table adicional_pagamentos add column if not exists criado_por text default '';`;
 
 // ══════════════════════════════════════════
 // ESTADO

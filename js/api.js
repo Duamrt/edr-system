@@ -8,7 +8,13 @@ async function sbGet(t, q='') {
     return r.json();
   } catch(e) { clearTimeout(timer); throw e; }
 }
+const _TABELAS_RASTREIO = ['lancamentos','notas_fiscais','distribuicoes','entradas_diretas','repasses_cef','obra_adicionais','adicional_pagamentos','diarias'];
+function _addCriadoPor(t, b) {
+  if (_TABELAS_RASTREIO.includes(t) && usuarioAtual?.nome) b.criado_por = usuarioAtual.nome;
+  return b;
+}
 async function sbPost(t, b) {
+  _addCriadoPor(t, b);
   if (MODO_DEMO) { const novo = { id:'demo_'+_demoId(), ...b }; if(DEMO_DATA[t]) DEMO_DATA[t].push(novo); return [novo]; }
   const r = await fetch(`${SUPABASE_URL}/rest/v1/${t}`, { method: 'POST', headers: hdrs, body: JSON.stringify(b) }); if (!r.ok) throw new Error(await r.text()); return r.json();
 }

@@ -267,8 +267,9 @@ function renderCustosDetalhes(obraId) {
         <td style="padding:8px 6px;font-weight:700;color:var(--branco);">${medLabel}</td>
         <td style="padding:8px 6px;color:${tipoColor};font-weight:600;">${fmt(r.valor)}</td>
         <td style="padding:8px 6px;color:var(--texto);">${dt}</td>
-        <td style="padding:8px 6px;color:var(--texto3);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.observacao || '-'}</td>
-        <td style="padding:8px 6px;text-align:center;">
+        <td style="padding:8px 6px;color:var(--texto3);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.observacao || '-'}${r.criado_por ? `<span class="admin-only" style="display:block;font-size:9px;color:var(--texto4);margin-top:2px;">👤 ${r.criado_por}</span>` : ''}</td>
+        <td style="padding:8px 6px;text-align:center;white-space:nowrap;">
+          <button onclick="editarRepasse('${r.id}')" style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.2);border-radius:6px;padding:4px 10px;color:#3b82f6;font-size:11px;cursor:pointer;margin-right:4px;" title="Editar">✎</button>
           <button onclick="excluirRepasse('${r.id}')" style="background:rgba(220,38,38,0.1);border:1px solid rgba(220,38,38,0.2);border-radius:6px;padding:4px 10px;color:#ef4444;font-size:11px;cursor:pointer;" title="Excluir">✕</button>
         </td>
       </tr>`;
@@ -347,6 +348,24 @@ function abrirModalRepasse(obraId) {
   document.getElementById('modal-repasse').classList.remove('hidden');
 }
 
+function editarRepasse(id) {
+  const r = repassesCef.find(x => x.id === id);
+  if (!r) return;
+  const todasObras = [...obras, ...obrasArquivadas];
+  const sel = document.getElementById('repasse-obra');
+  sel.innerHTML = '<option value="" style="background:#1a1a2e;color:#fff;">Selecione...</option>' +
+    todasObras.map(o => `<option value="${o.id}" style="background:#1a1a2e;color:#fff;" ${o.id === r.obra_id ? 'selected' : ''}>${o.nome}</option>`).join('');
+  document.getElementById('repasse-id').value = r.id;
+  document.getElementById('repasse-tipo').value = r.tipo || 'pls';
+  document.getElementById('repasse-medicao').value = r.medicao_numero || '';
+  document.getElementById('repasse-valor').value = r.valor || '';
+  document.getElementById('repasse-data').value = r.data_credito || '';
+  document.getElementById('repasse-obs').value = r.observacao || '';
+  const tipo = r.tipo || 'pls';
+  document.getElementById('repasse-medicao-wrap').style.display = (tipo === 'entrada' || tipo === 'terreno') ? 'none' : '';
+  document.getElementById('modal-repasse').classList.remove('hidden');
+}
+
 function onRepasseTipoChange() {
   const tipo = document.getElementById('repasse-tipo').value;
   const wrap = document.getElementById('repasse-medicao-wrap');
@@ -373,10 +392,16 @@ async function salvarRepasse() {
   if (!data) return showToast('Informe a data do crédito.');
 
   const body = { obra_id: obraId, medicao_numero: medicao, valor, data_credito: data, observacao: obs, tipo };
+  const editId = document.getElementById('repasse-id').value;
 
   try {
-    await sbPost('repasses_cef', body);
-    showToast('Repasse CEF salvo!');
+    if (editId) {
+      await sbPatch('repasses_cef', `?id=eq.${editId}`, body);
+      showToast('Repasse atualizado!');
+    } else {
+      await sbPost('repasses_cef', body);
+      showToast('Repasse CEF salvo!');
+    }
     fecharModal('repasse');
     await loadRepassesCef();
     if (custoObraAtual) custosAbrirDetalhe(custoObraAtual); else renderCustos();

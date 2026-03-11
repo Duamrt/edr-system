@@ -168,7 +168,7 @@
 <div class="content" id="main-content-inner" style="visibility:hidden;">
 
   
-  <!-- RELATÓRIO F8 -->
+  <!-- RELATÓRIO F9 -->
   <div id="view-relatorio" class="hidden">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-top:4px;flex-wrap:wrap;gap:10px;">
       <div style="display:flex;align-items:center;gap:14px;">
@@ -176,8 +176,8 @@
           <span style="font-size:20px;">📈</span>
         </div>
         <div>
-          <div style="font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:700;color:var(--branco);letter-spacing:2px;">RELATÓRIO DE OBRAS</div>
-          <div style="font-size:11px;color:var(--texto3);">Custo por categoria · Evolução mensal · Comparativo</div>
+          <div style="font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:700;color:var(--branco);letter-spacing:2px;">PAINEL FINANCEIRO</div>
+          <div style="font-size:11px;color:var(--texto3);">Entradas · Saídas · Mão de Obra · Detalhamento por Obra</div>
         </div>
       </div>
       <button onclick="exportarRelatorioPDF()" style="background:rgba(46,204,113,0.15);border:1px solid rgba(46,204,113,0.4);color:var(--verde3);padding:8px 16px;border-radius:8px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:1px;">
@@ -187,18 +187,10 @@
 
     <!-- Filtros -->
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;">
-      <select id="rel-obra" onchange="renderRelatorio()" style="background:var(--bg3);border:1px solid var(--borda2);border-radius:8px;padding:8px 12px;color:var(--branco);font-family:inherit;font-size:12px;flex:1;min-width:160px;">
-        <option value="">🏗 Todas as obras</option>
-      </select>
-      <select id="rel-ano" onchange="renderRelatorio()" style="background:var(--bg3);border:1px solid var(--borda2);border-radius:8px;padding:8px 12px;color:var(--branco);font-family:inherit;font-size:12px;">
-        <option value="">📅 Todos os anos</option>
-      </select>
+      <select id="rel-mes" onchange="onChangeMesRel()" style="background:var(--bg3);border:1px solid var(--borda2);border-radius:8px;padding:8px 12px;color:var(--branco);font-family:inherit;font-size:12px;min-width:140px;"></select>
       <select id="rel-secao" onchange="renderRelatorio()" style="background:var(--bg3);border:1px solid var(--borda2);border-radius:8px;padding:8px 12px;color:var(--branco);font-family:inherit;font-size:12px;">
-        <option value="tudo">📊 Tudo</option>
-        <option value="categoria">🏷 Por Categoria</option>
-        <option value="mensal">📅 Evolução Mensal</option>
-        <option value="comparativo">⚖ Comparativo</option>
-          <option value="faltas">⚠ Faltas</option>
+        <option value="financeiro">💰 Painel Financeiro</option>
+        <option value="comparativo">⚖ Comparativo entre Obras</option>
       </select>
     </div>
 

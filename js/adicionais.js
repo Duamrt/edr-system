@@ -109,6 +109,7 @@ function abrirModalAdicional() {
   document.getElementById('add-obs').value = '';
   document.getElementById('add-data').value = new Date().toISOString().split('T')[0];
   document.getElementById('modal-adicional').classList.remove('hidden');
+  setTimeout(() => document.getElementById('add-descricao').focus(), 100);
 }
 
 function editarAdicional(id) {

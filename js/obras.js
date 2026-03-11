@@ -370,45 +370,7 @@ function filtrarLanc() {
     // Adicionais da obra
     const adds = typeof getAdicionaisObra === 'function' ? getAdicionaisObra(obraId) : { qtd:0, valorTotal:0, totalRecebido:0, saldo:0 };
 
-    if (catsComValor.length > 0 || adds.qtd > 0) {
-      detEl.classList.remove('hidden');
-      detEl.innerHTML = `
-        <div style="background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.15);border-radius:12px;padding:14px 16px;margin-bottom:12px;">
-          <div onclick="this.parentElement.querySelector('.dre-body').classList.toggle('hidden');this.querySelector('.dre-toggle').textContent=this.parentElement.querySelector('.dre-body').classList.contains('hidden')?'▶':'▼'" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;">
-            <div style="font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;color:var(--verde-hl);letter-spacing:2px;">📊 RESUMO FINANCEIRO — ${obraMap[obraId]||''}</div>
-            <div style="display:flex;align-items:center;gap:10px;">
-              <span style="font-size:14px;font-weight:800;color:var(--verde-hl);font-family:'JetBrains Mono',monospace;">${fmtR(totalObra)}</span>
-              <span class="dre-toggle" style="font-size:10px;color:var(--texto3);">▼</span>
-            </div>
-          </div>
-          <div class="dre-body" style="margin-top:10px;">
-          ${catsComValor.map(([lb, val]) => {
-            const pct = totalObra > 0 ? (val/totalObra*100).toFixed(1) : 0;
-            return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(46,204,113,0.06);">
-              <span style="flex:1;font-size:12px;color:var(--texto);">${lb}</span>
-              <div style="width:80px;height:4px;background:rgba(46,204,113,0.1);border-radius:2px;overflow:hidden;">
-                <div style="width:${pct}%;height:100%;background:var(--verde3);border-radius:2px;"></div>
-              </div>
-              <span style="font-size:11px;color:var(--texto3);width:36px;text-align:right;">${pct}%</span>
-              <span style="font-size:13px;font-weight:700;color:var(--branco);width:90px;text-align:right;font-family:'JetBrains Mono',monospace;">${fmtR(val)}</span>
-            </div>`;
-          }).join('')}
-          ${adds.qtd > 0 ? `
-          <div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(139,92,246,0.2);">
-            <div style="display:flex;align-items:center;gap:8px;padding:5px 0;">
-              <span style="flex:1;font-size:12px;color:#a78bfa;font-weight:700;">📝 Adicionais (${adds.qtd})</span>
-              <span style="font-size:13px;font-weight:700;color:#a78bfa;width:90px;text-align:right;font-family:'JetBrains Mono',monospace;">${fmtR(adds.valorTotal)}</span>
-            </div>
-            <div style="display:flex;gap:16px;font-size:10px;padding:2px 0;">
-              <span style="color:var(--verde-hl);">Recebido: ${fmtR(adds.totalRecebido)}</span>
-              <span style="color:${adds.saldo > 0 ? '#fbbf24' : 'var(--verde-hl)'};">Saldo: ${fmtR(adds.saldo)}</span>
-            </div>
-          </div>` : ''}
-          </div>
-        </div>`;
-    } else {
-      detEl.classList.add('hidden');
-    }
+    detEl.classList.add('hidden');
   } else if (detEl) {
     detEl.classList.add('hidden');
   }
@@ -422,7 +384,7 @@ function filtrarLanc() {
         </div>
       </div>
       ${l.etapa ? `<div style="margin-bottom:3px;"><span style="font-size:9px;font-weight:700;background:rgba(46,204,113,0.08);color:var(--verde3);border:1px solid rgba(46,204,113,0.2);border-radius:4px;padding:1px 6px;font-family:'JetBrains Mono',monospace;">${etapaLabel(l.etapa)}</span></div>` : ''}
-      <div class="lanc-meta">${obraMap[l.obra_id]||'—'} · ${(()=>{ const q=Number(l.qtd||1); const oNome=(obraMap[l.obra_id]||'').toUpperCase(); if(oNome.includes('ESCRIT')||q<=0||String(l.qtd).includes('e')||q!==Math.round(q*100)/100) return l.data||''; return q+' un · '+(l.data||''); })()}</div>
+      <div class="lanc-meta">${obraMap[l.obra_id]||'—'} · ${(()=>{ const q=Number(l.qtd||1); const oNome=(obraMap[l.obra_id]||'').toUpperCase(); if(oNome.includes('ESCRIT')||q<=0||String(l.qtd).includes('e')||q!==Math.round(q*100)/100) return l.data||''; return q+' un · '+(l.data||''); })()}${l.criado_por ? `<span class="admin-only" style="margin-left:6px;font-size:9px;color:var(--texto4);"> · 👤 ${l.criado_por}</span>` : ''}</div>
     </div>`).join('');
   aplicarPerfil();
 }
