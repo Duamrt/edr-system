@@ -660,20 +660,34 @@ function diarRenderRegistros() {
            <span style="font-size:9px;font-weight:700;letter-spacing:1px;color:#f87171;font-family:'Rajdhani',sans-serif;">⚠ FALTOU: </span>
            <span style="font-size:11px;color:#fca5a5;">${faltas.join(', ')}</span>
          </div>` : '';
+    const isFirst = dia === dias[0];
+    const chevron = `<span class="diar-chevron" style="font-size:10px;transition:transform .2s;display:inline-block;${isFirst?'transform:rotate(90deg)':''}">▶</span>`;
     return `<div class="diarias-registro-dia">
-      <div class="diarias-registro-header">
-        <span class="diarias-registro-data">${df}</span>
-        <div style="display:flex;align-items:center;gap:10px">
+      <div class="diarias-registro-header" style="cursor:pointer;user-select:none;" onclick="diarToggleDia(this)">
+        <div style="display:flex;align-items:center;gap:8px">
+          ${chevron}
+          <span class="diarias-registro-data">${df}</span>
           <span class="diarias-registro-count">${items.length} func.</span>
           ${faltas.length ? `<span style="font-size:9px;font-weight:700;color:#f87171;font-family:'Rajdhani',sans-serif;">⚠ ${faltas.length} falta(s)</span>` : ''}
-          <button class="diarias-btn-del" onclick="diarDeletarDia('${dia}')" title="Remover dia">✕</button>
         </div>
+        <button class="diarias-btn-del" onclick="event.stopPropagation();diarDeletarDia('${dia}')" title="Remover dia">✕</button>
       </div>
-      <div>${rows}</div>
-      ${faltasHtml}
+      <div class="diar-dia-body" style="${isFirst?'':'display:none;'}">${rows}${faltasHtml}</div>
     </div>`;
   }).join('');
   diarRenderFolha();
+}
+
+function diarToggleDia(headerEl) {
+  const body = headerEl.nextElementSibling;
+  const chevron = headerEl.querySelector('.diar-chevron');
+  if (body.style.display === 'none') {
+    body.style.display = '';
+    if (chevron) chevron.style.transform = 'rotate(90deg)';
+  } else {
+    body.style.display = 'none';
+    if (chevron) chevron.style.transform = '';
+  }
 }
 
 async function diarDeletarDia(data) {
