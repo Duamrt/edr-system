@@ -303,9 +303,8 @@ async function recalcularCategorias() {
     // getCatEstoque retorna key legada → resolver pra key oficial numerada
     const catLegada = getCatEstoque(m.nome);
     const novaCat = resolveEtapaKey(catLegada);
-    // Também resolver a categoria atual pra comparar corretamente
-    const catAtual = resolveEtapaKey(m.categoria || '');
-    if (novaCat !== catAtual) {
+    // Comparar com a key CRUA salva no banco — se for diferente, atualizar
+    if (novaCat !== m.categoria) {
       try {
         await sbPatch('materiais', `?id=eq.${m.id}`, { categoria: novaCat });
         m.categoria = novaCat;
