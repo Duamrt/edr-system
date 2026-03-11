@@ -1,41 +1,67 @@
 const MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 const MESES_FULL = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 const CAT_CORES = {
-  // Keys legadas (usadas em dados existentes)
+  // Keys legadas (compatibilidade com dados existentes)
   alimentacao:'#e67e22',alvenaria:'#95a5a6',cobertura:'#e74c3c',combustivel:'#f39c12',
   doc:'#9b59b6',eletrica:'#f1c40f',epi:'#1abc9c',esgoto:'#7f8c8d',esquadria:'#3498db',
   expediente:'#bdc3c7',ferro:'#7f8c8d',ferramenta:'#e67e22',forma:'#8e44ad',
   gesso:'#ecf0f1',granito:'#95a5a6',hidraulica:'#2980b9',impermeab:'#16a085',
   limpeza:'#27ae60',locacao:'#d35400',loucas:'#2ecc71',mao:'#e74c3c',
   pintura:'#f39c12',rev_cer:'#c0392b',terreno:'#6d4c41',generico:'#7f8c8d',outros:'#546e7a',
-  tecnologia:'#6366f1',imobilizado:'#64748b',imposto:'#a855f7',
-  // Keys numeradas do ETAPAS
-  '01_terreno':'#6d4c41','02_doc':'#9b59b6','03_prelim':'#78909c','04_terra':'#8d6e63',
-  '05_fund':'#455a64','06_estrut':'#546e7a','07_alven':'#95a5a6','08_cobr':'#e74c3c',
-  '09_elet':'#f1c40f','10_hidro':'#2980b9','10b_esgoto':'#7f8c8d','11_esquad':'#3498db',
-  '12_revestc':'#c0392b','12b_revarg':'#a1887f','13_pintura':'#f39c12','13b_gesso':'#ecf0f1',
-  '13c_impermeab':'#16a085','13d_granito':'#95a5a6','13e_loucas':'#2ecc71',
-  '14_acab':'#ff7043','15_locacao':'#d35400','16_externo':'#66bb6a','17_limpeza':'#27ae60',
-  '00_outros':'#546e7a'
+  tecnologia:'#6366f1',imobilizado:'#64748b',imposto:'#a855f7',aco:'#7f8c8d',
+  // Keys oficiais numeradas (ETAPAS v2)
+  '01_acab':'#ff7043','02_aco':'#7f8c8d','03_alimentacao':'#e67e22','04_alven':'#95a5a6',
+  '05_externo':'#66bb6a','06_cobr':'#e74c3c','07_combustivel':'#f39c12','08_doc':'#9b59b6',
+  '09_elet':'#f1c40f','10_epi':'#1abc9c','11_esquad':'#3498db','12_esgoto':'#7f8c8d',
+  '13_estrut':'#546e7a','14_expediente':'#bdc3c7','15_ferramenta':'#e67e22','16_forma':'#8e44ad',
+  '17_fund':'#455a64','18_generico':'#7f8c8d','19_gesso':'#ecf0f1','20_granito':'#95a5a6',
+  '21_hidro':'#2980b9','22_imobilizado':'#64748b','23_impermeab':'#16a085','24_imposto':'#a855f7',
+  '25_limpeza':'#27ae60','26_locacao':'#d35400','27_loucas':'#2ecc71','28_mao':'#e74c3c',
+  '29_terra':'#8d6e63','30_pintura':'#f39c12','31_prelim':'#78909c','32_revarg':'#a1887f',
+  '33_revestc':'#c0392b','34_tecnologia':'#6366f1','35_terreno':'#6d4c41','36_outros':'#546e7a',
+  // Keys numeradas v1 (legado)
+  '00_outros':'#546e7a','01_terreno':'#6d4c41','02_doc':'#9b59b6','03_prelim':'#78909c',
+  '04_terra':'#8d6e63','05_fund':'#455a64','06_estrut':'#546e7a','07_alven':'#95a5a6',
+  '08_cobr':'#e74c3c','10_hidro':'#2980b9','10b_esgoto':'#7f8c8d','12_revestc':'#c0392b',
+  '12b_revarg':'#a1887f','13_pintura':'#f39c12','13b_gesso':'#ecf0f1','13c_impermeab':'#16a085',
+  '13d_granito':'#95a5a6','13e_loucas':'#2ecc71','14_acab':'#ff7043','15_locacao':'#d35400',
+  '16_externo':'#66bb6a','17_limpeza':'#27ae60',
 };
 
+// Mapa de aliases: keys legadas/antigas → key oficial do ETAPAS v2
+const ETAPA_ALIAS = {
+  // Keys legadas sem número
+  alvenaria:'04_alven', cobertura:'06_cobr', eletrica:'09_elet',
+  esgoto:'12_esgoto', esquadria:'11_esquad', aco:'02_aco', ferro:'02_aco',
+  hidraulica:'21_hidro', limpeza:'25_limpeza', locacao:'26_locacao',
+  loucas:'27_loucas', pintura:'30_pintura', rev_cer:'33_revestc',
+  rev_arg:'32_revarg', gesso:'19_gesso', granito:'20_granito',
+  impermeab:'23_impermeab', terreno:'35_terreno', prelim:'31_prelim',
+  fundacao:'17_fund', estrutura:'13_estrut', outros:'36_outros',
+  combustivel:'07_combustivel', alimentacao:'03_alimentacao',
+  mao:'28_mao', imposto:'24_imposto', epi:'10_epi',
+  ferramenta:'15_ferramenta', expediente:'14_expediente',
+  imobilizado:'22_imobilizado', tecnologia:'34_tecnologia',
+  doc:'08_doc', generico:'18_generico', forma:'16_forma',
+  // Keys numeradas v1 (versão anterior)
+  '01_terreno':'35_terreno', '02_doc':'08_doc', '03_prelim':'31_prelim',
+  '04_terra':'29_terra', '05_fund':'17_fund', '06_estrut':'13_estrut',
+  '07_alven':'04_alven', '08_cobr':'06_cobr', '10_hidro':'21_hidro',
+  '10b_esgoto':'12_esgoto', '12_revestc':'33_revestc', '12b_revarg':'32_revarg',
+  '13_pintura':'30_pintura', '13b_gesso':'19_gesso', '13c_impermeab':'23_impermeab',
+  '13d_granito':'20_granito', '13e_loucas':'27_loucas', '14_acab':'01_acab',
+  '15_locacao':'26_locacao', '16_externo':'05_externo', '17_limpeza':'25_limpeza',
+  '00_outros':'36_outros',
+};
+
+// Resolve qualquer key legada pra key oficial do ETAPAS v2
+function resolveEtapaKey(key) { return ETAPA_ALIAS[key] || key; }
+
 function getCatLabel(key) {
-  // Fonte única: consulta ETAPAS (definido em obras.js)
-  // Mapa de aliases para keys legadas/do estoque → key oficial do ETAPAS
-  const ALIAS = {
-    alvenaria:'07_alven', cobertura:'08_cobr', eletrica:'09_elet',
-    esgoto:'10b_esgoto', esquadria:'11_esquad', aco:'ferro',
-    hidraulica:'10_hidro', limpeza:'17_limpeza', locacao:'15_locacao',
-    loucas:'13e_loucas', pintura:'13_pintura', rev_cer:'12_revestc',
-    rev_arg:'12b_revarg', gesso:'13b_gesso', granito:'13d_granito',
-    impermeab:'13c_impermeab', terreno:'01_terreno', prelim:'03_prelim',
-    fundacao:'05_fund', estrutura:'06_estrut', outros:'00_outros'
-  };
-  const resolvedKey = ALIAS[key] || key;
+  const resolvedKey = resolveEtapaKey(key);
   if (typeof ETAPAS !== 'undefined') {
     const etapa = ETAPAS.find(e => e.key === resolvedKey);
     if (etapa) return etapa.lb;
-    // Tentar key original caso alias não bata
     const etapa2 = ETAPAS.find(e => e.key === key);
     if (etapa2) return etapa2.lb;
   }
@@ -43,22 +69,23 @@ function getCatLabel(key) {
 }
 
 function getCatFromLanc(l) {
-  if (l.etapa && l.etapa !== '00_outros') return l.etapa;
+  // Se já tem etapa salva, resolver pra key oficial
+  if (l.etapa && l.etapa !== '00_outros' && l.etapa !== '36_outros') return resolveEtapaKey(l.etapa);
   const descLimpa = (l.descricao||'').replace(/^\d{6}\s*·\s*/, '').trim();
   const dn = descLimpa.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
   const mat = catalogoMateriais.find(m => {
     const mn = norm(m.nome);
     return mn === norm(l.descricao||'') || mn === norm(descLimpa) || mn.includes(dn) || dn.includes(mn.split(' ')[0]);
   });
-  if (mat && mat.categoria) return mat.categoria;
+  if (mat && mat.categoria) return resolveEtapaKey(mat.categoria);
   const desc = descLimpa || l.descricao || "";
   const dnn = desc.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
   const catEstoque = getCatEstoque(desc);
-  if (catEstoque && catEstoque !== "outros") return catEstoque;
-  if (/mao[\s\-]de[\s\-]obra|armador|eletricista|pintor|pedreiro|servente|mestre de obras|encanador|azulejista/.test(dnn)) return "mao";
-  if (/aquisicao de terreno|compra de terreno/.test(dnn)) return "terreno";
-  if (/contrato|documento|anotacao|alvara|licenca|vistoria|escritura/.test(dnn)) return "doc";
-  return "outros";
+  if (catEstoque && catEstoque !== "outros") return resolveEtapaKey(catEstoque);
+  if (/mao[\s\-]de[\s\-]obra|armador|eletricista|pintor|pedreiro|servente|mestre de obras|encanador|azulejista/.test(dnn)) return "28_mao";
+  if (/aquisicao de terreno|compra de terreno/.test(dnn)) return "35_terreno";
+  if (/contrato|documento|anotacao|alvara|licenca|vistoria|escritura/.test(dnn)) return "08_doc";
+  return "36_outros";
 }
 
 function verCategoriaEmObras(cat) {

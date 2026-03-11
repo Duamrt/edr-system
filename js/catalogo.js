@@ -26,8 +26,8 @@ function renderCatalogo() {
   if (!lista.length) { el.innerHTML = '<div class="empty">Nenhum material encontrado. Clique em "+ Novo Material" para cadastrar.</div>'; return; }
   // Gera CATS_OPTS a partir de ETAPAS (fonte única de verdade)
   const CATS_OPTS = typeof ETAPAS !== 'undefined'
-    ? ETAPAS.filter(e => e.key !== '00_outros').map(e => [e.key, e.lb]).concat([['00_outros','📦 Não classificado']])
-    : [['00_outros','📦 Não classificado']];
+    ? ETAPAS.map(e => [e.key, e.lb])
+    : [['36_outros','📦 36 · Não classificado']];
   el.innerHTML = lista.map(m => {
     const isAuto = m.auto === true || m.auto === 'true';
     const catSelect = CATS_OPTS.map(([k,lb]) => `<option value="${k}" ${m.categoria===k?'selected':''}>${lb}</option>`).join('');

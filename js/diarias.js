@@ -1186,7 +1186,7 @@ async function diarConfirmarLancamentosEDR() {
       const resp = await fetch(`${SUPABASE_URL}/rest/v1/lancamentos`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Prefer': 'return=minimal' },
-        body: JSON.stringify({ obra_id: obraId, descricao: 'MAO DE OBRA', qtd: 1, preco: valor, total: valor, data: hoje, obs, etapa: '00_outros' })
+        body: JSON.stringify({ obra_id: obraId, descricao: 'MAO DE OBRA', qtd: 1, preco: valor, total: valor, data: hoje, obs, etapa: '28_mao' })
       });
       if (resp.ok || resp.status === 201) {
         statusEl.innerHTML += `<div style="color:var(--verde-hl)">✅ ${obra}: R$ ${valor.toLocaleString('pt-BR',{minimumFractionDigits:2})} lançado</div>`;

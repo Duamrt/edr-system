@@ -140,7 +140,7 @@ function renderDashboard() {
   // ── DADOS POR ETAPA (Centro de Custo) ──
   const etapaMap = {};
   lancAtivos.forEach(l => {
-    const lb = etapaLabel(l.etapa || '00_outros');
+    const lb = etapaLabel(l.etapa || '36_outros');
     etapaMap[lb] = (etapaMap[lb]||0) + Number(l.total||0);
   });
   const etapaEntries = Object.entries(etapaMap).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).slice(0,8);

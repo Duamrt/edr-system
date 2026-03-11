@@ -120,7 +120,7 @@ function renderObrasCards() {
     // Top 3 etapas por valor
     const porEtapa = {};
     ls.forEach(l => {
-      const k = l.etapa || '00_outros';
+      const k = l.etapa || '36_outros';
       porEtapa[k] = (porEtapa[k] || 0) + Number(l.total || 0);
     });
     const topEtapas = Object.entries(porEtapa)
@@ -336,7 +336,7 @@ function filtrarLanc() {
   let lista = lancamentos.filter(l => obraIds.has(l.obra_id));
   if (busca) lista = lista.filter(l => norm(l.descricao||'').includes(busca));
   if (obraId) lista = lista.filter(l => l.obra_id === obraId);
-  if (catFiltroAtual) lista = lista.filter(l => (l.etapa || '00_outros') === catFiltroAtual);
+  if (catFiltroAtual) lista = lista.filter(l => resolveEtapaKey(l.etapa || '36_outros') === catFiltroAtual);
   const el = document.getElementById('obras-lanc-lista'), empty = document.getElementById('obras-empty');
   if (!el || !empty) return;
   if (!lista.length) { el.innerHTML = ''; empty.classList.remove('hidden');
@@ -365,7 +365,7 @@ function filtrarLanc() {
     const todosLancObra = lancamentos.filter(l => l.obra_id === obraId);
     const porCat = {};
     todosLancObra.forEach(l => {
-      const lb = etapaLabel(l.etapa || '00_outros');
+      const lb = etapaLabel(l.etapa || '36_outros');
       porCat[lb] = (porCat[lb] || 0) + Number(l.total || 0);
     });
     const totalObra = Object.values(porCat).reduce((s,v) => s+v, 0);
@@ -397,48 +397,46 @@ function filtrarLanc() {
 // ETAPAS CONSTRUTIVAS — Centro de Custo
 // ══════════════════════════════════════════
 const ETAPAS = [
-  // ── Etapas construtivas (numeradas) ──
-  { key:'01_terreno',    lb:'🏛 01 · Terreno' },
-  { key:'02_doc',        lb:'📋 02 · Documentação / Licenças' },
-  { key:'03_prelim',     lb:'⛏ 03 · Serviços Preliminares' },
-  { key:'04_terra',      lb:'🌍 04 · Movimento de Terra' },
-  { key:'05_fund',       lb:'🏗 05 · Fundação' },
-  { key:'06_estrut',     lb:'🔩 06 · Estrutura' },
-  { key:'07_alven',      lb:'🧱 07 · Alvenaria' },
-  { key:'08_cobr',       lb:'🏠 08 · Cobertura' },
+  { key:'01_acab',       lb:'✨ 01 · Acabamento Final' },
+  { key:'02_aco',        lb:'⚙ 02 · Aço / Ferro' },
+  { key:'03_alimentacao',lb:'🍽 03 · Alimentação' },
+  { key:'04_alven',      lb:'🧱 04 · Alvenaria' },
+  { key:'05_externo',    lb:'🌿 05 · Área Externa' },
+  { key:'06_cobr',       lb:'🏠 06 · Cobertura' },
+  { key:'07_combustivel',lb:'⛽ 07 · Combustível' },
+  { key:'08_doc',        lb:'📋 08 · Documentação / Licenças' },
   { key:'09_elet',       lb:'⚡ 09 · Elétrica' },
-  { key:'10_hidro',      lb:'🚿 10 · Hidráulica' },
-  { key:'10b_esgoto',    lb:'🪠 10b · Esgoto' },
+  { key:'10_epi',        lb:'🦺 10 · EPI / Segurança' },
   { key:'11_esquad',     lb:'🪟 11 · Esquadrias' },
-  { key:'12_revestc',    lb:'🟫 12 · Revestimento Cerâmico' },
-  { key:'12b_revarg',    lb:'🪣 12b · Revestimento Argamassa' },
-  { key:'13_pintura',    lb:'🖌 13 · Pintura' },
-  { key:'13b_gesso',     lb:'⬜ 13b · Gesso' },
-  { key:'13c_impermeab', lb:'💧 13c · Impermeabilização' },
-  { key:'13d_granito',   lb:'🪨 13d · Granito / Pedra' },
-  { key:'13e_loucas',    lb:'🛁 13e · Louças e Metais' },
-  { key:'14_acab',       lb:'✨ 14 · Acabamento Final' },
-  { key:'15_locacao',    lb:'🏗 15 · Locação / Máq. / Equip.' },
-  { key:'16_externo',    lb:'🌿 16 · Área Externa' },
-  { key:'17_limpeza',    lb:'🧹 17 · Limpeza Final' },
-  // ── Categorias gerais (sem numerar) ──
-  { key:'ferro',         lb:'⚙ Aço / Ferro' },
-  { key:'forma',         lb:'🪵 Forma e Madeira' },
-  { key:'combustivel',   lb:'⛽ Combustível' },
-  { key:'alimentacao',   lb:'🍽 Alimentação' },
-  { key:'mao',           lb:'👷 Mão de Obra' },
-  { key:'imposto',       lb:'🧾 Impostos / Encargos' },
-  { key:'epi',           lb:'🦺 EPI / Segurança' },
-  { key:'ferramenta',    lb:'🔨 Ferramentas' },
-  { key:'expediente',    lb:'📎 Expediente' },
-  { key:'imobilizado',   lb:'🖥 Imobilizado' },
-  { key:'tecnologia',    lb:'💻 Tecnologia / Assinaturas' },
-  { key:'doc',           lb:'📋 Documentação' },
-  { key:'generico',      lb:'❓ Genérico' },
-  { key:'00_outros',     lb:'📦 Não classificado' },
+  { key:'12_esgoto',     lb:'🪠 12 · Esgoto' },
+  { key:'13_estrut',     lb:'🔩 13 · Estrutura' },
+  { key:'14_expediente', lb:'📎 14 · Expediente' },
+  { key:'15_ferramenta', lb:'🔨 15 · Ferramentas' },
+  { key:'16_forma',      lb:'🪵 16 · Forma e Madeira' },
+  { key:'17_fund',       lb:'🏗 17 · Fundação' },
+  { key:'18_generico',   lb:'❓ 18 · Genérico' },
+  { key:'19_gesso',      lb:'⬜ 19 · Gesso' },
+  { key:'20_granito',    lb:'🪨 20 · Granito / Pedra' },
+  { key:'21_hidro',      lb:'🚿 21 · Hidráulica' },
+  { key:'22_imobilizado',lb:'🖥 22 · Imobilizado' },
+  { key:'23_impermeab',  lb:'💧 23 · Impermeabilização' },
+  { key:'24_imposto',    lb:'🧾 24 · Impostos / Encargos' },
+  { key:'25_limpeza',    lb:'🧹 25 · Limpeza' },
+  { key:'26_locacao',    lb:'🏗 26 · Locação / Máq. / Equip.' },
+  { key:'27_loucas',     lb:'🛁 27 · Louças e Metais' },
+  { key:'28_mao',        lb:'👷 28 · Mão de Obra' },
+  { key:'29_terra',      lb:'🌍 29 · Movimento de Terra' },
+  { key:'30_pintura',    lb:'🖌 30 · Pintura' },
+  { key:'31_prelim',     lb:'⛏ 31 · Serviços Preliminares' },
+  { key:'32_revarg',     lb:'🪣 32 · Revestimento Argamassa' },
+  { key:'33_revestc',    lb:'🟫 33 · Revestimento Cerâmico' },
+  { key:'34_tecnologia', lb:'💻 34 · Tecnologia / Assinaturas' },
+  { key:'35_terreno',    lb:'🏛 35 · Terreno' },
+  { key:'36_outros',     lb:'📦 36 · Não classificado' },
 ];
 function etapaLabel(key) {
-  return ETAPAS.find(e => e.key === key)?.lb || key || '—';
+  const resolved = typeof resolveEtapaKey === 'function' ? resolveEtapaKey(key) : key;
+  return ETAPAS.find(e => e.key === resolved)?.lb || ETAPAS.find(e => e.key === key)?.lb || key || '—';
 }
 function etapaSelectOpts(selected='', incluiVazio=true) {
   const vazio = incluiVazio ? '<option value="">— Etapa (opcional) —</option>' : '';
