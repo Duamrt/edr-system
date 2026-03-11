@@ -286,26 +286,6 @@ async function excluirMaterial(id) {
   showToast('Material excluído do catálogo.');
 }
 
-async function migrarMateriaisExistentes() {
-  if (!confirm('Isso vai criar códigos automáticos para todos os materiais do estoque que ainda não têm código. Continuar?')) return;
-  const estoque = consolidarEstoque();
-  let criados = 0;
-  const proxBase = catalogoMateriais.length > 0 ? Math.max(...catalogoMateriais.map(m => parseInt(m.codigo)||0)) : 0;
-  for (const [i, m] of estoque.entries()) {
-    const jaExiste = catalogoMateriais.find(x => norm(x.nome) === norm(m.desc));
-    if (jaExiste) continue;
-    const codigo = String(proxBase + i + 1).padStart(6, '0');
-    try {
-      const [saved] = await sbPost('materiais', { codigo, nome: m.desc.toUpperCase(), unidade: m.unidade||'UN', categoria: getCatEstoque(m.desc)||'' });
-      catalogoMateriais.push(saved);
-      criados++;
-    } catch(e) {}
-  }
-  catalogoMateriais.sort((a,b) => a.codigo.localeCompare(b.codigo));
-  renderCatalogo();
-  showToast(`✅ ${criados} MATERIAL(IS) MIGRADO(S) PARA O CATÁLOGO!`);
-}
-
 async function editarCategoriaMaterial(id, categoria, selEl) {
   if (!categoria) return;
   try {
@@ -317,16 +297,17 @@ async function editarCategoriaMaterial(id, categoria, selEl) {
 }
 
 async function recalcularCategorias() {
-  if (!confirm('Recalcular automaticamente as categorias de todos os materiais do catálogo?')) return;
+  if (!confirm('Recalcular automaticamente as categorias de todos os materiais do catálogo?\n\nIsso vai usar a classificação automática + converter para o padrão numerado (01-36).')) return;
   let atualizados = 0;
   for (const m of catalogoMateriais) {
-    const novaCat = getCatEstoque(m.nome);
-    if (novaCat !== m.categoria) {
+    // getCatEstoque retorna key legada → resolver pra key oficial numerada
+    const catLegada = getCatEstoque(m.nome);
+    const novaCat = resolveEtapaKey(catLegada);
+    // Também resolver a categoria atual pra comparar corretamente
+    const catAtual = resolveEtapaKey(m.categoria || '');
+    if (novaCat !== catAtual) {
       try {
-        await fetch(`${SUPABASE_URL}/rest/v1/materiais?id=eq.${m.id}`, {
-          method: 'PATCH', headers: hdrs,
-          body: JSON.stringify({ categoria: novaCat })
-        });
+        await sbPatch('materiais', `?id=eq.${m.id}`, { categoria: novaCat });
         m.categoria = novaCat;
         atualizados++;
       } catch(e) {}
