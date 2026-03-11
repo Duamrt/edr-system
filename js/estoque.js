@@ -154,6 +154,11 @@ function consolidarEstoque() {
     .sort((a,b) => a.desc.localeCompare(b.desc));
 }
 
+function toggleLimparBusca() {
+  const btn = document.getElementById('btn-limpar-busca');
+  if (btn) btn.style.display = document.getElementById('estoque-busca').value.trim() ? 'block' : 'none';
+}
+
 function renderEstoque() {
   document.getElementById('estoque-loading').classList.add('hidden');
   const lista = document.getElementById('estoque-lista'), empty = document.getElementById('estoque-empty');
