@@ -10,30 +10,22 @@ const CAT_CORES = {
 };
 
 function getCatLabel(key) {
-  const CATS_OPTS = [
-    ['alimentacao','🍽 Alimentação'],['alvenaria','🧱 Alvenaria'],['cobertura','🏠 Cobertura'],
-    ['combustivel','⛽ Combustível'],['doc','📋 Documentação'],['eletrica','⚡ Elétrica'],
-    ['epi','🦺 EPI / Segurança'],['esgoto','🪠 Esgoto'],['esquadria','🪟 Esquadrias'],
-    ['expediente','📎 Expediente'],['ferro','⚙ Aço / Ferro'],['aco','⚙ Aço / Ferro'],['ferramenta','🔨 Ferramentas'],
-    ['forma','🪵 Forma e Madeira'],['gesso','⬜ Gesso'],['granito','🪨 Granito / Pedra'],
-    ['hidraulica','🚿 Hidráulica'],['impermeab','💧 Impermeabilização'],['limpeza','🧹 Limpeza'],
-    ['locacao','🏗 Locação de Equip.'],['loucas','🛁 Louças e Metais'],['mao','👷 Mão de Obra'],
-    ['imposto','🧾 Impostos / Encargos'],
-    ['imobilizado','🖥 Imobilizado'],['pintura','🖌 Pintura'],['rev_cer','🟫 Revest. Cerâmico'],['rev_arg','🟤 Revest. Argamassa'],
-    ['terreno','🏡 Terreno'],['generico','❓ Genérico'],['outros','📦 Outros'],
-    ['01_terreno','🏛 01 · Terreno'],['02_doc','📋 02 · Documentação'],
-    ['03_prelim','⛏ 03 · Serv. Preliminares'],['04_terra','🌍 04 · Mov. de Terra'],
-    ['05_fund','🏗 05 · Fundação'],['06_estrut','🔩 06 · Estrutura'],
-    ['07_alven','🧱 07 · Alvenaria'],['08_cobr','🏠 08 · Cobertura'],
-    ['09_elet','⚡ 09 · Elétrica'],['10_hidro','🚿 10 · Hidráulica'],
-    ['11_esquad','🪟 11 · Esquadrias'],['12_revestc','🟫 12 · Rev. Cerâmico'],
-    ['13_pintura','🖌 13 · Pintura'],['14_acab','✨ 14 · Acabamento'],
-    ['15_locacao','🏗 15 · Locação / Equip.'],['16_externo','🌿 16 · Área Externa'],
-    ['17_limpeza','🧹 17 · Limpeza Final'],
-    ['00_outros','📦 Não classificado']
-  ];
-  const found = CATS_OPTS.find(([k]) => k === key);
-  return found ? found[1] : '📦 ' + (key||'Outros');
+  // Fonte única: consulta ETAPAS (definido em obras.js) + extras do estoque
+  const extras = {
+    alvenaria:'🧱 Alvenaria',cobertura:'🏠 Cobertura',eletrica:'⚡ Elétrica',
+    esgoto:'🪠 Esgoto',esquadria:'🪟 Esquadrias',ferro:'⚙ Aço / Ferro',aco:'⚙ Aço / Ferro',
+    forma:'🪵 Forma e Madeira',gesso:'⬜ Gesso',granito:'🪨 Granito / Pedra',
+    hidraulica:'🚿 Hidráulica',impermeab:'💧 Impermeabilização',limpeza:'🧹 Limpeza',
+    locacao:'🏗 Locação de Equip.',loucas:'🛁 Louças e Metais',
+    pintura:'🖌 Pintura',rev_cer:'🟫 Revest. Cerâmico',rev_arg:'🟤 Revest. Argamassa',
+    terreno:'🏡 Terreno',generico:'❓ Genérico',outros:'📦 Outros'
+  };
+  // Primeiro tenta no ETAPAS (fonte principal, compartilhada)
+  if (typeof ETAPAS !== 'undefined') {
+    const etapa = ETAPAS.find(e => e.key === key);
+    if (etapa) return etapa.lb;
+  }
+  return extras[key] || '📦 ' + (key||'Outros');
 }
 
 function getCatFromLanc(l) {

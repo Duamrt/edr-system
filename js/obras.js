@@ -410,6 +410,15 @@ const ETAPAS = [
   { key:'15_locacao',    lb:'🏗 15 · Locação / Máq. / Equip.' },
   { key:'16_externo',    lb:'🌿 16 · Área Externa' },
   { key:'17_limpeza',    lb:'🧹 17 · Limpeza Final' },
+  { key:'combustivel',   lb:'⛽ Combustível' },
+  { key:'alimentacao',   lb:'🍽 Alimentação' },
+  { key:'mao',           lb:'👷 Mão de Obra' },
+  { key:'imposto',       lb:'🧾 Impostos / Encargos' },
+  { key:'epi',           lb:'🦺 EPI / Segurança' },
+  { key:'ferramenta',    lb:'🔨 Ferramentas' },
+  { key:'expediente',    lb:'📎 Expediente' },
+  { key:'imobilizado',   lb:'🖥 Imobilizado' },
+  { key:'doc',           lb:'📋 Documentação' },
   { key:'00_outros',     lb:'📦 Não classificado' },
 ];
 function etapaLabel(key) {
