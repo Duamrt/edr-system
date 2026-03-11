@@ -512,6 +512,7 @@ body::before {
    ══════════════════════════════════════════════ */
 @media (max-width: 768px) {
 
+  /* ── Shell & Nav ── */
   .sidebar { display: none !important; }
   #bottom-nav { display: flex !important; }
   #demo-banner { bottom: 64px !important; }
@@ -519,34 +520,120 @@ body::before {
   .app-shell { flex-direction: column; }
   .main-content { height: calc(100vh - 48px - 64px); padding-bottom: 80px; }
 
-  .header { padding: 0 12px; height: 48px; }
+  /* ── Header ── */
+  .header { padding: 0 10px; height: 48px; }
   .header-sub { display: none; }
-  .header-title { font-size: 14px; }
+  .header-title { font-size: 13px; letter-spacing: 1px; }
   .header-logo-box { width: 26px; height: 26px; }
-  .user-badge { font-size: 10px; padding: 3px 8px; }
+  .user-badge { font-size: 9px; padding: 3px 8px; }
   .btn-logout { font-size: 9px; padding: 4px 8px; }
 
-  .field-row { flex-direction: column !important; gap: 8px !important; }
+  /* ── Content padding ── */
+  .content { padding: 12px 10px !important; }
 
-  .modal { width: 95vw !important; max-height: 88vh !important; overflow-y: auto; padding: 16px !important; }
+  /* ── Forms ── */
+  .field-row { grid-template-columns: 1fr !important; gap: 8px !important; }
+  .field-row-3 { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
+  .field input, .field select, .field textarea { font-size: 16px !important; padding: 12px !important; }
+  .form-section { padding: 14px 12px !important; }
 
-  .btn-save, .btn-outline, .btn-verde-outline { min-height: 44px; font-size: 13px !important; }
+  /* ── Filter row ── */
+  .filter-row { flex-wrap: wrap !important; }
+  .filter-row select, .filter-row input { min-width: 0 !important; flex: 1 1 100% !important; font-size: 14px !important; padding: 12px !important; }
 
-  #dash-cards { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
-  .stat-card { padding: 12px 10px !important; border-radius: 12px !important; }
-  #stat-cards-grid { grid-template-columns: 1fr 1fr !important; }
-  #stat-cards-grid .stat-card:last-child { grid-column: 1 / -1; padding: 6px 10px !important; display:flex; align-items:center; justify-content:space-between; gap:8px; }
-  #stat-cards-grid .stat-card:last-child .stat-label { margin-bottom:0; }
+  /* ── Modals ── */
+  .modal { width: 95vw !important; max-height: 90vh !important; overflow-y: auto; padding: 16px !important; border-radius: 14px !important; }
+  .modal-overlay { padding: 10px !important; }
+
+  /* ── Buttons — Touch targets ── */
+  .btn-save, .btn-outline, .btn-verde-outline { min-height: 48px; font-size: 14px !important; }
+  .btn-add-item { min-height: 48px; }
+  button, select, input[type="file"] { min-height: 44px; }
+
+  /* ── Dashboard ── */
+  #dash-cards { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
+  .stat-card { padding: 10px 8px !important; border-radius: 12px !important; }
+  #stat-cards-grid { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
+  #stat-cards-grid .stat-card:last-child { grid-column: 1 / -1; padding: 6px 10px !important; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  #stat-cards-grid .stat-card:last-child .stat-label { margin-bottom: 0; }
   #stat-cards-grid .stat-card:last-child .stat-value { font-size: 14px !important; }
   .stat-sub { font-size: 9px !important; letter-spacing: 0.5px !important; }
+  .card { padding: 12px !important; margin-bottom: 8px !important; border-radius: 12px !important; }
+  .card-grid { grid-template-columns: 1fr !important; gap: 8px !important; }
 
+  /* ── Chips — scroll horizontal ── */
   .chips-wrap { flex-wrap: nowrap !important; overflow-x: auto !important; -webkit-overflow-scrolling: touch; padding-bottom: 6px; }
   .chips-wrap::-webkit-scrollbar { display: none; }
 
-  .catalogo-item { flex-wrap: wrap; gap: 6px; }
-  .catalogo-nome { min-width: 60%; }
+  /* ── Obras ── */
+  #obras-cards-grid { grid-template-columns: 1fr !important; }
+  #obras-sticky { padding: 8px 0 6px 0 !important; }
+  #obras-sticky > div:first-child { flex-wrap: wrap !important; gap: 6px !important; }
+  #obras-sticky [style*="display:flex"][style*="gap:6px"] { flex-wrap: wrap !important; overflow-x: auto !important; }
+  .obra-card { padding: 12px !important; }
+  .obra-card-nome { font-size: 14px !important; }
+  .obra-card-total { font-size: 14px !important; }
+  .lanc-item { padding: 10px 12px !important; }
+  .lanc-desc { font-size: 13px !important; }
+  .lanc-val { font-size: 13px !important; }
+  .lanc-meta { font-size: 10px !important; }
 
-  .credito-table { display: block; overflow-x: auto; }
+  /* ── Estoque ── */
+  #estoque-sticky { padding: 8px 0 6px 0 !important; }
+  .estoque-layout { flex-direction: column !important; }
+  .estoque-sidebar { width: 100% !important; position: static !important; }
+
+  /* ── Notas ── */
+  .nota-card { padding: 12px !important; }
+  .nota-fornecedor { font-size: 13px !important; }
+  .nota-top { flex-wrap: wrap; gap: 4px; }
+
+  /* ── Catálogo ── */
+  .catalogo-item { flex-wrap: wrap; gap: 6px; padding: 10px !important; }
+  .catalogo-nome { min-width: 60%; font-size: 12px !important; }
+  .catalogo-codigo { min-width: auto !important; font-size: 10px !important; padding: 2px 6px !important; }
+  #catalogo-sticky > div[style*="display:flex"] { flex-wrap: wrap !important; gap: 6px !important; }
+  #catalogo-admin-btns { width: 100%; justify-content: flex-end; }
+
+  /* ── Custos CEF ── */
+  #custos-cards-grid { grid-template-columns: 1fr !important; }
+  #custos-detalhe-view > div[style*="position:sticky"] { padding: 6px 0 4px 0 !important; }
+  #custos-detalhe-view [style*="display:flex"][style*="gap:8px"] { flex-wrap: wrap !important; }
+
+  /* ── Tables ── */
+  .credito-table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* ── Modulo badge ── */
+  .modulo-badge { font-size: 10px !important; padding: 4px 10px !important; }
+
+  /* ── Section titles ── */
+  .section-title { font-size: 12px !important; }
+
+  /* ── Form NF — botões importar ── */
+  #view-form [style*="display:flex"][style*="gap:8px"] { flex-wrap: wrap !important; }
+  #view-form [style*="display:flex"][style*="gap:8px"] > button { flex: 1 1 100% !important; }
+
+  /* ── Toast ── */
+  .toast { left: 10px; right: 10px; transform: none; text-align: center; font-size: 11px; }
+
+  /* ── Banco de dados ── */
+  #view-banco .card [style*="display:flex"] { flex-wrap: wrap !important; gap: 8px !important; }
+
+  /* ── Setup ── */
+  .shortcut-grid { grid-template-columns: 1fr !important; }
+  .sql-box { font-size: 10px !important; padding: 10px !important; }
+}
+
+/* ── Extra small (≤ 400px) ── */
+@media (max-width: 400px) {
+  .content { padding: 8px 6px !important; }
+  .header-title { font-size: 12px; }
+  .user-badge { display: none; }
+  .field-row-3 { grid-template-columns: 1fr !important; }
+  #dash-cards, #stat-cards-grid { grid-template-columns: 1fr !important; }
+  .bnav-btn { font-size: 7px; min-width: 38px; padding: 6px 4px; }
+  .bnav-btn .bnav-icon { font-size: 18px; }
 }
 
 /* ── Bottom Nav ── */
@@ -850,9 +937,22 @@ body::before {
 /* Responsive */
 @media (max-width: 768px) {
   #view-diarias .diarias-main { grid-template-columns: 1fr; }
-  #view-diarias .diarias-panel-left { border-right: none; border-bottom: 1px solid var(--borda); width: 100% !important; padding: 16px !important; overflow: visible !important; }
-  #view-diarias .diarias-panel-left.recolhido { width: 100% !important; padding: 16px !important; }
-  #view-diarias .diarias-panel-right { padding: 16px !important; }
+  #view-diarias .diarias-panel-left { border-right: none; border-bottom: 1px solid var(--borda); width: 100% !important; padding: 14px 10px !important; overflow: visible !important; }
+  #view-diarias .diarias-panel-left.recolhido { width: 100% !important; padding: 14px 10px !important; }
+  #view-diarias .diarias-panel-right { padding: 14px 10px !important; }
+  #view-diarias .diarias-header { padding: 10px 12px; }
+  #view-diarias .diarias-header-title { font-size: 12px; }
+  #view-diarias .diarias-textarea { min-height: 120px; font-size: 14px; }
+  #view-diarias .diarias-folha-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+  #view-diarias .diarias-folha-header > div { width: 100%; }
+  #view-diarias .btn-diarias-exportar { flex: 1; font-size: 10px; padding: 8px 10px; text-align: center; justify-content: center; }
+  #view-diarias .diarias-folha-table { font-size: 11px; }
+  #view-diarias .diarias-folha-table th,
+  #view-diarias .diarias-folha-table td { padding: 7px 6px; }
+  #view-diarias .diarias-tabs { flex-wrap: wrap; }
+  #view-diarias .diarias-tab { font-size: 10px; padding: 6px 10px; }
+  #view-diarias .diarias-registro-row { flex-wrap: wrap; gap: 4px; padding: 7px 10px; }
+  #view-diarias .diarias-rr-obras { flex: 1 1 100%; order: 3; }
 }
 /* Perfil Mestre: sem valores, sem lançar no EDR, sem exportar */
 body.perfil-mestre .diarias-func-val,
@@ -864,8 +964,75 @@ body.perfil-mestre #btn-diar-extra,
 body.perfil-mestre #diar-extras-lista,
 body.perfil-mestre #diar-togglePanel,
 body.perfil-mestre #btn-diar-nova-quinzena,
+body.perfil-mestre #btn-diar-del-quinzena,
 body.perfil-mestre th:last-child,
 body.perfil-mestre td:last-child { display: none !important; }
-/* Mestre mobile: painel esquerdo sempre visível e expandido */
+/* Mestre: painel esquerdo sempre visível e expandido */
 body.perfil-mestre #view-diarias .diarias-panel-left { width: auto !important; min-width: 0 !important; overflow: visible !important; }
 body.perfil-mestre #view-diarias .diarias-panel-left > *:not(.diarias-panel-toggle) { display: block !important; }
+
+/* ══════════════════════════════════════════════
+   MESTRE — MOBILE OPTIMIZATIONS
+   ══════════════════════════════════════════════ */
+/* Mestre não tem bottom-nav → corrigir alturas */
+body.perfil-mestre .main-content { padding-bottom: 0 !important; }
+
+@media (max-width: 768px) {
+  /* Mestre: full height sem bottom-nav */
+  body.perfil-mestre .main-content { height: calc(100vh - 48px) !important; }
+
+  /* Header compacto pro mestre */
+  body.perfil-mestre .header { height: 42px; }
+  body.perfil-mestre .header-brand { gap: 8px; }
+  body.perfil-mestre .header-logo-box { width: 22px; height: 22px; }
+  body.perfil-mestre .header-logo-text { font-size: 11px; }
+  body.perfil-mestre .header-title { font-size: 12px; }
+  body.perfil-mestre .app-shell { height: calc(100vh - 42px); }
+
+  /* Diárias — painel esquerdo compacto */
+  body.perfil-mestre #view-diarias .diarias-panel-left { padding: 10px !important; gap: 10px !important; }
+  body.perfil-mestre #view-diarias .diarias-textarea { min-height: 100px; font-size: 14px; }
+  body.perfil-mestre #view-diarias .btn-diarias-interpretar { padding: 14px 16px; font-size: 14px; }
+  body.perfil-mestre #view-diarias .btn-diarias-confirmar { padding: 14px 16px; font-size: 14px; min-height: 48px; }
+
+  /* Diárias — painel direito */
+  body.perfil-mestre #view-diarias .diarias-panel-right { padding: 10px !important; }
+
+  /* Registros — layout mobile otimizado */
+  body.perfil-mestre .diarias-registro-row { padding: 8px 10px; }
+  body.perfil-mestre .diarias-rr-nome { font-size: 13px; }
+  body.perfil-mestre .diarias-rr-obras { font-size: 10px; }
+  body.perfil-mestre .diarias-registro-header { padding: 8px 10px; }
+
+  /* Folha simplificada — tabela cabe sem scroll */
+  body.perfil-mestre .diarias-folha-table { font-size: 12px; }
+  body.perfil-mestre .diarias-folha-table th,
+  body.perfil-mestre .diarias-folha-table td { padding: 8px 6px; }
+  body.perfil-mestre .diarias-td-nome { font-size: 13px; }
+
+  /* Quinzena selector e tabs em linha */
+  body.perfil-mestre #view-diarias .diarias-panel-right > div:first-child { flex-direction: column !important; align-items: flex-start !important; gap: 8px !important; }
+  body.perfil-mestre .diarias-tabs { width: 100%; }
+  body.perfil-mestre .diarias-tab { flex: 1; text-align: center; padding: 8px 6px; font-size: 11px; }
+
+  /* Func cards na prévia */
+  body.perfil-mestre .diarias-func-card { padding: 8px 0; }
+  body.perfil-mestre .diarias-func-nome { font-size: 13px; }
+  body.perfil-mestre .diarias-func-obras { font-size: 10px; }
+  body.perfil-mestre .diarias-func-avatar { width: 26px; height: 26px; font-size: 10px; }
+
+  /* Calendar modal */
+  body.perfil-mestre .modal { padding: 12px !important; }
+}
+
+/* Extra small para mestre */
+@media (max-width: 400px) {
+  body.perfil-mestre .header { height: 38px; padding: 0 8px; }
+  body.perfil-mestre .header-title { font-size: 11px; letter-spacing: 0.5px; }
+  body.perfil-mestre .app-shell { height: calc(100vh - 38px); }
+  body.perfil-mestre .main-content { height: calc(100vh - 38px) !important; }
+  body.perfil-mestre .user-badge { display: none; }
+  body.perfil-mestre #view-diarias .diarias-textarea { min-height: 80px; }
+  body.perfil-mestre .diarias-folha-table th,
+  body.perfil-mestre .diarias-folha-table td { padding: 6px 4px; font-size: 11px; }
+}

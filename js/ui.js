@@ -197,7 +197,7 @@ async function salvarEntradaDireta() {
 }
 
 // ── SAÍDA / BAIXA DE ESTOQUE ──────────────────────────────
-function abrirSaidaMaterial() {
+function abrirSaidaMaterial(descPreenchida, unidadePreenchida) {
   // Popular selects
   const obraSelect = document.getElementById('saida-obra');
   obraSelect.innerHTML = '<option value="">— Selecione a obra —</option>' +
@@ -207,12 +207,18 @@ function abrirSaidaMaterial() {
   const hoje = new Date().toISOString().split('T')[0];
   document.getElementById('saida-data').value = hoje;
   // Limpar campos
-  document.getElementById('saida-desc').value = '';
+  document.getElementById('saida-desc').value = descPreenchida || '';
   document.getElementById('saida-qtd').value = '';
   document.getElementById('saida-obs').value = '';
+  if (unidadePreenchida) document.getElementById('saida-unidade').value = unidadePreenchida;
   document.getElementById('ac-saida-list').classList.add('hidden');
   document.getElementById('modal-saida').classList.remove('hidden');
-  setTimeout(() => document.getElementById('saida-desc').focus(), 100);
+  // Se veio com material, foca direto na quantidade
+  if (descPreenchida) {
+    setTimeout(() => document.getElementById('saida-qtd').focus(), 100);
+  } else {
+    setTimeout(() => document.getElementById('saida-desc').focus(), 100);
+  }
 }
 
 function onSaidaDescInput() {

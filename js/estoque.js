@@ -206,42 +206,26 @@ function renderEstoque() {
         <div style="font-weight:800;font-size:20px;color:${corSaldo};">${m.saldoTotal}</div>
         <div style="font-size:10px;color:var(--texto3);">${m.unidade}</div>
       </div>
-      <button class="btn-dist-item" onclick="abrirSaidaMaterial(${i})">📤</button>
+      <button class="btn-dist-item" onclick="abrirSaidaDoItem(${i})">📤</button>
     </div>`;
   }).join('');
   window._materiaisEstoque = filtrados;
   aplicarPerfil();
 }
 
-function abrirSaidaMaterial(idx) {
+// Saída direto de um item do estoque (botão 📤 no card do material)
+function abrirSaidaDoItem(idx) {
   const m = (window._materiaisEstoque||[])[idx]; if (!m) return;
-  distItemAtual = { material: m };
-  document.getElementById('modal-nota-info').innerHTML =
-    `<strong>${m.desc}</strong><br>Saldo: <strong style="color:var(--roxo)">${m.saldoTotal} ${m.unidade}</strong> em ${m.lotes.length} lote${m.lotes.length!==1?'s':''}`;
-  const saldoColor = m.saldoTotal < 0 ? 'color:var(--vermelho)' : 'color:var(--verde-hl)';
-  document.getElementById('dist-saldo-info').innerHTML = `Saldo atual: <strong style="${saldoColor}">${m.saldoTotal} ${m.unidade}</strong>${m.saldoTotal < 0 ? ' ⚠ negativo' : ''}`;
-  document.getElementById('dist-qtd').value = '';
-  document.getElementById('dist-qtd').max = m.saldoTotal;
-  document.getElementById('dist-obs').value = '';
-  document.getElementById('dist-valor-preview').style.display = 'none';
-  const hist = distribuicoes.filter(d => norm(d.item_desc) === norm(m.desc));
-  const histEl = document.getElementById('dist-historico');
-  if (hist.length) {
-    document.getElementById('dist-historico-lista').innerHTML = hist.slice(0,5).map(d =>
-      `<div class="dist-historico-row"><span>${d.obra_nome}</span><span>${d.qtd} ${m.unidade} · ${fmtR(d.valor)}</span></div>`).join('');
-    histEl.classList.remove('hidden');
-  } else histEl.classList.add('hidden');
-  const selDistEtapa = document.getElementById('dist-etapa');
-  if (selDistEtapa) selDistEtapa.innerHTML = etapaSelectOpts();
-  document.getElementById('modal-dist').classList.remove('hidden');
+  // Abre o modal genérico de saída já preenchido com o material
+  abrirSaidaMaterial(m.desc, m.unidade);
 }
 
 function abrirDistribuicaoItem(notaId, itemIdx) {
   const nota = notas.find(n => n.id === notaId); if (!nota) return;
   const itens = parseItens(nota); const item = itens[itemIdx]; if (!item) return;
   const materiais = consolidarEstoque();
-  const idx = materiais.findIndex(m => norm(m.desc) === norm(item.desc));
-  if (idx >= 0) { window._materiaisEstoque = materiais; abrirSaidaMaterial(idx); }
+  const m = materiais.find(m => norm(m.desc) === norm(item.desc));
+  if (m) { abrirSaidaMaterial(m.desc, m.unidade); }
 }
 
 function calcDistValor() {
