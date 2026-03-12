@@ -167,7 +167,16 @@ alter table distribuicoes add column if not exists criado_por text default '';
 alter table entradas_diretas add column if not exists criado_por text default '';
 alter table repasses_cef add column if not exists criado_por text default '';
 alter table obra_adicionais add column if not exists criado_por text default '';
-alter table adicional_pagamentos add column if not exists criado_por text default '';`;
+alter table adicional_pagamentos add column if not exists criado_por text default '';
+
+-- Slug para Kit de Entrega Digital
+alter table obras add column if not exists slug_entrega text default '';
+-- Campos extras para entrega (proprietário, endereço)
+alter table obras add column if not exists proprietario text default '';
+alter table obras add column if not exists endereco_rua text default '';
+alter table obras add column if not exists endereco_numero text default '';
+alter table obras add column if not exists endereco_bairro text default '';
+alter table obras add column if not exists endereco_cep text default '';`;
 
 // ══════════════════════════════════════════
 // ESTADO

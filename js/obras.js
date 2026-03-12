@@ -168,7 +168,8 @@ function renderObrasCards() {
         <div style="display:flex;align-items:center;gap:8px;">
           ${usuarioAtual?.perfil === 'admin' ? `<button onclick="event.stopPropagation();abrirModalObra('${o.id}')" style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);color:#60a5fa;border-radius:6px;padding:3px 10px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;cursor:pointer;">✏ EDITAR</button>` : ''}
           ${usuarioAtual?.perfil === 'admin' ? (mostandoArquivadas
-            ? `<button onclick="event.stopPropagation();reimprimirTermo('${o.id}')" style="background:rgba(139,92,246,0.08);border:1px solid rgba(139,92,246,0.2);color:#a78bfa;border-radius:6px;padding:3px 10px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;cursor:pointer;">📄 TERMO</button>
+            ? `${o.slug_entrega ? `<button onclick="event.stopPropagation();abrirEntregaDigital('${o.slug_entrega}')" style="background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.3);color:#c9a84c;border-radius:6px;padding:3px 10px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;cursor:pointer;">📦 ENTREGA</button>` : ''}
+               <button onclick="event.stopPropagation();reimprimirTermo('${o.id}')" style="background:rgba(139,92,246,0.08);border:1px solid rgba(139,92,246,0.2);color:#a78bfa;border-radius:6px;padding:3px 10px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;cursor:pointer;">📄 TERMO</button>
                <button onclick="event.stopPropagation();arquivarObraCard('${o.id}',false)" style="background:rgba(46,204,113,0.08);border:1px solid rgba(46,204,113,0.2);color:#4ade80;border-radius:6px;padding:3px 10px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;cursor:pointer;">🏗 REATIVAR</button>`
             : `<button onclick="event.stopPropagation();arquivarObraCard('${o.id}',true)" style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);color:#fbbf24;border-radius:6px;padding:3px 10px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;cursor:pointer;">✅ CONCLUIR</button>`
           ) : ''}
@@ -244,6 +245,11 @@ async function arquivarObraCard(obraId, arquivar) {
   } catch(e) { showToast('ERRO AO ATUALIZAR OBRA.'); }
 }
 
+function gerarSlug(texto) {
+  return (texto || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-');
+}
+
 function abrirModalConclusao(obraId) {
   const obra = [...obras, ...obrasArquivadas].find(o => o.id === obraId);
   if (!obra) return;
@@ -256,6 +262,10 @@ function abrirModalConclusao(obraId) {
   document.getElementById('concluir-bairro').value = obra.endereco_bairro || '';
   document.getElementById('concluir-cidade').value = obra.cidade || '';
   document.getElementById('concluir-cep').value = obra.endereco_cep || '';
+  // Auto-sugerir slug a partir do nome da obra (ex: "CASA GILMARA" → "gilmara")
+  const slugExistente = obra.slug_entrega || '';
+  const slugSugerido = slugExistente || gerarSlug(obra.nome.replace(/^(CASA|RESID[ÊE]NCIA|PROJ\.?|PROJETO)\s+/i, ''));
+  document.getElementById('concluir-slug').value = slugSugerido;
   document.getElementById('modal-concluir-obra').classList.remove('hidden');
   setTimeout(() => document.getElementById('concluir-proprietario').focus(), 100);
 }
@@ -278,6 +288,7 @@ async function confirmarConclusaoObra() {
   if (!numero) { showToast('INFORME O NÚMERO / LOTE.'); return; }
   if (!bairro) { showToast('INFORME O BAIRRO.'); return; }
   if (!cidade) { showToast('INFORME A CIDADE.'); return; }
+  const slug_entrega = (document.getElementById('concluir-slug').value || '').toLowerCase().trim().replace(/\s+/g, '-');
   const obra = [...obras, ...obrasArquivadas].find(o => o.id === obraId);
   const nome = obra?.nome || 'Obra';
   if (!confirm(`Concluir "${nome}" e gerar o Termo de Entrega?`)) return;
@@ -286,7 +297,7 @@ async function confirmarConclusaoObra() {
       arquivada: true,
       proprietario, contratante: proprietario, cpf_contratante: cpf,
       endereco_rua: rua, endereco_numero: numero, endereco_bairro: bairro,
-      cidade, endereco_cep: cep
+      cidade, endereco_cep: cep, slug_entrega
     });
     // Gerar termo
     gerarTermoEntrega({ proprietario, cpf, dataEntrega, rua, numero, bairro, cidade, modelo: nome });
@@ -596,16 +607,18 @@ async function salvarNovaObra() {
   const valorVenda = parseFloat(document.getElementById('nova-obra-valor-venda').value) || 0;
   const contratante = (document.getElementById('nova-obra-contratante').value||'').toUpperCase().trim();
   const cpf_contratante = (document.getElementById('nova-obra-cpf').value||'').trim();
+  const slug_entrega = (document.getElementById('nova-obra-slug').value||'').toLowerCase().trim().replace(/\s+/g,'-');
   const editId = document.getElementById('obra-edit-id').value;
   if (!nome) { showToast('INFORME O NOME DA OBRA.'); return; }
   try {
+    const payload = { nome, cidade, valor_venda: valorVenda, contratante, cpf_contratante, slug_entrega };
     if (editId) {
-      await sbPatch('obras', `?id=eq.${editId}`, { nome, cidade, valor_venda: valorVenda, contratante, cpf_contratante });
+      await sbPatch('obras', `?id=eq.${editId}`, payload);
       await loadObras();
       populateSelects(); renderDashboard(); renderObrasCards();
       showToast(`✅ OBRA "${nome}" ATUALIZADA!`);
     } else {
-      const [nova] = await sbPost('obras', { nome, cidade, valor_venda: valorVenda, contratante, cpf_contratante });
+      const [nova] = await sbPost('obras', payload);
       obras.push(nova); obras.sort((a,b)=>a.nome.localeCompare(b.nome));
       populateSelects(); renderDashboard(); renderObrasCards();
       showToast(`✅ OBRA ${nome} CADASTRADA!`);
@@ -622,9 +635,17 @@ function abrirModalObra(obraId) {
   document.getElementById('nova-obra-valor-venda').value = obra ? (obra.valor_venda || '') : '';
   document.getElementById('nova-obra-contratante').value = obra ? (obra.contratante || '') : '';
   document.getElementById('nova-obra-cpf').value = obra ? (obra.cpf_contratante || '') : '';
+  document.getElementById('nova-obra-slug').value = obra ? (obra.slug_entrega || '') : '';
   document.getElementById('modal-obra-titulo').textContent = obra ? '🏗 EDITAR OBRA' : '🏗 NOVA OBRA';
   document.getElementById('modal-obra').classList.remove('hidden');
   setTimeout(() => document.getElementById('nova-obra-nome').focus(), 100);
+}
+
+// URL base do site de entrega (Netlify)
+const ENTREGA_BASE_URL = 'https://sensational-pixie-84dce5.netlify.app/entrega';
+
+function abrirEntregaDigital(slug) {
+  window.open(`${ENTREGA_BASE_URL}/${slug}`, '_blank');
 }
 
 // ══════════════════════════════════════════

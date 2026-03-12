@@ -870,6 +870,10 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
     </div>
     <div class="field"><label>NOME DO CONTRATANTE</label><input type="text" id="nova-obra-contratante" placeholder="EX: JOÃO DA SILVA" style="text-transform:uppercase;"></div>
     <div class="field"><label>CPF DO CONTRATANTE</label><input type="text" id="nova-obra-cpf" placeholder="000.000.000-00" maxlength="14"></div>
+    <div style="border-top:1px solid var(--borda);margin:12px 0 8px;padding-top:10px;">
+      <div style="font-size:10px;color:var(--texto3);letter-spacing:2px;font-weight:700;margin-bottom:8px;">📦 ENTREGA DIGITAL</div>
+    </div>
+    <div class="field"><label>SLUG DE ENTREGA</label><input type="text" id="nova-obra-slug" placeholder="ex: gilmara, carlos-e-amanda" style="text-transform:lowercase;"><div style="font-size:9px;color:var(--texto3);margin-top:3px;">Nome simplificado (sem acentos). Usado na URL: site/entrega/<strong>slug</strong></div></div>
     <button class="btn-save" onclick="salvarNovaObra()">SALVAR</button>
     <button class="btn-outline" onclick="fecharModal('obra')">CANCELAR</button>
   </div>
@@ -903,6 +907,10 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
       <div class="field"><label>CIDADE / UF *</label><input type="text" id="concluir-cidade" placeholder="EX: JUPI-PE" style="text-transform:uppercase;"></div>
       <div class="field"><label>CEP</label><input type="text" id="concluir-cep" placeholder="00000-000" maxlength="9"></div>
     </div>
+    <div style="border-top:1px solid var(--borda);margin:10px 0;padding-top:6px;">
+      <div style="font-size:10px;color:var(--texto3);letter-spacing:2px;font-weight:700;">📦 ENTREGA DIGITAL</div>
+    </div>
+    <div class="field"><label>SLUG DE ENTREGA</label><input type="text" id="concluir-slug" placeholder="ex: gilmara" style="text-transform:lowercase;"><div style="font-size:9px;color:var(--texto3);margin-top:3px;">Gera a página de entrega em site/entrega/<strong>slug</strong></div></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;">
       <button class="btn-save" onclick="confirmarConclusaoObra()">✅ CONCLUIR E GERAR TERMO</button>
       <button class="btn-outline" onclick="fecharModal('concluir-obra')">CANCELAR</button>
