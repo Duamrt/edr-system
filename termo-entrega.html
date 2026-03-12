@@ -307,7 +307,7 @@
   <div class="assinaturas">
     <div class="assinatura-box">
       <div class="assinatura-linha">Proprietário(a)</div>
-      <div class="assinatura-sub" id="t-ass-proprietario">Nome: ____________________________________<br>CPF: _____________________________________</div>
+      <div class="assinatura-sub" id="t-ass-proprietario">CPF: _____________________________________</div>
     </div>
     <div class="assinatura-box">
       <div class="assinatura-linha">EDR Engenharia</div>
@@ -348,8 +348,8 @@
     set('t-local-data', `${cidadeLocal}, ${hoje.getDate()} de ${meses[hoje.getMonth()]} de ${hoje.getFullYear()}`);
     // Assinatura proprietario
     const assEl = document.getElementById('t-ass-proprietario');
-    if (assEl && d.proprietario) {
-      assEl.innerHTML = `Nome: ${d.proprietario}<br>CPF: ${d.cpf || '_____________________________________'}`;
+    if (assEl && d.cpf) {
+      assEl.innerHTML = `CPF: ${d.cpf}`;
     }
     // Limpar dados do localStorage apos uso
     localStorage.removeItem('edr-termo-dados');
