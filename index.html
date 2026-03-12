@@ -500,23 +500,20 @@
 
   <!-- BANCO DE DADOS (admin only) -->
   <div id="view-banco" class="hidden">
-    <div style="position:sticky;top:53px;z-index:90;background:var(--bg);padding:10px 0 4px 0;">
+    <div style="position:sticky;top:53px;z-index:90;background:var(--bg);padding:10px 0 8px 0;">
       <div class="modulo-badge">🗄 DADOS</div>
     </div>
 
     <!-- OBRAS CADASTRADAS -->
     <div class="card" style="margin-bottom:12px;padding:16px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-        <div class="section-title" style="margin:0;font-size:13px;">🏗 OBRAS CADASTRADAS</div>
-        <button class="btn-save" style="padding:6px 14px;font-size:12px;" onclick="abrirModalObra()">+ Nova Obra</button>
-      </div>
-      <div id="banco-obras-lista" style="max-height:300px;overflow-y:auto;"></div>
+      <div class="section-title" style="margin-bottom:14px;font-size:13px;">🏗 OBRAS CADASTRADAS</div>
+      <div id="banco-obras-lista" style="max-height:400px;overflow-y:auto;"></div>
     </div>
 
     <!-- FORNECEDORES -->
     <div class="card" style="margin-bottom:12px;padding:16px;">
       <div class="section-title" style="margin-bottom:14px;font-size:13px;">🏭 FORNECEDORES <span id="banco-forn-count" style="font-size:11px;color:var(--texto3);font-weight:400;"></span></div>
-      <div id="banco-forn-lista" style="max-height:300px;overflow-y:auto;"></div>
+      <div id="banco-forn-lista" style="max-height:400px;overflow-y:auto;"></div>
     </div>
 
     <!-- USUÁRIOS -->

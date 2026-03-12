@@ -97,15 +97,13 @@ function renderBanco() {
       obrasEl.innerHTML = obras.map(o => {
         const ls = lancamentos.filter(l => l.obra_id === o.id);
         const total = ls.reduce((s,l) => s + Number(l.total||0), 0);
+        const status = o.status === 'concluida' ? '<span style="font-size:9px;padding:2px 8px;border-radius:10px;background:rgba(46,204,113,0.1);color:var(--verde-hl);font-weight:700;margin-left:8px;">CONCLUÍDA</span>' : '';
         return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--borda2);">
           <div>
-            <div style="font-weight:700;font-size:13px;">${o.nome}</div>
+            <div style="font-weight:700;font-size:13px;">${o.nome}${status}</div>
             <div style="font-size:11px;color:var(--texto3);margin-top:2px;">${ls.length} lançamento${ls.length!==1?'s':''}</div>
           </div>
-          <div style="text-align:right;">
-            <div style="font-weight:700;color:var(--verde-hl);font-size:13px;">${fmtR(total)}</div>
-            <div style="font-size:10px;color:var(--texto3);">ID: ${o.id?.substring(0,8)}…</div>
-          </div>
+          <div style="font-weight:700;color:var(--verde-hl);font-size:13px;">${fmtR(total)}</div>
         </div>`;
       }).join('');
     }
