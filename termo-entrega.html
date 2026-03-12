@@ -348,8 +348,11 @@
     set('t-local-data', `${cidadeLocal}, ${hoje.getDate()} de ${meses[hoje.getMonth()]} de ${hoje.getFullYear()}`);
     // Assinatura proprietario
     const assEl = document.getElementById('t-ass-proprietario');
-    if (assEl && d.cpf) {
-      assEl.innerHTML = `CPF: ${d.cpf}`;
+    if (assEl) {
+      const parts = [];
+      if (d.proprietario) parts.push(d.proprietario);
+      if (d.cpf) parts.push(`CPF: ${d.cpf}`);
+      if (parts.length) assEl.innerHTML = parts.join('<br>');
     }
     // Limpar dados do localStorage apos uso
     localStorage.removeItem('edr-termo-dados');
