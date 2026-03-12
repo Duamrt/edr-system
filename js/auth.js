@@ -41,6 +41,13 @@ function entrarNoApp() {
   // Badge modo visitante
   const demoBadge = document.getElementById('demo-mode-badge');
   if (demoBadge) demoBadge.style.display = usuarioAtual.perfil === 'visitante' ? 'block' : 'none';
+  // Limpar resquícios de demo se NÃO está em modo demo
+  if (!MODO_DEMO) {
+    const bannerOrfao = document.getElementById('demo-banner');
+    if (bannerOrfao) bannerOrfao.remove();
+    const mc = document.getElementById('main-content');
+    if (mc) mc.style.paddingBottom = '';
+  }
   aplicarPerfil();
   initMenuDragDrop();
   iniciarApp();
@@ -49,6 +56,19 @@ function fazerLogout() {
   try { localStorage.removeItem('edr_session'); } catch(e) {}
   MODO_DEMO = false;
   usuarioAtual = null;
+  // Cancelar timer pendente do banner demo
+  if (typeof _demoBannerTimer !== 'undefined' && _demoBannerTimer) {
+    clearTimeout(_demoBannerTimer);
+    _demoBannerTimer = null;
+  }
+  // Remover banner e badge de demo se existirem
+  const demoBanner = document.getElementById('demo-banner');
+  if (demoBanner) demoBanner.remove();
+  const demoBadge = document.getElementById('demo-badge');
+  if (demoBadge) demoBadge.classList.add('hidden');
+  // Restaurar padding do main-content
+  const mc = document.getElementById('main-content');
+  if (mc) mc.style.paddingBottom = '';
   document.getElementById('app').classList.add('hidden');
   document.getElementById('login-screen').classList.remove('hidden');
   document.getElementById('login-user').value = '';

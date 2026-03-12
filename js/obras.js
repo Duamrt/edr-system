@@ -444,6 +444,19 @@ function etapaSelectOpts(selected='', incluiVazio=true) {
 }
 
 // Redireciona para F3 Entrada Direta com a obra pré-selecionada
+function irParaAdicionais() {
+  setView('obras');
+  const obraId = document.getElementById('obras-filtro-obra')?.value || '';
+  if (obraId) {
+    // Obra já selecionada — ir direto pra aba Adicionais
+    obrasSwitchTab('add');
+  } else if (obras.length) {
+    // Nenhuma obra selecionada — abrir a primeira e ir na aba Adicionais
+    obrasAbrirDetalhe(obras[0].id);
+    setTimeout(() => obrasSwitchTab('add'), 100);
+  }
+}
+
 function irParaEntradaDireta() {
   const obraId = document.getElementById('obras-filtro-obra')?.value || '';
   setView('estoque');

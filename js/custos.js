@@ -96,6 +96,10 @@ function renderCustosCards() {
         <span style="font-size:11px;font-weight:700;color:#a78bfa;">${fmt(adds.valorTotal)}</span>
       </div>` : ''}
       ${valorVenda > 0 ? `<div style="margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;padding:6px 10px;background:rgba(46,204,113,0.06);border:1px solid rgba(46,204,113,0.12);border-radius:8px;">
+          <span style="font-size:10px;color:var(--texto3);letter-spacing:.5px;">SALDO A RECEBER</span>
+          <span style="font-size:14px;font-weight:800;color:${(valorVenda - totalRecebido) >= 0 ? 'var(--verde-hl)' : '#ef4444'};font-family:'JetBrains Mono',monospace;">${fmt(valorVenda - totalRecebido)}</span>
+        </div>
         <div style="height:6px;background:rgba(46,204,113,0.1);border-radius:3px;overflow:hidden;">
           <div style="width:${pctRecebido}%;height:100%;background:var(--verde3);border-radius:3px;"></div>
         </div>

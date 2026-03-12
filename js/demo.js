@@ -114,6 +114,8 @@ function _demoFilter(table, q) {
   return result;
 }
 
+let _demoBannerTimer = null;
+
 function entrarModoDemo() {
   MODO_DEMO = true;
   USUARIOS.length = 0;
@@ -123,7 +125,9 @@ function entrarModoDemo() {
   const badge = document.getElementById('demo-badge');
   if (badge) badge.classList.remove('hidden');
   entrarNoApp();
-  setTimeout(() => {
+  if (_demoBannerTimer) clearTimeout(_demoBannerTimer);
+  _demoBannerTimer = setTimeout(() => {
+    if (!MODO_DEMO) return; // Saiu do demo antes do timer
     if (!document.getElementById('demo-banner')) {
       const b = document.createElement('div');
       b.id = 'demo-banner';
@@ -134,6 +138,7 @@ function entrarModoDemo() {
       const mc = document.getElementById('main-content');
       if (mc) mc.style.paddingBottom = (window.innerWidth <= 768 ? '110px' : '40px');
     }
+    _demoBannerTimer = null;
   }, 600);
 }
 
