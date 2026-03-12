@@ -138,23 +138,23 @@ function renderBanco() {
     }
   }
 
-  // USUÁRIOS
+  // USUÁRIOS — puxa do array USUARIOS (Supabase)
   const usersEl = document.getElementById('banco-users-lista');
   if (usersEl) {
-    const usuarios = [
-      { login: 'duamrt', perfil: 'Admin', nome: 'Duam — Operações' },
-      { login: 'elydart', perfil: 'Admin', nome: 'Elyda — Financeiro' },
-      { login: 'operador', perfil: 'Operacional', nome: 'Equipe de Campo' },
-      { login: 'anderson', perfil: 'Mestre', nome: 'Anderson — Mestre de Obras' },
-    ];
-    usersEl.innerHTML = usuarios.map(u =>
-      `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--borda2);">
-        <div style="width:36px;height:36px;border-radius:50%;background:var(--verde-bg);display:flex;align-items:center;justify-content:center;font-size:16px;">${u.perfil==='Admin'?'👑':'👷'}</div>
-        <div>
-          <div style="font-weight:700;font-size:13px;">${u.nome}</div>
-          <div style="font-size:11px;color:var(--texto3);">@${u.login} · ${u.perfil}</div>
-        </div>
-      </div>`
-    ).join('');
+    const lista = typeof USUARIOS !== 'undefined' ? USUARIOS.filter(u => u.ativo !== false) : [];
+    if (!lista.length) { usersEl.innerHTML = '<div class="empty">Nenhum usuário cadastrado.</div>'; }
+    else {
+      const iconePerfil = p => p === 'admin' ? '👑' : p === 'mestre' ? '🔨' : '👷';
+      const labelPerfil = p => p === 'admin' ? 'Admin' : p === 'mestre' ? 'Mestre' : 'Operacional';
+      usersEl.innerHTML = lista.map(u =>
+        `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--borda2);">
+          <div style="width:36px;height:36px;border-radius:50%;background:var(--verde-bg);display:flex;align-items:center;justify-content:center;font-size:16px;">${iconePerfil(u.perfil)}</div>
+          <div>
+            <div style="font-weight:700;font-size:13px;">${u.nome}</div>
+            <div style="font-size:11px;color:var(--texto3);">@${u.usuario} · ${labelPerfil(u.perfil)}</div>
+          </div>
+        </div>`
+      ).join('');
+    }
   }
 }
