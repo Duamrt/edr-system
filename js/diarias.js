@@ -608,10 +608,11 @@ function diarParseMensagem(msgOriginal) {
     'madeira', 'prego', 'parafuso', 'tinta', 'cal', 'saco', 'sacos', 'bloco', 'telha'];
 
   // Detectar turno global da mensagem (se houver)
-  // Padrões: "ate meio-dia", "manha", "tarde", "atarde", "i atarde"
+  // Padrões: "ate meio-dia", "manha", "tarde", "atarde", "meio dia em X"
   const detectarTurno = (texto) => {
     if (/ate meio.?dia|ate o meio.?dia|manha|de manha/.test(texto)) return 'manha';
     if (/a tarde|atarde|de tarde|tarde/.test(texto)) return 'tarde';
+    if (/meio.?dia/.test(texto)) return 'manha'; // "meio dia em X" = meia diária = 0.5
     return 'dia';
   };
 
@@ -710,7 +711,8 @@ function diarParseMensagem(msgOriginal) {
     // Suporta: "i atarde", "e atarde", "i manha", "e de tarde", etc.
     const marcado = bloco
       .replace(/\b(e|i)\s+(ate meio.?dia|de manha|a tarde|atarde|de tarde)/g, '|$2')
-      .replace(/\b(e|i)\s+(manha)\b/g, '|$2');
+      .replace(/\b(e|i)\s+(manha)\b/g, '|$2')
+      .replace(/,\s*(meio.?dia|manha|de manha|tarde|atarde|a tarde|de tarde|ate meio.?dia)/gi, '|$1'); // vírgula antes de turno
     const partes = marcado.split('|').map(s => s.trim()).filter(Boolean);
     return partes.length > 1 ? partes : [bloco];
   };
@@ -750,7 +752,11 @@ function diarParseMensagem(msgOriginal) {
 
     if (funcs.length) {
       ultimosFuncs = funcs;
-      funcs.forEach(f => addPeriodo(f, turno, obra));
+      // Se tem obra ou é bloco único, adiciona período
+      // Se não tem obra e tem mais blocos, só guarda os nomes pra usar nos próximos
+      if (obra !== 'Não especificada' || blocos.length === 1) {
+        funcs.forEach(f => addPeriodo(f, turno, obra));
+      }
     } else if (obra !== 'Não especificada' && ultimosFuncs.length) {
       // Bloco sem nome mas com obra — aplica ao mesmo grupo do bloco anterior
       // Ex: "I atarde casa di Pedro" — mesmos funcionários, turno tarde, obra Pedro
