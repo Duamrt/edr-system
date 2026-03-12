@@ -56,6 +56,16 @@ function fazerLogout() {
   try { localStorage.removeItem('edr_session'); } catch(e) {}
   MODO_DEMO = false;
   usuarioAtual = null;
+  // Restaurar USUARIOS fallback (limpa resquícios do demo)
+  USUARIOS = [
+    { usuario: 'elydart',  senha: '1202elyd@',   perfil: 'admin',       nome: 'Elyda',         ativo: true },
+    { usuario: 'admin',    senha: 'admin321',    perfil: 'admin',       nome: 'Duam',          ativo: true },
+    { usuario: 'mikael',   senha: 'op123',       perfil: 'operacional', nome: 'Mikael',        ativo: true },
+    { usuario: 'anderson', senha: 'mestre123',   perfil: 'mestre',      nome: 'Anderson',      ativo: true },
+    { usuario: 'visitante',senha: 'edr2024',     perfil: 'visitante',   nome: 'Visitante',     ativo: true },
+  ];
+  // Limpar arrays de dados para evitar resquícios do demo
+  obras = []; obrasArquivadas = []; notas = []; lancamentos = []; distribuicoes = [];
   // Cancelar timer pendente do banner demo
   if (typeof _demoBannerTimer !== 'undefined' && _demoBannerTimer) {
     clearTimeout(_demoBannerTimer);
@@ -113,8 +123,9 @@ function aplicarPerfil() {
   const isVisitante = usuarioAtual.perfil === 'visitante';
 
   // Visitante: ativa modo demo (nenhuma escrita vai ao Supabase)
-  // Não desativar MODO_DEMO se já foi ativado por entrarModoDemo()
+  // Demais perfis: garante que MODO_DEMO está desligado
   if (isVisitante) MODO_DEMO = true;
+  else MODO_DEMO = false;
 
   // Resetar sidebar — mostrar tudo antes de aplicar restrições
   ['nav-dashboard','nav-obras','nav-estoque','nav-notas','nav-form','nav-creditos',

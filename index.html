@@ -875,6 +875,41 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
   </div>
 </div>
 
+<!-- MODAL CONCLUIR OBRA -->
+<div id="modal-concluir-obra" class="modal-overlay hidden" onclick="closeModalOutside(event,'concluir-obra')">
+  <div class="modal" style="max-width:480px;">
+    <div class="modal-title"><span>✅ CONCLUIR OBRA</span> <button class="modal-close" onclick="fecharModal('concluir-obra')">✕</button></div>
+    <input type="hidden" id="concluir-obra-id">
+    <div style="font-size:11px;color:var(--texto2);margin-bottom:12px;padding:8px;background:rgba(46,204,113,0.06);border:1px solid rgba(46,204,113,0.15);border-radius:6px;">
+      Preencha os dados do imóvel para gerar o <strong>Termo de Entrega</strong> e arquivar a obra.
+    </div>
+    <div style="border-bottom:1px solid var(--borda);margin-bottom:10px;padding-bottom:6px;">
+      <div style="font-size:10px;color:var(--texto3);letter-spacing:2px;font-weight:700;">👤 PROPRIETÁRIO</div>
+    </div>
+    <div class="field"><label>NOME DO PROPRIETÁRIO *</label><input type="text" id="concluir-proprietario" placeholder="NOME COMPLETO" style="text-transform:uppercase;"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div class="field"><label>CPF *</label><input type="text" id="concluir-cpf" placeholder="000.000.000-00" maxlength="14"></div>
+      <div class="field"><label>DATA DE ENTREGA *</label><input type="date" id="concluir-data-entrega"></div>
+    </div>
+    <div style="border-bottom:1px solid var(--borda);margin:10px 0;padding-bottom:6px;">
+      <div style="font-size:10px;color:var(--texto3);letter-spacing:2px;font-weight:700;">📍 ENDEREÇO DO IMÓVEL</div>
+    </div>
+    <div class="field"><label>RUA / LOGRADOURO *</label><input type="text" id="concluir-rua" placeholder="EX: RUA DAS FLORES" style="text-transform:uppercase;"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div class="field"><label>Nº / LOTE *</label><input type="text" id="concluir-numero" placeholder="EX: 123 / LOTE 5"></div>
+      <div class="field"><label>BAIRRO *</label><input type="text" id="concluir-bairro" placeholder="EX: CENTRO" style="text-transform:uppercase;"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:2fr 1fr;gap:10px;">
+      <div class="field"><label>CIDADE / UF *</label><input type="text" id="concluir-cidade" placeholder="EX: JUPI-PE" style="text-transform:uppercase;"></div>
+      <div class="field"><label>CEP</label><input type="text" id="concluir-cep" placeholder="00000-000" maxlength="9"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;">
+      <button class="btn-save" onclick="confirmarConclusaoObra()">✅ CONCLUIR E GERAR TERMO</button>
+      <button class="btn-outline" onclick="fecharModal('concluir-obra')">CANCELAR</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL ASSISTENTE TRIBUTÁRIO -->
 <div id="modal-ai" class="modal-overlay hidden" onclick="closeModalOutside(event,'ai')">
   <div class="modal">

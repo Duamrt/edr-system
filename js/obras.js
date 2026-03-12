@@ -64,7 +64,13 @@ function onClickArquivarObra() {
   if (usuarioAtual?.perfil !== 'admin') return;
   const obraId = document.getElementById('obras-filtro-obra').value;
   if (!obraId) return;
-  arquivarObra(obraId, !mostandoArquivadas);
+  const arquivar = !mostandoArquivadas;
+  if (arquivar) {
+    // Abrir modal de conclusão
+    abrirModalConclusao(obraId);
+    return;
+  }
+  arquivarObra(obraId, false);
   document.getElementById('obras-filtro-obra').value = '';
   document.getElementById('btn-arquivar-obra').style.display = 'none';
 }
@@ -162,7 +168,8 @@ function renderObrasCards() {
         <div style="display:flex;align-items:center;gap:8px;">
           ${usuarioAtual?.perfil === 'admin' ? `<button onclick="event.stopPropagation();abrirModalObra('${o.id}')" style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);color:#60a5fa;border-radius:6px;padding:3px 10px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;cursor:pointer;">✏ EDITAR</button>` : ''}
           ${usuarioAtual?.perfil === 'admin' ? (mostandoArquivadas
-            ? `<button onclick="event.stopPropagation();arquivarObraCard('${o.id}',false)" style="background:rgba(46,204,113,0.08);border:1px solid rgba(46,204,113,0.2);color:#4ade80;border-radius:6px;padding:3px 10px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;cursor:pointer;">🏗 REATIVAR</button>`
+            ? `<button onclick="event.stopPropagation();reimprimirTermo('${o.id}')" style="background:rgba(139,92,246,0.08);border:1px solid rgba(139,92,246,0.2);color:#a78bfa;border-radius:6px;padding:3px 10px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;cursor:pointer;">📄 TERMO</button>
+               <button onclick="event.stopPropagation();arquivarObraCard('${o.id}',false)" style="background:rgba(46,204,113,0.08);border:1px solid rgba(46,204,113,0.2);color:#4ade80;border-radius:6px;padding:3px 10px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;cursor:pointer;">🏗 REATIVAR</button>`
             : `<button onclick="event.stopPropagation();arquivarObraCard('${o.id}',true)" style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);color:#fbbf24;border-radius:6px;padding:3px 10px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;cursor:pointer;">✅ CONCLUIR</button>`
           ) : ''}
           <span style="font-size:10px;color:var(--verde-hl);font-weight:600;">DETALHES →</span>
@@ -201,16 +208,18 @@ function obrasVoltarCards() {
 
 async function arquivarObra(obraId, arquivar) {
   if (usuarioAtual?.perfil !== 'admin') return;
-  const acao = arquivar ? 'marcar como concluída' : 'reabrir';
-  if (!confirm(`Deseja ${acao} esta obra?`)) return;
+  if (arquivar) {
+    abrirModalConclusao(obraId);
+    return;
+  }
+  if (!confirm('Deseja reabrir esta obra?')) return;
   try {
-    await sbPatch('obras', `?id=eq.${obraId}`, { arquivada: arquivar });
-    // Atualizar localmente
+    await sbPatch('obras', `?id=eq.${obraId}`, { arquivada: false });
     await loadObras();
     populateSelects();
     filtrarLanc();
     renderDashboard();
-    showToast(arquivar ? '✅ OBRA CONCLUÍDA!' : '🔄 OBRA REABERTA!');
+    showToast('🔄 OBRA REABERTA!');
   } catch(e) { showToast('ERRO AO ATUALIZAR OBRA.'); }
 }
 
@@ -218,16 +227,100 @@ async function arquivarObraCard(obraId, arquivar) {
   if (usuarioAtual?.perfil !== 'admin') return;
   const obra = [...obras, ...obrasArquivadas].find(o => o.id === obraId);
   const nome = obra?.nome || 'esta obra';
-  const acao = arquivar ? `Concluir "${nome}" e arquivar?` : `Reativar "${nome}"?`;
-  if (!confirm(acao)) return;
+  if (arquivar) {
+    // Abrir modal de conclusão ao invés de confirm simples
+    abrirModalConclusao(obraId);
+    return;
+  }
+  // Reativar — confirm simples
+  if (!confirm(`Reativar "${nome}"?`)) return;
   try {
-    await sbPatch('obras', `?id=eq.${obraId}`, { arquivada: arquivar });
+    await sbPatch('obras', `?id=eq.${obraId}`, { arquivada: false });
     await loadObras();
     populateSelects();
     renderObrasCards();
     renderDashboard();
-    showToast(arquivar ? `✅ "${nome}" concluída e arquivada!` : `🔄 "${nome}" reativada!`);
+    showToast(`🔄 "${nome}" reativada!`);
   } catch(e) { showToast('ERRO AO ATUALIZAR OBRA.'); }
+}
+
+function abrirModalConclusao(obraId) {
+  const obra = [...obras, ...obrasArquivadas].find(o => o.id === obraId);
+  if (!obra) return;
+  document.getElementById('concluir-obra-id').value = obraId;
+  document.getElementById('concluir-proprietario').value = obra.contratante || obra.proprietario || '';
+  document.getElementById('concluir-cpf').value = obra.cpf_contratante || '';
+  document.getElementById('concluir-data-entrega').value = new Date().toISOString().split('T')[0];
+  document.getElementById('concluir-rua').value = obra.endereco_rua || '';
+  document.getElementById('concluir-numero').value = obra.endereco_numero || '';
+  document.getElementById('concluir-bairro').value = obra.endereco_bairro || '';
+  document.getElementById('concluir-cidade').value = obra.cidade || '';
+  document.getElementById('concluir-cep').value = obra.endereco_cep || '';
+  document.getElementById('modal-concluir-obra').classList.remove('hidden');
+  setTimeout(() => document.getElementById('concluir-proprietario').focus(), 100);
+}
+
+async function confirmarConclusaoObra() {
+  const obraId = document.getElementById('concluir-obra-id').value;
+  const proprietario = (document.getElementById('concluir-proprietario').value || '').toUpperCase().trim();
+  const cpf = (document.getElementById('concluir-cpf').value || '').trim();
+  const dataEntrega = document.getElementById('concluir-data-entrega').value;
+  const rua = (document.getElementById('concluir-rua').value || '').toUpperCase().trim();
+  const numero = (document.getElementById('concluir-numero').value || '').trim();
+  const bairro = (document.getElementById('concluir-bairro').value || '').toUpperCase().trim();
+  const cidade = (document.getElementById('concluir-cidade').value || '').toUpperCase().trim();
+  const cep = (document.getElementById('concluir-cep').value || '').trim();
+  // Validação
+  if (!proprietario) { showToast('INFORME O NOME DO PROPRIETÁRIO.'); return; }
+  if (!cpf) { showToast('INFORME O CPF DO PROPRIETÁRIO.'); return; }
+  if (!dataEntrega) { showToast('INFORME A DATA DE ENTREGA.'); return; }
+  if (!rua) { showToast('INFORME A RUA / LOGRADOURO.'); return; }
+  if (!numero) { showToast('INFORME O NÚMERO / LOTE.'); return; }
+  if (!bairro) { showToast('INFORME O BAIRRO.'); return; }
+  if (!cidade) { showToast('INFORME A CIDADE.'); return; }
+  const obra = [...obras, ...obrasArquivadas].find(o => o.id === obraId);
+  const nome = obra?.nome || 'Obra';
+  if (!confirm(`Concluir "${nome}" e gerar o Termo de Entrega?`)) return;
+  try {
+    await sbPatch('obras', `?id=eq.${obraId}`, {
+      arquivada: true,
+      proprietario, contratante: proprietario, cpf_contratante: cpf,
+      endereco_rua: rua, endereco_numero: numero, endereco_bairro: bairro,
+      cidade, endereco_cep: cep
+    });
+    // Gerar termo
+    gerarTermoEntrega({ proprietario, cpf, dataEntrega, rua, numero, bairro, cidade, modelo: nome });
+    await loadObras();
+    populateSelects();
+    renderObrasCards();
+    renderDashboard();
+    fecharModal('concluir-obra');
+    showToast(`✅ "${nome}" concluída! Termo aberto em nova aba.`);
+  } catch(e) { showToast('ERRO AO CONCLUIR OBRA.'); console.error(e); }
+}
+
+function gerarTermoEntrega(dados) {
+  localStorage.setItem('edr-termo-dados', JSON.stringify(dados));
+  window.open('termo-entrega.html', '_blank');
+}
+
+function reimprimirTermo(obraId) {
+  const obra = [...obras, ...obrasArquivadas].find(o => o.id === obraId);
+  if (!obra) return;
+  if (!obra.proprietario && !obra.contratante) {
+    showToast('DADOS INCOMPLETOS. EDITE A OBRA ANTES.');
+    return;
+  }
+  gerarTermoEntrega({
+    proprietario: obra.proprietario || obra.contratante || '',
+    cpf: obra.cpf_contratante || '',
+    dataEntrega: obra.criado_em ? obra.criado_em.split('T')[0] : '',
+    rua: obra.endereco_rua || '',
+    numero: obra.endereco_numero || '',
+    bairro: obra.endereco_bairro || '',
+    cidade: obra.cidade || '',
+    modelo: obra.nome || ''
+  });
 }
 
 let obraTabAtual = 'lanc';
