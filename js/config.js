@@ -169,6 +169,30 @@ alter table repasses_cef add column if not exists criado_por text default '';
 alter table obra_adicionais add column if not exists criado_por text default '';
 alter table adicional_pagamentos add column if not exists criado_por text default '';
 
+-- Tabela de funcionários para diárias (CRUD dinâmico)
+create table if not exists diarias_funcionarios (
+  id uuid default gen_random_uuid() primary key,
+  nome text not null,
+  cargo text not null default 'Servente',
+  diaria numeric not null default 80,
+  apelidos text[] default '{}',
+  ativo boolean default true,
+  criado_em timestamptz default now()
+);
+alter table diarias_funcionarios disable row level security;
+
+-- Seed inicial (apenas se tabela vazia)
+insert into diarias_funcionarios (nome, cargo, diaria, apelidos, ativo) values
+  ('Anderson', 'Mestre', 170, '{"zezao","zezão"}', true),
+  ('Josimar', 'Betoneiro', 90, '{"binlade","binladem","bin laden"}', true),
+  ('Nego', 'Pedreiro', 130, '{"seu nego","rochedo"}', true),
+  ('Adeilton', 'Pedreiro', 130, '{"adeilto"}', true),
+  ('Val', 'Servente', 80, '{}', true),
+  ('Rosinaldo', 'Servente', 80, '{"tana"}', true),
+  ('Marcone', 'Servente', 80, '{}', true),
+  ('Heleno', 'Servente', 80, '{"eleno"}', false)
+on conflict do nothing;
+
 -- Slug para Kit de Entrega Digital
 alter table obras add column if not exists slug_entrega text default '';
 -- Campos extras para entrega (proprietário, endereço)

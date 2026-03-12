@@ -135,27 +135,256 @@ function diarAbrirCalendarioFunc(nome) {
 
 
 // ────────────────────────────────────────────
-// DADOS DOS FUNCIONÁRIOS
+// DADOS DOS FUNCIONÁRIOS (dinâmico — Supabase)
 // ────────────────────────────────────────────
-const DIAR_FUNCIONARIOS = {
+let DIAR_FUNCIONARIOS = {};
+let DIAR_FUNCIONARIOS_RAW = []; // array original do Supabase
+
+// Fallback hardcoded (usado enquanto Supabase não responde)
+const DIAR_FUNCIONARIOS_FALLBACK = {
   'anderson': { nome: 'Anderson', cargo: 'Mestre', diaria: 170 },
   'zezao':    { nome: 'Anderson', cargo: 'Mestre', diaria: 170 },
-  'zezão':    { nome: 'Anderson', cargo: 'Mestre', diaria: 170 },
   'josimar':  { nome: 'Josimar', cargo: 'Betoneiro', diaria: 90 },
   'binlade':  { nome: 'Josimar', cargo: 'Betoneiro', diaria: 90 },
-  'binladem': { nome: 'Josimar', cargo: 'Betoneiro', diaria: 90 },
-  'bin laden':{ nome: 'Josimar', cargo: 'Betoneiro', diaria: 90 },
   'nego':     { nome: 'Nego', cargo: 'Pedreiro', diaria: 130 },
   'seu nego': { nome: 'Nego', cargo: 'Pedreiro', diaria: 130 },
-  'rochedo':  { nome: 'Nego', cargo: 'Pedreiro', diaria: 130 },
   'adeilton': { nome: 'Adeilton', cargo: 'Pedreiro', diaria: 130 },
-  'adeilto':  { nome: 'Adeilton', cargo: 'Pedreiro', diaria: 130 },
-  'heleno':   { nome: 'Heleno', cargo: 'Servente', diaria: 80 },
-  'eleno':    { nome: 'Heleno', cargo: 'Servente', diaria: 80 },
+  'marcone':  { nome: 'Marcone', cargo: 'Servente', diaria: 80 },
   'rosinaldo':{ nome: 'Rosinaldo', cargo: 'Servente', diaria: 80 },
   'tana':     { nome: 'Rosinaldo', cargo: 'Servente', diaria: 80 },
   'val':      { nome: 'Val', cargo: 'Servente', diaria: 80 },
 };
+DIAR_FUNCIONARIOS = { ...DIAR_FUNCIONARIOS_FALLBACK };
+
+async function diarCarregarFuncionarios() {
+  try {
+    const lista = await sbGet('diarias_funcionarios', '?order=nome.asc');
+    if (!Array.isArray(lista) || !lista.length) return;
+    DIAR_FUNCIONARIOS_RAW = lista;
+    // Reconstruir mapa de aliases
+    DIAR_FUNCIONARIOS = {};
+    lista.filter(f => f.ativo).forEach(f => {
+      const entry = { nome: f.nome, cargo: f.cargo, diaria: Number(f.diaria) };
+      // Nome principal (minúsculo)
+      DIAR_FUNCIONARIOS[f.nome.toLowerCase()] = entry;
+      // Apelidos
+      const apelidos = Array.isArray(f.apelidos) ? f.apelidos : [];
+      apelidos.forEach(a => { if (a) DIAR_FUNCIONARIOS[a.toLowerCase()] = entry; });
+    });
+    // Atualizar DIAR_TEAM
+    _diarAtualizarTeam();
+  } catch(e) { console.warn('diarCarregarFuncionarios fallback', e); }
+}
+
+function _diarAtualizarTeam() {
+  const ativos = DIAR_FUNCIONARIOS_RAW.filter(f => f.ativo);
+  const ordem = { 'Mestre':1, 'Pedreiro':2, 'Betoneiro':3, 'Servente':4 };
+  ativos.sort((a,b) => (ordem[a.cargo]||9) - (ordem[b.cargo]||9));
+  // Substituir DIAR_TEAM com nomes únicos dos ativos
+  DIAR_TEAM.length = 0;
+  ativos.forEach(f => { if (!DIAR_TEAM.includes(f.nome)) DIAR_TEAM.push(f.nome); });
+}
+
+function diarGetFuncionariosAtivos() {
+  if (DIAR_FUNCIONARIOS_RAW.length) return DIAR_FUNCIONARIOS_RAW.filter(f => f.ativo);
+  // Fallback: extrair do mapa hardcoded
+  const unicos = {};
+  Object.values(DIAR_FUNCIONARIOS).forEach(f => { unicos[f.nome] = f; });
+  return Object.values(unicos);
+}
+
+// ────────────────────────────────────────────
+// CRUD FUNCIONÁRIOS — Modal
+// ────────────────────────────────────────────
+function diarAbrirModalEquipe() {
+  let modal = document.getElementById('diar-modalEquipe');
+  if (!modal) {
+    document.body.insertAdjacentHTML('beforeend', `
+    <div id="diar-modalEquipe" style="display:flex;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:9999;align-items:center;justify-content:center;padding:16px">
+      <div style="background:var(--bg2);border:1px solid var(--borda);border-radius:14px;width:100%;max-width:540px;max-height:90vh;overflow-y:auto;padding:22px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+          <div style="font-weight:800;font-size:15px;letter-spacing:.05em;color:var(--branco)">👷 EQUIPE DE OBRA</div>
+          <button onclick="document.getElementById('diar-modalEquipe').style.display='none'" style="background:none;border:none;color:var(--texto3);font-size:18px;cursor:pointer;padding:4px 8px">✕</button>
+        </div>
+        <div id="diar-equipe-lista"></div>
+        <div style="margin-top:16px;border-top:1px solid var(--borda);padding-top:16px">
+          <div style="font-weight:700;font-size:12px;letter-spacing:.08em;color:var(--verde-hl);margin-bottom:10px;font-family:'Rajdhani',sans-serif">+ ADICIONAR FUNCIONÁRIO</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+            <input id="diar-eq-nome" type="text" placeholder="Nome" style="padding:9px 12px;background:var(--bg3);border:1px solid var(--borda2);border-radius:8px;color:var(--branco);font-size:13px">
+            <select id="diar-eq-cargo" style="padding:9px 12px;background:var(--bg3);border:1px solid var(--borda2);border-radius:8px;color:var(--branco);font-size:13px">
+              <option value="Servente">Servente</option>
+              <option value="Pedreiro">Pedreiro</option>
+              <option value="Betoneiro">Betoneiro</option>
+              <option value="Mestre">Mestre</option>
+              <option value="Eletricista">Eletricista</option>
+              <option value="Encanador">Encanador</option>
+            </select>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+            <input id="diar-eq-diaria" type="number" placeholder="Diária (R$)" min="0" step="5" style="padding:9px 12px;background:var(--bg3);border:1px solid var(--borda2);border-radius:8px;color:var(--branco);font-size:13px">
+            <input id="diar-eq-apelidos" type="text" placeholder="Apelidos (vírgula)" style="padding:9px 12px;background:var(--bg3);border:1px solid var(--borda2);border-radius:8px;color:var(--branco);font-size:13px">
+          </div>
+          <button onclick="diarAdicionarFuncionario()" style="width:100%;padding:10px;background:var(--verde);color:var(--verde-hl);border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;letter-spacing:.05em">ADICIONAR</button>
+        </div>
+      </div>
+    </div>`);
+    modal = document.getElementById('diar-modalEquipe');
+  } else {
+    modal.style.display = 'flex';
+  }
+  diarRenderListaEquipe();
+}
+
+function diarRenderListaEquipe() {
+  const el = document.getElementById('diar-equipe-lista');
+  if (!el) return;
+  const todos = DIAR_FUNCIONARIOS_RAW.length ? [...DIAR_FUNCIONARIOS_RAW] : [];
+  if (!todos.length) {
+    // Fallback: extrair do mapa
+    const unicos = {};
+    Object.values(DIAR_FUNCIONARIOS).forEach(f => { unicos[f.nome] = f; });
+    Object.values(unicos).forEach(f => todos.push({ nome: f.nome, cargo: f.cargo, diaria: f.diaria, apelidos: [], ativo: true }));
+  }
+  const ordem = { 'Mestre':1, 'Pedreiro':2, 'Betoneiro':3, 'Servente':4 };
+  todos.sort((a,b) => {
+    if (a.ativo !== b.ativo) return a.ativo ? -1 : 1;
+    return (ordem[a.cargo]||9) - (ordem[b.cargo]||9);
+  });
+  el.innerHTML = todos.map(f => {
+    const apelidos = Array.isArray(f.apelidos) ? f.apelidos.filter(Boolean).join(', ') : '';
+    const opaco = f.ativo ? '' : 'opacity:0.4;';
+    const statusTag = f.ativo
+      ? '<span style="font-size:9px;background:rgba(46,204,113,0.15);color:var(--verde-hl);padding:2px 6px;border-radius:4px;font-weight:700">ATIVO</span>'
+      : '<span style="font-size:9px;background:rgba(239,68,68,0.15);color:#f87171;padding:2px 6px;border-radius:4px;font-weight:700">INATIVO</span>';
+    const btnToggle = f.ativo
+      ? `<button onclick="diarToggleFuncionario('${f.id}',false)" title="Desativar" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);color:#f87171;border-radius:6px;padding:3px 8px;font-size:10px;cursor:pointer;">desativar</button>`
+      : `<button onclick="diarToggleFuncionario('${f.id}',true)" title="Reativar" style="background:rgba(46,204,113,0.1);border:1px solid rgba(46,204,113,0.2);color:var(--verde-hl);border-radius:6px;padding:3px 8px;font-size:10px;cursor:pointer;">reativar</button>`;
+    const btnEditar = `<button onclick="diarEditarFuncionario('${f.id}')" title="Editar" style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.2);color:#60a5fa;border-radius:6px;padding:3px 8px;font-size:10px;cursor:pointer;">editar</button>`;
+    const btnExcluir = !f.ativo ? `<button onclick="diarExcluirFuncionario('${f.id}','${f.nome}')" title="Excluir" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);color:#f87171;border-radius:6px;padding:3px 8px;font-size:10px;cursor:pointer;">excluir</button>` : '';
+    return `<div style="${opaco}display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid var(--borda);gap:8px;flex-wrap:wrap">
+      <div style="flex:1;min-width:140px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-weight:700;color:var(--branco);font-size:13px">${f.nome}</span>
+          <span style="font-size:10px;color:var(--texto3)">${f.cargo}</span>
+          ${statusTag}
+        </div>
+        <div style="font-size:10px;color:var(--texto3);margin-top:2px">
+          R$ ${Number(f.diaria).toFixed(2)}${apelidos ? ` · apelidos: ${apelidos}` : ''}
+        </div>
+      </div>
+      <div style="display:flex;gap:4px;flex-shrink:0">${btnEditar}${btnToggle}${btnExcluir}</div>
+    </div>`;
+  }).join('');
+}
+
+async function diarAdicionarFuncionario() {
+  const nome = document.getElementById('diar-eq-nome').value.trim();
+  const cargo = document.getElementById('diar-eq-cargo').value;
+  const diaria = parseFloat(document.getElementById('diar-eq-diaria').value) || 80;
+  const apelidosStr = document.getElementById('diar-eq-apelidos').value.trim();
+  const apelidos = apelidosStr ? apelidosStr.split(',').map(a => a.trim().toLowerCase()).filter(Boolean) : [];
+  if (!nome) { showToast('Informe o nome'); return; }
+  // Verificar duplicata
+  if (DIAR_FUNCIONARIOS_RAW.find(f => f.nome.toLowerCase() === nome.toLowerCase())) {
+    showToast('Já existe um funcionário com esse nome'); return;
+  }
+  try {
+    const [novo] = await sbPost('diarias_funcionarios', { nome, cargo, diaria, apelidos, ativo: true });
+    DIAR_FUNCIONARIOS_RAW.push(novo);
+    _diarReconstruirMapa();
+    diarRenderListaEquipe();
+    // Limpar campos
+    document.getElementById('diar-eq-nome').value = '';
+    document.getElementById('diar-eq-diaria').value = '';
+    document.getElementById('diar-eq-apelidos').value = '';
+    showToast(`${nome} adicionado!`);
+  } catch(e) { showToast('Erro ao adicionar: ' + e.message); }
+}
+
+async function diarToggleFuncionario(id, ativo) {
+  try {
+    await sbPatch('diarias_funcionarios', `?id=eq.${id}`, { ativo });
+    const f = DIAR_FUNCIONARIOS_RAW.find(f => f.id === id);
+    if (f) f.ativo = ativo;
+    _diarReconstruirMapa();
+    diarRenderListaEquipe();
+    showToast(ativo ? 'Funcionário reativado' : 'Funcionário desativado');
+  } catch(e) { showToast('Erro: ' + e.message); }
+}
+
+async function diarExcluirFuncionario(id, nome) {
+  if (!confirm(`Excluir ${nome} permanentemente?\n\nIsso não afeta registros antigos.`)) return;
+  try {
+    await sbDelete('diarias_funcionarios', `?id=eq.${id}`);
+    DIAR_FUNCIONARIOS_RAW = DIAR_FUNCIONARIOS_RAW.filter(f => f.id !== id);
+    _diarReconstruirMapa();
+    diarRenderListaEquipe();
+    showToast(`${nome} excluído`);
+  } catch(e) { showToast('Erro: ' + e.message); }
+}
+
+function diarEditarFuncionario(id) {
+  const f = DIAR_FUNCIONARIOS_RAW.find(f => f.id === id);
+  if (!f) return;
+  const apelidos = Array.isArray(f.apelidos) ? f.apelidos.join(', ') : '';
+  const html = `
+  <div id="diar-editFunc" style="position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px">
+    <div style="background:var(--bg2);border:1px solid rgba(59,130,246,0.3);border-radius:14px;padding:22px;width:min(400px,94vw)">
+      <div style="font-weight:800;font-size:14px;letter-spacing:.05em;color:var(--branco);margin-bottom:16px">Editar ${f.nome}</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div><label style="font-size:10px;color:var(--texto3)">NOME</label><input id="diar-edit-nome" type="text" value="${f.nome}" style="width:100%;box-sizing:border-box;padding:9px 12px;background:var(--bg3);border:1px solid var(--borda2);border-radius:8px;color:var(--branco);font-size:13px;margin-top:4px"></div>
+          <div><label style="font-size:10px;color:var(--texto3)">CARGO</label><select id="diar-edit-cargo" style="width:100%;box-sizing:border-box;padding:9px 12px;background:var(--bg3);border:1px solid var(--borda2);border-radius:8px;color:var(--branco);font-size:13px;margin-top:4px">
+            <option value="Servente" ${f.cargo==='Servente'?'selected':''}>Servente</option>
+            <option value="Pedreiro" ${f.cargo==='Pedreiro'?'selected':''}>Pedreiro</option>
+            <option value="Betoneiro" ${f.cargo==='Betoneiro'?'selected':''}>Betoneiro</option>
+            <option value="Mestre" ${f.cargo==='Mestre'?'selected':''}>Mestre</option>
+            <option value="Eletricista" ${f.cargo==='Eletricista'?'selected':''}>Eletricista</option>
+            <option value="Encanador" ${f.cargo==='Encanador'?'selected':''}>Encanador</option>
+          </select></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div><label style="font-size:10px;color:var(--texto3)">DIÁRIA (R$)</label><input id="diar-edit-diaria" type="number" value="${f.diaria}" min="0" step="5" style="width:100%;box-sizing:border-box;padding:9px 12px;background:var(--bg3);border:1px solid var(--borda2);border-radius:8px;color:var(--branco);font-size:13px;margin-top:4px"></div>
+          <div><label style="font-size:10px;color:var(--texto3)">APELIDOS</label><input id="diar-edit-apelidos" type="text" value="${apelidos}" placeholder="vírgula" style="width:100%;box-sizing:border-box;padding:9px 12px;background:var(--bg3);border:1px solid var(--borda2);border-radius:8px;color:var(--branco);font-size:13px;margin-top:4px"></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:16px">
+        <button onclick="document.getElementById('diar-editFunc').remove()" style="flex:1;background:var(--bg3);border:1px solid var(--borda2);border-radius:8px;padding:10px;color:var(--texto2);font-weight:700;font-size:12px;cursor:pointer">CANCELAR</button>
+        <button onclick="diarSalvarEdicaoFunc('${id}')" style="flex:2;background:var(--verde-hl);border:none;border-radius:8px;padding:10px;color:#000;font-weight:800;font-size:13px;cursor:pointer">SALVAR</button>
+      </div>
+    </div>
+  </div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+async function diarSalvarEdicaoFunc(id) {
+  const nome = document.getElementById('diar-edit-nome').value.trim();
+  const cargo = document.getElementById('diar-edit-cargo').value;
+  const diaria = parseFloat(document.getElementById('diar-edit-diaria').value) || 80;
+  const apelidosStr = document.getElementById('diar-edit-apelidos').value.trim();
+  const apelidos = apelidosStr ? apelidosStr.split(',').map(a => a.trim().toLowerCase()).filter(Boolean) : [];
+  if (!nome) { showToast('Nome obrigatório'); return; }
+  try {
+    await sbPatch('diarias_funcionarios', `?id=eq.${id}`, { nome, cargo, diaria, apelidos });
+    const f = DIAR_FUNCIONARIOS_RAW.find(f => f.id === id);
+    if (f) { f.nome = nome; f.cargo = cargo; f.diaria = diaria; f.apelidos = apelidos; }
+    _diarReconstruirMapa();
+    document.getElementById('diar-editFunc')?.remove();
+    diarRenderListaEquipe();
+    showToast(`${nome} atualizado!`);
+  } catch(e) { showToast('Erro: ' + e.message); }
+}
+
+function _diarReconstruirMapa() {
+  DIAR_FUNCIONARIOS = {};
+  DIAR_FUNCIONARIOS_RAW.filter(f => f.ativo).forEach(f => {
+    const entry = { nome: f.nome, cargo: f.cargo, diaria: Number(f.diaria) };
+    DIAR_FUNCIONARIOS[f.nome.toLowerCase()] = entry;
+    const apelidos = Array.isArray(f.apelidos) ? f.apelidos : [];
+    apelidos.forEach(a => { if (a) DIAR_FUNCIONARIOS[a.toLowerCase()] = entry; });
+  });
+  _diarAtualizarTeam();
+}
 
 // State
 let diarRegistros = [];        // carregado do Supabase
@@ -189,6 +418,7 @@ async function initDiarias() {
   if (!document.getElementById('diar-dataInput').value) {
     document.getElementById('diar-dataInput').value = new Date().toISOString().split('T')[0];
   }
+  await diarCarregarFuncionarios();
   await diarCarregarQuinzenas();
   diarRenderRegistros();
   diarRenderExtras();
@@ -434,23 +664,23 @@ function diarParseMensagem(msgOriginal) {
     return palavra.charAt(0).toUpperCase() + palavra.slice(1).toLowerCase();
   };
 
-  // Mapa de apelidos → funcionário
-  // Chave = regex pattern, valor = chave em DIAR_FUNCIONARIOS
-  const ALIAS_PATTERNS = [
-    { re: /seu\s+nego|rochedo/, key: 'nego' },
+  // Construir ALIAS_PATTERNS dinamicamente a partir de DIAR_FUNCIONARIOS
+  const ALIAS_PATTERNS = [];
+  // Adicionar padrões especiais (multi-palavra) primeiro
+  const _aliasEspeciais = [
+    { re: /seu\s+nego|rochedo/, key: 'seu nego' },
     { re: /bin\s+lad[ea]m?|binlad[ea]m?/, key: 'binlade' },
     { re: /zez[aã]o/, key: 'zezao' },
-    { re: /adeilto\b/, key: 'adeilton' },
-    { re: /eleno\b/, key: 'heleno' },
-    { re: /tana\b/, key: 'tana' },
-    { re: /anderson/, key: 'anderson' },
-    { re: /josimar/, key: 'josimar' },
-    { re: /\bneg[oa]\b/, key: 'nego' },
-    { re: /adeilton/, key: 'adeilton' },
-    { re: /heleno/, key: 'heleno' },
-    { re: /rosinaldo/, key: 'rosinaldo' },
-    { re: /\bval\b/, key: 'val' },
   ];
+  _aliasEspeciais.forEach(a => { if (DIAR_FUNCIONARIOS[a.key]) ALIAS_PATTERNS.push(a); });
+  // Adicionar todas as chaves do mapa como patterns
+  Object.keys(DIAR_FUNCIONARIOS).forEach(key => {
+    // Escapar regex chars e criar pattern
+    const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    // Para nomes curtos (3 chars), usar word boundary
+    const re = key.length <= 3 ? new RegExp(`\\b${escaped}\\b`) : new RegExp(escaped);
+    ALIAS_PATTERNS.push({ re, key });
+  });
 
   // Encontrar todos os funcionários mencionados no texto
   const encontrarFuncionarios = (texto) => {
@@ -606,7 +836,7 @@ async function diarConfirmarLancamento() {
 // ────────────────────────────────────────────
 // FALTAS
 // ────────────────────────────────────────────
-const DIAR_TEAM = ['Anderson','Josimar','Nego','Adeilton','Heleno','Val','Rosinaldo'];
+let DIAR_TEAM = ['Anderson','Josimar','Nego','Adeilton','Val','Rosinaldo','Marcone'];
 
 function diarGetFaltasDia(dia, regs) {
   // normalizar periodos (pode vir como string do Supabase)
@@ -790,6 +1020,12 @@ function diarRenderFolha() {
 function diarGetExtrasQuinzena() { return diarExtras; }
 
 function diarAbrirModalExtra() {
+  // Popular select de funcionários (dinâmico)
+  const selFunc = document.getElementById('diar-extra-func');
+  selFunc.innerHTML = '<option value="">Selecionar...</option>';
+  diarGetFuncionariosAtivos().forEach(f => {
+    selFunc.innerHTML += `<option value="${f.nome}">${f.nome} (${f.cargo})</option>`;
+  });
   // Popular select de obras
   const sel = document.getElementById('diar-extra-obra');
   sel.innerHTML = '<option value="">Selecionar obra...</option>';
