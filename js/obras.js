@@ -641,11 +641,11 @@ function abrirModalObra(obraId) {
   setTimeout(() => document.getElementById('nova-obra-nome').focus(), 100);
 }
 
-// URL base do site de entrega (Netlify)
-const ENTREGA_BASE_URL = 'https://sensational-pixie-84dce5.netlify.app/entrega';
+// URL base do site de entrega (GitHub Pages)
+const ENTREGA_BASE_URL = 'https://duamrt.github.io/EDR-SITE/entrega';
 
 function abrirEntregaDigital(slug) {
-  window.open(`${ENTREGA_BASE_URL}/${slug}`, '_blank');
+  window.open(`${ENTREGA_BASE_URL}/${slug}.html`, '_blank');
 }
 
 // ══════════════════════════════════════════
