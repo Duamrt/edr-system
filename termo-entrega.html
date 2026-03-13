@@ -16,9 +16,16 @@
   .page { width: 210mm; min-height: 297mm; margin: 10mm auto; background: #fff; padding: 20mm 18mm 25mm 18mm; box-shadow: 0 2px 16px rgba(0,0,0,0.12); position: relative; }
   @media print {
     body { background: #fff; }
-    .page { width: auto; min-height: auto; margin: 0; padding: 0; box-shadow: none; page-break-after: always; }
+    .page { width: auto; min-height: auto; margin: 0; padding: 0; box-shadow: none; page-break-after: always; padding-bottom: 20mm; }
     .page:last-child { page-break-after: auto; }
     .no-print { display: none !important; }
+    .footer { position: static; margin-top: 30px; }
+    table { page-break-inside: avoid; }
+    h2, h3 { page-break-after: avoid; }
+    .ficha, .assinaturas, .checklist { page-break-inside: avoid; }
+    table td, table th { font-size: 9pt; padding: 5px 8px; }
+    .nota { page-break-inside: avoid; }
+    ol, ul { page-break-inside: avoid; }
   }
   .header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 12px; border-bottom: 3px solid var(--verde); margin-bottom: 20px; }
   .header-logo { height: 60px; }
