@@ -501,6 +501,14 @@ async function diarCarregarRegistros() {
     diarRegistros = r1; diarExtras = r2;
     if (!Array.isArray(diarRegistros)) diarRegistros = [];
     if (!Array.isArray(diarExtras))    diarExtras = [];
+    // Normalizar periodos (pode vir como string JSON do Supabase)
+    diarRegistros = diarRegistros.map(r => ({
+      ...r,
+      periodos: typeof r.periodos === 'string' ? JSON.parse(r.periodos || '[]') : (r.periodos || []),
+      total_fracoes: Number(r.total_fracoes || 0),
+      diaria_base: Number(r.diaria_base || 0),
+      valor: Number(r.valor || 0)
+    }));
   } catch(e) { diarRegistros = []; diarExtras = []; }
 }
 
