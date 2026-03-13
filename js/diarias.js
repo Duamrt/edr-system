@@ -1151,7 +1151,7 @@ function diarExportarFolha() {
     } else {
       diarGerarPDF(regs);
     }
-  } catch(e) { alert('Erro exportar: ' + e.message); }
+  } catch(e) { showToast('Erro ao exportar: ' + e.message); }
 }
 
 function diarGerarPDF(regs) {
@@ -1285,8 +1285,8 @@ function diarGerarPDF(regs) {
       doc.setTextColor(...CINZA1); doc.setFont('helvetica','bold'); doc.setFontSize(8.5);
       doc.text(e.funcionario, margem + 2, y + 5);
       doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(...CINZA2);
-      doc.text(e.desc.substring(0,28), colX[1]+2, y+5);
-      doc.text(e.obra.substring(0,18), colX[3]+2, y+5);
+      doc.text((e.descricao||'').substring(0,28), colX[1]+2, y+5);
+      doc.text((e.obra||'').substring(0,18), colX[3]+2, y+5);
       doc.setFont('helvetica','bold'); doc.setTextColor(...VERDE);
       doc.text(`R$ ${e.valor.toLocaleString('pt-BR',{minimumFractionDigits:2})}`, W-margem-2, y+5, {align:'right'});
       y += 7;
@@ -1357,7 +1357,7 @@ function diarGerarPDF(regs) {
   // Salvar
   doc.save(`EDR_Folha_${(diarQuinzenaAtiva?.label||'quinzena').replace(/[^a-zA-Z0-9]/g,'_')}.pdf`);
   showToast('✅ PDF gerado!');
-  } catch(e) { alert('Erro gerar PDF: ' + e.message); }
+  } catch(e) { showToast('Erro ao gerar PDF: ' + e.message); }
 }
 
 // ────────────────────────────────────────────
