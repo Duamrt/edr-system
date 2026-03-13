@@ -6,7 +6,7 @@
 <title>EDR Engenharia — Manual do Proprietário, Termo de Garantia e Entrega</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700;900&family=Barlow+Condensed:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-  @page { size: A4; margin: 20mm 18mm 25mm 18mm; }
+  @page { size: A4; margin: 12mm 14mm 12mm 14mm; }
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
     --verde: #0a3d18; --verde2: #0d5220; --verde-claro: #1a7a30;
@@ -15,17 +15,31 @@
   body { font-family: 'Barlow', sans-serif; font-size: 11pt; color: var(--preto); line-height: 1.6; background: #e8e8e8; }
   .page { width: 210mm; min-height: 297mm; margin: 10mm auto; background: #fff; padding: 20mm 18mm 25mm 18mm; box-shadow: 0 2px 16px rgba(0,0,0,0.12); position: relative; }
   @media print {
-    body { background: #fff; }
-    .page { width: auto; min-height: auto; margin: 0; padding: 0; box-shadow: none; page-break-after: always; padding-bottom: 20mm; }
+    body { background: #fff; font-size: 10pt; line-height: 1.45; }
+    .page { width: auto; min-height: auto; margin: 0; padding: 0; box-shadow: none; page-break-after: always; }
     .page:last-child { page-break-after: auto; }
     .no-print { display: none !important; }
-    .footer { position: static; margin-top: 30px; }
+    .footer { position: static; margin-top: 20px; border-top: 1.5px solid var(--verde); padding-top: 6px; }
+    .header { padding-bottom: 8px; margin-bottom: 12px; }
+    .header-logo { height: 44px; }
+    .header-logo-sm { height: 30px; }
+    h2 { font-size: 11pt; margin: 14px 0 6px 0; page-break-after: avoid; }
+    h3 { font-size: 10pt; margin: 10px 0 4px 0; page-break-after: avoid; }
+    p { margin-bottom: 5px; font-size: 10pt; }
+    li { margin-bottom: 2px; font-size: 10pt; }
     table { page-break-inside: avoid; }
-    h2, h3 { page-break-after: avoid; }
-    .ficha, .assinaturas, .checklist { page-break-inside: avoid; }
-    table td, table th { font-size: 9pt; padding: 5px 8px; }
-    .nota { page-break-inside: avoid; }
-    ol, ul { page-break-inside: avoid; }
+    table td, table th { font-size: 8.5pt; padding: 4px 6px; }
+    .ficha { padding: 10px 12px; margin-bottom: 10px; }
+    .ficha-label { font-size: 7pt; }
+    .ficha-valor { font-size: 10pt; }
+    .assinaturas { page-break-inside: avoid; margin-top: 30px; }
+    .checklist { page-break-inside: avoid; }
+    .checklist li { padding: 4px 0 4px 28px; }
+    .nota { page-break-inside: avoid; font-size: 9pt; padding: 6px 10px; }
+    .doc-title { font-size: 17pt; margin-bottom: 4px; }
+    .doc-subtitle { font-size: 9pt; margin-bottom: 16px; }
+    .local-data { margin-top: 20px; }
+    .assinatura-linha { margin-top: 40px; }
   }
   .header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 12px; border-bottom: 3px solid var(--verde); margin-bottom: 20px; }
   .header-logo { height: 60px; }
