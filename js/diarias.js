@@ -1137,22 +1137,25 @@ function diarSwitchTab(tab, el) {
 // EXPORTAR CSV
 // ────────────────────────────────────────────
 function diarExportarFolha() {
-  const regs = diarGetRegistrosQuinzena();
-  if (!regs.length) { showToast('Nenhum dado para exportar'); return; }
+  try {
+    const regs = diarGetRegistrosQuinzena();
+    if (!regs.length) { showToast('Nenhum dado para exportar'); return; }
 
-  // Carregar jsPDF dinamicamente se não estiver disponível
-  if (!window.jspdf) {
-    const script = document.createElement('script');
-    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
-    script.onload = () => diarGerarPDF(regs);
-    script.onerror = () => { showToast('Erro ao carregar gerador de PDF. Tente novamente.'); };
-    document.head.appendChild(script);
-  } else {
-    diarGerarPDF(regs);
-  }
+    // Carregar jsPDF dinamicamente se não estiver disponível
+    if (!window.jspdf) {
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+      script.onload = () => diarGerarPDF(regs);
+      script.onerror = () => { showToast('Erro ao carregar gerador de PDF. Tente novamente.'); };
+      document.head.appendChild(script);
+    } else {
+      diarGerarPDF(regs);
+    }
+  } catch(e) { alert('Erro exportar: ' + e.message); }
 }
 
 function diarGerarPDF(regs) {
+  try {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const W = 210, margem = 14;
@@ -1354,6 +1357,7 @@ function diarGerarPDF(regs) {
   // Salvar
   doc.save(`EDR_Folha_${(diarQuinzenaAtiva?.label||'quinzena').replace(/[^a-zA-Z0-9]/g,'_')}.pdf`);
   showToast('✅ PDF gerado!');
+  } catch(e) { alert('Erro gerar PDF: ' + e.message); }
 }
 
 // ────────────────────────────────────────────
