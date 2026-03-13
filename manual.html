@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manual do Sistema — EDR Engenharia</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #050505; --bg2: rgba(12,18,12,0.85); --bg3: rgba(18,26,18,0.9);
+    --verde: #1a7a3a; --verde2: #22a050; --verde-hl: #2ecc71;
+    --texto: #ddeadd; --texto2: #a0b8a0; --borda: rgba(46,204,113,0.12);
+    --borda2: rgba(46,204,113,0.2);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html { scroll-behavior: smooth; }
+  body { font-family:'Rajdhani',sans-serif; background:var(--bg); color:var(--texto); line-height:1.6; padding:0 16px 60px; }
+
+  /* HEADER */
+  .manual-header { text-align:center; padding:40px 0 20px; border-bottom:1px solid var(--borda2); margin-bottom:32px; }
+  .manual-header h1 { font-size:2rem; color:var(--verde-hl); font-weight:700; letter-spacing:1px; }
+  .manual-header p { color:var(--texto2); font-size:1rem; margin-top:4px; }
+
+  /* FILTRO PERFIL */
+  .perfil-filter { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-bottom:32px; position:sticky; top:0; z-index:10; background:var(--bg); padding:12px 0; border-bottom:1px solid var(--borda); }
+  .perfil-btn { padding:8px 20px; border-radius:8px; border:1px solid var(--borda2); background:var(--bg2); color:var(--texto2); font-family:inherit; font-size:.95rem; font-weight:600; cursor:pointer; transition:.2s; }
+  .perfil-btn:hover { border-color:var(--verde2); color:var(--verde-hl); }
+  .perfil-btn.active { background:var(--verde); color:#fff; border-color:var(--verde2); }
+
+  /* CONTAINER */
+  .container { max-width:800px; margin:0 auto; }
+
+  /* SEÇÕES */
+  .modulo { margin-bottom:40px; border:1px solid var(--borda); border-radius:12px; overflow:hidden; }
+  .modulo-header { background:var(--bg3); padding:16px 20px; display:flex; align-items:center; gap:12px; cursor:pointer; user-select:none; }
+  .modulo-header:hover { background:rgba(26,122,58,0.15); }
+  .modulo-icon { font-size:1.5rem; }
+  .modulo-title { font-size:1.2rem; font-weight:700; color:var(--verde-hl); flex:1; }
+  .modulo-atalho { font-family:'JetBrains Mono',monospace; font-size:.75rem; background:rgba(46,204,113,0.15); color:var(--verde-hl); padding:2px 8px; border-radius:4px; }
+  .modulo-toggle { color:var(--texto2); font-size:1.2rem; transition:.3s; }
+  .modulo.open .modulo-toggle { transform:rotate(180deg); }
+  .modulo-body { display:none; padding:20px; }
+  .modulo.open .modulo-body { display:block; }
+
+  /* PERFIL BADGES */
+  .perfil-badges { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:16px; }
+  .badge { font-size:.7rem; padding:2px 8px; border-radius:4px; font-weight:600; text-transform:uppercase; letter-spacing:.5px; }
+  .badge-admin { background:rgba(231,76,60,0.2); color:#e74c3c; }
+  .badge-operacional { background:rgba(52,152,219,0.2); color:#3498db; }
+  .badge-mestre { background:rgba(243,156,18,0.2); color:#f39c12; }
+
+  /* PASSO A PASSO */
+  .steps { counter-reset:step; }
+  .step { position:relative; padding:12px 16px 12px 52px; margin-bottom:8px; background:var(--bg2); border-radius:8px; border-left:3px solid var(--verde); }
+  .step::before { counter-increment:step; content:counter(step); position:absolute; left:14px; top:12px; width:26px; height:26px; background:var(--verde); color:#fff; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:.85rem; font-weight:700; }
+  .step strong { color:var(--verde-hl); }
+  .step em { color:var(--texto2); font-style:normal; font-size:.85rem; }
+
+  /* DICA */
+  .dica { background:rgba(243,156,18,0.1); border:1px solid rgba(243,156,18,0.25); border-radius:8px; padding:12px 16px; margin:12px 0; font-size:.9rem; color:#f1c40f; }
+  .dica::before { content:'💡 '; }
+
+  /* ALERTA */
+  .alerta { background:rgba(231,76,60,0.1); border:1px solid rgba(231,76,60,0.25); border-radius:8px; padding:12px 16px; margin:12px 0; font-size:.9rem; color:#e74c3c; }
+  .alerta::before { content:'⚠ '; }
+
+  /* INFO */
+  .info { background:rgba(52,152,219,0.1); border:1px solid rgba(52,152,219,0.25); border-radius:8px; padding:12px 16px; margin:12px 0; font-size:.9rem; color:#3498db; }
+
+  /* SUB-SEÇÕES */
+  h3 { color:var(--verde2); font-size:1rem; margin:20px 0 10px; padding-bottom:4px; border-bottom:1px solid var(--borda); }
+  h4 { color:var(--texto); font-size:.95rem; margin:16px 0 8px; }
+  p { color:var(--texto2); margin-bottom:8px; font-size:.92rem; }
+  ul { color:var(--texto2); margin:8px 0 8px 20px; font-size:.9rem; }
+  li { margin-bottom:4px; }
+  code { font-family:'JetBrains Mono',monospace; background:rgba(46,204,113,0.1); color:var(--verde-hl); padding:1px 6px; border-radius:3px; font-size:.8rem; }
+
+  /* TABELA */
+  table { width:100%; border-collapse:collapse; margin:12px 0; font-size:.85rem; }
+  th { background:var(--bg3); color:var(--verde-hl); padding:8px 12px; text-align:left; border-bottom:1px solid var(--borda2); }
+  td { padding:8px 12px; border-bottom:1px solid var(--borda); color:var(--texto2); }
+
+  /* PRINT */
+  @media print {
+    body { background:#fff; color:#222; }
+    .perfil-filter { display:none; }
+    .modulo { break-inside:avoid; border-color:#ccc; }
+    .modulo-body { display:block !important; }
+    .step { background:#f5f5f5; border-left-color:#1a7a3a; }
+    .badge-admin { color:#c0392b; } .badge-operacional { color:#2980b9; } .badge-mestre { color:#d68910; }
+    code { background:#eee; color:#1a7a3a; }
+  }
+
+  /* MOBILE */
+  @media(max-width:600px) {
+    .manual-header h1 { font-size:1.4rem; }
+    .perfil-btn { font-size:.8rem; padding:6px 12px; }
+    .modulo-body { padding:14px; }
+  }
+
+  /* INDICE */
+  .indice { background:var(--bg2); border:1px solid var(--borda); border-radius:12px; padding:20px; margin-bottom:32px; }
+  .indice h2 { color:var(--verde-hl); font-size:1.1rem; margin-bottom:12px; }
+  .indice a { color:var(--texto2); text-decoration:none; display:block; padding:4px 0; font-size:.9rem; }
+  .indice a:hover { color:var(--verde-hl); }
+  .indice .idx-num { color:var(--verde2); font-family:'JetBrains Mono',monospace; font-size:.8rem; margin-right:8px; }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<!-- HEADER -->
+<div class="manual-header">
+  <h1>MANUAL DO SISTEMA EDR</h1>
+  <p>Guia completo de uso — por perfil e por menu</p>
+</div>
+
+<!-- FILTRO POR PERFIL -->
+<div class="perfil-filter">
+  <button class="perfil-btn active" onclick="filtrar('todos')">Todos</button>
+  <button class="perfil-btn" onclick="filtrar('admin')">Admin</button>
+  <button class="perfil-btn" onclick="filtrar('operacional')">Operacional</button>
+  <button class="perfil-btn" onclick="filtrar('mestre')">Mestre</button>
+</div>
+
+<!-- INDICE -->
+<div class="indice">
+  <h2>Navegue pelo manual</h2>
+  <a href="#mod-login"><span class="idx-num">00</span> Login e Perfis de Acesso</a>
+  <a href="#mod-f1"><span class="idx-num">F1</span> Resumo (Dashboard)</a>
+  <a href="#mod-f2"><span class="idx-num">F2</span> Obras</a>
+  <a href="#mod-f3"><span class="idx-num">F3</span> Estoque</a>
+  <a href="#mod-f4"><span class="idx-num">F4</span> Historico de NFs</a>
+  <a href="#mod-f5"><span class="idx-num">F5</span> Lancar Nota Fiscal</a>
+  <a href="#mod-f6"><span class="idx-num">F6</span> Guia de Creditos NF</a>
+  <a href="#mod-f7"><span class="idx-num">F7</span> Diarias</a>
+  <a href="#mod-f8"><span class="idx-num">F8</span> Catalogo de Materiais</a>
+  <a href="#mod-f9"><span class="idx-num">F9</span> Relatorio Financeiro</a>
+  <a href="#mod-f10"><span class="idx-num">F10</span> Custos CEF</a>
+  <a href="#mod-f11"><span class="idx-num">F11</span> Dados (Usuarios)</a>
+  <a href="#mod-f12"><span class="idx-num">F12</span> Setup</a>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- LOGIN -->
+<!-- ═══════════════════════════════════════ -->
+<div class="modulo open" id="mod-login" data-perfis="admin,operacional,mestre">
+  <div class="modulo-header" onclick="toggleMod(this)">
+    <span class="modulo-icon">🔐</span>
+    <span class="modulo-title">Login e Perfis de Acesso</span>
+    <span class="modulo-toggle">▼</span>
+  </div>
+  <div class="modulo-body">
+    <p>O sistema possui 4 perfis com acessos diferentes:</p>
+    <table>
+      <tr><th>Perfil</th><th>Acesso</th><th>Sessao</th></tr>
+      <tr><td><strong>Admin</strong></td><td>Todos os menus (F1 a F12)</td><td>30 dias</td></tr>
+      <tr><td><strong>Operacional</strong></td><td>F1 a F8 (sem relatorios, custos, dados e setup)</td><td>8 horas</td></tr>
+      <tr><td><strong>Mestre</strong></td><td>Somente Diarias (F7)</td><td>8 horas</td></tr>
+      <tr><td><strong>Visitante</strong></td><td>Leitura completa, sem gravar nada</td><td>8 horas</td></tr>
+    </table>
+
+    <h3>Como fazer login</h3>
+    <div class="steps">
+      <div class="step">Acesse <strong>sistema.edreng.com.br</strong> no navegador</div>
+      <div class="step">Digite seu <strong>usuario</strong> e <strong>senha</strong></div>
+      <div class="step">Clique em <strong>ENTRAR</strong> ou pressione Enter</div>
+    </div>
+    <div class="dica">No computador, use as teclas <code>F1</code> a <code>F12</code> para navegar rapidamente entre os menus.</div>
+    <div class="dica">No celular, use o menu inferior. Toque em <strong>MAIS</strong> para ver todos os modulos.</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- F1 DASHBOARD -->
+<!-- ═══════════════════════════════════════ -->
+<div class="modulo" id="mod-f1" data-perfis="admin,operacional">
+  <div class="modulo-header" onclick="toggleMod(this)">
+    <span class="modulo-icon">📊</span>
+    <span class="modulo-title">Resumo (Dashboard)</span>
+    <span class="modulo-atalho">F1</span>
+    <span class="modulo-toggle">▼</span>
+  </div>
+  <div class="modulo-body">
+    <div class="perfil-badges">
+      <span class="badge badge-admin">Admin</span>
+      <span class="badge badge-operacional">Operacional</span>
+    </div>
+
+    <h3>Visao Admin</h3>
+    <p>Painel completo com dados financeiros de todas as obras:</p>
+    <ul>
+      <li><strong>Painel financeiro</strong> — receita total, custo total e saldo</li>
+      <li><strong>Grafico mensal</strong> — evolucao de entradas mes a mes</li>
+      <li><strong>Detalhe por obra</strong> — custos separados por etapa</li>
+      <li><strong>Comparativo</strong> — variacao mes anterior vs atual</li>
+    </ul>
+
+    <h3>Visao Operacional</h3>
+    <p>Dashboard simplificado com foco na operacao:</p>
+    <ul>
+      <li><strong>Obras ativas</strong> — cards com obras em andamento</li>
+      <li><strong>Estoque</strong> — top 8 materiais disponiveis</li>
+      <li><strong>Ultimos lancamentos</strong> — 8 mais recentes</li>
+      <li><strong>Botoes rapidos</strong> — atalho para Lancar NF e Estoque</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- F2 OBRAS -->
+<!-- ═══════════════════════════════════════ -->
+<div class="modulo" id="mod-f2" data-perfis="admin,operacional">
+  <div class="modulo-header" onclick="toggleMod(this)">
+    <span class="modulo-icon">🏗</span>
+    <span class="modulo-title">Obras</span>
+    <span class="modulo-atalho">F2</span>
+    <span class="modulo-toggle">▼</span>
+  </div>
+  <div class="modulo-body">
+    <div class="perfil-badges">
+      <span class="badge badge-admin">Admin</span>
+      <span class="badge badge-operacional">Operacional</span>
+    </div>
+    <p>Gerenciamento completo das obras/projetos da empresa.</p>
+
+    <h3>Visualizar obras</h3>
+    <div class="steps">
+      <div class="step">Acesse <strong>OBRAS (F2)</strong> — as obras ativas aparecem em cards</div>
+      <div class="step">Clique em um card para abrir o <strong>detalhe da obra</strong></div>
+      <div class="step">Na aba <strong>Materiais</strong>, veja todos os lancamentos separados por etapa (centro de custo)</div>
+      <div class="step">Na aba <strong>Adicionais</strong>, veja servicos extras contratados</div>
+    </div>
+
+    <h3>Criar nova obra</h3>
+    <div class="steps">
+      <div class="step">Clique no botao <strong>+ NOVA OBRA</strong></div>
+      <div class="step">Preencha: <strong>nome da obra</strong>, proprietario, endereco</div>
+      <div class="step">Clique em <strong>SALVAR</strong></div>
+    </div>
+
+    <h3>Arquivar obra concluida</h3>
+    <div class="steps">
+      <div class="step">Abra o detalhe da obra</div>
+      <div class="step">Clique em <strong>CONCLUIR OBRA</strong></div>
+      <div class="step">O sistema gera automaticamente o <strong>Termo de Entrega</strong> (Kit Digital)</div>
+      <div class="step">A obra vai para a secao de <strong>arquivadas</strong></div>
+    </div>
+    <div class="dica">Para ver obras arquivadas, ative o botao <strong>Mostrar Arquivadas</strong> na tela de obras.</div>
+
+    <h3>Gerar Termo de Entrega</h3>
+    <div class="steps">
+      <div class="step">No detalhe da obra, clique em <strong>GERAR TERMO</strong></div>
+      <div class="step">O sistema abre uma pagina com o termo pronto para impressao/PDF</div>
+      <div class="step">Use <code>Ctrl+P</code> para salvar como PDF ou imprimir</div>
+    </div>
+
+    <h3>Filtrar lancamentos</h3>
+    <div class="steps">
+      <div class="step">Dentro do detalhe da obra, use o <strong>filtro por categoria</strong> ou <strong>por data</strong></div>
+      <div class="step">Clique na categoria para <strong>expandir/recolher</strong> os itens</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- F3 ESTOQUE -->
+<!-- ═══════════════════════════════════════ -->
+<div class="modulo" id="mod-f3" data-perfis="admin,operacional">
+  <div class="modulo-header" onclick="toggleMod(this)">
+    <span class="modulo-icon">📦</span>
+    <span class="modulo-title">Estoque</span>
+    <span class="modulo-atalho">F3</span>
+    <span class="modulo-toggle">▼</span>
+  </div>
+  <div class="modulo-body">
+    <div class="perfil-badges">
+      <span class="badge badge-admin">Admin</span>
+      <span class="badge badge-operacional">Operacional</span>
+    </div>
+    <p>Controle completo de materiais no almoxarifado. O saldo e calculado automaticamente:</p>
+    <div class="info"><strong>Saldo = (Notas Fiscais + Entradas Diretas + Ajustes) &minus; Distribuicoes para obras</strong></div>
+
+    <h3>Consultar saldo</h3>
+    <div class="steps">
+      <div class="step">Acesse <strong>ESTOQUE (F3)</strong></div>
+      <div class="step">Os materiais aparecem em cards com o <strong>saldo atual</strong></div>
+      <div class="step">Use a <strong>barra de busca</strong> para filtrar por nome do material</div>
+    </div>
+    <div class="dica">Cards com saldo zerado ou negativo ficam sinalizados com cores diferentes.</div>
+
+    <h3>Entrada Direta (material sem NF)</h3>
+    <p>Para registrar material que chegou sem nota fiscal (fiado, doacao, sobra de outra obra):</p>
+    <div class="steps">
+      <div class="step">Clique no botao <strong>📥 ENTRADA</strong> (barra superior)</div>
+      <div class="step">Escolha o destino: <strong>Estoque</strong> ou <strong>Direto na Obra</strong></div>
+      <div class="step">Preencha: material, quantidade, unidade, preco, fornecedor</div>
+      <div class="step">Clique em <strong>SALVAR</strong></div>
+    </div>
+    <div class="alerta"><strong>Estoque</strong> = material fica guardado, voce distribui depois. <strong>Obra</strong> = material ja vai direto pro custo da obra, sem passar pelo estoque.</div>
+
+    <h3>Saida de material (distribuir para obra)</h3>
+    <p>Para enviar material do estoque para uma obra:</p>
+    <div class="steps">
+      <div class="step">Clique no botao <strong>📤 SAIDA</strong> na barra superior, ou clique no botao 📤 do proprio card do material</div>
+      <div class="step">Selecione a <strong>obra destino</strong></div>
+      <div class="step">Selecione a <strong>etapa</strong> (centro de custo: alvenaria, eletrica, etc.)</div>
+      <div class="step">Informe a <strong>quantidade</strong></div>
+      <div class="step">Clique em <strong>CONFIRMAR</strong></div>
+    </div>
+    <div class="info">O sistema usa logica <strong>FIFO</strong> (primeiro que entrou, primeiro que sai). O custo e calculado automaticamente pelo preco de entrada e o lancamento e criado na obra.</div>
+
+    <h3>Ajuste de estoque (somente Admin)</h3>
+    <div class="perfil-badges"><span class="badge badge-admin">Somente Admin</span></div>
+    <p>Para corrigir diferencas entre o sistema e a realidade:</p>
+    <div class="steps">
+      <div class="step">Clique no botao <strong>📋 AJUSTE</strong> (barra superior)</div>
+      <div class="step">Busque o <strong>material</strong> pelo nome</div>
+      <div class="step">O sistema mostra o <strong>saldo atual</strong></div>
+      <div class="step">Escolha o tipo:
+        <ul>
+          <li><strong>Inventario</strong> — material que ja existia (sempre positivo)</li>
+          <li><strong>Contagem Fisica</strong> — diferenca da contagem real (+ ou &minus;)</li>
+          <li><strong>Correcao</strong> — erro, perda ou extravio (+ ou &minus;)</li>
+        </ul>
+      </div>
+      <div class="step">Informe a quantidade e o motivo</div>
+      <div class="step">Clique em <strong>SALVAR</strong></div>
+    </div>
+    <div class="dica">Ajustes nao geram custo em obra. Servem apenas para corrigir o saldo do estoque.</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- F4 HISTORICO NFS -->
+<!-- ═══════════════════════════════════════ -->
+<div class="modulo" id="mod-f4" data-perfis="admin,operacional">
+  <div class="modulo-header" onclick="toggleMod(this)">
+    <span class="modulo-icon">🧾</span>
+    <span class="modulo-title">Historico de Notas Fiscais</span>
+    <span class="modulo-atalho">F4</span>
+    <span class="modulo-toggle">▼</span>
+  </div>
+  <div class="modulo-body">
+    <div class="perfil-badges">
+      <span class="badge badge-admin">Admin</span>
+      <span class="badge badge-operacional">Operacional</span>
+    </div>
+    <p>Lista completa de todas as notas fiscais lancadas no sistema.</p>
+
+    <h3>Consultar notas</h3>
+    <div class="steps">
+      <div class="step">Acesse <strong>HISTORICO (F4)</strong></div>
+      <div class="step">As notas aparecem em ordem cronologica (mais recente primeiro)</div>
+      <div class="step">Clique em uma nota para ver os <strong>itens detalhados</strong></div>
+    </div>
+
+    <h3>Informacoes de cada nota</h3>
+    <ul>
+      <li><strong>Numero da NF</strong>, data, fornecedor, CNPJ</li>
+      <li><strong>Valor bruto</strong>, frete, imposto</li>
+      <li><strong>Itens</strong> — descricao, quantidade, unidade, preco, total</li>
+      <li><strong>Credito</strong> — se gera credito fiscal ou nao</li>
+      <li><strong>Obra destino</strong> — pra onde foi o material</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- F5 LANCAR NF -->
+<!-- ═══════════════════════════════════════ -->
+<div class="modulo" id="mod-f5" data-perfis="admin,operacional">
+  <div class="modulo-header" onclick="toggleMod(this)">
+    <span class="modulo-icon">➕</span>
+    <span class="modulo-title">Lancar Nota Fiscal</span>
+    <span class="modulo-atalho">F5</span>
+    <span class="modulo-toggle">▼</span>
+  </div>
+  <div class="modulo-body">
+    <div class="perfil-badges">
+      <span class="badge badge-admin">Admin</span>
+      <span class="badge badge-operacional">Operacional</span>
+    </div>
+    <p>Formulario para registrar novas notas fiscais no sistema.</p>
+
+    <h3>Lancamento manual</h3>
+    <div class="steps">
+      <div class="step">Acesse <strong>LANCAR NF (F5)</strong></div>
+      <div class="step">Preencha o cabecalho: <strong>data, numero da NF, fornecedor, CNPJ</strong></div>
+      <div class="step">Selecione a <strong>obra destino</strong>:
+        <ul>
+          <li><strong>EDR</strong> = material vai para o estoque</li>
+          <li><strong>Nome da obra</strong> = custo vai direto para a obra</li>
+        </ul>
+      </div>
+      <div class="step">Adicione os <strong>itens</strong>: descricao, quantidade, unidade, preco unitario</div>
+      <div class="step">Marque se o item <strong>gera credito</strong> fiscal ou nao</div>
+      <div class="step">Preencha <strong>frete</strong> e <strong>imposto</strong> se houver</div>
+      <div class="step">Clique em <strong>SALVAR NOTA</strong></div>
+    </div>
+    <div class="dica">O sistema sugere materiais do catalogo conforme voce digita. Isso padroniza os nomes e categoriza automaticamente.</div>
+
+    <h3>Importacao Rapida (copiar/colar)</h3>
+    <p>Para notas com muitos itens, voce pode colar o texto direto:</p>
+    <div class="steps">
+      <div class="step">Clique em <strong>IMPORTAR</strong></div>
+      <div class="step">Cole o texto da nota (formato: descricao, qtd, preco — separados por tab, ponto-e-virgula ou pipe)</div>
+      <div class="step">O sistema interpreta automaticamente e mostra um <strong>preview</strong></div>
+      <div class="step">Revise, ajuste se necessario, e clique em <strong>CONFIRMAR</strong></div>
+    </div>
+
+    <h3>Importacao XML (NF-e)</h3>
+    <div class="steps">
+      <div class="step">Clique em <strong>IMPORTAR XML</strong></div>
+      <div class="step">Selecione o arquivo <strong>.xml</strong> da nota fiscal eletronica</div>
+      <div class="step">O sistema extrai automaticamente: fornecedor, CNPJ, itens, valores</div>
+      <div class="step">Revise e confirme</div>
+    </div>
+    <div class="alerta">Confira sempre a obra destino antes de salvar. Material com obra = EDR vai pro estoque. Qualquer outra obra vai direto pro custo.</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- F6 GUIA CREDITOS -->
+<!-- ═══════════════════════════════════════ -->
+<div class="modulo" id="mod-f6" data-perfis="admin,operacional">
+  <div class="modulo-header" onclick="toggleMod(this)">
+    <span class="modulo-icon">📖</span>
+    <span class="modulo-title">Guia de Creditos NF</span>
+    <span class="modulo-atalho">F6</span>
+    <span class="modulo-toggle">▼</span>
+  </div>
+  <div class="modulo-body">
+    <div class="perfil-badges">
+      <span class="badge badge-admin">Admin</span>
+      <span class="badge badge-operacional">Operacional</span>
+    </div>
+    <p>Tabela de referencia para saber quais materiais geram credito fiscal na construcao civil.</p>
+
+    <h3>Como usar</h3>
+    <div class="steps">
+      <div class="step">Acesse <strong>GUIA NF (F6)</strong></div>
+      <div class="step">Consulte a tabela: itens com <strong>✓</strong> geram credito, itens com <strong>✗</strong> nao geram</div>
+    </div>
+
+    <h3>Exemplos</h3>
+    <table>
+      <tr><th>Gera Credito ✓</th><th>Nao Gera ✗</th></tr>
+      <tr><td>Cimento, ferro, madeira</td><td>Combustivel</td></tr>
+      <tr><td>Argamassa, tinta, piso</td><td>Alimentacao</td></tr>
+      <tr><td>Telhas, portas, janelas</td><td>Limpeza, ferramentas</td></tr>
+      <tr><td>Tubos, fios, concreto</td><td>Mobiliario, multas</td></tr>
+      <tr><td>Frete de materiais</td><td>EPI (em geral)</td></tr>
+    </table>
+    <div class="dica">Ao lancar uma NF, o sistema tenta classificar automaticamente o credito baseado no catalogo.</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- F7 DIARIAS -->
+<!-- ═══════════════════════════════════════ -->
+<div class="modulo" id="mod-f7" data-perfis="admin,operacional,mestre">
+  <div class="modulo-header" onclick="toggleMod(this)">
+    <span class="modulo-icon">👷</span>
+    <span class="modulo-title">Diarias</span>
+    <span class="modulo-atalho">F7</span>
+    <span class="modulo-toggle">▼</span>
+  </div>
+  <div class="modulo-body">
+    <div class="perfil-badges">
+      <span class="badge badge-admin">Admin</span>
+      <span class="badge badge-operacional">Operacional</span>
+      <span class="badge badge-mestre">Mestre</span>
+    </div>
+    <p>Controle de diarias da equipe de obra. O mestre de obras tem acesso exclusivo a este modulo.</p>
+
+    <h3>Entendendo a estrutura</h3>
+    <ul>
+      <li><strong>Quinzena</strong> — periodo de pagamento (ex: 01/03 a 15/03)</li>
+      <li><strong>Periodos</strong> — manha, tarde, noite (cada um conta como 0,5 ou 1 diaria)</li>
+      <li><strong>Extras</strong> — bonus ou descontos por quinzena</li>
+    </ul>
+
+    <h3>Lancar diarias do dia</h3>
+    <div class="steps">
+      <div class="step">Acesse <strong>DIARIAS (F7)</strong> — a aba <strong>Registro</strong> ja vem selecionada</div>
+      <div class="step">No campo de texto, digite no formato: <strong>nome quantidade</strong>
+        <ul>
+          <li>Exemplo: <code>anderson 3</code> = Anderson trabalhou 3 periodos</li>
+          <li>Exemplo: <code>nego 2,5</code> = Nego trabalhou 2,5 periodos</li>
+          <li>Funciona com <strong>apelidos</strong> (nego, val, zezao, etc.)</li>
+        </ul>
+      </div>
+      <div class="step">O sistema interpreta e mostra o <strong>resumo</strong></div>
+      <div class="step">Confirme clicando em <strong>LANCAR</strong></div>
+    </div>
+    <div class="dica">Voce pode lancar varios funcionarios de uma vez, um por linha.</div>
+
+    <h3>Ver calendario de diarias</h3>
+    <div class="steps">
+      <div class="step">Na aba <strong>Registro</strong>, role para baixo</div>
+      <div class="step">Os dias aparecem em ordem, clique para <strong>expandir</strong> e ver quem trabalhou</div>
+      <div class="step">Para excluir um dia inteiro, clique no botao de <strong>excluir</strong> do dia</div>
+    </div>
+
+    <h3>Ver folha de pagamento</h3>
+    <div class="steps">
+      <div class="step">Clique na aba <strong>Folha</strong></div>
+      <div class="step">A folha mostra: funcionario, dias trabalhados, valor da diaria, total, extras, valor final</div>
+      <div class="step">Clique em <strong>EXPORTAR PDF</strong> para salvar/imprimir</div>
+    </div>
+
+    <h3>Adicionar extras (bonus/desconto)</h3>
+    <div class="steps">
+      <div class="step">Clique na aba <strong>Extras</strong></div>
+      <div class="step">Clique em <strong>+ EXTRA</strong></div>
+      <div class="step">Selecione o funcionario, informe o valor (positivo = bonus, negativo = desconto) e a descricao</div>
+      <div class="step">Clique em <strong>SALVAR</strong></div>
+    </div>
+
+    <h3>Gerenciar quinzenas</h3>
+    <div class="steps">
+      <div class="step">No topo do modulo, veja a <strong>quinzena ativa</strong></div>
+      <div class="step">Para criar uma nova, clique em <strong>NOVA QUINZENA</strong> — o sistema sugere as datas automaticamente</div>
+      <div class="step">Para trocar de quinzena, use o <strong>seletor</strong> no topo</div>
+    </div>
+
+    <h3>Gerenciar equipe (Admin)</h3>
+    <div class="perfil-badges"><span class="badge badge-admin">Somente Admin</span></div>
+    <div class="steps">
+      <div class="step">Clique em <strong>EQUIPE</strong></div>
+      <div class="step">Para adicionar: preencha nome, cargo, valor da diaria, apelidos</div>
+      <div class="step">Para desativar: clique no botao ao lado do nome (ex: funcionario que saiu)</div>
+      <div class="step">Para editar valor: clique no nome e altere</div>
+    </div>
+
+    <h3>Lancar diarias como custo na obra (Admin)</h3>
+    <div class="perfil-badges"><span class="badge badge-admin">Somente Admin</span></div>
+    <div class="steps">
+      <div class="step">Clique em <strong>LANCAR EDR</strong></div>
+      <div class="step">Selecione a obra</div>
+      <div class="step">O sistema calcula o custo total de diarias da quinzena</div>
+      <div class="step">Confirme para gerar o lancamento na obra</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- F8 CATALOGO -->
+<!-- ═══════════════════════════════════════ -->
+<div class="modulo" id="mod-f8" data-perfis="admin,operacional">
+  <div class="modulo-header" onclick="toggleMod(this)">
+    <span class="modulo-icon">📂</span>
+    <span class="modulo-title">Catalogo de Materiais</span>
+    <span class="modulo-atalho">F8</span>
+    <span class="modulo-toggle">▼</span>
+  </div>
+  <div class="modulo-body">
+    <div class="perfil-badges">
+      <span class="badge badge-admin">Admin</span>
+      <span class="badge badge-operacional">Operacional</span>
+    </div>
+    <p>Base de materiais padronizados. Quando voce lanca uma NF, o sistema usa o catalogo para sugerir nomes e categorizar automaticamente.</p>
+
+    <h3>Consultar materiais</h3>
+    <div class="steps">
+      <div class="step">Acesse <strong>CATALOGO (F8)</strong></div>
+      <div class="step">Use a <strong>busca</strong> ou filtre por <strong>categoria</strong></div>
+      <div class="step">Cada material mostra: codigo, nome, unidade, categoria, preco medio</div>
+    </div>
+
+    <h3>Cadastrar novo material</h3>
+    <div class="steps">
+      <div class="step">Clique em <strong>+ NOVO MATERIAL</strong></div>
+      <div class="step">Preencha: nome, unidade (UN, m2, kg, etc.), categoria</div>
+      <div class="step">Clique em <strong>SALVAR</strong> — o codigo e gerado automaticamente</div>
+    </div>
+    <div class="dica">Materiais tambem sao cadastrados automaticamente quando voce lanca uma NF com itens novos. Eles aparecem com um badge de "auto-cadastrado" para voce revisar.</div>
+
+    <h3>Reconciliacao (Admin)</h3>
+    <div class="perfil-badges"><span class="badge badge-admin">Somente Admin</span></div>
+    <p>Ferramenta para vincular itens orfaos (lancados sem match no catalogo) a materiais existentes:</p>
+    <div class="steps">
+      <div class="step">Clique em <strong>RECONCILIAR</strong></div>
+      <div class="step">O sistema escaneia itens que nao tem vinculo com o catalogo</div>
+      <div class="step">Para cada item, voce pode: <strong>vincular</strong> a um material existente, <strong>cadastrar</strong> como novo, ou <strong>excluir</strong></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- F9 RELATORIO -->
+<!-- ═══════════════════════════════════════ -->
+<div class="modulo" id="mod-f9" data-perfis="admin">
+  <div class="modulo-header" onclick="toggleMod(this)">
+    <span class="modulo-icon">📈</span>
+    <span class="modulo-title">Relatorio Financeiro</span>
+    <span class="modulo-atalho">F9</span>
+    <span class="modulo-toggle">▼</span>
+  </div>
+  <div class="modulo-body">
+    <div class="perfil-badges"><span class="badge badge-admin">Somente Admin</span></div>
+    <p>Relatorios financeiros completos com graficos e comparativos.</p>
+
+    <h3>Gerar relatorio</h3>
+    <div class="steps">
+      <div class="step">Acesse <strong>RELATORIO (F9)</strong></div>
+      <div class="step">Selecione o <strong>mes/ano</strong> desejado</div>
+      <div class="step">O sistema gera automaticamente:
+        <ul>
+          <li><strong>Painel financeiro</strong> — receita, custo, saldo do periodo</li>
+          <li><strong>Grafico mensal</strong> — evolucao visual</li>
+          <li><strong>Detalhe por obra</strong> — custos por etapa em cada obra</li>
+          <li><strong>Comparativo</strong> — mes atual vs anterior</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>Exportar PDF</h3>
+    <div class="steps">
+      <div class="step">Com o relatorio na tela, clique em <strong>EXPORTAR PDF</strong></div>
+      <div class="step">O sistema gera o PDF para download/impressao</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- F10 CUSTOS CEF -->
+<!-- ═══════════════════════════════════════ -->
+<div class="modulo" id="mod-f10" data-perfis="admin">
+  <div class="modulo-header" onclick="toggleMod(this)">
+    <span class="modulo-icon">💰</span>
+    <span class="modulo-title">Custos CEF (Repasses)</span>
+    <span class="modulo-atalho">F10</span>
+    <span class="modulo-toggle">▼</span>
+  </div>
+  <div class="modulo-body">
+    <div class="perfil-badges"><span class="badge badge-admin">Somente Admin</span></div>
+    <p>Controle de repasses da Caixa Economica Federal e custos por obra.</p>
+
+    <h3>Visualizar custos por obra</h3>
+    <div class="steps">
+      <div class="step">Acesse <strong>CUSTOS CEF (F10)</strong></div>
+      <div class="step">As obras aparecem em cards com resumo: lancamentos, adicionais, repasses</div>
+      <div class="step">Clique em uma obra para ver o <strong>detalhe completo</strong> com tabela mensal</div>
+    </div>
+
+    <h3>Registrar repasse CEF</h3>
+    <div class="steps">
+      <div class="step">No detalhe da obra, clique em <strong>+ REPASSE</strong></div>
+      <div class="step">Preencha: numero da medicao, valor, data do credito, tipo (PLS ou outro)</div>
+      <div class="step">Clique em <strong>SALVAR</strong></div>
+    </div>
+
+    <h3>Gerar relatorio de custos</h3>
+    <div class="steps">
+      <div class="step">No detalhe da obra, clique em <strong>RELATORIO</strong></div>
+      <div class="step">O sistema gera um relatorio completo de custos vs repasses</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- F11 DADOS -->
+<!-- ═══════════════════════════════════════ -->
+<div class="modulo" id="mod-f11" data-perfis="admin">
+  <div class="modulo-header" onclick="toggleMod(this)">
+    <span class="modulo-icon">🗄</span>
+    <span class="modulo-title">Dados (Gestao de Usuarios)</span>
+    <span class="modulo-atalho">F11</span>
+    <span class="modulo-toggle">▼</span>
+  </div>
+  <div class="modulo-body">
+    <div class="perfil-badges"><span class="badge badge-admin">Somente Admin</span></div>
+    <p>Gerenciamento de usuarios que acessam o sistema.</p>
+
+    <h3>Criar novo usuario</h3>
+    <div class="steps">
+      <div class="step">Acesse <strong>DADOS (F11)</strong></div>
+      <div class="step">Clique em <strong>+ NOVO USUARIO</strong></div>
+      <div class="step">Preencha: nome de usuario (login), senha, nome completo</div>
+      <div class="step">Selecione o <strong>perfil</strong>:
+        <ul>
+          <li><strong>Admin</strong> — acesso total</li>
+          <li><strong>Operacional</strong> — lanca NF, estoque, obras, diarias</li>
+          <li><strong>Mestre</strong> — somente diarias</li>
+        </ul>
+      </div>
+      <div class="step">Clique em <strong>SALVAR</strong></div>
+    </div>
+
+    <h3>Editar ou desativar usuario</h3>
+    <div class="steps">
+      <div class="step">Na lista de usuarios, clique em <strong>EDITAR</strong></div>
+      <div class="step">Altere nome, senha ou perfil conforme necessario</div>
+      <div class="step">Para desativar (ex: funcionario que saiu), clique em <strong>DESATIVAR</strong></div>
+    </div>
+    <div class="dica">Usuarios desativados nao conseguem fazer login, mas o historico de lancamentos deles e mantido.</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- F12 SETUP -->
+<!-- ═══════════════════════════════════════ -->
+<div class="modulo" id="mod-f12" data-perfis="admin">
+  <div class="modulo-header" onclick="toggleMod(this)">
+    <span class="modulo-icon">⚙</span>
+    <span class="modulo-title">Setup</span>
+    <span class="modulo-atalho">F12</span>
+    <span class="modulo-toggle">▼</span>
+  </div>
+  <div class="modulo-body">
+    <div class="perfil-badges"><span class="badge badge-admin">Somente Admin</span></div>
+    <p>Configuracoes tecnicas do sistema.</p>
+
+    <h3>SQL de Setup</h3>
+    <p>Contem o SQL completo para criar todas as tabelas do sistema no Supabase. Usar apenas na primeira instalacao ou quando uma nova tabela for adicionada.</p>
+    <div class="steps">
+      <div class="step">Clique em <strong>COPIAR SQL</strong></div>
+      <div class="step">Abra o <strong>Supabase SQL Editor</strong></div>
+      <div class="step">Cole e execute</div>
+    </div>
+
+    <h3>Resetar menu</h3>
+    <p>Se a ordem dos menus ficou bagunçada:</p>
+    <div class="steps">
+      <div class="step">Clique em <strong>RESETAR MENU</strong></div>
+      <div class="step">A ordem volta ao padrao (F1 a F12)</div>
+    </div>
+    <div class="dica">O menu lateral pode ser reorganizado arrastando os botoes. O setup reseta isso.</div>
+  </div>
+</div>
+
+</div><!-- /container -->
+
+<script>
+function toggleMod(header) {
+  header.closest('.modulo').classList.toggle('open');
+}
+
+function filtrar(perfil) {
+  document.querySelectorAll('.perfil-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+
+  document.querySelectorAll('.modulo').forEach(m => {
+    if (perfil === 'todos') { m.style.display = ''; return; }
+    const perfis = (m.dataset.perfis || '').split(',');
+    m.style.display = perfis.includes(perfil) ? '' : 'none';
+  });
+}
+
+// Abre o primeiro modulo por padrao
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.modulo')[0]?.classList.add('open');
+});
+</script>
+</body>
+</html>

@@ -34,6 +34,7 @@ async function iniciarApp() {
   setupEnterNav();
   setupKeyboardShortcuts();
   setupClickOutside();
+  initAjuda();
 }
 async function loadUsuarios() {
   try {
