@@ -323,6 +323,108 @@ async function salvarSaidaMaterial() {
     filtrarLanc();
   } catch(e) { console.error(e); showToast('ERRO AO REGISTRAR SAÍDA.'); }
 }
+// ── AJUSTE DE ESTOQUE ─────────────────────────────────────
+let ajusteTipoAtual = 'inventario';
+
+function abrirAjusteEstoque() {
+  ajusteTipoAtual = 'inventario';
+  document.getElementById('ajuste-desc').value = '';
+  document.getElementById('ajuste-qtd').value = '';
+  document.getElementById('ajuste-unidade').value = '';
+  document.getElementById('ajuste-motivo').value = '';
+  document.getElementById('ajuste-saldo-atual').style.display = 'none';
+  document.getElementById('ac-ajuste-list').classList.add('hidden');
+  setTipoAjuste('inventario');
+  document.getElementById('modal-ajuste').classList.remove('hidden');
+  setTimeout(() => document.getElementById('ajuste-desc').focus(), 100);
+}
+
+function setTipoAjuste(tipo) {
+  ajusteTipoAtual = tipo;
+  const btns = { inventario: 'btn-ajuste-inventario', contagem: 'btn-ajuste-contagem', correcao: 'btn-ajuste-correcao' };
+  const cores = { inventario: ['96,165,250', '#60a5fa'], contagem: ['46,204,113', 'var(--verde-hl)'], correcao: ['245,158,11', '#fbbf24'] };
+  const infos = {
+    inventario: 'Material que ja existia antes do sistema. Entra no saldo sem gerar custo.',
+    contagem: 'Contagem fisica real. Informe a DIFERENCA (positiva ou negativa) em relacao ao saldo atual.',
+    correcao: 'Correcao manual por erro de lancamento, perda ou extravio.'
+  };
+  const labels = { inventario: 'QUANTIDADE A ADICIONAR *', contagem: 'DIFERENCA (+ ou -) *', correcao: 'QUANTIDADE A AJUSTAR (+ ou -) *' };
+  Object.entries(btns).forEach(([k, id]) => {
+    const el = document.getElementById(id);
+    if (k === tipo) {
+      el.style.background = `rgba(${cores[k][0]},0.15)`;
+      el.style.color = cores[k][1];
+      el.style.borderColor = `rgba(${cores[k][0]},0.4)`;
+    } else {
+      el.style.background = 'transparent';
+      el.style.color = 'var(--texto3)';
+      el.style.borderColor = `rgba(${cores[k][0]},0.2)`;
+    }
+  });
+  document.getElementById('ajuste-tipo-info').textContent = infos[tipo];
+  document.getElementById('ajuste-qtd-label').textContent = labels[tipo];
+}
+
+function onAjusteDescInput() {
+  const val = document.getElementById('ajuste-desc').value;
+  const list = document.getElementById('ac-ajuste-list');
+  if (!val || val.length < 2) { list.classList.add('hidden'); return; }
+  const v = norm(val);
+  const matches = catalogoMateriais
+    .filter(m => norm(m.nome).includes(v))
+    .sort((a, b) => { const na = norm(a.nome), nb = norm(b.nome); return (na.startsWith(v) ? 0 : 1) - (nb.startsWith(v) ? 0 : 1); })
+    .slice(0, 10);
+  if (!matches.length) { list.classList.add('hidden'); return; }
+  list.innerHTML = matches.map(m =>
+    `<div class="autocomplete-item" onclick="selecionarAjusteItem('${m.nome.replace(/'/g, "\\'")}','${m.unidade || 'UN'}')">
+      ${m.codigo ? `<span class="ac-codigo">${m.codigo}</span>` : ''}<span class="ac-label">${m.nome}</span><span style="font-size:10px;color:var(--texto3);">${m.unidade || 'UN'}</span>
+    </div>`
+  ).join('');
+  list.classList.remove('hidden');
+}
+
+function selecionarAjusteItem(desc, unidade) {
+  document.getElementById('ajuste-desc').value = desc;
+  document.getElementById('ajuste-unidade').value = unidade;
+  document.getElementById('ac-ajuste-list').classList.add('hidden');
+  // Mostrar saldo atual
+  const materiais = consolidarEstoque();
+  const m = materiais.find(m => norm(m.desc) === norm(desc));
+  const saldoEl = document.getElementById('ajuste-saldo-atual');
+  if (m) {
+    saldoEl.innerHTML = `Saldo atual no sistema: <strong style="color:var(--verde-hl);">${m.saldoTotal} ${m.unidade}</strong>`;
+    saldoEl.style.display = 'block';
+  } else {
+    saldoEl.innerHTML = `Material sem saldo no sistema (sera criado).`;
+    saldoEl.style.display = 'block';
+  }
+  document.getElementById('ajuste-qtd').focus();
+}
+
+async function salvarAjusteEstoque() {
+  const desc = (document.getElementById('ajuste-desc').value || '').toUpperCase().trim();
+  const qtd = parseFloat(document.getElementById('ajuste-qtd').value) || 0;
+  const unidade = (document.getElementById('ajuste-unidade').value || 'UN').toUpperCase();
+  const motivo = (document.getElementById('ajuste-motivo').value || '').toUpperCase();
+  if (!desc) { showToast('INFORME O MATERIAL.'); return; }
+  if (qtd === 0) { showToast('INFORME A QUANTIDADE.'); return; }
+  if (ajusteTipoAtual === 'inventario' && qtd < 0) { showToast('INVENTARIO INICIAL DEVE SER POSITIVO.'); return; }
+  const label = { inventario: 'INVENTARIO INICIAL', contagem: 'CONTAGEM FISICA', correcao: 'CORRECAO MANUAL' }[ajusteTipoAtual];
+  if (!confirm(`Confirma ${label}: ${qtd > 0 ? '+' : ''}${qtd} ${unidade} de ${desc}?`)) return;
+  try {
+    const [novo] = await sbPost('ajustes_estoque', {
+      item_desc: desc, unidade, qtd,
+      tipo: ajusteTipoAtual,
+      motivo: `${label}${motivo ? ' · ' + motivo : ''}`
+    });
+    ajustesEstoque.unshift(novo);
+    showToast(`📋 Ajuste registrado: ${qtd > 0 ? '+' : ''}${qtd} ${unidade} de ${desc}`);
+    fecharModal('ajuste');
+    renderEstoque();
+    renderDashboard();
+  } catch (e) { console.error(e); showToast('ERRO AO REGISTRAR AJUSTE. Execute o SQL no SETUP.'); }
+}
+
 function toggleBnavMore() {
   document.getElementById('bnav-more-menu').classList.toggle('open');
 }

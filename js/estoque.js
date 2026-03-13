@@ -134,7 +134,24 @@ function consolidarEstoque() {
     if (e.preco > 0) map[key].totalValor += Number(e.qtd) * Number(e.preco);
   });
 
-  // 3. Calcular saldo real = (NF + entrada direta) - distribuições
+  // 2b. Ajustes de estoque (inventário inicial, contagem física, correções)
+  ajustesEstoque.forEach(a => {
+    const key = getEstoqueKey(a.item_desc);
+    const mat = getMaterialCatalogo(a.item_desc);
+    const descPadrao = mat ? mat.nome : a.item_desc;
+    if (!map[key]) map[key] = {
+      desc: descPadrao,
+      unidade: mat?.unidade || a.unidade || 'UN',
+      credito: false,
+      codigo: mat?.codigo || null,
+      categoria: mat?.categoria || null,
+      qtdNF: 0, qtdDireta: 0, qtdAjuste: 0, totalValor: 0, lotes: [], temNFPendente: false
+    };
+    if (!map[key].qtdAjuste) map[key].qtdAjuste = 0;
+    map[key].qtdAjuste += Number(a.qtd);
+  });
+
+  // 3. Calcular saldo real = (NF + entrada direta + ajustes) - distribuições
   // Criar mapa reverso: material -> key
   const keyByRef = new Map();
   Object.entries(map).forEach(([k, v]) => keyByRef.set(v, k));
@@ -144,7 +161,7 @@ function consolidarEstoque() {
     const totalDistribuido = distribuicoes
       .filter(d => getEstoqueKey(d.item_desc) === myKey)
       .reduce((s,d) => s + Number(d.qtd), 0);
-    m.saldoTotal = m.qtdNF + m.qtdDireta - totalDistribuido;
+    m.saldoTotal = m.qtdNF + m.qtdDireta + (m.qtdAjuste||0) - totalDistribuido;
     m.temNFPendente = m.qtdDireta > 0;
     m.valorMedio = (m.qtdNF + m.qtdDireta) > 0 ? m.totalValor / (m.qtdNF + m.qtdDireta) : 0;
   });
@@ -205,6 +222,7 @@ function renderEstoque() {
           <span class="admin-only"> · ${fmtR(m.valorMedio)}/un · Total: ${fmtR(m.saldoTotal * m.valorMedio)}</span>
           ${m.lotes.length > 0 ? ` · ${m.lotes.length} lote${m.lotes.length!==1?'s':''}` : ''}
           ${m.qtdDireta > 0 ? ` · <span style="color:var(--amarelo);">+${m.qtdDireta} entrada direta</span>` : ''}
+          ${(m.qtdAjuste||0) !== 0 ? ` · <span style="color:#60a5fa;">${m.qtdAjuste > 0 ? '+' : ''}${m.qtdAjuste} ajuste</span>` : ''}
         </div>
       </div>
       <div style="text-align:right;min-width:55px;">

@@ -23,7 +23,7 @@ async function iniciarApp() {
   populateSelects();
   renderTabelaCreditos();
   renderUsuarios();
-  await Promise.all([loadNotas(), loadLancamentos(), loadDistribuicoes(), loadEntradasDiretas(), loadMateriais(), loadRepassesCef(), loadAdicionais()]);
+  await Promise.all([loadNotas(), loadLancamentos(), loadDistribuicoes(), loadEntradasDiretas(), loadMateriais(), loadRepassesCef(), loadAdicionais(), loadAjustesEstoque()]);
   const mc = document.getElementById("main-content-inner"); if(mc) mc.style.visibility="visible";
   document.getElementById('sql-box').textContent = SQL_SETUP;
   renderDashboard();
@@ -60,3 +60,4 @@ async function loadNotas() { try { notas = await sbGet('notas_fiscais', '?order=
 async function loadLancamentos() { try { lancamentos = await sbGet('lancamentos', '?select=id,obra_id,descricao,qtd,preco,total,data,obs,etapa,criado_por&order=data.desc'); if (!Array.isArray(lancamentos)) lancamentos = []; } catch(e) { lancamentos = []; } }
 async function loadDistribuicoes() { try { const r = await sbGet('distribuicoes', '?order=criado_em.desc'); distribuicoes = Array.isArray(r) ? r : []; } catch(e) { distribuicoes = []; } }
 async function loadEntradasDiretas() { try { const r = await sbGet('entradas_diretas', '?order=criado_em.desc'); entradasDiretas = Array.isArray(r) ? r : []; } catch(e) { entradasDiretas = []; } }
+async function loadAjustesEstoque() { try { const r = await sbGet('ajustes_estoque', '?order=criado_em.desc'); ajustesEstoque = Array.isArray(r) ? r : []; } catch(e) { ajustesEstoque = []; } }

@@ -200,13 +200,26 @@ alter table obras add column if not exists proprietario text default '';
 alter table obras add column if not exists endereco_rua text default '';
 alter table obras add column if not exists endereco_numero text default '';
 alter table obras add column if not exists endereco_bairro text default '';
-alter table obras add column if not exists endereco_cep text default '';`;
+alter table obras add column if not exists endereco_cep text default '';
+
+-- Ajustes de estoque (inventário inicial, contagem física, correções)
+create table if not exists ajustes_estoque (
+  id uuid default gen_random_uuid() primary key,
+  item_desc text not null,
+  unidade text default 'UN',
+  qtd numeric not null,
+  tipo text not null default 'inventario',
+  motivo text default '',
+  criado_por text default '',
+  criado_em timestamptz default now()
+);
+alter table ajustes_estoque disable row level security;`;
 
 // ══════════════════════════════════════════
 // ESTADO
 // ══════════════════════════════════════════
 let usuarioAtual = null;
-let obras = [], notas = [], lancamentos = [], distribuicoes = [], entradasDiretas = [], catalogoMateriais = [], repassesCef = [];
+let obras = [], notas = [], lancamentos = [], distribuicoes = [], entradasDiretas = [], catalogoMateriais = [], repassesCef = [], ajustesEstoque = [];
 let itensForm = [], distItemAtual = null, currentCredito = null;
 let acSelectedIdx = -1, acFornIdx = -1, cachedFornecedores = [], cachedItens = [];
 let obraFiltroAtual = null, catFiltroAtual = null, obrasArquivadas = [];

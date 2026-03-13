@@ -175,6 +175,7 @@
   <div id="view-relatorio" class="hidden">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-top:4px;flex-wrap:wrap;gap:10px;">
       <div style="display:flex;align-items:center;gap:14px;">
+        <button onclick="setView('dashboard')" style="background:rgba(46,204,113,0.08);border:1px solid rgba(46,204,113,0.15);color:var(--verde-hl);border-radius:8px;padding:5px 14px;font-size:11px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;cursor:pointer;margin-right:8px;">← VOLTAR</button>
         <div style="width:44px;height:44px;border:1px solid rgba(46,204,113,0.35);border-radius:12px;display:flex;align-items:center;justify-content:center;background:rgba(46,204,113,0.07);">
           <span style="font-size:20px;">📈</span>
         </div>
@@ -281,8 +282,9 @@
     <div id="estoque-sticky" style="position:sticky;top:0;z-index:90;background:var(--bg);padding:10px 0 8px 0;border-bottom:1px solid var(--borda);margin-bottom:8px;">
       <div class="modulo-badge">📦 ESTOQUE EDR</div>
       <div style="display:flex;gap:8px;margin-bottom:8px;">
-        <button class="btn-save" style="flex:1;padding:10px;font-size:13px;" onclick="abrirEntradaDireta()">📥 ENTRADA DIRETA</button>
-        <button class="btn-save" style="flex:1;padding:10px;font-size:13px;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);color:#f87171;" onclick="abrirSaidaMaterial()">📤 SAÍDA / BAIXA</button>
+        <button class="btn-save" style="flex:1;padding:10px;font-size:13px;" onclick="abrirEntradaDireta()">📥 ENTRADA</button>
+        <button class="btn-save" style="flex:1;padding:10px;font-size:13px;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);color:#f87171;" onclick="abrirSaidaMaterial()">📤 SAÍDA</button>
+        <button class="btn-save admin-only" style="flex:1;padding:10px;font-size:13px;background:rgba(96,165,250,0.12);border:1px solid rgba(96,165,250,0.3);color:#60a5fa;" onclick="abrirAjusteEstoque()">📋 AJUSTE</button>
       </div>
       <div class="filter-row" style="margin-bottom:4px;position:relative;">
         <input type="text" id="estoque-busca" placeholder="🔍 Buscar material..." oninput="renderEstoque();toggleLimparBusca()" style="text-transform:none;padding-right:90px;">
@@ -824,6 +826,35 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
   </div>
 </div>
 
+
+<!-- MODAL AJUSTE DE ESTOQUE -->
+<div id="modal-ajuste" class="modal-overlay hidden" onclick="closeModalOutside(event,'ajuste')">
+  <div class="modal">
+    <div class="modal-title">📋 AJUSTE DE ESTOQUE <button class="modal-close" onclick="fecharModal('ajuste')">✕</button></div>
+    <div style="background:rgba(96,165,250,0.08);border:1px solid rgba(96,165,250,0.2);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:11px;color:#60a5fa;font-weight:600;">
+      Registre contagem fisica, inventario inicial ou correcao de saldo. Ajustes nao geram custo em obra.
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:14px;">
+      <button id="btn-ajuste-inventario" onclick="setTipoAjuste('inventario')" style="flex:1;padding:12px 8px;border-radius:10px;font-size:11px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;cursor:pointer;border:1px solid rgba(96,165,250,0.4);background:rgba(96,165,250,0.15);color:#60a5fa;min-height:44px;">📦 INVENTARIO INICIAL</button>
+      <button id="btn-ajuste-contagem" onclick="setTipoAjuste('contagem')" style="flex:1;padding:12px 8px;border-radius:10px;font-size:11px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;cursor:pointer;border:1px solid rgba(46,204,113,0.2);background:transparent;color:var(--texto3);min-height:44px;">🔢 CONTAGEM FISICA</button>
+      <button id="btn-ajuste-correcao" onclick="setTipoAjuste('correcao')" style="flex:1;padding:12px 8px;border-radius:10px;font-size:11px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;cursor:pointer;border:1px solid rgba(245,158,11,0.2);background:transparent;color:var(--texto3);min-height:44px;">🔧 CORRECAO</button>
+    </div>
+    <div id="ajuste-tipo-info" style="font-size:11px;color:var(--texto3);margin-bottom:14px;">Material que ja existia antes do sistema. Entra no saldo sem gerar custo.</div>
+    <div class="field autocomplete-wrap">
+      <label>MATERIAL *</label>
+      <input type="text" id="ajuste-desc" placeholder="BUSCAR MATERIAL..." oninput="onAjusteDescInput()" autocomplete="off">
+      <div class="autocomplete-list hidden" id="ac-ajuste-list"></div>
+    </div>
+    <div id="ajuste-saldo-atual" style="display:none;background:var(--bg3);border:1px solid var(--borda2);border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:var(--texto2);"></div>
+    <div class="field-row">
+      <div class="field"><label id="ajuste-qtd-label">QUANTIDADE A ADICIONAR *</label><input type="number" id="ajuste-qtd" placeholder="0" step="0.01" style="text-transform:none;font-size:16px;"></div>
+      <div class="field"><label>UNIDADE</label><input type="text" id="ajuste-unidade" placeholder="UN" style="text-transform:uppercase;"></div>
+    </div>
+    <div class="field"><label>MOTIVO / OBSERVACAO</label><input type="text" id="ajuste-motivo" placeholder="EX: CONTAGEM REALIZADA EM 12/03..." style="text-transform:uppercase;"></div>
+    <button class="btn-save" style="background:rgba(96,165,250,0.2);border:1px solid rgba(96,165,250,0.4);color:#60a5fa;" onclick="salvarAjusteEstoque()">📋 CONFIRMAR AJUSTE</button>
+    <button class="btn-outline" onclick="fecharModal('ajuste')">CANCELAR</button>
+  </div>
+</div>
 
 <!-- MODAL ADICIONAL -->
 <div id="modal-adicional" class="modal-overlay hidden">

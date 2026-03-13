@@ -1,4 +1,4 @@
-let chartPizza = null, chartBarras = null;
+// Dashboard EDR — gráficos HTML nativos (sem dependência de Chart.js)
 
 function renderDashboardOperador() {
   const el = document.getElementById('oper-welcome');
@@ -240,19 +240,24 @@ function renderDashboard() {
       }).join('')}
     </div>
 
-    <!-- GRÁFICOS -->
-    <div style="display:grid;grid-template-columns:3fr 2fr;gap:12px;margin-bottom:14px;" id="dash-graficos">
-      <div class="card" style="padding:18px 16px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-          <div class="section-title" style="font-size:12px;color:var(--texto2);">CUSTO POR OBRA</div>
-          <div style="font-size:9px;color:var(--texto3);font-family:'JetBrains Mono',monospace;">duplo clique → abre obra</div>
-        </div>
-        <canvas id="chart-barras" height="170"></canvas>
+    <!-- FLUXO DE CAIXA — 6 MESES -->
+    <div class="card" style="padding:18px 16px;margin-bottom:14px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <div class="section-title" style="font-size:12px;color:var(--texto2);">FLUXO DE CAIXA — ULTIMOS 6 MESES</div>
       </div>
-      <div class="card" style="padding:18px 16px;">
-        <div class="section-title" style="margin-bottom:14px;font-size:12px;color:var(--texto2);">CUSTO POR CENTRO DE CUSTO</div>
-        <canvas id="chart-pizza" height="170"></canvas>
-      </div>
+      <div id="dash-fluxo-caixa"></div>
+    </div>
+
+    <!-- CUSTO vs RECEITA POR OBRA -->
+    <div class="card" style="padding:18px 16px;margin-bottom:14px;">
+      <div class="section-title" style="margin-bottom:14px;font-size:12px;color:var(--texto2);">CUSTO vs RECEITA POR OBRA</div>
+      <div id="dash-custo-receita"></div>
+    </div>
+
+    <!-- TOP CENTROS DE CUSTO -->
+    <div class="card" style="padding:18px 16px;margin-bottom:14px;">
+      <div class="section-title" style="margin-bottom:14px;font-size:12px;color:var(--texto2);">TOP CENTROS DE CUSTO</div>
+      <div id="dash-top-etapas"></div>
     </div>
 
     <!-- ÚLTIMOS LANÇAMENTOS -->
@@ -270,84 +275,101 @@ function renderDashboard() {
     </div>` : ''}
   `;
 
-  // ── GRÁFICOS ──
-  function renderCharts() {
-    const coresPizza = [
-      'rgba(46,204,113,0.75)','rgba(100,116,139,0.7)','rgba(59,130,246,0.7)',
-      'rgba(245,158,11,0.7)','rgba(139,92,246,0.7)','rgba(6,182,212,0.65)',
-      'rgba(239,68,68,0.65)','rgba(156,163,175,0.55)',
-    ];
-    const maxIdx = porObra.length ? porObra.indexOf(porObra.reduce((a,b)=>a.custo>b.custo?a:b, porObra[0])) : -1;
-    const coresBarra = porObra.map((_,i) => i === maxIdx ? 'rgba(46,204,113,0.75)' : 'rgba(100,116,139,0.45)');
-
-    Chart.defaults.color = '#6a8a6a';
-    Chart.defaults.font.family = "'Barlow', sans-serif";
-
-    const ctxB = document.getElementById('chart-barras')?.getContext('2d');
-    if (ctxB) {
-      if (chartBarras) chartBarras.destroy();
-      chartBarras = new Chart(ctxB, {
-        type: 'bar',
-        data: {
-          labels: porObra.map(o => o.nome.length > 16 ? o.nome.substring(0,14)+'…' : o.nome),
-          datasets: [{ data: porObra.map(o=>o.custo), backgroundColor: coresBarra, borderRadius: 8, borderWidth: 0,
-            hoverBackgroundColor: porObra.map((_,i) => i === maxIdx ? 'rgba(74,222,128,0.85)' : 'rgba(148,163,184,0.6)') }]
-        },
-        options: {
-          plugins: { legend: { display: false },
-            tooltip: { callbacks: { label: ctx => '  ' + fmt(ctx.raw), footer: () => '  Duplo clique para abrir a obra' },
-              backgroundColor: 'rgba(6,12,6,0.9)', borderColor: 'rgba(46,204,113,0.3)', borderWidth: 1, titleColor: '#ddeadd', bodyColor: '#9ab89a', footerColor: '#6a8a6a', footerFont: { size: 9 }, padding: 10 }
-          },
-          scales: {
-            x: { ticks: { color: '#6a8a6a', font: { size: 10 } }, grid: { display: false }, border: { color: 'rgba(46,204,113,0.1)' } },
-            y: { ticks: { color: '#6a8a6a', font: { size: 10 }, callback: v => v>=1000?(v/1000).toFixed(0)+'k':''+v }, grid: { color: 'rgba(46,204,113,0.05)' }, border: { display: false } }
-          },
-          onClick: (evt, elements) => {
-            if (!elements.length) return;
-            const idx = elements[0].index;
-            const obra = porObra[idx];
-            if (!obra) return;
-            const nowTs = Date.now();
-            if (chartBarras._lastClick && (nowTs - chartBarras._lastClick) < 400 && chartBarras._lastClickIdx === idx) {
-              setView('custos');
-              setTimeout(() => custosAbrirDetalhe(obra.id), 100);
-              chartBarras._lastClick = 0;
-            } else {
-              chartBarras._lastClick = nowTs;
-              chartBarras._lastClickIdx = idx;
-            }
-          }
-        }
-      });
+  // ── FLUXO DE CAIXA (últimos 6 meses) ──
+  (function renderFluxoCaixa() {
+    const el = document.getElementById('dash-fluxo-caixa');
+    if (!el) return;
+    const hoje = new Date();
+    const mesesArr = [];
+    for (let i = 5; i >= 0; i--) {
+      let m = hoje.getMonth() + 1 - i;
+      let a = hoje.getFullYear();
+      while (m <= 0) { m += 12; a--; }
+      mesesArr.push(a + '-' + String(m).padStart(2, '0'));
     }
+    const MESES_LBL = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    const dados = mesesArr.map(ym => {
+      const saidas = lancAtivos.filter(l => l.data && l.data.startsWith(ym)).reduce((s,l) => s + Number(l.total||0), 0);
+      const repMes = repassesCef.filter(r => obraAtivaIds.has(r.obra_id) && r.data_credito && r.data_credito.startsWith(ym)).reduce((s,r) => s + Number(r.valor||0), 0);
+      const pgtosMes = (typeof adicionaisPgtos !== 'undefined' ? adicionaisPgtos : []).filter(p => p.data && p.data.startsWith(ym)).reduce((s,p) => s + Number(p.valor||0), 0);
+      return { ym, entradas: repMes + pgtosMes, saidas };
+    });
+    const maxVal = Math.max(...dados.map(d => Math.max(d.entradas, d.saidas)), 1);
+    const mesAtual = hoje.getFullYear() + '-' + String(hoje.getMonth()+1).padStart(2,'0');
 
-    const ctxP = document.getElementById('chart-pizza')?.getContext('2d');
-    if (ctxP) {
-      if (chartPizza) chartPizza.destroy();
-      chartPizza = new Chart(ctxP, {
-        type: 'doughnut',
-        data: {
-          labels: etapaEntries.map(([k])=>k),
-          datasets: [{ data: etapaEntries.map(([,v])=>v), backgroundColor: coresPizza, borderWidth: 0, hoverOffset: 6 }]
-        },
-        options: {
-          plugins: {
-            legend: { position: 'bottom', labels: { color: '#6a8a6a', font: { size: 10 }, boxWidth: 10, padding: 7 } },
-            tooltip: { callbacks: { label: ctx => '  ' + fmt(ctx.raw) }, backgroundColor: 'rgba(6,12,6,0.9)', borderColor: 'rgba(46,204,113,0.3)', borderWidth: 1, titleColor: '#ddeadd', bodyColor: '#9ab89a', padding: 10 }
-          },
-          cutout: '60%'
-        }
-      });
-    }
-  }
+    // Legenda
+    let html = `<div style="display:flex;gap:16px;margin-bottom:10px;">
+      <span style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--texto3);"><span style="width:10px;height:10px;background:#2ecc71;border-radius:2px;display:inline-block;"></span> Entradas</span>
+      <span style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--texto3);"><span style="width:10px;height:10px;background:#e74c3c;border-radius:2px;display:inline-block;"></span> Saidas</span>
+    </div>`;
+    html += '<div style="display:flex;gap:6px;align-items:flex-end;">';
+    dados.forEach(d => {
+      const [,m] = d.ym.split('-');
+      const hE = Math.max(d.entradas / maxVal * 120, d.entradas > 0 ? 4 : 0);
+      const hS = Math.max(d.saidas / maxVal * 120, d.saidas > 0 ? 4 : 0);
+      const isAtual = d.ym === mesAtual;
+      const saldo = d.entradas - d.saidas;
+      const corSaldo = saldo >= 0 ? '#2ecc71' : '#ef4444';
+      html += `<div style="flex:1;text-align:center;${isAtual ? 'background:rgba(46,204,113,0.05);border-radius:8px;padding:4px 2px;border:1px solid rgba(46,204,113,0.15);' : ''}">
+        <div style="display:flex;gap:2px;justify-content:center;align-items:flex-end;height:120px;">
+          <div style="width:40%;height:${hE}px;background:linear-gradient(0deg,#16a085,#2ecc71);border-radius:3px 3px 0 0;" title="Entradas: ${fmtR(d.entradas)}"></div>
+          <div style="width:40%;height:${hS}px;background:linear-gradient(0deg,#c0392b,#e74c3c);border-radius:3px 3px 0 0;" title="Saidas: ${fmtR(d.saidas)}"></div>
+        </div>
+        <div style="font-size:10px;color:${isAtual ? 'var(--verde-hl)' : 'var(--texto3)'};font-weight:${isAtual ? '700' : '400'};margin-top:4px;">${MESES_LBL[parseInt(m)-1]}</div>
+        <div style="font-size:9px;color:${corSaldo};font-weight:600;font-family:'JetBrains Mono',monospace;">${saldo >= 0 ? '+' : ''}${fmtR(saldo, true)}</div>
+      </div>`;
+    });
+    html += '</div>';
+    el.innerHTML = html;
+  })();
 
-  if (typeof Chart === 'undefined') {
-    const s = document.createElement('script');
-    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js';
-    s.onload = renderCharts;
-    document.head.appendChild(s);
-  } else {
-    renderCharts();
-  }
+  // ── CUSTO vs RECEITA POR OBRA ──
+  (function renderCustoReceita() {
+    const el = document.getElementById('dash-custo-receita');
+    if (!el) return;
+    const dados = porObra.filter(o => o.vv > 0 || o.custo > 0);
+    if (!dados.length) { el.innerHTML = '<div style="color:var(--texto3);font-size:12px;">Nenhuma obra com dados.</div>'; return; }
+    const maxVal = Math.max(...dados.map(d => Math.max(d.custo, d.vv + (d.adds?.valorTotal || 0))), 1);
+    el.innerHTML = dados.map(o => {
+      const receita = o.vv + (o.adds?.valorTotal || 0);
+      const pctCusto = o.custo / maxVal * 100;
+      const pctReceita = receita / maxVal * 100;
+      const corM = o.margem >= 15 ? '#2ecc71' : o.margem >= 0 ? '#f59e0b' : '#ef4444';
+      return `<div style="margin-bottom:14px;cursor:pointer;" onclick="setView('custos');setTimeout(()=>custosAbrirDetalhe('${o.id}'),100)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <span style="font-size:12px;color:var(--branco);font-weight:600;">${o.nome}</span>
+          <span style="font-size:11px;font-weight:700;color:${corM};">${receita > 0 ? o.margem.toFixed(0) + '%' : '—'}</span>
+        </div>
+        <div style="position:relative;height:22px;background:rgba(255,255,255,0.04);border-radius:4px;overflow:hidden;">
+          ${receita > 0 ? `<div style="position:absolute;top:0;left:0;height:100%;width:${pctReceita}%;background:rgba(46,204,113,0.15);border-radius:4px;border:1px solid rgba(46,204,113,0.2);"></div>` : ''}
+          <div style="position:absolute;top:0;left:0;height:100%;width:${pctCusto}%;background:${o.margem < 0 ? 'rgba(239,68,68,0.5)' : 'rgba(245,158,11,0.5)'};border-radius:4px;"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:3px;font-size:10px;">
+          <span style="color:#f59e0b;">Custo: ${fmt(o.custo)}</span>
+          <span style="color:var(--verde-hl);">${receita > 0 ? 'Receita: ' + fmt(receita) : 'Sem valor de venda'}</span>
+        </div>
+      </div>`;
+    }).join('');
+  })();
+
+  // ── TOP CENTROS DE CUSTO ──
+  (function renderTopEtapas() {
+    const el = document.getElementById('dash-top-etapas');
+    if (!el) return;
+    const totalCusto = etapaEntries.reduce((s,[,v]) => s + v, 0);
+    const coresEtapa = ['#2ecc71','#3498db','#e67e22','#9b59b6','#e74c3c','#1abc9c','#f39c12','#27ae60'];
+    el.innerHTML = etapaEntries.map(([lb, val], i) => {
+      const pct = totalCusto > 0 ? (val / totalCusto * 100) : 0;
+      return `<div style="margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px;">
+          <span style="color:var(--branco);font-weight:600;">${lb}</span>
+          <span style="color:var(--texto2);">${fmtR(val)} <span style="color:var(--texto3);">(${pct.toFixed(1)}%)</span></span>
+        </div>
+        <div style="height:6px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;">
+          <div style="height:100%;width:${pct}%;background:${coresEtapa[i % coresEtapa.length]};border-radius:3px;transition:width .5s;"></div>
+        </div>
+      </div>`;
+    }).join('') || '<div style="color:var(--texto3);font-size:12px;">Sem dados.</div>';
+  })();
   setTimeout(autoFitStatValues, 50);
 }
