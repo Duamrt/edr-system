@@ -26,6 +26,27 @@
 <title>EDR System</title>
 </head>
 <body>
+<!-- ── SPLASH SCREEN ── -->
+<div id="splash-screen" style="position:fixed;inset:0;z-index:9999;background:#050505;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 0.5s ease;">
+  <div style="font-family:'Rajdhani',sans-serif;font-size:32px;font-weight:700;color:#2ecc71;letter-spacing:6px;animation:splashPulse 1.5s ease infinite;">EDR</div>
+  <div style="font-size:11px;color:#6a8a6a;letter-spacing:4px;margin-top:8px;font-family:'Barlow',sans-serif;font-weight:300;">ENGENHARIA</div>
+  <div style="width:120px;height:2px;background:rgba(46,204,113,0.15);border-radius:2px;margin-top:24px;overflow:hidden;">
+    <div style="width:40%;height:100%;background:linear-gradient(90deg,transparent,#2ecc71,transparent);animation:splashBar 1.2s ease-in-out infinite;border-radius:2px;"></div>
+  </div>
+</div>
+<style>
+  @keyframes splashPulse { 0%,100% { opacity:1; } 50% { opacity:0.6; } }
+  @keyframes splashBar { 0% { transform:translateX(-200%); } 100% { transform:translateX(350%); } }
+</style>
+<script>
+  // Remove splash após fontes e DOM carregarem
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      const splash = document.getElementById('splash-screen');
+      if (splash) { splash.style.opacity = '0'; setTimeout(() => splash.remove(), 500); }
+    }, 800);
+  });
+</script>
 <!-- ── TELA DE LOGIN ─────────────────────────────── -->
 <div class="login-screen" id="login-screen">
   <div class="login-logo">
