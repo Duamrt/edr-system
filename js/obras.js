@@ -120,7 +120,7 @@ function renderObrasCards() {
     const ls = lancamentos.filter(l => l.obra_id === o.id);
     const total = ls.reduce((s, l) => s + Number(l.total || 0), 0);
     const ultimaData = ls.length ? ls.sort((a, b) => (b.data || '').localeCompare(a.data || ''))[0]?.data : null;
-    const ultimaStr = ultimaData ? new Date(ultimaData + 'T12:00:00').toLocaleDateString('pt-BR') : 'Sem lançamentos';
+    const ultimaStr = ultimaData ? fmtData(ultimaData) : 'Sem lançamentos';
     const adds = typeof getAdicionaisObra === 'function' ? getAdicionaisObra(o.id) : { qtd:0, valorTotal:0, totalRecebido:0, saldo:0 };
 
     // Top 3 etapas por valor
@@ -256,7 +256,7 @@ function abrirModalConclusao(obraId) {
   document.getElementById('concluir-obra-id').value = obraId;
   document.getElementById('concluir-proprietario').value = obra.contratante || obra.proprietario || '';
   document.getElementById('concluir-cpf').value = obra.cpf_contratante || '';
-  document.getElementById('concluir-data-entrega').value = new Date().toISOString().split('T')[0];
+  document.getElementById('concluir-data-entrega').value = hojeISO();
   document.getElementById('concluir-rua').value = obra.endereco_rua || '';
   document.getElementById('concluir-numero').value = obra.endereco_numero || '';
   document.getElementById('concluir-bairro').value = obra.endereco_bairro || '';

@@ -416,7 +416,7 @@ function diarTogglePanel() {
 
 async function initDiarias() {
   if (!document.getElementById('diar-dataInput').value) {
-    document.getElementById('diar-dataInput').value = new Date().toISOString().split('T')[0];
+    document.getElementById('diar-dataInput').value = hojeISO();
   }
   await diarCarregarFuncionarios();
   await diarCarregarQuinzenas();
@@ -515,7 +515,7 @@ async function diarCarregarRegistros() {
 function diarGetRegistrosQuinzena() { return diarRegistros; }
 
 function diarAbrirModalNovaQuinzena() {
-  const hoje = new Date().toISOString().split('T')[0];
+  const hoje = hojeISO();
   document.body.insertAdjacentHTML('beforeend', `
   <div id="diar-modalNQ" style="position:fixed;inset:0;background:rgba(0,0,0,0.82);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px">
     <div style="background:var(--bg2);border:1px solid rgba(46,204,113,0.3);border-radius:14px;padding:22px;width:min(400px,94vw)">
@@ -1424,7 +1424,7 @@ async function diarConfirmarLancamentosEDR() {
   btn.disabled = true; btn.textContent = 'Lançando...';
   const statusEl = document.getElementById('diar-edrStatus');
   const obs = document.getElementById('diar-modalEDR').dataset.obs || 'Folha quinzenal';
-  const hoje = new Date().toISOString().split('T')[0];
+  const hoje = hojeISO();
   const rows = document.querySelectorAll('#diar-modalEDRBody tbody tr');
   let ok = 0, erro = 0;
   for (const row of rows) {

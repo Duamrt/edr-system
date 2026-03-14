@@ -1,10 +1,13 @@
 // ══════════════════════════════════════════
 // UTILITÁRIOS
 // ══════════════════════════════════════════
-function setToday() { const d = new Date().toISOString().split('T')[0]; document.getElementById('f-emissao').value = d; document.getElementById('f-recebimento').value = d; }
+function setToday() { const d = hojeISO(); document.getElementById('f-emissao').value = d; document.getElementById('f-recebimento').value = d; }
 function fmt(v) { return Number(v||0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
 function maskCNPJ(el) { let v = el.value.replace(/\D/g,'').slice(0,14); if(v.length>12)v=v.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2}).*/,'$1.$2.$3/$4-$5'); else if(v.length>8)v=v.replace(/^(\d{2})(\d{3})(\d{3})(\d*)/,'$1.$2.$3/$4'); else if(v.length>5)v=v.replace(/^(\d{2})(\d{3})(\d*)/,'$1.$2.$3'); else if(v.length>2)v=v.replace(/^(\d{2})(\d*)/,'$1.$2'); el.value = v; }
 function norm(s) { return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+// Datas padronizadas — usar em todo o sistema
+function hojeISO() { return new Date().toISOString().split('T')[0]; }
+function fmtData(iso) { if (!iso) return '—'; return iso.split('T')[0].split('-').reverse().join('/'); }
 function parseItens(n) { try { return JSON.parse(n.itens||'[]'); } catch { return []; } }
 
 function populateSelects() {

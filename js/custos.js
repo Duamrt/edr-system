@@ -261,7 +261,7 @@ function renderCustosDetalhes(obraId) {
     const sorted = [...reps].sort((a, b) => a.medicao_numero - b.medicao_numero);
     sorted.forEach(r => {
       acum += Number(r.valor || 0);
-      const dt = r.data_credito ? new Date(r.data_credito + 'T12:00:00').toLocaleDateString('pt-BR') : '-';
+      const dt = fmtData(r.data_credito);
       const tipoR = (r.tipo || 'pls');
       const tipoLabel = tipoR === 'entrada' ? '💵 ENTRADA' : tipoR === 'terreno' ? '🏗 TERRENO' : '📄 PLS';
       const tipoColor = tipoR === 'entrada' ? '#3b82f6' : tipoR === 'terreno' ? '#a855f7' : 'var(--verde-hl)';
@@ -340,7 +340,7 @@ function abrirModalRepasse(obraId) {
   document.getElementById('repasse-tipo').value = 'pls';
   document.getElementById('repasse-medicao').value = '';
   document.getElementById('repasse-valor').value = '';
-  document.getElementById('repasse-data').value = new Date().toISOString().split('T')[0];
+  document.getElementById('repasse-data').value = hojeISO();
   document.getElementById('repasse-obs').value = '';
   document.getElementById('repasse-medicao-wrap').style.display = '';
   // Auto-incrementar medição
@@ -500,7 +500,7 @@ function gerarRelatorioCustos(obraIdParam) {
     }
     html += `<table><thead><tr><th>Tipo</th><th>Med. Nº</th><th>Valor</th><th>Data Crédito</th><th>Observação</th></tr></thead><tbody>`;
     data.reps.sort((a, b) => a.medicao_numero - b.medicao_numero).forEach(r => {
-      const dt = r.data_credito ? new Date(r.data_credito + 'T12:00:00').toLocaleDateString('pt-BR') : '-';
+      const dt = fmtData(r.data_credito);
       const tipoR = (r.tipo || 'pls');
       const tipoLb = tipoR === 'entrada' ? 'ENTRADA' : tipoR === 'terreno' ? 'CEF TERRENO' : 'PLS CEF';
       const medLb = (tipoR === 'entrada' || tipoR === 'terreno') ? '-' : '#' + r.medicao_numero;

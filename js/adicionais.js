@@ -107,7 +107,7 @@ function abrirModalAdicional() {
   document.getElementById('add-valor').value = '';
   document.getElementById('add-condicao').value = '';
   document.getElementById('add-obs').value = '';
-  document.getElementById('add-data').value = new Date().toISOString().split('T')[0];
+  document.getElementById('add-data').value = hojeISO();
   document.getElementById('modal-adicional').classList.remove('hidden');
   setTimeout(() => document.getElementById('add-descricao').focus(), 100);
 }
@@ -180,7 +180,7 @@ function abrirPgtoAdicional(addId) {
   document.getElementById('pgto-add-id').value = addId;
   document.getElementById('pgto-saldo-info').innerHTML = `<strong>${a.descricao}</strong><br>Valor: ${fmtR(a.valor)} · Pago: ${fmtR(totalPago)} · <strong style="color:${saldo > 0 ? '#fbbf24' : 'var(--verde-hl)'}">Saldo: ${fmtR(saldo)}</strong>`;
   document.getElementById('pgto-valor').value = '';
-  document.getElementById('pgto-data').value = new Date().toISOString().split('T')[0];
+  document.getElementById('pgto-data').value = hojeISO();
   document.getElementById('pgto-forma').value = '';
   document.getElementById('modal-add-pgto').classList.remove('hidden');
 }
@@ -208,7 +208,7 @@ function gerarTermoAdicional(id) {
   const obraCidade = obra?.cidade || 'JUPI-PE';
   const contratante = obra?.contratante || '';
   const cpfContratante = obra?.cpf_contratante || '';
-  const dataAcordo = a.data_acordo ? new Date(a.data_acordo + 'T12:00:00').toLocaleDateString('pt-BR') : new Date().toLocaleDateString('pt-BR');
+  const dataAcordo = a.data_acordo ? fmtData(a.data_acordo) : fmtData(hojeISO());
   const valorExtenso = valorPorExtenso(a.valor);
 
   if (!contratante) { showToast('⚠ Preencha o nome do contratante na obra antes de gerar o termo. (Editar Obra)'); return; }

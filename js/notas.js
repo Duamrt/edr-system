@@ -350,7 +350,7 @@ async function salvarNota() {
     norm(n.fornecedor) === norm(fornecedor)
   );
   if (nfDup) {
-    const dataLanc = nfDup.data ? new Date(nfDup.data+'T12:00:00').toLocaleDateString('pt-BR') : '—';
+    const dataLanc = fmtData(nfDup.data);
     const confirmar = confirm(
       `⚠ NOTA DUPLICADA DETECTADA!\n\nA NF Nº ${numero} do fornecedor ${fornecedor} já foi lançada em ${dataLanc}.\n\nSalvar mesmo assim causará duplicidade no estoque.\n\nClique CANCELAR para revisar ou OK apenas se tiver certeza de que são notas diferentes.`
     );
@@ -385,7 +385,7 @@ async function salvarNota() {
         // Buscar obra EDR-ESCRITORIO
         const obraEsc = obras.find(o => o.nome && o.nome.toUpperCase().includes('ESCRIT'));
         if (obraEsc) {
-          const hoje = new Date().toISOString().split('T')[0];
+          const hoje = hojeISO();
           for (const [idx, it] of itensEscritorio.entries()) {
             const itemIdx = itensForm.indexOf(it);
             // Distribuição automática

@@ -271,7 +271,7 @@ async function confirmarDistribuicaoItem() {
   if (m.saldoTotal <= 0 && !m.temNFPendente && m.qtdDireta === 0) {
     if (!confirm(`Saldo atual: ${m.saldoTotal} ${m.unidade}. Confirma saída mesmo assim? (Material fiado)`)) return;
   }
-  const hoje = new Date().toISOString().split('T')[0];
+  const hoje = hojeISO();
   // FIFO: consumir lotes na ordem de entrada
   // Recalcular saldo real de cada lote descontando distribuições já gravadas
   let restante = qtd, totalValor = 0;

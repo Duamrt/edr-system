@@ -61,7 +61,7 @@ function abrirNota(id) {
 }
 
 function abrirEntradaDireta() {
-  const hoje = new Date().toISOString().split('T')[0];
+  const hoje = hojeISO();
   document.getElementById('entrada-desc').value = '';
   document.getElementById('entrada-qtd').value = '';
   document.getElementById('entrada-unidade').value = '';
@@ -204,7 +204,7 @@ function abrirSaidaMaterial(descPreenchida, unidadePreenchida) {
     obras.map(o => `<option value="${o.id}">${o.nome}</option>`).join('');
   document.getElementById('saida-etapa').innerHTML = etapaSelectOpts('', false);
   // Data de hoje
-  const hoje = new Date().toISOString().split('T')[0];
+  const hoje = hojeISO();
   document.getElementById('saida-data').value = hoje;
   // Limpar campos
   document.getElementById('saida-desc').value = descPreenchida || '';

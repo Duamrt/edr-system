@@ -723,7 +723,7 @@ function renderTabelaEntradas() {
       <th style="text-align:right;padding:6px 8px;color:var(--texto3);font-size:10px;">VALOR</th>
     </tr>`;
   filtradas.forEach(e => {
-    const dataFmt = e.data ? e.data.split('-').reverse().join('/') : '—';
+    const dataFmt = fmtData(e.data);
     tbl += `<tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
       <td style="padding:6px 8px;color:var(--texto4);">${dataFmt}</td>
       <td style="padding:6px 8px;font-weight:600;">${e.obraNome}</td>
