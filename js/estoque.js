@@ -346,39 +346,49 @@ async function exportarEstoqueExcel() {
   // Cores EDR
   const VERDE = '0A3D18';
   const VERDE_CLARO = '1A7A30';
-  const CINZA_CLARO = 'F2F2F2';
   const BRANCO = 'FFFFFF';
 
   // Largura das colunas
   ws.columns = [
     { width: 6 },   // A - #
-    { width: 42 },  // B - Material
-    { width: 10 },  // C - Unidade
-    { width: 16 },  // D - Saldo Sistema
-    { width: 16 },  // E - Contagem Real
-    { width: 16 },  // F - Diferença
+    { width: 14 },  // B - Código
+    { width: 40 },  // C - Material
+    { width: 10 },  // D - Unidade
+    { width: 16 },  // E - Saldo Sistema
+    { width: 16 },  // F - Contagem Real
+    { width: 16 },  // G - Diferença
   ];
 
-  // Logo via texto estilizado (header)
-  ws.mergeCells('A1:F1');
+  // Logo embutida
+  const logoB64 = 'iVBORw0KGgoAAAANSUhEUgAAAGAAAAA8CAYAAACZ1L+0AAAG40lEQVR42u3cf4wdVRUH8M/Mm91CaSsgFJoiWtGqDVVYk1okuijB1mDURNs0aiQSfySgVGqMDRFISFT8EaOJRI38YzQNUYNGE39bXVB+hEBQQ4utQIoSLRRTaEu3u/tm/GPOWybLtvu2u+w82DnJzezOm7k/zvece849946hoYYaqqg2SmpsN53mOzkY1Jr13gxpo2jEodGAOaMFuAhLuni2iH4O2XDCCQ6NrDUmk05bgybqUynxqbaR/I+22xvtzKkmZHPM+Axj+Bi+jl1xrzgmqxJ9CpcZaa/Sn96sbb9CopBIjpthCdpSJ+tLbqc9OB8A6NDZ+Bk2Tuut4WJAqi0bO9dBez0hdXqsDcctDNlmkusq68ycglAXAGPRdlLRiqPTgMy9RkPiW0aMGperne4W9dx6ucJoXWtAqt61p+iqLJogkalW1NG5Tr+8Md4txu/VQnVpwMyo9RyQpk+LZvDui0ADGmoAaABoqAGgfspq3oVnXfRh7JjLcXdCVITZWTQAPKt5w8HcsWlAVii0K0bj6LTtJ9oNABzCebgGfeOezsml/yYXOWgIuX4LtBwZh+AKrAjGTubbyvEUduLXOBDg5/MdgDG8FG+dwhc0gpvd4OmSvemjRtt3KByJ36/F4/hXgFAcZYwfwjfxNaUPKnWwvs1XLwB+I66Zhfp24c1dPnsJ9uD7YJV+sC7bYl32ZF0e4rqsoELpkm5VrkcrxwrktEKTsqgnm6R03BW/w7lYj612GpnvZmgRC+JUZTJrpkrtymI+WelEu/pjDXgPrrXQ0qgxafYBc0MjoQ134RGHvT8AaDUAzO3eI8H9CgPNTrg+OtwrnuD5BkDHBb1SYncDwNybwG2chTUyt8aklDe+oJnV0Zpgbk7lU/opbjVq53wH4NC0fUGTM/V/XdZzNn4Y5uhHDehzb32x4LoByHExvjyFL2gqWoqP4+1H8fGM4RlcGOUP8fxwtDvvfEEdBt2Cl2PVDLf+/ViNUyfUk0Rby3E+tuLz4boof1/UG67pugD4u9JBNlN6JBj7y2M88zD+HMzvV7qwiyYgMzvtpzi5sgi3K+ZmhiP4Kn6AV8WUVDQhyXdbbL3Tp/DhdFM6WjWZ/2ckxvfduH4wns3mLwCDMfjhbIuiVU4b1z9vfSgqa8E1+EJoSV7nQawe2YgV/Vg4Bw21Y4zbwv3wiQCgNb8BSMZd0XN5DPKzuE4ZN8h7JSKWzoPchI4W/Bz/xaeR29cbWpDOs0SULfgcFllT/y54PgHQjnl/Ox7EVj/pjeMpL3QApmvXJ7gan7LEKb0Qksxq9MwnBmV2SA0epy/oNmdKnOQtMo9pWT4FMx/T7yF34z4HfM+gTWr2CWU1zsrDs5DlcrnC9qhnzD+70phyK1jYYMiYdcm+OjfHWW1zcisZ8I5sG1rHnWi3INlvtLhUHmd8up94R/UlhwwXl0jz87STdh0JenMPwFBnqmltU+QrJE6bkUl6uDhVIp82gG2JseIMiVFJ8qAk/1Ewv6eOLTb0Ik7UTg1KLVV4vEYrpNP+UoUf99ap6YYaDZvycFVDM9zwJV0mVBwPoN1+jSWZot7k+Rao1ixbVAti4O34f0klYNKhxeNZ6s+lhZNEttIoxXiGb1lH4tkMmb5oe2ICeF/lvXRCsnZxFOam0cbIJL8XvQZAJylio9LJtQYrcb/yWxAD2BTM3qMMxi/D5cpjKQ9HPacpw4avx6W4E9crv6iyHV/EPco48tV4HTbg93HvKqxVBuH/Effvir59BkP4Dn6hDGF+RZkx04rrYezABcokjmXYjD/hA/H/LlyGG2Ic6WwAks3SHL88pOY2pdt3WUjQJ3FmdPhunBOMWRL3O3QiXok78G3lUZIlyhMNJ0b9hTKt6RuhKe8LqT8rrr/Bb/GK6NeNeIDxTdqb8K3QnrOjvi3Yjyuj3yfFb/fgjGjnZXg6/t4YwnQlbpqNnLN0FhfGPrwmJPiZ6PjmkOS/REefiOlodQAxMdliIT6Ml8S9Tfg33hkaczgk/gK8KxjWDgBWK88aZfhrSOt65ZEVeBJfChD2Rf/ei/sChKuUQfw9oZELlOlPi6PdK+L/O/GREIoZhzeTWWB8EYMZCGnbr8xGWRsDeQq3hySvDOacrzwctbMyh18cDO3Dr3BKMO0AXovdcRDrwhj4/piezgnm92FvaNGro+6+0IjdyjNIOwL0FQFoPx6NPrwB/wmGP4S34W8hDEdi6nognl0Z49pblwtjLted1iwKV9Jl/a0pzrP2nJ1eNfs6aURpRTryypSXV57NjzLo6oeTqj6aieZlu9LOxLbzisWTT/DzpBNOTVQto6QSuM8nuV99v/nQX0MNNfRCpv8DZbT0ubGUoD4AAAAASUVORK5CYII=';
+
+  // Inserir logo
+  const logoId = wb.addImage({ base64: logoB64, extension: 'png' });
+  ws.addImage(logoId, { tl: { col: 0, row: 0 }, ext: { width: 96, height: 60 } });
+
+  // Header com logo — faixa verde
+  ws.mergeCells('A1:G1');
   const headerCell = ws.getCell('A1');
-  headerCell.value = 'EDR ENGENHARIA';
+  headerCell.value = '          EDR ENGENHARIA';
   headerCell.font = { name: 'Arial', size: 18, bold: true, color: { argb: BRANCO } };
   headerCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: VERDE } };
-  headerCell.alignment = { horizontal: 'center', vertical: 'middle' };
-  ws.getRow(1).height = 40;
+  headerCell.alignment = { horizontal: 'left', vertical: 'middle' };
+  ws.getRow(1).height = 48;
+  // Preencher todas as celulas do merge com verde
+  for (let c = 2; c <= 7; c++) { ws.getRow(1).getCell(c).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: VERDE } }; }
 
   // Subtítulo
-  ws.mergeCells('A2:F2');
+  ws.mergeCells('A2:G2');
   const subCell = ws.getCell('A2');
   subCell.value = 'INVENTÁRIO DE ESTOQUE — CONTAGEM FÍSICA';
   subCell.font = { name: 'Arial', size: 11, bold: true, color: { argb: BRANCO } };
   subCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: VERDE_CLARO } };
   subCell.alignment = { horizontal: 'center', vertical: 'middle' };
   ws.getRow(2).height = 26;
+  for (let c = 2; c <= 7; c++) { ws.getRow(2).getCell(c).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: VERDE_CLARO } }; }
 
   // Info
-  ws.mergeCells('A3:F3');
+  ws.mergeCells('A3:G3');
   const infoCell = ws.getCell('A3');
   const hoje = new Date();
   infoCell.value = `Data: ${hoje.toLocaleDateString('pt-BR')}  •  CNPJ: 49.909.440/0001-55  •  Jupi-PE`;
@@ -405,15 +415,15 @@ async function exportarEstoqueExcel() {
   let itemNum = 0;
   Object.keys(catMap).sort().forEach(cat => {
     // Header da categoria
-    const catRow = ws.addRow([cat, '', '', '', '', '']);
-    ws.mergeCells(catRow.number, 1, catRow.number, 6);
+    const catRow = ws.addRow([cat, '', '', '', '', '', '']);
+    ws.mergeCells(catRow.number, 1, catRow.number, 7);
     catRow.getCell(1).font = { name: 'Arial', size: 11, bold: true, color: { argb: BRANCO } };
     catRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '2D6A3F' } };
     catRow.getCell(1).alignment = { horizontal: 'left', vertical: 'middle', indent: 1 };
     catRow.height = 26;
 
     // Cabeçalho colunas
-    const colRow = ws.addRow(['#', 'MATERIAL', 'UN', 'SALDO SISTEMA', 'CONTAGEM REAL', 'DIFERENÇA']);
+    const colRow = ws.addRow(['#', 'CÓDIGO', 'MATERIAL', 'UN', 'SALDO SISTEMA', 'CONTAGEM REAL', 'DIFERENÇA']);
     colRow.eachCell(c => {
       c.font = { name: 'Arial', size: 9, bold: true, color: { argb: '333333' } };
       c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'E8E8E8' } };
@@ -425,34 +435,37 @@ async function exportarEstoqueExcel() {
     // Itens
     catMap[cat].sort((a,b) => a.desc.localeCompare(b.desc)).forEach(m => {
       itemNum++;
-      const row = ws.addRow([itemNum, m.desc, m.unidade, m.saldoTotal, '', '']);
+      const codigo = m.codigo || '—';
+      const row = ws.addRow([itemNum, codigo, m.desc, m.unidade, m.saldoTotal, '', '']);
       row.height = 20;
 
       // Estilo de cada célula
       row.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
       row.getCell(1).font = { name: 'Arial', size: 9, color: { argb: '999999' } };
-      row.getCell(2).font = { name: 'Arial', size: 10 };
-      row.getCell(2).alignment = { vertical: 'middle', indent: 1 };
-      row.getCell(3).font = { name: 'Arial', size: 9 };
-      row.getCell(3).alignment = { horizontal: 'center', vertical: 'middle' };
-      row.getCell(4).font = { name: 'Arial', size: 10, bold: true };
+      row.getCell(2).font = { name: 'Arial', size: 9, color: { argb: '666666' } };
+      row.getCell(2).alignment = { horizontal: 'center', vertical: 'middle' };
+      row.getCell(3).font = { name: 'Arial', size: 10 };
+      row.getCell(3).alignment = { vertical: 'middle', indent: 1 };
+      row.getCell(4).font = { name: 'Arial', size: 9 };
       row.getCell(4).alignment = { horizontal: 'center', vertical: 'middle' };
-      row.getCell(5).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFDE7' } };
+      row.getCell(5).font = { name: 'Arial', size: 10, bold: true };
       row.getCell(5).alignment = { horizontal: 'center', vertical: 'middle' };
-      row.getCell(5).font = { name: 'Arial', size: 10 };
+      row.getCell(6).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFDE7' } };
       row.getCell(6).alignment = { horizontal: 'center', vertical: 'middle' };
       row.getCell(6).font = { name: 'Arial', size: 10 };
+      row.getCell(7).alignment = { horizontal: 'center', vertical: 'middle' };
+      row.getCell(7).font = { name: 'Arial', size: 10 };
 
       // Fórmula diferença = contagem - saldo
       const r = row.number;
-      row.getCell(6).value = { formula: `IF(E${r}="","",E${r}-D${r})` };
+      row.getCell(7).value = { formula: `IF(F${r}="","",F${r}-E${r})` };
 
       // Bordas em todas
       row.eachCell(c => { c.border = bordas; });
 
       // Zebra
       if (itemNum % 2 === 0) {
-        [1,2,3,4,6].forEach(i => {
+        [1,2,3,4,5,7].forEach(i => {
           row.getCell(i).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F9F9F9' } };
         });
       }
@@ -463,16 +476,16 @@ async function exportarEstoqueExcel() {
   });
 
   // Rodapé
-  const footRow = ws.addRow([]);
   ws.addRow([]);
-  const totalRow = ws.addRow(['', `TOTAL DE ITENS: ${materiais.length}`, '', '', '', '']);
-  totalRow.getCell(2).font = { name: 'Arial', size: 10, bold: true, color: { argb: VERDE } };
+  ws.addRow([]);
+  const totalRow = ws.addRow(['', '', `TOTAL DE ITENS: ${materiais.length}`, '', '', '', '']);
+  totalRow.getCell(3).font = { name: 'Arial', size: 10, bold: true, color: { argb: VERDE } };
 
-  const respRow = ws.addRow(['', 'Responsável pela contagem: _______________________________', '', '', '', '']);
-  respRow.getCell(2).font = { name: 'Arial', size: 9, color: { argb: '666666' } };
+  const respRow = ws.addRow(['', '', 'Responsável pela contagem: _______________________________', '', '', '', '']);
+  respRow.getCell(3).font = { name: 'Arial', size: 9, color: { argb: '666666' } };
 
-  const assinRow = ws.addRow(['', 'Assinatura: _______________________________  Data: ___/___/______', '', '', '', '']);
-  assinRow.getCell(2).font = { name: 'Arial', size: 9, color: { argb: '666666' } };
+  const assinRow = ws.addRow(['', '', 'Assinatura: _______________________________  Data: ___/___/______', '', '', '', '']);
+  assinRow.getCell(3).font = { name: 'Arial', size: 9, color: { argb: '666666' } };
 
   // Configurar impressão
   ws.pageSetup = { orientation: 'portrait', fitToPage: true, fitToWidth: 1, fitToHeight: 0, paperSize: 9 };
