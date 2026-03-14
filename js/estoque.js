@@ -1,11 +1,6 @@
 // ══════════════════════════════════════════
 // ESTOQUE
 // ══════════════════════════════════════════
-function getSaldoItem(notaId, itemIdx, qtdOriginal) {
-  const distribuido = distribuicoes.filter(d => d.nota_id === notaId && d.item_idx === itemIdx).reduce((s,d) => s + Number(d.qtd), 0);
-  return qtdOriginal - distribuido; // permite negativo para reconciliação correta
-}
-
 const CATS_ESTOQUE = [
   { key:'prelim',     lb:'⛏ Serv. Preliminar',   fn: d => /andaime|tapume|demolic|terraplan|escavac|aterro|compactac|reaterro|locacao de obra|limpeza de terreno|placa de obra/i.test(d) },
   { key:'fundacao',   lb:'🏗 Fundação',           fn: d => /sapata|estaca|bloco de fundc|baldrame|radier|viga baldr|cinta|fundac|brocas|microestaca/i.test(d) },
