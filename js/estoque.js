@@ -323,40 +323,171 @@ async function confirmarDistribuicaoItem() {
   } catch(e) { console.error(e); showToast('ERRO AO DISTRIBUIR.'); }
 }
 
-function exportarEstoqueExcel() {
+async function exportarEstoqueExcel() {
   const materiais = consolidarEstoque();
   if (!materiais.length) { showToast('ESTOQUE VAZIO.'); return; }
 
+  showToast('⏳ Gerando planilha...');
+
+  // Carregar ExcelJS se ainda não carregou
+  if (!window.ExcelJS) {
+    await new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js';
+      s.onload = resolve; s.onerror = reject;
+      document.head.appendChild(s);
+    });
+  }
+
+  const wb = new ExcelJS.Workbook();
+  wb.creator = 'EDR Engenharia';
+  const ws = wb.addWorksheet('Estoque EDR', { properties: { defaultColWidth: 18 } });
+
+  // Cores EDR
+  const VERDE = '0A3D18';
+  const VERDE_CLARO = '1A7A30';
+  const CINZA_CLARO = 'F2F2F2';
+  const BRANCO = 'FFFFFF';
+
+  // Largura das colunas
+  ws.columns = [
+    { width: 6 },   // A - #
+    { width: 42 },  // B - Material
+    { width: 10 },  // C - Unidade
+    { width: 16 },  // D - Saldo Sistema
+    { width: 16 },  // E - Contagem Real
+    { width: 16 },  // F - Diferença
+  ];
+
+  // Logo via texto estilizado (header)
+  ws.mergeCells('A1:F1');
+  const headerCell = ws.getCell('A1');
+  headerCell.value = 'EDR ENGENHARIA';
+  headerCell.font = { name: 'Arial', size: 18, bold: true, color: { argb: BRANCO } };
+  headerCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: VERDE } };
+  headerCell.alignment = { horizontal: 'center', vertical: 'middle' };
+  ws.getRow(1).height = 40;
+
+  // Subtítulo
+  ws.mergeCells('A2:F2');
+  const subCell = ws.getCell('A2');
+  subCell.value = 'INVENTÁRIO DE ESTOQUE — CONTAGEM FÍSICA';
+  subCell.font = { name: 'Arial', size: 11, bold: true, color: { argb: BRANCO } };
+  subCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: VERDE_CLARO } };
+  subCell.alignment = { horizontal: 'center', vertical: 'middle' };
+  ws.getRow(2).height = 26;
+
+  // Info
+  ws.mergeCells('A3:F3');
+  const infoCell = ws.getCell('A3');
+  const hoje = new Date();
+  infoCell.value = `Data: ${hoje.toLocaleDateString('pt-BR')}  •  CNPJ: 49.909.440/0001-55  •  Jupi-PE`;
+  infoCell.font = { name: 'Arial', size: 9, italic: true, color: { argb: '666666' } };
+  infoCell.alignment = { horizontal: 'center', vertical: 'middle' };
+  ws.getRow(3).height = 22;
+
+  // Linha vazia
+  ws.addRow([]);
+
+  // Agrupar por categoria
   const catMap = {};
   materiais.forEach(m => {
     const catKey = m.categoria || getCatEstoque(m.desc);
     const catObj = CATS_ESTOQUE.find(c => c.key === catKey);
-    const catNome = catObj ? catObj.lb.replace(/^[^\s]+\s/, '') : 'Outros';
+    const catNome = catObj ? catObj.lb : '📦 Outros';
     if (!catMap[catNome]) catMap[catNome] = [];
     catMap[catNome].push(m);
   });
 
-  let csv = '\uFEFF';
-  csv += 'CATEGORIA;MATERIAL;UNIDADE;SALDO SISTEMA;CONTAGEM REAL;DIFERENÇA\n';
+  const bordaFina = { style: 'thin', color: { argb: 'CCCCCC' } };
+  const bordas = { top: bordaFina, left: bordaFina, bottom: bordaFina, right: bordaFina };
 
+  let itemNum = 0;
   Object.keys(catMap).sort().forEach(cat => {
-    catMap[cat].sort((a,b) => a.desc.localeCompare(b.desc)).forEach(m => {
-      const desc = m.desc.replace(/;/g, ',').replace(/"/g, '');
-      csv += `${cat};${desc};${m.unidade};${m.saldoTotal};;\n`;
+    // Header da categoria
+    const catRow = ws.addRow([cat, '', '', '', '', '']);
+    ws.mergeCells(catRow.number, 1, catRow.number, 6);
+    catRow.getCell(1).font = { name: 'Arial', size: 11, bold: true, color: { argb: BRANCO } };
+    catRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '2D6A3F' } };
+    catRow.getCell(1).alignment = { horizontal: 'left', vertical: 'middle', indent: 1 };
+    catRow.height = 26;
+
+    // Cabeçalho colunas
+    const colRow = ws.addRow(['#', 'MATERIAL', 'UN', 'SALDO SISTEMA', 'CONTAGEM REAL', 'DIFERENÇA']);
+    colRow.eachCell(c => {
+      c.font = { name: 'Arial', size: 9, bold: true, color: { argb: '333333' } };
+      c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'E8E8E8' } };
+      c.alignment = { horizontal: 'center', vertical: 'middle' };
+      c.border = bordas;
     });
+    colRow.height = 22;
+
+    // Itens
+    catMap[cat].sort((a,b) => a.desc.localeCompare(b.desc)).forEach(m => {
+      itemNum++;
+      const row = ws.addRow([itemNum, m.desc, m.unidade, m.saldoTotal, '', '']);
+      row.height = 20;
+
+      // Estilo de cada célula
+      row.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
+      row.getCell(1).font = { name: 'Arial', size: 9, color: { argb: '999999' } };
+      row.getCell(2).font = { name: 'Arial', size: 10 };
+      row.getCell(2).alignment = { vertical: 'middle', indent: 1 };
+      row.getCell(3).font = { name: 'Arial', size: 9 };
+      row.getCell(3).alignment = { horizontal: 'center', vertical: 'middle' };
+      row.getCell(4).font = { name: 'Arial', size: 10, bold: true };
+      row.getCell(4).alignment = { horizontal: 'center', vertical: 'middle' };
+      row.getCell(5).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFDE7' } };
+      row.getCell(5).alignment = { horizontal: 'center', vertical: 'middle' };
+      row.getCell(5).font = { name: 'Arial', size: 10 };
+      row.getCell(6).alignment = { horizontal: 'center', vertical: 'middle' };
+      row.getCell(6).font = { name: 'Arial', size: 10 };
+
+      // Fórmula diferença = contagem - saldo
+      const r = row.number;
+      row.getCell(6).value = { formula: `IF(E${r}="","",E${r}-D${r})` };
+
+      // Bordas em todas
+      row.eachCell(c => { c.border = bordas; });
+
+      // Zebra
+      if (itemNum % 2 === 0) {
+        [1,2,3,4,6].forEach(i => {
+          row.getCell(i).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F9F9F9' } };
+        });
+      }
+    });
+
+    // Linha vazia entre categorias
+    ws.addRow([]);
   });
 
-  csv += `\n;TOTAL DE ITENS:;${materiais.length};;;\n`;
-  csv += `;DATA:;${new Date().toLocaleDateString('pt-BR')};;;\n`;
+  // Rodapé
+  const footRow = ws.addRow([]);
+  ws.addRow([]);
+  const totalRow = ws.addRow(['', `TOTAL DE ITENS: ${materiais.length}`, '', '', '', '']);
+  totalRow.getCell(2).font = { name: 'Arial', size: 10, bold: true, color: { argb: VERDE } };
 
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const respRow = ws.addRow(['', 'Responsável pela contagem: _______________________________', '', '', '', '']);
+  respRow.getCell(2).font = { name: 'Arial', size: 9, color: { argb: '666666' } };
+
+  const assinRow = ws.addRow(['', 'Assinatura: _______________________________  Data: ___/___/______', '', '', '', '']);
+  assinRow.getCell(2).font = { name: 'Arial', size: 9, color: { argb: '666666' } };
+
+  // Configurar impressão
+  ws.pageSetup = { orientation: 'portrait', fitToPage: true, fitToWidth: 1, fitToHeight: 0, paperSize: 9 };
+  ws.headerFooter = { oddFooter: 'EDR Engenharia — Inventário de Estoque — Página &P de &N' };
+
+  // Gerar e baixar
+  const buffer = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `estoque-edr-${new Date().toISOString().slice(0,10)}.csv`;
+  a.download = `estoque-edr-${hoje.toISOString().slice(0,10)}.xlsx`;
   a.click();
   URL.revokeObjectURL(url);
-  showToast('✅ Planilha exportada!');
+  showToast('✅ Planilha Excel exportada!');
 }
 
 // ══════════════════════════════════════════
