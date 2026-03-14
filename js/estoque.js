@@ -323,4 +323,40 @@ async function confirmarDistribuicaoItem() {
   } catch(e) { console.error(e); showToast('ERRO AO DISTRIBUIR.'); }
 }
 
+function exportarEstoqueExcel() {
+  const materiais = consolidarEstoque();
+  if (!materiais.length) { showToast('ESTOQUE VAZIO.'); return; }
+
+  const catMap = {};
+  materiais.forEach(m => {
+    const catKey = m.categoria || getCatEstoque(m.desc);
+    const catObj = CATS_ESTOQUE.find(c => c.key === catKey);
+    const catNome = catObj ? catObj.lb.replace(/^[^\s]+\s/, '') : 'Outros';
+    if (!catMap[catNome]) catMap[catNome] = [];
+    catMap[catNome].push(m);
+  });
+
+  let csv = '\uFEFF';
+  csv += 'CATEGORIA;MATERIAL;UNIDADE;SALDO SISTEMA;CONTAGEM REAL;DIFERENÇA\n';
+
+  Object.keys(catMap).sort().forEach(cat => {
+    catMap[cat].sort((a,b) => a.desc.localeCompare(b.desc)).forEach(m => {
+      const desc = m.desc.replace(/;/g, ',').replace(/"/g, '');
+      csv += `${cat};${desc};${m.unidade};${m.saldoTotal};;\n`;
+    });
+  });
+
+  csv += `\n;TOTAL DE ITENS:;${materiais.length};;;\n`;
+  csv += `;DATA:;${new Date().toLocaleDateString('pt-BR')};;;\n`;
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `estoque-edr-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('✅ Planilha exportada!');
+}
+
 // ══════════════════════════════════════════
