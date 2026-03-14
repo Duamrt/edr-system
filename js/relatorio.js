@@ -187,23 +187,43 @@ function msgVazio() {
 }
 
 // ── PAINEL FINANCEIRO (visão principal) ──────────────────────
+// Toggle: mostrar obras concluídas no relatório (default: não)
+if (typeof window._relMostrarConcluidas === 'undefined') window._relMostrarConcluidas = false;
+
+function toggleObrasConcluidas() {
+  window._relMostrarConcluidas = !window._relMostrarConcluidas;
+  renderRelatorio();
+}
+
+function getObrasIdsAtivas() {
+  return new Set(obras.filter(o => !o.arquivada).map(o => o.id));
+}
+
 function buildPainelFinanceiro() {
   const [anoStr, mesStr] = relMesAtual.split('-');
   const mesLabel = MESES_FULL[parseInt(mesStr)-1] + ' ' + anoStr;
+  const mostrarConcluidas = window._relMostrarConcluidas;
+  const idsAtivas = getObrasIdsAtivas();
 
-  // SAÍDAS do mês (lançamentos)
-  const lancMes = getLancMes(relMesAtual);
+  // SAÍDAS do mês (lançamentos) — filtrar por obras ativas se toggle desligado
+  const lancMesTodas = getLancMes(relMesAtual);
+  const lancMes = mostrarConcluidas ? lancMesTodas : lancMesTodas.filter(l => !l.obra_id || idsAtivas.has(l.obra_id));
   const totalSaidas = lancMes.reduce((s,l) => s + Number(l.total||0), 0);
 
   // Mão de obra do mês
   const maoObraMes = lancMes.filter(l => getCatFromLanc(l) === '28_mao').reduce((s,l) => s + Number(l.total||0), 0);
 
   // ENTRADAS do mês: pagamentos de adicionais recebidos no mês
-  const pgtosMes = adicionaisPgtos.filter(p => p.data && p.data.startsWith(relMesAtual));
+  const pgtosTodasMes = adicionaisPgtos.filter(p => p.data && p.data.startsWith(relMesAtual));
+  const pgtosMes = mostrarConcluidas ? pgtosTodasMes : pgtosTodasMes.filter(p => {
+    const adic = (typeof adicionais !== 'undefined' ? adicionais : []).find(a => a.id === p.adicional_id);
+    return !adic || !adic.obra_id || idsAtivas.has(adic.obra_id);
+  });
   const totalPgtosAdic = pgtosMes.reduce((s,p) => s + Number(p.valor||0), 0);
 
   // Entradas: repasses CEF no mês (PLs, entrada, terreno)
-  const repassesMes = getRepassesMes(relMesAtual);
+  const repassesTodasMes = getRepassesMes(relMesAtual);
+  const repassesMes = mostrarConcluidas ? repassesTodasMes : repassesTodasMes.filter(r => !r.obra_id || idsAtivas.has(r.obra_id));
   const totalRepasses = repassesMes.reduce((s,r) => s + Number(r.valor||0), 0);
   // Detalhe dos tipos de repasse
   const plsMes = repassesMes.filter(r => (r.tipo||'pls') === 'pls').reduce((s,r) => s + Number(r.valor||0), 0);
@@ -222,8 +242,18 @@ function buildPainelFinanceiro() {
   if (totalPgtosAdic > 0) subParts.push(`Extras: ${fmtR(totalPgtosAdic)}`);
   const subEntradas = subParts.length ? subParts.join(' · ') : 'Nenhuma entrada no mês';
 
+  // ── TOGGLE OBRAS CONCLUÍDAS ──
+  const toggleCor = mostrarConcluidas ? '#2ecc71' : 'var(--texto4)';
+  const toggleBg = mostrarConcluidas ? 'rgba(46,204,113,0.15)' : 'transparent';
+  const toggleBorda = mostrarConcluidas ? '1.5px solid rgba(46,204,113,0.4)' : '1.5px solid var(--borda2)';
+  let html = `<div style="display:flex;justify-content:flex-end;margin-bottom:12px;">
+    <span onclick="toggleObrasConcluidas()" style="cursor:pointer;padding:6px 14px;border-radius:20px;font-size:11px;font-weight:600;color:${toggleCor};background:${toggleBg};border:${toggleBorda};transition:all .2s;user-select:none;">
+      ${mostrarConcluidas ? '✅ Mostrando concluídas' : '📋 Só obras ativas'}
+    </span>
+  </div>`;
+
   // ── CARDS RESUMO ──
-  let html = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:20px;">
+  html += `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:20px;">
     ${cardResumo('💰', 'ENTRADAS', totalEntradas, '#2ecc71', subEntradas)}
     ${cardResumo('📤', 'SAÍDAS', totalSaidas, '#ef4444', `${lancMes.length} lançamentos`)}
     ${cardResumo('📊', 'SALDO', saldo, corSaldo, saldo >= 0 ? 'Positivo' : 'Negativo')}
@@ -359,7 +389,8 @@ function buildGraficoMensal() {
 
 // ── DETALHAMENTO POR OBRA ────────────────────────────────────
 function buildDetalheObras(ym) {
-  const obrasAtivas = obras.filter(o => !o.arquivada);
+  const mostrarConcluidas = window._relMostrarConcluidas;
+  const obrasAtivas = mostrarConcluidas ? [...obras, ...obrasArquivadas] : obras.filter(o => !o.arquivada);
   if (!obrasAtivas.length) return '';
 
   const dados = obrasAtivas.map(o => {
