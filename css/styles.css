@@ -448,7 +448,8 @@ body::before {
 .shortcut-key { color: var(--branco); font-weight: 700; }
 
 /* ── TOAST ── */
-.toast { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); background: rgba(6,12,6,0.92); border: 1px solid rgba(46,204,113,0.3); color: var(--branco); padding: 10px 22px; border-radius: 12px; z-index: 9999; font-size: 12px; box-shadow: 0 8px 32px rgba(0,0,0,.6), 0 0 20px rgba(46,204,113,0.1); pointer-events: none; font-weight: 600; backdrop-filter: blur(20px); font-family: 'Barlow', sans-serif; letter-spacing: .5px; }
+.toast { position: fixed; top: 24px; left: 50%; transform: translateX(-50%); background: rgba(10,61,24,0.97); border: 1.5px solid rgba(46,204,113,0.5); color: #fff; padding: 16px 32px; border-radius: 14px; z-index: 9999; font-size: 15px; box-shadow: 0 12px 48px rgba(0,0,0,.7), 0 0 40px rgba(46,204,113,0.25); pointer-events: none; font-weight: 700; backdrop-filter: blur(20px); font-family: 'Barlow', sans-serif; letter-spacing: .5px; animation: toastIn 0.35s ease; }
+@keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(-20px) scale(0.95); } to { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); } }
 .empty { text-align: center; color: var(--texto3); padding: 40px 20px; font-size: 13px; font-family: 'JetBrains Mono', monospace; letter-spacing: 1px; }
 .loading { text-align: center; color: var(--texto3); padding: 30px; font-size: 12px; font-family: 'JetBrains Mono', monospace; letter-spacing: 1px; }
 .progress { background: rgba(46,204,113,0.06); border-radius: 4px; height: 3px; margin-top: 10px; }
@@ -617,7 +618,8 @@ body::before {
   #view-form [style*="display:flex"][style*="gap:8px"] > button { flex: 1 1 100% !important; }
 
   /* ── Toast ── */
-  .toast { left: 10px; right: 10px; transform: none; text-align: center; font-size: 11px; }
+  .toast { left: 12px; right: 12px; transform: none; text-align: center; font-size: 14px; padding: 14px 20px; }
+  @keyframes toastIn { from { opacity: 0; transform: translateY(-20px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
 
   /* ── Banco de dados ── */
   #view-banco .card [style*="display:flex"] { flex-wrap: wrap !important; gap: 8px !important; }

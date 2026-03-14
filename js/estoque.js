@@ -359,30 +359,15 @@ async function exportarEstoqueExcel() {
     { width: 18 },  // G - Diferença
   ];
 
-  // Logo embutida (fundo branco, sem transparencia)
-  const logoB64 = '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';
-
-  // Linha 1: Logo (col A-B) + Titulo centralizado (col C-G)
-  // Fundo verde em toda a linha
+  // Header — fundo verde com titulo centralizado (logo: usuario adiciona manualmente)
   ws.getRow(1).height = 50;
-  for (let c = 1; c <= 7; c++) {
-    const cell = ws.getRow(1).getCell(c);
-    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: VERDE } };
-  }
-
-  // Logo na célula A1
-  const logoId = wb.addImage({ base64: logoB64, extension: 'png' });
-  ws.addImage(logoId, {
-    tl: { col: 0.2, row: 0.15 },
-    ext: { width: 90, height: 56 }
-  });
-
-  // Titulo em C1:G1 centralizado
-  ws.mergeCells('C1:G1');
-  const headerCell = ws.getCell('C1');
+  ws.mergeCells('A1:G1');
+  const headerCell = ws.getCell('A1');
   headerCell.value = 'EDR ENGENHARIA';
-  headerCell.font = { name: 'Arial', size: 20, bold: true, color: { argb: BRANCO } };
+  headerCell.font = { name: 'Arial', size: 22, bold: true, color: { argb: BRANCO } };
+  headerCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: VERDE } };
   headerCell.alignment = { horizontal: 'center', vertical: 'middle' };
+  for (let c = 2; c <= 7; c++) { ws.getRow(1).getCell(c).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: VERDE } }; }
 
   // Subtítulo
   ws.mergeCells('A2:G2');
