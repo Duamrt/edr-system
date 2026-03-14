@@ -58,10 +58,10 @@ function fazerLogout() {
   usuarioAtual = null;
   // Restaurar USUARIOS fallback (limpa resquícios do demo)
   USUARIOS = [
-    { usuario: 'elydart',  senha: '1202elyd@',   perfil: 'admin',       nome: 'Elyda',         ativo: true },
-    { usuario: 'admin',    senha: 'admin321',    perfil: 'admin',       nome: 'Duam',          ativo: true },
-    { usuario: 'mikael',   senha: 'op123',       perfil: 'operacional', nome: 'Mikael',        ativo: true },
-    { usuario: 'anderson', senha: 'mestre123',   perfil: 'mestre',      nome: 'Anderson',      ativo: true },
+    { usuario: 'elydart',  senha: 'edrelyda',    perfil: 'admin',       nome: 'Elyda',         ativo: true },
+    { usuario: 'admin',    senha: 'duanxdzin',   perfil: 'admin',       nome: 'Duam',          ativo: true },
+    { usuario: 'mikael',   senha: 'mika123',     perfil: 'operacional', nome: 'Mikael',        ativo: true },
+    { usuario: 'anderson', senha: 'edr123',      perfil: 'mestre',      nome: 'Anderson',      ativo: true },
     { usuario: 'visitante',senha: 'edr2024',     perfil: 'visitante',   nome: 'Visitante',     ativo: true },
   ];
   // Limpar arrays de dados para evitar resquícios do demo
