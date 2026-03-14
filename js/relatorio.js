@@ -196,7 +196,7 @@ function buildPainelFinanceiro() {
   const totalSaidas = lancMes.reduce((s,l) => s + Number(l.total||0), 0);
 
   // Mão de obra do mês
-  const maoObraMes = lancMes.filter(l => getCatFromLanc(l) === 'mao').reduce((s,l) => s + Number(l.total||0), 0);
+  const maoObraMes = lancMes.filter(l => getCatFromLanc(l) === '28_mao').reduce((s,l) => s + Number(l.total||0), 0);
 
   // ENTRADAS do mês: pagamentos de adicionais recebidos no mês
   const pgtosMes = adicionaisPgtos.filter(p => p.data && p.data.startsWith(relMesAtual));
@@ -367,7 +367,7 @@ function buildDetalheObras(ym) {
     const lancObra = lancamentos.filter(l => l.obra_id === o.id && l.data && l.data.startsWith(ym));
     const saidas = lancObra.reduce((s,l) => s + Number(l.total||0), 0);
     // Mão de obra do mês nessa obra
-    const mao = lancObra.filter(l => getCatFromLanc(l) === 'mao').reduce((s,l) => s + Number(l.total||0), 0);
+    const mao = lancObra.filter(l => getCatFromLanc(l) === '28_mao').reduce((s,l) => s + Number(l.total||0), 0);
     // Entradas do mês: repasses CEF dessa obra + pagamentos de adicionais
     const repObra = getRepassesMes(ym).filter(r => r.obra_id === o.id);
     const entRepasses = repObra.reduce((s,r) => s + Number(r.valor||0), 0);
@@ -511,7 +511,7 @@ async function exportarRelatorioPDF() {
   const mesLabel = MESES_FULL[parseInt(mesStr)-1] + ' ' + anoStr;
   const lancMes = getLancMes(relMesAtual);
   const totalSaidas = lancMes.reduce((s,l) => s + Number(l.total||0), 0);
-  const maoTotal = lancMes.filter(l => getCatFromLanc(l) === 'mao').reduce((s,l) => s + Number(l.total||0), 0);
+  const maoTotal = lancMes.filter(l => getCatFromLanc(l) === '28_mao').reduce((s,l) => s + Number(l.total||0), 0);
 
   // Entradas
   const pgtosMes = adicionaisPgtos.filter(p => p.data && p.data.startsWith(relMesAtual));
@@ -540,7 +540,7 @@ async function exportarRelatorioPDF() {
   const linhasObra = obrasAtivas.map(o => {
     const lancObra = lancMes.filter(l => l.obra_id === o.id);
     const sai = lancObra.reduce((s,l) => s + Number(l.total||0), 0);
-    const mao = lancObra.filter(l => getCatFromLanc(l) === 'mao').reduce((s,l) => s + Number(l.total||0), 0);
+    const mao = lancObra.filter(l => getCatFromLanc(l) === '28_mao').reduce((s,l) => s + Number(l.total||0), 0);
     const repObra = repassesMes.filter(r => r.obra_id === o.id).reduce((s,r) => s + Number(r.valor||0), 0);
     const addsObra = obrasAdicionais.filter(a => a.obra_id === o.id);
     const addIds = new Set(addsObra.map(a => a.id));
