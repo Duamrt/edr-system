@@ -7,8 +7,8 @@ function renderUsuarios() {
     const isSelf = u.usuario === usuarioAtual?.usuario;
     return `<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(46,204,113,0.07);gap:10px;${!isAtivo?'opacity:0.45':''}">
       <div style="flex:1;">
-        <div style="font-weight:700;font-size:14px;color:var(--branco);">${u.nome} ${isSelf?'<span style="font-size:10px;color:var(--verde3);">(você)</span>':''}</div>
-        <div style="font-size:11px;color:var(--texto3);margin-top:2px;font-family:'JetBrains Mono',monospace;">@${u.usuario}</div>
+        <div style="font-weight:700;font-size:14px;color:var(--branco);">${esc(u.nome)} ${isSelf?'<span style="font-size:10px;color:var(--verde3);">(você)</span>':''}</div>
+        <div style="font-size:11px;color:var(--texto3);margin-top:2px;font-family:'JetBrains Mono',monospace;">@${esc(u.usuario)}</div>
       </div>
       <span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;${u.perfil==='admin'?'background:rgba(46,204,113,0.1);color:var(--verde-hl);border:1px solid rgba(46,204,113,0.25);':'background:rgba(59,130,246,0.1);color:#60a5fa;border:1px solid rgba(59,130,246,0.2);'}">${u.perfil==='admin'?'👑 ADMIN':'👷 OPERACIONAL'}</span>
       <div style="display:flex;gap:6px;">
@@ -77,7 +77,7 @@ async function toggleAtivoUsuario(idOrUsuario, ativar) {
   const u = USUARIOS.find(x => (x.id||x.usuario) === idOrUsuario);
   if (!u) return;
   const acao = ativar ? 'ativar' : 'desativar';
-  if (!confirm(`Deseja ${acao} o usuário "${u.nome}"?`)) return;
+  if (!confirm(`Deseja ${acao} o usuário "${esc(u.nome)}"?`)) return;
   try {
     if (u.id) await sbPatch('usuarios', `?id=eq.${u.id}`, { ativo: ativar });
     u.ativo = ativar;
@@ -148,8 +148,8 @@ function renderBanco() {
         `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--borda2);">
           <div style="width:36px;height:36px;border-radius:50%;background:var(--verde-bg);display:flex;align-items:center;justify-content:center;font-size:16px;">${iconePerfil(u.perfil)}</div>
           <div>
-            <div style="font-weight:700;font-size:13px;">${u.nome}</div>
-            <div style="font-size:11px;color:var(--texto3);">@${u.usuario} · ${labelPerfil(u.perfil)}</div>
+            <div style="font-weight:700;font-size:13px;">${esc(u.nome)}</div>
+            <div style="font-size:11px;color:var(--texto3);">@${esc(u.usuario)} · ${labelPerfil(u.perfil)}</div>
           </div>
         </div>`
       ).join('');

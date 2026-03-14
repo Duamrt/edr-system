@@ -17,7 +17,7 @@ function renderNotas() {
     const classe = n.obra==='EDR'?'estoque':n.credito_status==='sim'?'':n.credito_status==='misto'?'misto':'sem-credito';
     return `<div class="nota-card ${classe}" onclick="abrirNota('${n.id}')" style="cursor:pointer;">
       <div class="nota-top">
-        <span class="nota-fornecedor">${n.fornecedor} <span style="font-weight:400;font-size:11px;color:var(--texto3)">NF ${n.numero_nf||''}</span></span>
+        <span class="nota-fornecedor">${esc(n.fornecedor)} <span style="font-weight:400;font-size:11px;color:var(--texto3)">NF ${n.numero_nf||''}</span></span>
         <div style="display:flex;align-items:center;gap:8px;">
           <span class="nota-valor admin-only">${fmtR(n.valor_bruto)}</span>
           <span style="color:var(--texto3);font-size:16px;">›</span>

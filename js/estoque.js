@@ -208,7 +208,7 @@ function renderEstoque() {
     return `<div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--bg2);border:1px solid var(--borda);border-radius:12px;margin-bottom:8px;border-left:3px solid ${bordaEsq};">
       <div style="flex:1;">
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-          <span style="font-weight:700;font-size:14px;color:var(--branco);">${m.desc}</span>
+          <span style="font-weight:700;font-size:14px;color:var(--branco);">${esc(m.desc)}</span>
           ${m.temNFPendente ? '<span style="font-size:9px;background:var(--amar-bg);color:var(--amarelo);border:1px solid rgba(245,158,11,.3);border-radius:4px;padding:2px 6px;font-weight:700;">⏳ NF PENDENTE</span>' : ''}
           ${negativo ? '<span style="font-size:9px;background:var(--verm-bg);color:var(--vermelho);border:1px solid var(--verm-bd);border-radius:4px;padding:2px 6px;font-weight:700;">⚠ SALDO NEGATIVO</span>' : ''}
         </div>
@@ -305,7 +305,7 @@ async function confirmarDistribuicaoItem() {
       distribuicoes.push({ ...dist, obra_nome: obraNome });
     }
     // Um único lançamento no financeiro da obra
-    const descLanc = `${m.desc}${obs ? ' · '+obs : ''}`;
+    const descLanc = `${esc(m.desc)}${obs ? ' · '+obs : ''}`;
     const [lanc] = await sbPost('lancamentos', {
       obra_id: obraId, descricao: descLanc,
       qtd, preco: precoMedio, total: totalValor, data: hoje,
@@ -313,7 +313,7 @@ async function confirmarDistribuicaoItem() {
       obs: `Estoque EDR · ${lotesUsados.length} lote${lotesUsados.length!==1?'s':''}`
     });
     if (lanc) lancamentos.unshift(lanc);
-    showToast(`✅ ${qtd} ${m.unidade} de ${m.desc} → ${obraNome}!`);
+    showToast(`✅ ${qtd} ${m.unidade} de ${esc(m.desc)} → ${obraNome}!`);
     fecharModal('dist'); renderEstoque(); renderDashboard(); filtrarLanc();
   } catch(e) { console.error(e); showToast('ERRO AO DISTRIBUIR.'); }
 }

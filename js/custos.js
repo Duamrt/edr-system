@@ -65,7 +65,7 @@ function renderCustosCards() {
                  onmouseout="this.style.borderColor='var(--borda)'">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
         <div>
-          <div style="font-size:15px;font-weight:700;color:var(--branco);font-family:'Rajdhani',sans-serif;">${o.nome}</div>
+          <div style="font-size:15px;font-weight:700;color:var(--branco);font-family:'Rajdhani',sans-serif;">${esc(o.nome)}</div>
           <div style="font-size:11px;color:var(--texto3);margin-top:2px;">📍 ${o.cidade || 'Sem cidade'}</div>
         </div>
         <div style="text-align:right;">
@@ -335,7 +335,7 @@ function abrirModalRepasse(obraId) {
   const todasObras = [...obras, ...obrasArquivadas];
   const sel = document.getElementById('repasse-obra');
   sel.innerHTML = '<option value="" style="background:#1a1a2e;color:#fff;">Selecione...</option>' +
-    todasObras.map(o => `<option value="${o.id}" style="background:#1a1a2e;color:#fff;" ${o.id === obraId ? 'selected' : ''}>${o.nome}</option>`).join('');
+    todasObras.map(o => `<option value="${o.id}" style="background:#1a1a2e;color:#fff;" ${o.id === obraId ? 'selected' : ''}>${esc(o.nome)}</option>`).join('');
   document.getElementById('repasse-id').value = '';
   document.getElementById('repasse-tipo').value = 'pls';
   document.getElementById('repasse-medicao').value = '';
@@ -358,7 +358,7 @@ function editarRepasse(id) {
   const todasObras = [...obras, ...obrasArquivadas];
   const sel = document.getElementById('repasse-obra');
   sel.innerHTML = '<option value="" style="background:#1a1a2e;color:#fff;">Selecione...</option>' +
-    todasObras.map(o => `<option value="${o.id}" style="background:#1a1a2e;color:#fff;" ${o.id === r.obra_id ? 'selected' : ''}>${o.nome}</option>`).join('');
+    todasObras.map(o => `<option value="${o.id}" style="background:#1a1a2e;color:#fff;" ${o.id === r.obra_id ? 'selected' : ''}>${esc(o.nome)}</option>`).join('');
   document.getElementById('repasse-id').value = r.id;
   document.getElementById('repasse-tipo').value = r.tipo || 'pls';
   document.getElementById('repasse-medicao').value = r.medicao_numero || '';

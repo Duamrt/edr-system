@@ -430,7 +430,7 @@ function buildDetalheObras(ym) {
 
     return `<div style="background:var(--bg2);border:1px solid var(--borda2);border-radius:10px;padding:14px;margin-bottom:10px;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-        <div style="font-size:12px;font-weight:700;color:var(--branco);max-width:55%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${d.nome}</div>
+        <div style="font-size:12px;font-weight:700;color:var(--branco);max-width:55%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(d.nome)}</div>
         <div style="font-size:10px;color:var(--texto4);">
           ${d.receitaTotal > 0 ? `<span style="color:${corPctGasto};font-weight:700;">${pctGasto.toFixed(0)}%</span> consumido` : ''}
         </div>
@@ -521,7 +521,7 @@ function buildSecaoComparativo() {
     const cor = cores[i % cores.length];
     return `<div style="margin-bottom:12px;">
       <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px;">
-        <span style="color:var(--branco);font-weight:600;max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${d.nome}</span>
+        <span style="color:var(--branco);font-weight:600;max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(d.nome)}</span>
         <span style="color:var(--texto2);">${fmtR(d.total)}</span>
       </div>
       <div style="height:10px;background:rgba(255,255,255,0.07);border-radius:5px;overflow:hidden;">
@@ -726,9 +726,9 @@ function renderTabelaEntradas() {
     const dataFmt = fmtData(e.data);
     tbl += `<tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
       <td style="padding:6px 8px;color:var(--texto4);">${dataFmt}</td>
-      <td style="padding:6px 8px;font-weight:600;">${e.obraNome}</td>
+      <td style="padding:6px 8px;font-weight:600;">${esc(e.obraNome)}</td>
       <td style="padding:6px 8px;">${e.tipoLabel}</td>
-      <td style="padding:6px 8px;color:var(--texto4);">${e.desc}</td>
+      <td style="padding:6px 8px;color:var(--texto4);">${esc(e.desc)}</td>
       <td style="padding:6px 8px;text-align:right;font-weight:700;color:#2ecc71;">${fmtR(e.valor)}</td>
     </tr>`;
   });

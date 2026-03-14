@@ -35,7 +35,7 @@ function renderCatalogo() {
     <div class="catalogo-item" style="${isAuto ? 'border-color:rgba(245,158,11,0.35);' : ''}">
       <span class="catalogo-codigo">${m.codigo || "S/COD"}</span>
       ${isAuto ? `<span style="font-size:9px;font-weight:800;background:rgba(245,158,11,0.12);color:#fbbf24;border:1px solid rgba(245,158,11,0.3);border-radius:4px;padding:1px 5px;font-family:'JetBrains Mono',monospace;white-space:nowrap;">AUTO</span>` : ''}
-      <span class="catalogo-nome">${m.nome}</span>
+      <span class="catalogo-nome">${esc(m.nome)}</span>
       <span class="catalogo-un">${m.unidade||'UN'}</span>
       ${usuarioAtual?.perfil==='admin' ? `
         <select onchange="editarCategoriaMaterial('${m.id}',this.value,this)" style="background:var(--bg3);border:1px solid ${isAuto?'rgba(245,158,11,0.3)':'var(--borda2)'};border-radius:6px;padding:3px 6px;color:${isAuto?'#fbbf24':'var(--branco)'};font-size:10px;font-family:inherit;cursor:pointer;" title="Editar categoria">
@@ -122,7 +122,7 @@ function crMostrarSimilares(val) {
     `<div onclick="crUsarExistente('${m.nome.replace(/'/g,"\\'")}','${m.codigo}')"
        style="display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:6px;cursor:pointer;background:rgba(46,204,113,0.05);border:1px solid rgba(46,204,113,0.1);margin-bottom:3px;">
       <span style="font-family:monospace;font-size:10px;color:var(--verde-hl);background:rgba(46,204,113,0.1);padding:2px 6px;border-radius:4px;">${m.codigo}</span>
-      <span style="font-size:12px;color:var(--branco);flex:1;">${m.nome}</span>
+      <span style="font-size:12px;color:var(--branco);flex:1;">${esc(m.nome)}</span>
       <span style="font-size:10px;color:var(--verde-hl);font-weight:700;">USAR →</span>
     </div>`
   ).join('');
@@ -229,7 +229,7 @@ function onMatNomeInput() {
   if (!matches.length) { list.classList.add('hidden'); return; }
   list.innerHTML = matches.map(m => `<div class="autocomplete-item" onmousedown="selectMatNome('${m.nome.replace(/'/g,"\\'")}')" style="opacity:0.7;">
     <span class="ac-codigo">${m.codigo}</span>
-    <span class="ac-label">${m.nome}</span>
+    <span class="ac-label">${esc(m.nome)}</span>
     <span style="font-size:10px;color:#dc2626;margin-left:auto;">já existe</span>
   </div>`).join('');
   list.classList.remove('hidden');
@@ -609,7 +609,7 @@ function reconciliarFiltrar(idx, busca) {
       style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:6px;cursor:pointer;background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.1);margin-bottom:4px;transition:background 0.15s;"
       onmouseover="this.style.background='rgba(46,204,113,0.12)'" onmouseout="this.style.background='rgba(46,204,113,0.04)'">
       <span style="font-family:monospace;font-size:10px;color:var(--verde-hl);background:rgba(46,204,113,0.1);padding:2px 6px;border-radius:4px;">${m.codigo}</span>
-      <span style="font-size:12px;color:var(--branco);flex:1;">${m.nome}</span>
+      <span style="font-size:12px;color:var(--branco);flex:1;">${esc(m.nome)}</span>
       <span style="font-size:10px;color:var(--verde-hl);font-weight:700;">VINCULAR →</span>
     </div>`).join('');
 }

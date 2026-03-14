@@ -147,7 +147,7 @@ function renderObrasCards() {
                  onmouseout="this.style.borderColor='var(--borda)'">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
         <div>
-          <div style="font-size:15px;font-weight:700;color:var(--branco);font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;">${o.nome}</div>
+          <div style="font-size:15px;font-weight:700;color:var(--branco);font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;">${esc(o.nome)}</div>
           <div style="font-size:11px;color:var(--texto3);margin-top:2px;">📍 ${o.cidade || 'Sem cidade'}</div>
         </div>
         <div style="text-align:right;">

@@ -260,11 +260,11 @@ function diarRenderListaEquipe() {
       ? `<button onclick="diarToggleFuncionario('${f.id}',false)" title="Desativar" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);color:#f87171;border-radius:6px;padding:3px 8px;font-size:10px;cursor:pointer;">desativar</button>`
       : `<button onclick="diarToggleFuncionario('${f.id}',true)" title="Reativar" style="background:rgba(46,204,113,0.1);border:1px solid rgba(46,204,113,0.2);color:var(--verde-hl);border-radius:6px;padding:3px 8px;font-size:10px;cursor:pointer;">reativar</button>`;
     const btnEditar = `<button onclick="diarEditarFuncionario('${f.id}')" title="Editar" style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.2);color:#60a5fa;border-radius:6px;padding:3px 8px;font-size:10px;cursor:pointer;">editar</button>`;
-    const btnExcluir = !f.ativo ? `<button onclick="diarExcluirFuncionario('${f.id}','${f.nome}')" title="Excluir" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);color:#f87171;border-radius:6px;padding:3px 8px;font-size:10px;cursor:pointer;">excluir</button>` : '';
+    const btnExcluir = !f.ativo ? `<button onclick="diarExcluirFuncionario('${f.id}','${esc(f.nome)}')" title="Excluir" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);color:#f87171;border-radius:6px;padding:3px 8px;font-size:10px;cursor:pointer;">excluir</button>` : '';
     return `<div style="${opaco}display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid var(--borda);gap:8px;flex-wrap:wrap">
       <div style="flex:1;min-width:140px">
         <div style="display:flex;align-items:center;gap:8px">
-          <span style="font-weight:700;color:var(--branco);font-size:13px">${f.nome}</span>
+          <span style="font-weight:700;color:var(--branco);font-size:13px">${esc(f.nome)}</span>
           <span style="font-size:10px;color:var(--texto3)">${f.cargo}</span>
           ${statusTag}
         </div>
@@ -330,10 +330,10 @@ function diarEditarFuncionario(id) {
   const html = `
   <div id="diar-editFunc" style="position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px">
     <div style="background:var(--bg2);border:1px solid rgba(59,130,246,0.3);border-radius:14px;padding:22px;width:min(400px,94vw)">
-      <div style="font-weight:800;font-size:14px;letter-spacing:.05em;color:var(--branco);margin-bottom:16px">Editar ${f.nome}</div>
+      <div style="font-weight:800;font-size:14px;letter-spacing:.05em;color:var(--branco);margin-bottom:16px">Editar ${esc(f.nome)}</div>
       <div style="display:flex;flex-direction:column;gap:10px">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-          <div><label style="font-size:10px;color:var(--texto3)">NOME</label><input id="diar-edit-nome" type="text" value="${f.nome}" style="width:100%;box-sizing:border-box;padding:9px 12px;background:var(--bg3);border:1px solid var(--borda2);border-radius:8px;color:var(--branco);font-size:13px;margin-top:4px"></div>
+          <div><label style="font-size:10px;color:var(--texto3)">NOME</label><input id="diar-edit-nome" type="text" value="${esc(f.nome)}" style="width:100%;box-sizing:border-box;padding:9px 12px;background:var(--bg3);border:1px solid var(--borda2);border-radius:8px;color:var(--branco);font-size:13px;margin-top:4px"></div>
           <div><label style="font-size:10px;color:var(--texto3)">CARGO</label><select id="diar-edit-cargo" style="width:100%;box-sizing:border-box;padding:9px 12px;background:var(--bg3);border:1px solid var(--borda2);border-radius:8px;color:var(--branco);font-size:13px;margin-top:4px">
             <option value="Servente" ${f.cargo==='Servente'?'selected':''}>Servente</option>
             <option value="Pedreiro" ${f.cargo==='Pedreiro'?'selected':''}>Pedreiro</option>
@@ -983,7 +983,7 @@ function diarRenderFolha() {
     const totalFunc = f.valor + extra;
     return `
     <tr>
-      <td class="diarias-td-nome" style="cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px;" onclick="diarAbrirCalendarioFunc('${f.nome}')" title="Ver calendário da quinzena">${f.nome} <span style="font-size:9px;color:var(--texto3)">📅</span></td>
+      <td class="diarias-td-nome" style="cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px;" onclick="diarAbrirCalendarioFunc('${esc(f.nome)}')" title="Ver calendário da quinzena">${esc(f.nome)} <span style="font-size:9px;color:var(--texto3)">📅</span></td>
       <td style="font-size:10px;color:var(--texto3)">${f.cargo||'-'}</td>
       ${isMestre ? '' : `<td style="color:var(--texto2);font-size:11px">R$ ${f.diaria} × ${f.fracoes.toFixed(1)}d</td>`}
       <td>${f.fracoes.toFixed(1)}d</td>
@@ -1038,7 +1038,7 @@ function diarAbrirModalExtra() {
   const selFunc = document.getElementById('diar-extra-func');
   selFunc.innerHTML = '<option value="">Selecionar...</option>';
   diarGetFuncionariosAtivos().forEach(f => {
-    selFunc.innerHTML += `<option value="${f.nome}">${f.nome} (${f.cargo})</option>`;
+    selFunc.innerHTML += `<option value="${esc(f.nome)}">${esc(f.nome)} (${f.cargo})</option>`;
   });
   // Popular select de obras
   const sel = document.getElementById('diar-extra-obra');

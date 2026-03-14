@@ -68,7 +68,7 @@ function renderAdicionais() {
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
         <div style="flex:1;">
           ${!obraId ? `<div style="font-size:10px;color:var(--verde3);margin-bottom:3px;">${obraNome}</div>` : ''}
-          <div style="font-size:14px;font-weight:700;color:var(--branco);">${a.descricao}</div>
+          <div style="font-size:14px;font-weight:700;color:var(--branco);">${esc(a.descricao)}</div>
           <div style="font-size:11px;color:var(--texto3);margin-top:2px;">${a.condicao || ''}</div>
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
@@ -178,7 +178,7 @@ function abrirPgtoAdicional(addId) {
   const totalPago = adicionaisPgtos.filter(p => p.adicional_id === addId).reduce((s, p) => s + Number(p.valor || 0), 0);
   const saldo = Number(a.valor) - totalPago;
   document.getElementById('pgto-add-id').value = addId;
-  document.getElementById('pgto-saldo-info').innerHTML = `<strong>${a.descricao}</strong><br>Valor: ${fmtR(a.valor)} · Pago: ${fmtR(totalPago)} · <strong style="color:${saldo > 0 ? '#fbbf24' : 'var(--verde-hl)'}">Saldo: ${fmtR(saldo)}</strong>`;
+  document.getElementById('pgto-saldo-info').innerHTML = `<strong>${esc(a.descricao)}</strong><br>Valor: ${fmtR(a.valor)} · Pago: ${fmtR(totalPago)} · <strong style="color:${saldo > 0 ? '#fbbf24' : 'var(--verde-hl)'}">Saldo: ${fmtR(saldo)}</strong>`;
   document.getElementById('pgto-valor').value = '';
   document.getElementById('pgto-data').value = hojeISO();
   document.getElementById('pgto-forma').value = '';
@@ -248,7 +248,7 @@ function gerarTermoAdicional(id) {
 </div>
 
 <div class="destaque">
-  <strong>SERVIÇO:</strong> ${a.descricao}<br>
+  <strong>SERVIÇO:</strong> ${esc(a.descricao)}<br>
 </div>
 
 <div class="clausula">
