@@ -167,6 +167,10 @@ function renderRelatorio() {
     html = buildSecaoFaltas();
   }
   el.innerHTML = html;
+  // Renderizar tabela de entradas filtradas (se existir no DOM)
+  if (document.getElementById('rel-entradas-tabela')) {
+    renderTabelaEntradas();
+  }
 }
 
 function getLancMes(ym) {
@@ -226,46 +230,56 @@ function buildPainelFinanceiro() {
     ${cardResumo('👷', 'MÃO DE OBRA', maoObraMes, '#f39c12', totalSaidas > 0 ? (maoObraMes/totalSaidas*100).toFixed(0)+'% do total' : '—')}
   </div>`;
 
-  // ── DETALHE DAS ENTRADAS ──
+  // ── DETALHE DAS ENTRADAS COM FILTROS ──
   if (repassesMes.length || pgtosMes.length) {
-    html += `<div class="rel-card" style="margin-bottom:16px;">
-      <div class="rel-card-title">💰 ENTRADAS DO MÊS — Detalhe</div>
-      <table style="width:100%;font-size:11px;border-collapse:collapse;">
-        <tr style="border-bottom:1px solid var(--borda2);">
-          <th style="text-align:left;padding:6px 8px;color:var(--texto3);font-size:10px;">DATA</th>
-          <th style="text-align:left;padding:6px 8px;color:var(--texto3);font-size:10px;">OBRA</th>
-          <th style="text-align:left;padding:6px 8px;color:var(--texto3);font-size:10px;">TIPO</th>
-          <th style="text-align:left;padding:6px 8px;color:var(--texto3);font-size:10px;">DESCRIÇÃO</th>
-          <th style="text-align:right;padding:6px 8px;color:var(--texto3);font-size:10px;">VALOR</th>
-        </tr>`;
-    // Repasses CEF
-    repassesMes.sort((a,b) => (a.data_credito||'').localeCompare(b.data_credito||'')).forEach(r => {
-      const obraNome = obras.find(o => o.id === r.obra_id)?.nome || '—';
-      const tipo = r.tipo === 'entrada' ? '💵 Entrada' : r.tipo === 'terreno' ? '🏗 Terreno' : '🏦 PL';
-      const data = r.data_credito ? r.data_credito.split('-').reverse().join('/') : '—';
-      const desc = r.descricao || r.tipo || '—';
-      html += `<tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
-        <td style="padding:6px 8px;color:var(--texto4);">${data}</td>
-        <td style="padding:6px 8px;font-weight:600;">${obraNome}</td>
-        <td style="padding:6px 8px;">${tipo}</td>
-        <td style="padding:6px 8px;color:var(--texto4);">${desc}</td>
-        <td style="padding:6px 8px;text-align:right;font-weight:700;color:#2ecc71;">${fmtR(Number(r.valor||0))}</td>
-      </tr>`;
+    // Montar todas as entradas como array unificado
+    const todasEntradas = [];
+    repassesMes.forEach(r => {
+      const tipoKey = r.tipo === 'entrada' ? 'entrada' : r.tipo === 'terreno' ? 'terreno' : 'pls';
+      const tipoLabel = tipoKey === 'entrada' ? '💵 Entrada' : tipoKey === 'terreno' ? '🏗 Terreno' : '🏦 PL';
+      todasEntradas.push({
+        data: r.data_credito || '', obraNome: obras.find(o => o.id === r.obra_id)?.nome || '—',
+        tipoKey, tipoLabel, desc: r.descricao || r.tipo || '—', valor: Number(r.valor||0)
+      });
     });
-    // Pagamentos de adicionais
-    pgtosMes.sort((a,b) => (a.data||'').localeCompare(b.data||'')).forEach(p => {
+    pgtosMes.forEach(p => {
       const adic = (typeof adicionais !== 'undefined' ? adicionais : []).find(a => a.id === p.adicional_id);
-      const obraNome = adic ? (obras.find(o => o.id === adic.obra_id)?.nome || '—') : '—';
-      const data = p.data ? p.data.split('-').reverse().join('/') : '—';
-      html += `<tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
-        <td style="padding:6px 8px;color:var(--texto4);">${data}</td>
-        <td style="padding:6px 8px;font-weight:600;">${obraNome}</td>
-        <td style="padding:6px 8px;">⭐ Extra</td>
-        <td style="padding:6px 8px;color:var(--texto4);">${adic?.descricao || '—'}</td>
-        <td style="padding:6px 8px;text-align:right;font-weight:700;color:#2ecc71;">${fmtR(Number(p.valor||0))}</td>
-      </tr>`;
+      todasEntradas.push({
+        data: p.data || '', obraNome: adic ? (obras.find(o => o.id === adic.obra_id)?.nome || '—') : '—',
+        tipoKey: 'extra', tipoLabel: '⭐ Extra', desc: adic?.descricao || '—', valor: Number(p.valor||0)
+      });
     });
-    html += `</table></div>`;
+    todasEntradas.sort((a,b) => a.data.localeCompare(b.data));
+
+    // Descobrir quais tipos existem no mês
+    const tiposPresentes = [...new Set(todasEntradas.map(e => e.tipoKey))];
+    const tipoConfig = { pls: { lb: '🏦 PLs', cor: '#3498db' }, entrada: { lb: '💵 Entrada', cor: '#2ecc71' }, terreno: { lb: '🏗 Terreno', cor: '#e67e22' }, extra: { lb: '⭐ Extras', cor: '#f1c40f' } };
+
+    // Guardar dados no window pra filtro funcionar
+    window._relEntradasMes = todasEntradas;
+    window._relFiltrosEntrada = new Set(tiposPresentes); // todos ativos inicialmente
+
+    const chipStyle = (key) => `cursor:pointer;padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:0.5px;transition:all .2s;user-select:none;`;
+
+    const chips = tiposPresentes.map(key => {
+      const c = tipoConfig[key] || { lb: key, cor: '#999' };
+      return `<span id="rel-chip-${key}" onclick="toggleFiltroEntrada('${key}')" style="${chipStyle(key)}background:${c.cor};color:#fff;">${c.lb}</span>`;
+    }).join('');
+
+    html += `<div class="rel-card" style="margin-bottom:16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+        <div class="rel-card-title" style="margin:0;">💰 ENTRADAS DO MÊS</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+          ${chips}
+          <span onclick="limparFiltrosEntrada()" style="cursor:pointer;padding:5px 10px;border-radius:20px;font-size:10px;color:var(--texto4);border:1px solid var(--borda2);transition:all .2s;">LIMPAR</span>
+        </div>
+      </div>
+      <div style="margin-bottom:8px;font-size:11px;color:var(--texto3);" id="rel-entradas-total"></div>
+      <div id="rel-entradas-tabela"></div>
+    </div>`;
+
+    // Renderizar tabela será feito por JS após o HTML ser inserido — via setTimeout
+    // A função renderTabelaEntradas precisa existir globalmente
   }
 
   // ── GRÁFICO ENTRADAS vs SAÍDAS (últimos 6 meses) ──
@@ -617,3 +631,76 @@ window.addEventListener('resize', () => {
   clearTimeout(window._resizeFit);
   window._resizeFit = setTimeout(autoFitStatValues, 100);
 });
+
+// ── FILTROS DE ENTRADAS NO RELATÓRIO ──
+const _tipoConfig = { pls: { lb: '🏦 PLs', cor: '#3498db' }, entrada: { lb: '💵 Entrada', cor: '#2ecc71' }, terreno: { lb: '🏗 Terreno', cor: '#e67e22' }, extra: { lb: '⭐ Extras', cor: '#f1c40f' } };
+
+function toggleFiltroEntrada(key) {
+  if (!window._relFiltrosEntrada) return;
+  const filtros = window._relFiltrosEntrada;
+  if (filtros.has(key)) filtros.delete(key); else filtros.add(key);
+  atualizarChipsEntrada();
+  renderTabelaEntradas();
+}
+
+function limparFiltrosEntrada() {
+  if (!window._relEntradasMes) return;
+  const todos = [...new Set(window._relEntradasMes.map(e => e.tipoKey))];
+  // Se todos ativos, desativa todos. Se algum desativado, ativa todos.
+  const filtros = window._relFiltrosEntrada;
+  const todosAtivos = todos.every(k => filtros.has(k));
+  if (todosAtivos) { filtros.clear(); } else { todos.forEach(k => filtros.add(k)); }
+  atualizarChipsEntrada();
+  renderTabelaEntradas();
+}
+
+function atualizarChipsEntrada() {
+  const filtros = window._relFiltrosEntrada || new Set();
+  Object.keys(_tipoConfig).forEach(key => {
+    const chip = document.getElementById(`rel-chip-${key}`);
+    if (!chip) return;
+    const c = _tipoConfig[key];
+    if (filtros.has(key)) {
+      chip.style.background = c.cor; chip.style.color = '#fff'; chip.style.border = 'none'; chip.style.opacity = '1';
+    } else {
+      chip.style.background = 'transparent'; chip.style.color = c.cor; chip.style.border = `1.5px solid ${c.cor}`; chip.style.opacity = '0.6';
+    }
+  });
+}
+
+function renderTabelaEntradas() {
+  const container = document.getElementById('rel-entradas-tabela');
+  const totalEl = document.getElementById('rel-entradas-total');
+  if (!container || !window._relEntradasMes) return;
+
+  const filtros = window._relFiltrosEntrada || new Set();
+  const filtradas = window._relEntradasMes.filter(e => filtros.has(e.tipoKey));
+  const totalFiltrado = filtradas.reduce((s, e) => s + e.valor, 0);
+
+  totalEl.innerHTML = filtradas.length
+    ? `Mostrando <strong>${filtradas.length}</strong> entrada${filtradas.length > 1 ? 's' : ''} · Total: <strong style="color:#2ecc71;">${fmtR(totalFiltrado)}</strong>`
+    : 'Nenhuma entrada com os filtros selecionados.';
+
+  if (!filtradas.length) { container.innerHTML = ''; return; }
+
+  let tbl = `<table style="width:100%;font-size:11px;border-collapse:collapse;">
+    <tr style="border-bottom:1px solid var(--borda2);">
+      <th style="text-align:left;padding:6px 8px;color:var(--texto3);font-size:10px;">DATA</th>
+      <th style="text-align:left;padding:6px 8px;color:var(--texto3);font-size:10px;">OBRA</th>
+      <th style="text-align:left;padding:6px 8px;color:var(--texto3);font-size:10px;">TIPO</th>
+      <th style="text-align:left;padding:6px 8px;color:var(--texto3);font-size:10px;">DESCRIÇÃO</th>
+      <th style="text-align:right;padding:6px 8px;color:var(--texto3);font-size:10px;">VALOR</th>
+    </tr>`;
+  filtradas.forEach(e => {
+    const dataFmt = e.data ? e.data.split('-').reverse().join('/') : '—';
+    tbl += `<tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
+      <td style="padding:6px 8px;color:var(--texto4);">${dataFmt}</td>
+      <td style="padding:6px 8px;font-weight:600;">${e.obraNome}</td>
+      <td style="padding:6px 8px;">${e.tipoLabel}</td>
+      <td style="padding:6px 8px;color:var(--texto4);">${e.desc}</td>
+      <td style="padding:6px 8px;text-align:right;font-weight:700;color:#2ecc71;">${fmtR(e.valor)}</td>
+    </tr>`;
+  });
+  tbl += '</table>';
+  container.innerHTML = tbl;
+}
