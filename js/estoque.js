@@ -348,34 +348,41 @@ async function exportarEstoqueExcel() {
   const VERDE_CLARO = '1A7A30';
   const BRANCO = 'FFFFFF';
 
-  // Largura das colunas
+  // Largura das colunas — generosa pra texto caber completo
   ws.columns = [
-    { width: 6 },   // A - #
-    { width: 14 },  // B - Código
-    { width: 40 },  // C - Material
-    { width: 10 },  // D - Unidade
-    { width: 16 },  // E - Saldo Sistema
-    { width: 16 },  // F - Contagem Real
-    { width: 16 },  // G - Diferença
+    { width: 7 },   // A - #
+    { width: 16 },  // B - Código
+    { width: 50 },  // C - Material (nome completo)
+    { width: 12 },  // D - Unidade
+    { width: 18 },  // E - Saldo Sistema
+    { width: 18 },  // F - Contagem Real
+    { width: 18 },  // G - Diferença
   ];
 
   // Logo embutida
   const logoB64 = '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';
 
-  // Inserir logo
-  const logoId = wb.addImage({ base64: logoB64, extension: 'png' });
-  ws.addImage(logoId, { tl: { col: 0, row: 0 }, ext: { width: 96, height: 60 } });
+  // Linha 1: Logo (col A-B) + Titulo centralizado (col C-G)
+  // Fundo verde em toda a linha
+  ws.getRow(1).height = 50;
+  for (let c = 1; c <= 7; c++) {
+    const cell = ws.getRow(1).getCell(c);
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: VERDE } };
+  }
 
-  // Header com logo — faixa verde
-  ws.mergeCells('A1:G1');
-  const headerCell = ws.getCell('A1');
-  headerCell.value = '          EDR ENGENHARIA';
-  headerCell.font = { name: 'Arial', size: 18, bold: true, color: { argb: BRANCO } };
-  headerCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: VERDE } };
-  headerCell.alignment = { horizontal: 'left', vertical: 'middle' };
-  ws.getRow(1).height = 48;
-  // Preencher todas as celulas do merge com verde
-  for (let c = 2; c <= 7; c++) { ws.getRow(1).getCell(c).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: VERDE } }; }
+  // Logo na célula A1
+  const logoId = wb.addImage({ base64: logoB64, extension: 'png' });
+  ws.addImage(logoId, {
+    tl: { col: 0.2, row: 0.15 },
+    ext: { width: 90, height: 56 }
+  });
+
+  // Titulo em C1:G1 centralizado
+  ws.mergeCells('C1:G1');
+  const headerCell = ws.getCell('C1');
+  headerCell.value = 'EDR ENGENHARIA';
+  headerCell.font = { name: 'Arial', size: 20, bold: true, color: { argb: BRANCO } };
+  headerCell.alignment = { horizontal: 'center', vertical: 'middle' };
 
   // Subtítulo
   ws.mergeCells('A2:G2');
