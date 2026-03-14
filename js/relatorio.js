@@ -226,6 +226,48 @@ function buildPainelFinanceiro() {
     ${cardResumo('👷', 'MÃO DE OBRA', maoObraMes, '#f39c12', totalSaidas > 0 ? (maoObraMes/totalSaidas*100).toFixed(0)+'% do total' : '—')}
   </div>`;
 
+  // ── DETALHE DAS ENTRADAS ──
+  if (repassesMes.length || pgtosMes.length) {
+    html += `<div class="rel-card" style="margin-bottom:16px;">
+      <div class="rel-card-title">💰 ENTRADAS DO MÊS — Detalhe</div>
+      <table style="width:100%;font-size:11px;border-collapse:collapse;">
+        <tr style="border-bottom:1px solid var(--borda2);">
+          <th style="text-align:left;padding:6px 8px;color:var(--texto3);font-size:10px;">DATA</th>
+          <th style="text-align:left;padding:6px 8px;color:var(--texto3);font-size:10px;">OBRA</th>
+          <th style="text-align:left;padding:6px 8px;color:var(--texto3);font-size:10px;">TIPO</th>
+          <th style="text-align:left;padding:6px 8px;color:var(--texto3);font-size:10px;">DESCRIÇÃO</th>
+          <th style="text-align:right;padding:6px 8px;color:var(--texto3);font-size:10px;">VALOR</th>
+        </tr>`;
+    // Repasses CEF
+    repassesMes.sort((a,b) => (a.data_credito||'').localeCompare(b.data_credito||'')).forEach(r => {
+      const obraNome = obras.find(o => o.id === r.obra_id)?.nome || '—';
+      const tipo = r.tipo === 'entrada' ? '💵 Entrada' : r.tipo === 'terreno' ? '🏗 Terreno' : '🏦 PL';
+      const data = r.data_credito ? r.data_credito.split('-').reverse().join('/') : '—';
+      const desc = r.descricao || r.tipo || '—';
+      html += `<tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
+        <td style="padding:6px 8px;color:var(--texto4);">${data}</td>
+        <td style="padding:6px 8px;font-weight:600;">${obraNome}</td>
+        <td style="padding:6px 8px;">${tipo}</td>
+        <td style="padding:6px 8px;color:var(--texto4);">${desc}</td>
+        <td style="padding:6px 8px;text-align:right;font-weight:700;color:#2ecc71;">${fmtR(Number(r.valor||0))}</td>
+      </tr>`;
+    });
+    // Pagamentos de adicionais
+    pgtosMes.sort((a,b) => (a.data||'').localeCompare(b.data||'')).forEach(p => {
+      const adic = (typeof adicionais !== 'undefined' ? adicionais : []).find(a => a.id === p.adicional_id);
+      const obraNome = adic ? (obras.find(o => o.id === adic.obra_id)?.nome || '—') : '—';
+      const data = p.data ? p.data.split('-').reverse().join('/') : '—';
+      html += `<tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
+        <td style="padding:6px 8px;color:var(--texto4);">${data}</td>
+        <td style="padding:6px 8px;font-weight:600;">${obraNome}</td>
+        <td style="padding:6px 8px;">⭐ Extra</td>
+        <td style="padding:6px 8px;color:var(--texto4);">${adic?.descricao || '—'}</td>
+        <td style="padding:6px 8px;text-align:right;font-weight:700;color:#2ecc71;">${fmtR(Number(p.valor||0))}</td>
+      </tr>`;
+    });
+    html += `</table></div>`;
+  }
+
   // ── GRÁFICO ENTRADAS vs SAÍDAS (últimos 6 meses) ──
   html += buildGraficoMensal();
 
