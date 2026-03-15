@@ -383,10 +383,14 @@ function renderImportPreview() {
       <div style="margin-top:6px;font-size:10px;color:${item.credito ? 'var(--verde-hl)' : '#f87171'};font-weight:700;">
         ${item.credito ? '✓ GERA CRÉDITO' : '✗ SEM CRÉDITO'} ${item.creditoCat ? '— '+item.creditoCat : ''}
       </div>` : `
-      <div style="margin-top:6px;display:flex;gap:6px;align-items:center;">
-        <span style="font-size:10px;color:#fbbf24;">❓ Classificar:</span>
-        <button onclick="importClassificar(${i},true)" style="font-size:9px;padding:2px 8px;border-radius:3px;background:rgba(46,204,113,0.08);color:var(--verde-hl);border:1px solid rgba(46,204,113,0.2);cursor:pointer;font-weight:700;">✓ CRÉDITO</button>
-        <button onclick="importClassificar(${i},false)" style="font-size:9px;padding:2px 8px;border-radius:3px;background:rgba(239,68,68,0.08);color:#f87171;border:1px solid rgba(239,68,68,0.2);cursor:pointer;font-weight:700;">✗ SEM CRÉDITO</button>
+      <div style="margin-top:6px;">
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+          <span style="font-size:10px;color:#fbbf24;">❓ Classificar:</span>
+          <button onclick="importConsultarCredito(${i})" style="font-size:9px;padding:2px 8px;border-radius:3px;background:rgba(139,92,246,0.1);color:#a78bfa;border:1px solid rgba(139,92,246,0.3);cursor:pointer;font-weight:700;">🔍 CONSULTAR</button>
+          <button onclick="importClassificar(${i},true)" style="font-size:9px;padding:2px 8px;border-radius:3px;background:rgba(46,204,113,0.08);color:var(--verde-hl);border:1px solid rgba(46,204,113,0.2);cursor:pointer;font-weight:700;">✓ CRÉDITO</button>
+          <button onclick="importClassificar(${i},false)" style="font-size:9px;padding:2px 8px;border-radius:3px;background:rgba(239,68,68,0.08);color:#f87171;border:1px solid rgba(239,68,68,0.2);cursor:pointer;font-weight:700;">✗ SEM CRÉDITO</button>
+        </div>
+        <div id="import-consulta-${i}" style="display:none;margin-top:6px;padding:8px 10px;border-radius:6px;font-size:10px;font-weight:700;"></div>
       </div>`}
     </div>`;
   }).join('');
@@ -458,6 +462,35 @@ function importEditarCampo(idx, campo, valor) {
     item.unidade = valor.toUpperCase();
   }
   renderImportPreview();
+}
+
+function importConsultarCredito(idx) {
+  const item = importItensPreview[idx];
+  const desc = item.descFinal || item.descOriginal;
+  const el = document.getElementById(`import-consulta-${idx}`);
+  if (!el) return;
+  // Consultar nas REGRAS_TRIBUTARIAS (mesmo motor do assistente)
+  const v = norm(desc);
+  let resultado = null;
+  if (typeof REGRAS_TRIBUTARIAS !== 'undefined') {
+    for (const r of REGRAS_TRIBUTARIAS) {
+      for (const p of r.palavras) { if (v.includes(norm(p)) || norm(p).includes(v)) { resultado = r; break; } }
+      if (resultado) break;
+    }
+  }
+  if (resultado) {
+    el.style.background = resultado.credito ? 'rgba(46,204,113,0.08)' : 'rgba(239,68,68,0.08)';
+    el.style.color = resultado.credito ? 'var(--verde-hl)' : '#f87171';
+    el.style.border = resultado.credito ? '1px solid rgba(46,204,113,0.2)' : '1px solid rgba(239,68,68,0.2)';
+    el.innerHTML = `${resultado.credito ? '✅' : '❌'} ${resultado.motivo}<br><span style="font-size:9px;color:var(--texto3);">Categoria: ${resultado.cat}</span>
+      <button onclick="importClassificar(${idx},${resultado.credito})" style="margin-left:8px;font-size:9px;padding:2px 8px;border-radius:3px;background:rgba(139,92,246,0.1);color:#a78bfa;border:1px solid rgba(139,92,246,0.3);cursor:pointer;font-weight:700;">APLICAR</button>`;
+  } else {
+    el.style.background = 'rgba(245,158,11,0.08)';
+    el.style.color = '#fbbf24';
+    el.style.border = '1px solid rgba(245,158,11,0.2)';
+    el.innerHTML = '⚠ Item não encontrado na base tributária. Classifique manualmente.';
+  }
+  el.style.display = 'block';
 }
 
 function importClassificar(idx, credito) {
