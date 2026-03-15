@@ -43,6 +43,7 @@ function renderCatalogo() {
           <option value="">— cat —</option>${catSelect}
         </select>
         ${isAuto ? `<button onclick="confirmarAutoMaterial('${m.id}')" style="background:rgba(46,204,113,0.08);border:1px solid rgba(46,204,113,0.2);color:var(--verde-hl);border-radius:6px;padding:3px 8px;font-size:9px;font-family:'Rajdhani',sans-serif;font-weight:700;cursor:pointer;white-space:nowrap;" title="Confirmar revisão">✓ OK</button>` : ''}
+        <button onclick="duplicarMaterial('${m.id}')" style="background:none;border:none;color:var(--texto3);cursor:pointer;font-size:14px;padding:4px;" title="Duplicar material">📋</button>
         <button onclick="editarMaterial('${m.id}')" style="background:none;border:none;color:var(--texto3);cursor:pointer;font-size:14px;padding:4px;" title="Editar material">✏️</button>
         <button onclick="excluirMaterial('${m.id}')" style="background:none;border:none;color:var(--texto3);cursor:pointer;font-size:14px;padding:4px;" title="Excluir">🗑</button>
       ` : m.categoria ? `<span class="catalogo-cat">${m.categoria}</span>` : ''}
@@ -221,6 +222,25 @@ function editarMaterial(id) {
   document.getElementById('btn-salvar-mat').disabled = false;
   document.getElementById('modal-material').classList.remove('hidden');
   setTimeout(() => document.getElementById('mat-nome').focus(), 100);
+}
+
+function duplicarMaterial(id) {
+  const m = catalogoMateriais.find(x => x.id === id);
+  if (!m) return;
+  _editandoMaterialId = null; // modo novo (é uma cópia, não edição)
+  const selCat = document.getElementById('mat-categoria');
+  if (selCat && typeof ETAPAS !== 'undefined') {
+    selCat.innerHTML = '<option value="">— Selecione —</option>' + ETAPAS.map(e => `<option value="${e.key}">${e.lb}</option>`).join('');
+  }
+  // Preencher com dados do item original pra editar só o nome
+  document.getElementById('mat-nome').value = m.nome || '';
+  document.getElementById('mat-unidade').value = m.unidade || 'UN';
+  selCat.value = m.categoria || '';
+  document.getElementById('modal-material-aviso').classList.add('hidden');
+  document.getElementById('btn-salvar-mat').textContent = '💾 CADASTRAR CÓPIA';
+  document.getElementById('btn-salvar-mat').disabled = false;
+  document.getElementById('modal-material').classList.remove('hidden');
+  setTimeout(() => { const n = document.getElementById('mat-nome'); n.focus(); n.select(); }, 100);
 }
 
 function onMatNomeInput() {
