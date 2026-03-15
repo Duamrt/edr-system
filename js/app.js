@@ -38,15 +38,11 @@ async function iniciarApp() {
 }
 async function loadUsuarios() {
   try {
-    const rows = await sbGet('usuarios', '?select=*&order=criado_em');
+    const rows = await sbGet('usuarios', '?select=id,usuario,nome,perfil,ativo&order=criado_em');
     if (Array.isArray(rows) && rows.length && rows[0]?.usuario) {
       USUARIOS = rows;
     }
-  } catch(e) { /* mantém USUARIOS fallback */ }
-  // Garantir que visitante sempre existe, independente do Supabase
-  if (!USUARIOS.find(u => u.usuario === 'visitante')) {
-    USUARIOS.push({ usuario: 'visitante', senha: 'edr2024', perfil: 'visitante', nome: 'Visitante', ativo: true });
-  }
+  } catch(e) { /* mantém USUARIOS vazio */ }
 }
 
 async function loadObras() {

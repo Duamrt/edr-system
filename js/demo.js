@@ -121,7 +121,7 @@ function entrarModoDemo() {
   USUARIOS.length = 0;
   DEMO_DATA.usuarios.forEach(u => USUARIOS.push(u));
   usuarioAtual = DEMO_DATA.usuarios[0];
-  try { localStorage.removeItem('edr_session'); } catch(e) {}
+  try { localStorage.removeItem('edr_auth'); } catch(e) {}
   const badge = document.getElementById('demo-badge');
   if (badge) badge.classList.remove('hidden');
   entrarNoApp();

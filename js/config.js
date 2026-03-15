@@ -1,21 +1,19 @@
 const SUPABASE_URL = 'https://mepzoxoahpwcvvlymlfh.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_Z9E8KLU8ZIMcWjD-bMG5gg_eM585qWq';
 
+// Headers dinâmicos — usa token Auth se logado, senão anon key
+let _authToken = null;
+function getHdrs(preferOverride) {
+  return {
+    'apikey': SUPABASE_KEY,
+    'Authorization': `Bearer ${_authToken || SUPABASE_KEY}`,
+    'Content-Type': 'application/json',
+    'Prefer': preferOverride || 'return=representation'
+  };
+}
 
-const hdrs = { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=representation' };
-
-
-// USUÁRIOS (admin gerencia aqui)
-// Usuários carregados do Supabase — fallback mínimo de emergência
-// Fallback completo — usado se Supabase não tiver tabela 'usuarios' ainda
-// Após rodar o SQL de setup, os usuários ficam no Supabase e este array é substituído
-let USUARIOS = [
-  { usuario: 'elydart',  senha: 'edrelyda',    perfil: 'admin',       nome: 'Elyda',         ativo: true },
-  { usuario: 'admin',    senha: 'duanxdzin',   perfil: 'admin',       nome: 'Duam',          ativo: true },
-  { usuario: 'mikael',   senha: 'mika123',     perfil: 'operacional', nome: 'Mikael',        ativo: true },
-  { usuario: 'anderson', senha: 'edr123',      perfil: 'mestre',      nome: 'Anderson',      ativo: true },
-  { usuario: 'visitante',senha: 'edr2024',     perfil: 'visitante',   nome: 'Visitante',     ativo: true },
-];
+// USUÁRIOS — carregados do Supabase Auth (sem senhas no código)
+let USUARIOS = [];
 
 const SQL_SETUP = `-- EDR System · Setup completo
 create table if not exists notas_fiscais (

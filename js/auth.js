@@ -1,35 +1,60 @@
-function fazerLogin() {
+// ══════════════════════════════════════════
+// AUTENTICAÇÃO — Supabase Auth (GoTrue)
+// ══════════════════════════════════════════
+
+async function fazerLogin() {
   const u = document.getElementById('login-user').value.trim().toLowerCase();
   const s = document.getElementById('login-pass').value;
   const btn = document.querySelector('.btn-login');
+  const errEl = document.getElementById('login-error');
+  if (!u || !s) { errEl.textContent = 'Informe usuário e senha.'; return; }
   if (btn) { btn.disabled = true; btn.textContent = 'AGUARDE...'; }
-  // Tentar login com usuários já carregados
-  const tentarLogin = () => {
-    const user = USUARIOS.find(x => x.usuario === u && x.senha === s && x.ativo !== false);
-    if (btn) { btn.disabled = false; btn.textContent = 'ENTRAR'; }
-    if (!user) {
-      document.getElementById('login-error').textContent = 'Usuário ou senha incorretos ou acesso desativado.';
+  errEl.textContent = '';
+
+  try {
+    const email = u.includes('@') ? u : u + '@edreng.com.br';
+    const r = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password: s })
+    });
+    const data = await r.json();
+    if (!r.ok || !data.access_token) {
+      errEl.textContent = 'Usuário ou senha incorretos.';
+      if (btn) { btn.disabled = false; btn.textContent = 'ENTRAR'; }
       return;
     }
-    usuarioAtual = user;
+    // Salvar tokens
+    _authToken = data.access_token;
+    const meta = data.user?.user_metadata || {};
+    usuarioAtual = {
+      id: data.user.id,
+      usuario: meta.usuario || u,
+      nome: meta.nome || u,
+      perfil: meta.perfil || 'operacional',
+      ativo: true
+    };
+    // Persistir sessão
     try {
-      const ttl = user.perfil === 'admin' ? 30 : 0.33;
-      localStorage.setItem('edr_session', JSON.stringify({ usuario: user.usuario, perfil: user.perfil, ts: Date.now(), ttl_dias: ttl }));
+      localStorage.setItem('edr_auth', JSON.stringify({
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
+        expires_at: Date.now() + (data.expires_in * 1000),
+        user: usuarioAtual
+      }));
     } catch(e) {}
+    // Agendar refresh do token
+    _agendarRefreshToken(data.expires_in);
     entrarNoApp();
-  };
-  // Sempre tenta Supabase primeiro para garantir senhas atualizadas
-  // Se demorar mais de 3s, usa fallback local
-  if (USUARIOS.length <= 6) {
-    const timeoutPromise = new Promise(res => setTimeout(res, 3000));
-    Promise.race([loadUsuarios(), timeoutPromise]).then(tentarLogin).catch(tentarLogin);
-  } else {
-    tentarLogin();
+  } catch(e) {
+    console.error('Erro no login:', e);
+    errEl.textContent = 'Erro de conexão. Tente novamente.';
   }
+  if (btn) { btn.disabled = false; btn.textContent = 'ENTRAR'; }
 }
+
 function entrarNoApp() {
   document.getElementById('login-screen').classList.add('hidden');
-  // Esconder todas as views
   ['obras','estoque','notas','form','creditos','setup','catalogo','banco','relatorio','diarias'].forEach(name => {
     const el = document.getElementById('view-'+name);
     if (el) el.classList.add('hidden');
@@ -38,10 +63,8 @@ function entrarNoApp() {
   if (dash) dash.classList.remove('hidden');
   document.getElementById('app').classList.remove('hidden');
   document.getElementById('user-nome-badge').textContent = usuarioAtual.nome;
-  // Badge modo visitante
   const demoBadge = document.getElementById('demo-mode-badge');
   if (demoBadge) demoBadge.style.display = usuarioAtual.perfil === 'visitante' ? 'block' : 'none';
-  // Limpar resquícios de demo se NÃO está em modo demo
   if (!MODO_DEMO) {
     const bannerOrfao = document.getElementById('demo-banner');
     if (bannerOrfao) bannerOrfao.remove();
@@ -52,31 +75,31 @@ function entrarNoApp() {
   initMenuDragDrop();
   iniciarApp();
 }
-function fazerLogout() {
-  try { localStorage.removeItem('edr_session'); } catch(e) {}
+
+async function fazerLogout() {
+  // Chamar logout no Supabase (invalidar token)
+  if (_authToken) {
+    try {
+      await fetch(`${SUPABASE_URL}/auth/v1/logout`, {
+        method: 'POST',
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${_authToken}`, 'Content-Type': 'application/json' }
+      });
+    } catch(e) {}
+  }
+  _authToken = null;
+  try { localStorage.removeItem('edr_auth'); } catch(e) {}
+  if (_refreshTimer) { clearTimeout(_refreshTimer); _refreshTimer = null; }
   MODO_DEMO = false;
   usuarioAtual = null;
-  // Restaurar USUARIOS fallback (limpa resquícios do demo)
-  USUARIOS = [
-    { usuario: 'elydart',  senha: 'edrelyda',    perfil: 'admin',       nome: 'Elyda',         ativo: true },
-    { usuario: 'admin',    senha: 'duanxdzin',   perfil: 'admin',       nome: 'Duam',          ativo: true },
-    { usuario: 'mikael',   senha: 'mika123',     perfil: 'operacional', nome: 'Mikael',        ativo: true },
-    { usuario: 'anderson', senha: 'edr123',      perfil: 'mestre',      nome: 'Anderson',      ativo: true },
-    { usuario: 'visitante',senha: 'edr2024',     perfil: 'visitante',   nome: 'Visitante',     ativo: true },
-  ];
-  // Limpar arrays de dados para evitar resquícios do demo
   obras = []; obrasArquivadas = []; notas = []; lancamentos = []; distribuicoes = [];
-  // Cancelar timer pendente do banner demo
   if (typeof _demoBannerTimer !== 'undefined' && _demoBannerTimer) {
     clearTimeout(_demoBannerTimer);
     _demoBannerTimer = null;
   }
-  // Remover banner e badge de demo se existirem
   const demoBanner = document.getElementById('demo-banner');
   if (demoBanner) demoBanner.remove();
   const demoBadge = document.getElementById('demo-badge');
   if (demoBadge) demoBadge.classList.add('hidden');
-  // Restaurar padding do main-content
   const mc = document.getElementById('main-content');
   if (mc) mc.style.paddingBottom = '';
   document.getElementById('app').classList.add('hidden');
@@ -85,72 +108,118 @@ function fazerLogout() {
   document.getElementById('login-pass').value = '';
   document.getElementById('login-error').textContent = '';
 }
-function verificarSessao() {
+
+// ── SESSÃO: restaurar + refresh ──────────────────────────────
+let _refreshTimer = null;
+
+async function _refreshAuthToken(refreshToken) {
   try {
-    const s = localStorage.getItem('edr_session');
-    if (!s) return false;
-    const { usuario, ts, ttl_dias } = JSON.parse(s);
-    const ttl = (ttl_dias || 30) * 24 * 60 * 60 * 1000;
-    if (Date.now() - ts > ttl) { localStorage.removeItem('edr_session'); return false; }
-    // Aceita qualquer perfil — admin 30 dias, operador 8h
-    const user = USUARIOS.find(x => x.usuario === usuario && x.ativo !== false);
-    if (!user) return false;
-    usuarioAtual = user;
+    const r = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: refreshToken })
+    });
+    if (!r.ok) return false;
+    const data = await r.json();
+    if (!data.access_token) return false;
+    _authToken = data.access_token;
+    const meta = data.user?.user_metadata || {};
+    usuarioAtual = {
+      id: data.user.id,
+      usuario: meta.usuario || usuarioAtual?.usuario || '',
+      nome: meta.nome || usuarioAtual?.nome || '',
+      perfil: meta.perfil || usuarioAtual?.perfil || 'operacional',
+      ativo: true
+    };
+    try {
+      localStorage.setItem('edr_auth', JSON.stringify({
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
+        expires_at: Date.now() + (data.expires_in * 1000),
+        user: usuarioAtual
+      }));
+    } catch(e) {}
+    _agendarRefreshToken(data.expires_in);
     return true;
   } catch(e) { return false; }
 }
-// Auto-login ao abrir o app
-window.addEventListener('DOMContentLoaded', async () => {
-  // Verificar sessão imediatamente com fallback local
-  // loadUsuarios em paralelo — se Supabase responder, atualiza USUARIOS em bg
+
+function _agendarRefreshToken(expiresInSec) {
+  if (_refreshTimer) clearTimeout(_refreshTimer);
+  // Renovar 60s antes de expirar
+  const ms = Math.max((expiresInSec - 60) * 1000, 30000);
+  _refreshTimer = setTimeout(async () => {
+    const sess = _getSessaoLocal();
+    if (sess?.refresh_token) {
+      const ok = await _refreshAuthToken(sess.refresh_token);
+      if (!ok) fazerLogout();
+    }
+  }, ms);
+}
+
+function _getSessaoLocal() {
   try {
-    if (verificarSessao()) { entrarNoApp(); loadUsuarios(); return; }
-  } catch(e) {
-    try { localStorage.removeItem('edr_session'); } catch(e2) {}
+    const s = localStorage.getItem('edr_auth');
+    return s ? JSON.parse(s) : null;
+  } catch(e) { return null; }
+}
+
+function verificarSessao() {
+  const sess = _getSessaoLocal();
+  if (!sess || !sess.access_token) return false;
+  // Token expirado? Tentar refresh em background, mas entrar com dados locais
+  _authToken = sess.access_token;
+  usuarioAtual = sess.user;
+  if (sess.expires_at && Date.now() > sess.expires_at) {
+    // Token expirado — tentar refresh em background
+    if (sess.refresh_token) {
+      _refreshAuthToken(sess.refresh_token).then(ok => {
+        if (!ok) fazerLogout();
+      });
+    }
+    // Mesmo com token expirado, entrar com dados locais (refresh vai atualizar)
+    return true;
   }
-  // Sem sessão — tentar carregar usuários do Supabase com timeout de 5s
-  // Se falhar, login ainda funciona com fallback embutido
+  // Token válido — agendar refresh
+  const restante = Math.max(Math.floor((sess.expires_at - Date.now()) / 1000), 60);
+  _agendarRefreshToken(restante);
+  return true;
+}
+
+// Auto-login ao abrir o app
+window.addEventListener('DOMContentLoaded', () => {
   try {
-    await Promise.race([
-      loadUsuarios(),
-      new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 5000))
-    ]);
-  } catch(e) { /* mantém fallback */ }
+    if (verificarSessao()) { entrarNoApp(); return; }
+  } catch(e) {
+    try { localStorage.removeItem('edr_auth'); } catch(e2) {}
+  }
 });
+
 function aplicarPerfil() {
   const isAdmin = usuarioAtual.perfil === 'admin';
   const isMestre = usuarioAtual.perfil === 'mestre';
   const isVisitante = usuarioAtual.perfil === 'visitante';
 
-  // Visitante: ativa modo demo (nenhuma escrita vai ao Supabase)
-  // Demais perfis: garante que MODO_DEMO está desligado
   if (isVisitante) MODO_DEMO = true;
   else MODO_DEMO = false;
 
-  // Resetar sidebar — mostrar tudo antes de aplicar restrições
   ['nav-dashboard','nav-obras','nav-estoque','nav-notas','nav-form','nav-creditos',
    'nav-catalogo','nav-relatorio','nav-banco','nav-setup','nav-diarias','nav-custos'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.classList.remove('hidden');
   });
-  // Resetar bottom nav
   const bnav = document.getElementById('bottom-nav');
   if (bnav) bnav.style.display = '';
-  // Resetar classe de perfil no body
   document.body.classList.remove('perfil-mestre');
-
-  // Classe no body para CSS condicional
   document.body.classList.toggle('perfil-mestre', isMestre);
 
   document.querySelectorAll('.admin-only').forEach(el => el.classList.toggle('hidden', !isAdmin));
   document.querySelectorAll('.operacional-info').forEach(el => el.classList.toggle('hidden', isAdmin));
 
-  // Operacional e Mestre não veem setup
   if (!isAdmin) {
     document.getElementById('nav-setup').classList.add('hidden');
   }
 
-  // Mestre: só vê diárias — oculta tudo mais na sidebar e vai direto pra F7
   if (isMestre) {
     ['nav-dashboard','nav-obras','nav-estoque','nav-notas','nav-form','nav-creditos','nav-catalogo','nav-relatorio','nav-banco'].forEach(id => {
       const el = document.getElementById(id);
@@ -159,10 +228,8 @@ function aplicarPerfil() {
     const bnav = document.getElementById('bottom-nav');
     if (bnav) bnav.style.display = 'none';
     setTimeout(() => setView('diarias'), 100);
-    // Garantir painel esquerdo expandido no mestre
     diarPanelRecolhido = false;
     const pl = document.getElementById('diar-panelLeft');
     if (pl) pl.classList.remove('recolhido');
   }
 }
-
