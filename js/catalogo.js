@@ -42,7 +42,7 @@ function renderCatalogo() {
         <select onchange="editarCategoriaMaterial('${m.id}',this.value,this)" style="background:var(--bg3);border:1px solid ${isAuto?'rgba(245,158,11,0.3)':'var(--borda2)'};border-radius:6px;padding:3px 6px;color:${isAuto?'#fbbf24':'var(--branco)'};font-size:10px;font-family:inherit;cursor:pointer;" title="Editar categoria">
           <option value="">— cat —</option>${catSelect}
         </select>
-        ${isAuto ? `<button onclick="confirmarAutoMaterial('${m.id}')" style="background:rgba(46,204,113,0.08);border:1px solid rgba(46,204,113,0.2);color:var(--verde-hl);border-radius:6px;padding:3px 8px;font-size:9px;font-family:'Rajdhani',sans-serif;font-weight:700;cursor:pointer;white-space:nowrap;" title="Confirmar revisão">✓ OK</button>` : ''}
+        ${isAuto ? `<button onclick="confirmarAutoMaterial('${m.id}')" style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.15);color:var(--verde-hl);border-radius:6px;padding:3px 8px;font-size:9px;font-family:'Rajdhani',sans-serif;font-weight:700;cursor:pointer;white-space:nowrap;" title="Confirmar revisão">✓ OK</button>` : ''}
         <button onclick="duplicarMaterial('${m.id}')" style="background:none;border:none;color:var(--texto3);cursor:pointer;font-size:14px;padding:4px;" title="Duplicar material">📋</button>
         <button onclick="editarMaterial('${m.id}')" style="background:none;border:none;color:var(--texto3);cursor:pointer;font-size:14px;padding:4px;" title="Editar material">✏️</button>
         <button onclick="excluirMaterial('${m.id}')" style="background:none;border:none;color:var(--texto3);cursor:pointer;font-size:14px;padding:4px;" title="Excluir">🗑</button>
@@ -62,7 +62,7 @@ function cadastroRapidoMaterial(nomeDigitado, origem) {
     modal.id = 'modal-cadastro-rapido';
     modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.75);backdrop-filter:blur(6px);';
     modal.innerHTML = `
-      <div style="background:var(--bg2);border:1px solid rgba(46,204,113,0.3);border-radius:16px;padding:24px;width:min(420px,94vw);box-shadow:0 20px 60px rgba(0,0,0,.6);">
+      <div style="background:var(--bg2);border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:24px;width:min(420px,94vw);box-shadow:0 20px 60px rgba(0,0,0,.6);">
         <div style="font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;color:var(--verde-hl);margin-bottom:4px;">+ CADASTRAR NOVO MATERIAL</div>
         <div style="font-size:11px;color:var(--texto3);margin-bottom:16px;">Item não encontrado no catálogo. Confirme que não é um item já cadastrado e preencha abaixo.</div>
         <div id="cr-similares" style="display:none;margin-bottom:12px;border:1px solid rgba(251,191,36,0.3);border-radius:8px;padding:10px 12px;background:rgba(251,191,36,0.06);">
@@ -73,7 +73,7 @@ function cadastroRapidoMaterial(nomeDigitado, origem) {
         <div style="margin-bottom:12px;">
           <label style="font-size:10px;letter-spacing:1px;color:var(--texto3);font-family:'Rajdhani',sans-serif;">NOME DO MATERIAL *</label>
           <input id="cr-nome" type="text" autocomplete="off"
-            style="width:100%;box-sizing:border-box;background:var(--bg3);border:1px solid var(--borda2);border-radius:8px;padding:10px 12px;color:var(--branco);font-size:13px;font-family:'Barlow',sans-serif;margin-top:4px;"
+            style="width:100%;box-sizing:border-box;background:var(--bg3);border:1px solid var(--borda2);border-radius:8px;padding:10px 12px;color:var(--branco);font-size:13px;font-family:'Inter',sans-serif;margin-top:4px;"
             oninput="this.value=this.value.toUpperCase();crMostrarSimilares(this.value)">
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
@@ -123,8 +123,8 @@ function crMostrarSimilares(val) {
   if (!similares.length) { painel.style.display = 'none'; return; }
   lista.innerHTML = similares.map(m =>
     `<div onclick="crUsarExistente('${m.nome.replace(/'/g,"\\'")}','${m.codigo}')"
-       style="display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:6px;cursor:pointer;background:rgba(46,204,113,0.05);border:1px solid rgba(46,204,113,0.1);margin-bottom:3px;">
-      <span style="font-family:monospace;font-size:10px;color:var(--verde-hl);background:rgba(46,204,113,0.1);padding:2px 6px;border-radius:4px;">${m.codigo}</span>
+       style="display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:6px;cursor:pointer;background:rgba(34,197,94,0.04);border:1px solid rgba(34,197,94,0.08);margin-bottom:3px;">
+      <span style="font-family:monospace;font-size:10px;color:var(--verde-hl);background:rgba(34,197,94,0.08);padding:2px 6px;border-radius:4px;">${m.codigo}</span>
       <span style="font-size:12px;color:var(--branco);flex:1;">${esc(m.nome)}</span>
       <span style="font-size:10px;color:var(--verde-hl);font-weight:700;">USAR →</span>
     </div>`
@@ -492,7 +492,7 @@ function renderReconciliacao() {
       <div class="admin-only"><span style="font-size:11px;color:var(--texto3);">Valor total:</span> <span style="font-weight:700;color:var(--branco);">${fmtR(totalValor)}</span></div>
     </div>
     <div style="margin-top:8px;display:flex;gap:8px;">
-      <button onclick="reconciliarTodosComSugestao()" style="background:rgba(46,204,113,0.08);border:1px solid rgba(46,204,113,0.25);color:var(--verde-hl);border-radius:8px;padding:6px 14px;font-size:11px;font-weight:700;font-family:'Rajdhani',sans-serif;cursor:pointer;letter-spacing:1px;">✅ VINCULAR TODOS COM SCORE ≥ 80</button>
+      <button onclick="reconciliarTodosComSugestao()" style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);color:var(--verde-hl);border-radius:8px;padding:6px 14px;font-size:11px;font-weight:700;font-family:'Rajdhani',sans-serif;cursor:pointer;letter-spacing:1px;">✅ VINCULAR TODOS COM SCORE ≥ 80</button>
     </div>`;
 
   listaEl.innerHTML = _orfaos.map((o, i) => {
@@ -515,10 +515,10 @@ function renderReconciliacao() {
           <div style="font-size:10px;color:var(--texto3);margin-top:3px;">${fontesStr} · Qtd: ${o.qtdTotal % 1 === 0 ? o.qtdTotal : o.qtdTotal.toFixed(2)} · <span class="admin-only">${fmtR(o.valorTotal)}</span></div>
         </div>
         ${sug ? `
-          <div style="flex:1;min-width:200px;background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.12);border-radius:8px;padding:8px 10px;">
+          <div style="flex:1;min-width:200px;background:rgba(34,197,94,0.04);border:1px solid rgba(34,197,94,0.1);border-radius:8px;padding:8px 10px;">
             <div style="font-size:9px;font-weight:700;letter-spacing:1px;color:var(--texto3);margin-bottom:4px;">SUGESTÃO (${sug.tipo})</div>
             <div style="display:flex;align-items:center;gap:8px;">
-              <span style="font-family:monospace;font-size:10px;color:var(--verde-hl);background:rgba(46,204,113,0.1);padding:2px 6px;border-radius:4px;">${sug.material.codigo}</span>
+              <span style="font-family:monospace;font-size:10px;color:var(--verde-hl);background:rgba(34,197,94,0.08);padding:2px 6px;border-radius:4px;">${sug.material.codigo}</span>
               <span style="font-size:12px;color:var(--branco);flex:1;">${sug.material.nome}</span>
               <span style="font-size:11px;font-weight:800;color:${scoreColor};">${sug.score}%</span>
             </div>
@@ -528,7 +528,7 @@ function renderReconciliacao() {
           </div>`}
       </div>
       <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;">
-        ${sug ? `<button onclick="reconciliarVincular(${i})" style="background:rgba(46,204,113,0.08);border:1px solid rgba(46,204,113,0.25);color:var(--verde-hl);border-radius:6px;padding:5px 12px;font-size:11px;font-weight:700;font-family:'Rajdhani',sans-serif;cursor:pointer;">✅ VINCULAR A ${sug.material.codigo}</button>` : ''}
+        ${sug ? `<button onclick="reconciliarVincular(${i})" style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);color:var(--verde-hl);border-radius:6px;padding:5px 12px;font-size:11px;font-weight:700;font-family:'Rajdhani',sans-serif;cursor:pointer;">✅ VINCULAR A ${sug.material.codigo}</button>` : ''}
         <button onclick="reconciliarBuscar(${i})" style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.25);color:#60a5fa;border-radius:6px;padding:5px 12px;font-size:11px;font-weight:700;font-family:'Rajdhani',sans-serif;cursor:pointer;">🔍 BUSCAR MANUALMENTE</button>
         <button onclick="reconciliarCadastrar(${i})" style="background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.25);color:#fbbf24;border-radius:6px;padding:5px 12px;font-size:11px;font-weight:700;font-family:'Rajdhani',sans-serif;cursor:pointer;">➕ CADASTRAR NOVO</button>
         <button onclick="reconciliarExcluir(${i})" style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);color:#f87171;border-radius:6px;padding:5px 12px;font-size:11px;font-weight:700;font-family:'Rajdhani',sans-serif;cursor:pointer;">🗑 EXCLUIR</button>
@@ -676,9 +676,9 @@ function reconciliarFiltrar(idx, busca) {
 
   resEl.innerHTML = resultados.map(m => `
     <div onclick="reconciliarVincular(${idx}, catalogoMateriais.find(x=>x.codigo==='${m.codigo}'))"
-      style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:6px;cursor:pointer;background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.1);margin-bottom:4px;transition:background 0.15s;"
-      onmouseover="this.style.background='rgba(46,204,113,0.12)'" onmouseout="this.style.background='rgba(46,204,113,0.04)'">
-      <span style="font-family:monospace;font-size:10px;color:var(--verde-hl);background:rgba(46,204,113,0.1);padding:2px 6px;border-radius:4px;">${m.codigo}</span>
+      style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:6px;cursor:pointer;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);margin-bottom:4px;transition:background 0.15s;"
+      onmouseover="this.style.background='rgba(34,197,94,0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.03)'">
+      <span style="font-family:monospace;font-size:10px;color:var(--verde-hl);background:rgba(34,197,94,0.08);padding:2px 6px;border-radius:4px;">${m.codigo}</span>
       <span style="font-size:12px;color:var(--branco);flex:1;">${esc(m.nome)}</span>
       <span style="font-size:10px;color:var(--verde-hl);font-weight:700;">VINCULAR →</span>
     </div>`).join('');

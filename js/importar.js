@@ -311,10 +311,10 @@ function renderImportPreview() {
 
   let html = `
     <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
-      <div style="font-size:11px;padding:4px 10px;border-radius:4px;background:rgba(46,204,113,0.08);color:var(--verde-hl);border:1px solid rgba(46,204,113,0.2);">
+      <div style="font-size:11px;padding:4px 10px;border-radius:4px;background:rgba(34,197,94,0.08);color:var(--verde-hl);border:1px solid rgba(34,197,94,0.15);">
         ${importItensPreview.length} itens encontrados
       </div>
-      ${matchCount > 0 ? `<div style="font-size:11px;padding:4px 10px;border-radius:4px;background:rgba(46,204,113,0.08);color:var(--verde-hl);border:1px solid rgba(46,204,113,0.2);">
+      ${matchCount > 0 ? `<div style="font-size:11px;padding:4px 10px;border-radius:4px;background:rgba(34,197,94,0.08);color:var(--verde-hl);border:1px solid rgba(34,197,94,0.15);">`}
         ✓ ${matchCount} com match no catálogo
       </div>` : ''}
       ${semMatch > 0 ? `<div style="font-size:11px;padding:4px 10px;border-radius:4px;background:rgba(245,158,11,0.1);color:#fbbf24;border:1px solid rgba(245,158,11,0.3);">
@@ -330,7 +330,7 @@ function renderImportPreview() {
     const hasMatch = item.match && item.match.score >= 60;
     const scoreColor = !item.match ? '#f87171' : item.match.score >= 80 ? 'var(--verde-hl)' : item.match.score >= 60 ? '#fbbf24' : '#f87171';
     const scoreLabel = !item.match ? 'SEM MATCH' : item.match.score >= 80 ? 'MATCH FORTE' : item.match.score >= 60 ? 'MATCH PARCIAL' : 'MATCH FRACO';
-    const borderColor = hasMatch ? 'rgba(46,204,113,0.2)' : 'rgba(245,158,11,0.3)';
+    const borderColor = hasMatch ? 'rgba(34,197,94,0.15)' : 'rgba(245,158,11,0.3)';
 
     // Input com busca no catálogo
     const selectCatalogo = `
@@ -353,7 +353,7 @@ function renderImportPreview() {
           <div style="font-size:13px;color:var(--texto2);font-family:'JetBrains Mono',monospace;">${item.descOriginal}</div>
         </div>
         <div style="display:flex;align-items:center;gap:6px;">
-          <span style="font-size:9px;padding:2px 7px;border-radius:3px;background:${hasMatch ? 'rgba(46,204,113,0.08)' : 'rgba(245,158,11,0.1)'};color:${scoreColor};border:1px solid;font-weight:700;">${scoreLabel}${item.match ? ' '+item.match.score+'%' : ''}</span>
+          <span style="font-size:9px;padding:2px 7px;border-radius:3px;background:${hasMatch ? 'rgba(34,197,94,0.08)' : 'rgba(245,158,11,0.1)'};color:${scoreColor};border:1px solid;font-weight:700;">${scoreLabel}${item.match ? ' '+item.match.score+'%' : ''}</span>
           <button onclick="importRemoverItem(${i})" style="background:none;border:none;color:var(--texto3);cursor:pointer;font-size:14px;" title="Remover">✕</button>
         </div>
       </div>
@@ -387,7 +387,7 @@ function renderImportPreview() {
         <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
           <span style="font-size:10px;color:#fbbf24;">❓ Classificar:</span>
           <button onclick="importConsultarCredito(${i})" style="font-size:9px;padding:2px 8px;border-radius:3px;background:rgba(139,92,246,0.1);color:#a78bfa;border:1px solid rgba(139,92,246,0.3);cursor:pointer;font-weight:700;">🔍 CONSULTAR</button>
-          <button onclick="importClassificar(${i},true)" style="font-size:9px;padding:2px 8px;border-radius:3px;background:rgba(46,204,113,0.08);color:var(--verde-hl);border:1px solid rgba(46,204,113,0.2);cursor:pointer;font-weight:700;">✓ CRÉDITO</button>
+          <button onclick="importClassificar(${i},true)" style="font-size:9px;padding:2px 8px;border-radius:3px;background:rgba(34,197,94,0.08);color:var(--verde-hl);border:1px solid rgba(34,197,94,0.15);cursor:pointer;font-weight:700;">✓ CRÉDITO</button>
           <button onclick="importClassificar(${i},false)" style="font-size:9px;padding:2px 8px;border-radius:3px;background:rgba(239,68,68,0.08);color:#f87171;border:1px solid rgba(239,68,68,0.2);cursor:pointer;font-weight:700;">✗ SEM CRÉDITO</button>
         </div>
         <div id="import-consulta-${i}" style="display:none;margin-top:6px;padding:8px 10px;border-radius:6px;font-size:10px;font-weight:700;"></div>
@@ -479,9 +479,9 @@ function importConsultarCredito(idx) {
     }
   }
   if (resultado) {
-    el.style.background = resultado.credito ? 'rgba(46,204,113,0.08)' : 'rgba(239,68,68,0.08)';
+    el.style.background = resultado.credito ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)';
     el.style.color = resultado.credito ? 'var(--verde-hl)' : '#f87171';
-    el.style.border = resultado.credito ? '1px solid rgba(46,204,113,0.2)' : '1px solid rgba(239,68,68,0.2)';
+    el.style.border = resultado.credito ? '1px solid rgba(34,197,94,0.15)' : '1px solid rgba(239,68,68,0.2)';
     el.innerHTML = `${resultado.credito ? '✅' : '❌'} ${resultado.motivo}<br><span style="font-size:9px;color:var(--texto3);">Categoria: ${resultado.cat}</span>
       <button onclick="importClassificar(${idx},${resultado.credito})" style="margin-left:8px;font-size:9px;padding:2px 8px;border-radius:3px;background:rgba(139,92,246,0.1);color:#a78bfa;border:1px solid rgba(139,92,246,0.3);cursor:pointer;font-weight:700;">APLICAR</button>`;
   } else {
@@ -571,8 +571,8 @@ function importBuscarCatInput(idx) {
   }
 
   list.innerHTML = matches.map(m =>
-    `<div onmousedown="importSelecionarCatPorInput(${idx},'${m.codigo}')" style="padding:8px 10px;cursor:pointer;border-bottom:1px solid var(--borda);display:flex;gap:8px;align-items:center;transition:background 0.1s;" onmouseover="this.style.background='rgba(46,204,113,0.08)'" onmouseout="this.style.background='transparent'">
-      <span style="font-family:monospace;font-size:10px;color:var(--verde-hl);background:rgba(46,204,113,0.1);padding:2px 6px;border-radius:4px;white-space:nowrap;">${m.codigo}</span>
+    `<div onmousedown="importSelecionarCatPorInput(${idx},'${m.codigo}')" style="padding:8px 10px;cursor:pointer;border-bottom:1px solid var(--borda);display:flex;gap:8px;align-items:center;transition:background 0.1s;" onmouseover="this.style.background='rgba(34,197,94,0.08)'" onmouseout="this.style.background='transparent'">
+      <span style="font-family:monospace;font-size:10px;color:var(--verde-hl);background:rgba(34,197,94,0.08);padding:2px 6px;border-radius:4px;white-space:nowrap;">${m.codigo}</span>
       <span style="font-size:11px;color:var(--branco);flex:1;">${m.nome}</span>
       <span style="font-size:10px;color:var(--texto3);">${m.unidade || 'UN'}</span>
     </div>`

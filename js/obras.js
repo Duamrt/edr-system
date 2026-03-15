@@ -49,8 +49,8 @@ function onChangeObraFiltro() {
       btn.style.display = 'block';
       btn.textContent = mostandoArquivadas ? '🏗 REATIVAR' : '✅ CONCLUÍDA';
       btn.style.color = mostandoArquivadas ? '#4ade80' : '#fbbf24';
-      btn.style.borderColor = mostandoArquivadas ? 'rgba(46,204,113,0.3)' : 'rgba(245,158,11,0.2)';
-      btn.style.background = mostandoArquivadas ? 'rgba(46,204,113,0.08)' : 'rgba(245,158,11,0.08)';
+      btn.style.borderColor = mostandoArquivadas ? 'rgba(34,197,94,0.2)' : 'rgba(245,158,11,0.2)';
+      btn.style.background = mostandoArquivadas ? 'rgba(34,197,94,0.08)' : 'rgba(245,158,11,0.08)';
     } else {
       btn.style.display = 'none';
     }
@@ -143,7 +143,7 @@ function renderObrasCards() {
 
     return `<div class="card" style="padding:16px;cursor:pointer;transition:all .2s;border:1px solid var(--borda);"
                  onclick="obrasAbrirDetalhe('${o.id}')"
-                 onmouseover="this.style.borderColor='rgba(46,204,113,0.4)'"
+                 onmouseover="this.style.borderColor='rgba(34,197,94,0.3)'"
                  onmouseout="this.style.borderColor='var(--borda)'">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
         <div>
@@ -160,17 +160,17 @@ function renderObrasCards() {
         ${topEtapas.map(([k, v]) => {
           const pct = total > 0 ? (v / total * 100).toFixed(0) : 0;
           const lbl = ETAPAS.find(e => e.key === k)?.lb || '📦 Outros';
-          return `<span style="font-size:9px;background:rgba(46,204,113,0.08);color:var(--verde3);border:1px solid rgba(46,204,113,0.15);border-radius:4px;padding:2px 6px;">${lbl.split(' ').slice(0, 2).join(' ')} ${pct}%</span>`;
+          return `<span style="font-size:9px;background:rgba(34,197,94,0.08);color:var(--verde3);border:1px solid rgba(34,197,94,0.1);border-radius:4px;padding:2px 6px;">${lbl.split(' ').slice(0, 2).join(' ')} ${pct}%</span>`;
         }).join('')}
       </div>` : ''}
-      <div style="display:flex;justify-content:space-between;align-items:center;padding-top:8px;border-top:1px solid rgba(46,204,113,0.06);">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding-top:8px;border-top:1px solid rgba(255,255,255,0.04);">
         <span style="font-size:10px;color:var(--texto3);">📅 Último: ${ultimaStr}</span>
         <div style="display:flex;align-items:center;gap:8px;">
           ${usuarioAtual?.perfil === 'admin' ? `<button onclick="event.stopPropagation();abrirModalObra('${o.id}')" style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);color:#60a5fa;border-radius:6px;padding:3px 10px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;cursor:pointer;">✏ EDITAR</button>` : ''}
           ${usuarioAtual?.perfil === 'admin' ? (mostandoArquivadas
             ? `${o.slug_entrega ? `<button onclick="event.stopPropagation();abrirEntregaDigital('${o.slug_entrega}')" style="background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.3);color:#c9a84c;border-radius:6px;padding:3px 10px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;cursor:pointer;">📦 ENTREGA</button>` : ''}
                <button onclick="event.stopPropagation();reimprimirTermo('${o.id}')" style="background:rgba(139,92,246,0.08);border:1px solid rgba(139,92,246,0.2);color:#a78bfa;border-radius:6px;padding:3px 10px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;cursor:pointer;">📄 TERMO</button>
-               <button onclick="event.stopPropagation();arquivarObraCard('${o.id}',false)" style="background:rgba(46,204,113,0.08);border:1px solid rgba(46,204,113,0.2);color:#4ade80;border-radius:6px;padding:3px 10px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;cursor:pointer;">🏗 REATIVAR</button>`
+               <button onclick="event.stopPropagation();arquivarObraCard('${o.id}',false)" style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.15);color:#4ade80;border-radius:6px;padding:3px 10px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;cursor:pointer;">🏗 REATIVAR</button>`
             : `<button onclick="event.stopPropagation();arquivarObraCard('${o.id}',true)" style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);color:#fbbf24;border-radius:6px;padding:3px 10px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;cursor:pointer;">✅ CONCLUIR</button>`
           ) : ''}
           <span style="font-size:10px;color:var(--verde-hl);font-weight:600;">DETALHES →</span>
@@ -379,7 +379,7 @@ function renderObrasMateriais() {
       const rows = m.registros
         .sort((a,b) => (b.data||'').localeCompare(a.data||''))
         .map(d => {
-          const obra = obraId ? '' : `<span style="font-size:10px;color:var(--verde3);background:rgba(46,204,113,0.08);border:1px solid rgba(46,204,113,0.15);border-radius:4px;padding:1px 6px;">${d.obra_nome||'—'}</span>`;
+          const obra = obraId ? '' : `<span style="font-size:10px;color:var(--verde3);background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.1);border-radius:4px;padding:1px 6px;">${d.obra_nome||'—'}</span>`;
           const etiqueta = d.item_idx === -1
             ? `<span style="font-size:9px;color:#fbbf24;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.25);border-radius:4px;padding:1px 5px;">SAÍDA MANUAL</span>`
             : `<span style="font-size:9px;color:#60a5fa;background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);border-radius:4px;padding:1px 5px;">DISTRIBUÇÃO</span>`;
@@ -397,7 +397,7 @@ function renderObrasMateriais() {
         }).join('');
 
       return `<div style="background:var(--bg2);border:1px solid var(--borda);border-radius:10px;margin-bottom:10px;overflow:hidden;">
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:rgba(46,204,113,0.04);">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:rgba(255,255,255,0.03);">
           <span style="font-weight:700;color:var(--branco);font-size:13px;">${m.desc}</span>
           <div style="display:flex;gap:12px;align-items:center;">
             <span style="font-size:11px;color:var(--texto3)">${m.registros.length} mov.</span>
@@ -491,7 +491,7 @@ function filtrarLanc() {
           <button class="lanc-del admin-only" onclick="excluirLanc('${l.id}')">🗑</button>
         </div>
       </div>
-      ${l.etapa ? `<div style="margin-bottom:3px;"><span style="font-size:9px;font-weight:700;background:rgba(46,204,113,0.08);color:var(--verde3);border:1px solid rgba(46,204,113,0.2);border-radius:4px;padding:1px 6px;font-family:'JetBrains Mono',monospace;">${etapaLabel(l.etapa)}</span></div>` : ''}
+      ${l.etapa ? `<div style="margin-bottom:3px;"><span style="font-size:9px;font-weight:700;background:rgba(34,197,94,0.08);color:var(--verde3);border:1px solid rgba(34,197,94,0.15);border-radius:4px;padding:1px 6px;font-family:'JetBrains Mono',monospace;">${etapaLabel(l.etapa)}</span></div>` : ''}
       <div class="lanc-meta">${obraMap[l.obra_id]||'—'} · ${(()=>{ const q=Number(l.qtd||1); const oNome=(obraMap[l.obra_id]||'').toUpperCase(); if(oNome.includes('ESCRIT')||q<=0||String(l.qtd).includes('e')||q!==Math.round(q*100)/100) return l.data||''; return q+' un · '+(l.data||''); })()}${l.criado_por ? `<span class="admin-only" style="margin-left:6px;font-size:9px;color:var(--texto4);"> · 👤 ${l.criado_por}</span>` : ''}</div>
     </div>`).join('');
   aplicarPerfil();

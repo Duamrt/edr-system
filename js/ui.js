@@ -103,11 +103,11 @@ function setDestinoEntrada(tipo) {
   const wrapObra = document.getElementById('entrada-obra-wrap');
   if (tipo === 'estoque') {
     btnEst.style.background = 'rgba(139,92,246,0.15)'; btnEst.style.color = '#a78bfa'; btnEst.style.borderColor = 'rgba(139,92,246,0.4)';
-    btnObra.style.background = 'transparent'; btnObra.style.color = 'var(--texto3)'; btnObra.style.borderColor = 'rgba(46,204,113,0.2)';
+    btnObra.style.background = 'transparent'; btnObra.style.color = 'var(--texto3)'; btnObra.style.borderColor = 'rgba(255,255,255,0.1)';
     infoEst.classList.remove('hidden'); wrapObra.classList.add('hidden');
     btnEst.dataset.ativo = '1';
   } else {
-    btnObra.style.background = 'rgba(46,204,113,0.12)'; btnObra.style.color = 'var(--verde-hl)'; btnObra.style.borderColor = 'rgba(46,204,113,0.4)';
+    btnObra.style.background = 'rgba(34,197,94,0.1)'; btnObra.style.color = 'var(--verde-hl)'; btnObra.style.borderColor = 'rgba(34,197,94,0.3)';
     btnEst.style.background = 'transparent'; btnEst.style.color = 'var(--texto3)'; btnEst.style.borderColor = 'rgba(139,92,246,0.2)';
     infoEst.classList.add('hidden'); wrapObra.classList.remove('hidden');
     btnEst.dataset.ativo = '';
@@ -138,7 +138,7 @@ function onEntradaDescInput() {
   matches.push({ desc: txtEst, unidade: 'UN', codigo: '', cadastroRapido: true });
   const top = matches.slice(0,15);
   list.innerHTML = top.map((m,i) => m.cadastroRapido
-    ? `<div class="autocomplete-item" data-ed-idx="${i}" style="border-top:1px solid rgba(46,204,113,0.2);margin-top:2px;">
+    ? `<div class="autocomplete-item" data-ed-idx="${i}" style="border-top:1px solid rgba(255,255,255,0.1);margin-top:2px;">
         <span style="color:var(--verde-hl);font-weight:700;font-size:12px;">+ CADASTRAR "${m.desc}" NO CATÁLOGO</span>
         <span style="font-size:10px;color:var(--texto3);">e usar aqui</span>
        </div>`

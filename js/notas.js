@@ -160,7 +160,7 @@ function showAutocomplete(val) {
   matches.push({ label: txt, credito: null, cat: '', unidade: '', anterior: false, codigo: null, cadastroRapido: true });
   cachedItens = matches;
   list.innerHTML = matches.map((m, i) => m.cadastroRapido
-    ? `<div class="autocomplete-item" data-ac-idx="${i}" style="border-top:1px solid rgba(46,204,113,0.2);margin-top:2px;">
+    ? `<div class="autocomplete-item" data-ac-idx="${i}" style="border-top:1px solid rgba(255,255,255,0.1);margin-top:2px;">
         <span style="color:var(--verde-hl);font-weight:700;font-size:12px;">+ CADASTRAR "${m.label}" NO CATÁLOGO</span>
         <span style="font-size:10px;color:var(--texto3);">e usar aqui</span>
        </div>`

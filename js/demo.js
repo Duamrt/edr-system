@@ -132,7 +132,7 @@ function entrarModoDemo() {
       const b = document.createElement('div');
       b.id = 'demo-banner';
       b.innerHTML = '&#127916; <strong>MODO DEMO</strong> &mdash; dados fictícios &nbsp;&middot;&nbsp; 4 obras residenciais &nbsp;&middot;&nbsp; nenhuma alteração é salva';
-      b.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#0d2b16;color:#7bed9f;text-align:center;padding:7px 12px;font-size:11px;letter-spacing:1px;z-index:201;border-top:1px solid rgba(46,204,113,0.4);font-family:inherit;';
+      b.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#0d2b16;color:#7bed9f;text-align:center;padding:7px 12px;font-size:11px;letter-spacing:1px;z-index:201;border-top:1px solid rgba(34,197,94,0.3);font-family:inherit;';
       document.body.appendChild(b);
       // Empurra conteúdo pra não ficar atrás do banner
       const mc = document.getElementById('main-content');

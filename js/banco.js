@@ -5,15 +5,15 @@ function renderUsuarios() {
   el.innerHTML = USUARIOS.map(u => {
     const isAtivo = u.ativo !== false;
     const isSelf = u.usuario === usuarioAtual?.usuario;
-    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(46,204,113,0.07);gap:10px;${!isAtivo?'opacity:0.45':''}">
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.04);gap:10px;${!isAtivo?'opacity:0.45':''}">
       <div style="flex:1;">
         <div style="font-weight:700;font-size:14px;color:var(--branco);">${esc(u.nome)} ${isSelf?'<span style="font-size:10px;color:var(--verde3);">(você)</span>':''}</div>
         <div style="font-size:11px;color:var(--texto3);margin-top:2px;font-family:'JetBrains Mono',monospace;">@${esc(u.usuario)}</div>
       </div>
-      <span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;${u.perfil==='admin'?'background:rgba(46,204,113,0.1);color:var(--verde-hl);border:1px solid rgba(46,204,113,0.25);':'background:rgba(59,130,246,0.1);color:#60a5fa;border:1px solid rgba(59,130,246,0.2);'}">${u.perfil==='admin'?'👑 ADMIN':'👷 OPERACIONAL'}</span>
+      <span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;${u.perfil==='admin'?'background:rgba(34,197,94,0.08);color:var(--verde-hl);border:1px solid rgba(34,197,94,0.2);':'background:rgba(59,130,246,0.1);color:#60a5fa;border:1px solid rgba(59,130,246,0.2);'}">${u.perfil==='admin'?'👑 ADMIN':'👷 OPERACIONAL'}</span>
       <div style="display:flex;gap:6px;">
-        <button onclick="abrirModalEditarUsuario('${u.id||u.usuario}')" style="background:rgba(46,204,113,0.07);border:1px solid rgba(46,204,113,0.15);color:var(--verde3);border-radius:7px;padding:5px 10px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;cursor:pointer;letter-spacing:1px;" title="Editar">✏ EDITAR</button>
-        ${!isSelf ? `<button onclick="toggleAtivoUsuario('${u.id||u.usuario}',${!isAtivo})" style="background:${isAtivo?'rgba(239,68,68,0.07)':'rgba(46,204,113,0.07)'};border:1px solid ${isAtivo?'rgba(239,68,68,0.2)':'rgba(46,204,113,0.2)'};color:${isAtivo?'#f87171':'var(--verde3)'};border-radius:7px;padding:5px 10px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;cursor:pointer;letter-spacing:1px;">${isAtivo?'🚫 DESATIVAR':'✅ ATIVAR'}</button>` : ''}
+        <button onclick="abrirModalEditarUsuario('${u.id||u.usuario}')" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:var(--verde3);border-radius:7px;padding:5px 10px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;cursor:pointer;letter-spacing:1px;" title="Editar">✏ EDITAR</button>
+        ${!isSelf ? `<button onclick="toggleAtivoUsuario('${u.id||u.usuario}',${!isAtivo})" style="background:${isAtivo?'rgba(239,68,68,0.07)':'rgba(34,197,94,0.08)'};border:1px solid ${isAtivo?'rgba(239,68,68,0.2)':'rgba(34,197,94,0.15)'};color:${isAtivo?'#f87171':'var(--verde3)'};border-radius:7px;padding:5px 10px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;cursor:pointer;letter-spacing:1px;">${isAtivo?'🚫 DESATIVAR':'✅ ATIVAR'}</button>` : ''}
       </div>
     </div>`;
   }).join('');
@@ -97,7 +97,7 @@ function renderBanco() {
       obrasEl.innerHTML = obras.map(o => {
         const ls = lancamentos.filter(l => l.obra_id === o.id);
         const total = ls.reduce((s,l) => s + Number(l.total||0), 0);
-        const status = o.status === 'concluida' ? '<span style="font-size:9px;padding:2px 8px;border-radius:10px;background:rgba(46,204,113,0.1);color:var(--verde-hl);font-weight:700;margin-left:8px;">CONCLUÍDA</span>' : '';
+        const status = o.status === 'concluida' ? '<span style="font-size:9px;padding:2px 8px;border-radius:10px;background:rgba(34,197,94,0.08);color:var(--verde-hl);font-weight:700;margin-left:8px;">CONCLUÍDA</span>' : '';
         return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--borda2);">
           <div>
             <div style="font-weight:700;font-size:13px;">${o.nome}${status}</div>

@@ -113,7 +113,7 @@ function diarAbrirCalendarioFunc(nome) {
         return `<span style="font-size:10px;color:var(--texto2)">${t} <strong style="color:var(--branco)">${p.obra}</strong></span>`;
       }).join(' · ');
       const val = Number(reg.valor||0);
-      return `<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-bottom:1px solid rgba(255,255,255,0.04);background:rgba(46,204,113,0.04);">
+      return `<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-bottom:1px solid rgba(255,255,255,0.04);background:rgba(255,255,255,0.03);">
         <div style="width:8px;height:8px;border-radius:50%;background:#2ecc71;flex-shrink:0;box-shadow:0 0 6px #2ecc7188"></div>
         <span style="font-size:11px;font-weight:600;color:var(--branco);width:110px">${df}</span>
         <div style="flex:1;font-size:10px">${obras}</div>
@@ -254,11 +254,11 @@ function diarRenderListaEquipe() {
     const apelidos = Array.isArray(f.apelidos) ? f.apelidos.filter(Boolean).join(', ') : '';
     const opaco = f.ativo ? '' : 'opacity:0.4;';
     const statusTag = f.ativo
-      ? '<span style="font-size:9px;background:rgba(46,204,113,0.15);color:var(--verde-hl);padding:2px 6px;border-radius:4px;font-weight:700">ATIVO</span>'
+      ? '<span style="font-size:9px;background:rgba(34,197,94,0.1);color:var(--verde-hl);padding:2px 6px;border-radius:4px;font-weight:700">ATIVO</span>'
       : '<span style="font-size:9px;background:rgba(239,68,68,0.15);color:#f87171;padding:2px 6px;border-radius:4px;font-weight:700">INATIVO</span>';
     const btnToggle = f.ativo
       ? `<button onclick="diarToggleFuncionario('${f.id}',false)" title="Desativar" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);color:#f87171;border-radius:6px;padding:3px 8px;font-size:10px;cursor:pointer;">desativar</button>`
-      : `<button onclick="diarToggleFuncionario('${f.id}',true)" title="Reativar" style="background:rgba(46,204,113,0.1);border:1px solid rgba(46,204,113,0.2);color:var(--verde-hl);border-radius:6px;padding:3px 8px;font-size:10px;cursor:pointer;">reativar</button>`;
+      : `<button onclick="diarToggleFuncionario('${f.id}',true)" title="Reativar" style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.15);color:var(--verde-hl);border-radius:6px;padding:3px 8px;font-size:10px;cursor:pointer;">reativar</button>`;
     const btnEditar = `<button onclick="diarEditarFuncionario('${f.id}')" title="Editar" style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.2);color:#60a5fa;border-radius:6px;padding:3px 8px;font-size:10px;cursor:pointer;">editar</button>`;
     const btnExcluir = !f.ativo ? `<button onclick="diarExcluirFuncionario('${f.id}','${esc(f.nome)}')" title="Excluir" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);color:#f87171;border-radius:6px;padding:3px 8px;font-size:10px;cursor:pointer;">excluir</button>` : '';
     return `<div style="${opaco}display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid var(--borda);gap:8px;flex-wrap:wrap">
@@ -518,7 +518,7 @@ function diarAbrirModalNovaQuinzena() {
   const hoje = hojeISO();
   document.body.insertAdjacentHTML('beforeend', `
   <div id="diar-modalNQ" style="position:fixed;inset:0;background:rgba(0,0,0,0.82);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px">
-    <div style="background:var(--bg2);border:1px solid rgba(46,204,113,0.3);border-radius:14px;padding:22px;width:min(400px,94vw)">
+    <div style="background:var(--bg2);border:1px solid rgba(255,255,255,0.1);border-radius:14px;padding:22px;width:min(400px,94vw)">
       <div style="font-family:'Rajdhani',sans-serif;font-weight:800;font-size:14px;letter-spacing:2px;color:var(--verde-hl);margin-bottom:16px">+ NOVA QUINZENA</div>
       <div style="display:flex;flex-direction:column;gap:12px">
         <div>
@@ -1018,7 +1018,7 @@ function diarRenderFolha() {
       <tbody>${rows}${trTotal}</tbody>
     </table>
     ${!isMestre && obraLinhas ? `<div style="margin-top:16px;background:var(--bg2);border:1px solid var(--borda);border-radius:10px;overflow:hidden">
-      <div style="padding:10px 14px;background:rgba(46,204,113,0.06);font-weight:700;font-size:12px;letter-spacing:.08em;color:var(--verde-hl)">🏗 CUSTO MÃO DE OBRA POR OBRA</div>
+      <div style="padding:10px 14px;background:rgba(255,255,255,0.04);font-weight:700;font-size:12px;letter-spacing:.08em;color:var(--verde-hl)">🏗 CUSTO MÃO DE OBRA POR OBRA</div>
       <table style="width:100%;border-collapse:collapse"><tbody>${obraLinhas}</tbody>
         <tfoot><tr style="border-top:1px solid var(--borda)">
           <td style="padding:9px 10px;font-weight:700">TOTAL</td>
@@ -1106,7 +1106,7 @@ function diarRenderExtras() {
             <button onclick="diarExcluirExtra('${e.id}')" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);color:#f87171;border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;">✕</button>
           </div>
         </div>`).join('')}
-      <div style="padding:9px 12px;display:flex;justify-content:space-between;align-items:center;background:rgba(46,204,113,0.04);">
+      <div style="padding:9px 12px;display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.03);">
         <span style="font-size:11px;font-weight:700;color:var(--texto2);">TOTAL EXTRAS</span>
         <span style="font-weight:800;color:var(--verde-hl);font-family:'JetBrains Mono',monospace;">R$ ${totalExtras.toLocaleString('pt-BR',{minimumFractionDigits:2})}</span>
       </div>

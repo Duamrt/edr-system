@@ -33,9 +33,9 @@ async function loadAdicionais() {
 
 const STATUS_ADD = {
   pendente:    { lb: '⏳ PENDENTE',     cor: '#fbbf24', bg: 'rgba(245,158,11,0.1)', bd: 'rgba(245,158,11,0.3)' },
-  aprovado:    { lb: '✅ APROVADO',     cor: 'var(--verde-hl)', bg: 'rgba(46,204,113,0.08)', bd: 'rgba(46,204,113,0.2)' },
+  aprovado:    { lb: '✅ APROVADO',     cor: 'var(--verde-hl)', bg: 'rgba(34,197,94,0.08)', bd: 'rgba(34,197,94,0.15)' },
   execucao:    { lb: '🔨 EM EXECUÇÃO', cor: '#60a5fa', bg: 'rgba(59,130,246,0.08)', bd: 'rgba(59,130,246,0.2)' },
-  concluido:   { lb: '✔ CONCLUÍDO',    cor: 'var(--verde-hl)', bg: 'rgba(46,204,113,0.08)', bd: 'rgba(46,204,113,0.25)' },
+  concluido:   { lb: '✔ CONCLUÍDO',    cor: 'var(--verde-hl)', bg: 'rgba(34,197,94,0.08)', bd: 'rgba(34,197,94,0.2)' },
 };
 
 function renderAdicionais() {
@@ -90,7 +90,7 @@ function renderAdicionais() {
         <select onchange="mudarStatusAdicional('${a.id}',this.value)" style="padding:4px 8px;font-size:10px;background:var(--bg3);border:1px solid var(--borda2);border-radius:5px;color:var(--branco);font-family:inherit;cursor:pointer;">
           ${Object.entries(STATUS_ADD).map(([k, v]) => `<option value="${k}" ${a.status === k ? 'selected' : ''}>${v.lb}</option>`).join('')}
         </select>
-        <button onclick="abrirPgtoAdicional('${a.id}')" style="padding:4px 10px;font-size:10px;background:rgba(46,204,113,0.08);border:1px solid rgba(46,204,113,0.2);border-radius:5px;color:var(--verde-hl);font-weight:700;cursor:pointer;font-family:inherit;">💰 PAGAMENTO</button>
+        <button onclick="abrirPgtoAdicional('${a.id}')" style="padding:4px 10px;font-size:10px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.15);border-radius:5px;color:var(--verde-hl);font-weight:700;cursor:pointer;font-family:inherit;">💰 PAGAMENTO</button>
         <button onclick="gerarTermoAdicional('${a.id}')" style="padding:4px 10px;font-size:10px;background:rgba(139,92,246,0.08);border:1px solid rgba(139,92,246,0.2);border-radius:5px;color:#a78bfa;font-weight:700;cursor:pointer;font-family:inherit;">📄 TERMO</button>
         <button onclick="editarAdicional('${a.id}')" style="padding:4px 10px;font-size:10px;background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);border-radius:5px;color:#60a5fa;font-weight:700;cursor:pointer;font-family:inherit;">✏ EDITAR</button>
         <button onclick="excluirAdicional('${a.id}')" style="padding:4px 10px;font-size:10px;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);border-radius:5px;color:#f87171;cursor:pointer;font-family:inherit;">🗑</button>

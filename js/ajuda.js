@@ -389,8 +389,8 @@ function initAjuda() {
     style.id = 'ajuda-css';
     style.textContent = `
       @keyframes ajudaSlideIn { from { transform:translateX(100%);opacity:0; } to { transform:translateX(0);opacity:1; } }
-      #ajuda-fab { position:fixed;bottom:80px;right:16px;width:44px;height:44px;border-radius:50%;border:1px solid rgba(46,204,113,0.3);background:rgba(10,16,10,0.9);color:var(--verde-hl);font-size:18px;font-weight:800;cursor:pointer;z-index:900;display:flex;align-items:center;justify-content:center;font-family:'Rajdhani',sans-serif;backdrop-filter:blur(8px);transition:.2s;box-shadow:0 2px 12px rgba(0,0,0,0.4); }
-      #ajuda-fab:hover { background:rgba(46,204,113,0.15);border-color:rgba(46,204,113,0.5);transform:scale(1.1); }
+      #ajuda-fab { position:fixed;bottom:80px;right:16px;width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,0.1);background:rgba(10,16,10,0.9);color:var(--verde-hl);font-size:18px;font-weight:800;cursor:pointer;z-index:900;display:flex;align-items:center;justify-content:center;font-family:'Rajdhani',sans-serif;backdrop-filter:blur(8px);transition:.2s;box-shadow:0 2px 12px rgba(0,0,0,0.4); }
+      #ajuda-fab:hover { background:rgba(34,197,94,0.1);border-color:rgba(34,197,94,0.4);transform:scale(1.1); }
       @media(min-width:769px) { #ajuda-fab { bottom:20px;right:20px; } }
       @media(max-width:768px) { #ajuda-painel { width:100vw !important;max-width:100vw !important; } }
     `;

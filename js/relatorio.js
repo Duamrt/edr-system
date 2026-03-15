@@ -244,8 +244,8 @@ function buildPainelFinanceiro() {
 
   // ── TOGGLE OBRAS CONCLUÍDAS ──
   const toggleCor = mostrarConcluidas ? '#2ecc71' : 'var(--texto4)';
-  const toggleBg = mostrarConcluidas ? 'rgba(46,204,113,0.15)' : 'transparent';
-  const toggleBorda = mostrarConcluidas ? '1.5px solid rgba(46,204,113,0.4)' : '1.5px solid var(--borda2)';
+  const toggleBg = mostrarConcluidas ? 'rgba(34,197,94,0.1)' : 'transparent';
+  const toggleBorda = mostrarConcluidas ? '1.5px solid rgba(34,197,94,0.3)' : '1.5px solid var(--borda2)';
   let html = `<div style="display:flex;justify-content:flex-end;margin-bottom:12px;">
     <span onclick="toggleObrasConcluidas()" style="cursor:pointer;padding:6px 14px;border-radius:20px;font-size:11px;font-weight:600;color:${toggleCor};background:${toggleBg};border:${toggleBorda};transition:all .2s;user-select:none;">
       ${mostrarConcluidas ? '✅ Mostrando concluídas' : '📋 Só obras ativas'}
@@ -359,7 +359,7 @@ function buildGraficoMensal() {
     const hEnt = Math.max((d.entradas / maxVal * 100), d.entradas > 0 ? 4 : 0);
     const hSai = Math.max((d.saidas / maxVal * 100), d.saidas > 0 ? 4 : 0);
     const isAtual = d.ym === relMesAtual;
-    const bordaAtual = isAtual ? 'border:2px solid rgba(46,204,113,0.5);border-radius:10px;padding:4px;' : '';
+    const bordaAtual = isAtual ? 'border:2px solid rgba(34,197,94,0.4);border-radius:10px;padding:4px;' : '';
     return `<div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;min-width:55px;${bordaAtual}">
       <div style="display:flex;gap:3px;align-items:flex-end;height:90px;width:100%;">
         <div style="flex:1;display:flex;align-items:flex-end;height:100%;">

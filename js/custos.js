@@ -61,7 +61,7 @@ function renderCustosCards() {
 
     return `<div class="card" style="padding:16px;cursor:pointer;transition:all .2s;border:1px solid var(--borda);"
                  onclick="custosAbrirDetalhe('${o.id}')"
-                 onmouseover="this.style.borderColor='rgba(46,204,113,0.4)'"
+                 onmouseover="this.style.borderColor='rgba(34,197,94,0.3)'"
                  onmouseout="this.style.borderColor='var(--borda)'">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
         <div>
@@ -74,7 +74,7 @@ function renderCustosCards() {
         </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-bottom:10px;">
-        <div style="text-align:center;padding:6px;background:rgba(46,204,113,0.04);border-radius:8px;">
+        <div style="text-align:center;padding:6px;background:rgba(255,255,255,0.03);border-radius:8px;">
           <div style="font-size:9px;color:var(--texto3);">📄 PLS</div>
           <div style="font-size:11px;font-weight:700;color:var(--verde-hl);">${fmt(totalPls)}</div>
         </div>
@@ -96,11 +96,11 @@ function renderCustosCards() {
         <span style="font-size:11px;font-weight:700;color:#a78bfa;">${fmt(adds.valorTotal)}</span>
       </div>` : ''}
       ${valorVenda > 0 ? `<div style="margin-bottom:8px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;padding:6px 10px;background:rgba(46,204,113,0.06);border:1px solid rgba(46,204,113,0.12);border-radius:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;padding:6px 10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:8px;">
           <span style="font-size:10px;color:var(--texto3);letter-spacing:.5px;">SALDO A RECEBER</span>
           <span style="font-size:14px;font-weight:800;color:${(valorVenda - totalRecebido) >= 0 ? 'var(--verde-hl)' : '#ef4444'};font-family:'JetBrains Mono',monospace;">${fmt(valorVenda - totalRecebido)}</span>
         </div>
-        <div style="height:6px;background:rgba(46,204,113,0.1);border-radius:3px;overflow:hidden;">
+        <div style="height:6px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;">
           <div style="width:${pctRecebido}%;height:100%;background:var(--verde3);border-radius:3px;"></div>
         </div>
         <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--texto3);margin-top:3px;">
@@ -108,7 +108,7 @@ function renderCustosCards() {
           <span style="font-weight:700;color:${corLucro};">Lucro: ${fmt(lucro)}</span>
         </div>
       </div>` : ''}
-      <div style="display:flex;justify-content:space-between;align-items:center;padding-top:8px;border-top:1px solid rgba(46,204,113,0.06);">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding-top:8px;border-top:1px solid rgba(255,255,255,0.04);">
         <span style="font-size:10px;color:var(--texto3);">${reps.length} lançamento(s)</span>
         <span style="font-size:10px;color:var(--verde-hl);font-weight:600;">VER DETALHES →</span>
       </div>
@@ -167,20 +167,20 @@ function renderCustosResumo() {
       <div class="card" style="padding:18px;grid-column:1/-1;">
         <div class="section-title" style="font-size:13px;margin-bottom:14px;">📊 RESUMO FINANCEIRO — ${obra.nome}</div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:14px;">
-          <div style="text-align:center;padding:10px;background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.1);border-radius:10px;">
+          <div style="text-align:center;padding:10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;">
             <div style="font-size:10px;color:var(--texto3);letter-spacing:1px;margin-bottom:4px;">VALOR DO IMÓVEL</div>
             <div style="font-size:18px;font-weight:700;color:var(--branco);font-family:'Rajdhani',sans-serif;">${valorVenda > 0 ? fmt(valorVenda) : 'Não informado'}</div>
           </div>
-          <div style="text-align:center;padding:10px;background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.1);border-radius:10px;">
+          <div style="text-align:center;padding:10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;">
             <div style="font-size:10px;color:var(--texto3);letter-spacing:1px;margin-bottom:4px;">TOTAL RECEBIDO</div>
             <div style="font-size:18px;font-weight:700;color:var(--verde-hl);font-family:'Rajdhani',sans-serif;">${fmt(totalRecebido)}</div>
             <div style="font-size:10px;color:var(--texto3);margin-top:2px;">📄 PLS: ${fmt(totalPls)} &nbsp;|&nbsp; 💵 Entradas: ${fmt(totalEntrada)} &nbsp;|&nbsp; 🏗 Terreno: ${fmt(totalTerreno)}</div>
           </div>
-          <div style="text-align:center;padding:10px;background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.1);border-radius:10px;">
+          <div style="text-align:center;padding:10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;">
             <div style="font-size:10px;color:var(--texto3);letter-spacing:1px;margin-bottom:4px;">SALDO A RECEBER</div>
             <div style="font-size:18px;font-weight:700;color:${corSaldo};font-family:'Rajdhani',sans-serif;">${valorVenda > 0 ? fmt(saldoReceber) : '-'}</div>
           </div>
-          <div style="text-align:center;padding:10px;background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.1);border-radius:10px;">
+          <div style="text-align:center;padding:10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;">
             <div style="font-size:10px;color:var(--texto3);letter-spacing:1px;margin-bottom:4px;">CUSTO TOTAL</div>
             <div style="font-size:18px;font-weight:700;color:#f59e0b;font-family:'Rajdhani',sans-serif;">${fmt(custoTotal)}</div>
           </div>
@@ -189,11 +189,11 @@ function renderCustosResumo() {
             <div style="font-size:18px;font-weight:700;color:#a78bfa;font-family:'Rajdhani',sans-serif;">${fmt(adds.valorTotal)}</div>
             <div style="font-size:10px;color:var(--texto3);margin-top:2px;">Recebido: ${fmt(adds.totalRecebido)} · Saldo: ${fmt(adds.saldo)}</div>
           </div>` : ''}
-          <div style="text-align:center;padding:10px;background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.1);border-radius:10px;">
+          <div style="text-align:center;padding:10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;">
             <div style="font-size:10px;color:var(--texto3);letter-spacing:1px;margin-bottom:4px;">LUCRO ESTIMADO</div>
             <div style="font-size:18px;font-weight:700;color:${corLucro};font-family:'Rajdhani',sans-serif;">${receitaObra > 0 ? fmt(lucro) : '-'}</div>
           </div>
-          <div style="text-align:center;padding:10px;background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.1);border-radius:10px;">
+          <div style="text-align:center;padding:10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;">
             <div style="font-size:10px;color:var(--texto3);letter-spacing:1px;margin-bottom:4px;">MARGEM</div>
             <div style="font-size:18px;font-weight:700;color:${corMargem};font-family:'Rajdhani',sans-serif;">${receitaObra > 0 ? margem.toFixed(1) + '%' : '-'}</div>
           </div>
@@ -266,7 +266,7 @@ function renderCustosDetalhes(obraId) {
       const tipoLabel = tipoR === 'entrada' ? '💵 ENTRADA' : tipoR === 'terreno' ? '🏗 TERRENO' : '📄 PLS';
       const tipoColor = tipoR === 'entrada' ? '#3b82f6' : tipoR === 'terreno' ? '#a855f7' : 'var(--verde-hl)';
       const medLabel = (tipoR === 'entrada' || tipoR === 'terreno') ? '-' : '#' + r.medicao_numero;
-      html += `<tr style="border-bottom:1px solid rgba(46,204,113,0.06);">
+      html += `<tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
         <td style="padding:8px 6px;font-size:11px;font-weight:600;color:${tipoColor};">${tipoLabel}</td>
         <td style="padding:8px 6px;font-weight:700;color:var(--branco);">${medLabel}</td>
         <td style="padding:8px 6px;color:${tipoColor};font-weight:600;">${fmt(r.valor)}</td>
@@ -309,7 +309,7 @@ function renderCustosHistoricoMensal(obraId) {
     const reps = porMes[mes];
     const totalMes = reps.reduce((s, r) => s + Number(r.valor || 0), 0);
     const label = mes !== 'sem-data' ? new Date(mes + '-15').toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }) : 'Sem data';
-    html += `<div style="margin-bottom:12px;padding:10px;background:rgba(46,204,113,0.03);border:1px solid rgba(46,204,113,0.08);border-radius:10px;">
+    html += `<div style="margin-bottom:12px;padding:10px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);border-radius:10px;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
         <span style="font-size:12px;font-weight:600;color:var(--branco);text-transform:capitalize;">${label}</span>
         <span style="font-size:13px;font-weight:700;color:var(--verde-hl);">${fmt(totalMes)}</span>
