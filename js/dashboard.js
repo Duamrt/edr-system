@@ -128,7 +128,7 @@ function calcDashEtapas(lancAtivos) {
 function dashBuildHeader(dataStr) {
   return `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-top:4px;padding-bottom:16px;border-bottom:1px solid rgba(255,255,255,0.06);">
     <div style="display:flex;align-items:center;gap:14px;">
-      <div style="width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:#22c55e;">
+      <div style="width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#22c55e,#16a34a);box-shadow:0 4px 16px rgba(34,197,94,0.3);">
         <span style="font-family:'Inter',sans-serif;font-size:14px;font-weight:900;color:#000;letter-spacing:-0.5px;">EDR</span>
       </div>
       <div>
