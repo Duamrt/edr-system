@@ -27,10 +27,10 @@
 </head>
 <body>
 <!-- ── SPLASH SCREEN ── -->
-<div id="splash-screen" style="position:fixed;inset:0;z-index:9999;background:#050505;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 0.5s ease;">
+<div id="splash-screen" style="position:fixed;inset:0;z-index:9999;background:#0a0a0a;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 0.5s ease;">
   <div style="font-family:'Rajdhani',sans-serif;font-size:32px;font-weight:700;color:#2ecc71;letter-spacing:6px;animation:splashPulse 1.5s ease infinite;">EDR</div>
-  <div style="font-size:11px;color:#6a8a6a;letter-spacing:4px;margin-top:8px;font-family:'Barlow',sans-serif;font-weight:300;">ENGENHARIA</div>
-  <div style="width:120px;height:2px;background:rgba(46,204,113,0.15);border-radius:2px;margin-top:24px;overflow:hidden;">
+  <div style="font-size:11px;color:#6a8a6a;letter-spacing:4px;margin-top:8px;font-family:'Inter',sans-serif;font-weight:300;">ENGENHARIA</div>
+  <div style="width:120px;height:2px;background:rgba(34,197,94,0.1);border-radius:2px;margin-top:24px;overflow:hidden;">
     <div style="width:40%;height:100%;background:linear-gradient(90deg,transparent,#2ecc71,transparent);animation:splashBar 1.2s ease-in-out infinite;border-radius:2px;"></div>
   </div>
 </div>
@@ -69,7 +69,7 @@
     <button class="btn-login" onclick="fazerLogin()">ENTRAR</button>
     <div class="login-error" id="login-error"></div>
     <div style="margin-top:18px;text-align:center;">
-      <button onclick="entrarModoDemo()" style="background:transparent;border:1px solid rgba(46,204,113,0.3);border-radius:8px;padding:9px 20px;color:rgba(46,204,113,0.75);font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;cursor:pointer;transition:all .2s;" onmouseover="this.style.borderColor='rgba(46,204,113,0.7)';this.style.color='#2ecc71'" onmouseout="this.style.borderColor='rgba(46,204,113,0.3)';this.style.color='rgba(46,204,113,0.75)'">
+      <button onclick="entrarModoDemo()" style="background:transparent;border:1px solid rgba(34,197,94,0.2);border-radius:8px;padding:9px 20px;color:rgba(34,197,94,0.6);font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;cursor:pointer;transition:all .2s;" onmouseover="this.style.borderColor='rgba(34,197,94,0.5)';this.style.color='#2ecc71'" onmouseout="this.style.borderColor='rgba(34,197,94,0.2)';this.style.color='rgba(34,197,94,0.6)'">
         &#9654; VER DEMONSTRAÇÃO
       </button>
       <div style="font-size:10px;color:var(--texto3);margin-top:6px;letter-spacing:1px;">dados fictícios · sem afetar o sistema real</div>
@@ -196,8 +196,8 @@
   <div id="view-relatorio" class="hidden">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-top:4px;flex-wrap:wrap;gap:10px;">
       <div style="display:flex;align-items:center;gap:14px;">
-        <button onclick="setView('dashboard')" style="background:rgba(46,204,113,0.08);border:1px solid rgba(46,204,113,0.15);color:var(--verde-hl);border-radius:8px;padding:5px 14px;font-size:11px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;cursor:pointer;margin-right:8px;">← VOLTAR</button>
-        <div style="width:44px;height:44px;border:1px solid rgba(46,204,113,0.35);border-radius:12px;display:flex;align-items:center;justify-content:center;background:rgba(46,204,113,0.07);">
+        <button onclick="setView('dashboard')" style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.1);color:var(--verde-hl);border-radius:8px;padding:5px 14px;font-size:11px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;cursor:pointer;margin-right:8px;">← VOLTAR</button>
+        <div style="width:44px;height:44px;border:1px solid rgba(34,197,94,0.25);border-radius:12px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.04);">
           <span style="font-size:20px;">📈</span>
         </div>
         <div>
@@ -205,7 +205,7 @@
           <div style="font-size:11px;color:var(--texto3);">Entradas · Saídas · Mão de Obra · Detalhamento por Obra</div>
         </div>
       </div>
-      <button onclick="exportarRelatorioPDF()" style="background:rgba(46,204,113,0.15);border:1px solid rgba(46,204,113,0.4);color:var(--verde3);padding:8px 16px;border-radius:8px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:1px;">
+      <button onclick="exportarRelatorioPDF()" style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);color:var(--verde3);padding:8px 16px;border-radius:8px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:1px;">
         ⬇ EXPORTAR PDF
       </button>
     </div>
@@ -241,7 +241,7 @@
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding-top:4px;">
         <div class="modulo-badge" style="margin-bottom:0;">🏗 EDR OBRAS</div>
         <div style="display:flex;gap:8px;">
-          <button onclick="abrirModalObra()" style="background:rgba(46,204,113,0.08);border:1px solid rgba(46,204,113,0.25);color:var(--verde-hl);border-radius:8px;padding:4px 12px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;cursor:pointer;" class="admin-only">➕ NOVA OBRA</button>
+          <button onclick="abrirModalObra()" style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);color:var(--verde-hl);border-radius:8px;padding:4px 12px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;cursor:pointer;" class="admin-only">➕ NOVA OBRA</button>
           <button onclick="toggleObrasArquivadas()" id="btn-ver-arquivadas2" style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);color:#fbbf24;border-radius:8px;padding:4px 12px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;cursor:pointer;" class="admin-only">📋 VER CONCLUÍDAS</button>
         </div>
       </div>
@@ -250,7 +250,7 @@
     <div id="obras-sticky" style="position:sticky;top:0;z-index:90;background:var(--bg);padding:10px 0 8px 0;border-bottom:1px solid var(--borda);margin-bottom:8px;display:none;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
         <div style="display:flex;align-items:center;">
-          <button onclick="obrasVoltarCards()" style="background:rgba(46,204,113,0.08);border:1px solid rgba(46,204,113,0.15);color:var(--verde-hl);border-radius:8px;padding:5px 14px;font-size:11px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;cursor:pointer;margin-right:8px;">← VOLTAR</button>
+          <button onclick="obrasVoltarCards()" style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.1);color:var(--verde-hl);border-radius:8px;padding:5px 14px;font-size:11px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;cursor:pointer;margin-right:8px;">← VOLTAR</button>
           <div class="modulo-badge" style="margin-bottom:0;">🏗 EDR OBRAS</div>
         </div>
         <button onclick="toggleObrasArquivadas()" id="btn-ver-arquivadas" style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);color:#fbbf24;border-radius:8px;padding:4px 12px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;cursor:pointer;transition:all .2s;" class="admin-only">📋 VER CONCLUÍDAS</button>
@@ -373,10 +373,10 @@
     <div class="form-section">
       <div class="form-title"><span class="form-step">2</span> ITENS DA NOTA</div>
       <div style="display:flex;gap:8px;margin-bottom:14px;">
-        <button onclick="abrirImportXML()" style="flex:1;padding:12px 16px;background:rgba(46,204,113,0.08);border:1px solid rgba(46,204,113,0.25);border-radius:8px;color:var(--verde-hl);font-size:13px;font-weight:700;font-family:'Barlow',sans-serif;cursor:pointer;letter-spacing:0.5px;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:8px;">
+        <button onclick="abrirImportXML()" style="flex:1;padding:12px 16px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:8px;color:var(--verde-hl);font-size:13px;font-weight:700;font-family:'Inter',sans-serif;cursor:pointer;letter-spacing:0.5px;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:8px;">
           📄 IMPORTAR XML<span style="font-size:10px;opacity:0.7;font-weight:400;">Arquivo da NF-e</span>
         </button>
-        <button onclick="abrirImportRapida()" style="flex:1;padding:12px 16px;background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.3);border-radius:8px;color:#a78bfa;font-size:13px;font-weight:700;font-family:'Barlow',sans-serif;cursor:pointer;letter-spacing:0.5px;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:8px;">
+        <button onclick="abrirImportRapida()" style="flex:1;padding:12px 16px;background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.3);border-radius:8px;color:#a78bfa;font-size:13px;font-weight:700;font-family:'Inter',sans-serif;cursor:pointer;letter-spacing:0.5px;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:8px;">
           📋 COLAR TEXTO<span style="font-size:10px;opacity:0.7;font-weight:400;">Cola os itens da nota</span>
         </button>
       </div>
@@ -409,7 +409,7 @@
           <div class="field"><label>DESCONTO (R$)</label><input type="number" id="i-desconto" data-next="i-imposto" placeholder="0,00" style="text-transform:none;" oninput="calcItemTotal()"></div>
           <div class="field"><label>IMPOSTO (R$)</label><input type="number" id="i-imposto" placeholder="0,00" style="text-transform:none;" data-action="addItem"></div>
         </div>
-        <div class="field"><label>TOTAL DO ITEM</label><input type="number" id="i-total" readonly style="background:rgba(46,204,113,0.04);color:var(--texto2);font-weight:700;text-transform:none;"></div>
+        <div class="field"><label>TOTAL DO ITEM</label><input type="number" id="i-total" readonly style="background:rgba(255,255,255,0.03);color:var(--texto2);font-weight:700;text-transform:none;"></div>
         <button class="btn-add-item" onclick="adicionarItem()">+ ADICIONAR ITEM &nbsp;<span style="font-size:11px;opacity:.7;">ou ENTER no último campo</span></button>
       </div>
     </div>
@@ -445,8 +445,8 @@
       </div>
       <!-- Filtros -->
       <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
-        <input type="text" id="custos-filtro-busca" placeholder="🔍 Buscar obra..." oninput="filtrarCustosCards()" style="flex:1;min-width:160px;padding:8px 12px;background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.15);border-radius:8px;color:var(--branco);font-size:12px;font-family:inherit;outline:none;">
-        <select id="custos-filtro-periodo" onchange="filtrarCustosCards()" style="padding:8px 12px;background:#1a1a2e;border:1px solid rgba(46,204,113,0.15);border-radius:8px;color:var(--branco);font-size:12px;font-family:inherit;outline:none;cursor:pointer;">
+        <input type="text" id="custos-filtro-busca" placeholder="🔍 Buscar obra..." oninput="filtrarCustosCards()" style="flex:1;min-width:160px;padding:8px 12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:8px;color:var(--branco);font-size:12px;font-family:inherit;outline:none;">
+        <select id="custos-filtro-periodo" onchange="filtrarCustosCards()" style="padding:8px 12px;background:var(--bg3);border:1px solid rgba(34,197,94,0.1);border-radius:8px;color:var(--branco);font-size:12px;font-family:inherit;outline:none;cursor:pointer;">
           <option value="">Todos os períodos</option>
           <option value="30">Últimos 30 dias</option>
           <option value="90">Últimos 90 dias</option>
@@ -462,7 +462,7 @@
       <div style="position:sticky;top:53px;z-index:90;background:var(--bg);padding:10px 0 4px 0;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
           <div style="display:flex;align-items:center;">
-            <button onclick="custosVoltarCards()" style="background:rgba(46,204,113,0.08);border:1px solid rgba(46,204,113,0.15);color:var(--verde-hl);border-radius:8px;padding:5px 14px;font-size:11px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;cursor:pointer;margin-right:8px;">← VOLTAR</button>
+            <button onclick="custosVoltarCards()" style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.1);color:var(--verde-hl);border-radius:8px;padding:5px 14px;font-size:11px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;cursor:pointer;margin-right:8px;">← VOLTAR</button>
             <div class="modulo-badge" style="margin-bottom:0;">💰 CUSTOS CEF</div>
           </div>
           <div style="display:flex;gap:8px;">
@@ -488,35 +488,35 @@
       <input type="hidden" id="repasse-id">
       <div class="field" style="margin-bottom:12px;">
         <label>TIPO *</label>
-        <select id="repasse-tipo" onchange="onRepasseTipoChange()" style="width:100%;padding:10px 14px;background:#1a1a2e;border:1px solid rgba(46,204,113,0.15);border-radius:10px;color:var(--branco);font-size:14px;outline:none;font-family:inherit;">
-          <option value="pls" style="background:#1a1a2e;color:#fff;">📄 PLS CEF (Medição)</option>
-          <option value="entrada" style="background:#1a1a2e;color:#fff;">💵 ENTRADA CLIENTE</option>
-          <option value="terreno" style="background:#1a1a2e;color:#fff;">🏗 CEF TERRENO</option>
+        <select id="repasse-tipo" onchange="onRepasseTipoChange()" style="width:100%;padding:10px 14px;background:var(--bg3);border:1px solid rgba(34,197,94,0.1);border-radius:10px;color:var(--branco);font-size:14px;outline:none;font-family:inherit;">
+          <option value="pls" style="background:var(--bg3);color:#fff;">📄 PLS CEF (Medição)</option>
+          <option value="entrada" style="background:var(--bg3);color:#fff;">💵 ENTRADA CLIENTE</option>
+          <option value="terreno" style="background:var(--bg3);color:#fff;">🏗 CEF TERRENO</option>
         </select>
       </div>
       <div class="field" style="margin-bottom:12px;">
         <label>OBRA *</label>
-        <select id="repasse-obra" style="width:100%;padding:10px 14px;background:#1a1a2e;border:1px solid rgba(46,204,113,0.15);border-radius:10px;color:var(--branco);font-size:14px;outline:none;font-family:inherit;">
-          <option value="" style="background:#1a1a2e;color:#fff;">Selecione...</option>
+        <select id="repasse-obra" style="width:100%;padding:10px 14px;background:var(--bg3);border:1px solid rgba(34,197,94,0.1);border-radius:10px;color:var(--branco);font-size:14px;outline:none;font-family:inherit;">
+          <option value="" style="background:var(--bg3);color:#fff;">Selecione...</option>
         </select>
       </div>
       <div style="display:flex;gap:8px;">
         <div id="repasse-medicao-wrap" class="field" style="flex:1;margin-bottom:12px;">
           <label>MEDIÇÃO Nº *</label>
-          <input type="number" id="repasse-medicao" min="1" placeholder="Ex: 1" style="width:100%;padding:10px 14px;background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.15);border-radius:10px;color:var(--branco);font-size:14px;outline:none;font-family:inherit;">
+          <input type="number" id="repasse-medicao" min="1" placeholder="Ex: 1" style="width:100%;padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;color:var(--branco);font-size:14px;outline:none;font-family:inherit;">
         </div>
         <div class="field" style="flex:1;margin-bottom:12px;">
           <label>VALOR (R$) *</label>
-          <input type="number" id="repasse-valor" min="0" step="0.01" placeholder="0,00" style="width:100%;padding:10px 14px;background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.15);border-radius:10px;color:var(--branco);font-size:14px;outline:none;font-family:inherit;">
+          <input type="number" id="repasse-valor" min="0" step="0.01" placeholder="0,00" style="width:100%;padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;color:var(--branco);font-size:14px;outline:none;font-family:inherit;">
         </div>
       </div>
       <div class="field" style="margin-bottom:12px;">
         <label>DATA DO CRÉDITO *</label>
-        <input type="date" id="repasse-data" style="width:100%;padding:10px 14px;background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.15);border-radius:10px;color:var(--branco);font-size:14px;outline:none;font-family:inherit;">
+        <input type="date" id="repasse-data" style="width:100%;padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;color:var(--branco);font-size:14px;outline:none;font-family:inherit;">
       </div>
       <div class="field" style="margin-bottom:16px;">
         <label>OBSERVAÇÃO</label>
-        <input type="text" id="repasse-obs" placeholder="Ex: Medição aprovada pela CEF" style="width:100%;padding:10px 14px;background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.15);border-radius:10px;color:var(--branco);font-size:14px;outline:none;font-family:inherit;">
+        <input type="text" id="repasse-obs" placeholder="Ex: Medição aprovada pela CEF" style="width:100%;padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;color:var(--branco);font-size:14px;outline:none;font-family:inherit;">
       </div>
       <button class="btn-save" onclick="salvarRepasse()">SALVAR REPASSE</button>
       <button class="btn-outline" style="margin-top:8px;" onclick="fecharModal('repasse')">CANCELAR</button>
@@ -560,7 +560,7 @@
     <div class="card">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
         <div class="section-title" style="margin-bottom:0;">👤 Usuários do Sistema</div>
-        <button onclick="abrirModalNovoUsuario()" style="background:rgba(46,204,113,0.08);border:1px solid rgba(46,204,113,0.25);color:var(--verde-hl);border-radius:8px;padding:7px 14px;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;letter-spacing:1px;cursor:pointer;transition:all .2s;">➕ NOVO USUÁRIO</button>
+        <button onclick="abrirModalNovoUsuario()" style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);color:var(--verde-hl);border-radius:8px;padding:7px 14px;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;letter-spacing:1px;cursor:pointer;transition:all .2s;">➕ NOVO USUÁRIO</button>
       </div>
       <div id="usuarios-lista"></div>
     </div>
@@ -604,7 +604,7 @@
       <!-- PAINEL ESQUERDO: ENTRADA -->
       <div class="diarias-panel-left" id="diar-panelLeft">
         <!-- Botão toggle -->
-        <button id="diar-togglePanel" onclick="diarTogglePanel()" title="Recolher painel" style="align-self:flex-end;background:rgba(46,204,113,0.07);border:1px solid rgba(46,204,113,0.18);color:var(--verde-hl);border-radius:7px;padding:4px 9px;font-size:13px;cursor:pointer;line-height:1;flex-shrink:0;">◀</button>
+        <button id="diar-togglePanel" onclick="diarTogglePanel()" title="Recolher painel" style="align-self:flex-end;background:rgba(255,255,255,0.04);border:1px solid rgba(34,197,94,0.12);color:var(--verde-hl);border-radius:7px;padding:4px 9px;font-size:13px;cursor:pointer;line-height:1;flex-shrink:0;">◀</button>
         <div id="diar-panelContent">
         <div class="diarias-panel-title">// LANÇAR DIÁRIAS</div>
         <div>
@@ -640,10 +640,10 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
             <div class="diarias-panel-title" style="margin:0">// QUINZENA</div>
-            <select id="diar-quinzena-select" onchange="diarTrocarQuinzena(this.value)" style="background:var(--bg3);border:1px solid rgba(46,204,113,0.25);border-radius:8px;padding:5px 10px;color:var(--verde-hl);font-size:11px;font-family:'Rajdhani',sans-serif;font-weight:700;cursor:pointer;">
+            <select id="diar-quinzena-select" onchange="diarTrocarQuinzena(this.value)" style="background:var(--bg3);border:1px solid rgba(34,197,94,0.2);border-radius:8px;padding:5px 10px;color:var(--verde-hl);font-size:11px;font-family:'Rajdhani',sans-serif;font-weight:700;cursor:pointer;">
               <option value="">Carregando...</option>
             </select>
-            <button onclick="diarAbrirModalNovaQuinzena()" title="Nova quinzena" style="background:rgba(46,204,113,0.07);border:1px solid rgba(46,204,113,0.2);color:var(--verde-hl);border-radius:7px;padding:4px 9px;font-size:12px;cursor:pointer;" id="btn-diar-nova-quinzena">＋</button>
+            <button onclick="diarAbrirModalNovaQuinzena()" title="Nova quinzena" style="background:rgba(255,255,255,0.04);border:1px solid rgba(34,197,94,0.15);color:var(--verde-hl);border-radius:7px;padding:4px 9px;font-size:12px;cursor:pointer;" id="btn-diar-nova-quinzena">＋</button>
             <button onclick="diarExcluirQuinzena()" title="Excluir quinzena" style="background:rgba(239,68,68,0.07);border:1px solid rgba(239,68,68,0.2);color:#f87171;border-radius:7px;padding:4px 9px;font-size:12px;cursor:pointer;" id="btn-diar-del-quinzena" class="admin-only">🗑</button>
           </div>
           <div class="diarias-tabs">
@@ -695,19 +695,19 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
     <input type="hidden" id="usr-id">
     <div class="field" style="margin-bottom:12px;">
       <label>NOME COMPLETO</label>
-      <input type="text" id="usr-nome" placeholder="Ex: João Silva" style="width:100%;padding:10px 14px;background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.15);border-radius:10px;color:var(--branco);font-size:14px;outline:none;font-family:inherit;">
+      <input type="text" id="usr-nome" placeholder="Ex: João Silva" style="width:100%;padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;color:var(--branco);font-size:14px;outline:none;font-family:inherit;">
     </div>
     <div class="field" style="margin-bottom:12px;">
       <label>USUÁRIO (login)</label>
-      <input type="text" id="usr-usuario" placeholder="Ex: joao.silva" style="width:100%;padding:10px 14px;background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.15);border-radius:10px;color:var(--branco);font-size:14px;outline:none;font-family:inherit;" autocomplete="off">
+      <input type="text" id="usr-usuario" placeholder="Ex: joao.silva" style="width:100%;padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;color:var(--branco);font-size:14px;outline:none;font-family:inherit;" autocomplete="off">
     </div>
     <div class="field" style="margin-bottom:12px;">
       <label>SENHA</label>
-      <input type="password" id="usr-senha" placeholder="Mínimo 4 caracteres" style="width:100%;padding:10px 14px;background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.15);border-radius:10px;color:var(--branco);font-size:14px;outline:none;font-family:inherit;" autocomplete="new-password">
+      <input type="password" id="usr-senha" placeholder="Mínimo 4 caracteres" style="width:100%;padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;color:var(--branco);font-size:14px;outline:none;font-family:inherit;" autocomplete="new-password">
     </div>
     <div class="field" style="margin-bottom:16px;">
       <label>PERFIL DE ACESSO</label>
-      <select id="usr-perfil" style="width:100%;padding:10px 14px;background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.15);border-radius:10px;color:var(--branco);font-size:14px;outline:none;font-family:inherit;">
+      <select id="usr-perfil" style="width:100%;padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;color:var(--branco);font-size:14px;outline:none;font-family:inherit;">
         <option value="operacional">👷 Operacional — lança NF e materiais</option>
         <option value="mestre">🔨 Mestre — somente visualiza diárias</option>
         <option value="visitante">👁 Visitante — visualização e simulação</option>
@@ -779,11 +779,11 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
     <div class="field"><label>DATA</label><input type="date" id="entrada-data" style="text-transform:none;"></div>
 
     <!-- DESTINO -->
-    <div style="border:1px solid rgba(46,204,113,0.15);border-radius:10px;padding:12px;margin:10px 0;background:rgba(46,204,113,0.03);">
+    <div style="border:1px solid rgba(34,197,94,0.1);border-radius:10px;padding:12px;margin:10px 0;background:rgba(255,255,255,0.02);">
       <div style="font-size:11px;font-weight:700;color:var(--verde-hl);letter-spacing:1.5px;margin-bottom:10px;">DESTINO DO MATERIAL</div>
       <div style="display:flex;gap:8px;margin-bottom:10px;">
         <button id="btn-destino-estoque" onclick="setDestinoEntrada('estoque')" style="flex:1;padding:14px 8px;border-radius:10px;font-size:12px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;cursor:pointer;border:1px solid rgba(139,92,246,0.4);background:rgba(139,92,246,0.15);color:#a78bfa;min-height:48px;touch-action:manipulation;">📦 ESTOQUE</button>
-        <button id="btn-destino-obra" onclick="setDestinoEntrada('obra')" style="flex:1;padding:14px 8px;border-radius:10px;font-size:12px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;cursor:pointer;border:1px solid rgba(46,204,113,0.2);background:transparent;color:var(--texto3);min-height:48px;touch-action:manipulation;">🏗 DIRETO NA OBRA</button>
+        <button id="btn-destino-obra" onclick="setDestinoEntrada('obra')" style="flex:1;padding:14px 8px;border-radius:10px;font-size:12px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;cursor:pointer;border:1px solid rgba(34,197,94,0.15);background:transparent;color:var(--texto3);min-height:48px;touch-action:manipulation;">🏗 DIRETO NA OBRA</button>
       </div>
       <div id="entrada-estoque-info" style="font-size:11px;color:var(--texto3);">Material entra no estoque. Distribua para a obra depois pelo F3.</div>
       <div id="entrada-obra-wrap" class="hidden">
@@ -837,7 +837,7 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
     <div id="dist-valor-preview" style="background:var(--verde-bg);border:1px solid var(--verde-borda);border-radius:8px;padding:10px;margin-bottom:12px;font-size:13px;color:#15803d;font-weight:700;display:none;">
       💰 VALOR PROPORCIONAL: <span id="dist-valor-val">R$ 0,00</span>
     </div>
-    <div class="field"><label>ETAPA DA OBRA *</label><select id="dist-etapa" style="width:100%;padding:10px 14px;background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.15);border-radius:10px;color:var(--branco);font-size:13px;font-family:inherit;"></select></div>
+    <div class="field"><label>ETAPA DA OBRA *</label><select id="dist-etapa" style="width:100%;padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;color:var(--branco);font-size:13px;font-family:inherit;"></select></div>
     <div class="field"><label>OBSERVAÇÃO</label><input type="text" id="dist-obs" placeholder="EX: BLOCO A, SUITE..."></div>
     <div id="dist-historico" class="dist-historico hidden">
       <div class="dist-historico-title">DISTRIBUIÇÕES ANTERIORES DESTE ITEM:</div>
@@ -858,7 +858,7 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
     </div>
     <div style="display:flex;gap:8px;margin-bottom:14px;">
       <button id="btn-ajuste-inventario" onclick="setTipoAjuste('inventario')" style="flex:1;padding:12px 8px;border-radius:10px;font-size:11px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;cursor:pointer;border:1px solid rgba(96,165,250,0.4);background:rgba(96,165,250,0.15);color:#60a5fa;min-height:44px;">📦 INVENTARIO INICIAL</button>
-      <button id="btn-ajuste-contagem" onclick="setTipoAjuste('contagem')" style="flex:1;padding:12px 8px;border-radius:10px;font-size:11px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;cursor:pointer;border:1px solid rgba(46,204,113,0.2);background:transparent;color:var(--texto3);min-height:44px;">🔢 CONTAGEM FISICA</button>
+      <button id="btn-ajuste-contagem" onclick="setTipoAjuste('contagem')" style="flex:1;padding:12px 8px;border-radius:10px;font-size:11px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;cursor:pointer;border:1px solid rgba(34,197,94,0.15);background:transparent;color:var(--texto3);min-height:44px;">🔢 CONTAGEM FISICA</button>
       <button id="btn-ajuste-correcao" onclick="setTipoAjuste('correcao')" style="flex:1;padding:12px 8px;border-radius:10px;font-size:11px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;cursor:pointer;border:1px solid rgba(245,158,11,0.2);background:transparent;color:var(--texto3);min-height:44px;">🔧 CORRECAO</button>
     </div>
     <div id="ajuste-tipo-info" style="font-size:11px;color:var(--texto3);margin-bottom:14px;">Material que ja existia antes do sistema. Entra no saldo sem gerar custo.</div>
@@ -936,7 +936,7 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
   <div class="modal" style="max-width:480px;">
     <div class="modal-title"><span>✅ CONCLUIR OBRA</span> <button class="modal-close" onclick="fecharModal('concluir-obra')">✕</button></div>
     <input type="hidden" id="concluir-obra-id">
-    <div style="font-size:11px;color:var(--texto2);margin-bottom:12px;padding:8px;background:rgba(46,204,113,0.06);border:1px solid rgba(46,204,113,0.15);border-radius:6px;">
+    <div style="font-size:11px;color:var(--texto2);margin-bottom:12px;padding:8px;background:rgba(255,255,255,0.04);border:1px solid rgba(34,197,94,0.1);border-radius:6px;">
       Preencha os dados do imóvel para gerar o <strong>Termo de Entrega</strong> e arquivar a obra.
     </div>
     <div style="border-bottom:1px solid var(--borda);margin-bottom:10px;padding-bottom:6px;">
@@ -1031,21 +1031,21 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
     </div>
     <div class="field" style="margin-bottom:12px">
       <label>FUNCIONÁRIO</label>
-      <select id="diar-extra-func" style="width:100%;padding:10px 14px;background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.15);border-radius:10px;color:var(--branco);font-size:14px;outline:none;font-family:inherit;">
+      <select id="diar-extra-func" style="width:100%;padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;color:var(--branco);font-size:14px;outline:none;font-family:inherit;">
         <option value="">Selecionar...</option>
       </select>
     </div>
     <div class="field" style="margin-bottom:12px">
       <label>DESCRIÇÃO</label>
-      <input type="text" id="diar-extra-desc" placeholder="Ex: Bonificação produtividade, Vale transporte..." style="width:100%;padding:10px 14px;background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.15);border-radius:10px;color:var(--branco);font-size:14px;outline:none;font-family:inherit;">
+      <input type="text" id="diar-extra-desc" placeholder="Ex: Bonificação produtividade, Vale transporte..." style="width:100%;padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;color:var(--branco);font-size:14px;outline:none;font-family:inherit;">
     </div>
     <div class="field" style="margin-bottom:12px">
       <label>VALOR (R$)</label>
-      <input type="number" id="diar-extra-valor" placeholder="0,00" min="0" step="0.01" style="width:100%;padding:10px 14px;background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.15);border-radius:10px;color:var(--branco);font-size:14px;outline:none;font-family:inherit;">
+      <input type="number" id="diar-extra-valor" placeholder="0,00" min="0" step="0.01" style="width:100%;padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;color:var(--branco);font-size:14px;outline:none;font-family:inherit;">
     </div>
     <div class="field" style="margin-bottom:18px">
       <label>ALOCAR CUSTO NA OBRA</label>
-      <select id="diar-extra-obra" style="width:100%;padding:10px 14px;background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.15);border-radius:10px;color:var(--branco);font-size:14px;outline:none;font-family:inherit;">
+      <select id="diar-extra-obra" style="width:100%;padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;color:var(--branco);font-size:14px;outline:none;font-family:inherit;">
         <option value="">Selecionar obra...</option>
       </select>
     </div>
@@ -1083,7 +1083,7 @@ AREIA GROSSA
 VERGALHAO CA50" style="width:100%;min-height:140px;padding:14px;background:var(--bg2);border:1px solid var(--borda);border-radius:8px;color:var(--branco);font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.7;resize:vertical;outline:none;"></textarea>
     </div>
 
-    <button onclick="interpretarImport()" style="width:100%;padding:12px;background:rgba(139,92,246,0.15);border:1px solid rgba(139,92,246,0.4);border-radius:8px;color:#a78bfa;font-size:14px;font-weight:700;font-family:'Barlow',sans-serif;cursor:pointer;letter-spacing:1px;margin-bottom:16px;transition:all 0.2s;">
+    <button onclick="interpretarImport()" style="width:100%;padding:12px;background:rgba(139,92,246,0.15);border:1px solid rgba(139,92,246,0.4);border-radius:8px;color:#a78bfa;font-size:14px;font-weight:700;font-family:'Inter',sans-serif;cursor:pointer;letter-spacing:1px;margin-bottom:16px;transition:all 0.2s;">
       🔍 INTERPRETAR ITENS
     </button>
 
@@ -1098,7 +1098,7 @@ VERGALHAO CA50" style="width:100%;min-height:140px;padding:14px;background:var(-
       <div id="import-preview"></div>
     </div>
 
-    <button id="import-btn-confirmar" class="hidden" onclick="confirmarImport()" style="width:100%;padding:14px;background:var(--verde);border:1px solid var(--verde3);border-radius:8px;color:var(--verde-hl);font-size:14px;font-weight:800;font-family:'Barlow',sans-serif;cursor:pointer;letter-spacing:1px;margin-top:12px;transition:all 0.2s;">
+    <button id="import-btn-confirmar" class="hidden" onclick="confirmarImport()" style="width:100%;padding:14px;background:var(--verde);border:1px solid var(--verde3);border-radius:8px;color:var(--verde-hl);font-size:14px;font-weight:800;font-family:'Inter',sans-serif;cursor:pointer;letter-spacing:1px;margin-top:12px;transition:all 0.2s;">
       ✅ CONFIRMAR E ADICIONAR AO FORM
     </button>
   </div>

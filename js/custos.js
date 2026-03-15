@@ -334,8 +334,8 @@ function renderCustosHistoricoMensal(obraId) {
 function abrirModalRepasse(obraId) {
   const todasObras = [...obras, ...obrasArquivadas];
   const sel = document.getElementById('repasse-obra');
-  sel.innerHTML = '<option value="" style="background:#1a1a2e;color:#fff;">Selecione...</option>' +
-    todasObras.map(o => `<option value="${o.id}" style="background:#1a1a2e;color:#fff;" ${o.id === obraId ? 'selected' : ''}>${esc(o.nome)}</option>`).join('');
+  sel.innerHTML = '<option value="" style="background:var(--bg3);color:#fff;">Selecione...</option>' +
+    todasObras.map(o => `<option value="${o.id}" style="background:var(--bg3);color:#fff;" ${o.id === obraId ? 'selected' : ''}>${esc(o.nome)}</option>`).join('');
   document.getElementById('repasse-id').value = '';
   document.getElementById('repasse-tipo').value = 'pls';
   document.getElementById('repasse-medicao').value = '';
@@ -357,8 +357,8 @@ function editarRepasse(id) {
   if (!r) return;
   const todasObras = [...obras, ...obrasArquivadas];
   const sel = document.getElementById('repasse-obra');
-  sel.innerHTML = '<option value="" style="background:#1a1a2e;color:#fff;">Selecione...</option>' +
-    todasObras.map(o => `<option value="${o.id}" style="background:#1a1a2e;color:#fff;" ${o.id === r.obra_id ? 'selected' : ''}>${esc(o.nome)}</option>`).join('');
+  sel.innerHTML = '<option value="" style="background:var(--bg3);color:#fff;">Selecione...</option>' +
+    todasObras.map(o => `<option value="${o.id}" style="background:var(--bg3);color:#fff;" ${o.id === r.obra_id ? 'selected' : ''}>${esc(o.nome)}</option>`).join('');
   document.getElementById('repasse-id').value = r.id;
   document.getElementById('repasse-tipo').value = r.tipo || 'pls';
   document.getElementById('repasse-medicao').value = r.medicao_numero || '';
