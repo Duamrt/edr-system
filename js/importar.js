@@ -437,8 +437,8 @@ function importSelecionarCatalogo(idx, codigoCat) {
       item.codigoCat = mat.codigo;
       item.unidade = mat.unidade || item.unidade;
       item.confirmado = true;
-      // Reclassificar crédito com nome do catálogo
-      const cred = classificarItem(mat.nome);
+      // Reclassificar crédito com nome do catálogo, fallback pra descrição original
+      const cred = classificarItem(mat.nome) || classificarItem(item.descOriginal);
       item.credito = cred ? cred.credito : null;
       item.creditoCat = cred ? cred.cat : '';
     }
