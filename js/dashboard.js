@@ -32,7 +32,7 @@ function renderDashboardOperador() {
           <div style="font-size:11px;color:var(--texto3);margin-top:4px;font-family:'JetBrains Mono',monospace;text-transform:capitalize;">${dataStr} · ${horaStr}</div>
         </div>
         <div style="display:flex;gap:10px;">
-          <button onclick="setView('form')" style="background:rgba(46,204,113,0.1);border:1px solid rgba(46,204,113,0.3);color:var(--verde-hl);border-radius:10px;padding:10px 16px;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:12px;letter-spacing:1px;cursor:pointer;">➕ LANÇAR NF</button>
+          <button onclick="setView('form')" style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.15);color:var(--verde-hl);border-radius:10px;padding:10px 16px;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:12px;letter-spacing:1px;cursor:pointer;">➕ LANÇAR NF</button>
           <button onclick="setView('estoque')" style="background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.25);color:#a78bfa;border-radius:10px;padding:10px 16px;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:12px;letter-spacing:1px;cursor:pointer;">📦 ESTOQUE</button>
         </div>
       </div>
@@ -48,9 +48,9 @@ function dashBuildObrasAtivas(obrasAtivas) {
   return `<div class="card" style="padding:16px;">
     <div style="font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;color:var(--verde-hl);letter-spacing:2px;margin-bottom:12px;">🏗 Obras em Andamento</div>
     ${obrasAtivas.length ? obrasAtivas.map(o => `
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(46,204,113,0.07);">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
         <span style="font-size:13px;color:var(--branco);font-weight:600;">${esc(o.nome)}</span>
-        <span style="font-size:10px;color:var(--texto3);font-family:'JetBrains Mono',monospace;background:rgba(46,204,113,0.07);padding:2px 8px;border-radius:10px;">${o.qtd} lanç.</span>
+        <span style="font-size:10px;color:var(--texto3);font-family:'JetBrains Mono',monospace;background:rgba(255,255,255,0.04);padding:2px 8px;border-radius:10px;">${o.qtd} lanç.</span>
       </div>`).join('') :
       '<div style="color:var(--texto3);font-size:12px;padding:8px 0;">Nenhuma obra ativa.</div>'}
   </div>`;
@@ -126,23 +126,23 @@ function calcDashEtapas(lancAtivos) {
 
 // ── SEÇÕES HTML DO DASHBOARD ADMIN ──────────────────────────
 function dashBuildHeader(dataStr) {
-  return `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding-top:4px;">
+  return `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-top:4px;padding-bottom:16px;border-bottom:1px solid rgba(255,255,255,0.06);">
     <div style="display:flex;align-items:center;gap:14px;">
-      <div style="width:44px;height:44px;border:1px solid rgba(46,204,113,0.35);border-radius:12px;display:flex;align-items:center;justify-content:center;background:rgba(46,204,113,0.07);box-shadow:0 0 20px rgba(46,204,113,0.12);">
-        <span style="font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:700;color:var(--verde3);">EDR</span>
+      <div style="width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:#22c55e;">
+        <span style="font-family:'Inter',sans-serif;font-size:14px;font-weight:900;color:#000;letter-spacing:-0.5px;">EDR</span>
       </div>
       <div>
-        <div style="font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:700;color:var(--branco);letter-spacing:2px;">PAINEL DE CONTROLE</div>
-        <div style="font-size:10px;color:var(--texto3);letter-spacing:3px;font-family:'JetBrains Mono',monospace;">${dataStr}</div>
+        <div style="font-family:'Inter',sans-serif;font-size:18px;font-weight:700;color:var(--branco);letter-spacing:-0.3px;">Painel de Controle</div>
+        <div style="font-size:11px;color:var(--texto3);font-weight:400;">${dataStr}</div>
       </div>
     </div>
   </div>`;
 }
 
 function dashBuildCardReceita(receitaTotal, valorVendaTotal, addGeral) {
-  return `<div class="stat-card" style="border-top-color:rgba(59,130,246,0.6);margin-bottom:10px;text-align:center;padding:16px;">
+  return `<div class="stat-card" style="border-top:2px solid #3b82f6;margin-bottom:10px;text-align:center;padding:18px;">
     <div class="stat-label" style="font-size:10px;">RECEITA TOTAL</div>
-    <div class="stat-value" style="color:#60a5fa;font-size:clamp(20px,4vw,28px);">${receitaTotal > 0 ? fmt(receitaTotal) : 'Não informado'}</div>
+    <div class="stat-value" style="color:#3b82f6;font-size:clamp(20px,4vw,28px);">${receitaTotal > 0 ? fmt(receitaTotal) : 'Não informado'}</div>
     <div class="stat-sub">${obras.length} imóvel(is)${addGeral.valorTotal > 0 ? ` · Venda: ${fmt(valorVendaTotal)} + Adicionais: ${fmt(addGeral.valorTotal)}` : ' · soma dos valores de venda'}</div>
   </div>`;
 }
@@ -151,23 +151,23 @@ function dashBuildCardsSecundarios(m, porObra) {
   const { custoTotal, totalRecebido, lucroGeral, margemGeral } = m;
   const corLucro = lucroGeral >= 0 ? 'var(--verde-hl)' : '#ef4444';
   const corMargem = margemGeral >= 15 ? 'var(--verde-hl)' : margemGeral >= 0 ? '#f59e0b' : '#ef4444';
-  return `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:14px;">
-    <div class="stat-card" style="border-top-color:rgba(245,158,11,0.6);">
+  return `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:18px;">
+    <div class="stat-card" style="border-top:2px solid #f59e0b;padding:18px;">
       <div class="stat-label">CUSTO TOTAL</div>
       <div class="stat-value" style="color:#f59e0b;">${fmt(custoTotal)}</div>
       <div class="stat-sub">${porObra.length} obra(s) ativa(s)</div>
     </div>
-    <div class="stat-card" style="border-top-color:rgba(46,204,113,0.6);">
+    <div class="stat-card" style="border-top:2px solid #22c55e;padding:18px;">
       <div class="stat-label">TOTAL RECEBIDO</div>
       <div class="stat-value" style="color:var(--verde-hl);">${fmt(totalRecebido)}</div>
       <div class="stat-sub">PLS + Entradas + Terreno</div>
     </div>
-    <div class="stat-card" style="border-top-color:${lucroGeral >= 0 ? 'rgba(46,204,113,0.6)' : 'rgba(239,68,68,0.6)'};">
+    <div class="stat-card" style="border-top:2px solid ${lucroGeral >= 0 ? '#22c55e' : '#ef4444'};padding:18px;">
       <div class="stat-label">LUCRO GERAL</div>
       <div class="stat-value" style="color:${corLucro};">${fmt(lucroGeral)}</div>
       <div class="stat-sub">venda - custo</div>
     </div>
-    <div class="stat-card" style="border-top-color:${margemGeral >= 15 ? 'rgba(46,204,113,0.6)' : margemGeral >= 0 ? 'rgba(245,158,11,0.6)' : 'rgba(239,68,68,0.6)'};">
+    <div class="stat-card" style="border-top:2px solid ${margemGeral >= 15 ? '#22c55e' : margemGeral >= 0 ? '#f59e0b' : '#ef4444'};padding:18px;">
       <div class="stat-label">MARGEM GERAL</div>
       <div class="stat-value" style="color:${corMargem};">${m.valorVendaTotal > 0 ? margemGeral.toFixed(1)+'%' : '-'}</div>
       <div class="stat-sub">${margemGeral >= 15 ? 'saudável' : margemGeral >= 0 ? 'atenção' : 'prejuízo'}</div>
@@ -192,13 +192,13 @@ function dashBuildAlertas(alertas) {
 
 function dashBuildSaudeObras(porObra) {
   return `<div class="card" style="padding:16px;margin-bottom:14px;">
-    <div style="font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;color:var(--verde-hl);letter-spacing:2px;margin-bottom:12px;">🏗 SAÚDE DAS OBRAS</div>
+    <div style="font-size:13px;font-weight:700;color:var(--texto2);letter-spacing:0.5px;margin-bottom:16px;display:flex;align-items:center;gap:8px;"><span style="width:6px;height:6px;border-radius:50%;background:#22c55e;"></span> Saúde das Obras</div>
     ${porObra.map(o => {
       const pctReceb = o.vv > 0 ? Math.min((o.receb/o.vv*100),100) : 0;
       const corM = o.margem >= 15 ? 'var(--verde-hl)' : o.margem >= 0 ? '#f59e0b' : '#ef4444';
       const addInfo = o.adds && o.adds.qtd > 0 ? `<span style="font-size:10px;color:#a78bfa;">📝 +${fmt(o.adds.valorTotal)}</span>` : '';
       return `
-      <div style="padding:10px 0;border-bottom:1px solid rgba(46,204,113,0.06);cursor:pointer;" onclick="setView('custos');setTimeout(()=>custosAbrirDetalhe('${o.id}'),100)">
+      <div style="padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.06);cursor:pointer;transition:padding .15s;" onclick="setView('custos');setTimeout(()=>custosAbrirDetalhe('${o.id}'),100)">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
           <span style="font-size:13px;color:var(--branco);font-weight:600;">${esc(o.nome)}</span>
           <div style="display:flex;gap:14px;align-items:center;">
@@ -208,7 +208,7 @@ function dashBuildSaudeObras(porObra) {
           </div>
         </div>
         ${o.vv > 0 ? `<div style="display:flex;align-items:center;gap:8px;">
-          <div style="flex:1;height:4px;background:rgba(46,204,113,0.1);border-radius:2px;overflow:hidden;">
+          <div style="flex:1;height:4px;background:rgba(255,255,255,0.04);border-radius:2px;overflow:hidden;">
             <div style="width:${pctReceb}%;height:100%;background:var(--verde3);border-radius:2px;"></div>
           </div>
           <span style="font-size:9px;color:var(--texto3);min-width:60px;text-align:right;">Receb. ${pctReceb.toFixed(0)}%</span>
@@ -251,7 +251,7 @@ function dashRenderFluxoCaixa(lancAtivos, obraAtivaIds) {
     const isAtual = d.ym === mesAtual;
     const saldo = d.entradas - d.saidas;
     const corSaldo = saldo >= 0 ? '#2ecc71' : '#ef4444';
-    html += `<div style="flex:1;text-align:center;${isAtual ? 'background:rgba(46,204,113,0.05);border-radius:8px;padding:4px 2px;border:1px solid rgba(46,204,113,0.15);' : ''}">
+    html += `<div style="flex:1;text-align:center;${isAtual ? 'background:rgba(34,197,94,0.04);border-radius:8px;padding:4px 2px;border:1px solid rgba(34,197,94,0.1);' : ''}">
       <div style="display:flex;gap:2px;justify-content:center;align-items:flex-end;height:120px;">
         <div style="width:40%;height:${hE}px;background:linear-gradient(0deg,#16a085,#2ecc71);border-radius:3px 3px 0 0;" title="Entradas: ${fmtR(d.entradas)}"></div>
         <div style="width:40%;height:${hS}px;background:linear-gradient(0deg,#c0392b,#e74c3c);border-radius:3px 3px 0 0;" title="Saidas: ${fmtR(d.saidas)}"></div>
@@ -281,7 +281,7 @@ function dashRenderCustoReceita(porObra) {
         <span style="font-size:11px;font-weight:700;color:${corM};">${receita > 0 ? o.margem.toFixed(0) + '%' : '—'}</span>
       </div>
       <div style="position:relative;height:22px;background:rgba(255,255,255,0.04);border-radius:4px;overflow:hidden;">
-        ${receita > 0 ? `<div style="position:absolute;top:0;left:0;height:100%;width:${pctReceita}%;background:rgba(46,204,113,0.15);border-radius:4px;border:1px solid rgba(46,204,113,0.2);"></div>` : ''}
+        ${receita > 0 ? `<div style="position:absolute;top:0;left:0;height:100%;width:${pctReceita}%;background:rgba(34,197,94,0.1);border-radius:4px;border:1px solid rgba(34,197,94,0.15);"></div>` : ''}
         <div style="position:absolute;top:0;left:0;height:100%;width:${pctCusto}%;background:${o.margem < 0 ? 'rgba(239,68,68,0.5)' : 'rgba(245,158,11,0.5)'};border-radius:4px;"></div>
       </div>
       <div style="display:flex;justify-content:space-between;margin-top:3px;font-size:10px;">
@@ -338,25 +338,25 @@ function renderDashboard() {
     ${dashBuildCardsSecundarios(m, porObra)}
     ${dashBuildAlertas(alertas)}
     ${dashBuildSaudeObras(porObra)}
-    <div class="card" style="padding:18px 16px;margin-bottom:14px;">
-      <div class="section-title" style="font-size:12px;color:var(--texto2);margin-bottom:14px;">FLUXO DE CAIXA — ULTIMOS 6 MESES</div>
+    <div class="card" style="padding:22px;margin-bottom:16px;">
+      <div style="font-size:13px;font-weight:700;color:var(--texto2);letter-spacing:0.5px;margin-bottom:16px;display:flex;align-items:center;gap:8px;"><span style="width:6px;height:6px;border-radius:50%;background:#22c55e;"></span> Fluxo de Caixa — Últimos 6 meses</div>
       <div id="dash-fluxo-caixa"></div>
     </div>
-    <div class="card" style="padding:18px 16px;margin-bottom:14px;">
-      <div class="section-title" style="margin-bottom:14px;font-size:12px;color:var(--texto2);">CUSTO vs RECEITA POR OBRA</div>
+    <div class="card" style="padding:22px;margin-bottom:16px;">
+      <div style="font-size:13px;font-weight:700;color:var(--texto2);letter-spacing:0.5px;margin-bottom:16px;display:flex;align-items:center;gap:8px;"><span style="width:6px;height:6px;border-radius:50%;background:#f59e0b;"></span> Custo vs Receita por Obra</div>
       <div id="dash-custo-receita"></div>
     </div>
-    <div class="card" style="padding:18px 16px;margin-bottom:14px;">
-      <div class="section-title" style="margin-bottom:14px;font-size:12px;color:var(--texto2);">TOP CENTROS DE CUSTO</div>
+    <div class="card" style="padding:22px;margin-bottom:16px;">
+      <div style="font-size:13px;font-weight:700;color:var(--texto2);letter-spacing:0.5px;margin-bottom:16px;display:flex;align-items:center;gap:8px;"><span style="width:6px;height:6px;border-radius:50%;background:#f59e0b;"></span> Top Centros de Custo</div>
       <div id="dash-top-etapas"></div>
     </div>
-    ${ultimos.length ? `<div class="card" style="padding:16px;">
-      <div style="font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;color:#60a5fa;letter-spacing:2px;margin-bottom:10px;">🕐 ÚLTIMOS LANÇAMENTOS</div>
+    ${ultimos.length ? `<div class="card" style="padding:22px;">
+      <div style="font-size:13px;font-weight:700;color:var(--texto2);letter-spacing:0.5px;margin-bottom:16px;display:flex;align-items:center;gap:8px;"><span style="width:6px;height:6px;border-radius:50%;background:#3b82f6;"></span> Últimos Lançamentos</div>
       ${ultimos.map(l => `
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid rgba(59,130,246,0.06);">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
           <div>
             <div style="font-size:12px;color:var(--branco);font-weight:600;">${esc(l.descricao)}</div>
-            <div style="font-size:10px;color:var(--texto3);margin-top:1px;">${obraMap[l.obra_id]||'—'} · ${l.data||''} ${l.etapa ? '· '+etapaLabel(l.etapa) : ''}</div>
+            <div style="font-size:10px;color:var(--texto3);margin-top:2px;">${obraMap[l.obra_id]||'—'} · ${l.data||''} ${l.etapa ? '· '+etapaLabel(l.etapa) : ''}</div>
           </div>
           <span style="font-size:12px;font-weight:700;color:#f59e0b;font-family:'JetBrains Mono',monospace;">${fmtR(l.total)}</span>
         </div>`).join('')}
