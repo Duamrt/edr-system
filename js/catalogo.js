@@ -2,6 +2,7 @@
 // CATÁLOGO DE MATERIAIS
 // ══════════════════════════════════════════
 let filtroAuto = false;
+let _editandoMaterialId = null; // null = novo, id = editando
 function filtrarSoAuto() {
   filtroAuto = !filtroAuto;
   renderCatalogo();
@@ -42,6 +43,7 @@ function renderCatalogo() {
           <option value="">— cat —</option>${catSelect}
         </select>
         ${isAuto ? `<button onclick="confirmarAutoMaterial('${m.id}')" style="background:rgba(46,204,113,0.08);border:1px solid rgba(46,204,113,0.2);color:var(--verde-hl);border-radius:6px;padding:3px 8px;font-size:9px;font-family:'Rajdhani',sans-serif;font-weight:700;cursor:pointer;white-space:nowrap;" title="Confirmar revisão">✓ OK</button>` : ''}
+        <button onclick="editarMaterial('${m.id}')" style="background:none;border:none;color:var(--texto3);cursor:pointer;font-size:14px;padding:4px;" title="Editar material">✏️</button>
         <button onclick="excluirMaterial('${m.id}')" style="background:none;border:none;color:var(--texto3);cursor:pointer;font-size:14px;padding:4px;" title="Excluir">🗑</button>
       ` : m.categoria ? `<span class="catalogo-cat">${m.categoria}</span>` : ''}
     </div>`;
@@ -186,6 +188,7 @@ async function salvarCadastroRapido() {
 
 
 function abrirModalNovoMaterial() {
+  _editandoMaterialId = null;
   document.getElementById('mat-nome').value = '';
   document.getElementById('mat-unidade').value = 'UN';
   // Popular select de categoria a partir do ETAPAS (fonte única)
@@ -195,6 +198,27 @@ function abrirModalNovoMaterial() {
   }
   selCat.value = '';
   document.getElementById('modal-material-aviso').classList.add('hidden');
+  document.getElementById('btn-salvar-mat').textContent = '💾 SALVAR MATERIAL';
+  document.getElementById('modal-material').classList.remove('hidden');
+  setTimeout(() => document.getElementById('mat-nome').focus(), 100);
+}
+
+function editarMaterial(id) {
+  const m = catalogoMateriais.find(x => x.id === id);
+  if (!m) return;
+  _editandoMaterialId = id;
+  // Popular select de categoria
+  const selCat = document.getElementById('mat-categoria');
+  if (selCat && typeof ETAPAS !== 'undefined') {
+    selCat.innerHTML = '<option value="">— Selecione —</option>' + ETAPAS.map(e => `<option value="${e.key}">${e.lb}</option>`).join('');
+  }
+  // Preencher campos
+  document.getElementById('mat-nome').value = m.nome || '';
+  document.getElementById('mat-unidade').value = m.unidade || 'UN';
+  selCat.value = m.categoria || '';
+  document.getElementById('modal-material-aviso').classList.add('hidden');
+  document.getElementById('btn-salvar-mat').textContent = '💾 SALVAR ALTERAÇÕES';
+  document.getElementById('btn-salvar-mat').disabled = false;
   document.getElementById('modal-material').classList.remove('hidden');
   setTimeout(() => document.getElementById('mat-nome').focus(), 100);
 }
@@ -206,9 +230,9 @@ function onMatNomeInput() {
   const aviso = document.getElementById('modal-material-aviso');
   const list = document.getElementById('ac-mat-list');
   
-  // Verificar duplicata exata
+  // Verificar duplicata exata (excluir o próprio item se estiver editando)
   if (nome.length >= 3) {
-    const similar = catalogoMateriais.find(m => norm(m.nome) === norm(nome));
+    const similar = catalogoMateriais.find(m => norm(m.nome) === norm(nome) && m.id !== _editandoMaterialId);
     if (similar) {
       aviso.innerHTML = `⚠ Material já existe: <b>${similar.codigo}</b> — ${similar.nome}`;
       aviso.classList.remove('hidden');
@@ -248,6 +272,32 @@ async function salvarMaterial() {
   const unidade = document.getElementById('mat-unidade').value;
   const categoria = document.getElementById('mat-categoria').value;
   if (!nome) { showToast('⚠ INFORME O NOME DO MATERIAL.'); return; }
+  const btn = document.getElementById('btn-salvar-mat');
+
+  // === MODO EDIÇÃO ===
+  if (_editandoMaterialId) {
+    const atual = catalogoMateriais.find(m => m.id === _editandoMaterialId);
+    if (!atual) return;
+    // Verificar duplicata (excluindo o próprio)
+    const duplicata = catalogoMateriais.find(m => m.id !== _editandoMaterialId && norm(m.nome) === norm(nome));
+    if (duplicata) { showToast(`⚠ MATERIAL JÁ EXISTE: ${duplicata.codigo}`); return; }
+    btn.disabled = true; btn.textContent = 'SALVANDO...';
+    try {
+      await sbPatch('materiais', `?id=eq.${_editandoMaterialId}`, { nome, unidade, categoria, auto: false });
+      atual.nome = nome;
+      atual.unidade = unidade;
+      atual.categoria = categoria;
+      atual.auto = false;
+      _editandoMaterialId = null;
+      fecharModal('material');
+      renderCatalogo();
+      showToast(`✅ MATERIAL ${atual.codigo} ATUALIZADO!`);
+    } catch(e) { showToast('ERRO AO ATUALIZAR MATERIAL.'); }
+    btn.disabled = false; btn.textContent = '💾 SALVAR ALTERAÇÕES';
+    return;
+  }
+
+  // === MODO NOVO ===
   // Verificar duplicata exata
   const existe = catalogoMateriais.find(m => norm(m.nome) === norm(nome));
   if (existe) { showToast(`⚠ MATERIAL JÁ EXISTE: ${existe.codigo}`); return; }
@@ -256,7 +306,7 @@ async function salvarMaterial() {
     ? Math.max(...catalogoMateriais.map(m => parseInt(m.codigo)||0)) + 1
     : 1;
   const codigo = String(proxNum).padStart(6, '0');
-  const btn = document.getElementById('btn-salvar-mat'); btn.disabled = true; btn.textContent = 'SALVANDO...';
+  btn.disabled = true; btn.textContent = 'SALVANDO...';
   try {
     const [saved] = await sbPost('materiais', { codigo, nome, unidade, categoria });
     catalogoMateriais.push(saved);
