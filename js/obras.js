@@ -622,6 +622,8 @@ async function salvarNovaObra() {
       obras.push(nova); obras.sort((a,b)=>a.nome.localeCompare(b.nome));
       populateSelects(); renderDashboard(); renderObrasCards();
       showToast(`✅ OBRA ${nome} CADASTRADA!`);
+      // Criar no ClickUp em background (não bloqueia)
+      if (typeof clickupCriarObra === 'function') clickupCriarObra(nome);
     }
     fecharModal('obra');
   } catch(e) { showToast('ERRO AO SALVAR.'); }
