@@ -299,6 +299,10 @@ async function confirmarConclusaoObra() {
       endereco_rua: rua, endereco_numero: numero, endereco_bairro: bairro,
       cidade, endereco_cep: cep, slug_entrega
     });
+    // Arquivar no ClickUp
+    if (obra?.clickup_list_id && typeof clickupArquivarObra === 'function') {
+      clickupArquivarObra(obra.clickup_list_id);
+    }
     // Gerar termo
     gerarTermoEntrega({ proprietario, cpf, dataEntrega, rua, numero, bairro, cidade, modelo: nome });
     await loadObras();
@@ -614,6 +618,11 @@ async function salvarNovaObra() {
     const payload = { nome, cidade, valor_venda: valorVenda, contratante, cpf_contratante, slug_entrega };
     if (editId) {
       await sbPatch('obras', `?id=eq.${editId}`, payload);
+      // Renomear no ClickUp se mudou o nome
+      const obraAtual = [...obras, ...obrasArquivadas].find(o => o.id === editId);
+      if (obraAtual?.clickup_list_id && obraAtual.nome !== nome) {
+        clickupRenomearObra(obraAtual.clickup_list_id, nome);
+      }
       await loadObras();
       populateSelects(); renderDashboard(); renderObrasCards();
       showToast(`✅ OBRA "${nome}" ATUALIZADA!`);
@@ -622,8 +631,8 @@ async function salvarNovaObra() {
       obras.push(nova); obras.sort((a,b)=>a.nome.localeCompare(b.nome));
       populateSelects(); renderDashboard(); renderObrasCards();
       showToast(`✅ OBRA ${nome} CADASTRADA!`);
-      // Criar no ClickUp em background (não bloqueia)
-      if (typeof clickupCriarObra === 'function') clickupCriarObra(nome);
+      // Criar no ClickUp em background
+      if (typeof clickupCriarObra === 'function') clickupCriarObra(nome, nova.id);
     }
     fecharModal('obra');
   } catch(e) { showToast('ERRO AO SALVAR.'); }

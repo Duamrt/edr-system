@@ -40,28 +40,44 @@ const CLICKUP_ETAPAS = [
   '61 · INSTALAÇÃO DE LOUÇAS E METAIS','62 · LIMPEZA DA OBRA E ENTREGA'
 ];
 
-async function clickupCriarObra(nomeObra) {
+// Cache da config pra não buscar toda hora
+let _clickupConfig = null;
+
+async function _getClickupConfig() {
+  if (_clickupConfig) return _clickupConfig;
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_clickup_config`, {
+      method: 'POST', headers: getHdrs(), body: '{}'
+    });
+    _clickupConfig = await r.json();
+    return _clickupConfig;
+  } catch(e) { return null; }
+}
+
+// ── CRIAR obra no ClickUp ──
+async function clickupCriarObra(nomeObra, obraId) {
   if (MODO_DEMO) return;
   try {
-    // Buscar config do ClickUp via Supabase
-    const configResp = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_clickup_config`, {
-      method: 'POST',
-      headers: getHdrs(),
-      body: '{}'
-    });
-    const config = await configResp.json();
-    if (!config?.key || !config?.folder) { console.log('ClickUp config não encontrada'); return; }
+    const config = await _getClickupConfig();
+    if (!config?.key || !config?.folder) return;
 
-    // 1. Criar List no ClickUp
+    // Criar List
     const listResp = await fetch(`https://api.clickup.com/api/v2/folder/${config.folder}/list`, {
       method: 'POST',
       headers: { 'Authorization': config.key, 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: nomeObra })
     });
     const list = await listResp.json();
-    if (!list.id) { console.log('Erro ao criar List no ClickUp:', list); return; }
+    if (!list.id) return;
 
-    // 2. Criar as 62 etapas (em lotes pra não travar)
+    // Salvar o clickup_list_id na obra do Supabase
+    if (obraId) {
+      await sbPatch('obras', `?id=eq.${obraId}`, { clickup_list_id: list.id });
+      const obra = obras.find(o => o.id === obraId);
+      if (obra) obra.clickup_list_id = list.id;
+    }
+
+    // Criar 62 etapas
     let criadas = 0;
     for (const etapa of CLICKUP_ETAPAS) {
       try {
@@ -74,9 +90,62 @@ async function clickupCriarObra(nomeObra) {
       } catch(e) {}
     }
 
-    console.log(`[ClickUp] Obra "${nomeObra}" criada: ${criadas}/62 etapas`);
+    console.log(`[ClickUp] Obra "${nomeObra}" criada: ${criadas}/62 etapas (List: ${list.id})`);
     showToast(`📋 Obra criada no ClickUp com ${criadas} etapas!`);
-  } catch(e) {
-    console.log('Erro ClickUp:', e.message);
-  }
+  } catch(e) { console.log('Erro ClickUp criar:', e.message); }
+}
+
+// ── RENOMEAR obra no ClickUp ──
+async function clickupRenomearObra(clickupListId, novoNome) {
+  if (MODO_DEMO || !clickupListId) return;
+  try {
+    const config = await _getClickupConfig();
+    if (!config?.key) return;
+
+    await fetch(`https://api.clickup.com/api/v2/list/${clickupListId}`, {
+      method: 'PUT',
+      headers: { 'Authorization': config.key, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: novoNome })
+    });
+    console.log(`[ClickUp] Obra renomeada: ${novoNome}`);
+  } catch(e) { console.log('Erro ClickUp renomear:', e.message); }
+}
+
+// ── ARQUIVAR obra no ClickUp ──
+async function clickupArquivarObra(clickupListId) {
+  if (MODO_DEMO || !clickupListId) return;
+  try {
+    const config = await _getClickupConfig();
+    if (!config?.key) return;
+
+    // ClickUp não tem "arquivar" por API, mas renomear com prefixo funciona
+    const listResp = await fetch(`https://api.clickup.com/api/v2/list/${clickupListId}`, {
+      headers: { 'Authorization': config.key }
+    });
+    const list = await listResp.json();
+    const nome = list.name || '';
+    if (!nome.startsWith('[ARQUIVADA]')) {
+      await fetch(`https://api.clickup.com/api/v2/list/${clickupListId}`, {
+        method: 'PUT',
+        headers: { 'Authorization': config.key, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: `[ARQUIVADA] ${nome}` })
+      });
+    }
+    console.log(`[ClickUp] Obra arquivada: ${nome}`);
+  } catch(e) { console.log('Erro ClickUp arquivar:', e.message); }
+}
+
+// ── DELETAR obra no ClickUp ──
+async function clickupDeletarObra(clickupListId) {
+  if (MODO_DEMO || !clickupListId) return;
+  try {
+    const config = await _getClickupConfig();
+    if (!config?.key) return;
+
+    await fetch(`https://api.clickup.com/api/v2/list/${clickupListId}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': config.key }
+    });
+    console.log(`[ClickUp] Obra deletada: ${clickupListId}`);
+  } catch(e) { console.log('Erro ClickUp deletar:', e.message); }
 }
