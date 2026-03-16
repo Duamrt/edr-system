@@ -144,7 +144,7 @@ function setView(v) {
   // Mestre só pode acessar diárias
   if (usuarioAtual?.perfil === 'mestre' && v !== 'diarias') return;
   syncBnav(v);
-  const views = ['dashboard','obras','estoque','notas','form','creditos','setup','catalogo','banco','relatorio','diarias','custos'];
+  const views = ['dashboard','obras','estoque','notas','form','creditos','setup','catalogo','banco','relatorio','diarias','custos','leads'];
   views.forEach(name => {
     document.getElementById(`view-${name}`)?.classList.toggle('hidden', name !== v);
     const nb = document.getElementById(`nav-${name}`);
@@ -157,6 +157,7 @@ function setView(v) {
   if (v === 'relatorio') initRelatorio();
   if (v === 'diarias') initDiarias();
   if (v === 'custos') renderCustos();
+  if (v === 'leads') renderLeads();
 }
 
 

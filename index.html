@@ -128,6 +128,9 @@
   <button class="nav-btn admin-only" id="nav-custos" data-view="custos" onclick="setView('custos')" draggable="true">
     <span class="nav-icon">💰</span>CUSTOS CEF<span class="nav-key">F10</span>
   </button>
+  <button class="nav-btn admin-only" id="nav-leads" data-view="leads" onclick="setView('leads')" draggable="true">
+    <span class="nav-icon">🎯</span>LEADS
+  </button>
   <button class="nav-btn admin-only" id="nav-banco" data-view="banco" onclick="setView('banco')" draggable="true">
     <span class="nav-icon">🗄</span>DADOS<span class="nav-key">F11</span>
   </button>
@@ -568,6 +571,24 @@
       <div class="alert-title">✅ SEGURO</div>
       <div class="alert-text">O SQL cria/atualiza apenas as tabelas do EDR System. As tabelas obras e lancamentos do EDR Obras não são afetadas.</div>
     </div>
+  </div>
+
+  <!-- LEADS (Duda chatbot) -->
+  <div id="view-leads" class="hidden">
+    <div style="position:sticky;top:0;z-index:90;background:var(--bg);padding:10px 0 8px 0;border-bottom:1px solid var(--borda);margin-bottom:8px;">
+      <div class="modulo-badge">🎯 LEADS</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        <select id="leads-filtro-status" onchange="renderLeads()" style="padding:8px 12px;background:var(--bg2);border:1px solid var(--borda);border-radius:8px;color:var(--branco);font-size:12px;font-family:inherit;">
+          <option value="">Todos</option>
+          <option value="novo" selected>Novos</option>
+          <option value="contatado">Contatados</option>
+          <option value="convertido">Convertidos</option>
+          <option value="descartado">Descartados</option>
+        </select>
+        <div id="leads-stats" style="font-size:11px;color:var(--texto3);"></div>
+      </div>
+    </div>
+    <div id="leads-lista"></div>
   </div>
 
   <!-- CATÁLOGO DE MATERIAIS -->
@@ -1144,6 +1165,7 @@ VERGALHAO CA50" style="width:100%;min-height:140px;padding:14px;background:var(-
 <script src="js/dashboard.js"></script>
 <script src="js/custos.js"></script>
 <script src="js/menu.js"></script>
+<script src="js/leads.js"></script>
 <script src="js/clickup.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/ajuda.js"></script>

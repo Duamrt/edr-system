@@ -204,7 +204,7 @@ function aplicarPerfil() {
   else MODO_DEMO = false;
 
   ['nav-dashboard','nav-obras','nav-estoque','nav-notas','nav-form','nav-creditos',
-   'nav-catalogo','nav-relatorio','nav-banco','nav-setup','nav-diarias','nav-custos'].forEach(id => {
+   'nav-catalogo','nav-relatorio','nav-banco','nav-setup','nav-diarias','nav-custos','nav-leads'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.classList.remove('hidden');
   });
