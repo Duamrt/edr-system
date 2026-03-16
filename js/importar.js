@@ -314,7 +314,7 @@ function renderImportPreview() {
       <div style="font-size:11px;padding:4px 10px;border-radius:4px;background:rgba(34,197,94,0.08);color:var(--verde-hl);border:1px solid rgba(34,197,94,0.15);">
         ${importItensPreview.length} itens encontrados
       </div>
-      ${matchCount > 0 ? `<div style="font-size:11px;padding:4px 10px;border-radius:4px;background:rgba(34,197,94,0.08);color:var(--verde-hl);border:1px solid rgba(34,197,94,0.15);">`}
+      ${matchCount > 0 ? `<div style="font-size:11px;padding:4px 10px;border-radius:4px;background:rgba(34,197,94,0.08);color:var(--verde-hl);border:1px solid rgba(34,197,94,0.15);">
         ✓ ${matchCount} com match no catálogo
       </div>` : ''}
       ${semMatch > 0 ? `<div style="font-size:11px;padding:4px 10px;border-radius:4px;background:rgba(245,158,11,0.1);color:#fbbf24;border:1px solid rgba(245,158,11,0.3);">
