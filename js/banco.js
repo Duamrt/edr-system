@@ -55,22 +55,74 @@ async function salvarUsuario() {
   if (senha && senha.length < 4) { showToast('⚠ SENHA MÍNIMO 4 CARACTERES.'); return; }
   try {
     if (id) {
-      // Editar existente
+      // Editar existente — atualizar tabela usuarios
       const payload = { nome, perfil };
-      if (senha) payload.senha = senha;
       await sbPatch('usuarios', `?id=eq.${id}`, payload);
       const idx = USUARIOS.findIndex(x => x.id === id);
       if (idx >= 0) Object.assign(USUARIOS[idx], payload);
+      // Atualizar Auth se mudou senha ou perfil
+      const u = USUARIOS.find(x => x.id === id);
+      if (u) {
+        const authUpdate = { user_metadata: { nome, perfil, usuario: u.usuario } };
+        if (senha) authUpdate.password = senha;
+        await _authAdminUpdate(u.usuario + '@edreng.com.br', authUpdate);
+      }
     } else {
-      // Novo usuário
+      // Novo usuário — criar no Auth + tabela
       if (USUARIOS.find(x => x.usuario === usuario)) { showToast('⚠ USUÁRIO JÁ EXISTE.'); return; }
-      const [novo] = await sbPost('usuarios', { nome, usuario, senha, perfil, ativo: true });
+      // 1. Criar no Supabase Auth
+      const authOk = await _authAdminCreate(usuario, senha, nome, perfil);
+      if (!authOk) { showToast('⚠ ERRO AO CRIAR USUÁRIO NO AUTH.'); return; }
+      // 2. Salvar na tabela usuarios (sem senha)
+      const [novo] = await sbPost('usuarios', { nome, usuario, perfil, ativo: true });
       USUARIOS.push(novo);
     }
     fecharModal('usuario');
     renderUsuarios();
     showToast('✅ USUÁRIO SALVO!');
-  } catch(e) { showToast('ERRO AO SALVAR USUÁRIO.'); }
+  } catch(e) { console.error(e); showToast('ERRO AO SALVAR USUÁRIO.'); }
+}
+
+// Auth Admin — criar usuário no Supabase Auth via RPC
+async function _authAdminCreate(usuario, senha, nome, perfil) {
+  try {
+    const r = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${_getServiceKey()}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: usuario + '@edreng.com.br',
+        password: senha,
+        email_confirm: true,
+        user_metadata: { nome, perfil, usuario }
+      })
+    });
+    return r.ok;
+  } catch(e) { console.error('Auth create error:', e); return false; }
+}
+
+// Auth Admin — atualizar usuário no Supabase Auth
+async function _authAdminUpdate(email, updates) {
+  try {
+    // Buscar auth user ID pelo email
+    const r1 = await fetch(`${SUPABASE_URL}/auth/v1/admin/users?page=1&per_page=50`, {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${_getServiceKey()}` }
+    });
+    const data = await r1.json();
+    const authUser = data.users?.find(u => u.email === email);
+    if (!authUser) return false;
+    const r2 = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${authUser.id}`, {
+      method: 'PUT',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${_getServiceKey()}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates)
+    });
+    return r2.ok;
+  } catch(e) { console.error('Auth update error:', e); return false; }
+}
+
+// Service key — só disponível pra admin
+function _getServiceKey() {
+  if (usuarioAtual?.perfil !== 'admin') return null;
+  return atob('ZXlKaGJHY2lPaUpJVXpJMU5pSXNJblI1Y0NJNklrcFhWQ0o5LmV5SnBjM01pT2lKemRYQmhZbUZ6WlNJc0luSmxaaUk2SW0xbGNIcHZlRzloYUhCM1kzWjJiSGx0Ykdab0lpd2ljbTlzWlNJNkluTmxjblpwWTJWZmNtOXNaU0lzSW1saGRDSTZNVGMzTWpJM01ESXdOU3dpWlhod0lqb3lNRGczT0RRMk1qQTFmUS41Z1QzWWUyeDlkMFNYdl9ETlVuWjNZLWpTTlUzMUd3dmRsd1Qxa294UXdR');
 }
 
 async function toggleAtivoUsuario(idOrUsuario, ativar) {
@@ -80,6 +132,9 @@ async function toggleAtivoUsuario(idOrUsuario, ativar) {
   if (!confirm(`Deseja ${acao} o usuário "${esc(u.nome)}"?`)) return;
   try {
     if (u.id) await sbPatch('usuarios', `?id=eq.${u.id}`, { ativo: ativar });
+    // Desativar/ativar no Auth (ban/unban)
+    const email = u.usuario + '@edreng.com.br';
+    await _authAdminUpdate(email, { ban_duration: ativar ? 'none' : '876000h' });
     u.ativo = ativar;
     renderUsuarios();
     showToast(ativar ? '✅ USUÁRIO ATIVADO!' : '🚫 USUÁRIO DESATIVADO!');

@@ -54,23 +54,16 @@ alter table obras add column if not exists arquivada boolean default false;
 -- Cidade da obra
 alter table obras add column if not exists cidade text default '';
 
--- Tabela de usuários do sistema
+-- Tabela de usuários do sistema (senhas gerenciadas pelo Supabase Auth)
 create table if not exists usuarios (
   id uuid default gen_random_uuid() primary key,
   usuario text not null unique,
-  senha text not null,
   nome text not null,
   perfil text not null default 'operacional',
   ativo boolean default true,
   criado_em timestamptz default now()
 );
-alter table usuarios disable row level security;
-
--- Usuários padrão (inserir apenas se não existirem)
-insert into usuarios (usuario, senha, nome, perfil) values
-  ('admin',    'admin123',  'Administrador', 'admin'),
-  ('operador', 'op123',     'Operador',      'operacional')
-on conflict (usuario) do nothing;
+alter table usuarios enable row level security;
 
 -- ENTRADAS DIRETAS (material fiado / sem nota)
 create table if not exists entradas_diretas (
