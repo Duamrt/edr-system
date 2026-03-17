@@ -54,6 +54,9 @@ alter table obras add column if not exists arquivada boolean default false;
 -- Cidade da obra
 alter table obras add column if not exists cidade text default '';
 
+-- Área construída (m²)
+alter table obras add column if not exists area_m2 numeric default 0;
+
 -- Tabela de usuários do sistema (senhas gerenciadas pelo Supabase Auth)
 create table if not exists usuarios (
   id uuid default gen_random_uuid() primary key,

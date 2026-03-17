@@ -318,6 +318,9 @@ function buildPainelFinanceiro() {
   // ── DETALHAMENTO POR OBRA ──
   html += buildDetalheObras(relMesAtual);
 
+  // ── CUSTO POR M² ──
+  html += buildCustoPorM2();
+
   return html;
 }
 
@@ -465,6 +468,65 @@ function buildDetalheObras(ym) {
   const [, ms] = ym.split('-');
   return `<div class="rel-card" style="margin-bottom:16px;">
     <div class="rel-card-title">🏗 DETALHAMENTO POR OBRA — ${MESES_FULL[parseInt(ms)-1]}</div>
+    ${linhas}
+  </div>`;
+}
+
+// ── CUSTO POR M² ─────────────────────────────────────────────
+function buildCustoPorM2() {
+  const todasObras = [...obras, ...obrasArquivadas];
+  const obrasComArea = todasObras.filter(o => Number(o.area_m2) > 0);
+  if (!obrasComArea.length) return '';
+
+  const dados = obrasComArea.map(o => {
+    const area = Number(o.area_m2);
+    const totalGasto = lancamentos.filter(l => l.obra_id === o.id).reduce((s,l) => s + Number(l.total||0), 0);
+    const maoObra = lancamentos.filter(l => l.obra_id === o.id && getCatFromLanc(l) === '28_mao').reduce((s,l) => s + Number(l.total||0), 0);
+    const valorVenda = Number(o.valor_venda||0);
+    const custoM2 = area > 0 ? totalGasto / area : 0;
+    const maoM2 = area > 0 ? maoObra / area : 0;
+    const vendaM2 = area > 0 && valorVenda > 0 ? valorVenda / area : 0;
+    const lucroM2 = vendaM2 > 0 ? vendaM2 - custoM2 : 0;
+    const margemPct = vendaM2 > 0 ? (lucroM2 / vendaM2 * 100) : 0;
+    return { nome: o.nome, area, totalGasto, maoObra, custoM2, maoM2, vendaM2, lucroM2, margemPct, arquivada: o.arquivada };
+  }).sort((a,b) => a.custoM2 - b.custoM2);
+
+  const linhas = dados.map(d => {
+    const corMargem = d.lucroM2 > 0 ? '#2ecc71' : d.vendaM2 > 0 ? '#ef4444' : 'var(--texto4)';
+    const badge = d.arquivada ? '<span style="font-size:8px;background:rgba(34,197,94,0.15);color:#2ecc71;padding:2px 6px;border-radius:4px;margin-left:6px;font-weight:700;">CONCLUÍDA</span>' : '';
+    return `<div style="background:var(--bg2);border:1px solid var(--borda2);border-radius:10px;padding:14px;margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <div style="font-size:12px;font-weight:700;color:var(--branco);">${esc(d.nome)}${badge}</div>
+        <div style="font-size:10px;color:var(--texto4);">${d.area.toFixed(1)} m²</div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px;">
+        <div>
+          <div style="font-size:9px;color:var(--texto4);margin-bottom:2px;">CUSTO / m²</div>
+          <div style="font-size:16px;font-weight:800;color:#e74c3c;font-family:'Rajdhani',sans-serif;">${fmtR(d.custoM2)}</div>
+        </div>
+        <div>
+          <div style="font-size:9px;color:var(--texto4);margin-bottom:2px;">MÃO OBRA / m²</div>
+          <div style="font-size:16px;font-weight:800;color:#f39c12;font-family:'Rajdhani',sans-serif;">${fmtR(d.maoM2)}</div>
+        </div>
+        ${d.vendaM2 > 0 ? `<div>
+          <div style="font-size:9px;color:var(--texto4);margin-bottom:2px;">VENDA / m²</div>
+          <div style="font-size:16px;font-weight:800;color:#2ecc71;font-family:'Rajdhani',sans-serif;">${fmtR(d.vendaM2)}</div>
+        </div>
+        <div>
+          <div style="font-size:9px;color:var(--texto4);margin-bottom:2px;">LUCRO / m²</div>
+          <div style="font-size:16px;font-weight:800;color:${corMargem};font-family:'Rajdhani',sans-serif;">${fmtR(d.lucroM2)}</div>
+          <div style="font-size:9px;color:${corMargem};margin-top:2px;">Margem ${d.margemPct.toFixed(1)}%</div>
+        </div>` : ''}
+      </div>
+      <div style="margin-top:10px;font-size:10px;color:var(--texto4);">
+        Total gasto: ${fmtR(d.totalGasto)} · Mão de obra: ${fmtR(d.maoObra)} (${d.totalGasto > 0 ? (d.maoObra/d.totalGasto*100).toFixed(0) : 0}%)
+      </div>
+    </div>`;
+  }).join('');
+
+  return `<div class="rel-card" style="margin-bottom:16px;">
+    <div class="rel-card-title">📐 CUSTO POR m²</div>
+    <div style="font-size:11px;color:var(--texto3);margin-bottom:12px;">Comparativo de custo acumulado por área construída</div>
     ${linhas}
   </div>`;
 }

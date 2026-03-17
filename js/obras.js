@@ -612,10 +612,11 @@ async function salvarNovaObra() {
   const contratante = (document.getElementById('nova-obra-contratante').value||'').toUpperCase().trim();
   const cpf_contratante = (document.getElementById('nova-obra-cpf').value||'').trim();
   const slug_entrega = (document.getElementById('nova-obra-slug').value||'').toLowerCase().trim().replace(/\s+/g,'-');
+  const area_m2 = parseFloat(document.getElementById('nova-obra-area').value) || 0;
   const editId = document.getElementById('obra-edit-id').value;
   if (!nome) { showToast('INFORME O NOME DA OBRA.'); return; }
   try {
-    const payload = { nome, cidade, valor_venda: valorVenda, contratante, cpf_contratante, slug_entrega };
+    const payload = { nome, cidade, valor_venda: valorVenda, contratante, cpf_contratante, slug_entrega, area_m2 };
     if (editId) {
       await sbPatch('obras', `?id=eq.${editId}`, payload);
       // Renomear no ClickUp se mudou o nome
@@ -647,6 +648,7 @@ function abrirModalObra(obraId) {
   document.getElementById('nova-obra-contratante').value = obra ? (obra.contratante || '') : '';
   document.getElementById('nova-obra-cpf').value = obra ? (obra.cpf_contratante || '') : '';
   document.getElementById('nova-obra-slug').value = obra ? (obra.slug_entrega || '') : '';
+  document.getElementById('nova-obra-area').value = obra ? (obra.area_m2 || '') : '';
   document.getElementById('modal-obra-titulo').textContent = obra ? '🏗 EDITAR OBRA' : '🏗 NOVA OBRA';
   document.getElementById('modal-obra').classList.remove('hidden');
   setTimeout(() => document.getElementById('nova-obra-nome').focus(), 100);

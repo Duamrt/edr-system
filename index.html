@@ -940,7 +940,10 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
     <input type="hidden" id="obra-edit-id">
     <div class="field"><label>NOME DA OBRA *</label><input type="text" id="nova-obra-nome" placeholder="EX: RESIDENCIAL SILVA"></div>
     <div class="field"><label>CIDADE</label><input type="text" id="nova-obra-cidade" placeholder="EX: RECIFE"></div>
-    <div class="field"><label>VALOR DE VENDA (R$)</label><input type="number" id="nova-obra-valor-venda" min="0" step="0.01" placeholder="0,00"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div class="field"><label>VALOR DE VENDA (R$)</label><input type="number" id="nova-obra-valor-venda" min="0" step="0.01" placeholder="0,00"></div>
+      <div class="field"><label>ÁREA CONSTRUÍDA (m²)</label><input type="number" id="nova-obra-area" min="0" step="0.01" placeholder="0,00"></div>
+    </div>
     <div style="border-top:1px solid var(--borda);margin:12px 0 8px;padding-top:10px;">
       <div style="font-size:10px;color:var(--texto3);letter-spacing:2px;font-weight:700;margin-bottom:8px;">👤 DADOS DO CONTRATANTE (p/ contratos)</div>
     </div>
