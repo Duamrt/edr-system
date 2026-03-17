@@ -214,6 +214,7 @@ function aplicarPerfil() {
   document.body.classList.toggle('perfil-mestre', isMestre);
 
   document.querySelectorAll('.admin-only').forEach(el => el.classList.toggle('hidden', !isAdmin));
+  document.querySelectorAll('.admin-mestre').forEach(el => el.classList.toggle('hidden', !isAdmin && !isMestre));
   document.querySelectorAll('.operacional-info').forEach(el => el.classList.toggle('hidden', isAdmin));
 
   if (!isAdmin) {
