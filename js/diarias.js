@@ -579,7 +579,7 @@ async function diarEditarLabelQuinzena() {
   const novoLabel = prompt('Editar descrição da quinzena:', diarQuinzenaAtiva.label);
   if (!novoLabel || novoLabel.trim() === '' || novoLabel.trim() === diarQuinzenaAtiva.label) return;
   try {
-    await sbPatch('diarias_quinzenas', diarQuinzenaAtiva.id, { label: novoLabel.trim() });
+    await sbPatch('diarias_quinzenas', '?id=eq.' + diarQuinzenaAtiva.id, { label: novoLabel.trim() });
     diarQuinzenaAtiva.label = novoLabel.trim();
     const q = diarQuinzenas.find(x => x.id === diarQuinzenaAtiva.id);
     if (q) q.label = novoLabel.trim();
