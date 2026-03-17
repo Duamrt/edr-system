@@ -17,7 +17,7 @@ function renderCatalogo() {
   const busca = norm(document.getElementById('catalogo-busca')?.value || '');
   const catFiltro = document.getElementById('catalogo-cat-filtro')?.value || '';
   let lista = [...catalogoMateriais];
-  if (busca) lista = lista.filter(m => norm(m.nome).includes(busca) || m.codigo.includes(busca));
+  if (busca) lista = lista.filter(m => norm(m.nome).includes(busca) || (m.codigo && m.codigo.includes(busca)));
   if (catFiltro) lista = lista.filter(m => (m.categoria||'outros') === catFiltro);
   if (filtroAuto) lista = lista.filter(m => m.auto === true || m.auto === 'true');
   const el = document.getElementById('catalogo-lista');

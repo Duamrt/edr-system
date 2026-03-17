@@ -107,7 +107,8 @@ function diarAbrirCalendarioFunc(nome) {
     }
 
     if (reg) {
-      const periodos = typeof reg.periodos === 'string' ? JSON.parse(reg.periodos||'[]') : (reg.periodos||[]);
+      let periodos = [];
+      try { periodos = typeof reg.periodos === 'string' ? JSON.parse(reg.periodos||'[]') : (reg.periodos||[]); } catch(e) { console.warn('JSON periodos inválido:', reg.periodos); }
       const obras = periodos.map(p => {
         const t = p.turno === 'manha' ? '☀ manhã' : p.turno === 'tarde' ? '🌤 tarde' : '📅 dia todo';
         return `<span style="font-size:10px;color:var(--texto2)">${t} <strong style="color:var(--branco)">${p.obra}</strong></span>`;

@@ -86,6 +86,7 @@ async function fazerLogout() {
       });
     } catch(e) {}
   }
+  _logoutInProgress = true;
   _authToken = null;
   try { localStorage.removeItem('edr_auth'); } catch(e) {}
   if (_refreshTimer) { clearTimeout(_refreshTimer); _refreshTimer = null; }
@@ -111,6 +112,7 @@ async function fazerLogout() {
 
 // ── SESSÃO: restaurar + refresh ──────────────────────────────
 let _refreshTimer = null;
+let _logoutInProgress = false;
 
 async function _refreshAuthToken(refreshToken) {
   try {
@@ -174,7 +176,7 @@ function verificarSessao() {
     // Token expirado — tentar refresh em background
     if (sess.refresh_token) {
       _refreshAuthToken(sess.refresh_token).then(ok => {
-        if (!ok) fazerLogout();
+        if (!ok && !_logoutInProgress) fazerLogout();
       });
     }
     // Mesmo com token expirado, entrar com dados locais (refresh vai atualizar)

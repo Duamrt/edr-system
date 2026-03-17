@@ -85,10 +85,12 @@ async function salvarUsuario() {
 
 // Auth Admin — criar usuário no Supabase Auth via RPC
 async function _authAdminCreate(usuario, senha, nome, perfil) {
+  const sk = _getServiceKey();
+  if (!sk) { showToast('Sem permissão admin'); return false; }
   try {
     const r = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {
       method: 'POST',
-      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${_getServiceKey()}`, 'Content-Type': 'application/json' },
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${sk}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         email: usuario + '@edreng.com.br',
         password: senha,
