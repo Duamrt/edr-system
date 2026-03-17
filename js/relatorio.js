@@ -631,12 +631,16 @@ async function exportarRelatorioPDF() {
 </div>
 
 <div class="footer">EDR System · ${dataHoje}</div>
+<div class="no-print" style="position:fixed;bottom:0;left:0;right:0;padding:12px;background:#fff;border-top:2px solid #2ecc71;display:flex;gap:10px;justify-content:center;z-index:9999;">
+  <button onclick="window.print()" style="background:#2ecc71;color:#fff;border:none;border-radius:8px;padding:12px 24px;font-size:14px;font-weight:700;cursor:pointer;">🖨 IMPRIMIR</button>
+  <button onclick="window.close()" style="background:#e74c3c;color:#fff;border:none;border-radius:8px;padding:12px 24px;font-size:14px;font-weight:700;cursor:pointer;">← VOLTAR AO SISTEMA</button>
+</div>
+<style>@media print{.no-print{display:none!important;}body{padding-bottom:0!important;}} body{padding-bottom:70px;}</style>
 </body></html>`;
 
   const w = window.open('', '_blank');
   w.document.write(htmlPDF);
   w.document.close();
-  setTimeout(() => { w.print(); }, 400);
 }
 
 function autoFitStatValues() {
