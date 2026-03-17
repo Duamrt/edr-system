@@ -573,6 +573,21 @@ async function diarSalvarNovaQuinzena() {
   } catch(e) { console.error(e); showToast('Erro ao criar quinzena: ' + e.message); }
 }
 
+// ── Editar label da quinzena ──────────────────
+async function diarEditarLabelQuinzena() {
+  if (!diarQuinzenaAtiva) { showToast('Selecione uma quinzena'); return; }
+  const novoLabel = prompt('Editar descrição da quinzena:', diarQuinzenaAtiva.label);
+  if (!novoLabel || novoLabel.trim() === '' || novoLabel.trim() === diarQuinzenaAtiva.label) return;
+  try {
+    await sbPatch('diarias_quinzenas', diarQuinzenaAtiva.id, { label: novoLabel.trim() });
+    diarQuinzenaAtiva.label = novoLabel.trim();
+    const q = diarQuinzenas.find(x => x.id === diarQuinzenaAtiva.id);
+    if (q) q.label = novoLabel.trim();
+    diarAtualizarSelectQuinzena();
+    showToast('Descrição atualizada!');
+  } catch(e) { console.error(e); showToast('Erro ao editar: ' + e.message); }
+}
+
 // ────────────────────────────────────────────
 // INTERPRETAÇÃO LOCAL (regex, sem API)
 // ────────────────────────────────────────────
