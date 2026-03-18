@@ -560,14 +560,9 @@ function renderContratoCard(obraId) {
   const isAdmin = usuarioAtual?.perfil === 'admin';
 
   if (contratoValor <= 0) {
-    if (isAdmin) {
-      el.innerHTML = `<div class="card" style="padding:16px;margin-bottom:12px;text-align:center;border:1px dashed rgba(34,197,94,0.2);">
-        <div style="color:var(--texto3);font-size:12px;margin-bottom:8px;">Nenhum contrato CEF cadastrado para esta obra.</div>
-        <button class="btn-save" style="padding:6px 18px;font-size:11px;" onclick="abrirModalContratoCEF('${esc(obraId)}')">+ CADASTRAR CONTRATO CEF</button>
-      </div>`;
-    } else {
-      el.innerHTML = '';
-    }
+    el.innerHTML = `<div style="padding:10px 14px;margin-bottom:12px;border:1px dashed rgba(255,255,255,0.06);border-radius:8px;text-align:center;">
+      <span style="font-size:11px;color:var(--texto3);">📋 Sem contrato CEF — clique em <strong style="color:var(--verde-hl);">📋 CONTRATO</strong> acima para cadastrar</span>
+    </div>`;
     return;
   }
 
