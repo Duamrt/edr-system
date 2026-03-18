@@ -9,7 +9,7 @@ function abrirNota(id) {
   const itensHTML = itens.length ? itens.map(it => `
     <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--borda);">
       <div style="flex:1;">
-        <div style="font-weight:600;font-size:13px;color:var(--branco);">${it.desc}</div>
+        <div style="font-weight:600;font-size:13px;color:var(--branco);">${esc(it.desc)}</div>
         <div style="font-size:11px;color:var(--texto2);margin-top:3px;">${(()=>{const q=Number(it.qtd);return q%1===0?q:q.toFixed(3);})()} ${it.unidade||'UN'} × ${fmtR(it.preco||0)}/UN${it.desconto>0?' · Desc: '+fmtR(it.desconto):''}</div>
       </div>
       <div style="text-align:right;flex-shrink:0;">
@@ -23,8 +23,8 @@ function abrirNota(id) {
     <div style="background:var(--bg3);border:1px solid var(--borda);border-radius:10px;padding:14px;margin-bottom:14px;">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
         <div>
-          <div style="font-weight:800;font-size:16px;color:var(--branco);">${n.fornecedor}</div>
-          <div style="font-size:12px;color:var(--texto3);margin-top:2px;">${n.cnpj||'SEM CNPJ'}</div>
+          <div style="font-weight:800;font-size:16px;color:var(--branco);">${esc(n.fornecedor)}</div>
+          <div style="font-size:12px;color:var(--texto3);margin-top:2px;">${esc(n.cnpj||'SEM CNPJ')}</div>
         </div>
         <div style="text-align:right;">
           <div style="font-size:11px;color:var(--texto3);">NF</div>
@@ -35,11 +35,11 @@ function abrirNota(id) {
         <div><div style="color:var(--texto3);font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">Emissão</div><div style="color:var(--branco);font-weight:600;">${n.data||'—'}</div></div>
         <div><div style="color:var(--texto3);font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">Recebimento</div><div style="color:var(--branco);font-weight:600;">${n.data_recebimento||'—'}</div></div>
         <div><div style="color:var(--texto3);font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">Natureza</div><div style="color:var(--branco);font-weight:600;">${n.natureza||'—'}</div></div>
-        <div><div style="color:var(--texto3);font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">Destino</div><div style="color:var(--branco);font-weight:600;">${n.obra==='EDR'?'📦 Estoque':n.obra==='EDR_ESCRITORIO'?'🏢 Escritório':n.obra}</div></div>
+        <div><div style="color:var(--texto3);font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">Destino</div><div style="color:var(--branco);font-weight:600;">${n.obra==='EDR'?'📦 Estoque':n.obra==='EDR_ESCRITORIO'?'🏢 Escritório':esc(n.obra)}</div></div>
         <div><div style="color:var(--texto3);font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">Crédito</div><div style="font-weight:700;color:${n.credito_status==='sim'?'var(--verde-hl)':n.credito_status==='misto'?'var(--amarelo)':'#f87171'};">${n.credito_status==='sim'?'✓ Sim':n.credito_status==='misto'?'⚡ Parcial':'✗ Não'}</div></div>
         ${isAdmin ? `<div><div style="color:var(--texto3);font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">Total</div><div style="font-weight:800;color:var(--verde-hl);">${fmtR(total)}</div></div>` : ''}
       </div>
-      ${n.obs ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--borda);font-size:12px;color:var(--texto2);">📝 ${n.obs}</div>` : ''}
+      ${n.obs ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--borda);font-size:12px;color:var(--texto2);">📝 ${esc(n.obs)}</div>` : ''}
     </div>
 
     <!-- ITENS -->
@@ -449,4 +449,12 @@ document.addEventListener('click', e => {
 
 function closeModalOutside(e, w) { if (e.target === document.getElementById(`modal-${w}`)) fecharModal(w); }
 
-function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.remove('hidden'); setTimeout(() => t.classList.add('hidden'), 3000); }
+function showToast(msg, duracao) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.remove('hidden');
+  // Erros/avisos ficam mais tempo (5s), sucesso 3s
+  if (!duracao) duracao = /⚠|ERRO|❌|FALHA/i.test(msg) ? 5000 : 3000;
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.add('hidden'), duracao);
+}

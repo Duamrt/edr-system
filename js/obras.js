@@ -391,7 +391,7 @@ function renderObrasMateriais() {
             <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
               <span style="font-size:11px;color:var(--texto2)">${d.data||'—'}</span>
               ${etiqueta} ${obra}
-              ${d.etapa ? `<span style="font-size:9px;color:var(--texto3)">${etapaLabel(d.etapa)}</span>` : ''}
+              ${d.etapa ? `<span style="font-size:9px;color:var(--texto3)">${esc(etapaLabel(d.etapa))}</span>` : ''}
             </div>
             <div style="display:flex;gap:12px;align-items:center;">
               <span style="font-weight:700;color:var(--branco)">${Number(d.qtd).toFixed(2)}</span>
@@ -495,7 +495,7 @@ function filtrarLanc() {
           <button class="lanc-del admin-only" onclick="excluirLanc('${l.id}')">🗑</button>
         </div>
       </div>
-      ${l.etapa ? `<div style="margin-bottom:3px;"><span style="font-size:9px;font-weight:700;background:rgba(34,197,94,0.08);color:var(--verde3);border:1px solid rgba(34,197,94,0.15);border-radius:4px;padding:1px 6px;font-family:'JetBrains Mono',monospace;">${etapaLabel(l.etapa)}</span></div>` : ''}
+      ${l.etapa ? `<div style="margin-bottom:3px;"><span style="font-size:9px;font-weight:700;background:rgba(34,197,94,0.08);color:var(--verde3);border:1px solid rgba(34,197,94,0.15);border-radius:4px;padding:1px 6px;font-family:'JetBrains Mono',monospace;">${esc(etapaLabel(l.etapa))}</span></div>` : ''}
       <div class="lanc-meta">${obraMap[l.obra_id]||'—'} · ${(()=>{ const q=Number(l.qtd||1); const oNome=(obraMap[l.obra_id]||'').toUpperCase(); if(oNome.includes('ESCRIT')||q<=0||String(l.qtd).includes('e')||q!==Math.round(q*100)/100) return l.data||''; return q+' un · '+(l.data||''); })()}${l.criado_por ? `<span class="admin-only" style="margin-left:6px;font-size:9px;color:var(--texto4);"> · 👤 ${l.criado_por}</span>` : ''}</div>
     </div>`).join('');
   aplicarPerfil();

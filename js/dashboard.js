@@ -356,7 +356,7 @@ function renderDashboard() {
         <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
           <div>
             <div style="font-size:12px;color:var(--branco);font-weight:600;">${esc(l.descricao)}</div>
-            <div style="font-size:10px;color:var(--texto3);margin-top:2px;">${obraMap[l.obra_id]||'—'} · ${l.data||''} ${l.etapa ? '· '+etapaLabel(l.etapa) : ''}</div>
+            <div style="font-size:10px;color:var(--texto3);margin-top:2px;">${esc(obraMap[l.obra_id]||'—')} · ${l.data||''} ${l.etapa ? '· '+esc(etapaLabel(l.etapa)) : ''}</div>
           </div>
           <span style="font-size:12px;font-weight:700;color:#f59e0b;font-family:'JetBrains Mono',monospace;">${fmtR(l.total)}</span>
         </div>`).join('')}

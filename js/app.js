@@ -16,6 +16,33 @@ if ("serviceWorker" in navigator) {
   });
 }
 
+// ── Detecção offline ──────────────────────────────────────
+function _showOfflineBanner(offline) {
+  let banner = document.getElementById('offline-banner');
+  if (offline && !banner) {
+    banner = document.createElement('div');
+    banner.id = 'offline-banner';
+    banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#dc2626;color:#fff;text-align:center;padding:8px;font-size:12px;font-weight:700;letter-spacing:.5px;';
+    banner.textContent = '⚠ SEM CONEXÃO — as alterações não serão salvas até a internet voltar.';
+    document.body.prepend(banner);
+  } else if (!offline && banner) {
+    banner.remove();
+    showToast('✅ Conexão restabelecida.');
+  }
+}
+window.addEventListener('offline', () => _showOfflineBanner(true));
+window.addEventListener('online', () => _showOfflineBanner(false));
+
+// ── Auto-refresh ao voltar pra aba (sync entre usuários) ──
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && usuarioAtual && !_logoutInProgress) {
+    // Recarrega dados silenciosamente ao voltar pra aba (resolve sync entre 2 usuários)
+    Promise.all([loadLancamentos(), loadDistribuicoes(), loadEntradasDiretas(), loadAjustesEstoque()])
+      .then(() => { renderEstoque(); renderDashboard(); })
+      .catch(() => {});
+  }
+});
+
 async function iniciarApp() {
   initCATS();
   await loadUsuarios();
