@@ -1,5 +1,5 @@
 // EDR System — Service Worker
-const CACHE_NAME = 'edr-system-v1';
+const CACHE_NAME = 'edr-system-v2';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
