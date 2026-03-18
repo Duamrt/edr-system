@@ -302,6 +302,27 @@ const AJUDA_CONTEUDO = {
     ]
   },
 
+  'contas-pagar': {
+    titulo: 'Contas a Pagar',
+    perfis: ['admin'],
+    secoes: [
+      { titulo: 'Visao geral', info: 'Modulo simples para controlar contas parceladas ou a prazo. Duam compra 95% a vista — este modulo e para as excecoes.' },
+      { titulo: 'Cadastrar nova conta', passos: [
+        'Clique em + NOVA CONTA',
+        'Preencha: fornecedor, descricao, valor e data de vencimento',
+        'Opcionalmente vincule a uma obra e informe referencia da nota',
+        'Clique em SALVAR'
+      ]},
+      { titulo: 'Gerenciar contas', passos: [
+        'Use os chips de filtro: Todas, Pendentes, Vencidas, Pagas',
+        'Clique em Pago para marcar como paga (registra data automatica)',
+        'Clique em Editar para alterar dados',
+        'Clique em Excluir para remover'
+      ]},
+      { dica: 'Contas vencidas aparecem automaticamente no Dashboard como alerta.' }
+    ]
+  },
+
   setup: {
     titulo: 'Setup',
     perfis: ['admin'],
@@ -410,7 +431,7 @@ function fecharAjudaFora(e) {
 
 // ── DETECTAR VIEW ATIVA ─────────────────────────────────
 function getViewAtiva() {
-  const views = ['dashboard','obras','estoque','notas','form','creditos','diarias','catalogo','relatorio','custos','banco','setup','leads'];
+  const views = ['dashboard','obras','estoque','notas','form','creditos','diarias','catalogo','relatorio','custos','banco','setup','leads','contas-pagar'];
   for (const v of views) {
     const el = document.getElementById('view-' + v);
     if (el && !el.classList.contains('hidden')) return v;

@@ -134,6 +134,9 @@
   <button class="nav-btn admin-only" id="nav-banco" data-view="banco" onclick="setView('banco')" draggable="true">
     <span class="nav-icon">🗄</span>DADOS<span class="nav-key">F11</span>
   </button>
+  <button class="nav-btn admin-only" id="nav-contas-pagar" data-view="contas-pagar" onclick="setView('contas-pagar')" draggable="true">
+    <span class="nav-icon">📋</span><span class="nav-label">Contas</span><span class="nav-key">F13</span>
+  </button>
   <button class="nav-btn admin-only" id="nav-setup" data-view="setup" onclick="setView('setup')" style="color:#dc2626;" draggable="true">
     <span class="nav-icon">⚙</span>SETUP<span class="nav-key">F12</span>
   </button>
@@ -189,6 +192,9 @@
   </button>
   <button class="bnav-more-item admin-only" id="bnav-banco" onclick="setView('banco');closeBnavMore()">
     <span class="bnav-more-icon">🗄</span>DADOS
+  </button>
+  <button class="bnav-more-item admin-only" id="bnav-contas-pagar" onclick="setView('contas-pagar');closeBnavMore()">
+    <span>📋</span><span>Contas</span>
   </button>
   <button class="bnav-more-item admin-only" id="bnav-setup" onclick="setView('setup');closeBnavMore()" style="color:#dc2626;">
     <span class="bnav-more-icon">⚙</span>SETUP
@@ -583,6 +589,15 @@
       <div id="leads-stats" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;"></div>
     </div>
     <div id="leads-lista"></div>
+  </div>
+
+  <!-- CONTAS A PAGAR -->
+  <div id="view-contas-pagar" class="hidden">
+    <div style="position:sticky;top:0;z-index:90;background:var(--bg);padding:10px 0 8px 0;border-bottom:1px solid var(--borda);margin-bottom:8px;">
+      <div class="modulo-badge">📋 CONTAS A PAGAR</div>
+      <div id="contas-stats" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;"></div>
+    </div>
+    <div id="contas-lista"></div>
   </div>
 
   <!-- CATÁLOGO DE MATERIAIS -->
@@ -1145,6 +1160,44 @@ VERGALHAO CA50" style="width:100%;min-height:140px;padding:14px;background:var(-
   </div>
 </div>
 
+<!-- MODAL CONTA A PAGAR -->
+<div id="modal-conta" class="modal-overlay hidden" onclick="closeModalOutside(event,'conta')">
+  <div class="modal" style="max-width:440px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <span id="modal-conta-titulo" style="font-weight:800;font-size:15px;color:var(--branco);">Nova conta</span>
+      <button onclick="fecharModal('conta')" style="background:none;border:none;color:var(--texto3);font-size:18px;cursor:pointer;">&times;</button>
+    </div>
+    <div class="field">
+      <label>FORNECEDOR *</label>
+      <input type="text" id="conta-fornecedor" placeholder="Nome do fornecedor">
+    </div>
+    <div class="field">
+      <label>DESCRICAO</label>
+      <input type="text" id="conta-descricao" placeholder="Ex: Pneu caminhao 2/3">
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>VALOR *</label>
+        <input type="number" id="conta-valor" step="0.01" placeholder="0,00">
+      </div>
+      <div class="field">
+        <label>VENCIMENTO *</label>
+        <input type="date" id="conta-vencimento">
+      </div>
+    </div>
+    <div class="field">
+      <label>OBRA (OPCIONAL)</label>
+      <select id="conta-obra"><option value="">— Nenhuma —</option></select>
+    </div>
+    <div class="field">
+      <label>REF. NOTA / DOCUMENTO</label>
+      <input type="text" id="conta-nota-ref" placeholder="Opcional">
+    </div>
+    <input type="hidden" id="conta-id" value="">
+    <button class="btn-save" onclick="salvarConta()">SALVAR</button>
+  </div>
+</div>
+
 <!-- JS Modules -->
 <script src="js/config.js"></script>
 <script src="js/demo.js"></script>
@@ -1160,6 +1213,7 @@ VERGALHAO CA50" style="width:100%;min-height:140px;padding:14px;background:var(-
 <script src="js/fiscal.js"></script>
 <script src="js/banco.js"></script>
 <script src="js/catalogo.js"></script>
+<script src="js/contas-pagar.js"></script>
 <script src="js/dashboard.js"></script>
 <script src="js/custos.js"></script>
 <script src="js/menu.js"></script>

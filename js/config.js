@@ -207,7 +207,23 @@ create table if not exists ajustes_estoque (
   criado_por text default '',
   criado_em timestamptz default now()
 );
-alter table ajustes_estoque enable row level security;`;
+alter table ajustes_estoque enable row level security;
+
+-- Contas a pagar (parcelas e contas a prazo)
+create table if not exists contas_pagar (
+  id uuid default gen_random_uuid() primary key,
+  fornecedor text not null,
+  descricao text default '',
+  valor numeric not null,
+  data_vencimento date not null,
+  status text default 'pendente',
+  data_pagamento date,
+  obra_id uuid references obras(id),
+  nota_ref text default '',
+  criado_em timestamptz default now()
+);
+alter table contas_pagar enable row level security;
+create policy "contas_pagar_all" on contas_pagar for all using (true) with check (true);`;
 
 // ══════════════════════════════════════════
 // ESTADO

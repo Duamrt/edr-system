@@ -366,5 +366,24 @@ function renderDashboard() {
   dashRenderFluxoCaixa(m.lancAtivos, m.obraAtivaIds);
   dashRenderCustoReceita(porObra);
   dashRenderTopEtapas(etapaEntries);
+
+  // Alerta de contas vencidas
+  if (typeof getContasVencidas === 'function') {
+    const vencidas = getContasVencidas();
+    if (vencidas.length > 0) {
+      const totalVenc = vencidas.reduce((s, c) => s + Number(c.valor || 0), 0);
+      const alertaHTML = `<div style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);border-radius:12px;padding:14px 16px;margin-top:14px;cursor:pointer;" onclick="setView('contas-pagar')">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <div style="font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;color:#ef4444;letter-spacing:2px;">🚨 CONTAS VENCIDAS</div>
+            <div style="font-size:13px;color:var(--branco);margin-top:4px;font-weight:600;">${vencidas.length} conta${vencidas.length > 1 ? 's' : ''} vencida${vencidas.length > 1 ? 's' : ''} — ${fmt(totalVenc)}</div>
+          </div>
+          <button style="padding:6px 14px;border-radius:8px;border:1px solid rgba(239,68,68,0.3);background:rgba(239,68,68,0.08);color:#ef4444;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">VER CONTAS</button>
+        </div>
+      </div>`;
+      el.insertAdjacentHTML('beforeend', alertaHTML);
+    }
+  }
+
   setTimeout(autoFitStatValues, 50);
 }

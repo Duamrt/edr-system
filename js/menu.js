@@ -36,7 +36,7 @@ function resetarOrdemMenu() {
   localStorage.removeItem(getMenuOrderKey());
   const nav = document.getElementById('main-nav');
   const sidebarBottom = nav.querySelector('.sidebar-bottom');
-  const ordemPadrao = ['dashboard','obras','estoque','notas','form','creditos','diarias','catalogo','relatorio','custos','banco','setup'];
+  const ordemPadrao = ['dashboard','obras','estoque','notas','form','creditos','diarias','catalogo','relatorio','custos','contas-pagar','banco','setup'];
   ordemPadrao.forEach(view => {
     const btn = nav.querySelector(`.nav-btn[data-view="${view}"]`);
     if (btn) nav.insertBefore(btn, sidebarBottom);
@@ -145,7 +145,7 @@ function setView(v) {
   if (usuarioAtual?.perfil === 'mestre' && v !== 'diarias') return;
   closeBnavMore();
   syncBnav(v);
-  const views = ['dashboard','obras','estoque','notas','form','creditos','setup','catalogo','banco','relatorio','diarias','custos','leads'];
+  const views = ['dashboard','obras','estoque','notas','form','creditos','setup','catalogo','banco','relatorio','diarias','custos','leads','contas-pagar'];
   views.forEach(name => {
     document.getElementById(`view-${name}`)?.classList.toggle('hidden', name !== v);
     const nb = document.getElementById(`nav-${name}`);
@@ -159,6 +159,7 @@ function setView(v) {
   if (v === 'diarias') initDiarias();
   if (v === 'custos') renderCustos();
   if (v === 'leads') renderLeads();
+  if (v === 'contas-pagar') renderContasPagar();
 }
 
 
