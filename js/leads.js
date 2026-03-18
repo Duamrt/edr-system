@@ -72,7 +72,7 @@ function verConversaLead(leadId) {
   const modal = document.createElement('div');
   modal.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.75);display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);';
   modal.onclick = e => { if (e.target === modal) modal.remove(); };
-  const obs = lead.observacoes.replace(/\n/g, '<br>').replace(/(Cliente:)/g, '<strong style="color:var(--verde-hl);">$1</strong>').replace(/(Duda:)/g, '<strong style="color:#f59e0b;">$1</strong>');
+  const obs = esc(lead.observacoes).replace(/\n/g, '<br>').replace(/(Cliente:)/g, '<strong style="color:var(--verde-hl);">$1</strong>').replace(/(Duda:)/g, '<strong style="color:#f59e0b;">$1</strong>');
   modal.innerHTML = `<div style="background:#111113;border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:24px;max-width:600px;width:100%;max-height:80vh;overflow-y:auto;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
       <span style="font-weight:700;font-size:14px;">💬 Conversa com ${esc(lead.nome || 'Lead')}</span>

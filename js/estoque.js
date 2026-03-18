@@ -147,15 +147,15 @@ function consolidarEstoque() {
   });
 
   // 3. Calcular saldo real = (NF + entrada direta + ajustes) - distribuições
-  // Criar mapa reverso: material -> key
-  const keyByRef = new Map();
-  Object.entries(map).forEach(([k, v]) => keyByRef.set(v, k));
-  
-  Object.values(map).forEach(m => {
-    const myKey = keyByRef.get(m);
-    const totalDistribuido = distribuicoes
-      .filter(d => getEstoqueKey(d.item_desc) === myKey)
-      .reduce((s,d) => s + Number(d.qtd), 0);
+  // Pré-computa chave de cada distribuição uma vez (evita recálculo O(n²))
+  const distByKey = {};
+  distribuicoes.forEach(d => {
+    const k = getEstoqueKey(d.item_desc);
+    distByKey[k] = (distByKey[k] || 0) + Number(d.qtd);
+  });
+
+  Object.entries(map).forEach(([myKey, m]) => {
+    const totalDistribuido = distByKey[myKey] || 0;
     m.saldoTotal = m.qtdNF + m.qtdDireta + (m.qtdAjuste||0) - totalDistribuido;
     m.temNFPendente = m.qtdDireta > 0;
     m.valorMedio = (m.qtdNF + m.qtdDireta) > 0 ? m.totalValor / (m.qtdNF + m.qtdDireta) : 0;

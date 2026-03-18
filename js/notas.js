@@ -292,7 +292,7 @@ function renderItensForm() {
   if (!itensForm.length) { lista.innerHTML = ''; totalRow.classList.add('hidden'); return; }
   totalRow.classList.remove('hidden');
   document.getElementById('item-total-val').textContent = fmtR(itensForm.reduce((s,i) => s+i.total, 0));
-  lista.innerHTML = itensForm.map((item, idx) => `<div class="item-row"><div class="item-row-info"><div class="item-row-desc">${item.desc}</div><div class="item-row-meta">${Number(item.qtd)%1===0?item.qtd:Number(item.qtd).toFixed(3)} ${item.unidade} · ${fmtR(item.preco)}/UN · <span style="color:${item.credito?'#15803d':'#dc2626'};font-weight:700;">${item.credito?'✓ CRÉDITO':'✗ SEM CRÉDITO'}</span></div></div><div class="item-row-val">${fmtR(item.total)}</div><button class="item-row-del" onclick="removerItem(${idx})">🗑</button></div>`).join('');
+  lista.innerHTML = itensForm.map((item, idx) => `<div class="item-row"><div class="item-row-info"><div class="item-row-desc">${esc(item.desc)}</div><div class="item-row-meta">${Number(item.qtd)%1===0?item.qtd:Number(item.qtd).toFixed(3)} ${esc(item.unidade)} · ${fmtR(item.preco)}/UN · <span style="color:${item.credito?'#15803d':'#dc2626'};font-weight:700;">${item.credito?'✓ CRÉDITO':'✗ SEM CRÉDITO'}</span></div></div><div class="item-row-val">${fmtR(item.total)}</div><button class="item-row-del" onclick="removerItem(${idx})">🗑</button></div>`).join('');
 }
 
 // SALVAR NOTA

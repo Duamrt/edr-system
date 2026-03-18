@@ -168,17 +168,37 @@ function penalizarMedidasDiferentes(strA, strB) {
   return 0; // medidas batem
 }
 
+// Cache de catálogo limpo (invalidar quando catalogoMateriais mudar)
+let _catCacheVer = 0;
+let _catCache = null;
+function getCatCache() {
+  if (_catCache && _catCacheVer === catalogoMateriais.length) return _catCache;
+  _catCacheVer = catalogoMateriais.length;
+  const byNome = new Map();
+  const byPrimeiraPalavra = new Map();
+  for (const mat of catalogoMateriais) {
+    const limpo = limparParaMatch(mat.nome);
+    if (!limpo) continue;
+    byNome.set(mat, limpo);
+    const pp = limpo.split(/\s+/)[0] || '';
+    if (pp.length >= 3) {
+      if (!byPrimeiraPalavra.has(pp)) byPrimeiraPalavra.set(pp, []);
+      byPrimeiraPalavra.get(pp).push(mat);
+    }
+  }
+  _catCache = { byNome, byPrimeiraPalavra };
+  return _catCache;
+}
+
 function matchCatalogo(descOriginal) {
   const inputLimpo = limparParaMatch(descOriginal);
   if (!inputLimpo) return null;
 
+  const cache = getCatCache();
   let melhorMatch = null;
   let melhorScore = 0;
 
-  for (const mat of catalogoMateriais) {
-    const catLimpo = limparParaMatch(mat.nome);
-    if (!catLimpo) continue;
-
+  for (const [mat, catLimpo] of cache.byNome) {
     // 1. Match exato
     if (catLimpo === inputLimpo) {
       return { material: mat, score: 100, tipo: 'exato' };
@@ -210,21 +230,23 @@ function matchCatalogo(descOriginal) {
     }
   }
 
-  // 4. Fallback: palavras significativas em comum
-  // Exige que a 1ª palavra do input (tipo do material) bata com alguma do catálogo
+  // 4. Fallback: palavras significativas em comum (usa índice por 1ª palavra)
   if (!melhorMatch || melhorScore < 70) {
     const todasPalavrasInput = inputLimpo.split(/\s+/).filter(p => p.length >= 3);
     const palavrasInput = todasPalavrasInput.filter(p => p.length >= 4);
     const primeiraPalavra = todasPalavrasInput[0] || '';
-    if (palavrasInput.length) {
-      for (const mat of catalogoMateriais) {
-        const catLimpo = limparParaMatch(mat.nome);
+    if (palavrasInput.length && primeiraPalavra.length >= 3) {
+      // Buscar apenas materiais cuja 1ª palavra bate (índice)
+      const candidatos = [];
+      for (const [pp, mats] of cache.byPrimeiraPalavra) {
+        if (pp === primeiraPalavra || pp.startsWith(primeiraPalavra) || primeiraPalavra.startsWith(pp)) {
+          candidatos.push(...mats);
+        }
+      }
+      for (const mat of candidatos) {
+        const catLimpo = cache.byNome.get(mat);
+        if (!catLimpo) continue;
         const palavrasCat = catLimpo.split(/\s+/).filter(p => p.length >= 3);
-        // A 1ª palavra do input deve bater com alguma palavra do catálogo
-        const primeiraBate = primeiraPalavra.length >= 3 && palavrasCat.some(pc =>
-          pc === primeiraPalavra || pc.startsWith(primeiraPalavra) || primeiraPalavra.startsWith(pc)
-        );
-        if (!primeiraBate) continue; // tipo do material diferente, pular
         const hits = palavrasInput.filter(pi => palavrasCat.some(pc => pi === pc || pc.startsWith(pi) || pi.startsWith(pc)));
         const numHits = hits.length;
         if (numHits >= 2 || (numHits === 1 && hits[0].length >= 6)) {
