@@ -410,7 +410,7 @@ function fecharAjudaFora(e) {
 
 // ── DETECTAR VIEW ATIVA ─────────────────────────────────
 function getViewAtiva() {
-  const views = ['dashboard','obras','estoque','notas','form','creditos','diarias','catalogo','relatorio','custos','banco','setup'];
+  const views = ['dashboard','obras','estoque','notas','form','creditos','diarias','catalogo','relatorio','custos','banco','setup','leads'];
   for (const v of views) {
     const el = document.getElementById('view-' + v);
     if (el && !el.classList.contains('hidden')) return v;
