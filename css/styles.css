@@ -204,31 +204,32 @@ body::before {
 .nav-btn.active .nav-key { color: var(--verde-hl); background: rgba(34,197,94,0.1); border-color: rgba(34,197,94,0.2); }
 .nav-divider { width: 36px; height: 1px; background: rgba(255,255,255,0.06); margin: 6px 0; display: none; }
 .sidebar-group-label {
-  font-size: 8px;
-  font-weight: 700;
-  color: var(--texto3);
-  letter-spacing: 1px;
+  font-size: 9px;
+  font-weight: 800;
+  color: #e0e0e0;
+  letter-spacing: 1.5px;
   text-transform: uppercase;
-  padding: 8px 4px 2px;
-  margin-top: 4px;
+  padding: 12px 6px 6px;
+  margin-top: 2px;
   user-select: none;
   width: 100%;
   text-align: center;
   cursor: pointer;
-  transition: color .2s;
+  transition: all .2s;
   position: relative;
-  border-top: 1px solid rgba(255,255,255,0.04);
+  border-top: 1px solid rgba(255,255,255,0.06);
+  border-radius: 6px;
 }
-.sidebar-group-label:hover { color: var(--texto2); }
+.sidebar-group-label:hover { color: #fff; background: rgba(255,255,255,0.03); }
 .sidebar-group-label::after {
-  content: '▾';
-  font-size: 8px;
+  content: '▸';
+  font-size: 9px;
   margin-left: 4px;
-  opacity: 0.5;
+  opacity: 0.4;
   transition: transform .2s;
   display: inline-block;
 }
-.sidebar-group-label.collapsed::after { transform: rotate(-90deg); }
+.sidebar-group-label:not(.collapsed)::after { content: '▾'; }
 .sidebar-group-label:first-child {
   margin-top: 0;
   padding-top: 8px;

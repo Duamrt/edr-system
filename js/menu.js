@@ -166,6 +166,8 @@ function initMenuDragDrop() {
 
   // Aplicar ordem salva
   aplicarOrdemMenu();
+  // Iniciar sidebar com grupos colapsados
+  initSidebarGroups();
 }
 
 // ── SIDEBAR ACCORDION ─────────────────────────────────────
@@ -183,6 +185,21 @@ function toggleSidebarGroup(labelEl) {
     group.style.maxHeight = group.scrollHeight + 'px';
     requestAnimationFrame(() => { group.classList.add('collapsed'); labelEl.classList.add('collapsed'); });
   }
+}
+
+function collapseAllGroups() {
+  document.querySelectorAll('.sidebar-group').forEach(g => {
+    g.classList.add('collapsed');
+    g.style.maxHeight = '0px';
+    const label = g.previousElementSibling;
+    if (label?.classList.contains('sidebar-group-label')) label.classList.add('collapsed');
+  });
+}
+
+function initSidebarGroups() {
+  // Começa tudo fechado, abre só o grupo do Dashboard
+  collapseAllGroups();
+  expandGroupForView('dashboard');
 }
 
 function expandGroupForView(viewId) {
