@@ -134,6 +134,11 @@
   <button class="nav-btn admin-only" id="nav-banco" data-view="banco" onclick="setView('banco')" draggable="true">
     <span class="nav-icon">🗄</span>DADOS<span class="nav-key">F11</span>
   </button>
+  <button class="nav-btn admin-only" id="nav-caixa" data-view="caixa" onclick="setView('caixa')" draggable="true">
+    <span class="nav-icon">💰</span>
+    <span class="nav-label">Caixa</span>
+    <span class="nav-key"></span>
+  </button>
   <button class="nav-btn admin-only" id="nav-contas-pagar" data-view="contas-pagar" onclick="setView('contas-pagar')" draggable="true">
     <span class="nav-icon">📋</span><span class="nav-label">Contas</span><span class="nav-key">F13</span>
   </button>
@@ -192,6 +197,9 @@
   </button>
   <button class="bnav-more-item admin-only" id="bnav-banco" onclick="setView('banco');closeBnavMore()">
     <span class="bnav-more-icon">🗄</span>DADOS
+  </button>
+  <button class="bnav-more-item admin-only" id="bnav-caixa" onclick="setView('caixa');closeBnavMore()">
+    <span>💰</span><span>Caixa</span>
   </button>
   <button class="bnav-more-item admin-only" id="bnav-contas-pagar" onclick="setView('contas-pagar');closeBnavMore()">
     <span>📋</span><span>Contas</span>
@@ -589,6 +597,14 @@
       <div id="leads-stats" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;"></div>
     </div>
     <div id="leads-lista"></div>
+  </div>
+
+  <!-- FLUXO DE CAIXA -->
+  <div id="view-caixa" class="hidden">
+    <div style="position:sticky;top:0;z-index:90;background:var(--bg);padding:10px 0 8px 0;border-bottom:1px solid var(--borda);margin-bottom:8px;">
+      <div class="modulo-badge">💰 FLUXO DE CAIXA</div>
+    </div>
+    <div id="caixa-content"></div>
   </div>
 
   <!-- CONTAS A PAGAR -->
@@ -1199,6 +1215,45 @@ VERGALHAO CA50" style="width:100%;min-height:140px;padding:14px;background:var(-
   </div>
 </div>
 
+<!-- MODAL PROJECAO CAIXA -->
+<div id="modal-projecao" class="modal-overlay hidden" onclick="closeModalOutside(event,'projecao')">
+  <div class="modal" style="max-width:440px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <span id="modal-projecao-titulo" style="font-weight:800;font-size:15px;color:var(--branco);">Nova entrada prevista</span>
+      <button onclick="fecharModal('projecao')" style="background:none;border:none;color:var(--texto3);font-size:18px;cursor:pointer;">&times;</button>
+    </div>
+    <div class="field">
+      <label>TIPO *</label>
+      <select id="proj-tipo">
+        <option value="repasse_cef">🏦 Repasse CEF (PL)</option>
+        <option value="entrada_cliente">💵 Entrada do cliente</option>
+        <option value="terreno">🏗 Terreno</option>
+        <option value="extra">📋 Outro</option>
+      </select>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>VALOR *</label>
+        <input type="number" id="proj-valor" step="0.01" placeholder="0,00">
+      </div>
+      <div class="field">
+        <label>DATA PREVISTA *</label>
+        <input type="date" id="proj-data">
+      </div>
+    </div>
+    <div class="field">
+      <label>OBRA</label>
+      <select id="proj-obra"><option value="">— Geral —</option></select>
+    </div>
+    <div class="field">
+      <label>DESCRICAO</label>
+      <input type="text" id="proj-descricao" placeholder="Ex: PL 5 - Pedro">
+    </div>
+    <input type="hidden" id="proj-id" value="">
+    <button class="btn-save" onclick="salvarProjecao()">SALVAR</button>
+  </div>
+</div>
+
 <!-- JS Modules -->
 <script src="js/config.js"></script>
 <script src="js/demo.js"></script>
@@ -1214,6 +1269,7 @@ VERGALHAO CA50" style="width:100%;min-height:140px;padding:14px;background:var(-
 <script src="js/fiscal.js"></script>
 <script src="js/banco.js"></script>
 <script src="js/catalogo.js"></script>
+<script src="js/caixa.js"></script>
 <script src="js/contas-pagar.js"></script>
 <script src="js/dashboard.js"></script>
 <script src="js/custos.js"></script>

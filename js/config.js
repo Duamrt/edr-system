@@ -223,7 +223,20 @@ create table if not exists contas_pagar (
   criado_em timestamptz default now()
 );
 alter table contas_pagar enable row level security;
-create policy "contas_pagar_all" on contas_pagar for all using (true) with check (true);`;
+create policy "contas_pagar_all" on contas_pagar for all using (true) with check (true);
+
+-- Projecoes de caixa (fluxo de caixa projetado)
+create table if not exists projecoes_caixa (
+  id uuid default gen_random_uuid() primary key,
+  tipo text not null default 'repasse_cef',
+  valor numeric not null,
+  data_prevista date not null,
+  obra_id uuid references obras(id),
+  descricao text default '',
+  criado_em timestamptz default now()
+);
+alter table projecoes_caixa enable row level security;
+create policy "projecoes_caixa_all" on projecoes_caixa for all using (true) with check (true);`;
 
 // ══════════════════════════════════════════
 // ESTADO

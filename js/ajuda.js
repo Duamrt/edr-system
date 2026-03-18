@@ -302,6 +302,32 @@ const AJUDA_CONTEUDO = {
     ]
   },
 
+  caixa: {
+    titulo: 'Fluxo de Caixa Projetado',
+    perfis: ['admin'],
+    secoes: [
+      { titulo: 'Visao geral', info: 'Modulo para projetar o caixa futuro. Mostra saldo atual (entradas - saidas), previsao para as proximas 2 semanas e grafico de 6 meses com historico real + projecao.' },
+      { titulo: 'Entender o saldo', passos: [
+        'O saldo atual e calculado: soma de repasses CEF + pagamentos de adicionais - lancamentos - contas pagas',
+        'Verde = caixa positivo. Vermelho = caixa negativo (atencao!)',
+        'Os cards de 14 dias mostram entradas previstas e saida estimada baseada na media dos ultimos 90 dias'
+      ]},
+      { titulo: 'Cadastrar entrada prevista', passos: [
+        'Clique em + ADICIONAR',
+        'Selecione o tipo: Repasse CEF, Entrada do cliente, Terreno ou Outro',
+        'Informe valor, data prevista e obra (opcional)',
+        'Clique em SALVAR'
+      ]},
+      { titulo: 'Ler o grafico', passos: [
+        'Barras verdes = entradas. Barras vermelhas = saidas',
+        'Meses com * sao projetados (estimativa baseada na media)',
+        'Abaixo do grafico, a linha de saldo acumulado mostra se o caixa fica negativo em algum ponto',
+        'Se o saldo fica vermelho: cuidado, pode faltar dinheiro naquele mes'
+      ]},
+      { dica: 'Use este modulo antes de comprar material. Se o saldo projetado fica negativo, aguarde o proximo repasse CEF.' }
+    ]
+  },
+
   'contas-pagar': {
     titulo: 'Contas a Pagar',
     perfis: ['admin'],
@@ -431,7 +457,7 @@ function fecharAjudaFora(e) {
 
 // ── DETECTAR VIEW ATIVA ─────────────────────────────────
 function getViewAtiva() {
-  const views = ['dashboard','obras','estoque','notas','form','creditos','diarias','catalogo','relatorio','custos','banco','setup','leads','contas-pagar'];
+  const views = ['dashboard','obras','estoque','notas','form','creditos','diarias','catalogo','relatorio','custos','banco','setup','leads','caixa','contas-pagar'];
   for (const v of views) {
     const el = document.getElementById('view-' + v);
     if (el && !el.classList.contains('hidden')) return v;
