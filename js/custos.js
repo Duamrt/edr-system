@@ -95,6 +95,26 @@ function renderCustosCards() {
         <span style="font-size:10px;color:#a78bfa;">📝 ${adds.qtd} adicional(is)</span>
         <span style="font-size:11px;font-weight:700;color:#a78bfa;">${fmt(adds.valorTotal)}</span>
       </div>` : ''}
+      ${Number(o.contrato_valor) > 0 ? (() => {
+        const cv = Number(o.contrato_valor);
+        const pctContrato = cv > 0 ? Math.min((totalRecebido / cv * 100), 100) : 0;
+        const falta = cv - totalRecebido;
+        return `<div style="padding:6px 8px;margin-bottom:8px;background:rgba(59,130,246,0.06);border:1px solid rgba(59,130,246,0.15);border-radius:6px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+            <span style="font-size:10px;color:#60a5fa;font-weight:700;">📋 CONTRATO CEF</span>
+            <span style="font-size:11px;font-weight:700;color:#60a5fa;">${pctContrato.toFixed(0)}% recebido</span>
+          </div>
+          <div style="height:4px;background:rgba(59,130,246,0.15);border-radius:2px;overflow:hidden;">
+            <div style="width:${pctContrato}%;height:100%;background:#3b82f6;border-radius:2px;"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--texto3);margin-top:3px;">
+            <span>Contratado: ${fmtR(cv)}</span>
+            <span>Falta: ${fmtR(falta)}</span>
+          </div>
+        </div>`;
+      })() : `<div style="padding:4px 8px;margin-bottom:8px;border:1px dashed rgba(255,255,255,0.08);border-radius:6px;text-align:center;">
+        <span style="font-size:9px;color:var(--texto3);">📋 Sem contrato CEF cadastrado</span>
+      </div>`}
       ${valorVenda > 0 ? `<div style="margin-bottom:8px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;padding:6px 10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:8px;">
           <span style="font-size:10px;color:var(--texto3);letter-spacing:.5px;">SALDO A RECEBER</span>
