@@ -580,16 +580,7 @@
   <div id="view-leads" class="hidden">
     <div style="position:sticky;top:0;z-index:90;background:var(--bg);padding:10px 0 8px 0;border-bottom:1px solid var(--borda);margin-bottom:8px;">
       <div class="modulo-badge">🎯 LEADS</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-        <select id="leads-filtro-status" onchange="renderLeads()" style="padding:8px 12px;background:var(--bg2);border:1px solid var(--borda);border-radius:8px;color:var(--branco);font-size:12px;font-family:inherit;">
-          <option value="">Todos</option>
-          <option value="novo" selected>Novos</option>
-          <option value="contatado">Contatados</option>
-          <option value="convertido">Convertidos</option>
-          <option value="descartado">Descartados</option>
-        </select>
-        <div id="leads-stats" style="font-size:11px;color:var(--texto3);"></div>
-      </div>
+      <div id="leads-stats" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;"></div>
     </div>
     <div id="leads-lista"></div>
   </div>
