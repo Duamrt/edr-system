@@ -121,6 +121,7 @@ function custosAbrirDetalhe(obraId) {
   document.getElementById('custos-cards-overview').style.display = 'none';
   document.getElementById('custos-detalhe-view').style.display = '';
   document.getElementById('custos-filtro-obra').value = obraId;
+  renderContratoCard(obraId);
   renderCustosResumo();
   renderCustosDetalhes(obraId);
   renderCustosHistoricoMensal(obraId);
@@ -130,6 +131,8 @@ function custosVoltarCards() {
   custoObraAtual = '';
   document.getElementById('custos-cards-overview').style.display = '';
   document.getElementById('custos-detalhe-view').style.display = 'none';
+  const cc = document.getElementById('custos-contrato-card');
+  if (cc) cc.innerHTML = '';
   renderCustosCards();
 }
 
@@ -514,4 +517,134 @@ function gerarRelatorioCustos(obraIdParam) {
   w.document.write(html);
   w.document.close();
   w.print();
+}
+
+// ══════════════════════════════════════════
+// CONTRATO CEF — card + modal
+// ══════════════════════════════════════════
+
+function renderContratoCard(obraId) {
+  const el = document.getElementById('custos-contrato-card');
+  if (!el) return;
+  const todasObras = [...obras, ...obrasArquivadas];
+  const obra = todasObras.find(o => o.id === obraId);
+  if (!obra) { el.innerHTML = ''; return; }
+
+  const contratoValor = Number(obra.contrato_valor || 0);
+  const contratoEntrada = Number(obra.contrato_entrada || 0);
+  const contratoTerreno = Number(obra.contrato_terreno || 0);
+  const contratoTaxa = obra.contrato_taxa || '';
+  const contratoPrazo = obra.contrato_prazo || '';
+  const contratoData = obra.contrato_data || '';
+
+  const isAdmin = usuarioAtual?.perfil === 'admin';
+
+  if (contratoValor <= 0) {
+    if (isAdmin) {
+      el.innerHTML = `<div class="card" style="padding:16px;margin-bottom:12px;text-align:center;border:1px dashed rgba(34,197,94,0.2);">
+        <div style="color:var(--texto3);font-size:12px;margin-bottom:8px;">Nenhum contrato CEF cadastrado para esta obra.</div>
+        <button class="btn-save" style="padding:6px 18px;font-size:11px;" onclick="abrirModalContratoCEF('${esc(obraId)}')">+ CADASTRAR CONTRATO CEF</button>
+      </div>`;
+    } else {
+      el.innerHTML = '';
+    }
+    return;
+  }
+
+  // Calcular recebido via repasses
+  const repassesObra = repassesCef.filter(r => r.obra_id === obraId);
+  const totalRecebido = repassesObra.reduce((s, r) => s + Number(r.valor || 0), 0);
+  const falta = contratoValor - totalRecebido;
+  const pctRecebido = Math.min((totalRecebido / contratoValor) * 100, 100);
+
+  // Verificar entrada e terreno pagos
+  const totalEntradaPaga = repassesObra.filter(r => (r.tipo || 'pls') === 'entrada').reduce((s, r) => s + Number(r.valor || 0), 0);
+  const totalTerrenoPago = repassesObra.filter(r => (r.tipo || 'pls') === 'terreno').reduce((s, r) => s + Number(r.valor || 0), 0);
+  const entradaOk = contratoEntrada > 0 && totalEntradaPaga >= contratoEntrada;
+  const terrenoOk = contratoTerreno > 0 && totalTerrenoPago >= contratoTerreno;
+
+  let infoExtra = '';
+  if (contratoTaxa || contratoPrazo || contratoData) {
+    const parts = [];
+    if (contratoTaxa) parts.push(`Taxa: ${esc(contratoTaxa)}`);
+    if (contratoPrazo) parts.push(`Prazo: ${esc(contratoPrazo)}`);
+    if (contratoData) parts.push(`Data: ${fmtData(contratoData)}`);
+    infoExtra = `<div style="font-size:10px;color:var(--texto3);margin-top:8px;display:flex;gap:12px;flex-wrap:wrap;">${parts.map(p => `<span>${p}</span>`).join('')}</div>`;
+  }
+
+  el.innerHTML = `<div class="card" style="padding:16px;margin-bottom:12px;border:1px solid rgba(34,197,94,0.12);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <div class="section-title" style="margin:0;font-size:13px;">📋 CONTRATO CEF</div>
+      <div style="font-size:16px;font-weight:800;color:var(--verde-hl);font-family:'JetBrains Mono',monospace;">${fmt(contratoValor)}</div>
+    </div>
+    <div style="margin-bottom:8px;">
+      <div style="height:8px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden;">
+        <div style="width:${pctRecebido}%;height:100%;background:linear-gradient(90deg,var(--verde-hl),#27ae60);border-radius:4px;transition:width 0.4s;"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--texto3);margin-top:4px;">
+        <span>${pctRecebido.toFixed(0)}% recebido</span>
+        <span>Recebido: <b style="color:var(--verde-hl);">${fmt(totalRecebido)}</b> &nbsp;|&nbsp; Falta: <b style="color:#f59e0b;">${fmt(falta)}</b></span>
+      </div>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:11px;">
+      ${contratoEntrada > 0 ? `<span style="padding:3px 8px;border-radius:6px;background:${entradaOk ? 'rgba(34,197,94,0.1)' : 'rgba(245,158,11,0.1)'};color:${entradaOk ? 'var(--verde-hl)' : '#f59e0b'};font-weight:600;">Entrada: ${fmt(contratoEntrada)} ${entradaOk ? '&#10003;' : '&#9679; pendente'}</span>` : ''}
+      ${contratoTerreno > 0 ? `<span style="padding:3px 8px;border-radius:6px;background:${terrenoOk ? 'rgba(34,197,94,0.1)' : 'rgba(168,85,247,0.1)'};color:${terrenoOk ? 'var(--verde-hl)' : '#a855f7'};font-weight:600;">Terreno: ${fmt(contratoTerreno)} ${terrenoOk ? '&#10003;' : '&#9679; pendente'}</span>` : ''}
+    </div>
+    ${infoExtra}
+    ${isAdmin ? `<div style="margin-top:10px;"><button onclick="abrirModalContratoCEF('${esc(obraId)}')" style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.2);border-radius:6px;padding:5px 14px;color:#3b82f6;font-size:11px;cursor:pointer;font-family:inherit;font-weight:600;">✏ Editar contrato</button></div>` : ''}
+  </div>`;
+}
+
+function abrirModalContratoCEF(obraId) {
+  const todasObras = [...obras, ...obrasArquivadas];
+  const obra = todasObras.find(o => o.id === obraId);
+  if (!obra) return;
+
+  document.getElementById('contrato-obra-id').value = obraId;
+  document.getElementById('contrato-valor').value = obra.contrato_valor || '';
+  document.getElementById('contrato-entrada').value = obra.contrato_entrada || '';
+  document.getElementById('contrato-terreno').value = obra.contrato_terreno || '';
+  document.getElementById('contrato-taxa').value = obra.contrato_taxa || '';
+  document.getElementById('contrato-prazo').value = obra.contrato_prazo || '';
+  document.getElementById('contrato-data').value = obra.contrato_data || '';
+
+  document.getElementById('modal-contrato-cef').classList.remove('hidden');
+}
+
+async function salvarContratoCEF() {
+  const obraId = document.getElementById('contrato-obra-id').value;
+  if (!obraId) return;
+
+  const valor = parseFloat(document.getElementById('contrato-valor').value) || 0;
+  const entrada = parseFloat(document.getElementById('contrato-entrada').value) || 0;
+  const terreno = parseFloat(document.getElementById('contrato-terreno').value) || 0;
+  const taxa = document.getElementById('contrato-taxa').value.trim();
+  const prazo = document.getElementById('contrato-prazo').value.trim();
+  const data = document.getElementById('contrato-data').value || null;
+
+  if (valor <= 0) return showToast('Informe o valor total do contrato.');
+
+  const body = {
+    contrato_valor: valor,
+    contrato_entrada: entrada,
+    contrato_terreno: terreno,
+    contrato_taxa: taxa,
+    contrato_prazo: prazo,
+    contrato_data: data
+  };
+
+  try {
+    await sbPatch('obras', `?id=eq.${obraId}`, body);
+    // Atualizar obra local
+    const todasObras = [...obras, ...obrasArquivadas];
+    const obra = todasObras.find(o => o.id === obraId);
+    if (obra) Object.assign(obra, body);
+    fecharModal('contrato-cef');
+    showToast('Contrato CEF salvo!');
+    renderContratoCard(obraId);
+    renderCustosResumo();
+  } catch(e) {
+    showToast('Erro ao salvar contrato.');
+    console.error(e);
+  }
 }

@@ -55,7 +55,7 @@ async function fazerLogin() {
 
 function entrarNoApp() {
   document.getElementById('login-screen').classList.add('hidden');
-  ['obras','estoque','notas','form','creditos','setup','catalogo','banco','relatorio','diarias','caixa','contas-pagar','garantias'].forEach(name => {
+  ['obras','estoque','notas','form','creditos','setup','catalogo','banco','relatorio','diarias','custos','leads','caixa','contas-pagar','garantias'].forEach(name => {
     const el = document.getElementById('view-'+name);
     if (el) el.classList.add('hidden');
   });

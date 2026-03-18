@@ -14,6 +14,8 @@ function salvarOrdemMenu() {
   const btns = [...nav.querySelectorAll('.nav-btn[data-view]')];
   const ordem = btns.map(b => b.getAttribute('data-view'));
   localStorage.setItem(getMenuOrderKey(), JSON.stringify(ordem));
+  // Esconder labels quando ordem customizada
+  nav.querySelectorAll('.sidebar-group-label').forEach(l => l.style.display = 'none');
   atualizarAtalhosMenu();
 }
 
@@ -24,6 +26,8 @@ function aplicarOrdemMenu() {
     const ordem = JSON.parse(saved);
     const nav = document.getElementById('main-nav');
     const sidebarBottom = nav.querySelector('.sidebar-bottom');
+    // Esconder labels de grupo quando ordem customizada
+    nav.querySelectorAll('.sidebar-group-label').forEach(l => l.style.display = 'none');
     ordem.forEach(view => {
       const btn = nav.querySelector(`.nav-btn[data-view="${view}"]`);
       if (btn) nav.insertBefore(btn, sidebarBottom);
@@ -36,13 +40,37 @@ function resetarOrdemMenu() {
   localStorage.removeItem(getMenuOrderKey());
   const nav = document.getElementById('main-nav');
   const sidebarBottom = nav.querySelector('.sidebar-bottom');
-  const ordemPadrao = ['dashboard','obras','estoque','notas','form','creditos','diarias','catalogo','relatorio','custos','caixa','contas-pagar','garantias','banco','setup'];
-  ordemPadrao.forEach(view => {
-    const btn = nav.querySelector(`.nav-btn[data-view="${view}"]`);
-    if (btn) nav.insertBefore(btn, sidebarBottom);
+  // Mostrar labels de grupo novamente
+  nav.querySelectorAll('.sidebar-group-label').forEach(l => l.style.display = '');
+  // Estrutura padrão: labels + botões intercalados
+  const estrutura = [
+    { label: 'VISAO' },
+    'dashboard','relatorio','caixa',
+    { label: 'OBRAS' },
+    'obras','custos','garantias',
+    { label: 'MATERIAIS' },
+    'estoque','catalogo','notas','form',
+    { label: 'FINANCEIRO' },
+    'contas-pagar','creditos',
+    { label: 'EQUIPE' },
+    'diarias',
+    { label: 'COMERCIAL' },
+    'leads',
+    { label: 'CONFIG' },
+    'banco','setup'
+  ];
+  estrutura.forEach(item => {
+    if (typeof item === 'object') {
+      // Encontrar o label correspondente
+      const labels = nav.querySelectorAll('.sidebar-group-label');
+      labels.forEach(l => { if (l.textContent.trim() === item.label) nav.insertBefore(l, sidebarBottom); });
+    } else {
+      const btn = nav.querySelector(`.nav-btn[data-view="${item}"]`);
+      if (btn) nav.insertBefore(btn, sidebarBottom);
+    }
   });
   atualizarAtalhosMenu();
-  showToast('✅ Menu restaurado!');
+  showToast('Menu restaurado!');
 }
 
 function initMenuDragDrop() {

@@ -98,56 +98,68 @@
 
 <div class="app-shell">
 <nav class="sidebar" id="main-nav">
+  <div class="sidebar-group-label">VISAO</div>
   <button class="nav-btn active" id="nav-dashboard" data-view="dashboard" onclick="setView('dashboard')" draggable="true">
     <span class="nav-icon">📊</span>RESUMO<span class="nav-key">F1</span>
   </button>
-  <button class="nav-btn" id="nav-obras" data-view="obras" onclick="setView('obras')" draggable="true">
-    <span class="nav-icon">🏗</span>OBRAS<span class="nav-key">F2</span>
-  </button>
-  <button class="nav-btn" id="nav-estoque" data-view="estoque" onclick="setView('estoque')" draggable="true">
-    <span class="nav-icon">📦</span>ESTOQUE<span class="nav-key">F3</span>
-  </button>
-  <button class="nav-btn" id="nav-notas" data-view="notas" onclick="setView('notas')" draggable="true">
-    <span class="nav-icon">🧾</span>HISTÓRICO<span class="nav-key">F4</span>
-  </button>
-  <button class="nav-btn" id="nav-form" data-view="form" onclick="setView('form')" draggable="true">
-    <span class="nav-icon">➕</span>LANÇAR NF<span class="nav-key">F5</span>
-  </button>
-  <button class="nav-btn" id="nav-creditos" data-view="creditos" onclick="setView('creditos')" draggable="true">
-    <span class="nav-icon">📖</span>GUIA NF<span class="nav-key">F6</span>
-  </button>
-  <button class="nav-btn" id="nav-diarias" data-view="diarias" onclick="setView('diarias')" draggable="true">
-    <span class="nav-icon">👷</span>DIÁRIAS<span class="nav-key">F7</span>
-  </button>
-  <button class="nav-btn" id="nav-catalogo" data-view="catalogo" onclick="setView('catalogo')" draggable="true">
-    <span class="nav-icon">📂</span>CATÁLOGO<span class="nav-key">F8</span>
-  </button>
   <button class="nav-btn admin-mestre" id="nav-relatorio" data-view="relatorio" onclick="setView('relatorio')" draggable="true">
-    <span class="nav-icon">📈</span>RELATÓRIO<span class="nav-key">F9</span>
-  </button>
-  <button class="nav-btn admin-only" id="nav-custos" data-view="custos" onclick="setView('custos')" draggable="true">
-    <span class="nav-icon">💰</span>CUSTOS CEF<span class="nav-key">F10</span>
-  </button>
-  <button class="nav-btn admin-only" id="nav-leads" data-view="leads" onclick="setView('leads')" draggable="true">
-    <span class="nav-icon">🎯</span>LEADS
-  </button>
-  <button class="nav-btn admin-only" id="nav-banco" data-view="banco" onclick="setView('banco')" draggable="true">
-    <span class="nav-icon">🗄</span>DADOS<span class="nav-key">F11</span>
+    <span class="nav-icon">📈</span>RELATORIO<span class="nav-key">F2</span>
   </button>
   <button class="nav-btn admin-only" id="nav-caixa" data-view="caixa" onclick="setView('caixa')" draggable="true">
-    <span class="nav-icon">💰</span>
-    <span class="nav-label">Caixa</span>
-    <span class="nav-key"></span>
+    <span class="nav-icon">💵</span>CAIXA<span class="nav-key">F3</span>
   </button>
-  <button class="nav-btn admin-only" id="nav-contas-pagar" data-view="contas-pagar" onclick="setView('contas-pagar')" draggable="true">
-    <span class="nav-icon">📋</span><span class="nav-label">Contas</span><span class="nav-key">F13</span>
+
+  <div class="sidebar-group-label">OBRAS</div>
+  <button class="nav-btn" id="nav-obras" data-view="obras" onclick="setView('obras')" draggable="true">
+    <span class="nav-icon">🏗</span>OBRAS<span class="nav-key">F4</span>
+  </button>
+  <button class="nav-btn admin-only" id="nav-custos" data-view="custos" onclick="setView('custos')" draggable="true">
+    <span class="nav-icon">💰</span>CUSTOS CEF<span class="nav-key">F5</span>
   </button>
   <button class="nav-btn admin-only" id="nav-garantias" data-view="garantias" onclick="setView('garantias')" draggable="true">
-    <span class="nav-icon">🛡</span><span class="nav-label">Garantia</span><span class="nav-key"></span>
+    <span class="nav-icon">🛡</span>GARANTIA<span class="nav-key">F6</span>
+  </button>
+
+  <div class="sidebar-group-label">MATERIAIS</div>
+  <button class="nav-btn" id="nav-estoque" data-view="estoque" onclick="setView('estoque')" draggable="true">
+    <span class="nav-icon">📦</span>ESTOQUE<span class="nav-key">F7</span>
+  </button>
+  <button class="nav-btn" id="nav-catalogo" data-view="catalogo" onclick="setView('catalogo')" draggable="true">
+    <span class="nav-icon">📂</span>CATALOGO<span class="nav-key">F8</span>
+  </button>
+  <button class="nav-btn" id="nav-notas" data-view="notas" onclick="setView('notas')" draggable="true">
+    <span class="nav-icon">🧾</span>NOTAS<span class="nav-key">F9</span>
+  </button>
+  <button class="nav-btn" id="nav-form" data-view="form" onclick="setView('form')" draggable="true">
+    <span class="nav-icon">➕</span>LANCAR NF<span class="nav-key">F10</span>
+  </button>
+
+  <div class="sidebar-group-label">FINANCEIRO</div>
+  <button class="nav-btn admin-only" id="nav-contas-pagar" data-view="contas-pagar" onclick="setView('contas-pagar')" draggable="true">
+    <span class="nav-icon">📋</span>CONTAS<span class="nav-key">F11</span>
+  </button>
+  <button class="nav-btn" id="nav-creditos" data-view="creditos" onclick="setView('creditos')" draggable="true">
+    <span class="nav-icon">📖</span>CREDITOS<span class="nav-key">F12</span>
+  </button>
+
+  <div class="sidebar-group-label">EQUIPE</div>
+  <button class="nav-btn" id="nav-diarias" data-view="diarias" onclick="setView('diarias')" draggable="true">
+    <span class="nav-icon">👷</span>DIARIAS<span class="nav-key"></span>
+  </button>
+
+  <div class="sidebar-group-label">COMERCIAL</div>
+  <button class="nav-btn admin-only" id="nav-leads" data-view="leads" onclick="setView('leads')" draggable="true">
+    <span class="nav-icon">🎯</span>LEADS<span class="nav-key"></span>
+  </button>
+
+  <div class="sidebar-group-label">CONFIG</div>
+  <button class="nav-btn admin-only" id="nav-banco" data-view="banco" onclick="setView('banco')" draggable="true">
+    <span class="nav-icon">🗄</span>DADOS<span class="nav-key"></span>
   </button>
   <button class="nav-btn admin-only" id="nav-setup" data-view="setup" onclick="setView('setup')" style="color:#dc2626;" draggable="true">
-    <span class="nav-icon">⚙</span>SETUP<span class="nav-key">F12</span>
+    <span class="nav-icon">⚙</span>SETUP<span class="nav-key"></span>
   </button>
+
   <div class="sidebar-bottom">
     <button class="nav-btn-reset-order" onclick="resetarOrdemMenu()" title="Restaurar ordem padrão do menu">
       <span style="font-size:14px;">↻</span>RESETAR
@@ -498,6 +510,7 @@
         </div>
       </div>
       <input type="hidden" id="custos-filtro-obra" value="">
+      <div id="custos-contrato-card"></div>
       <div id="custos-resumo"></div>
       <div id="custos-detalhes"></div>
       <div id="custos-historico-mensal" style="margin-top:16px;"></div>
@@ -546,6 +559,47 @@
       </div>
       <button class="btn-save" onclick="salvarRepasse()">SALVAR REPASSE</button>
       <button class="btn-outline" style="margin-top:8px;" onclick="fecharModal('repasse')">CANCELAR</button>
+    </div>
+  </div>
+
+  <!-- MODAL CONTRATO CEF -->
+  <div id="modal-contrato-cef" class="modal-overlay hidden" onclick="closeModalOutside(event,'contrato-cef')">
+    <div class="modal" style="max-width:440px;">
+      <div class="modal-title">
+        <span>📋 CONTRATO CEF</span>
+        <button class="modal-close" onclick="fecharModal('contrato-cef')">✕</button>
+      </div>
+      <input type="hidden" id="contrato-obra-id">
+      <div class="field" style="margin-bottom:12px;">
+        <label>VALOR TOTAL CONTRATADO (R$) *</label>
+        <input type="number" id="contrato-valor" min="0" step="0.01" placeholder="Ex: 194000" style="width:100%;padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;color:var(--branco);font-size:14px;outline:none;font-family:inherit;">
+      </div>
+      <div style="display:flex;gap:8px;">
+        <div class="field" style="flex:1;margin-bottom:12px;">
+          <label>ENTRADA (R$)</label>
+          <input type="number" id="contrato-entrada" min="0" step="0.01" placeholder="Ex: 5000" style="width:100%;padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;color:var(--branco);font-size:14px;outline:none;font-family:inherit;">
+        </div>
+        <div class="field" style="flex:1;margin-bottom:12px;">
+          <label>TERRENO (R$)</label>
+          <input type="number" id="contrato-terreno" min="0" step="0.01" placeholder="Ex: 15000" style="width:100%;padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;color:var(--branco);font-size:14px;outline:none;font-family:inherit;">
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <div class="field" style="flex:1;margin-bottom:12px;">
+          <label>TAXA (% a.a.)</label>
+          <input type="text" id="contrato-taxa" placeholder="Ex: 7,95%" style="width:100%;padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;color:var(--branco);font-size:14px;outline:none;font-family:inherit;">
+        </div>
+        <div class="field" style="flex:1;margin-bottom:12px;">
+          <label>PRAZO</label>
+          <input type="text" id="contrato-prazo" placeholder="Ex: 360 meses" style="width:100%;padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;color:var(--branco);font-size:14px;outline:none;font-family:inherit;">
+        </div>
+      </div>
+      <div class="field" style="margin-bottom:16px;">
+        <label>DATA DO CONTRATO</label>
+        <input type="date" id="contrato-data" style="width:100%;padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;color:var(--branco);font-size:14px;outline:none;font-family:inherit;">
+      </div>
+      <button class="btn-save" onclick="salvarContratoCEF()">SALVAR CONTRATO</button>
+      <button class="btn-outline" style="margin-top:8px;" onclick="fecharModal('contrato-cef')">CANCELAR</button>
     </div>
   </div>
 

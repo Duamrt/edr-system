@@ -203,6 +203,23 @@ body::before {
 @media (max-width: 768px) { .shortcut-hint { display: none !important; } .nav-key { display: none !important; } }
 .nav-btn.active .nav-key { color: var(--verde-hl); background: rgba(34,197,94,0.1); border-color: rgba(34,197,94,0.2); }
 .nav-divider { width: 36px; height: 1px; background: rgba(255,255,255,0.06); margin: 6px 0; display: none; }
+.sidebar-group-label {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--texto3);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 14px 16px 4px;
+  margin-top: 2px;
+  user-select: none;
+  pointer-events: none;
+  width: 100%;
+  text-align: center;
+}
+.sidebar-group-label:first-child {
+  margin-top: 0;
+  padding-top: 8px;
+}
 .sidebar-bottom { margin-top: auto; padding-bottom: 8px; }
 .nav-btn.dragging { opacity: 0.3; transform: scale(0.95); }
 .nav-btn.drag-over { border-color: var(--verde-hl) !important; box-shadow: 0 0 12px rgba(34,197,94,0.2); }
