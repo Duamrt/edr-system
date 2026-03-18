@@ -64,7 +64,7 @@ function selectFornecedor(idx) {
   if (m.cnpj) document.getElementById('f-cnpj').value = m.cnpj;
   document.getElementById('ac-forn-list').classList.add('hidden');
   acFornIdx = -1; document.getElementById('f-obra').focus();
-  showToast('✅ FORNECEDOR PREENCHIDO!');
+  showToast('✅ Fornecedor preenchido!');
 }
 
 // AUTOCOMPLETE ITENS
@@ -228,7 +228,7 @@ function abrirAssistente() {
   setTimeout(() => document.getElementById('ai-input').focus(), 100);
 }
 function consultarAssistente() {
-  const item = document.getElementById('ai-input').value.trim(); if (!item) { showToast('INFORME O ITEM.'); return; }
+  const item = document.getElementById('ai-input').value.trim(); if (!item) { showToast('⚠ Informe o item.'); return; }
   document.getElementById('ai-loading').classList.remove('hidden');
   ['ai-response','ai-actions'].forEach(id => document.getElementById(id).classList.add('hidden'));
   document.getElementById('btn-ai-consultar').disabled = true;
@@ -274,9 +274,9 @@ function adicionarItem() {
   const desconto = parseFloat(document.getElementById('i-desconto').value)||0;
   const total = Math.max(0, qtd*preco-desconto);
   const imposto = parseFloat(document.getElementById('i-imposto').value)||0;
-  if (!desc) { showToast('⚠ INFORME A DESCRIÇÃO DO ITEM.'); document.getElementById('i-desc').focus(); return; }
-  if (!preco || preco <= 0) { showToast('⚠ VALOR UNITÁRIO OBRIGATÓRIO — não é permitido lançar item com valor zero.'); document.getElementById('i-preco').focus(); return; }
-  if (currentCredito === null) { showToast('CLASSIFIQUE O ITEM ANTES DE ADICIONAR.'); document.getElementById('i-desc').focus(); return; }
+  if (!desc) { showToast('⚠ Informe a descrição do item.'); document.getElementById('i-desc').focus(); return; }
+  if (!preco || preco <= 0) { showToast('⚠ Valor unitário obrigatório — não é permitido lançar item com valor zero.'); document.getElementById('i-preco').focus(); return; }
+  if (currentCredito === null) { showToast('⚠ Classifique o item antes de adicionar.'); document.getElementById('i-desc').focus(); return; }
   const res = classificarItem(desc);
   itensForm.push({ desc, qtd, unidade, preco, total, imposto, credito: currentCredito, cat: res?.cat||'Manual' });
   renderItensForm();
@@ -336,8 +336,8 @@ async function salvarNota() {
   const numero = document.getElementById('f-numero').value.trim();
   const fornecedor = document.getElementById('f-fornecedor').value.trim().toUpperCase();
   const emissao = document.getElementById('f-emissao').value;
-  if (!fornecedor || !emissao || !numero) { showToast('PREENCHA FORNECEDOR, Nº DA NOTA E DATA.'); return; }
-  if (!itensForm.length) { showToast('ADICIONE PELO MENOS UM ITEM.'); return; }
+  if (!fornecedor || !emissao || !numero) { showToast('⚠ Preencha fornecedor, nº da nota e data.'); return; }
+  if (!itensForm.length) { showToast('⚠ Adicione pelo menos um item.'); return; }
   const cnpjVal = document.getElementById('f-cnpj').value.trim();
   if (!cnpjVal) {
     const prosseguir = confirm('⚠ CNPJ não informado.\n\nSem CNPJ o lançamento fica incompleto para fins fiscais.\n\nDeseja salvar mesmo assim?');
@@ -404,18 +404,18 @@ async function salvarNota() {
             if (lanc) lancamentos.unshift(lanc);
           }
           const nomes = itensEscritorio.map(i => i.desc).join(', ');
-          showToast(`✅ NF LANÇADA! ${itensEscritorio.length} item(ns) baixado(s) automaticamente → ${obraEsc.nome}`);
+          showToast(`✅ NF lançada! ${itensEscritorio.length} item(ns) baixado(s) automaticamente → ${obraEsc.nome}`);
         } else {
-          showToast('✅ NOTA LANÇADA! ⚠ Crie a obra ESCRITÓRIO para baixa automática.');
+          showToast('✅ Nota lançada! ⚠ Crie a obra Escritório para baixa automática.');
         }
       } else {
-        showToast('✅ NOTA FISCAL LANÇADA!');
+        showToast('✅ Nota fiscal lançada!');
       }
     } else {
-      showToast('✅ NOTA FISCAL LANÇADA!');
+      showToast('✅ Nota fiscal lançada!');
     }
     resetForm(); renderDashboard(); renderEstoque(); renderNotas(); setView('estoque');
-  } catch(e) { console.error(e); if (e.message.includes('does not exist')) { showToast('⚠ EXECUTE O SQL NA ABA SETUP.'); setView('setup'); } else showToast('ERRO AO SALVAR.'); }
+  } catch(e) { console.error(e); if (e.message.includes('does not exist')) { showToast('⚠ Execute o SQL na aba Setup.'); setView('setup'); } else showToast('❌ Não foi possível salvar a nota.'); }
   btn.disabled = false; btn.textContent = '💾 SALVAR NOTA FISCAL   Ctrl+S';
 }
 

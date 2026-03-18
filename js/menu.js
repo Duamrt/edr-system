@@ -42,7 +42,7 @@ function resetarOrdemMenu() {
     if (btn) nav.insertBefore(btn, sidebarBottom);
   });
   atualizarAtalhosMenu();
-  showToast('Menu restaurado!');
+  showToast('✅ Menu restaurado!');
 }
 
 function initMenuDragDrop() {

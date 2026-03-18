@@ -80,7 +80,7 @@ async function loadObras() {
   } catch(e) { obras = []; obrasArquivadas = []; }
 }
 async function loadMateriais() { try { const r = await sbGet('materiais', '?order=codigo&limit=1000'); catalogoMateriais = Array.isArray(r) ? r : []; console.log('Materiais carregados:', catalogoMateriais.length); } catch(e) { catalogoMateriais = []; } }
-async function loadNotas() { try { notas = await sbGet('notas_fiscais', '?order=criado_em.desc'); if (!Array.isArray(notas)) { notas = []; showToast('⚠ Execute o SQL no SETUP.'); } } catch(e) { notas = []; } }
+async function loadNotas() { try { notas = await sbGet('notas_fiscais', '?order=criado_em.desc'); if (!Array.isArray(notas)) { notas = []; showToast('⚠ Execute o SQL na aba Setup.'); } } catch(e) { notas = []; } }
 async function loadLancamentos() { try { lancamentos = await sbGet('lancamentos', '?select=id,obra_id,descricao,qtd,preco,total,data,obs,etapa,criado_por&order=data.desc'); if (!Array.isArray(lancamentos)) lancamentos = []; } catch(e) { lancamentos = []; } }
 async function loadDistribuicoes() { try { const r = await sbGet('distribuicoes', '?order=criado_em.desc'); distribuicoes = Array.isArray(r) ? r : []; } catch(e) { distribuicoes = []; } }
 async function loadEntradasDiretas() { try { const r = await sbGet('entradas_diretas', '?order=criado_em.desc'); entradasDiretas = Array.isArray(r) ? r : []; } catch(e) { entradasDiretas = []; } }

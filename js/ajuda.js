@@ -411,7 +411,7 @@ function initAjuda() {
         return;
       }
     }
-    showToast('Sem ajuda disponivel para esta tela.');
+    showToast('⚠ Sem ajuda disponível para esta tela.');
   };
   document.body.appendChild(fab);
 }

@@ -147,7 +147,7 @@ async function salvarAdicional() {
     }
     fecharModal('adicional');
     renderAdicionais();
-  } catch(e) { console.error(e); showToast('Erro ao salvar adicional.'); }
+  } catch(e) { console.error(e); showToast('❌ Não foi possível salvar o adicional.'); }
 }
 
 async function mudarStatusAdicional(id, status) {
@@ -156,20 +156,20 @@ async function mudarStatusAdicional(id, status) {
     const a = obrasAdicionais.find(x => x.id === id);
     if (a) a.status = status;
     renderAdicionais();
-    showToast(`Status → ${STATUS_ADD[status]?.lb || status}`);
-  } catch(e) { showToast('Erro ao atualizar status.'); }
+    showToast(`✅ Status → ${STATUS_ADD[status]?.lb || status}`);
+  } catch(e) { showToast('❌ Não foi possível atualizar o status.'); }
 }
 
 async function excluirAdicional(id) {
-  if (!confirm('Excluir este serviço adicional e todos os pagamentos vinculados?')) return;
+  if (!confirm('Excluir este serviço adicional e todos os pagamentos vinculados? Esta ação não pode ser desfeita.')) return;
   try {
     await sbDelete('adicional_pagamentos', `?adicional_id=eq.${id}`);
     await sbDelete('obra_adicionais', `?id=eq.${id}`);
     obrasAdicionais = obrasAdicionais.filter(a => a.id !== id);
     adicionaisPgtos = adicionaisPgtos.filter(p => p.adicional_id !== id);
     renderAdicionais();
-    showToast('Adicional excluído.');
-  } catch(e) { showToast('Erro ao excluir.'); }
+    showToast('✅ Adicional excluído.');
+  } catch(e) { showToast('❌ Não foi possível excluir o adicional.'); }
 }
 
 // ── PAGAMENTOS ──
@@ -197,7 +197,7 @@ async function salvarPgtoAdicional() {
     fecharModal('add-pgto');
     renderAdicionais();
     showToast('✅ Pagamento registrado!');
-  } catch(e) { console.error(e); showToast('Erro ao registrar pagamento.'); }
+  } catch(e) { console.error(e); showToast('❌ Não foi possível registrar o pagamento.'); }
 }
 
 // ── TERMO DE AUTORIZAÇÃO (PDF) ──

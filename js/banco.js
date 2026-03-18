@@ -49,10 +49,10 @@ async function salvarUsuario() {
   const usuario = document.getElementById('usr-usuario').value.trim().toLowerCase();
   const senha = document.getElementById('usr-senha').value;
   const perfil = document.getElementById('usr-perfil').value;
-  if (!nome) { showToast('⚠ INFORME O NOME.'); return; }
-  if (!usuario) { showToast('⚠ INFORME O USUÁRIO.'); return; }
-  if (!id && !senha) { showToast('⚠ INFORME A SENHA.'); return; }
-  if (senha && senha.length < 4) { showToast('⚠ SENHA MÍNIMO 4 CARACTERES.'); return; }
+  if (!nome) { showToast('⚠ Informe o nome.'); return; }
+  if (!usuario) { showToast('⚠ Informe o usuário.'); return; }
+  if (!id && !senha) { showToast('⚠ Informe a senha.'); return; }
+  if (senha && senha.length < 4) { showToast('⚠ Senha mínimo 4 caracteres.'); return; }
   try {
     if (id) {
       // Editar existente — atualizar tabela usuarios
@@ -69,24 +69,24 @@ async function salvarUsuario() {
       }
     } else {
       // Novo usuário — criar no Auth + tabela
-      if (USUARIOS.find(x => x.usuario === usuario)) { showToast('⚠ USUÁRIO JÁ EXISTE.'); return; }
+      if (USUARIOS.find(x => x.usuario === usuario)) { showToast('⚠ Usuário já existe.'); return; }
       // 1. Criar no Supabase Auth
       const authOk = await _authAdminCreate(usuario, senha, nome, perfil);
-      if (!authOk) { showToast('⚠ ERRO AO CRIAR USUÁRIO NO AUTH.'); return; }
+      if (!authOk) { showToast('❌ Não foi possível criar o usuário no Auth.'); return; }
       // 2. Salvar na tabela usuarios (sem senha)
       const [novo] = await sbPost('usuarios', { nome, usuario, perfil, ativo: true });
       USUARIOS.push(novo);
     }
     fecharModal('usuario');
     renderUsuarios();
-    showToast('✅ USUÁRIO SALVO!');
-  } catch(e) { console.error(e); showToast('ERRO AO SALVAR USUÁRIO.'); }
+    showToast('✅ Usuário salvo!');
+  } catch(e) { console.error(e); showToast('❌ Não foi possível salvar o usuário.'); }
 }
 
 // Auth Admin — criar usuário no Supabase Auth via RPC
 async function _authAdminCreate(usuario, senha, nome, perfil) {
   const sk = _getServiceKey();
-  if (!sk) { showToast('Sem permissão admin'); return false; }
+  if (!sk) { showToast('❌ Sem permissão de administrador.'); return false; }
   try {
     const r = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {
       method: 'POST',
@@ -139,8 +139,8 @@ async function toggleAtivoUsuario(idOrUsuario, ativar) {
     await _authAdminUpdate(email, { ban_duration: ativar ? 'none' : '876000h' });
     u.ativo = ativar;
     renderUsuarios();
-    showToast(ativar ? '✅ USUÁRIO ATIVADO!' : '🚫 USUÁRIO DESATIVADO!');
-  } catch(e) { showToast('ERRO AO ATUALIZAR.'); }
+    showToast(ativar ? '✅ Usuário ativado!' : '✅ Usuário desativado.');
+  } catch(e) { showToast('❌ Não foi possível atualizar o usuário.'); }
 }
 
 // ══════════════════════════════════════════

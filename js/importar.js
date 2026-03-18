@@ -621,7 +621,7 @@ function processarXMLNFe(input) {
   const file = input.files[0];
   if (!file) return;
   if (!file.name.toLowerCase().endsWith('.xml')) {
-    showToast('⚠ Selecione um arquivo .xml'); return;
+    showToast('⚠ Selecione um arquivo .xml.'); return;
   }
   const reader = new FileReader();
   reader.onload = e => {
@@ -629,13 +629,13 @@ function processarXMLNFe(input) {
       const parser = new DOMParser();
       const xml = parser.parseFromString(e.target.result, 'text/xml');
       const parseError = xml.querySelector('parsererror');
-      if (parseError) { showToast('⚠ XML inválido — verifique o arquivo.'); return; }
+      if (parseError) { showToast('❌ XML inválido — verifique o arquivo.'); return; }
       const nfe = extrairDadosNFe(xml);
-      if (!nfe) { showToast('⚠ Não foi possível ler a NF-e. Verifique se é um XML de nota fiscal.'); return; }
+      if (!nfe) { showToast('❌ Não foi possível ler a NF-e. Verifique se é um XML de nota fiscal.'); return; }
       preencherFormComXML(nfe);
     } catch (err) {
       console.error('Erro ao processar XML:', err);
-      showToast('⚠ Erro ao processar o XML.');
+      showToast('❌ Não foi possível processar o XML.');
     }
   };
   reader.readAsText(file);

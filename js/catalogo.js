@@ -134,7 +134,7 @@ function crMostrarSimilares(val) {
 
 function crUsarExistente(nome, codigo) {
   fecharCadastroRapido();
-  showToast('Usando ' + codigo + ' — ' + nome);
+  showToast('✅ Usando ' + codigo + ' — ' + nome);
   const m = catalogoMateriais.find(x => x.codigo === codigo);
   if (_crOrigem === 'nf') {
     document.getElementById('i-desc').value = nome;
@@ -158,7 +158,7 @@ async function salvarCadastroRapido() {
   const aviso = document.getElementById('cr-aviso');
   if (!nome || nome.length < 2) { aviso.textContent = 'Informe o nome do material.'; aviso.style.display='block'; return; }
   const existe = catalogoMateriais.find(m => (m.nome||'').toUpperCase() === nome);
-  if (existe) { aviso.textContent = 'Ja existe: ' + existe.codigo + ' — ' + existe.nome; aviso.style.display='block'; return; }
+  if (existe) { aviso.textContent = 'Já existe: ' + existe.codigo + ' — ' + existe.nome; aviso.style.display='block'; return; }
   const btn = document.getElementById('cr-btn-salvar');
   btn.disabled = true; btn.textContent = 'SALVANDO...';
   try {
@@ -168,7 +168,7 @@ async function salvarCadastroRapido() {
     catalogoMateriais.push(saved);
     catalogoMateriais.sort((a,b) => a.codigo.localeCompare(b.codigo));
     fecharCadastroRapido();
-    showToast(codigo + ' — ' + nome + ' CADASTRADO!');
+    showToast('✅ ' + codigo + ' — ' + nome + ' cadastrado!');
     if (_crOrigem === 'nf') {
       document.getElementById('i-desc').value = nome;
       const res = classificarItem(nome);
@@ -291,7 +291,7 @@ async function salvarMaterial() {
   const nome = document.getElementById('mat-nome').value.trim().toUpperCase();
   const unidade = document.getElementById('mat-unidade').value;
   const categoria = document.getElementById('mat-categoria').value;
-  if (!nome) { showToast('⚠ INFORME O NOME DO MATERIAL.'); return; }
+  if (!nome) { showToast('⚠ Informe o nome do material.'); return; }
   const btn = document.getElementById('btn-salvar-mat');
 
   // === MODO EDIÇÃO ===
@@ -300,7 +300,7 @@ async function salvarMaterial() {
     if (!atual) return;
     // Verificar duplicata (excluindo o próprio)
     const duplicata = catalogoMateriais.find(m => m.id !== _editandoMaterialId && norm(m.nome) === norm(nome));
-    if (duplicata) { showToast(`⚠ MATERIAL JÁ EXISTE: ${duplicata.codigo}`); return; }
+    if (duplicata) { showToast(`⚠ Material já existe: ${duplicata.codigo}`); return; }
     btn.disabled = true; btn.textContent = 'SALVANDO...';
     try {
       await sbPatch('materiais', `?id=eq.${_editandoMaterialId}`, { nome, unidade, categoria, auto: false });
@@ -311,8 +311,8 @@ async function salvarMaterial() {
       _editandoMaterialId = null;
       fecharModal('material');
       renderCatalogo();
-      showToast(`✅ MATERIAL ${atual.codigo} ATUALIZADO!`);
-    } catch(e) { showToast('ERRO AO ATUALIZAR MATERIAL.'); }
+      showToast(`✅ Material ${atual.codigo} atualizado!`);
+    } catch(e) { showToast('❌ Não foi possível atualizar o material.'); }
     btn.disabled = false; btn.textContent = '💾 SALVAR ALTERAÇÕES';
     return;
   }
@@ -320,7 +320,7 @@ async function salvarMaterial() {
   // === MODO NOVO ===
   // Verificar duplicata exata
   const existe = catalogoMateriais.find(m => norm(m.nome) === norm(nome));
-  if (existe) { showToast(`⚠ MATERIAL JÁ EXISTE: ${existe.codigo}`); return; }
+  if (existe) { showToast(`⚠ Material já existe: ${existe.codigo}`); return; }
   // Gerar próximo código
   const proxNum = catalogoMateriais.length > 0
     ? Math.max(...catalogoMateriais.map(m => parseInt(m.codigo)||0)) + 1
@@ -333,8 +333,8 @@ async function salvarMaterial() {
     catalogoMateriais.sort((a,b) => a.codigo.localeCompare(b.codigo));
     fecharModal('material');
     renderCatalogo();
-    showToast(`✅ MATERIAL ${codigo} — ${nome} CADASTRADO!`);
-  } catch(e) { showToast('ERRO AO SALVAR MATERIAL.'); }
+    showToast(`✅ Material ${codigo} — ${nome} cadastrado!`);
+  } catch(e) { showToast('❌ Não foi possível salvar o material.'); }
   btn.disabled = false; btn.textContent = '💾 SALVAR MATERIAL';
 }
 
@@ -344,16 +344,16 @@ async function confirmarAutoMaterial(id) {
     const m = catalogoMateriais.find(x => x.id === id);
     if (m) m.auto = false;
     renderCatalogo();
-    showToast('✅ MATERIAL CONFIRMADO!');
-  } catch(e) { showToast('ERRO AO CONFIRMAR.'); }
+    showToast('✅ Material confirmado!');
+  } catch(e) { showToast('❌ Não foi possível confirmar o material.'); }
 }
 
 async function excluirMaterial(id) {
-  if (!confirm('Excluir este material do catálogo?')) return;
+  if (!confirm('Excluir este material do catálogo? Esta ação não pode ser desfeita.')) return;
   await sbDelete('materiais', `?id=eq.${id}`);
   catalogoMateriais = catalogoMateriais.filter(m => m.id !== id);
   renderCatalogo();
-  showToast('Material excluído do catálogo.');
+  showToast('✅ Material excluído do catálogo.');
 }
 
 async function editarCategoriaMaterial(id, categoria, selEl) {
@@ -362,8 +362,8 @@ async function editarCategoriaMaterial(id, categoria, selEl) {
     await sbPatch('materiais', `?id=eq.${id}`, { categoria, auto: false });
     const m = catalogoMateriais.find(x => x.id === id);
     if (m) { m.categoria = categoria; m.auto = false; }
-    showToast('✅ CENTRO DE CUSTO ATUALIZADO!');
-  } catch(e) { showToast('ERRO AO ATUALIZAR CATEGORIA.'); }
+    showToast('✅ Centro de custo atualizado!');
+  } catch(e) { showToast('❌ Não foi possível atualizar a categoria.'); }
 }
 
 async function recalcularCategorias() {
@@ -383,10 +383,10 @@ async function recalcularCategorias() {
     }
   }
   renderCatalogo();
-  showToast(`✅ ${atualizados} CENTRO(S) DE CUSTO ATUALIZADO(S)!`);
+  showToast(`✅ ${atualizados} centro(s) de custo atualizado(s)!`);
 }
 
-function copiarSQL() { navigator.clipboard.writeText(SQL_SETUP).then(() => showToast('SQL COPIADO!')).catch(() => showToast('SELECIONE E COPIE MANUALMENTE.')); }
+function copiarSQL() { navigator.clipboard.writeText(SQL_SETUP).then(() => showToast('✅ SQL copiado!')).catch(() => showToast('⚠ Selecione e copie manualmente.')); }
 
 // ══════════════════════════════════════════
 // RECONCILIAÇÃO DE ITENS ÓRFÃOS
@@ -543,7 +543,7 @@ async function reconciliarVincular(idx, matOverride) {
   const o = _orfaos[idx];
   if (!o) return;
   const mat = matOverride || o.sugestao?.material;
-  if (!mat) { showToast('Sem material para vincular.'); return; }
+  if (!mat) { showToast('⚠ Sem material para vincular.'); return; }
 
   const el = document.getElementById(`orfao-${idx}`);
   if (el) el.style.opacity = '0.5';
@@ -599,7 +599,7 @@ async function reconciliarVincular(idx, matOverride) {
     showToast(`✅ "${o.desc}" → ${mat.codigo} · ${novoNome} (${atualizados} registro${atualizados !== 1 ? 's' : ''} atualizado${atualizados !== 1 ? 's' : ''})`);
   } catch (e) {
     console.error('Erro ao reconciliar:', e);
-    showToast('❌ ERRO AO VINCULAR. Tente novamente.');
+    showToast('❌ Não foi possível vincular. Tente novamente.');
     if (el) el.style.opacity = '1';
   }
 }
@@ -607,7 +607,7 @@ async function reconciliarVincular(idx, matOverride) {
 // Vincular todos com score >= 80 de uma vez
 async function reconciliarTodosComSugestao() {
   const candidatos = _orfaos.filter(o => o.sugestao && o.sugestao.score >= 80);
-  if (!candidatos.length) { showToast('Nenhum item com score >= 80.'); return; }
+  if (!candidatos.length) { showToast('⚠ Nenhum item com score >= 80.'); return; }
   if (!confirm(`Vincular automaticamente ${candidatos.length} item(ns) com score ≥ 80%?\n\nIsso vai atualizar as descrições nas notas, entradas e distribuições.`)) return;
 
   let ok = 0;
@@ -704,7 +704,7 @@ async function reconciliarCadastrar(idx) {
     showToast(`✅ ${codigo} · ${o.desc} cadastrado e vinculado!`);
   } catch (e) {
     console.error(e);
-    showToast('❌ ERRO AO CADASTRAR.');
+    showToast('❌ Não foi possível cadastrar.');
   }
 }
 
@@ -757,7 +757,7 @@ async function reconciliarExcluir(idx) {
     showToast(`🗑 "${o.desc}" excluído de ${nfs.length + entradas.length + dists.length} registro(s).`);
   } catch (e) {
     console.error(e);
-    showToast('❌ ERRO AO EXCLUIR.');
+    showToast('❌ Não foi possível excluir.');
     if (el) el.style.opacity = '1';
   }
 }

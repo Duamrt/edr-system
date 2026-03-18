@@ -89,7 +89,7 @@ async function atualizarLeadStatus(leadId, novoStatus) {
     const lead = leadsData.find(l => l.id === leadId);
     if (lead) lead.status = novoStatus;
     renderLeads();
-    const labels = { contatado: '📞 LEAD CONTATADO!', convertido: '✅ LEAD CONVERTIDO!', descartado: '✕ Lead descartado.', novo: '↩ Lead reaberto.' };
-    showToast(labels[novoStatus] || 'Status atualizado.');
-  } catch(e) { showToast('Erro ao atualizar lead.'); }
+    const labels = { contatado: '📞 Lead contatado!', convertido: '✅ Lead convertido!', descartado: '✅ Lead descartado.', novo: '✅ Lead reaberto.' };
+    showToast(labels[novoStatus] || '✅ Status atualizado.');
+  } catch(e) { showToast('❌ Não foi possível atualizar o lead.'); }
 }

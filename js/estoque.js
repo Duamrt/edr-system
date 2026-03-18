@@ -257,16 +257,16 @@ function calcDistValor() {
 }
 
 async function confirmarDistribuicaoItem() {
-  if (!distItemAtual?.material) { showToast('ERRO: material não selecionado.'); return; }
+  if (!distItemAtual?.material) { showToast('❌ Material não selecionado.'); return; }
   const m = distItemAtual.material;
   const obraId = document.getElementById('dist-obra').value;
   const obraNome = document.getElementById('dist-obra').selectedOptions[0]?.text||'';
   const qtd = parseFloat(document.getElementById('dist-qtd').value)||0;
   const obs = document.getElementById('dist-obs').value.toUpperCase();
-  if (!obraId) { showToast('SELECIONE A OBRA.'); return; }
-  if (qtd <= 0) { showToast('INFORME A QUANTIDADE.'); return; }
+  if (!obraId) { showToast('⚠ Selecione a obra.'); return; }
+  if (qtd <= 0) { showToast('⚠ Informe a quantidade.'); return; }
   const etapaDistVal = document.getElementById('dist-etapa')?.value || '';
-  if (!etapaDistVal) { showToast('⚠ SELECIONE O CENTRO DE CUSTO (ETAPA).'); document.getElementById('dist-etapa')?.focus(); return; }
+  if (!etapaDistVal) { showToast('⚠ Selecione o centro de custo (etapa).'); document.getElementById('dist-etapa')?.focus(); return; }
   // Permite saldo negativo (material fiado)
   if (m.saldoTotal <= 0 && !m.temNFPendente && m.qtdDireta === 0) {
     if (!confirm(`Saldo atual: ${m.saldoTotal} ${m.unidade}. Confirma saída mesmo assim? (Material fiado)`)) return;
@@ -291,7 +291,7 @@ async function confirmarDistribuicaoItem() {
   // Se FIFO não cobriu tudo, usar saldo de entradas diretas/ajustes (sem nota_id)
   const temSaldoExtra = (m.qtdDireta + (m.qtdAjuste||0)) > 0;
   if (restante > 0 && !temSaldoExtra && lotesUsados.length === 0) {
-    showToast(`⚠ SALDO ESGOTADO. Não há lotes disponíveis.`); return;
+    showToast('⚠ Saldo esgotado. Não há lotes disponíveis.'); return;
   }
   // Preço médio: usar valor médio do material quando não há lotes NF
   const precoMedio = (lotesUsados.length > 0 && totalValor > 0) ? totalValor / (qtd - restante) : m.valorMedio;
@@ -329,12 +329,12 @@ async function confirmarDistribuicaoItem() {
     if (lanc) lancamentos.unshift(lanc);
     showToast(`✅ ${qtd} ${m.unidade} de ${esc(m.desc)} → ${obraNome}!`);
     fecharModal('dist'); renderEstoque(); renderDashboard(); filtrarLanc();
-  } catch(e) { console.error(e); showToast('ERRO AO DISTRIBUIR.'); }
+  } catch(e) { console.error(e); showToast('❌ Não foi possível distribuir. Verifique a conexão.'); }
 }
 
 async function exportarEstoqueExcel() {
   const materiais = consolidarEstoque();
-  if (!materiais.length) { showToast('ESTOQUE VAZIO.'); return; }
+  if (!materiais.length) { showToast('⚠ Estoque vazio.'); return; }
 
   showToast('⏳ Gerando planilha...');
 

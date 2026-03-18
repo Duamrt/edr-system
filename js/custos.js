@@ -390,10 +390,10 @@ async function salvarRepasse() {
   const data = document.getElementById('repasse-data').value;
   const obs = document.getElementById('repasse-obs').value.trim();
 
-  if (!obraId) return showToast('Selecione uma obra.');
-  if (tipo === 'pls' && (!medicao || medicao < 1)) return showToast('Informe o número da medição.');
-  if (!valor || valor <= 0) return showToast('Informe o valor do repasse.');
-  if (!data) return showToast('Informe a data do crédito.');
+  if (!obraId) return showToast('⚠ Selecione uma obra.');
+  if (tipo === 'pls' && (!medicao || medicao < 1)) return showToast('⚠ Informe o número da medição.');
+  if (!valor || valor <= 0) return showToast('⚠ Informe o valor do repasse.');
+  if (!data) return showToast('⚠ Informe a data do crédito.');
 
   const body = { obra_id: obraId, medicao_numero: medicao, valor, data_credito: data, observacao: obs, tipo };
   const editId = document.getElementById('repasse-id').value;
@@ -401,29 +401,29 @@ async function salvarRepasse() {
   try {
     if (editId) {
       await sbPatch('repasses_cef', `?id=eq.${editId}`, body);
-      showToast('Repasse atualizado!');
+      showToast('✅ Repasse atualizado!');
     } else {
       await sbPost('repasses_cef', body);
-      showToast('Repasse CEF salvo!');
+      showToast('✅ Repasse CEF salvo!');
     }
     fecharModal('repasse');
     await loadRepassesCef();
     if (custoObraAtual) custosAbrirDetalhe(custoObraAtual); else renderCustos();
   } catch(e) {
-    showToast('Erro ao salvar repasse.');
+    showToast('❌ Não foi possível salvar o repasse.');
     console.error(e);
   }
 }
 
 async function excluirRepasse(id) {
-  if (!confirm('Excluir este repasse CEF?')) return;
+  if (!confirm('Excluir este repasse CEF? Esta ação não pode ser desfeita.')) return;
   try {
     await sbDelete('repasses_cef', `?id=eq.${id}`);
-    showToast('Repasse excluído.');
+    showToast('✅ Repasse excluído.');
     await loadRepassesCef();
     if (custoObraAtual) custosAbrirDetalhe(custoObraAtual); else renderCustos();
   } catch(e) {
-    showToast('Erro ao excluir.');
+    showToast('❌ Não foi possível excluir o repasse.');
     console.error(e);
   }
 }

@@ -284,10 +284,10 @@ async function diarAdicionarFuncionario() {
   const diaria = parseFloat(document.getElementById('diar-eq-diaria').value) || 80;
   const apelidosStr = document.getElementById('diar-eq-apelidos').value.trim();
   const apelidos = apelidosStr ? apelidosStr.split(',').map(a => a.trim().toLowerCase()).filter(Boolean) : [];
-  if (!nome) { showToast('Informe o nome'); return; }
+  if (!nome) { showToast('⚠ Informe o nome.'); return; }
   // Verificar duplicata
   if (DIAR_FUNCIONARIOS_RAW.find(f => f.nome.toLowerCase() === nome.toLowerCase())) {
-    showToast('Já existe um funcionário com esse nome'); return;
+    showToast('⚠ Já existe um funcionário com esse nome.'); return;
   }
   try {
     const [novo] = await sbPost('diarias_funcionarios', { nome, cargo, diaria, apelidos, ativo: true });
@@ -298,8 +298,8 @@ async function diarAdicionarFuncionario() {
     document.getElementById('diar-eq-nome').value = '';
     document.getElementById('diar-eq-diaria').value = '';
     document.getElementById('diar-eq-apelidos').value = '';
-    showToast(`${nome} adicionado!`);
-  } catch(e) { showToast('Erro ao adicionar: ' + e.message); }
+    showToast(`✅ ${nome} adicionado!`);
+  } catch(e) { showToast('❌ Não foi possível adicionar: ' + e.message); }
 }
 
 async function diarToggleFuncionario(id, ativo) {
@@ -309,19 +309,19 @@ async function diarToggleFuncionario(id, ativo) {
     if (f) f.ativo = ativo;
     _diarReconstruirMapa();
     diarRenderListaEquipe();
-    showToast(ativo ? 'Funcionário reativado' : 'Funcionário desativado');
-  } catch(e) { showToast('Erro: ' + e.message); }
+    showToast(ativo ? '✅ Funcionário reativado!' : '✅ Funcionário desativado.');
+  } catch(e) { showToast('❌ Erro: ' + e.message); }
 }
 
 async function diarExcluirFuncionario(id, nome) {
-  if (!confirm(`Excluir ${nome} permanentemente?\n\nIsso não afeta registros antigos.`)) return;
+  if (!confirm(`Excluir ${nome} permanentemente? Isso não afeta registros antigos.`)) return;
   try {
     await sbDelete('diarias_funcionarios', `?id=eq.${id}`);
     DIAR_FUNCIONARIOS_RAW = DIAR_FUNCIONARIOS_RAW.filter(f => f.id !== id);
     _diarReconstruirMapa();
     diarRenderListaEquipe();
-    showToast(`${nome} excluído`);
-  } catch(e) { showToast('Erro: ' + e.message); }
+    showToast(`✅ ${nome} excluído.`);
+  } catch(e) { showToast('❌ Erro: ' + e.message); }
 }
 
 function diarEditarFuncionario(id) {
@@ -364,7 +364,7 @@ async function diarSalvarEdicaoFunc(id) {
   const diaria = parseFloat(document.getElementById('diar-edit-diaria').value) || 80;
   const apelidosStr = document.getElementById('diar-edit-apelidos').value.trim();
   const apelidos = apelidosStr ? apelidosStr.split(',').map(a => a.trim().toLowerCase()).filter(Boolean) : [];
-  if (!nome) { showToast('Nome obrigatório'); return; }
+  if (!nome) { showToast('⚠ Nome obrigatório.'); return; }
   try {
     await sbPatch('diarias_funcionarios', `?id=eq.${id}`, { nome, cargo, diaria, apelidos });
     const f = DIAR_FUNCIONARIOS_RAW.find(f => f.id === id);
@@ -372,8 +372,8 @@ async function diarSalvarEdicaoFunc(id) {
     _diarReconstruirMapa();
     document.getElementById('diar-editFunc')?.remove();
     diarRenderListaEquipe();
-    showToast(`${nome} atualizado!`);
-  } catch(e) { showToast('Erro: ' + e.message); }
+    showToast(`✅ ${nome} atualizado!`);
+  } catch(e) { showToast('❌ Erro: ' + e.message); }
 }
 
 function _diarReconstruirMapa() {
@@ -480,8 +480,8 @@ Essa ação não pode ser desfeita.`)) return;
     diarRegistros = []; diarExtras = [];
     diarAtualizarSelectQuinzena();
     diarRenderRegistros(); diarRenderExtras();
-    showToast('Quinzena excluída.');
-  } catch(e) { showToast('Erro ao excluir quinzena'); }
+    showToast('✅ Quinzena excluída.');
+  } catch(e) { showToast('❌ Não foi possível excluir a quinzena.'); }
 }
 
 async function diarTrocarQuinzena(id) {
@@ -560,23 +560,23 @@ async function diarSalvarNovaQuinzena() {
   const label  = (document.getElementById('nq-label')?.value||'').trim();
   const inicio = document.getElementById('nq-inicio')?.value;
   const fim    = document.getElementById('nq-fim')?.value;
-  if (!label||!inicio||!fim) { showToast('Preencha todos os campos'); return; }
+  if (!label||!inicio||!fim) { showToast('⚠ Preencha todos os campos.'); return; }
   try {
     const result = await sbPost('diarias_quinzenas', { label, data_inicio: inicio, data_fim: fim, fechada: false });
     const nova = Array.isArray(result) ? result[0] : result;
-    if (!nova?.id) { showToast('Erro: resposta inválida do servidor'); return; }
+    if (!nova?.id) { showToast('❌ Resposta inválida do servidor.'); return; }
     document.getElementById('diar-modalNQ')?.remove();
     diarQuinzenas.unshift(nova); diarQuinzenaAtiva = nova;
     diarAtualizarSelectQuinzena();
     await diarCarregarRegistros();
     diarRenderRegistros(); diarRenderExtras();
     showToast('\u2705 Quinzena criada!');
-  } catch(e) { console.error(e); showToast('Erro ao criar quinzena: ' + e.message); }
+  } catch(e) { console.error(e); showToast('❌ Não foi possível criar a quinzena: ' + e.message); }
 }
 
 // ── Editar label da quinzena ──────────────────
 async function diarEditarLabelQuinzena() {
-  if (!diarQuinzenaAtiva) { showToast('Selecione uma quinzena'); return; }
+  if (!diarQuinzenaAtiva) { showToast('⚠ Selecione uma quinzena.'); return; }
   const novoLabel = prompt('Editar descrição da quinzena:', diarQuinzenaAtiva.label);
   if (!novoLabel || novoLabel.trim() === '' || novoLabel.trim() === diarQuinzenaAtiva.label) return;
   try {
@@ -585,8 +585,8 @@ async function diarEditarLabelQuinzena() {
     const q = diarQuinzenas.find(x => x.id === diarQuinzenaAtiva.id);
     if (q) q.label = novoLabel.trim();
     diarAtualizarSelectQuinzena();
-    showToast('Descrição atualizada!');
-  } catch(e) { console.error(e); showToast('Erro ao editar: ' + e.message); }
+    showToast('✅ Descrição atualizada!');
+  } catch(e) { console.error(e); showToast('❌ Não foi possível editar: ' + e.message); }
 }
 
 // ────────────────────────────────────────────
@@ -595,8 +595,8 @@ async function diarEditarLabelQuinzena() {
 function diarInterpretar() {
   const msg = document.getElementById('diar-msgInput').value.trim();
   const data = document.getElementById('diar-dataInput').value;
-  if (!msg) { showToast('Cole uma mensagem primeiro!'); return; }
-  if (!data) { showToast('Selecione a data!'); return; }
+  if (!msg) { showToast('⚠ Cole uma mensagem primeiro.'); return; }
+  if (!data) { showToast('⚠ Selecione a data.'); return; }
 
   try {
     const regs = diarParseMensagem(msg);
@@ -829,7 +829,7 @@ function diarRenderPreview(regs) {
 // ────────────────────────────────────────────
 async function diarConfirmarLancamento() {
   if (!diarInterpretado) return;
-  if (!diarQuinzenaAtiva) { showToast('Nenhuma quinzena ativa! Crie uma quinzena primeiro.'); return; }
+  if (!diarQuinzenaAtiva) { showToast('⚠ Nenhuma quinzena ativa. Crie uma quinzena primeiro.'); return; }
   const btn = document.getElementById('diar-btnConfirmar');
   if (btn) { btn.disabled = true; btn.textContent = 'SALVANDO...'; }
   try {
@@ -854,8 +854,8 @@ async function diarConfirmarLancamento() {
       '<div class="diarias-empty"><div class="diarias-empty-icon">💬</div><div class="diarias-empty-text">Cole uma mensagem e clique em interpretar</div></div>';
     await diarCarregarRegistros();
     diarRenderRegistros();
-    showToast('✓ Diárias salvas!');
-  } catch(e) { showToast('Erro: ' + (e.message || JSON.stringify(e))); console.error('diarSalvar',e); }
+    showToast('✅ Diárias salvas!');
+  } catch(e) { showToast('❌ Erro: ' + (e.message || JSON.stringify(e))); console.error('diarSalvar',e); }
   if (btn) { btn.disabled = false; btn.textContent = '✓ CONFIRMAR E SALVAR'; }
 }
 
@@ -956,8 +956,8 @@ async function diarDeletarDia(data) {
     await sbDelete('diarias', `?quinzena_id=eq.${diarQuinzenaAtiva.id}&data=eq.${data}`);
     await diarCarregarRegistros();
     diarRenderRegistros();
-    showToast('Registros removidos');
-  } catch(e) { showToast('Erro ao remover'); }
+    showToast('✅ Registros removidos.');
+  } catch(e) { showToast('❌ Não foi possível remover.'); }
 }
 
 // ────────────────────────────────────────────
@@ -1078,26 +1078,26 @@ async function diarSalvarExtra() {
   const desc  = document.getElementById('diar-extra-desc').value.trim();
   const valor = parseFloat(document.getElementById('diar-extra-valor').value);
   const obra  = document.getElementById('diar-extra-obra').value;
-  if (!func)  { showToast('Selecione o funcionário'); return; }
-  if (!desc)  { showToast('Informe a descrição'); return; }
-  if (!valor||valor<=0) { showToast('Informe um valor válido'); return; }
-  if (!obra)  { showToast('Selecione a obra'); return; }
+  if (!func)  { showToast('⚠ Selecione o funcionário.'); return; }
+  if (!desc)  { showToast('⚠ Informe a descrição.'); return; }
+  if (!valor||valor<=0) { showToast('⚠ Informe um valor válido.'); return; }
+  if (!obra)  { showToast('⚠ Selecione a obra.'); return; }
   try {
     const [novo] = await sbPost('diarias_extras', { quinzena_id: diarQuinzenaAtiva.id, funcionario: func, descricao: desc, valor, obra });
     diarExtras.push(novo);
     diarFecharModalExtra(); diarRenderExtras(); diarRenderFolha();
     showToast('✅ Extra registrado!');
-  } catch(e) { showToast('Erro ao salvar extra'); }
+  } catch(e) { showToast('❌ Não foi possível salvar o extra.'); }
 }
 
 async function diarExcluirExtra(id) {
-  if (!confirm('Remover este extra?')) return;
+  if (!confirm('Remover este extra? Esta ação não pode ser desfeita.')) return;
   try {
     await sbDelete('diarias_extras', `?id=eq.${id}`);
     diarExtras = diarExtras.filter(e => e.id !== id);
     diarRenderExtras(); diarRenderFolha();
-    showToast('Extra removido.');
-  } catch(e) { showToast('Erro ao remover extra'); }
+    showToast('✅ Extra removido.');
+  } catch(e) { showToast('❌ Não foi possível remover o extra.'); }
 }
 
 function diarRenderExtras() {
@@ -1155,19 +1155,19 @@ function diarSwitchTab(tab, el) {
 function diarExportarFolha() {
   try {
     const regs = diarGetRegistrosQuinzena();
-    if (!regs.length) { showToast('Nenhum dado para exportar'); return; }
+    if (!regs.length) { showToast('⚠ Nenhum dado para exportar.'); return; }
 
     // Carregar jsPDF dinamicamente se não estiver disponível
     if (!window.jspdf) {
       const script = document.createElement('script');
       script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
       script.onload = () => diarGerarPDF(regs);
-      script.onerror = () => { showToast('Erro ao carregar gerador de PDF. Tente novamente.'); };
+      script.onerror = () => { showToast('❌ Não foi possível carregar o gerador de PDF. Tente novamente.'); };
       document.head.appendChild(script);
     } else {
       diarGerarPDF(regs);
     }
-  } catch(e) { showToast('Erro ao exportar: ' + e.message); }
+  } catch(e) { showToast('❌ Não foi possível exportar: ' + e.message); }
 }
 
 function diarGerarPDF(regs) {
@@ -1373,7 +1373,7 @@ function diarGerarPDF(regs) {
   // Salvar
   doc.save(`EDR_Folha_${(diarQuinzenaAtiva?.label||'quinzena').replace(/[^a-zA-Z0-9]/g,'_')}.pdf`);
   showToast('✅ PDF gerado!');
-  } catch(e) { showToast('Erro ao gerar PDF: ' + e.message); }
+  } catch(e) { showToast('❌ Não foi possível gerar o PDF: ' + e.message); }
 }
 
 // ────────────────────────────────────────────
@@ -1391,7 +1391,7 @@ async function diarBuscarObras() {
 
 async function diarAbrirModalEDR() {
   const custoPorObra = diarCalcCustoObra();
-  if (!Object.keys(custoPorObra).length) { showToast('Nenhum dado na quinzena atual'); return; }
+  if (!Object.keys(custoPorObra).length) { showToast('⚠ Nenhum dado na quinzena atual.'); return; }
   const obs = `Folha quinzenal · ${(diarQuinzenaAtiva?.label||'Quinzena')}`;
   const modal = document.getElementById('diar-modalEDR');
   modal.style.display = 'flex';
@@ -1453,7 +1453,7 @@ async function diarConfirmarLancamentosEDR() {
     } catch(e) { statusEl.innerHTML += `<div style="color:#f87171">❌ ${obra}: ${e.message}</div>`; erro++; }
   }
   btn.textContent = ok > 0 ? `✅ ${ok} lançado(s)${erro > 0 ? ` / ⚠️ ${erro} erro(s)` : ''}` : '❌ Falhou';
-  if (ok > 0) { _diarObrasCache = null; showToast(`${ok} lançamento(s) enviados!`); }
+  if (ok > 0) { _diarObrasCache = null; showToast(`✅ ${ok} lançamento(s) enviado(s)!`); }
 }
 
 function diarFecharModalEDR() {

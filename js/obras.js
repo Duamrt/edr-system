@@ -213,15 +213,15 @@ async function arquivarObra(obraId, arquivar) {
     abrirModalConclusao(obraId);
     return;
   }
-  if (!confirm('Deseja reabrir esta obra?')) return;
+  if (!confirm('Deseja reabrir esta obra? Ela voltará para a lista de obras ativas.')) return;
   try {
     await sbPatch('obras', `?id=eq.${obraId}`, { arquivada: false });
     await loadObras();
     populateSelects();
     filtrarLanc();
     renderDashboard();
-    showToast('🔄 OBRA REABERTA!');
-  } catch(e) { showToast('ERRO AO ATUALIZAR OBRA.'); }
+    showToast('✅ Obra reaberta com sucesso!');
+  } catch(e) { showToast('❌ Não foi possível atualizar a obra.'); }
 }
 
 async function arquivarObraCard(obraId, arquivar) {
@@ -241,8 +241,8 @@ async function arquivarObraCard(obraId, arquivar) {
     populateSelects();
     renderObrasCards();
     renderDashboard();
-    showToast(`🔄 "${nome}" reativada!`);
-  } catch(e) { showToast('ERRO AO ATUALIZAR OBRA.'); }
+    showToast(`✅ "${nome}" reativada!`);
+  } catch(e) { showToast('❌ Não foi possível atualizar a obra.'); }
 }
 
 function gerarSlug(texto) {
@@ -281,13 +281,13 @@ async function confirmarConclusaoObra() {
   const cidade = (document.getElementById('concluir-cidade').value || '').toUpperCase().trim();
   const cep = (document.getElementById('concluir-cep').value || '').trim();
   // Validação
-  if (!proprietario) { showToast('INFORME O NOME DO PROPRIETÁRIO.'); return; }
-  if (!cpf) { showToast('INFORME O CPF DO PROPRIETÁRIO.'); return; }
-  if (!dataEntrega) { showToast('INFORME A DATA DE ENTREGA.'); return; }
-  if (!rua) { showToast('INFORME A RUA / LOGRADOURO.'); return; }
-  if (!numero) { showToast('INFORME O NÚMERO / LOTE.'); return; }
-  if (!bairro) { showToast('INFORME O BAIRRO.'); return; }
-  if (!cidade) { showToast('INFORME A CIDADE.'); return; }
+  if (!proprietario) { showToast('⚠ Informe o nome do proprietário.'); return; }
+  if (!cpf) { showToast('⚠ Informe o CPF do proprietário.'); return; }
+  if (!dataEntrega) { showToast('⚠ Informe a data de entrega.'); return; }
+  if (!rua) { showToast('⚠ Informe a rua / logradouro.'); return; }
+  if (!numero) { showToast('⚠ Informe o número / lote.'); return; }
+  if (!bairro) { showToast('⚠ Informe o bairro.'); return; }
+  if (!cidade) { showToast('⚠ Informe a cidade.'); return; }
   const slug_entrega = (document.getElementById('concluir-slug').value || '').toLowerCase().trim().replace(/\s+/g, '-');
   const obra = [...obras, ...obrasArquivadas].find(o => o.id === obraId);
   const nome = obra?.nome || 'Obra';
@@ -311,7 +311,7 @@ async function confirmarConclusaoObra() {
     renderDashboard();
     fecharModal('concluir-obra');
     showToast(`✅ "${nome}" concluída! Termo aberto em nova aba.`);
-  } catch(e) { showToast('ERRO AO CONCLUIR OBRA.'); console.error(e); }
+  } catch(e) { showToast('❌ Não foi possível concluir a obra.'); console.error(e); }
 }
 
 function gerarTermoEntrega(dados) {
@@ -323,7 +323,7 @@ function reimprimirTermo(obraId) {
   const obra = [...obras, ...obrasArquivadas].find(o => o.id === obraId);
   if (!obra) return;
   if (!obra.proprietario && !obra.contratante) {
-    showToast('DADOS INCOMPLETOS. EDITE A OBRA ANTES.');
+    showToast('⚠ Dados incompletos. Edite a obra antes.');
     return;
   }
   gerarTermoEntrega({
@@ -579,7 +579,7 @@ function irParaEntradaDireta() {
 }
 
 async function excluirLanc(id) {
-  if (!confirm('Excluir este lançamento?')) return;
+  if (!confirm('Excluir este lançamento? Esta ação não pode ser desfeita.')) return;
   // Verificar se existe distribuição vinculada a este lançamento
   // Distribuições são vinculadas pelo lanc_id (se existir) ou pela combinação obra+desc+data
   const lanc = lancamentos.find(l => l.id === id);
@@ -602,7 +602,7 @@ async function excluirLanc(id) {
   lancamentos = lancamentos.filter(l => l.id !== id);
   filtrarLanc(); renderDashboard(); renderEstoque();
   if (!lanc || distribuicoes.filter(d => d.obra_id === lanc?.obra_id).length === 0)
-    showToast('Lançamento excluído.');
+    showToast('✅ Lançamento excluído.');
 }
 
 async function salvarNovaObra() {
@@ -614,7 +614,7 @@ async function salvarNovaObra() {
   const slug_entrega = (document.getElementById('nova-obra-slug').value||'').toLowerCase().trim().replace(/\s+/g,'-');
   const area_m2 = parseFloat(document.getElementById('nova-obra-area').value) || 0;
   const editId = document.getElementById('obra-edit-id').value;
-  if (!nome) { showToast('INFORME O NOME DA OBRA.'); return; }
+  if (!nome) { showToast('⚠ Informe o nome da obra.'); return; }
   try {
     const payload = { nome, cidade, valor_venda: valorVenda, contratante, cpf_contratante, slug_entrega, area_m2 };
     if (editId) {
@@ -626,17 +626,17 @@ async function salvarNovaObra() {
       }
       await loadObras();
       populateSelects(); renderDashboard(); renderObrasCards();
-      showToast(`✅ OBRA "${nome}" ATUALIZADA!`);
+      showToast(`✅ Obra "${nome}" atualizada!`);
     } else {
       const [nova] = await sbPost('obras', payload);
       obras.push(nova); obras.sort((a,b)=>a.nome.localeCompare(b.nome));
       populateSelects(); renderDashboard(); renderObrasCards();
-      showToast(`✅ OBRA ${nome} CADASTRADA!`);
+      showToast(`✅ Obra ${nome} cadastrada!`);
       // Criar no ClickUp em background
       if (typeof clickupCriarObra === 'function') clickupCriarObra(nome, nova.id);
     }
     fecharModal('obra');
-  } catch(e) { showToast('ERRO AO SALVAR.'); }
+  } catch(e) { showToast('❌ Não foi possível salvar a obra.'); }
 }
 
 function abrirModalObra(obraId) {

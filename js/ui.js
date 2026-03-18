@@ -169,12 +169,12 @@ async function salvarEntradaDireta() {
   const destinoObra = document.getElementById('btn-destino-estoque').dataset.ativo !== '1';
   const obraId = document.getElementById('entrada-obra-id').value;
   const obraObj = obras.find(o => o.id === obraId);
-  if (!desc) { showToast('⚠ INFORME O MATERIAL.'); return; }
-  if (qtd <= 0) { showToast('⚠ INFORME A QUANTIDADE.'); return; }
-  if (destinoObra && (!preco || preco <= 0)) { showToast('⚠ VALOR UNITÁRIO OBRIGATÓRIO para lançamento em obra.'); document.getElementById('entrada-preco').focus(); return; }
-  if (destinoObra && !obraId) { showToast('⚠ SELECIONE A OBRA.'); return; }
+  if (!desc) { showToast('⚠ Informe o material.'); return; }
+  if (qtd <= 0) { showToast('⚠ Informe a quantidade.'); return; }
+  if (destinoObra && (!preco || preco <= 0)) { showToast('⚠ Valor unitário obrigatório para lançamento em obra.'); document.getElementById('entrada-preco').focus(); return; }
+  if (destinoObra && !obraId) { showToast('⚠ Selecione a obra.'); return; }
   const etapaVal = document.getElementById('entrada-etapa')?.value || '';
-  if (destinoObra && !etapaVal) { showToast('⚠ SELECIONE O CENTRO DE CUSTO (ETAPA).'); document.getElementById('entrada-etapa')?.focus(); return; }
+  if (destinoObra && !etapaVal) { showToast('⚠ Selecione o centro de custo (etapa).'); document.getElementById('entrada-etapa')?.focus(); return; }
   try {
     if (destinoObra && obraObj) {
       // DIRETO NA OBRA — não gera estoque, só lançamento de custo
@@ -193,7 +193,7 @@ async function salvarEntradaDireta() {
     renderEstoque();
     renderDashboard();
     filtrarLanc();
-  } catch(e) { console.error(e); showToast('ERRO AO REGISTRAR. Execute o SQL no SETUP.'); }
+  } catch(e) { console.error(e); showToast('❌ Não foi possível registrar. Execute o SQL no Setup.'); }
 }
 
 // ── SAÍDA / BAIXA DE ESTOQUE ──────────────────────────────
@@ -285,10 +285,10 @@ async function salvarSaidaMaterial() {
   const obs = (document.getElementById('saida-obs').value||'').toUpperCase();
   const obraObj = obras.find(o => o.id === obraId);
 
-  if (!desc) { showToast('⚠ INFORME O MATERIAL.'); return; }
-  if (qtd <= 0) { showToast('⚠ INFORME A QUANTIDADE.'); return; }
-  if (!obraId) { showToast('⚠ SELECIONE A OBRA DESTINO.'); return; }
-  if (!etapa) { showToast('⚠ SELECIONE O CENTRO DE CUSTO.'); document.getElementById('saida-etapa').focus(); return; }
+  if (!desc) { showToast('⚠ Informe o material.'); return; }
+  if (qtd <= 0) { showToast('⚠ Informe a quantidade.'); return; }
+  if (!obraId) { showToast('⚠ Selecione a obra destino.'); return; }
+  if (!etapa) { showToast('⚠ Selecione o centro de custo.'); document.getElementById('saida-etapa').focus(); return; }
 
   // Verificar saldo disponível
   const estoqueItem = consolidarEstoque().find(m => m.desc.toUpperCase() === desc);
@@ -321,7 +321,7 @@ async function salvarSaidaMaterial() {
     renderEstoque();
     renderDashboard();
     filtrarLanc();
-  } catch(e) { console.error(e); showToast('ERRO AO REGISTRAR SAÍDA.'); }
+  } catch(e) { console.error(e); showToast('❌ Não foi possível registrar a saída.'); }
 }
 // ── AJUSTE DE ESTOQUE ─────────────────────────────────────
 let ajusteTipoAtual = 'inventario';
@@ -395,7 +395,7 @@ function selecionarAjusteItem(desc, unidade) {
     saldoEl.innerHTML = `Saldo atual no sistema: <strong style="color:var(--verde-hl);">${m.saldoTotal} ${m.unidade}</strong>`;
     saldoEl.style.display = 'block';
   } else {
-    saldoEl.innerHTML = `Material sem saldo no sistema (sera criado).`;
+    saldoEl.innerHTML = `Material sem saldo no sistema (será criado).`;
     saldoEl.style.display = 'block';
   }
   document.getElementById('ajuste-qtd').focus();
@@ -406,10 +406,10 @@ async function salvarAjusteEstoque() {
   const qtd = parseFloat(document.getElementById('ajuste-qtd').value) || 0;
   const unidade = (document.getElementById('ajuste-unidade').value || 'UN').toUpperCase();
   const motivo = (document.getElementById('ajuste-motivo').value || '').toUpperCase();
-  if (!desc) { showToast('INFORME O MATERIAL.'); return; }
-  if (qtd === 0) { showToast('INFORME A QUANTIDADE.'); return; }
-  if (ajusteTipoAtual === 'inventario' && qtd < 0) { showToast('INVENTARIO INICIAL DEVE SER POSITIVO.'); return; }
-  const label = { inventario: 'INVENTARIO INICIAL', contagem: 'CONTAGEM FISICA', correcao: 'CORRECAO MANUAL' }[ajusteTipoAtual];
+  if (!desc) { showToast('⚠ Informe o material.'); return; }
+  if (qtd === 0) { showToast('⚠ Informe a quantidade.'); return; }
+  if (ajusteTipoAtual === 'inventario' && qtd < 0) { showToast('⚠ Inventário inicial deve ser positivo.'); return; }
+  const label = { inventario: 'Inventário inicial', contagem: 'Contagem física', correcao: 'Correção manual' }[ajusteTipoAtual];
   if (!confirm(`Confirma ${label}: ${qtd > 0 ? '+' : ''}${qtd} ${unidade} de ${desc}?`)) return;
   try {
     const [novo] = await sbPost('ajustes_estoque', {
@@ -422,7 +422,7 @@ async function salvarAjusteEstoque() {
     fecharModal('ajuste');
     renderEstoque();
     renderDashboard();
-  } catch (e) { console.error(e); showToast('ERRO AO REGISTRAR AJUSTE. Execute o SQL no SETUP.'); }
+  } catch (e) { console.error(e); showToast('❌ Não foi possível registrar o ajuste. Execute o SQL no Setup.'); }
 }
 
 function toggleBnavMore() {
