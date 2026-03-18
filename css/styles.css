@@ -35,7 +35,7 @@ body { color: var(--texto, #f0f0f0) !important; background: var(--bg, #0a0a0a) !
   --branco:   #f0f0f0;
   --texto:    #f0f0f0;
   --texto2:   #8a8a8a;
-  --texto3:   #4a4a4a;
+  --texto3:   #6b6b6b;
   --vermelho: #ef4444;
   --verm-bg:  rgba(239,68,68,.1);
   --verm-bd:  rgba(239,68,68,.2);
@@ -328,7 +328,7 @@ body::before {
 .lanc-desc { font-weight: 600; font-size: 14px; flex: 1; margin-right: 8px; color: var(--branco); font-family: 'Inter', sans-serif; }
 .lanc-val { font-weight: 700; font-size: 14px; color: var(--verde-hl); white-space: nowrap; font-family: 'Inter', sans-serif; }
 .lanc-meta { font-size: 11px; color: var(--texto3); margin-top: 3px; font-family: 'JetBrains Mono', monospace; }
-.lanc-del { background: none; border: none; color: var(--texto3); cursor: pointer; font-size: 13px; padding: 2px; margin-left: 4px; transition: color .15s; }
+.lanc-del { background: none; border: none; color: var(--texto3); cursor: pointer; font-size: 13px; padding: 6px 8px; margin-left: 4px; transition: color .15s; min-width: 32px; min-height: 32px; display: inline-flex; align-items: center; justify-content: center; }
 .lanc-del:hover { color: var(--vermelho); }
 .filter-row { display: flex; gap: 8px; margin-bottom: 12px; }
 .filter-row select, .filter-row input { flex: 1; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--borda); font-size: 13px; background: var(--bg2); color: var(--texto); outline: none; font-family: 'Inter', sans-serif; transition: all .2s; }
@@ -606,9 +606,12 @@ body::before {
   #custos-detalhe-view > div[style*="position:sticky"] { padding: 6px 0 4px 0 !important; }
   #custos-detalhe-view [style*="display:flex"][style*="gap:8px"] { flex-wrap: wrap !important; }
 
+  /* ── Autocomplete menor em tela pequena ── */
+  .autocomplete-list { max-height: 160px !important; }
+
   /* ── Tables ── */
-  .credito-table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .credito-table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; touch-action: manipulation; }
+  table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; touch-action: manipulation; }
 
   /* ── Modulo badge ── */
   .modulo-badge { font-size: 10px !important; padding: 4px 10px !important; }

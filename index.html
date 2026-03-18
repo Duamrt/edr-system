@@ -485,7 +485,7 @@
   </div>
 
   <!-- MODAL NOVO REPASSE CEF -->
-  <div id="modal-repasse" class="modal-overlay hidden">
+  <div id="modal-repasse" class="modal-overlay hidden" onclick="closeModalOutside(event,'repasse')"
     <div class="modal" style="max-width:440px;">
       <div class="modal-title">
         <span>💰 NOVO REPASSE / ENTRADA</span>
@@ -711,7 +711,7 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
 </div><!-- /app -->
 <!-- MODAL NOVO MATERIAL -->
 <!-- Modal Novo/Editar Usuário -->
-<div id="modal-usuario" class="modal-overlay hidden">
+<div id="modal-usuario" class="modal-overlay hidden" onclick="closeModalOutside(event,'usuario')"
   <div class="modal" style="max-width:400px;">
     <div class="modal-title">
       <span id="modal-usuario-titulo">NOVO USUÁRIO</span>
@@ -744,7 +744,7 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
   </div>
 </div>
 
-<div id="modal-material" class="modal-overlay hidden">
+<div id="modal-material" class="modal-overlay hidden" onclick="closeModalOutside(event,'material')"
   <div class="modal" style="max-width:420px;">
     <div class="modal-title">🏷 MATERIAL <button class="modal-close" onclick="fecharModal('material')">✕</button></div>
     <div id="modal-material-aviso" class="hidden" style="background:#fef3c7;border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:12px;color:#92400e;"></div>
@@ -769,7 +769,7 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
 </div>
 
 <!-- MODAL DETALHE DA NOTA -->
-<div id="modal-nota" class="modal-overlay hidden">
+<div id="modal-nota" class="modal-overlay hidden" onclick="closeModalOutside(event,'nota')"
   <div class="modal" style="max-height:92vh;">
     <div class="modal-title">🧾 NOTA FISCAL <button class="modal-close" onclick="fecharModal('nota')">✕</button></div>
     <div id="modal-nota-body"></div>
@@ -777,7 +777,7 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
 </div>
 
 <!-- MODAL ENTRADA DIRETA -->
-<div id="modal-entrada" class="modal-overlay hidden">
+<div id="modal-entrada" class="modal-overlay hidden" onclick="closeModalOutside(event,'entrada')"
   <div class="modal">
     <div class="modal-title">📥 ENTRADA DIRETA (SEM NOTA) <button class="modal-close" onclick="fecharModal('entrada')">✕</button></div>
 
@@ -824,7 +824,7 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
 </div>
 
 <!-- MODAL SAÍDA / BAIXA DE ESTOQUE -->
-<div id="modal-saida" class="modal-overlay hidden">
+<div id="modal-saida" class="modal-overlay hidden" onclick="closeModalOutside(event,'saida')"
   <div class="modal">
     <div class="modal-title">📤 SAÍDA / BAIXA DE ESTOQUE <button class="modal-close" onclick="fecharModal('saida')">✕</button></div>
     <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:11px;color:#f87171;font-weight:600;">
@@ -849,7 +849,7 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
 </div>
 
 <!-- MODAL DISTRIBUIÇÃO POR ITEM -->
-<div id="modal-dist" class="modal-overlay hidden">
+<div id="modal-dist" class="modal-overlay hidden" onclick="closeModalOutside(event,'dist')"
   <div class="modal">
     <div class="modal-title">📤 DISTRIBUIR PARA OBRA <button class="modal-close" onclick="fecharModal('dist')">✕</button></div>
     <div class="modal-info" id="modal-nota-info"></div>
@@ -904,7 +904,7 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
 </div>
 
 <!-- MODAL ADICIONAL -->
-<div id="modal-adicional" class="modal-overlay hidden">
+<div id="modal-adicional" class="modal-overlay hidden" onclick="closeModalOutside(event,'adicional')"
   <div class="modal" style="max-width:500px;">
     <div class="modal-title">📝 SERVIÇO ADICIONAL <button class="modal-close" onclick="fecharModal('adicional')">✕</button></div>
     <input type="hidden" id="add-edit-id">
@@ -921,7 +921,7 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
 </div>
 
 <!-- MODAL PAGAMENTO ADICIONAL -->
-<div id="modal-add-pgto" class="modal-overlay hidden">
+<div id="modal-add-pgto" class="modal-overlay hidden" onclick="closeModalOutside(event,'add-pgto')"
   <div class="modal" style="max-width:400px;">
     <div class="modal-title">💰 REGISTRAR PAGAMENTO <button class="modal-close" onclick="fecharModal('add-pgto')">✕</button></div>
     <input type="hidden" id="pgto-add-id">
@@ -935,7 +935,7 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
 </div>
 
 <!-- MODAL NOVA OBRA -->
-<div id="modal-obra" class="modal-overlay hidden">
+<div id="modal-obra" class="modal-overlay hidden" onclick="closeModalOutside(event,'obra')"
   <div class="modal">
     <div class="modal-title"><span id="modal-obra-titulo">🏗 NOVA OBRA</span> <button class="modal-close" onclick="fecharModal('obra')">✕</button></div>
     <input type="hidden" id="obra-edit-id">

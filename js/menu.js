@@ -143,6 +143,7 @@ function initMenuDragDrop() {
 function setView(v) {
   // Mestre só pode acessar diárias
   if (usuarioAtual?.perfil === 'mestre' && v !== 'diarias') return;
+  closeBnavMore();
   syncBnav(v);
   const views = ['dashboard','obras','estoque','notas','form','creditos','setup','catalogo','banco','relatorio','diarias','custos','leads'];
   views.forEach(name => {
