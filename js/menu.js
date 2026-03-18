@@ -14,8 +14,9 @@ function salvarOrdemMenu() {
   const btns = [...nav.querySelectorAll('.nav-btn[data-view]')];
   const ordem = btns.map(b => b.getAttribute('data-view'));
   localStorage.setItem(getMenuOrderKey(), JSON.stringify(ordem));
-  // Esconder labels quando ordem customizada
+  // Esconder labels e grupos vazios quando ordem customizada
   nav.querySelectorAll('.sidebar-group-label').forEach(l => l.style.display = 'none');
+  nav.querySelectorAll('.sidebar-group').forEach(g => g.style.display = 'none');
   atualizarAtalhosMenu();
 }
 
@@ -26,8 +27,9 @@ function aplicarOrdemMenu() {
     const ordem = JSON.parse(saved);
     const nav = document.getElementById('main-nav');
     const sidebarBottom = nav.querySelector('.sidebar-bottom');
-    // Esconder labels de grupo quando ordem customizada
+    // Esconder labels e grupos vazios quando ordem customizada
     nav.querySelectorAll('.sidebar-group-label').forEach(l => l.style.display = 'none');
+    nav.querySelectorAll('.sidebar-group').forEach(g => g.style.display = 'none');
     ordem.forEach(view => {
       const btn = nav.querySelector(`.nav-btn[data-view="${view}"]`);
       if (btn) nav.insertBefore(btn, sidebarBottom);
@@ -40,33 +42,31 @@ function resetarOrdemMenu() {
   localStorage.removeItem(getMenuOrderKey());
   const nav = document.getElementById('main-nav');
   const sidebarBottom = nav.querySelector('.sidebar-bottom');
-  // Mostrar labels de grupo novamente
-  nav.querySelectorAll('.sidebar-group-label').forEach(l => l.style.display = '');
-  // Estrutura padrão: labels + botões intercalados
+  // Mostrar labels e grupos novamente
+  nav.querySelectorAll('.sidebar-group-label').forEach(l => { l.style.display = ''; l.classList.remove('collapsed'); });
+  nav.querySelectorAll('.sidebar-group').forEach(g => { g.style.display = ''; g.style.maxHeight = '500px'; g.classList.remove('collapsed'); });
+  // Estrutura padrão com botões DENTRO dos grupos
   const estrutura = [
-    { label: 'VISAO' },
-    'dashboard','relatorio','caixa',
-    { label: 'OBRAS' },
-    'obras','custos','garantias',
-    { label: 'MATERIAIS' },
-    'estoque','catalogo','notas','form',
-    { label: 'FINANCEIRO' },
-    'contas-pagar','creditos',
-    { label: 'EQUIPE' },
-    'diarias',
-    { label: 'COMERCIAL' },
-    'leads',
-    { label: 'CONFIG' },
-    'banco','setup'
+    { label: 'VISAO', views: ['dashboard','relatorio','caixa'] },
+    { label: 'OBRAS', views: ['obras','custos','garantias'] },
+    { label: 'MATERIAIS', views: ['estoque','catalogo','notas','form'] },
+    { label: 'FINANCEIRO', views: ['contas-pagar','creditos'] },
+    { label: 'EQUIPE', views: ['diarias'] },
+    { label: 'COMERCIAL', views: ['leads'] },
+    { label: 'CONFIG', views: ['banco','setup'] }
   ];
-  estrutura.forEach(item => {
-    if (typeof item === 'object') {
-      // Encontrar o label correspondente
-      const labels = nav.querySelectorAll('.sidebar-group-label');
-      labels.forEach(l => { if (l.textContent.trim() === item.label) nav.insertBefore(l, sidebarBottom); });
-    } else {
-      const btn = nav.querySelector(`.nav-btn[data-view="${item}"]`);
-      if (btn) nav.insertBefore(btn, sidebarBottom);
+  const labels = [...nav.querySelectorAll('.sidebar-group-label')];
+  const groups = [...nav.querySelectorAll('.sidebar-group')];
+  estrutura.forEach((sec, i) => {
+    const label = labels.find(l => l.textContent.trim() === sec.label);
+    const group = label ? label.nextElementSibling : groups[i];
+    if (label) nav.insertBefore(label, sidebarBottom);
+    if (group) {
+      nav.insertBefore(group, sidebarBottom);
+      sec.views.forEach(view => {
+        const btn = nav.querySelector(`.nav-btn[data-view="${view}"]`);
+        if (btn) group.appendChild(btn);
+      });
     }
   });
   atualizarAtalhosMenu();
@@ -177,6 +177,8 @@ function toggleSidebarGroup(labelEl) {
     group.classList.remove('collapsed');
     labelEl.classList.remove('collapsed');
     group.style.maxHeight = group.scrollHeight + 'px';
+    // Após a transição, remover max-height fixo para permitir conteúdo dinâmico
+    setTimeout(() => { group.style.maxHeight = '500px'; }, 260);
   } else {
     group.style.maxHeight = group.scrollHeight + 'px';
     requestAnimationFrame(() => { group.classList.add('collapsed'); labelEl.classList.add('collapsed'); });
@@ -193,6 +195,7 @@ function expandGroupForView(viewId) {
     group.classList.remove('collapsed');
     if (label) label.classList.remove('collapsed');
     group.style.maxHeight = group.scrollHeight + 'px';
+    setTimeout(() => { group.style.maxHeight = '500px'; }, 260);
   }
 }
 

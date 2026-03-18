@@ -204,19 +204,20 @@ body::before {
 .nav-btn.active .nav-key { color: var(--verde-hl); background: rgba(34,197,94,0.1); border-color: rgba(34,197,94,0.2); }
 .nav-divider { width: 36px; height: 1px; background: rgba(255,255,255,0.06); margin: 6px 0; display: none; }
 .sidebar-group-label {
-  font-size: 9px;
+  font-size: 8px;
   font-weight: 700;
   color: var(--texto3);
-  letter-spacing: 1.5px;
+  letter-spacing: 1px;
   text-transform: uppercase;
-  padding: 10px 16px 4px;
-  margin-top: 2px;
+  padding: 8px 4px 2px;
+  margin-top: 4px;
   user-select: none;
   width: 100%;
   text-align: center;
   cursor: pointer;
   transition: color .2s;
   position: relative;
+  border-top: 1px solid rgba(255,255,255,0.04);
 }
 .sidebar-group-label:hover { color: var(--texto2); }
 .sidebar-group-label::after {
@@ -231,8 +232,9 @@ body::before {
 .sidebar-group-label:first-child {
   margin-top: 0;
   padding-top: 8px;
+  border-top: none;
 }
-.sidebar-group { overflow: hidden; transition: max-height .25s ease; }
+.sidebar-group { overflow: hidden; transition: max-height .25s ease; max-height: 500px; }
 .sidebar-group.collapsed { max-height: 0 !important; }
 .sidebar-bottom { margin-top: auto; padding-bottom: 8px; }
 .nav-btn.dragging { opacity: 0.3; transform: scale(0.95); }
@@ -549,6 +551,7 @@ body::before {
 
   /* ── Shell & Nav ── */
   .sidebar { display: none !important; }
+  .sidebar-group-label, .sidebar-group, .sidebar-bottom { display: none !important; }
   #bottom-nav { display: flex !important; }
   #demo-banner { bottom: 64px !important; }
 
@@ -733,6 +736,21 @@ body::before {
 }
 .bnav-more-item:hover, .bnav-more-item:active { background: rgba(34,197,94,0.08); color: var(--verde-hl); border-color: rgba(34,197,94,0.15); }
 .bnav-more-icon { font-size: 22px; line-height: 1; }
+/* Labels de seção no more-menu — full width */
+#bnav-more-menu > div:not(.bnav-more-item):not(button) {
+  grid-column: 1 / -1;
+  font-size: 9px !important;
+  color: var(--texto3) !important;
+  letter-spacing: 1.5px !important;
+  padding: 10px 8px 4px !important;
+  font-weight: 700 !important;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  text-transform: uppercase;
+}
+#bnav-more-menu > div:not(.bnav-more-item):not(button):first-child {
+  border-top: none;
+  padding-top: 4px !important;
+}
 .rel-card { background: var(--bg2); border: 1px solid var(--borda2); border-radius: 12px; padding: 18px; }
 .rel-card-title { font-family: 'Rajdhani', sans-serif; font-size: 13px; font-weight: 700; color: var(--verde3); letter-spacing: 2px; margin-bottom: 16px; }
 
