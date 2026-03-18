@@ -263,6 +263,45 @@ const AJUDA_CONTEUDO = {
     ]
   },
 
+  leads: {
+    titulo: 'Leads (CRM)',
+    perfis: ['admin'],
+    secoes: [
+      { titulo: 'Visao geral', info: 'Leads sao contatos captados pelo chatbot Duda no site. Aqui voce acompanha cada lead desde o primeiro contato ate virar cliente.' },
+      { titulo: 'Filtrar por status', passos: [
+        'Use os chips no topo: Novo, Contatado, Convertido, Descartado',
+        'Clique novamente no chip ativo para mostrar todos'
+      ]},
+      { titulo: 'Atender um lead', passos: [
+        'Clique no card do lead para abrir o detalhe',
+        'Na aba Visao Geral, veja os dados completos',
+        'Clique em Abrir WhatsApp para iniciar a conversa',
+        'Apos atender, clique em CONTATADO para atualizar o status'
+      ]},
+      { titulo: 'Definir proxima acao', passos: [
+        'No modal do lead, veja a secao Proxima Acao',
+        'Selecione o tipo: Ligar, Visita, Proposta, Reuniao',
+        'Defina a data e clique em Salvar',
+        'A acao aparece no card do lead como lembrete'
+      ]},
+      { titulo: 'Adicionar notas', passos: [
+        'No modal do lead, clique na aba Notas',
+        'Escreva suas observacoes do atendimento',
+        'Clique em Salvar nota — fica registrado no historico'
+      ]},
+      { titulo: 'Converter em cliente', passos: [
+        'Quando o lead fechar negocio, clique em CONVERTIDO',
+        'Selecione a obra vinculada',
+        'O lead fica marcado como convertido com a obra associada'
+      ]},
+      { titulo: 'Ver conversa da Duda', passos: [
+        'No modal do lead, clique em Ver conversa Duda',
+        'Mostra o historico completo da conversa no chatbot'
+      ]},
+      { dica: 'O historico registra automaticamente toda mudanca de status, notas e acoes. Use a aba Historico para ver a timeline completa.' }
+    ]
+  },
+
   setup: {
     titulo: 'Setup',
     perfis: ['admin'],
