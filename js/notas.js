@@ -15,7 +15,7 @@ function renderNotas() {
   el.innerHTML = lista.map(n => {
     const itens = parseItens(n);
     const classe = n.obra==='EDR'?'estoque':n.credito_status==='sim'?'':n.credito_status==='misto'?'misto':'sem-credito';
-    return `<div class="nota-card ${classe}" onclick="abrirNota('${n.id}')" style="cursor:pointer;">
+    return `<div class="nota-card ${classe}" onclick="abrirNota('${esc(n.id)}')" style="cursor:pointer;">
       <div class="nota-top">
         <span class="nota-fornecedor">${esc(n.fornecedor)} <span style="font-weight:400;font-size:11px;color:var(--texto3)">NF ${n.numero_nf||''}</span></span>
         <div style="display:flex;align-items:center;gap:8px;">

@@ -181,7 +181,7 @@ function dashBuildAlertas(alertas) {
     <div style="font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;color:#ef4444;letter-spacing:2px;margin-bottom:8px;">⚠ OBRAS COM MARGEM NEGATIVA</div>
     ${alertas.map(o => `
       <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(239,68,68,0.08);">
-        <span style="font-size:12px;color:var(--branco);font-weight:600;cursor:pointer;" onclick="setView('custos');setTimeout(()=>custosAbrirDetalhe('${o.id}'),100)">${esc(o.nome)}</span>
+        <span style="font-size:12px;color:var(--branco);font-weight:600;cursor:pointer;" onclick="setView('custos');setTimeout(()=>custosAbrirDetalhe('${esc(o.id)}'),100)">${esc(o.nome)}</span>
         <div style="display:flex;gap:12px;align-items:center;">
           <span style="font-size:11px;color:#ef4444;font-weight:700;">${o.margem.toFixed(1)}%</span>
           <span style="font-size:11px;color:var(--texto3);">Prejuízo: ${fmt(Math.abs(o.lucro))}</span>
@@ -198,7 +198,7 @@ function dashBuildSaudeObras(porObra) {
       const corM = o.margem >= 15 ? 'var(--verde-hl)' : o.margem >= 0 ? '#f59e0b' : '#ef4444';
       const addInfo = o.adds && o.adds.qtd > 0 ? `<span style="font-size:10px;color:#a78bfa;">📝 +${fmt(o.adds.valorTotal)}</span>` : '';
       return `
-      <div style="padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.06);cursor:pointer;transition:padding .15s;" onclick="setView('custos');setTimeout(()=>custosAbrirDetalhe('${o.id}'),100)">
+      <div style="padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.06);cursor:pointer;transition:padding .15s;" onclick="setView('custos');setTimeout(()=>custosAbrirDetalhe('${esc(o.id)}'),100)">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
           <span style="font-size:13px;color:var(--branco);font-weight:600;">${esc(o.nome)}</span>
           <div style="display:flex;gap:14px;align-items:center;">
@@ -275,7 +275,7 @@ function dashRenderCustoReceita(porObra) {
     const pctCusto = o.custo / maxVal * 100;
     const pctReceita = receita / maxVal * 100;
     const corM = o.margem >= 15 ? '#2ecc71' : o.margem >= 0 ? '#f59e0b' : '#ef4444';
-    return `<div style="margin-bottom:14px;cursor:pointer;" onclick="setView('custos');setTimeout(()=>custosAbrirDetalhe('${o.id}'),100)">
+    return `<div style="margin-bottom:14px;cursor:pointer;" onclick="setView('custos');setTimeout(()=>custosAbrirDetalhe('${esc(o.id)}'),100)">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
         <span style="font-size:12px;color:var(--branco);font-weight:600;">${esc(o.nome)}</span>
         <span style="font-size:11px;font-weight:700;color:${corM};">${receita > 0 ? o.margem.toFixed(0) + '%' : '—'}</span>

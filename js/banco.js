@@ -12,8 +12,8 @@ function renderUsuarios() {
       </div>
       <span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;${u.perfil==='admin'?'background:rgba(34,197,94,0.08);color:var(--verde-hl);border:1px solid rgba(34,197,94,0.2);':'background:rgba(59,130,246,0.1);color:#60a5fa;border:1px solid rgba(59,130,246,0.2);'}">${u.perfil==='admin'?'👑 ADMIN':'👷 OPERACIONAL'}</span>
       <div style="display:flex;gap:6px;">
-        <button onclick="abrirModalEditarUsuario('${u.id||u.usuario}')" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:var(--verde3);border-radius:7px;padding:5px 10px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;cursor:pointer;letter-spacing:1px;" title="Editar">✏ EDITAR</button>
-        ${!isSelf ? `<button onclick="toggleAtivoUsuario('${u.id||u.usuario}',${!isAtivo})" style="background:${isAtivo?'rgba(239,68,68,0.07)':'rgba(34,197,94,0.08)'};border:1px solid ${isAtivo?'rgba(239,68,68,0.2)':'rgba(34,197,94,0.15)'};color:${isAtivo?'#f87171':'var(--verde3)'};border-radius:7px;padding:5px 10px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;cursor:pointer;letter-spacing:1px;">${isAtivo?'🚫 DESATIVAR':'✅ ATIVAR'}</button>` : ''}
+        <button onclick="abrirModalEditarUsuario('${esc(u.id||u.usuario)}')" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:var(--verde3);border-radius:7px;padding:5px 10px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;cursor:pointer;letter-spacing:1px;" title="Editar">✏ EDITAR</button>
+        ${!isSelf ? `<button onclick="toggleAtivoUsuario('${esc(u.id||u.usuario)}',${!isAtivo})" style="background:${isAtivo?'rgba(239,68,68,0.07)':'rgba(34,197,94,0.08)'};border:1px solid ${isAtivo?'rgba(239,68,68,0.2)':'rgba(34,197,94,0.15)'};color:${isAtivo?'#f87171':'var(--verde3)'};border-radius:7px;padding:5px 10px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;cursor:pointer;letter-spacing:1px;">${isAtivo?'🚫 DESATIVAR':'✅ ATIVAR'}</button>` : ''}
       </div>
     </div>`;
   }).join('');
@@ -83,48 +83,40 @@ async function salvarUsuario() {
   } catch(e) { console.error(e); showToast('❌ Não foi possível salvar o usuário.'); }
 }
 
-// Auth Admin — criar usuário no Supabase Auth via RPC
+// Auth Admin — criar usuário via RPC segura (sem service key no frontend)
 async function _authAdminCreate(usuario, senha, nome, perfil) {
-  const sk = _getServiceKey();
-  if (!sk) { showToast('❌ Sem permissão de administrador.'); return false; }
+  if (usuarioAtual?.perfil !== 'admin') { showToast('❌ Sem permissão de administrador.'); return false; }
   try {
-    const r = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/admin_create_auth_user`, {
       method: 'POST',
-      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${sk}`, 'Content-Type': 'application/json' },
+      headers: getHdrs(),
       body: JSON.stringify({
-        email: usuario + '@edreng.com.br',
-        password: senha,
-        email_confirm: true,
-        user_metadata: { nome, perfil, usuario }
+        p_email: usuario + '@edreng.com.br',
+        p_password: senha,
+        p_nome: nome,
+        p_perfil: perfil,
+        p_usuario: usuario
       })
     });
-    return r.ok;
+    if (!r.ok) { const err = await r.text(); console.error('Auth create error:', err); return false; }
+    return true;
   } catch(e) { console.error('Auth create error:', e); return false; }
 }
 
-// Auth Admin — atualizar usuário no Supabase Auth
+// Auth Admin — atualizar usuário via RPC segura
 async function _authAdminUpdate(email, updates) {
+  if (usuarioAtual?.perfil !== 'admin') return false;
   try {
-    // Buscar auth user ID pelo email
-    const r1 = await fetch(`${SUPABASE_URL}/auth/v1/admin/users?page=1&per_page=50`, {
-      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${_getServiceKey()}` }
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/admin_update_auth_user`, {
+      method: 'POST',
+      headers: getHdrs(),
+      body: JSON.stringify({
+        p_email: email,
+        p_updates: JSON.stringify(updates)
+      })
     });
-    const data = await r1.json();
-    const authUser = data.users?.find(u => u.email === email);
-    if (!authUser) return false;
-    const r2 = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${authUser.id}`, {
-      method: 'PUT',
-      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${_getServiceKey()}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(updates)
-    });
-    return r2.ok;
+    return r.ok;
   } catch(e) { console.error('Auth update error:', e); return false; }
-}
-
-// Service key — só disponível pra admin
-function _getServiceKey() {
-  if (usuarioAtual?.perfil !== 'admin') return null;
-  return atob('ZXlKaGJHY2lPaUpJVXpJMU5pSXNJblI1Y0NJNklrcFhWQ0o5LmV5SnBjM01pT2lKemRYQmhZbUZ6WlNJc0luSmxaaUk2SW0xbGNIcHZlRzloYUhCM1kzWjJiSGx0Ykdab0lpd2ljbTlzWlNJNkluTmxjblpwWTJWZmNtOXNaU0lzSW1saGRDSTZNVGMzTWpJM01ESXdOU3dpWlhod0lqb3lNRGczT0RRMk1qQTFmUS41Z1QzWWUyeDlkMFNYdl9ETlVuWjNZLWpTTlUzMUd3dmRsd1Qxa294UXdR');
 }
 
 async function toggleAtivoUsuario(idOrUsuario, ativar) {

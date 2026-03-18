@@ -241,7 +241,7 @@ function onSaidaDescInput() {
 
   if (!matches.length) { list.classList.add('hidden'); return; }
   list.innerHTML = matches.map(m =>
-    `<div class="autocomplete-item" onclick="selecionarSaidaItem('${m.nome.replace(/'/g,"\\'")}','${m.unidade||'UN'}')">
+    `<div class="autocomplete-item" onclick="selecionarSaidaItem('${esc(m.nome)}','${esc(m.unidade||'UN')}')">
       <span class="ac-cod">${m.codigo}</span>
       <span class="ac-label">${m.nome}</span>
       <span style="color:var(--texto3);font-size:10px;margin-left:auto">${m.saldo > 0 ? m.saldo.toFixed(2)+' '+m.unidade : '<span style="color:#f87171">sem saldo</span>'}</span>
@@ -376,7 +376,7 @@ function onAjusteDescInput() {
     .slice(0, 10);
   if (!matches.length) { list.classList.add('hidden'); return; }
   list.innerHTML = matches.map(m =>
-    `<div class="autocomplete-item" onclick="selecionarAjusteItem('${m.nome.replace(/'/g, "\\'")}','${m.unidade || 'UN'}')">
+    `<div class="autocomplete-item" onclick="selecionarAjusteItem('${esc(m.nome)}','${esc(m.unidade || 'UN')}')">
       ${m.codigo ? `<span class="ac-codigo">${m.codigo}</span>` : ''}<span class="ac-label">${m.nome}</span><span style="font-size:10px;color:var(--texto3);">${m.unidade || 'UN'}</span>
     </div>`
   ).join('');

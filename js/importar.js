@@ -593,7 +593,7 @@ function importBuscarCatInput(idx) {
   }
 
   list.innerHTML = matches.map(m =>
-    `<div onmousedown="importSelecionarCatPorInput(${idx},'${m.codigo}')" style="padding:8px 10px;cursor:pointer;border-bottom:1px solid var(--borda);display:flex;gap:8px;align-items:center;transition:background 0.1s;" onmouseover="this.style.background='rgba(34,197,94,0.08)'" onmouseout="this.style.background='transparent'">
+    `<div onmousedown="importSelecionarCatPorInput(${idx},'${esc(m.codigo)}')" style="padding:8px 10px;cursor:pointer;border-bottom:1px solid var(--borda);display:flex;gap:8px;align-items:center;transition:background 0.1s;" onmouseover="this.style.background='rgba(34,197,94,0.08)'" onmouseout="this.style.background='transparent'">
       <span style="font-family:monospace;font-size:10px;color:var(--verde-hl);background:rgba(34,197,94,0.08);padding:2px 6px;border-radius:4px;white-space:nowrap;">${m.codigo}</span>
       <span style="font-size:11px;color:var(--branco);flex:1;">${m.nome}</span>
       <span style="font-size:10px;color:var(--texto3);">${m.unidade || 'UN'}</span>

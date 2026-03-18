@@ -27,7 +27,7 @@ create table if not exists notas_fiscais (
   itens text default '[]', obs text default '',
   obs_distribuicao text default '', criado_em timestamptz default now()
 );
-alter table notas_fiscais disable row level security;
+alter table notas_fiscais enable row level security;
 alter table notas_fiscais add column if not exists frete numeric default 0;
 
 create table if not exists distribuicoes (
@@ -39,7 +39,7 @@ create table if not exists distribuicoes (
   data date default current_date, lancamento_id uuid,
   criado_em timestamptz default now()
 );
-alter table distribuicoes disable row level security;
+alter table distribuicoes enable row level security;
 
 -- Coluna para identificar materiais auto-cadastrados pela NF
 alter table materiais add column if not exists auto boolean default false;
@@ -80,7 +80,7 @@ create table if not exists entradas_diretas (
   obs text default '',
   criado_em timestamptz default now()
 );
-alter table entradas_diretas disable row level security;
+alter table entradas_diretas enable row level security;
 
 -- Itens fiscais / encargos no catálogo
 insert into materiais (codigo, nome, unidade, preco_medio, categoria) values
@@ -110,7 +110,7 @@ create table if not exists diarias_quinzenas (
   fechada boolean default false,
   criado_em timestamptz default now()
 );
-alter table diarias_quinzenas disable row level security;
+alter table diarias_quinzenas enable row level security;
 
 -- Tabela de registros de diárias
 create table if not exists diarias (
@@ -126,7 +126,7 @@ create table if not exists diarias (
   criado_por text default '',
   criado_em timestamptz default now()
 );
-alter table diarias disable row level security;
+alter table diarias enable row level security;
 
 -- Tabela de extras/bonificações
 create table if not exists diarias_extras (
@@ -138,7 +138,7 @@ create table if not exists diarias_extras (
   obra text default '',
   criado_em timestamptz default now()
 );
-alter table diarias_extras disable row level security;
+alter table diarias_extras enable row level security;
 
 -- Repasses CEF (controle de custos)
 create table if not exists repasses_cef (
@@ -173,7 +173,7 @@ create table if not exists diarias_funcionarios (
   ativo boolean default true,
   criado_em timestamptz default now()
 );
-alter table diarias_funcionarios disable row level security;
+alter table diarias_funcionarios enable row level security;
 
 -- Seed inicial (apenas se tabela vazia)
 insert into diarias_funcionarios (nome, cargo, diaria, apelidos, ativo) values
@@ -207,7 +207,7 @@ create table if not exists ajustes_estoque (
   criado_por text default '',
   criado_em timestamptz default now()
 );
-alter table ajustes_estoque disable row level security;`;
+alter table ajustes_estoque enable row level security;`;
 
 // ══════════════════════════════════════════
 // ESTADO

@@ -60,7 +60,7 @@ function renderCustosCards() {
     const corLucro = lucro >= 0 ? 'var(--verde-hl)' : '#ef4444';
 
     return `<div class="card" style="padding:16px;cursor:pointer;transition:all .2s;border:1px solid var(--borda);"
-                 onclick="custosAbrirDetalhe('${o.id}')"
+                 onclick="custosAbrirDetalhe('${esc(o.id)}')"
                  onmouseover="this.style.borderColor='rgba(34,197,94,0.3)'"
                  onmouseout="this.style.borderColor='var(--borda)'">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
@@ -273,8 +273,8 @@ function renderCustosDetalhes(obraId) {
         <td style="padding:8px 6px;color:var(--texto);">${dt}</td>
         <td style="padding:8px 6px;color:var(--texto3);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.observacao || '-'}${r.criado_por ? `<span class="admin-only" style="display:block;font-size:9px;color:var(--texto4);margin-top:2px;">👤 ${r.criado_por}</span>` : ''}</td>
         <td style="padding:8px 6px;text-align:center;white-space:nowrap;">
-          <button onclick="editarRepasse('${r.id}')" style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.2);border-radius:6px;padding:4px 10px;color:#3b82f6;font-size:11px;cursor:pointer;margin-right:4px;" title="Editar">✎</button>
-          <button onclick="excluirRepasse('${r.id}')" style="background:rgba(220,38,38,0.1);border:1px solid rgba(220,38,38,0.2);border-radius:6px;padding:4px 10px;color:#ef4444;font-size:11px;cursor:pointer;" title="Excluir">✕</button>
+          <button onclick="editarRepasse('${esc(r.id)}')" style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.2);border-radius:6px;padding:4px 10px;color:#3b82f6;font-size:11px;cursor:pointer;margin-right:4px;" title="Editar">✎</button>
+          <button onclick="excluirRepasse('${esc(r.id)}')" style="background:rgba(220,38,38,0.1);border:1px solid rgba(220,38,38,0.2);border-radius:6px;padding:4px 10px;color:#ef4444;font-size:11px;cursor:pointer;" title="Excluir">✕</button>
         </td>
       </tr>`;
     });

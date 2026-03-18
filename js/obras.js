@@ -142,7 +142,7 @@ function renderObrasCards() {
       : '';
 
     return `<div class="card" style="padding:16px;cursor:pointer;transition:all .2s;border:1px solid var(--borda);"
-                 onclick="obrasAbrirDetalhe('${o.id}')"
+                 onclick="obrasAbrirDetalhe('${esc(o.id)}')"
                  onmouseover="this.style.borderColor='rgba(34,197,94,0.3)'"
                  onmouseout="this.style.borderColor='var(--borda)'">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
@@ -166,12 +166,12 @@ function renderObrasCards() {
       <div style="display:flex;justify-content:space-between;align-items:center;padding-top:8px;border-top:1px solid rgba(255,255,255,0.04);">
         <span style="font-size:10px;color:var(--texto3);">📅 Último: ${ultimaStr}</span>
         <div style="display:flex;align-items:center;gap:8px;">
-          ${usuarioAtual?.perfil === 'admin' ? `<button onclick="event.stopPropagation();abrirModalObra('${o.id}')" style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);color:#60a5fa;border-radius:6px;padding:3px 10px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;cursor:pointer;">✏ EDITAR</button>` : ''}
+          ${usuarioAtual?.perfil === 'admin' ? `<button onclick="event.stopPropagation();abrirModalObra('${esc(o.id)}')" style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);color:#60a5fa;border-radius:6px;padding:3px 10px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;cursor:pointer;">✏ EDITAR</button>` : ''}
           ${usuarioAtual?.perfil === 'admin' ? (mostandoArquivadas
-            ? `${o.slug_entrega ? `<button onclick="event.stopPropagation();abrirEntregaDigital('${o.slug_entrega}')" style="background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.3);color:#c9a84c;border-radius:6px;padding:3px 10px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;cursor:pointer;">📦 ENTREGA</button>` : ''}
-               <button onclick="event.stopPropagation();reimprimirTermo('${o.id}')" style="background:rgba(139,92,246,0.08);border:1px solid rgba(139,92,246,0.2);color:#a78bfa;border-radius:6px;padding:3px 10px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;cursor:pointer;">📄 TERMO</button>
-               <button onclick="event.stopPropagation();arquivarObraCard('${o.id}',false)" style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.15);color:#4ade80;border-radius:6px;padding:3px 10px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;cursor:pointer;">🏗 REATIVAR</button>`
-            : `<button onclick="event.stopPropagation();arquivarObraCard('${o.id}',true)" style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);color:#fbbf24;border-radius:6px;padding:3px 10px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;cursor:pointer;">✅ CONCLUIR</button>`
+            ? `${o.slug_entrega ? `<button onclick="event.stopPropagation();abrirEntregaDigital('${esc(o.slug_entrega)}')" style="background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.3);color:#c9a84c;border-radius:6px;padding:3px 10px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;cursor:pointer;">📦 ENTREGA</button>` : ''}
+               <button onclick="event.stopPropagation();reimprimirTermo('${esc(o.id)}')" style="background:rgba(139,92,246,0.08);border:1px solid rgba(139,92,246,0.2);color:#a78bfa;border-radius:6px;padding:3px 10px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;cursor:pointer;">📄 TERMO</button>
+               <button onclick="event.stopPropagation();arquivarObraCard('${esc(o.id)}',false)" style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.15);color:#4ade80;border-radius:6px;padding:3px 10px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;cursor:pointer;">🏗 REATIVAR</button>`
+            : `<button onclick="event.stopPropagation();arquivarObraCard('${esc(o.id)}',true)" style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);color:#fbbf24;border-radius:6px;padding:3px 10px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;cursor:pointer;">✅ CONCLUIR</button>`
           ) : ''}
           <span style="font-size:10px;color:var(--verde-hl);font-weight:600;">DETALHES →</span>
         </div>
@@ -492,7 +492,7 @@ function filtrarLanc() {
         <div class="lanc-desc">${l.descricao}</div>
         <div style="display:flex;align-items:center;gap:4px;">
           <span class="lanc-val admin-only">${fmtR(l.total)}</span>
-          <button class="lanc-del admin-only" onclick="excluirLanc('${l.id}')">🗑</button>
+          <button class="lanc-del admin-only" onclick="excluirLanc('${esc(l.id)}')">🗑</button>
         </div>
       </div>
       ${l.etapa ? `<div style="margin-bottom:3px;"><span style="font-size:9px;font-weight:700;background:rgba(34,197,94,0.08);color:var(--verde3);border:1px solid rgba(34,197,94,0.15);border-radius:4px;padding:1px 6px;font-family:'JetBrains Mono',monospace;">${esc(etapaLabel(l.etapa))}</span></div>` : ''}

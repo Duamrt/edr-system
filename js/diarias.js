@@ -258,10 +258,10 @@ function diarRenderListaEquipe() {
       ? '<span style="font-size:9px;background:rgba(34,197,94,0.1);color:var(--verde-hl);padding:2px 6px;border-radius:4px;font-weight:700">ATIVO</span>'
       : '<span style="font-size:9px;background:rgba(239,68,68,0.15);color:#f87171;padding:2px 6px;border-radius:4px;font-weight:700">INATIVO</span>';
     const btnToggle = f.ativo
-      ? `<button onclick="diarToggleFuncionario('${f.id}',false)" title="Desativar" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);color:#f87171;border-radius:6px;padding:3px 8px;font-size:10px;cursor:pointer;">desativar</button>`
-      : `<button onclick="diarToggleFuncionario('${f.id}',true)" title="Reativar" style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.15);color:var(--verde-hl);border-radius:6px;padding:3px 8px;font-size:10px;cursor:pointer;">reativar</button>`;
-    const btnEditar = `<button onclick="diarEditarFuncionario('${f.id}')" title="Editar" style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.2);color:#60a5fa;border-radius:6px;padding:3px 8px;font-size:10px;cursor:pointer;">editar</button>`;
-    const btnExcluir = !f.ativo ? `<button onclick="diarExcluirFuncionario('${f.id}','${esc(f.nome)}')" title="Excluir" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);color:#f87171;border-radius:6px;padding:3px 8px;font-size:10px;cursor:pointer;">excluir</button>` : '';
+      ? `<button onclick="diarToggleFuncionario('${esc(f.id)}',false)" title="Desativar" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);color:#f87171;border-radius:6px;padding:3px 8px;font-size:10px;cursor:pointer;">desativar</button>`
+      : `<button onclick="diarToggleFuncionario('${esc(f.id)}',true)" title="Reativar" style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.15);color:var(--verde-hl);border-radius:6px;padding:3px 8px;font-size:10px;cursor:pointer;">reativar</button>`;
+    const btnEditar = `<button onclick="diarEditarFuncionario('${esc(f.id)}')" title="Editar" style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.2);color:#60a5fa;border-radius:6px;padding:3px 8px;font-size:10px;cursor:pointer;">editar</button>`;
+    const btnExcluir = !f.ativo ? `<button onclick="diarExcluirFuncionario('${esc(f.id)}','${esc(f.nome)}')" title="Excluir" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);color:#f87171;border-radius:6px;padding:3px 8px;font-size:10px;cursor:pointer;">excluir</button>` : '';
     return `<div style="${opaco}display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid var(--borda);gap:8px;flex-wrap:wrap">
       <div style="flex:1;min-width:140px">
         <div style="display:flex;align-items:center;gap:8px">
@@ -1119,7 +1119,7 @@ function diarRenderExtras() {
           </div>
           <div style="display:flex;align-items:center;gap:10px;">
             <span style="font-weight:700;color:var(--verde-hl);font-family:'JetBrains Mono',monospace;font-size:13px;">R$ ${e.valor.toLocaleString('pt-BR',{minimumFractionDigits:2})}</span>
-            <button onclick="diarExcluirExtra('${e.id}')" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);color:#f87171;border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;">✕</button>
+            <button onclick="diarExcluirExtra('${esc(e.id)}')" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);color:#f87171;border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;">✕</button>
           </div>
         </div>`).join('')}
       <div style="padding:9px 12px;display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.03);">

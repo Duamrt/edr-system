@@ -87,13 +87,13 @@ function renderAdicionais() {
       ${pgtos.length ? `<div style="margin-bottom:8px;padding:6px 8px;background:var(--bg3);border-radius:6px;">${pgtoRows}</div>` : ''}
       ${a.obs ? `<div style="font-size:10px;color:var(--texto3);margin-bottom:8px;">📌 ${a.obs}</div>` : ''}
       <div style="display:flex;gap:6px;flex-wrap:wrap;">
-        <select onchange="mudarStatusAdicional('${a.id}',this.value)" style="padding:4px 8px;font-size:10px;background:var(--bg3);border:1px solid var(--borda2);border-radius:5px;color:var(--branco);font-family:inherit;cursor:pointer;">
+        <select onchange="mudarStatusAdicional('${esc(a.id)}',this.value)" style="padding:4px 8px;font-size:10px;background:var(--bg3);border:1px solid var(--borda2);border-radius:5px;color:var(--branco);font-family:inherit;cursor:pointer;">
           ${Object.entries(STATUS_ADD).map(([k, v]) => `<option value="${k}" ${a.status === k ? 'selected' : ''}>${v.lb}</option>`).join('')}
         </select>
-        <button onclick="abrirPgtoAdicional('${a.id}')" style="padding:4px 10px;font-size:10px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.15);border-radius:5px;color:var(--verde-hl);font-weight:700;cursor:pointer;font-family:inherit;">💰 PAGAMENTO</button>
-        <button onclick="gerarTermoAdicional('${a.id}')" style="padding:4px 10px;font-size:10px;background:rgba(139,92,246,0.08);border:1px solid rgba(139,92,246,0.2);border-radius:5px;color:#a78bfa;font-weight:700;cursor:pointer;font-family:inherit;">📄 TERMO</button>
-        <button onclick="editarAdicional('${a.id}')" style="padding:4px 10px;font-size:10px;background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);border-radius:5px;color:#60a5fa;font-weight:700;cursor:pointer;font-family:inherit;">✏ EDITAR</button>
-        <button onclick="excluirAdicional('${a.id}')" style="padding:4px 10px;font-size:10px;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);border-radius:5px;color:#f87171;cursor:pointer;font-family:inherit;">🗑</button>
+        <button onclick="abrirPgtoAdicional('${esc(a.id)}')" style="padding:4px 10px;font-size:10px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.15);border-radius:5px;color:var(--verde-hl);font-weight:700;cursor:pointer;font-family:inherit;">💰 PAGAMENTO</button>
+        <button onclick="gerarTermoAdicional('${esc(a.id)}')" style="padding:4px 10px;font-size:10px;background:rgba(139,92,246,0.08);border:1px solid rgba(139,92,246,0.2);border-radius:5px;color:#a78bfa;font-weight:700;cursor:pointer;font-family:inherit;">📄 TERMO</button>
+        <button onclick="editarAdicional('${esc(a.id)}')" style="padding:4px 10px;font-size:10px;background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);border-radius:5px;color:#60a5fa;font-weight:700;cursor:pointer;font-family:inherit;">✏ EDITAR</button>
+        <button onclick="excluirAdicional('${esc(a.id)}')" style="padding:4px 10px;font-size:10px;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);border-radius:5px;color:#f87171;cursor:pointer;font-family:inherit;">🗑</button>
       </div>
     </div>`;
   }).join('');

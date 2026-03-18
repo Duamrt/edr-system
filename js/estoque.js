@@ -190,7 +190,7 @@ function renderEstoque() {
         <span class="cat-btn-count">${totalGeral}</span>
       </button>` +
       catsVisiveis.map(cat => `
-        <button class="cat-btn ${catEstoqueFiltro===cat.key?'ativo':''}" onclick="catEstoqueFiltro='${cat.key}';renderEstoque()">
+        <button class="cat-btn ${catEstoqueFiltro===cat.key?'ativo':''}" onclick="catEstoqueFiltro='${esc(cat.key)}';renderEstoque()">
           <span style="flex:1;">${cat.lb}</span>
           <span class="cat-btn-count">${contCat[cat.key]||0}</span>
         </button>`).join('');
