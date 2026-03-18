@@ -93,6 +93,11 @@ async function fazerLogout() {
   MODO_DEMO = false;
   usuarioAtual = null;
   obras = []; obrasArquivadas = []; notas = []; lancamentos = []; distribuicoes = [];
+  // Limpar estados de filtro pra não herdar IDs da sessão anterior
+  obraFiltroAtual = null; catFiltroAtual = null; catEstoqueFiltro = null;
+  entradasDiretas = []; catalogoMateriais = []; repassesCef = []; ajustesEstoque = [];
+  itensForm = []; distItemAtual = null; currentCredito = null;
+  leadsData = []; diarQuinzenas = []; diarQuinzenaAtiva = null;
   if (typeof _demoBannerTimer !== 'undefined' && _demoBannerTimer) {
     clearTimeout(_demoBannerTimer);
     _demoBannerTimer = null;

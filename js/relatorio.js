@@ -345,15 +345,17 @@ function buildGraficoMensal() {
     mesesArr.push(a + '-' + String(m).padStart(2,'0'));
   }
 
-  const dados = mesesArr.map(ym => {
-    const lanc = getLancMes(ym);
-    const saidas = lanc.reduce((s,l) => s + Number(l.total||0), 0);
-    const pgtos = adicionaisPgtos.filter(p => p.data && p.data.startsWith(ym));
-    const entAdic = pgtos.reduce((s,p) => s + Number(p.valor||0), 0);
-    const rep = getRepassesMes(ym);
-    const entRep = rep.reduce((s,r) => s + Number(r.valor||0), 0);
-    return { ym, entradas: entAdic + entRep, saidas };
-  });
+  // Pré-agregar por mês numa passagem só (evita filtrar lancamentos 6x)
+  const saidasPorMes = {}, entAdicPorMes = {}, entRepPorMes = {};
+  mesesArr.forEach(ym => { saidasPorMes[ym] = 0; entAdicPorMes[ym] = 0; entRepPorMes[ym] = 0; });
+  const mesesSet = new Set(mesesArr);
+  lancamentos.forEach(l => { const ym = l.data?.substring(0,7); if (ym && mesesSet.has(ym)) saidasPorMes[ym] += Number(l.total||0); });
+  adicionaisPgtos.forEach(p => { const ym = p.data?.substring(0,7); if (ym && mesesSet.has(ym)) entAdicPorMes[ym] += Number(p.valor||0); });
+  (typeof repassesCef !== 'undefined' ? repassesCef : []).forEach(r => { const ym = r.data_credito?.substring(0,7); if (ym && mesesSet.has(ym)) entRepPorMes[ym] += Number(r.valor||0); });
+
+  const dados = mesesArr.map(ym => ({
+    ym, entradas: entAdicPorMes[ym] + entRepPorMes[ym], saidas: saidasPorMes[ym]
+  }));
 
   const maxVal = Math.max(...dados.map(d => Math.max(d.entradas, d.saidas)), 1);
 

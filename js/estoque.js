@@ -272,45 +272,59 @@ async function confirmarDistribuicaoItem() {
     if (!confirm(`Saldo atual: ${m.saldoTotal} ${m.unidade}. Confirma saída mesmo assim? (Material fiado)`)) return;
   }
   const hoje = hojeISO();
-  // FIFO: consumir lotes na ordem de entrada
-  // Recalcular saldo real de cada lote descontando distribuições já gravadas
+  const etapaVal = document.getElementById('dist-etapa')?.value || '';
+  // FIFO: consumir lotes de NF na ordem de entrada
   let restante = qtd, totalValor = 0;
   const lotesUsados = [];
   for (const lote of m.lotes) {
     if (restante <= 0) break;
-    // saldo real do lote = qtd original - já distribuído deste lote específico
     const jaDistribuido = distribuicoes
       .filter(d => d.nota_id === lote.notaId && d.item_idx === lote.itemIdx)
       .reduce((s,d) => s + Number(d.qtd), 0);
     const saldoReal = Number(lote.item.qtd) - jaDistribuido;
-    if (saldoReal <= 0) continue; // lote esgotado, pular
+    if (saldoReal <= 0) continue;
     const usar = Math.min(restante, saldoReal);
     lotesUsados.push({ ...lote, usar, valor: usar * Number(lote.item.preco) });
     totalValor += usar * Number(lote.item.preco);
     restante -= usar;
   }
-  if (lotesUsados.length === 0 || restante > 0) {
-    const saldoDisp = qtd - restante;
-    if (saldoDisp <= 0) { showToast(`⚠ SALDO ESGOTADO. Não há lotes disponíveis.`); return; }
+  // Se FIFO não cobriu tudo, usar saldo de entradas diretas/ajustes (sem nota_id)
+  const temSaldoExtra = (m.qtdDireta + (m.qtdAjuste||0)) > 0;
+  if (restante > 0 && !temSaldoExtra && lotesUsados.length === 0) {
+    showToast(`⚠ SALDO ESGOTADO. Não há lotes disponíveis.`); return;
   }
-  const precoMedio = totalValor / qtd;
+  // Preço médio: usar valor médio do material quando não há lotes NF
+  const precoMedio = (lotesUsados.length > 0 && totalValor > 0) ? totalValor / (qtd - restante) : m.valorMedio;
+  const valorRestante = restante * precoMedio;
+  totalValor += valorRestante;
+  const precoFinal = qtd > 0 ? totalValor / qtd : 0;
   try {
-    // Salvar uma distribuição por lote (FIFO)
+    // Salvar distribuições por lote (FIFO)
     for (const lote of lotesUsados) {
       const [dist] = await sbPost('distribuicoes', {
         nota_id: lote.notaId, item_desc: m.desc, item_idx: lote.itemIdx,
         obra_id: obraId, obra_nome: obraNome, qtd: lote.usar, valor: lote.valor, data: hoje,
-        etapa: document.getElementById('dist-etapa')?.value || ''
+        etapa: etapaVal
       });
       distribuicoes.push({ ...dist, obra_nome: obraNome });
     }
+    // Distribuição sem nota (entrada direta / ajuste) — restante do FIFO
+    if (restante > 0) {
+      const [dist] = await sbPost('distribuicoes', {
+        nota_id: null, item_desc: m.desc, item_idx: 0,
+        obra_id: obraId, obra_nome: obraNome, qtd: restante, valor: valorRestante, data: hoje,
+        etapa: etapaVal
+      });
+      distribuicoes.push({ ...dist, obra_nome: obraNome });
+    }
+    const totalLotes = lotesUsados.length + (restante > 0 ? 1 : 0);
     // Um único lançamento no financeiro da obra
     const descLanc = `${esc(m.desc)}${obs ? ' · '+obs : ''}`;
     const [lanc] = await sbPost('lancamentos', {
       obra_id: obraId, descricao: descLanc,
-      qtd, preco: precoMedio, total: totalValor, data: hoje,
-      etapa: document.getElementById('dist-etapa')?.value || '',
-      obs: `Estoque EDR · ${lotesUsados.length} lote${lotesUsados.length!==1?'s':''}`
+      qtd, preco: precoFinal, total: totalValor, data: hoje,
+      etapa: etapaVal,
+      obs: `Estoque EDR · ${totalLotes} lote${totalLotes!==1?'s':''}`
     });
     if (lanc) lancamentos.unshift(lanc);
     showToast(`✅ ${qtd} ${m.unidade} de ${esc(m.desc)} → ${obraNome}!`);
