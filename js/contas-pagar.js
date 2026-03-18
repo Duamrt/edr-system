@@ -137,6 +137,33 @@ function renderContasPagar() {
   }).join('');
 }
 
+// ── AUTOCOMPLETE FORNECEDOR ───────────────────────────────
+function onContaFornInput() {
+  const val = (document.getElementById('conta-fornecedor').value || '').trim();
+  const list = document.getElementById('ac-conta-forn');
+  if (!list || val.length < 2) { if (list) list.classList.add('hidden'); return; }
+  const v = val.toUpperCase();
+  // Extrair fornecedores únicos das notas + contas já cadastradas
+  const fornSet = new Map();
+  notas.forEach(n => { if (n.fornecedor) fornSet.set(n.fornecedor.toUpperCase(), { nome: n.fornecedor, cnpj: n.cnpj || '' }); });
+  contasPagar.forEach(c => { if (c.fornecedor && !fornSet.has(c.fornecedor.toUpperCase())) fornSet.set(c.fornecedor.toUpperCase(), { nome: c.fornecedor, cnpj: '' }); });
+  const matches = [...fornSet.values()].filter(f => f.nome.toUpperCase().includes(v)).slice(0, 8);
+  if (!matches.length) { list.classList.add('hidden'); return; }
+  list.innerHTML = matches.map(f =>
+    `<div class="autocomplete-item" onmousedown="selecionarContaForn('${esc(f.nome)}')">
+      <span style="font-size:12px;color:var(--branco);">${esc(f.nome)}</span>
+      ${f.cnpj ? `<span style="font-size:10px;color:var(--texto3);">${esc(f.cnpj)}</span>` : ''}
+    </div>`
+  ).join('');
+  list.classList.remove('hidden');
+}
+
+function selecionarContaForn(nome) {
+  document.getElementById('conta-fornecedor').value = nome;
+  document.getElementById('ac-conta-forn').classList.add('hidden');
+  document.getElementById('conta-descricao').focus();
+}
+
 // ── MODAL CRIAR/EDITAR ───────────────────────────────────
 function abrirModalConta(contaId) {
   const modal = document.getElementById('modal-conta');

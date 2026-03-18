@@ -1169,7 +1169,8 @@ VERGALHAO CA50" style="width:100%;min-height:140px;padding:14px;background:var(-
     </div>
     <div class="field">
       <label>FORNECEDOR *</label>
-      <input type="text" id="conta-fornecedor" placeholder="Nome do fornecedor">
+      <input type="text" id="conta-fornecedor" placeholder="Nome do fornecedor" oninput="onContaFornInput()" autocomplete="off">
+      <div id="ac-conta-forn" class="autocomplete-list hidden"></div>
     </div>
     <div class="field">
       <label>DESCRICAO</label>
