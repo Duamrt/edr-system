@@ -92,6 +92,9 @@
   .page::after { content: 'EDR Engenharia — Manual do Proprietário, Termo de Garantia e Entrega          Página ' counter(pagina) ' de 4'; display: flex; justify-content: space-between; font-size: 7.5pt; color: #888; border-top: 2px solid var(--verde); padding-top: 8px; margin-top: auto; white-space: pre; }
   @media print { .page::after { display: none !important; } }
 </style>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="img/icon-192.png">
+  <link rel="apple-touch-icon" href="img/icon-192.png">
 </head>
 <body>
 
@@ -374,5 +377,6 @@
   } catch(e) { console.error('Erro ao preencher termo:', e); }
 })();
 </script>
+<script>if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js")}</script>
 </body>
 </html>

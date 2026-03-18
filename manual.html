@@ -105,6 +105,9 @@
   .indice a:hover { color:var(--verde-hl); }
   .indice .idx-num { color:var(--verde2); font-family:'JetBrains Mono',monospace; font-size:.8rem; margin-right:8px; }
 </style>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="img/icon-192.png">
+  <link rel="apple-touch-icon" href="img/icon-192.png">
 </head>
 <body>
 
@@ -755,5 +758,6 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.modulo')[0]?.classList.add('open');
 });
 </script>
+<script>if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js")}</script>
 </body>
 </html>
