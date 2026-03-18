@@ -236,7 +236,24 @@ create table if not exists projecoes_caixa (
   criado_em timestamptz default now()
 );
 alter table projecoes_caixa enable row level security;
-create policy "projecoes_caixa_all" on projecoes_caixa for all using (true) with check (true);`;
+create policy "projecoes_caixa_all" on projecoes_caixa for all using (true) with check (true);
+
+-- Chamados de garantia pós-entrega
+create table if not exists garantia_chamados (
+  id uuid primary key default gen_random_uuid(),
+  obra_id uuid references obras(id) on delete set null,
+  categoria text not null default 'outro',
+  descricao_problema text not null,
+  solucao text default '',
+  status text default 'aberto',
+  data_visita date,
+  cliente_nome text default '',
+  cliente_telefone text default '',
+  criado_em timestamptz default now(),
+  atualizado_em timestamptz default now()
+);
+alter table garantia_chamados enable row level security;
+create policy "garantia_chamados_all" on garantia_chamados for all using (true) with check (true);`;
 
 // ══════════════════════════════════════════
 // ESTADO

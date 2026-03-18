@@ -55,7 +55,7 @@ async function fazerLogin() {
 
 function entrarNoApp() {
   document.getElementById('login-screen').classList.add('hidden');
-  ['obras','estoque','notas','form','creditos','setup','catalogo','banco','relatorio','diarias','caixa','contas-pagar'].forEach(name => {
+  ['obras','estoque','notas','form','creditos','setup','catalogo','banco','relatorio','diarias','caixa','contas-pagar','garantias'].forEach(name => {
     const el = document.getElementById('view-'+name);
     if (el) el.classList.add('hidden');
   });
@@ -97,7 +97,7 @@ async function fazerLogout() {
   obraFiltroAtual = null; catFiltroAtual = null; catEstoqueFiltro = null;
   entradasDiretas = []; catalogoMateriais = []; repassesCef = []; ajustesEstoque = [];
   itensForm = []; distItemAtual = null; currentCredito = null;
-  leadsData = []; diarQuinzenas = []; diarQuinzenaAtiva = null; contasPagar = []; projecoesCaixa = [];
+  leadsData = []; diarQuinzenas = []; diarQuinzenaAtiva = null; contasPagar = []; projecoesCaixa = []; garantiaChamados = [];
   if (typeof _demoBannerTimer !== 'undefined' && _demoBannerTimer) {
     clearTimeout(_demoBannerTimer);
     _demoBannerTimer = null;
@@ -211,7 +211,7 @@ function aplicarPerfil() {
   else MODO_DEMO = false;
 
   ['nav-dashboard','nav-obras','nav-estoque','nav-notas','nav-form','nav-creditos',
-   'nav-catalogo','nav-relatorio','nav-banco','nav-setup','nav-diarias','nav-custos','nav-leads','nav-caixa','nav-contas-pagar'].forEach(id => {
+   'nav-catalogo','nav-relatorio','nav-banco','nav-setup','nav-diarias','nav-custos','nav-leads','nav-caixa','nav-contas-pagar','nav-garantias'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.classList.remove('hidden');
   });

@@ -436,9 +436,9 @@ function syncBnav(v) {
     const btn = document.getElementById('bnav-' + id);
     if (btn) btn.classList.toggle('active', id === v);
   });
-  const moreActive = ['form','creditos','catalogo','banco','setup','relatorio','caixa','contas-pagar'].includes(v);
+  const moreActive = ['form','creditos','catalogo','banco','setup','relatorio','caixa','contas-pagar','garantias'].includes(v);
   document.getElementById('bnav-more-btn')?.classList.toggle('active', moreActive);
-  ['form','creditos','catalogo','banco','setup','caixa','contas-pagar'].forEach(id => {
+  ['form','creditos','catalogo','banco','setup','caixa','contas-pagar','garantias'].forEach(id => {
     const btn = document.getElementById('bnav-' + id);
     if (btn) btn.classList.toggle('active', id === v);
   });

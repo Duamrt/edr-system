@@ -349,6 +349,30 @@ const AJUDA_CONTEUDO = {
     ]
   },
 
+  garantias: {
+    titulo: 'Garantia Pos-Entrega',
+    perfis: ['admin'],
+    secoes: [
+      { titulo: 'Visao geral', info: 'Modulo para rastrear chamados de garantia apos a entrega da obra. Registre problemas relatados pelos clientes, acompanhe o status e a solucao aplicada.' },
+      { titulo: 'Cadastrar chamado', passos: [
+        'Clique em + NOVO CHAMADO',
+        'Selecione a obra (inclui obras ja entregues)',
+        'Escolha a categoria do problema (estrutura, hidraulica, eletrica, etc.)',
+        'Descreva o problema relatado pelo cliente',
+        'Informe nome e telefone do contato para retorno',
+        'Clique em SALVAR'
+      ]},
+      { titulo: 'Gerenciar chamados', passos: [
+        'Use os chips de filtro: Abertos, Em andamento, Resolvidos',
+        'Clique nos botoes de status para mudar rapidamente',
+        'Clique em Editar para atualizar descricao, solucao ou agendar visita',
+        'Clique em Excluir para remover'
+      ]},
+      { titulo: 'Prazos de garantia', info: 'Fundacoes/Estrutura: 5 anos · Impermeabilizacao: 3 anos · Eletrica/Hidraulica: 2 anos · Revestimento, Esquadrias, Calhas, Gesso: 1 ano.' },
+      { dica: 'Obras entregues (arquivadas) aparecem no select com "(entregue)". Sao as que mais precisam de acompanhamento de garantia.' }
+    ]
+  },
+
   setup: {
     titulo: 'Setup',
     perfis: ['admin'],
@@ -457,7 +481,7 @@ function fecharAjudaFora(e) {
 
 // ── DETECTAR VIEW ATIVA ─────────────────────────────────
 function getViewAtiva() {
-  const views = ['dashboard','obras','estoque','notas','form','creditos','diarias','catalogo','relatorio','custos','banco','setup','leads','caixa','contas-pagar'];
+  const views = ['dashboard','obras','estoque','notas','form','creditos','diarias','catalogo','relatorio','custos','banco','setup','leads','caixa','contas-pagar','garantias'];
   for (const v of views) {
     const el = document.getElementById('view-' + v);
     if (el && !el.classList.contains('hidden')) return v;
