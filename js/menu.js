@@ -168,10 +168,39 @@ function initMenuDragDrop() {
   aplicarOrdemMenu();
 }
 
+// ── SIDEBAR ACCORDION ─────────────────────────────────────
+function toggleSidebarGroup(labelEl) {
+  const group = labelEl.nextElementSibling;
+  if (!group || !group.classList.contains('sidebar-group')) return;
+  const isCollapsed = group.classList.contains('collapsed');
+  if (isCollapsed) {
+    group.classList.remove('collapsed');
+    labelEl.classList.remove('collapsed');
+    group.style.maxHeight = group.scrollHeight + 'px';
+  } else {
+    group.style.maxHeight = group.scrollHeight + 'px';
+    requestAnimationFrame(() => { group.classList.add('collapsed'); labelEl.classList.add('collapsed'); });
+  }
+}
+
+function expandGroupForView(viewId) {
+  const btn = document.querySelector(`.nav-btn[data-view="${viewId}"]`);
+  if (!btn) return;
+  const group = btn.closest('.sidebar-group');
+  if (!group) return;
+  const label = group.previousElementSibling;
+  if (group.classList.contains('collapsed')) {
+    group.classList.remove('collapsed');
+    if (label) label.classList.remove('collapsed');
+    group.style.maxHeight = group.scrollHeight + 'px';
+  }
+}
+
 function setView(v) {
   // Mestre só pode acessar diárias
   if (usuarioAtual?.perfil === 'mestre' && v !== 'diarias') return;
   closeBnavMore();
+  expandGroupForView(v);
   syncBnav(v);
   const views = ['dashboard','obras','estoque','notas','form','creditos','setup','catalogo','banco','relatorio','diarias','custos','leads','caixa','contas-pagar','garantias'];
   views.forEach(name => {

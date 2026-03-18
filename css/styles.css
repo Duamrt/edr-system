@@ -209,17 +209,31 @@ body::before {
   color: var(--texto3);
   letter-spacing: 1.5px;
   text-transform: uppercase;
-  padding: 14px 16px 4px;
+  padding: 10px 16px 4px;
   margin-top: 2px;
   user-select: none;
-  pointer-events: none;
   width: 100%;
   text-align: center;
+  cursor: pointer;
+  transition: color .2s;
+  position: relative;
 }
+.sidebar-group-label:hover { color: var(--texto2); }
+.sidebar-group-label::after {
+  content: '▾';
+  font-size: 8px;
+  margin-left: 4px;
+  opacity: 0.5;
+  transition: transform .2s;
+  display: inline-block;
+}
+.sidebar-group-label.collapsed::after { transform: rotate(-90deg); }
 .sidebar-group-label:first-child {
   margin-top: 0;
   padding-top: 8px;
 }
+.sidebar-group { overflow: hidden; transition: max-height .25s ease; }
+.sidebar-group.collapsed { max-height: 0 !important; }
 .sidebar-bottom { margin-top: auto; padding-bottom: 8px; }
 .nav-btn.dragging { opacity: 0.3; transform: scale(0.95); }
 .nav-btn.drag-over { border-color: var(--verde-hl) !important; box-shadow: 0 0 12px rgba(34,197,94,0.2); }

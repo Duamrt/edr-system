@@ -98,67 +98,81 @@
 
 <div class="app-shell">
 <nav class="sidebar" id="main-nav">
-  <div class="sidebar-group-label">VISAO</div>
-  <button class="nav-btn active" id="nav-dashboard" data-view="dashboard" onclick="setView('dashboard')" draggable="true">
-    <span class="nav-icon">📊</span>RESUMO<span class="nav-key">F1</span>
-  </button>
-  <button class="nav-btn admin-mestre" id="nav-relatorio" data-view="relatorio" onclick="setView('relatorio')" draggable="true">
-    <span class="nav-icon">📈</span>RELATORIO<span class="nav-key">F2</span>
-  </button>
-  <button class="nav-btn admin-only" id="nav-caixa" data-view="caixa" onclick="setView('caixa')" draggable="true">
-    <span class="nav-icon">💵</span>CAIXA<span class="nav-key">F3</span>
-  </button>
+  <div class="sidebar-group-label" onclick="toggleSidebarGroup(this)">VISAO</div>
+  <div class="sidebar-group">
+    <button class="nav-btn active" id="nav-dashboard" data-view="dashboard" onclick="setView('dashboard')" draggable="true">
+      <span class="nav-icon">📊</span>RESUMO<span class="nav-key">F1</span>
+    </button>
+    <button class="nav-btn admin-mestre" id="nav-relatorio" data-view="relatorio" onclick="setView('relatorio')" draggable="true">
+      <span class="nav-icon">📈</span>RELATORIO<span class="nav-key">F2</span>
+    </button>
+    <button class="nav-btn admin-only" id="nav-caixa" data-view="caixa" onclick="setView('caixa')" draggable="true">
+      <span class="nav-icon">💵</span>CAIXA<span class="nav-key">F3</span>
+    </button>
+  </div>
 
-  <div class="sidebar-group-label">OBRAS</div>
-  <button class="nav-btn" id="nav-obras" data-view="obras" onclick="setView('obras')" draggable="true">
-    <span class="nav-icon">🏗</span>OBRAS<span class="nav-key">F4</span>
-  </button>
-  <button class="nav-btn admin-only" id="nav-custos" data-view="custos" onclick="setView('custos')" draggable="true">
-    <span class="nav-icon">💰</span>CUSTOS CEF<span class="nav-key">F5</span>
-  </button>
-  <button class="nav-btn admin-only" id="nav-garantias" data-view="garantias" onclick="setView('garantias')" draggable="true">
-    <span class="nav-icon">🛡</span>GARANTIA<span class="nav-key">F6</span>
-  </button>
+  <div class="sidebar-group-label" onclick="toggleSidebarGroup(this)">OBRAS</div>
+  <div class="sidebar-group">
+    <button class="nav-btn" id="nav-obras" data-view="obras" onclick="setView('obras')" draggable="true">
+      <span class="nav-icon">🏗</span>OBRAS<span class="nav-key">F4</span>
+    </button>
+    <button class="nav-btn admin-only" id="nav-custos" data-view="custos" onclick="setView('custos')" draggable="true">
+      <span class="nav-icon">💰</span>CUSTOS CEF<span class="nav-key">F5</span>
+    </button>
+    <button class="nav-btn admin-only" id="nav-garantias" data-view="garantias" onclick="setView('garantias')" draggable="true">
+      <span class="nav-icon">🛡</span>GARANTIA<span class="nav-key">F6</span>
+    </button>
+  </div>
 
-  <div class="sidebar-group-label">MATERIAIS</div>
-  <button class="nav-btn" id="nav-estoque" data-view="estoque" onclick="setView('estoque')" draggable="true">
-    <span class="nav-icon">📦</span>ESTOQUE<span class="nav-key">F7</span>
-  </button>
-  <button class="nav-btn" id="nav-catalogo" data-view="catalogo" onclick="setView('catalogo')" draggable="true">
-    <span class="nav-icon">📂</span>CATALOGO<span class="nav-key">F8</span>
-  </button>
-  <button class="nav-btn" id="nav-notas" data-view="notas" onclick="setView('notas')" draggable="true">
-    <span class="nav-icon">🧾</span>NOTAS<span class="nav-key">F9</span>
-  </button>
-  <button class="nav-btn" id="nav-form" data-view="form" onclick="setView('form')" draggable="true">
-    <span class="nav-icon">➕</span>LANCAR NF<span class="nav-key">F10</span>
-  </button>
+  <div class="sidebar-group-label" onclick="toggleSidebarGroup(this)">MATERIAIS</div>
+  <div class="sidebar-group">
+    <button class="nav-btn" id="nav-estoque" data-view="estoque" onclick="setView('estoque')" draggable="true">
+      <span class="nav-icon">📦</span>ESTOQUE<span class="nav-key">F7</span>
+    </button>
+    <button class="nav-btn" id="nav-catalogo" data-view="catalogo" onclick="setView('catalogo')" draggable="true">
+      <span class="nav-icon">📂</span>CATALOGO<span class="nav-key">F8</span>
+    </button>
+    <button class="nav-btn" id="nav-notas" data-view="notas" onclick="setView('notas')" draggable="true">
+      <span class="nav-icon">🧾</span>NOTAS<span class="nav-key">F9</span>
+    </button>
+    <button class="nav-btn" id="nav-form" data-view="form" onclick="setView('form')" draggable="true">
+      <span class="nav-icon">➕</span>LANCAR NF<span class="nav-key">F10</span>
+    </button>
+  </div>
 
-  <div class="sidebar-group-label">FINANCEIRO</div>
-  <button class="nav-btn admin-only" id="nav-contas-pagar" data-view="contas-pagar" onclick="setView('contas-pagar')" draggable="true">
-    <span class="nav-icon">📋</span>CONTAS<span class="nav-key">F11</span>
-  </button>
-  <button class="nav-btn" id="nav-creditos" data-view="creditos" onclick="setView('creditos')" draggable="true">
-    <span class="nav-icon">📖</span>CREDITOS<span class="nav-key">F12</span>
-  </button>
+  <div class="sidebar-group-label" onclick="toggleSidebarGroup(this)">FINANCEIRO</div>
+  <div class="sidebar-group">
+    <button class="nav-btn admin-only" id="nav-contas-pagar" data-view="contas-pagar" onclick="setView('contas-pagar')" draggable="true">
+      <span class="nav-icon">📋</span>CONTAS<span class="nav-key">F11</span>
+    </button>
+    <button class="nav-btn" id="nav-creditos" data-view="creditos" onclick="setView('creditos')" draggable="true">
+      <span class="nav-icon">📖</span>CREDITOS<span class="nav-key">F12</span>
+    </button>
+  </div>
 
-  <div class="sidebar-group-label">EQUIPE</div>
-  <button class="nav-btn" id="nav-diarias" data-view="diarias" onclick="setView('diarias')" draggable="true">
-    <span class="nav-icon">👷</span>DIARIAS<span class="nav-key"></span>
-  </button>
+  <div class="sidebar-group-label" onclick="toggleSidebarGroup(this)">EQUIPE</div>
+  <div class="sidebar-group">
+    <button class="nav-btn" id="nav-diarias" data-view="diarias" onclick="setView('diarias')" draggable="true">
+      <span class="nav-icon">👷</span>DIARIAS<span class="nav-key"></span>
+    </button>
+  </div>
 
-  <div class="sidebar-group-label">COMERCIAL</div>
-  <button class="nav-btn admin-only" id="nav-leads" data-view="leads" onclick="setView('leads')" draggable="true">
-    <span class="nav-icon">🎯</span>LEADS<span class="nav-key"></span>
-  </button>
+  <div class="sidebar-group-label" onclick="toggleSidebarGroup(this)">COMERCIAL</div>
+  <div class="sidebar-group">
+    <button class="nav-btn admin-only" id="nav-leads" data-view="leads" onclick="setView('leads')" draggable="true">
+      <span class="nav-icon">🎯</span>LEADS<span class="nav-key"></span>
+    </button>
+  </div>
 
-  <div class="sidebar-group-label">CONFIG</div>
-  <button class="nav-btn admin-only" id="nav-banco" data-view="banco" onclick="setView('banco')" draggable="true">
-    <span class="nav-icon">🗄</span>DADOS<span class="nav-key"></span>
-  </button>
-  <button class="nav-btn admin-only" id="nav-setup" data-view="setup" onclick="setView('setup')" style="color:#dc2626;" draggable="true">
-    <span class="nav-icon">⚙</span>SETUP<span class="nav-key"></span>
-  </button>
+  <div class="sidebar-group-label" onclick="toggleSidebarGroup(this)">CONFIG</div>
+  <div class="sidebar-group">
+    <button class="nav-btn admin-only" id="nav-banco" data-view="banco" onclick="setView('banco')" draggable="true">
+      <span class="nav-icon">🗄</span>DADOS<span class="nav-key"></span>
+    </button>
+    <button class="nav-btn admin-only" id="nav-setup" data-view="setup" onclick="setView('setup')" style="color:#dc2626;" draggable="true">
+      <span class="nav-icon">⚙</span>SETUP<span class="nav-key"></span>
+    </button>
+  </div>
 
   <div class="sidebar-bottom">
     <button class="nav-btn-reset-order" onclick="resetarOrdemMenu()" title="Restaurar ordem padrão do menu">
@@ -186,41 +200,48 @@
   </button>
 </div>
 <div id="bnav-more-menu">
+  <div style="font-size:8px;color:var(--texto3);letter-spacing:1px;padding:6px 8px 2px;font-weight:700;">VISÃO</div>
+  <button class="bnav-more-item admin-mestre" id="bnav-relatorio" onclick="setView('relatorio');closeBnavMore()">
+    <span class="bnav-more-icon">📈</span>RELATÓRIO
+  </button>
+  <button class="bnav-more-item admin-only" id="bnav-caixa" onclick="setView('caixa');closeBnavMore()">
+    <span class="bnav-more-icon">💵</span>CAIXA
+  </button>
+  <div style="font-size:8px;color:var(--texto3);letter-spacing:1px;padding:6px 8px 2px;font-weight:700;">OBRAS</div>
+  <button class="bnav-more-item admin-only" id="bnav-custos" onclick="setView('custos');closeBnavMore()">
+    <span class="bnav-more-icon">💰</span>CUSTOS CEF
+  </button>
+  <button class="bnav-more-item admin-only" id="bnav-garantias" onclick="setView('garantias');closeBnavMore()">
+    <span class="bnav-more-icon">🛡</span>GARANTIA
+  </button>
+  <div style="font-size:8px;color:var(--texto3);letter-spacing:1px;padding:6px 8px 2px;font-weight:700;">MATERIAIS</div>
+  <button class="bnav-more-item" id="bnav-catalogo" onclick="setView('catalogo');closeBnavMore()">
+    <span class="bnav-more-icon">📂</span>CATÁLOGO
+  </button>
   <button class="bnav-more-item" id="bnav-form" onclick="setView('form');closeBnavMore()">
     <span class="bnav-more-icon">➕</span>LANÇAR NF
   </button>
   <button class="bnav-more-item" id="bnav-creditos" onclick="setView('creditos');closeBnavMore()">
     <span class="bnav-more-icon">📖</span>GUIA NF
   </button>
-  <button class="bnav-more-item" id="bnav-adicionais" onclick="irParaAdicionais();closeBnavMore()">
-    <span class="bnav-more-icon">📝</span>ADICIONAIS
+  <div style="font-size:8px;color:var(--texto3);letter-spacing:1px;padding:6px 8px 2px;font-weight:700;">FINANCEIRO</div>
+  <button class="bnav-more-item admin-only" id="bnav-contas-pagar" onclick="setView('contas-pagar');closeBnavMore()">
+    <span class="bnav-more-icon">📋</span>CONTAS
   </button>
+  <div style="font-size:8px;color:var(--texto3);letter-spacing:1px;padding:6px 8px 2px;font-weight:700;">EQUIPE</div>
   <button class="bnav-more-item" id="bnav-diarias" onclick="setView('diarias');closeBnavMore()">
     <span class="bnav-more-icon">👷</span>DIÁRIAS
   </button>
-  <button class="bnav-more-item" id="bnav-catalogo" onclick="setView('catalogo');closeBnavMore()">
-    <span class="bnav-more-icon">📂</span>CATÁLOGO
+  <button class="bnav-more-item" id="bnav-adicionais" onclick="irParaAdicionais();closeBnavMore()">
+    <span class="bnav-more-icon">📝</span>ADICIONAIS
   </button>
-  <button class="bnav-more-item admin-mestre" id="bnav-relatorio" onclick="setView('relatorio');closeBnavMore()">
-    <span class="bnav-more-icon">📈</span>RELATÓRIO
-  </button>
-  <button class="bnav-more-item admin-only" id="bnav-custos" onclick="setView('custos');closeBnavMore()">
-    <span class="bnav-more-icon">💰</span>CUSTOS CEF
-  </button>
+  <div style="font-size:8px;color:var(--texto3);letter-spacing:1px;padding:6px 8px 2px;font-weight:700;">COMERCIAL</div>
   <button class="bnav-more-item admin-only" id="bnav-leads" onclick="setView('leads');closeBnavMore()">
     <span class="bnav-more-icon">🎯</span>LEADS
   </button>
+  <div style="font-size:8px;color:var(--texto3);letter-spacing:1px;padding:6px 8px 2px;font-weight:700;">CONFIG</div>
   <button class="bnav-more-item admin-only" id="bnav-banco" onclick="setView('banco');closeBnavMore()">
     <span class="bnav-more-icon">🗄</span>DADOS
-  </button>
-  <button class="bnav-more-item admin-only" id="bnav-caixa" onclick="setView('caixa');closeBnavMore()">
-    <span>💰</span><span>Caixa</span>
-  </button>
-  <button class="bnav-more-item admin-only" id="bnav-contas-pagar" onclick="setView('contas-pagar');closeBnavMore()">
-    <span>📋</span><span>Contas</span>
-  </button>
-  <button class="bnav-more-item admin-only" id="bnav-garantias" onclick="setView('garantias');closeBnavMore()">
-    <span>🛡</span><span>Garantia</span>
   </button>
   <button class="bnav-more-item admin-only" id="bnav-setup" onclick="setView('setup');closeBnavMore()" style="color:#dc2626;">
     <span class="bnav-more-icon">⚙</span>SETUP
