@@ -608,7 +608,7 @@ function renderContratoCard(obraId) {
     </div>
     <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:11px;">
       ${contratoEntrada > 0 ? `<span style="padding:3px 8px;border-radius:6px;background:${entradaOk ? 'rgba(34,197,94,0.1)' : 'rgba(245,158,11,0.1)'};color:${entradaOk ? 'var(--verde-hl)' : '#f59e0b'};font-weight:600;">Entrada: ${fmt(contratoEntrada)} ${entradaOk ? '&#10003;' : '&#9679; pendente'}</span>` : ''}
-      ${contratoTerreno > 0 ? `<span style="padding:3px 8px;border-radius:6px;background:${terrenoOk ? 'rgba(34,197,94,0.1)' : 'rgba(168,85,247,0.1)'};color:${terrenoOk ? 'var(--verde-hl)' : '#a855f7'};font-weight:600;">Terreno: ${fmt(contratoTerreno)} ${terrenoOk ? '&#10003;' : '&#9679; pendente'}</span>` : ''}
+      ${contratoTerreno > 0 ? `<span style="padding:3px 8px;border-radius:6px;background:rgba(168,85,247,0.06);color:#a855f7;font-weight:600;">Terreno: ${fmt(contratoTerreno)}</span>` : ''}
     </div>
     ${infoExtra}
     ${isAdmin ? `<div style="margin-top:10px;"><button onclick="abrirModalContratoCEF('${esc(obraId)}')" style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.2);border-radius:6px;padding:5px 14px;color:#3b82f6;font-size:11px;cursor:pointer;font-family:inherit;font-weight:600;">✏ Editar contrato</button></div>` : ''}
