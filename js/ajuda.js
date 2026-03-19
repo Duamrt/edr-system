@@ -230,18 +230,29 @@ const AJUDA_CONTEUDO = {
     perfis: ['admin'],
     secoes: [
       { titulo: 'Visualizar custos', passos: [
-        'As obras aparecem em cards com resumo de lancamentos, adicionais e repasses',
-        'Clique em uma obra para ver o detalhe com tabela mensal'
+        'As obras aparecem em cards com resumo: PLS, Entrada, Terreno e Custo',
+        'Clique em VER DETALHES para abrir o detalhe com tabela mensal'
+      ]},
+      { titulo: 'Contrato CEF', passos: [
+        'Clique em CONTRATO para cadastrar os dados do financiamento',
+        'Valor Contrato CEF — o que o banco financia',
+        'Valor Contrato EDR — o que o cliente contrata com a EDR (pode ser diferente)',
+        'Entrada do Cliente — os 20% que o cliente paga do bolso',
+        'Valor do Terreno — referencia de avaliacao (informativo, nao gera pendencia)',
+        'Marque "Entrada ja paga" quando o cliente quitar'
       ]},
       { titulo: 'Registrar repasse CEF', passos: [
-        'No detalhe da obra, clique em + REPASSE',
-        'Preencha: numero da medicao, valor, data do credito, tipo (PLS ou outro)',
+        'Clique em + NOVO REPASSE',
+        'Selecione o tipo: PLS (medicao), Entrada ou Terreno',
+        'Preencha: numero da medicao (se PLS), valor e data do credito',
         'Clique em SALVAR'
       ]},
+      { titulo: 'Cadastro rapido de material', info: 'Na importacao de NF, se o material nao existe no catalogo, clique em "+ CADASTRAR NO CATALOGO" no autocomplete. O item e criado e selecionado automaticamente.' },
       { titulo: 'Gerar relatorio de custos', passos: [
         'No detalhe da obra, clique em RELATORIO',
         'O sistema gera um relatorio completo de custos vs repasses'
-      ]}
+      ]},
+      { dica: 'A barra de progresso do contrato mostra quanto ja foi recebido vs o valor total financiado. Entrada e terreno sao contabilizados separadamente.' }
     ]
   },
 
