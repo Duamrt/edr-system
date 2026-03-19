@@ -73,7 +73,7 @@ function renderCustosCards() {
           <div style="font-size:9px;color:var(--texto3);">VALOR IMÓVEL</div>
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-bottom:10px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;">
         <div style="text-align:center;padding:6px;background:rgba(255,255,255,0.03);border-radius:8px;">
           <div style="font-size:9px;color:var(--texto3);">📄 PLS</div>
           <div style="font-size:11px;font-weight:700;color:var(--verde-hl);">${fmt(totalPls)}</div>
