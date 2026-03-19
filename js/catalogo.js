@@ -169,7 +169,9 @@ async function salvarCadastroRapido() {
     catalogoMateriais.sort((a,b) => a.codigo.localeCompare(b.codigo));
     fecharCadastroRapido();
     showToast('✅ ' + codigo + ' — ' + nome + ' cadastrado!');
-    if (_crOrigem === 'nf') {
+    if (_crOrigem === 'import') {
+      if (typeof importPosicaoRapidoCallback === 'function') importPosicaoRapidoCallback(codigo);
+    } else if (_crOrigem === 'nf') {
       document.getElementById('i-desc').value = nome;
       const res = classificarItem(nome);
       currentCredito = res?.credito ?? null;

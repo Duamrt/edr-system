@@ -587,7 +587,8 @@ function importBuscarCatInput(idx) {
     .slice(0, 20);
 
   if (!matches.length) {
-    list.innerHTML = `<div style="padding:8px 10px;font-size:11px;color:var(--texto3);">Nenhum item encontrado</div>`;
+    list.innerHTML = `<div style="padding:8px 10px;font-size:11px;color:var(--texto3);">Nenhum item encontrado</div>
+      <div onmousedown="importCadastroRapido(${idx},'${esc(val)}')" style="padding:10px;cursor:pointer;border-top:1px solid var(--borda);display:flex;align-items:center;gap:8px;color:var(--verde-hl);font-size:12px;font-weight:700;transition:background 0.1s;" onmouseover="this.style.background='rgba(34,197,94,0.08)'" onmouseout="this.style.background='transparent'">+ CADASTRAR NO CATÁLOGO</div>`;
     list.classList.remove('hidden');
     return;
   }
@@ -598,7 +599,7 @@ function importBuscarCatInput(idx) {
       <span style="font-size:11px;color:var(--branco);flex:1;">${m.nome}</span>
       <span style="font-size:10px;color:var(--texto3);">${m.unidade || 'UN'}</span>
     </div>`
-  ).join('');
+  ).join('') + `<div onmousedown="importCadastroRapido(${idx},'${esc(val)}')" style="padding:10px;cursor:pointer;border-top:1px solid var(--borda);display:flex;align-items:center;gap:8px;color:var(--verde-hl);font-size:11px;font-weight:700;transition:background 0.1s;" onmouseover="this.style.background='rgba(34,197,94,0.08)'" onmouseout="this.style.background='transparent'">+ CADASTRAR NOVO</div>`;
   list.classList.remove('hidden');
 
   // Fechar lista ao perder foco
@@ -607,6 +608,24 @@ function importBuscarCatInput(idx) {
 
 function importSelecionarCatPorInput(idx, codigo) {
   importSelecionarCatalogo(idx, codigo);
+}
+
+// ── Cadastro rápido inline durante importação ────────────────
+let _importCadastroIdx = null;
+
+function importCadastroRapido(idx, nomeDigitado) {
+  _importCadastroIdx = idx;
+  _catCacheVer = 0; // invalidar cache pra próxima busca
+  cadastroRapidoMaterial(nomeDigitado, 'import');
+}
+
+// Hook chamado após salvar cadastro rápido com origem 'import'
+function importPosicaoRapidoCallback(codigo) {
+  if (_importCadastroIdx !== null) {
+    _catCacheVer = 0;
+    importSelecionarCatalogo(_importCadastroIdx, codigo);
+    _importCadastroIdx = null;
+  }
 }
 
 // ══════════════════════════════════════════
