@@ -595,9 +595,15 @@
         <button class="modal-close" onclick="fecharModal('contrato-cef')">✕</button>
       </div>
       <input type="hidden" id="contrato-obra-id">
-      <div class="field" style="margin-bottom:12px;">
-        <label>VALOR TOTAL CONTRATADO (R$) *</label>
-        <input type="number" id="contrato-valor" min="0" step="0.01" placeholder="Ex: 194000" style="width:100%;padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;color:var(--branco);font-size:14px;outline:none;font-family:inherit;">
+      <div style="display:flex;gap:8px;">
+        <div class="field" style="flex:1;margin-bottom:12px;">
+          <label>VALOR CONTRATO CEF (R$) *</label>
+          <input type="number" id="contrato-valor" min="0" step="0.01" placeholder="Valor financiado pelo banco" style="width:100%;padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;color:var(--branco);font-size:14px;outline:none;font-family:inherit;">
+        </div>
+        <div class="field" style="flex:1;margin-bottom:12px;">
+          <label>VALOR CONTRATO EDR (R$)</label>
+          <input type="number" id="contrato-valor-edr" min="0" step="0.01" placeholder="Valor contratado com a EDR" style="width:100%;padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;color:var(--branco);font-size:14px;outline:none;font-family:inherit;">
+        </div>
       </div>
       <div style="display:flex;gap:8px;">
         <div class="field" style="flex:1;margin-bottom:12px;">
@@ -608,6 +614,14 @@
           <label>TERRENO (R$)</label>
           <input type="number" id="contrato-terreno" min="0" step="0.01" placeholder="Ex: 15000" style="width:100%;padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;color:var(--branco);font-size:14px;outline:none;font-family:inherit;">
         </div>
+      </div>
+      <div style="display:flex;gap:16px;margin-bottom:12px;">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--texto2);">
+          <input type="checkbox" id="contrato-entrada-paga" style="accent-color:var(--verde-hl);width:16px;height:16px;"> Entrada já paga
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--texto2);">
+          <input type="checkbox" id="contrato-terreno-pago" style="accent-color:var(--verde-hl);width:16px;height:16px;"> Terreno já pago
+        </label>
       </div>
       <div style="display:flex;gap:8px;">
         <div class="field" style="flex:1;margin-bottom:12px;">
