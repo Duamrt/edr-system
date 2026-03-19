@@ -626,7 +626,6 @@ function abrirModalContratoCEF(obraId) {
   document.getElementById('contrato-entrada').value = obra.contrato_entrada || '';
   document.getElementById('contrato-terreno').value = obra.contrato_terreno || '';
   document.getElementById('contrato-entrada-paga').checked = !!obra.entrada_paga;
-  document.getElementById('contrato-terreno-pago').checked = !!obra.terreno_pago;
   document.getElementById('contrato-taxa').value = obra.contrato_taxa || '';
   document.getElementById('contrato-prazo').value = obra.contrato_prazo || '';
   document.getElementById('contrato-data').value = obra.contrato_data || '';
@@ -643,7 +642,7 @@ async function salvarContratoCEF() {
   const entrada = parseFloat(document.getElementById('contrato-entrada').value) || 0;
   const terreno = parseFloat(document.getElementById('contrato-terreno').value) || 0;
   const entradaPaga = document.getElementById('contrato-entrada-paga').checked;
-  const terrenoPago = document.getElementById('contrato-terreno-pago').checked;
+  const terrenoPago = false;
   const taxa = document.getElementById('contrato-taxa').value.trim();
   const prazo = document.getElementById('contrato-prazo').value.trim();
   const data = document.getElementById('contrato-data').value || null;
