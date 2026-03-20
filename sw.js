@@ -1,5 +1,6 @@
-// EDR System — Service Worker
-const CACHE_NAME = 'edr-system-v2';
+// EDR System — Service Worker (network-first para HTML/JS/CSS, cache-first para imagens)
+// DEPLOY_VERSION é atualizado automaticamente pelo deploy.sh
+const CACHE_NAME = 'edr-system-v20260320103503';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -48,7 +49,24 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // Assets — cache-first, fallback rede
+  // HTMLs, JS e CSS — network-first (sempre pega atualizado, cache como fallback)
+  if (url.endsWith('.html') || url.endsWith('.js') || url.endsWith('.css') || e.request.mode === 'navigate') {
+    e.respondWith(
+      fetch(e.request).then(resp => {
+        if (resp.ok && e.request.method === 'GET') {
+          const clone = resp.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
+        }
+        return resp;
+      }).catch(() => caches.match(e.request).then(cached => {
+        if (cached) return cached;
+        if (e.request.mode === 'navigate') return caches.match('/index.html');
+      }))
+    );
+    return;
+  }
+
+  // Imagens e outros assets — cache-first, fallback rede
   e.respondWith(
     caches.match(e.request).then(cached => cached || fetch(e.request).then(resp => {
       if (resp.ok && e.request.method === 'GET') {
@@ -56,10 +74,6 @@ self.addEventListener('fetch', e => {
         caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
       }
       return resp;
-    })).catch(() => {
-      if (e.request.mode === 'navigate') {
-        return caches.match('/index.html');
-      }
-    })
+    })).catch(() => {})
   );
 });
