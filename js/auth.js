@@ -267,7 +267,7 @@ async function checkPlatformAdmin() {
       headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + _authToken }
     });
     const companies = await cr.json();
-    if (!companies || companies.length < 2) return;
+    if (!companies || !companies.length) return;
 
     const sel = document.getElementById('company-switcher');
     sel.innerHTML = companies.map(c =>
