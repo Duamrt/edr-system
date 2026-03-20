@@ -74,6 +74,11 @@ function resetarOrdemMenu() {
 }
 
 function initMenuDragDrop() {
+  // Drag & drop desativado — causava sumiço dos labels de grupo
+  // Limpar ordem customizada salva anteriormente
+  try { localStorage.removeItem(getMenuOrderKey()); } catch(e) {}
+  return;
+  /* DESATIVADO
   const nav = document.getElementById('main-nav');
   let draggedEl = null;
 
@@ -168,6 +173,7 @@ function initMenuDragDrop() {
   aplicarOrdemMenu();
   // Iniciar sidebar com grupos colapsados
   initSidebarGroups();
+  DESATIVADO */
 }
 
 // ── SIDEBAR ACCORDION ─────────────────────────────────────
