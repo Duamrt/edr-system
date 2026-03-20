@@ -351,6 +351,26 @@ function dashBuildSaudeObras(porObra) {
   </div>`;
 }
 
+function dashBuildSaudeObrasCompacta(porObra) {
+  if (!porObra.length) return '';
+  return `<div class="card" style="padding:16px;margin-bottom:14px;">
+    <div style="font-size:13px;font-weight:700;color:var(--texto2);letter-spacing:0.5px;margin-bottom:12px;display:flex;align-items:center;gap:8px;"><span style="width:6px;height:6px;border-radius:50%;background:#22c55e;"></span> Obras</div>
+    ${porObra.map(o => {
+      const pctReceb = o.vv > 0 ? Math.min((o.receb/o.vv*100),100) : 0;
+      const corM = o.margem >= 15 ? 'var(--verde-hl)' : o.margem >= 0 ? '#f59e0b' : '#ef4444';
+      return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.04);cursor:pointer;" onclick="setView('custos');setTimeout(()=>custosAbrirDetalhe('${esc(o.id)}'),100)">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:12px;color:var(--branco);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(o.nome)}</div>
+        </div>
+        <div style="width:80px;height:4px;background:rgba(255,255,255,0.04);border-radius:2px;overflow:hidden;flex-shrink:0;">
+          <div style="width:${pctReceb}%;height:100%;background:var(--verde3);border-radius:2px;"></div>
+        </div>
+        <span style="font-size:10px;font-weight:700;color:${corM};min-width:40px;text-align:right;">${o.vv > 0 ? o.margem.toFixed(0)+'%' : '—'}</span>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
 // ── GRÁFICOS ────────────────────────────────────────────────
 function dashRenderFluxoCaixa(lancAtivos, obraAtivaIds) {
   const el = document.getElementById('dash-fluxo-caixa');
@@ -464,34 +484,30 @@ function renderDashboard() {
   const ultimos = [...m.lancAtivos].sort((a,b) => new Date(b.data||0) - new Date(a.data||0)).slice(0, 5);
   const dataStr = new Date().toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'short',year:'numeric'}).toUpperCase();
 
-  // Montar HTML por seções
+  // Contas vencidas
+  const contasVenc = typeof getContasVencidas === 'function' ? getContasVencidas().length : 0;
+
+  // KPI Grid estilo NaRegua
+  const kpis = [
+    { num: fmt(m.receitaTotal), label: 'Receita Total', cor: '#3b82f6', bg: 'linear-gradient(135deg,#1a5276,#2e86c1)' },
+    { num: fmt(m.custoTotal), label: 'Custo Total', cor: '#f59e0b', bg: 'linear-gradient(135deg,#b7950b,#f1c40f)' },
+    { num: fmt(m.lucroGeral), label: 'Lucro', cor: m.lucroGeral >= 0 ? '#22c55e' : '#ef4444', bg: m.lucroGeral >= 0 ? 'linear-gradient(135deg,#1e8449,#27ae60)' : 'linear-gradient(135deg,#922b21,#e74c3c)' },
+    { num: m.valorVendaTotal > 0 ? m.margemGeral.toFixed(1)+'%' : '—', label: 'Margem', cor: '#a855f7', bg: 'linear-gradient(135deg,#6c3483,#9b59b6)' },
+    { num: porObra.length, label: 'Obras Ativas', cor: '#22c55e', bg: 'linear-gradient(135deg,#1e8449,#2ecc71)' },
+    { num: contasVenc, label: 'Contas Vencidas', cor: '#ef4444', bg: contasVenc > 0 ? 'linear-gradient(135deg,#922b21,#e74c3c)' : 'linear-gradient(135deg,#1e8449,#27ae60)' },
+  ];
+
   el.innerHTML = `
     ${dashBuildHeader(dataStr)}
-    ${dashBuildCardReceita(m.receitaTotal, m.valorVendaTotal, m.addGeral)}
-    ${dashBuildCardsSecundarios(m, porObra)}
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;">
+      ${kpis.map(k => `<div style="background:${k.bg};border-radius:14px;padding:16px 12px;text-align:center;cursor:pointer;transition:all .2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+        <div style="font-size:18px;font-weight:800;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,0.3);line-height:1.2;">${k.num}</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.85);letter-spacing:0.8px;text-transform:uppercase;margin-top:4px;">${k.label}</div>
+      </div>`).join('')}
+    </div>
     ${dashBuildAlertas(alertas)}
-    ${dashBuildSaudeObras(porObra)}
     ${dashBuildAgenda()}
-    ${ultimos.length ? `<div class="card" style="padding:22px;margin-bottom:16px;">
-      <div style="font-size:13px;font-weight:700;color:var(--texto2);letter-spacing:0.5px;margin-bottom:16px;display:flex;align-items:center;gap:8px;"><span style="width:6px;height:6px;border-radius:50%;background:#3b82f6;"></span> Últimos Lançamentos</div>
-      ${ultimos.map(l => {
-        const usuario = l.usuario || l.criado_por || '—';
-        return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
-          <div>
-            <div style="font-size:12px;color:var(--branco);font-weight:600;">${esc(l.descricao)}</div>
-            <div style="font-size:10px;color:var(--texto3);margin-top:2px;">${esc(obraMap[l.obra_id]||'—')} · ${l.data||''} ${l.etapa ? '· '+esc(etapaLabel(l.etapa)) : ''} · <span style="color:#60a5fa;">${esc(usuario)}</span></div>
-          </div>
-          <span style="font-size:12px;font-weight:700;color:#f59e0b;font-family:'JetBrains Mono',monospace;">${fmtR(l.total)}</span>
-        </div>`;
-      }).join('')}
-    </div>` : ''}
-    <div class="card" style="padding:22px;margin-bottom:16px;">
-      <div style="font-size:13px;font-weight:700;color:var(--texto2);letter-spacing:0.5px;margin-bottom:16px;display:flex;align-items:center;gap:8px;"><span style="width:6px;height:6px;border-radius:50%;background:#f59e0b;"></span> Custo vs Receita por Obra</div>
-      <div id="dash-custo-receita"></div>
-    </div>`;
-
-  // Renderizar gráficos
-  dashRenderCustoReceita(porObra);
+    ${dashBuildSaudeObrasCompacta(porObra)}`;
 
   // Alerta de contas vencidas
   if (typeof getContasVencidas === 'function') {
