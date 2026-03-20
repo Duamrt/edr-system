@@ -622,40 +622,70 @@ function abrirModalContratoCEF(obraId) {
 
   document.getElementById('contrato-obra-id').value = obraId;
   document.getElementById('contrato-valor').value = obra.contrato_valor || '';
-  document.getElementById('contrato-valor-edr').value = obra.contrato_valor_edr || '';
+  document.getElementById('contrato-subsidio').value = obra.contrato_subsidio || '';
+  document.getElementById('contrato-fgts').value = obra.contrato_fgts || '';
   document.getElementById('contrato-entrada').value = obra.contrato_entrada || '';
-  document.getElementById('contrato-terreno').value = obra.contrato_terreno || '';
+  document.getElementById('contrato-extras').value = obra.contrato_extras || '';
   document.getElementById('contrato-entrada-paga').checked = !!obra.entrada_paga;
   document.getElementById('contrato-taxa').value = obra.contrato_taxa || '';
   document.getElementById('contrato-prazo').value = obra.contrato_prazo || '';
   document.getElementById('contrato-data').value = obra.contrato_data || '';
 
+  calcularValorVenda();
   document.getElementById('modal-contrato-cef').classList.remove('hidden');
+}
+
+function calcularValorVenda() {
+  const financiado = parseFloat(document.getElementById('contrato-valor').value) || 0;
+  const subsidio = parseFloat(document.getElementById('contrato-subsidio').value) || 0;
+  const fgts = parseFloat(document.getElementById('contrato-fgts').value) || 0;
+  const entrada = parseFloat(document.getElementById('contrato-entrada').value) || 0;
+  const extras = parseFloat(document.getElementById('contrato-extras').value) || 0;
+
+  const valorVenda = financiado + subsidio + fgts + entrada + extras;
+  document.getElementById('contrato-venda-valor').textContent = fmt(valorVenda);
+
+  // Verificar contra valor_venda existente na obra
+  const obraId = document.getElementById('contrato-obra-id').value;
+  const obra = [...obras, ...obrasArquivadas].find(o => o.id === obraId);
+  const alertaEl = document.getElementById('contrato-venda-alerta');
+
+  if (obra && obra.valor_venda > 0 && valorVenda > 0 && Math.abs(valorVenda - Number(obra.valor_venda)) > 1) {
+    alertaEl.textContent = '⚠ Difere do valor atual (' + fmt(obra.valor_venda) + '). Ao salvar, será atualizado.';
+    alertaEl.style.display = 'block';
+  } else {
+    alertaEl.style.display = 'none';
+  }
 }
 
 async function salvarContratoCEF() {
   const obraId = document.getElementById('contrato-obra-id').value;
   if (!obraId) return;
 
-  const valor = parseFloat(document.getElementById('contrato-valor').value) || 0;
-  const valorEdr = parseFloat(document.getElementById('contrato-valor-edr').value) || 0;
+  const financiado = parseFloat(document.getElementById('contrato-valor').value) || 0;
+  const subsidio = parseFloat(document.getElementById('contrato-subsidio').value) || 0;
+  const fgts = parseFloat(document.getElementById('contrato-fgts').value) || 0;
   const entrada = parseFloat(document.getElementById('contrato-entrada').value) || 0;
-  const terreno = parseFloat(document.getElementById('contrato-terreno').value) || 0;
+  const extras = parseFloat(document.getElementById('contrato-extras').value) || 0;
   const entradaPaga = document.getElementById('contrato-entrada-paga').checked;
-  const terrenoPago = false;
   const taxa = document.getElementById('contrato-taxa').value.trim();
   const prazo = document.getElementById('contrato-prazo').value.trim();
   const data = document.getElementById('contrato-data').value || null;
 
-  if (valor <= 0) return showToast('Informe o valor do contrato CEF.');
+  if (financiado <= 0) return showToast('Informe o valor financiado.');
+
+  // Valor de venda = soma de tudo
+  const valorVenda = financiado + subsidio + fgts + entrada + extras;
 
   const body = {
-    contrato_valor: valor,
-    contrato_valor_edr: valorEdr,
+    contrato_valor: financiado,
+    contrato_subsidio: subsidio,
+    contrato_fgts: fgts,
     contrato_entrada: entrada,
-    contrato_terreno: terreno,
+    contrato_extras: extras,
+    contrato_valor_edr: valorVenda,
+    valor_venda: valorVenda,
     entrada_paga: entradaPaga,
-    terreno_pago: terrenoPago,
     contrato_taxa: taxa,
     contrato_prazo: prazo,
     contrato_data: data

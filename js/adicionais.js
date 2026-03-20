@@ -194,9 +194,26 @@ async function salvarPgtoAdicional() {
   try {
     const [novo] = await sbPost('adicional_pagamentos', { adicional_id, valor, data, forma });
     adicionaisPgtos.unshift(novo);
+
+    // Auto-atualizar status quando totalmente pago
+    const adicional = obrasAdicionais.find(a => a.id === adicional_id);
+    if (adicional) {
+      const totalPago = adicionaisPgtos
+        .filter(p => p.adicional_id === adicional_id)
+        .reduce((s, p) => s + Number(p.valor || 0), 0);
+      if (totalPago >= Number(adicional.valor || 0) && adicional.status !== 'concluido') {
+        await sbPatch('obra_adicionais', `?id=eq.${adicional_id}`, { status: 'concluido' });
+        adicional.status = 'concluido';
+        showToast('✅ Pagamento registrado! Adicional concluído automaticamente.');
+      } else {
+        showToast('✅ Pagamento registrado!');
+      }
+    } else {
+      showToast('✅ Pagamento registrado!');
+    }
+
     fecharModal('add-pgto');
     renderAdicionais();
-    showToast('✅ Pagamento registrado!');
   } catch(e) { console.error(e); showToast('❌ Não foi possível registrar o pagamento.'); }
 }
 
