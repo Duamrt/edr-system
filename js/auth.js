@@ -75,7 +75,10 @@ function entrarNoApp() {
   initMenuDragDrop();
   // Carregar company_id antes de carregar dados
   if (typeof loadCompanyId === 'function') {
-    loadCompanyId().then(() => iniciarApp()).catch(() => iniciarApp());
+    loadCompanyId().then(() => {
+      iniciarApp();
+      checkPlatformAdmin();
+    }).catch(() => iniciarApp());
   } else {
     iniciarApp();
   }
@@ -245,6 +248,39 @@ function aplicarPerfil() {
     const pl = document.getElementById('diar-panelLeft');
     if (pl) pl.classList.remove('recolhido');
   }
+}
+
+// ── Super Admin — seletor de empresa ──────────────────
+async function checkPlatformAdmin() {
+  if (MODO_DEMO || !_authToken) return;
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/is_platform_admin`, {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + _authToken, 'Content-Type': 'application/json' },
+      body: '{}'
+    });
+    const isAdmin = await r.json();
+    if (!isAdmin) return;
+
+    // Carregar todas as empresas
+    const cr = await fetch(`${SUPABASE_URL}/rest/v1/companies?select=id,name&order=name`, {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + _authToken }
+    });
+    const companies = await cr.json();
+    if (!companies || companies.length < 2) return;
+
+    const sel = document.getElementById('company-switcher');
+    sel.innerHTML = companies.map(c =>
+      '<option value="' + c.id + '"' + (c.id === _companyId ? ' selected' : '') + '>' + c.name + '</option>'
+    ).join('');
+    sel.style.display = 'inline-block';
+  } catch(e) { console.warn('checkPlatformAdmin:', e); }
+}
+
+async function switchCompany(companyId) {
+  _companyId = companyId;
+  // Recarregar dados com a nova empresa
+  if (typeof iniciarApp === 'function') iniciarApp();
 }
 
 // ── Tabs Login / Criar Conta ──────────────────────────
