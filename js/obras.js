@@ -341,7 +341,7 @@ function reimprimirTermo(obraId) {
 let obraTabAtual = 'lanc';
 function obrasSwitchTab(tab) {
   obraTabAtual = tab;
-  const tabs = ['lanc','mat','add'];
+  const tabs = ['lanc','mat','add','cef'];
   tabs.forEach(t => {
     const btn = document.getElementById('obras-tab-' + t);
     const cont = document.getElementById('obras-tab-content-' + t);
@@ -350,6 +350,126 @@ function obrasSwitchTab(tab) {
   });
   if (tab === 'mat') renderObrasMateriais();
   if (tab === 'add' && typeof renderAdicionais === 'function') renderAdicionais();
+  if (tab === 'cef') renderObraCef();
+}
+
+function renderObraCef() {
+  const obraId = document.getElementById('obras-filtro-obra')?.value || '';
+  const el = document.getElementById('obras-cef-content');
+  if (!el) return;
+
+  if (!obraId) {
+    el.innerHTML = '<div class="empty">Selecione uma obra pra ver os dados do contrato CEF.</div>';
+    return;
+  }
+
+  const obra = [...obras, ...obrasArquivadas].find(o => o.id === obraId);
+  if (!obra) { el.innerHTML = '<div class="empty">Obra não encontrada.</div>'; return; }
+
+  const financiado = Number(obra.contrato_valor || 0);
+  const subsidio = Number(obra.contrato_subsidio || 0);
+  const fgts = Number(obra.contrato_fgts || 0);
+  const entrada = Number(obra.contrato_entrada || 0);
+  const extras = Number(obra.contrato_extras || 0);
+  const valorVenda = Number(obra.valor_venda || 0);
+  const entradaPaga = obra.entrada_paga ? '✅ Sim' : '⏳ Pendente';
+
+  // Repasses recebidos
+  const reps = (typeof repassesCef !== 'undefined' ? repassesCef : []).filter(r => r.obra_id === obraId);
+  const totalRecebido = reps.reduce((s, r) => s + Number(r.valor || 0), 0);
+  const pctRecebido = financiado > 0 ? Math.min((totalRecebido / financiado * 100), 100) : 0;
+
+  // Custos
+  const custoTotal = (typeof lancamentos !== 'undefined' ? lancamentos : []).filter(l => l.obra_id === obraId).reduce((s, l) => s + Number(l.total || 0), 0);
+  const lucro = valorVenda - custoTotal;
+
+  // Adicionais
+  const adds = typeof getAdicionaisObra === 'function' ? getAdicionaisObra(obraId) : { qtd: 0, valorTotal: 0, totalRecebido: 0, saldo: 0 };
+
+  const somaComponentes = financiado + subsidio + fgts + entrada + extras;
+  const somaOk = valorVenda > 0 && Math.abs(somaComponentes - valorVenda) < 1;
+  const somaAlerta = valorVenda > 0 && !somaOk;
+
+  el.innerHTML = `
+    <!-- Valor de Venda -->
+    <div style="background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.2);border-radius:12px;padding:16px;margin-bottom:14px;text-align:center;">
+      <div style="font-size:10px;color:var(--texto3);letter-spacing:1px;font-weight:700;">VALOR DE VENDA DO IMÓVEL</div>
+      <div style="font-size:24px;font-weight:800;color:var(--verde-hl);margin-top:4px;">${valorVenda > 0 ? fmt(valorVenda) : 'Não definido'}</div>
+      ${somaAlerta ? '<div style="font-size:10px;color:#ef4444;margin-top:4px;font-weight:700;">⚠ Soma dos componentes (' + fmt(somaComponentes) + ') difere do valor de venda</div>' : ''}
+    </div>
+
+    <!-- Grid de valores -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;">
+      <div style="text-align:center;padding:10px;background:rgba(255,255,255,0.03);border:1px solid var(--borda);border-radius:10px;">
+        <div style="font-size:9px;color:var(--texto3);font-weight:700;">💰 FINANCIADO</div>
+        <div style="font-size:14px;font-weight:800;color:var(--verde-hl);margin-top:4px;">${fmt(financiado)}</div>
+      </div>
+      <div style="text-align:center;padding:10px;background:rgba(255,255,255,0.03);border:1px solid var(--borda);border-radius:10px;">
+        <div style="font-size:9px;color:var(--texto3);font-weight:700;">🏛 SUBSÍDIO</div>
+        <div style="font-size:14px;font-weight:800;color:#60a5fa;margin-top:4px;">${fmt(subsidio)}</div>
+      </div>
+      <div style="text-align:center;padding:10px;background:rgba(255,255,255,0.03);border:1px solid var(--borda);border-radius:10px;">
+        <div style="font-size:9px;color:var(--texto3);font-weight:700;">📋 FGTS</div>
+        <div style="font-size:14px;font-weight:800;color:#a855f7;margin-top:4px;">${fmt(fgts)}</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
+      <div style="text-align:center;padding:10px;background:rgba(255,255,255,0.03);border:1px solid var(--borda);border-radius:10px;">
+        <div style="font-size:9px;color:var(--texto3);font-weight:700;">💵 ENTRADA ${entradaPaga === '✅ Sim' ? '<span style="color:var(--verde-hl);">✓ PAGA</span>' : '<span style="color:#fbbf24;">PENDENTE</span>'}</div>
+        <div style="font-size:14px;font-weight:800;color:#f59e0b;margin-top:4px;">${fmt(entrada)}</div>
+      </div>
+      <div style="text-align:center;padding:10px;background:rgba(255,255,255,0.03);border:1px solid var(--borda);border-radius:10px;">
+        <div style="font-size:9px;color:var(--texto3);font-weight:700;">🔧 EXTRAS</div>
+        <div style="font-size:14px;font-weight:800;color:#ec4899;margin-top:4px;">${fmt(extras)}</div>
+      </div>
+    </div>
+
+    <!-- Barra de progresso repasses -->
+    <div style="background:var(--bg2);border:1px solid var(--borda);border-radius:10px;padding:12px;margin-bottom:14px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <span style="font-size:10px;color:var(--texto3);font-weight:700;">📊 REPASSES RECEBIDOS</span>
+        <span style="font-size:12px;font-weight:800;color:var(--verde-hl);">${pctRecebido.toFixed(0)}%</span>
+      </div>
+      <div style="height:6px;background:rgba(59,130,246,0.15);border-radius:3px;overflow:hidden;">
+        <div style="width:${pctRecebido}%;height:100%;background:#3b82f6;border-radius:3px;"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:10px;color:var(--texto3);">
+        <span>Recebido: <strong style="color:var(--verde-hl);">${fmt(totalRecebido)}</strong></span>
+        <span>Falta: <strong style="color:#fbbf24;">${fmt(Math.max(0, financiado - totalRecebido))}</strong></span>
+      </div>
+    </div>
+
+    <!-- Resumo financeiro -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
+      <div style="text-align:center;padding:10px;background:rgba(245,158,11,0.04);border:1px solid rgba(245,158,11,0.15);border-radius:10px;">
+        <div style="font-size:9px;color:var(--texto3);font-weight:700;">💸 CUSTO TOTAL</div>
+        <div style="font-size:14px;font-weight:800;color:#f59e0b;margin-top:4px;">${fmt(custoTotal)}</div>
+      </div>
+      <div style="text-align:center;padding:10px;background:${lucro >= 0 ? 'rgba(34,197,94,0.04)' : 'rgba(239,68,68,0.04)'};border:1px solid ${lucro >= 0 ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)'};border-radius:10px;">
+        <div style="font-size:9px;color:var(--texto3);font-weight:700;">📈 LUCRO</div>
+        <div style="font-size:14px;font-weight:800;color:${lucro >= 0 ? 'var(--verde-hl)' : '#ef4444'};margin-top:4px;">${fmt(lucro)}</div>
+      </div>
+    </div>
+
+    ${adds.qtd > 0 ? `<div style="padding:10px;background:rgba(139,92,246,0.06);border:1px solid rgba(139,92,246,0.15);border-radius:10px;margin-bottom:14px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:10px;color:#a78bfa;font-weight:700;">📝 ${adds.qtd} ADICIONAL(IS)</span>
+        <span style="font-size:12px;font-weight:700;color:#a78bfa;">${fmt(adds.valorTotal)}</span>
+      </div>
+      <div style="font-size:10px;color:var(--texto3);margin-top:4px;">Recebido: ${fmt(adds.totalRecebido)} · Saldo: <strong style="color:${adds.saldo > 0 ? '#fbbf24' : 'var(--verde-hl)'};">${fmt(adds.saldo)}</strong></div>
+    </div>` : ''}
+
+    <!-- Dados do contrato -->
+    ${obra.contrato_data || obra.contrato_taxa || obra.contrato_prazo ? `
+    <div style="background:var(--bg2);border:1px solid var(--borda);border-radius:10px;padding:12px;margin-bottom:14px;">
+      <div style="font-size:10px;color:var(--texto3);font-weight:700;letter-spacing:1px;margin-bottom:8px;">📋 DADOS DO CONTRATO</div>
+      ${obra.contrato_data ? '<div style="font-size:12px;color:var(--texto2);margin-bottom:4px;">Data: <strong>' + fmtData(obra.contrato_data) + '</strong></div>' : ''}
+      ${obra.contrato_taxa ? '<div style="font-size:12px;color:var(--texto2);margin-bottom:4px;">Taxa: <strong>' + esc(obra.contrato_taxa) + '% a.a.</strong></div>' : ''}
+      ${obra.contrato_prazo ? '<div style="font-size:12px;color:var(--texto2);">Prazo: <strong>' + esc(obra.contrato_prazo) + '</strong></div>' : ''}
+    </div>` : ''}
+
+    <button class="btn-save" style="padding:10px 18px;width:auto;font-size:12px;" onclick="abrirModalContratoCEF('${esc(obraId)}')">✏️ Editar Contrato CEF</button>
+  `;
 }
 
 function renderObrasMateriais() {
