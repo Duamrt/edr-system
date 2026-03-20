@@ -377,6 +377,20 @@ async function criarConta() {
         })
       });
       _companyId = company.id;
+
+      // 5. Registrar aceite dos termos
+      try {
+        await fetch(`${SUPABASE_URL}/rest/v1/termos_aceites`, {
+          method: 'POST',
+          headers: { ...hdrs, 'Prefer': 'return=minimal' },
+          body: JSON.stringify({
+            user_id: loginData.user.id,
+            company_id: company.id,
+            versao: '2026-03-20',
+            user_agent: navigator.userAgent
+          })
+        });
+      } catch(e) { console.warn('Erro ao salvar aceite:', e); }
     }
 
     // 5. Entrar no app
