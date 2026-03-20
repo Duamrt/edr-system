@@ -575,21 +575,52 @@ async function renderPlataformaClientes() {
 // ── Editar empresa ────────────────────────────────────
 async function editarEmpresa(companyId) {
   const hdrs = { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + _authToken };
-  const arr = await fetch(`${SUPABASE_URL}/rest/v1/companies?id=eq.${companyId}`, { headers: hdrs }).then(r => r.json());
+  const [arr, compUsers, allUsersRes] = await Promise.all([
+    fetch(`${SUPABASE_URL}/rest/v1/companies?id=eq.${companyId}`, { headers: hdrs }).then(r => r.json()),
+    fetch(`${SUPABASE_URL}/rest/v1/company_users?company_id=eq.${companyId}`, { headers: hdrs }).then(r => r.json()),
+    fetch(`${SUPABASE_URL}/auth/v1/admin/users`, { headers: hdrs }).then(r => r.json()).catch(() => ({ users: [] }))
+  ]);
   const c = arr && arr[0] ? arr[0] : null;
   if (!c) { alert('Empresa nao encontrada.'); return; }
+  const allUsers = allUsersRes.users || allUsersRes || [];
+
+  // Montar lista de usuarios editaveis
+  let usersHtml = '';
+  if (compUsers && compUsers.length) {
+    usersHtml = '<div style="margin-bottom:12px;"><label style="font-size:11px;color:var(--texto3);font-weight:700;display:block;margin-bottom:8px;">USUARIOS</label>' +
+      compUsers.map((cu, i) => {
+        const u = Array.isArray(allUsers) ? allUsers.find(usr => usr.id === cu.user_id) : null;
+        const email = u ? u.email : '—';
+        const nome = u?.user_metadata?.nome || '—';
+        return '<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;padding:8px;background:rgba(255,255,255,0.02);border:1px solid var(--borda);border-radius:8px;">' +
+          '<div style="flex:1;min-width:0;">' +
+            '<div style="font-size:12px;font-weight:700;color:#fafafa;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + nome + '</div>' +
+            '<div style="font-size:10px;color:var(--texto3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + email + '</div>' +
+          '</div>' +
+          '<select data-cuid="' + cu.id + '" class="ed-user-role" style="padding:4px 6px;background:var(--cinza-medio,#141414);border:1px solid var(--borda);border-radius:6px;color:#fafafa;font-size:10px;font-family:inherit;">' +
+            '<option value="admin"' + (cu.role === 'admin' ? ' selected' : '') + '>Admin</option>' +
+            '<option value="operacional"' + (cu.role === 'operacional' ? ' selected' : '') + '>Operacional</option>' +
+            '<option value="mestre"' + (cu.role === 'mestre' ? ' selected' : '') + '>Mestre</option>' +
+            '<option value="visitante"' + (cu.role === 'visitante' ? ' selected' : '') + '>Visitante</option>' +
+          '</select>' +
+          '<button onclick="removerUsuarioEmpresa(\'' + cu.id + '\',\'' + nome.replace(/'/g,'') + '\')" style="padding:4px 8px;border-radius:6px;border:1px solid rgba(239,68,68,0.2);background:rgba(239,68,68,0.05);color:#ef4444;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;">X</button>' +
+        '</div>';
+      }).join('') +
+    '</div>';
+  }
 
   const overlay = document.createElement('div');
   overlay.id = 'edit-empresa-overlay';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
   overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
 
-  overlay.innerHTML = '<div style="background:var(--cinza-escuro,#0a0a0a);border:1px solid var(--borda);border-radius:16px;padding:24px;width:100%;max-width:420px;">' +
+  overlay.innerHTML = '<div style="background:var(--cinza-escuro,#0a0a0a);border:1px solid var(--borda);border-radius:16px;padding:24px;width:100%;max-width:460px;max-height:90vh;overflow-y:auto;">' +
     '<div style="font-size:16px;font-weight:800;margin-bottom:16px;color:#a855f7;">Editar Empresa</div>' +
     '<div style="margin-bottom:12px;"><label style="font-size:11px;color:var(--texto3);font-weight:700;display:block;margin-bottom:4px;">NOME</label><input id="ed-emp-nome" value="' + (c.name || '') + '" style="width:100%;padding:10px;background:var(--cinza-medio,#141414);border:1px solid var(--borda);border-radius:8px;color:#fafafa;font-size:13px;font-family:inherit;box-sizing:border-box;"></div>' +
     '<div style="margin-bottom:12px;"><label style="font-size:11px;color:var(--texto3);font-weight:700;display:block;margin-bottom:4px;">CIDADE</label><input id="ed-emp-cidade" value="' + (c.city || '') + '" style="width:100%;padding:10px;background:var(--cinza-medio,#141414);border:1px solid var(--borda);border-radius:8px;color:#fafafa;font-size:13px;font-family:inherit;box-sizing:border-box;"></div>' +
     '<div style="margin-bottom:12px;"><label style="font-size:11px;color:var(--texto3);font-weight:700;display:block;margin-bottom:4px;">CNPJ</label><input id="ed-emp-cnpj" value="' + (c.cnpj || '') + '" style="width:100%;padding:10px;background:var(--cinza-medio,#141414);border:1px solid var(--borda);border-radius:8px;color:#fafafa;font-size:13px;font-family:inherit;box-sizing:border-box;"></div>' +
     '<div style="margin-bottom:12px;"><label style="font-size:11px;color:var(--texto3);font-weight:700;display:block;margin-bottom:4px;">TELEFONE</label><input id="ed-emp-phone" value="' + (c.phone || '') + '" style="width:100%;padding:10px;background:var(--cinza-medio,#141414);border:1px solid var(--borda);border-radius:8px;color:#fafafa;font-size:13px;font-family:inherit;box-sizing:border-box;"></div>' +
+    usersHtml +
     '<div style="margin-bottom:12px;"><label style="font-size:11px;color:var(--texto3);font-weight:700;display:block;margin-bottom:4px;">OBSERVAÇÕES (senhas, contatos, etc)</label><textarea id="ed-emp-notes" rows="4" style="width:100%;padding:10px;background:var(--cinza-medio,#141414);border:1px solid var(--borda);border-radius:8px;color:#fafafa;font-size:12px;font-family:monospace;box-sizing:border-box;resize:vertical;">' + (c.notes || '') + '</textarea></div>' +
     '<div style="margin-bottom:16px;"><label style="font-size:11px;color:var(--texto3);font-weight:700;display:block;margin-bottom:4px;">PLANO</label><select id="ed-emp-plan" style="width:100%;padding:10px;background:var(--cinza-medio,#141414);border:1px solid var(--borda);border-radius:8px;color:#fafafa;font-size:13px;font-family:inherit;">' +
       '<option value="trial"' + (c.plan === 'trial' ? ' selected' : '') + '>Trial</option>' +
@@ -609,6 +640,7 @@ async function editarEmpresa(companyId) {
 async function salvarEmpresa(companyId) {
   const hdrs = { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + _authToken, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' };
   try {
+    // Salvar dados da empresa
     await fetch(`${SUPABASE_URL}/rest/v1/companies?id=eq.${companyId}`, {
       method: 'PATCH',
       headers: hdrs,
@@ -621,11 +653,38 @@ async function salvarEmpresa(companyId) {
         notes: document.getElementById('ed-emp-notes').value.trim() || null
       })
     });
+
+    // Salvar perfis de usuarios alterados
+    const roleSelects = document.querySelectorAll('.ed-user-role');
+    for (const sel of roleSelects) {
+      const cuId = sel.getAttribute('data-cuid');
+      if (cuId) {
+        await fetch(`${SUPABASE_URL}/rest/v1/company_users?id=eq.${cuId}`, {
+          method: 'PATCH',
+          headers: hdrs,
+          body: JSON.stringify({ role: sel.value })
+        });
+      }
+    }
+
     document.getElementById('edit-empresa-overlay')?.remove();
     showToast('Empresa atualizada!');
     renderPlataformaClientes();
   } catch(e) {
     alert('Erro ao salvar: ' + e.message);
+  }
+}
+
+async function removerUsuarioEmpresa(companyUserId, nome) {
+  if (!confirm('Remover "' + nome + '" desta empresa?')) return;
+  const hdrs = { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + _authToken, 'Prefer': 'return=minimal' };
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/company_users?id=eq.${companyUserId}`, { method: 'DELETE', headers: hdrs });
+    showToast('Usuario removido.');
+    document.getElementById('edit-empresa-overlay')?.remove();
+    renderPlataformaClientes();
+  } catch(e) {
+    alert('Erro ao remover: ' + e.message);
   }
 }
 
