@@ -12,7 +12,7 @@ async function fazerLogin() {
   errEl.textContent = '';
 
   try {
-    const email = u.includes('@') ? u : u + '@edreng.com.br'; // TODO: remover domínio fixo quando tiver onboarding multi-empresa
+    const email = u.includes('@') ? u : u + '@edreng.com.br';
     const r = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
       method: 'POST',
       headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
@@ -245,4 +245,144 @@ function aplicarPerfil() {
     const pl = document.getElementById('diar-panelLeft');
     if (pl) pl.classList.remove('recolhido');
   }
+}
+
+// ── Tabs Login / Criar Conta ──────────────────────────
+function switchLoginTab(tab) {
+  document.getElementById('login-card-login').style.display = tab === 'login' ? 'block' : 'none';
+  document.getElementById('login-card-signup').style.display = tab === 'signup' ? 'block' : 'none';
+  document.getElementById('login-error').textContent = '';
+  document.getElementById('signup-error').textContent = '';
+}
+
+// ── Criar Conta ───────────────────────────────────────
+async function criarConta() {
+  const nome = document.getElementById('signup-nome').value.trim();
+  const empresa = document.getElementById('signup-empresa').value.trim();
+  const cidade = document.getElementById('signup-cidade').value.trim();
+  const email = document.getElementById('signup-email').value.trim().toLowerCase();
+  const senha = document.getElementById('signup-senha').value;
+  const errEl = document.getElementById('signup-error');
+  const btn = document.getElementById('btn-signup');
+
+  errEl.textContent = '';
+
+  if (!nome || !empresa || !email || !senha) {
+    errEl.textContent = 'Preencha todos os campos.';
+    return;
+  }
+  if (senha.length < 6) {
+    errEl.textContent = 'Senha deve ter pelo menos 6 caracteres.';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'CRIANDO...';
+
+  try {
+    // 1. Criar usuário no Supabase Auth
+    const r = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email,
+        password: senha,
+        data: { nome, perfil: 'admin', usuario: email.split('@')[0] }
+      })
+    });
+    const data = await r.json();
+
+    if (!r.ok || data.error) {
+      const msg = (data.error_description || data.msg || data.error?.message || '');
+      if (msg.includes('already registered')) errEl.textContent = 'Este e-mail já está cadastrado. Faça login.';
+      else errEl.textContent = 'Erro ao criar conta: ' + msg;
+      btn.disabled = false;
+      btn.textContent = 'CRIAR CONTA GRÁTIS';
+      return;
+    }
+
+    // 2. Fazer login automaticamente
+    const lr = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password: senha })
+    });
+    const loginData = await lr.json();
+
+    if (!lr.ok || !loginData.access_token) {
+      // Pode precisar confirmar email
+      errEl.style.color = '#2ecc71';
+      errEl.textContent = 'Conta criada! Verifique seu e-mail para confirmar e faça login.';
+      btn.disabled = false;
+      btn.textContent = 'CRIAR CONTA GRÁTIS';
+      return;
+    }
+
+    _authToken = loginData.access_token;
+    const meta = loginData.user?.user_metadata || {};
+    usuarioAtual = {
+      id: loginData.user.id,
+      usuario: meta.usuario || email.split('@')[0],
+      nome: meta.nome || nome,
+      perfil: meta.perfil || 'admin',
+      ativo: true
+    };
+
+    try {
+      localStorage.setItem('edr_auth', JSON.stringify({
+        access_token: loginData.access_token,
+        refresh_token: loginData.refresh_token,
+        expires_at: Date.now() + (loginData.expires_in * 1000),
+        user: usuarioAtual
+      }));
+    } catch(e) {}
+    _agendarRefreshToken(loginData.expires_in);
+
+    // 3. Criar empresa
+    const slug = empresa.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+    const hdrs = {
+      'apikey': SUPABASE_KEY,
+      'Authorization': 'Bearer ' + _authToken,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation'
+    };
+
+    const cr = await fetch(`${SUPABASE_URL}/rest/v1/companies`, {
+      method: 'POST',
+      headers: hdrs,
+      body: JSON.stringify({
+        owner_id: loginData.user.id,
+        name: empresa,
+        slug: slug + '-' + Date.now().toString(36),
+        city: cidade || null,
+        plan: 'trial'
+      })
+    });
+    const companyArr = await cr.json();
+    const company = Array.isArray(companyArr) ? companyArr[0] : companyArr;
+
+    if (company && company.id) {
+      // 4. Vincular usuário à empresa
+      await fetch(`${SUPABASE_URL}/rest/v1/company_users`, {
+        method: 'POST',
+        headers: { ...hdrs, 'Prefer': 'return=minimal' },
+        body: JSON.stringify({
+          company_id: company.id,
+          user_id: loginData.user.id,
+          role: 'admin'
+        })
+      });
+      _companyId = company.id;
+    }
+
+    // 5. Entrar no app
+    entrarNoApp();
+
+  } catch(e) {
+    console.error('Erro ao criar conta:', e);
+    errEl.textContent = 'Erro de conexão. Tente novamente.';
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'CRIAR CONTA GRÁTIS';
 }
