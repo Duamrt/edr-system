@@ -273,6 +273,12 @@ async function checkPlatformAdmin() {
     const badge = document.getElementById('super-admin-badge');
     if (badge) badge.style.display = 'inline-block';
 
+    // Mostrar menu SUPER ADMIN no sidebar
+    const labelSA = document.getElementById('label-superadmin');
+    const groupSA = document.getElementById('group-superadmin');
+    if (labelSA) labelSA.style.display = '';
+    if (groupSA) groupSA.style.display = '';
+
     // Mostrar seletor de empresa
     const sel = document.getElementById('company-switcher');
     sel.innerHTML = companies.map(c =>
@@ -464,4 +470,81 @@ async function criarConta() {
 
   btn.disabled = false;
   btn.textContent = 'CRIAR CONTA GRÁTIS';
+}
+
+// ── Painel Super Admin — Lista de Empresas ────────────
+async function renderPlataformaClientes() {
+  const statsEl = document.getElementById('plataforma-stats');
+  const listaEl = document.getElementById('plataforma-lista');
+  if (!listaEl) return;
+
+  listaEl.innerHTML = '<div style="color:var(--texto3);padding:20px;">Carregando empresas...</div>';
+
+  try {
+    // Buscar todas as empresas
+    const companies = await fetch(`${SUPABASE_URL}/rest/v1/companies?select=*&order=created_at.desc`, {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + _authToken }
+    }).then(r => r.json());
+
+    if (!companies || !companies.length) {
+      listaEl.innerHTML = '<div style="color:var(--texto3);padding:20px;">Nenhuma empresa cadastrada.</div>';
+      return;
+    }
+
+    // Buscar contagem de usuarios por empresa
+    const compUsers = await fetch(`${SUPABASE_URL}/rest/v1/company_users?select=company_id`, {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + _authToken }
+    }).then(r => r.json());
+
+    const userCount = {};
+    (compUsers || []).forEach(cu => {
+      userCount[cu.company_id] = (userCount[cu.company_id] || 0) + 1;
+    });
+
+    // Stats
+    const total = companies.length;
+    const trials = companies.filter(c => c.plan === 'trial').length;
+    const ativos = companies.filter(c => c.plan !== 'trial').length;
+
+    if (statsEl) {
+      statsEl.innerHTML = [
+        { label: 'Total', valor: total, cor: '#a855f7' },
+        { label: 'Trial', valor: trials, cor: '#f59e0b' },
+        { label: 'Ativos', valor: ativos, cor: '#22c55e' }
+      ].map(s =>
+        '<div style="background:rgba(255,255,255,0.03);border:1px solid var(--borda);border-radius:10px;padding:12px 18px;min-width:100px;">' +
+          '<div style="font-size:22px;font-weight:800;color:' + s.cor + ';">' + s.valor + '</div>' +
+          '<div style="font-size:11px;color:var(--texto3);font-weight:600;letter-spacing:0.5px;">' + s.label + '</div>' +
+        '</div>'
+      ).join('');
+    }
+
+    // Lista de empresas
+    listaEl.innerHTML = companies.map(c => {
+      const users = userCount[c.id] || 0;
+      const planBadge = c.plan === 'trial'
+        ? '<span style="background:rgba(245,158,11,0.12);color:#f59e0b;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;">TRIAL</span>'
+        : '<span style="background:rgba(34,197,94,0.12);color:#22c55e;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;">' + (c.plan || 'ATIVO').toUpperCase() + '</span>';
+      const trialEnd = c.trial_ends_at ? new Date(c.trial_ends_at).toLocaleDateString('pt-BR') : '';
+      const criado = c.created_at ? new Date(c.created_at).toLocaleDateString('pt-BR') : '';
+      const isActive = c.id === _companyId;
+
+      return '<div onclick="switchCompany(\'' + c.id + '\');setView(\'dashboard\');" style="background:' + (isActive ? 'rgba(168,85,247,0.06)' : 'rgba(255,255,255,0.02)') + ';border:1px solid ' + (isActive ? 'rgba(168,85,247,0.3)' : 'var(--borda)') + ';border-radius:12px;padding:16px 20px;margin-bottom:8px;cursor:pointer;transition:all .15s;display:flex;justify-content:space-between;align-items:center;" onmouseover="this.style.borderColor=\'rgba(168,85,247,0.4)\'" onmouseout="this.style.borderColor=\'' + (isActive ? 'rgba(168,85,247,0.3)' : 'var(--borda)') + '\'">' +
+        '<div>' +
+          '<div style="font-weight:700;font-size:14px;margin-bottom:4px;">' + (c.name || 'Sem nome') + ' ' + planBadge + '</div>' +
+          '<div style="font-size:11px;color:var(--texto3);">' +
+            (c.city ? c.city + ' · ' : '') +
+            users + ' usuario' + (users !== 1 ? 's' : '') +
+            (c.plan === 'trial' && trialEnd ? ' · Trial ate ' + trialEnd : '') +
+            ' · Criado ' + criado +
+          '</div>' +
+        '</div>' +
+        '<div style="font-size:18px;color:var(--texto3);">→</div>' +
+      '</div>';
+    }).join('');
+
+  } catch(e) {
+    console.error('Erro ao carregar empresas:', e);
+    listaEl.innerHTML = '<div style="color:var(--vermelho);padding:20px;">Erro ao carregar empresas.</div>';
+  }
 }
