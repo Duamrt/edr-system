@@ -269,16 +269,35 @@ async function checkPlatformAdmin() {
     const companies = await cr.json();
     if (!companies || !companies.length) return;
 
+    // Mostrar badge SUPER ADMIN
+    const badge = document.getElementById('super-admin-badge');
+    if (badge) badge.style.display = 'inline-block';
+
+    // Mostrar seletor de empresa
     const sel = document.getElementById('company-switcher');
     sel.innerHTML = companies.map(c =>
       '<option value="' + c.id + '"' + (c.id === _companyId ? ' selected' : '') + '>' + c.name + '</option>'
     ).join('');
     sel.style.display = 'inline-block';
+
+    // Atualizar nome exibido pra mostrar empresa atual
+    updateSuperAdminLabel();
   } catch(e) { console.warn('checkPlatformAdmin:', e); }
+}
+
+function updateSuperAdminLabel() {
+  const sel = document.getElementById('company-switcher');
+  if (!sel || sel.style.display === 'none') return;
+  const empresaNome = sel.options[sel.selectedIndex]?.text || '';
+  const nomeEl = document.getElementById('user-nome-badge');
+  if (nomeEl && empresaNome) {
+    nomeEl.textContent = usuarioAtual.nome + ' · ' + empresaNome;
+  }
 }
 
 async function switchCompany(companyId) {
   _companyId = companyId;
+  updateSuperAdminLabel();
   // Recarregar dados com a nova empresa
   if (typeof iniciarApp === 'function') iniciarApp();
 }
