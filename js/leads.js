@@ -7,10 +7,11 @@ let leadHistorico = [];
 let leadFiltroStatus = '';
 
 const LEAD_STATUS = {
-  novo:       { lb: 'NOVO',       cor: '#22c55e', bg: 'rgba(34,197,94,0.08)',    icone: '🟢' },
-  contatado:  { lb: 'CONTATADO',  cor: '#3b82f6', bg: 'rgba(59,130,246,0.08)',   icone: '🔵' },
-  convertido: { lb: 'CONVERTIDO', cor: '#f59e0b', bg: 'rgba(245,158,11,0.08)',   icone: '🟠' },
-  descartado: { lb: 'DESCARTADO', cor: '#6b7280', bg: 'rgba(255,255,255,0.04)',  icone: '⚫' }
+  novo:       { lb: 'QUALIFICADO', cor: '#22c55e', bg: 'rgba(34,197,94,0.08)',    icone: '🟢' },
+  conversa:   { lb: 'CONVERSA',    cor: '#a855f7', bg: 'rgba(168,85,247,0.08)',   icone: '💬' },
+  contatado:  { lb: 'CONTATADO',   cor: '#3b82f6', bg: 'rgba(59,130,246,0.08)',   icone: '🔵' },
+  convertido: { lb: 'CONVERTIDO',  cor: '#f59e0b', bg: 'rgba(245,158,11,0.08)',   icone: '🟠' },
+  descartado: { lb: 'DESCARTADO',  cor: '#6b7280', bg: 'rgba(255,255,255,0.04)',  icone: '⚫' }
 };
 
 const LEAD_ACOES = {
@@ -46,7 +47,7 @@ function renderLeads() {
   if (!el) return;
 
   // Contadores
-  const contadores = { novo: 0, contatado: 0, convertido: 0, descartado: 0 };
+  const contadores = { novo: 0, conversa: 0, contatado: 0, convertido: 0, descartado: 0 };
   leadsData.forEach(l => { if (contadores[l.status] !== undefined) contadores[l.status]++; });
   const total = leadsData.length;
 
@@ -71,7 +72,7 @@ function renderLeads() {
   }
 
   // Agrupar por status
-  const ordem = ['novo', 'contatado', 'convertido', 'descartado'];
+  const ordem = ['novo', 'conversa', 'contatado', 'convertido', 'descartado'];
   const grupos = {};
   lista.forEach(l => {
     const s = l.status || 'novo';
