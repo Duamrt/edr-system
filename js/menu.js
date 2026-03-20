@@ -303,6 +303,9 @@ function atualizarAtalhosMenu() {
 function setupKeyboardShortcuts() {
   atualizarAtalhosMenu();
   document.addEventListener('keydown', e => {
+    // Ignorar atalhos quando usuario ta digitando em input/textarea/select
+    const tag = document.activeElement?.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
     if (atalhoMenuMap[e.key]) { e.preventDefault(); setView(atalhoMenuMap[e.key]); return; }
     if (e.ctrlKey && e.key === 's') { e.preventDefault(); const v = document.getElementById('view-form'); if (v && !v.classList.contains('hidden')) salvarNota(); }
   }, true);
