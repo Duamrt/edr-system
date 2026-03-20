@@ -127,14 +127,9 @@ function calcDashEtapas(lancAtivos) {
 // ── SEÇÕES HTML DO DASHBOARD ADMIN ──────────────────────────
 function dashBuildHeader(dataStr) {
   return `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-top:4px;padding-bottom:16px;border-bottom:1px solid rgba(255,255,255,0.06);">
-    <div style="display:flex;align-items:center;gap:14px;">
-      <div style="width:42px;height:42px;border:1.5px solid rgba(34,197,94,0.4);border-radius:12px;display:flex;align-items:center;justify-content:center;background:rgba(34,197,94,0.06);box-shadow:0 0 20px rgba(34,197,94,0.15);">
-        <span style="font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:700;color:var(--verde3);letter-spacing:1px;">EDR</span>
-      </div>
-      <div>
-        <div style="font-family:'Inter',sans-serif;font-size:18px;font-weight:700;color:var(--branco);letter-spacing:-0.3px;">Painel de Controle</div>
-        <div style="font-size:11px;color:var(--texto3);font-weight:400;">${dataStr}</div>
-      </div>
+    <div>
+      <div style="font-family:'Inter',sans-serif;font-size:18px;font-weight:700;color:var(--branco);letter-spacing:-0.3px;">Resumo</div>
+      <div style="font-size:11px;color:var(--texto3);font-weight:400;">${dataStr}</div>
     </div>
   </div>`;
 }
