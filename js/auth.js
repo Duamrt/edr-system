@@ -476,11 +476,10 @@ async function renderPlataformaClientes() {
   try {
     const hdrs = { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + _authToken };
 
-    // Buscar empresas + usuarios de cada uma
-    const [companies, allUsers, allCompUsers] = await Promise.all([
+    // Buscar empresas + usuarios via RPC segura
+    const [companies, rpcUsers] = await Promise.all([
       fetch(`${SUPABASE_URL}/rest/v1/companies?select=*&order=created_at.desc`, { headers: hdrs }).then(r => r.json()),
-      fetch(`${SUPABASE_URL}/auth/v1/admin/users`, { headers: hdrs }).then(r => r.json()).catch(() => ({ users: [] })),
-      fetch(`${SUPABASE_URL}/rest/v1/company_users?select=*`, { headers: hdrs }).then(r => r.json())
+      fetch(`${SUPABASE_URL}/rest/v1/rpc/list_company_users`, { method: 'POST', headers: { ...hdrs, 'Content-Type': 'application/json' }, body: '{}' }).then(r => r.json()).catch(() => [])
     ]);
 
     if (!companies || !companies.length) {
@@ -488,7 +487,7 @@ async function renderPlataformaClientes() {
       return;
     }
 
-    const users = allUsers.users || allUsers || [];
+    const allCompUsers = rpcUsers || [];
 
     // Stats
     const total = companies.length;
@@ -526,9 +525,8 @@ async function renderPlataformaClientes() {
         usersHtml = '<div style="margin-top:12px;border-top:1px solid rgba(255,255,255,0.04);padding-top:10px;">' +
           '<div style="font-size:10px;color:var(--texto3);font-weight:700;letter-spacing:1px;margin-bottom:6px;">USUARIOS</div>' +
           companyUsers.map(cu => {
-            const u = Array.isArray(users) ? users.find(usr => usr.id === cu.user_id) : null;
-            const email = u ? u.email : '—';
-            const nome = u?.user_metadata?.nome || u?.user_metadata?.usuario || '—';
+            const email = cu.email || '—';
+            const nome = cu.nome || '—';
             const roleBadge = cu.role === 'admin'
               ? '<span style="color:#22c55e;font-size:9px;font-weight:700;">ADMIN</span>'
               : cu.role === 'mestre'
@@ -575,35 +573,34 @@ async function renderPlataformaClientes() {
 // ── Editar empresa ────────────────────────────────────
 async function editarEmpresa(companyId) {
   const hdrs = { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + _authToken };
-  const [arr, compUsers, allUsersRes] = await Promise.all([
+  const [arr, rpcUsers] = await Promise.all([
     fetch(`${SUPABASE_URL}/rest/v1/companies?id=eq.${companyId}`, { headers: hdrs }).then(r => r.json()),
-    fetch(`${SUPABASE_URL}/rest/v1/company_users?company_id=eq.${companyId}`, { headers: hdrs }).then(r => r.json()),
-    fetch(`${SUPABASE_URL}/auth/v1/admin/users`, { headers: hdrs }).then(r => r.json()).catch(() => ({ users: [] }))
+    fetch(`${SUPABASE_URL}/rest/v1/rpc/list_company_users`, { method: 'POST', headers: { ...hdrs, 'Content-Type': 'application/json' }, body: '{}' }).then(r => r.json()).catch(() => [])
   ]);
   const c = arr && arr[0] ? arr[0] : null;
   if (!c) { alert('Empresa nao encontrada.'); return; }
-  const allUsers = allUsersRes.users || allUsersRes || [];
+  const compUsers = (rpcUsers || []).filter(u => u.company_id === companyId);
 
   // Montar lista de usuarios editaveis
   let usersHtml = '';
   if (compUsers && compUsers.length) {
     usersHtml = '<div style="margin-bottom:12px;"><label style="font-size:11px;color:var(--texto3);font-weight:700;display:block;margin-bottom:8px;">USUARIOS</label>' +
       compUsers.map((cu, i) => {
-        const u = Array.isArray(allUsers) ? allUsers.find(usr => usr.id === cu.user_id) : null;
-        const email = u ? u.email : '—';
-        const nome = u?.user_metadata?.nome || '—';
+        const email = cu.email || '—';
+        const nome = cu.nome || '—';
+        const cuId = cu.cu_id || cu.id;
         return '<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;padding:8px;background:rgba(255,255,255,0.02);border:1px solid var(--borda);border-radius:8px;">' +
           '<div style="flex:1;min-width:0;">' +
             '<div style="font-size:12px;font-weight:700;color:#fafafa;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + nome + '</div>' +
             '<div style="font-size:10px;color:var(--texto3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + email + '</div>' +
           '</div>' +
-          '<select data-cuid="' + cu.id + '" class="ed-user-role" style="padding:4px 6px;background:var(--cinza-medio,#141414);border:1px solid var(--borda);border-radius:6px;color:#fafafa;font-size:10px;font-family:inherit;">' +
+          '<select data-cuid="' + cuId + '" class="ed-user-role" style="padding:4px 6px;background:var(--cinza-medio,#141414);border:1px solid var(--borda);border-radius:6px;color:#fafafa;font-size:10px;font-family:inherit;">' +
             '<option value="admin"' + (cu.role === 'admin' ? ' selected' : '') + '>Admin</option>' +
             '<option value="operacional"' + (cu.role === 'operacional' ? ' selected' : '') + '>Operacional</option>' +
             '<option value="mestre"' + (cu.role === 'mestre' ? ' selected' : '') + '>Mestre</option>' +
             '<option value="visitante"' + (cu.role === 'visitante' ? ' selected' : '') + '>Visitante</option>' +
           '</select>' +
-          '<button onclick="removerUsuarioEmpresa(\'' + cu.id + '\',\'' + nome.replace(/'/g,'') + '\')" style="padding:4px 8px;border-radius:6px;border:1px solid rgba(239,68,68,0.2);background:rgba(239,68,68,0.05);color:#ef4444;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;">X</button>' +
+          '<button onclick="removerUsuarioEmpresa(\'' + cuId + '\',\'' + nome.replace(/'/g,'') + '\')" style="padding:4px 8px;border-radius:6px;border:1px solid rgba(239,68,68,0.2);background:rgba(239,68,68,0.05);color:#ef4444;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;">X</button>' +
         '</div>';
       }).join('') +
     '</div>';
