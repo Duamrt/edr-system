@@ -279,31 +279,13 @@ async function checkPlatformAdmin() {
     if (labelSA) labelSA.style.display = '';
     if (groupSA) groupSA.style.display = '';
 
-    // Mostrar seletor de empresa
-    const sel = document.getElementById('company-switcher');
-    sel.innerHTML = companies.map(c =>
-      '<option value="' + c.id + '"' + (c.id === _companyId ? ' selected' : '') + '>' + c.name + '</option>'
-    ).join('');
-    sel.style.display = 'inline-block';
-
-    // Atualizar nome exibido pra mostrar empresa atual
-    updateSuperAdminLabel();
+    // Abrir direto na view de empresas
+    setTimeout(() => setView('clientes-plataforma'), 200);
   } catch(e) { console.warn('checkPlatformAdmin:', e); }
-}
-
-function updateSuperAdminLabel() {
-  const sel = document.getElementById('company-switcher');
-  if (!sel || sel.style.display === 'none') return;
-  const empresaNome = sel.options[sel.selectedIndex]?.text || '';
-  const nomeEl = document.getElementById('user-nome-badge');
-  if (nomeEl && empresaNome) {
-    nomeEl.textContent = usuarioAtual.nome + ' · ' + empresaNome;
-  }
 }
 
 async function switchCompany(companyId) {
   _companyId = companyId;
-  updateSuperAdminLabel();
   // Recarregar dados com a nova empresa
   if (typeof iniciarApp === 'function') iniciarApp();
 }
@@ -481,47 +463,45 @@ async function renderPlataformaClientes() {
   listaEl.innerHTML = '<div style="color:var(--texto3);padding:20px;">Carregando empresas...</div>';
 
   try {
-    // Buscar todas as empresas
-    const companies = await fetch(`${SUPABASE_URL}/rest/v1/companies?select=*&order=created_at.desc`, {
-      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + _authToken }
-    }).then(r => r.json());
+    const hdrs = { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + _authToken };
+
+    // Buscar empresas + usuarios de cada uma
+    const [companies, allUsers, allCompUsers] = await Promise.all([
+      fetch(`${SUPABASE_URL}/rest/v1/companies?select=*&order=created_at.desc`, { headers: hdrs }).then(r => r.json()),
+      fetch(`${SUPABASE_URL}/auth/v1/admin/users`, { headers: hdrs }).then(r => r.json()).catch(() => ({ users: [] })),
+      fetch(`${SUPABASE_URL}/rest/v1/company_users?select=*`, { headers: hdrs }).then(r => r.json())
+    ]);
 
     if (!companies || !companies.length) {
       listaEl.innerHTML = '<div style="color:var(--texto3);padding:20px;">Nenhuma empresa cadastrada.</div>';
       return;
     }
 
-    // Buscar contagem de usuarios por empresa
-    const compUsers = await fetch(`${SUPABASE_URL}/rest/v1/company_users?select=company_id`, {
-      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + _authToken }
-    }).then(r => r.json());
-
-    const userCount = {};
-    (compUsers || []).forEach(cu => {
-      userCount[cu.company_id] = (userCount[cu.company_id] || 0) + 1;
-    });
+    const users = allUsers.users || allUsers || [];
 
     // Stats
     const total = companies.length;
     const trials = companies.filter(c => c.plan === 'trial').length;
     const ativos = companies.filter(c => c.plan !== 'trial').length;
+    const totalUsers = (allCompUsers || []).length;
 
     if (statsEl) {
       statsEl.innerHTML = [
-        { label: 'Total', valor: total, cor: '#a855f7' },
+        { label: 'Empresas', valor: total, cor: '#a855f7' },
         { label: 'Trial', valor: trials, cor: '#f59e0b' },
-        { label: 'Ativos', valor: ativos, cor: '#22c55e' }
+        { label: 'Pagantes', valor: ativos, cor: '#22c55e' },
+        { label: 'Usuarios', valor: totalUsers, cor: '#3b82f6' }
       ].map(s =>
-        '<div style="background:rgba(255,255,255,0.03);border:1px solid var(--borda);border-radius:10px;padding:12px 18px;min-width:100px;">' +
+        '<div style="background:rgba(255,255,255,0.03);border:1px solid var(--borda);border-radius:10px;padding:12px 18px;min-width:90px;">' +
           '<div style="font-size:22px;font-weight:800;color:' + s.cor + ';">' + s.valor + '</div>' +
           '<div style="font-size:11px;color:var(--texto3);font-weight:600;letter-spacing:0.5px;">' + s.label + '</div>' +
         '</div>'
       ).join('');
     }
 
-    // Lista de empresas
+    // Lista de empresas com usuarios expandidos
     listaEl.innerHTML = companies.map(c => {
-      const users = userCount[c.id] || 0;
+      const companyUsers = (allCompUsers || []).filter(cu => cu.company_id === c.id);
       const planBadge = c.plan === 'trial'
         ? '<span style="background:rgba(245,158,11,0.12);color:#f59e0b;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;">TRIAL</span>'
         : '<span style="background:rgba(34,197,94,0.12);color:#22c55e;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;">' + (c.plan || 'ATIVO').toUpperCase() + '</span>';
@@ -529,17 +509,42 @@ async function renderPlataformaClientes() {
       const criado = c.created_at ? new Date(c.created_at).toLocaleDateString('pt-BR') : '';
       const isActive = c.id === _companyId;
 
-      return '<div onclick="switchCompany(\'' + c.id + '\');setView(\'dashboard\');" style="background:' + (isActive ? 'rgba(168,85,247,0.06)' : 'rgba(255,255,255,0.02)') + ';border:1px solid ' + (isActive ? 'rgba(168,85,247,0.3)' : 'var(--borda)') + ';border-radius:12px;padding:16px 20px;margin-bottom:8px;cursor:pointer;transition:all .15s;display:flex;justify-content:space-between;align-items:center;" onmouseover="this.style.borderColor=\'rgba(168,85,247,0.4)\'" onmouseout="this.style.borderColor=\'' + (isActive ? 'rgba(168,85,247,0.3)' : 'var(--borda)') + '\'">' +
-        '<div>' +
-          '<div style="font-weight:700;font-size:14px;margin-bottom:4px;">' + (c.name || 'Sem nome') + ' ' + planBadge + '</div>' +
-          '<div style="font-size:11px;color:var(--texto3);">' +
-            (c.city ? c.city + ' · ' : '') +
-            users + ' usuario' + (users !== 1 ? 's' : '') +
-            (c.plan === 'trial' && trialEnd ? ' · Trial ate ' + trialEnd : '') +
-            ' · Criado ' + criado +
+      // Lista de usuarios dessa empresa
+      let usersHtml = '';
+      if (companyUsers.length) {
+        usersHtml = '<div style="margin-top:12px;border-top:1px solid rgba(255,255,255,0.04);padding-top:10px;">' +
+          '<div style="font-size:10px;color:var(--texto3);font-weight:700;letter-spacing:1px;margin-bottom:6px;">USUARIOS</div>' +
+          companyUsers.map(cu => {
+            const u = Array.isArray(users) ? users.find(usr => usr.id === cu.user_id) : null;
+            const email = u ? u.email : '—';
+            const nome = u?.user_metadata?.nome || u?.user_metadata?.usuario || '—';
+            const roleBadge = cu.role === 'admin'
+              ? '<span style="color:#22c55e;font-size:9px;font-weight:700;">ADMIN</span>'
+              : cu.role === 'mestre'
+              ? '<span style="color:#f59e0b;font-size:9px;font-weight:700;">MESTRE</span>'
+              : '<span style="color:#3b82f6;font-size:9px;font-weight:700;">' + (cu.role || 'OPERACIONAL').toUpperCase() + '</span>';
+            return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.02);font-size:12px;">' +
+              '<div><strong style="color:var(--texto1);">' + nome + '</strong> ' + roleBadge + '<div style="font-size:10px;color:var(--texto3);">' + email + '</div></div>' +
+            '</div>';
+          }).join('') +
+        '</div>';
+      }
+
+      return '<div style="background:' + (isActive ? 'rgba(168,85,247,0.06)' : 'rgba(255,255,255,0.02)') + ';border:1px solid ' + (isActive ? 'rgba(168,85,247,0.3)' : 'var(--borda)') + ';border-radius:12px;padding:16px 20px;margin-bottom:12px;">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+          '<div>' +
+            '<div style="font-weight:700;font-size:14px;margin-bottom:4px;">' + (c.name || 'Sem nome') + ' ' + planBadge + '</div>' +
+            '<div style="font-size:11px;color:var(--texto3);">' +
+              (c.city ? c.city + ' · ' : '') +
+              (c.cnpj ? 'CNPJ ' + c.cnpj + ' · ' : '') +
+              companyUsers.length + ' usuario' + (companyUsers.length !== 1 ? 's' : '') +
+              (c.plan === 'trial' && trialEnd ? ' · Trial ate ' + trialEnd : '') +
+              ' · Criado ' + criado +
+            '</div>' +
           '</div>' +
+          '<button onclick="event.stopPropagation();switchCompany(\'' + c.id + '\');setView(\'dashboard\');" style="padding:6px 14px;border-radius:8px;border:1px solid rgba(168,85,247,0.3);background:rgba(168,85,247,0.08);color:#a855f7;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">ACESSAR</button>' +
         '</div>' +
-        '<div style="font-size:18px;color:var(--texto3);">→</div>' +
+        usersHtml +
       '</div>';
     }).join('');
 
