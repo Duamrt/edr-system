@@ -12,7 +12,7 @@ async function fazerLogin() {
   errEl.textContent = '';
 
   try {
-    const email = u.includes('@') ? u : u + '@edreng.com.br';
+    const email = u.includes('@') ? u : u + '@edreng.com.br'; // TODO: remover domínio fixo quando tiver onboarding multi-empresa
     const r = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
       method: 'POST',
       headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
@@ -73,7 +73,12 @@ function entrarNoApp() {
   }
   aplicarPerfil();
   initMenuDragDrop();
-  iniciarApp();
+  // Carregar company_id antes de carregar dados
+  if (typeof loadCompanyId === 'function') {
+    loadCompanyId().then(() => iniciarApp()).catch(() => iniciarApp());
+  } else {
+    iniciarApp();
+  }
 }
 
 async function fazerLogout() {
