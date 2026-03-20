@@ -279,6 +279,17 @@ async function checkPlatformAdmin() {
     if (labelSA) labelSA.style.display = '';
     if (groupSA) groupSA.style.display = '';
 
+    // Recolher todos os grupos do sidebar exceto SUPER ADMIN
+    document.querySelectorAll('.sidebar-group-label').forEach(label => {
+      if (label.id === 'label-superadmin') return;
+      const group = label.nextElementSibling;
+      if (group && group.classList.contains('sidebar-group')) {
+        group.classList.add('collapsed');
+        label.classList.add('collapsed');
+        group.style.maxHeight = '0px';
+      }
+    });
+
     // Abrir direto na view de empresas
     setTimeout(() => setView('clientes-plataforma'), 200);
   } catch(e) { console.warn('checkPlatformAdmin:', e); }
@@ -542,7 +553,11 @@ async function renderPlataformaClientes() {
               ' · Criado ' + criado +
             '</div>' +
           '</div>' +
-          '<button onclick="event.stopPropagation();switchCompany(\'' + c.id + '\');setView(\'dashboard\');" style="padding:6px 14px;border-radius:8px;border:1px solid rgba(168,85,247,0.3);background:rgba(168,85,247,0.08);color:#a855f7;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">ACESSAR</button>' +
+          '<div style="display:flex;gap:6px;">' +
+            '<button onclick="event.stopPropagation();editarEmpresa(\'' + c.id + '\');" style="padding:6px 10px;border-radius:8px;border:1px solid var(--borda);background:rgba(255,255,255,0.03);color:var(--texto3);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">EDITAR</button>' +
+            '<button onclick="event.stopPropagation();excluirEmpresa(\'' + c.id + '\',\'' + (c.name || '').replace(/'/g, '') + '\');" style="padding:6px 10px;border-radius:8px;border:1px solid rgba(239,68,68,0.2);background:rgba(239,68,68,0.05);color:#ef4444;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">EXCLUIR</button>' +
+            '<button onclick="event.stopPropagation();switchCompany(\'' + c.id + '\');setView(\'dashboard\');" style="padding:6px 14px;border-radius:8px;border:1px solid rgba(168,85,247,0.3);background:rgba(168,85,247,0.08);color:#a855f7;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">ACESSAR</button>' +
+          '</div>' +
         '</div>' +
         usersHtml +
       '</div>';
@@ -551,5 +566,81 @@ async function renderPlataformaClientes() {
   } catch(e) {
     console.error('Erro ao carregar empresas:', e);
     listaEl.innerHTML = '<div style="color:var(--vermelho);padding:20px;">Erro ao carregar empresas.</div>';
+  }
+}
+
+// ── Editar empresa ────────────────────────────────────
+async function editarEmpresa(companyId) {
+  const hdrs = { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + _authToken };
+  const arr = await fetch(`${SUPABASE_URL}/rest/v1/companies?id=eq.${companyId}`, { headers: hdrs }).then(r => r.json());
+  const c = arr && arr[0] ? arr[0] : null;
+  if (!c) { alert('Empresa nao encontrada.'); return; }
+
+  const overlay = document.createElement('div');
+  overlay.id = 'edit-empresa-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+  overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
+
+  overlay.innerHTML = '<div style="background:var(--cinza-escuro,#0a0a0a);border:1px solid var(--borda);border-radius:16px;padding:24px;width:100%;max-width:420px;">' +
+    '<div style="font-size:16px;font-weight:800;margin-bottom:16px;color:#a855f7;">Editar Empresa</div>' +
+    '<div style="margin-bottom:12px;"><label style="font-size:11px;color:var(--texto3);font-weight:700;display:block;margin-bottom:4px;">NOME</label><input id="ed-emp-nome" value="' + (c.name || '') + '" style="width:100%;padding:10px;background:var(--cinza-medio,#141414);border:1px solid var(--borda);border-radius:8px;color:#fafafa;font-size:13px;font-family:inherit;box-sizing:border-box;"></div>' +
+    '<div style="margin-bottom:12px;"><label style="font-size:11px;color:var(--texto3);font-weight:700;display:block;margin-bottom:4px;">CIDADE</label><input id="ed-emp-cidade" value="' + (c.city || '') + '" style="width:100%;padding:10px;background:var(--cinza-medio,#141414);border:1px solid var(--borda);border-radius:8px;color:#fafafa;font-size:13px;font-family:inherit;box-sizing:border-box;"></div>' +
+    '<div style="margin-bottom:12px;"><label style="font-size:11px;color:var(--texto3);font-weight:700;display:block;margin-bottom:4px;">CNPJ</label><input id="ed-emp-cnpj" value="' + (c.cnpj || '') + '" style="width:100%;padding:10px;background:var(--cinza-medio,#141414);border:1px solid var(--borda);border-radius:8px;color:#fafafa;font-size:13px;font-family:inherit;box-sizing:border-box;"></div>' +
+    '<div style="margin-bottom:12px;"><label style="font-size:11px;color:var(--texto3);font-weight:700;display:block;margin-bottom:4px;">TELEFONE</label><input id="ed-emp-phone" value="' + (c.phone || '') + '" style="width:100%;padding:10px;background:var(--cinza-medio,#141414);border:1px solid var(--borda);border-radius:8px;color:#fafafa;font-size:13px;font-family:inherit;box-sizing:border-box;"></div>' +
+    '<div style="margin-bottom:16px;"><label style="font-size:11px;color:var(--texto3);font-weight:700;display:block;margin-bottom:4px;">PLANO</label><select id="ed-emp-plan" style="width:100%;padding:10px;background:var(--cinza-medio,#141414);border:1px solid var(--borda);border-radius:8px;color:#fafafa;font-size:13px;font-family:inherit;">' +
+      '<option value="trial"' + (c.plan === 'trial' ? ' selected' : '') + '>Trial</option>' +
+      '<option value="essencial"' + (c.plan === 'essencial' ? ' selected' : '') + '>Essencial</option>' +
+      '<option value="completo"' + (c.plan === 'completo' ? ' selected' : '') + '>Completo</option>' +
+      '<option value="premium"' + (c.plan === 'premium' ? ' selected' : '') + '>Premium</option>' +
+    '</select></div>' +
+    '<div style="display:flex;gap:8px;">' +
+      '<button onclick="document.getElementById(\'edit-empresa-overlay\').remove();" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--borda);background:transparent;color:var(--texto3);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">CANCELAR</button>' +
+      '<button onclick="salvarEmpresa(\'' + companyId + '\')" style="flex:1;padding:10px;border-radius:8px;border:none;background:#a855f7;color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">SALVAR</button>' +
+    '</div>' +
+  '</div>';
+
+  document.body.appendChild(overlay);
+}
+
+async function salvarEmpresa(companyId) {
+  const hdrs = { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + _authToken, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' };
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/companies?id=eq.${companyId}`, {
+      method: 'PATCH',
+      headers: hdrs,
+      body: JSON.stringify({
+        name: document.getElementById('ed-emp-nome').value.trim(),
+        city: document.getElementById('ed-emp-cidade').value.trim() || null,
+        cnpj: document.getElementById('ed-emp-cnpj').value.trim() || null,
+        phone: document.getElementById('ed-emp-phone').value.trim() || null,
+        plan: document.getElementById('ed-emp-plan').value
+      })
+    });
+    document.getElementById('edit-empresa-overlay')?.remove();
+    showToast('Empresa atualizada!');
+    renderPlataformaClientes();
+  } catch(e) {
+    alert('Erro ao salvar: ' + e.message);
+  }
+}
+
+// ── Excluir empresa ───────────────────────────────────
+async function excluirEmpresa(companyId, nome) {
+  if (!confirm('Tem certeza que quer excluir "' + nome + '"?\n\nIsso vai apagar TODOS os dados dessa empresa (obras, estoque, financeiro, usuarios). Acao irreversivel.')) return;
+  if (!confirm('ULTIMA CONFIRMACAO: Excluir "' + nome + '" permanentemente?')) return;
+
+  const hdrs = { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + _authToken, 'Prefer': 'return=minimal' };
+  try {
+    // Deletar vinculos de usuarios
+    await fetch(`${SUPABASE_URL}/rest/v1/company_users?company_id=eq.${companyId}`, { method: 'DELETE', headers: hdrs });
+    // Deletar termos aceites
+    await fetch(`${SUPABASE_URL}/rest/v1/termos_aceites?company_id=eq.${companyId}`, { method: 'DELETE', headers: hdrs });
+    // Deletar empresa (cascade deve cuidar do resto se configurado)
+    await fetch(`${SUPABASE_URL}/rest/v1/companies?id=eq.${companyId}`, { method: 'DELETE', headers: hdrs });
+
+    showToast('Empresa excluida.');
+    renderPlataformaClientes();
+  } catch(e) {
+    alert('Erro ao excluir: ' + e.message);
   }
 }
