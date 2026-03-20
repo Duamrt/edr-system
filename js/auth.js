@@ -275,6 +275,10 @@ async function criarConta() {
     errEl.textContent = 'Senha deve ter pelo menos 6 caracteres.';
     return;
   }
+  if (!document.getElementById('signup-termos').checked) {
+    errEl.textContent = 'Aceite os Termos de Uso para continuar.';
+    return;
+  }
 
   btn.disabled = true;
   btn.textContent = 'CRIANDO...';
