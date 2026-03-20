@@ -176,15 +176,25 @@ function dashBuildAgenda() {
       </div>`;
     }).join('');
 
-    return `<div style="min-height:70px;background:${d.isHoje ? 'rgba(59,130,246,0.06)' : 'rgba(255,255,255,0.02)'};border:1px solid ${d.isHoje ? 'rgba(59,130,246,0.3)' : 'rgba(255,255,255,0.04)'};border-radius:10px;padding:10px;cursor:pointer;transition:all .15s;" onclick="abrirModalNota('${d.iso}')">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+    const clickAction = d.notas.length ? `abrirDiaAgenda('${d.iso}')` : `abrirModalNota('${d.iso}')`;
+    // No grid, mostrar preview truncado
+    const previewHTML = d.notas.length ? d.notas.slice(0, 2).map(n => {
+      const cor = CORES[(n.autor||'').toLowerCase()] || CORES['default'];
+      return `<div style="display:flex;gap:4px;align-items:flex-start;margin-top:3px;">
+        <div style="width:3px;height:12px;border-radius:2px;background:${cor};flex-shrink:0;margin-top:1px;"></div>
+        <div style="font-size:9px;color:var(--texto2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(n.texto)}</div>
+      </div>`;
+    }).join('') + (d.notas.length > 2 ? '<div style="font-size:8px;color:var(--texto3);margin-top:2px;">+' + (d.notas.length - 2) + ' mais</div>' : '') : '';
+
+    return `<div style="min-height:60px;background:${d.isHoje ? 'rgba(59,130,246,0.06)' : 'rgba(255,255,255,0.02)'};border:1px solid ${d.isHoje ? 'rgba(59,130,246,0.3)' : 'rgba(255,255,255,0.04)'};border-radius:10px;padding:8px;cursor:pointer;transition:all .15s;" onclick="${clickAction}">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
         <div>
-          <span style="font-size:10px;font-weight:700;color:${d.isHoje ? '#3b82f6' : 'var(--texto3)'};letter-spacing:0.5px;">${d.diaSemana}</span>
-          <span style="font-size:14px;font-weight:800;color:${d.isHoje ? '#3b82f6' : 'var(--branco)'};margin-left:6px;">${d.dia}</span>
+          <span style="font-size:9px;font-weight:700;color:${d.isHoje ? '#3b82f6' : 'var(--texto3)'};letter-spacing:0.5px;">${d.diaSemana}</span>
+          <span style="font-size:13px;font-weight:800;color:${d.isHoje ? '#3b82f6' : 'var(--branco)'};margin-left:4px;">${d.dia}</span>
         </div>
-        ${d.notas.length ? '<span style="font-size:9px;font-weight:700;background:rgba(59,130,246,0.15);color:#3b82f6;padding:2px 6px;border-radius:8px;">' + d.notas.length + '</span>' : ''}
+        ${d.notas.length ? '<span style="font-size:8px;font-weight:700;background:rgba(59,130,246,0.15);color:#3b82f6;padding:1px 5px;border-radius:6px;">' + d.notas.length + '</span>' : ''}
       </div>
-      ${notasHTML || ''}
+      ${previewHTML}
     </div>`;
   }).join('');
 
@@ -211,6 +221,45 @@ function dashBuildAgenda() {
       <div style="display:flex;align-items:center;gap:4px;font-size:9px;color:var(--texto3);"><div style="width:8px;height:8px;border-radius:2px;background:#a855f7;"></div> Elyda</div>
     </div>
   </div>`;
+}
+
+function abrirDiaAgenda(dataISO) {
+  const CORES = { 'duam': '#3b82f6', 'elyda': '#a855f7', 'default': '#22c55e' };
+  const notas = _agendaNotas.filter(n => n.data === dataISO);
+  const dataFormatada = new Date(dataISO + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' });
+
+  const el = document.createElement('div');
+  el.id = 'modal-nota-overlay';
+  el.className = 'modal-overlay';
+  el.onclick = function(e) { if (e.target === el) el.remove(); };
+
+  const notasHTML = notas.map(n => {
+    const cor = CORES[(n.autor||'').toLowerCase()] || CORES['default'];
+    return `<div style="display:flex;gap:10px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.04);">
+      <div style="width:4px;border-radius:2px;background:${cor};flex-shrink:0;"></div>
+      <div style="flex:1;">
+        <div style="font-size:13px;color:var(--branco);font-weight:600;line-height:1.5;">${esc(n.texto)}</div>
+        <div style="font-size:10px;color:var(--texto3);margin-top:4px;">
+          <span style="color:${cor};font-weight:700;">${esc(n.autor || '—')}</span>${n.hora ? ' · ' + n.hora : ''}
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;flex-shrink:0;">
+        <button onclick="document.getElementById('modal-nota-overlay').remove();editarNota('${n.id}')" style="background:none;border:1px solid var(--borda);color:var(--texto3);cursor:pointer;font-size:11px;padding:4px 8px;border-radius:6px;">✏</button>
+        <button onclick="document.getElementById('modal-nota-overlay').remove();excluirNota('${n.id}')" style="background:none;border:1px solid rgba(239,68,68,0.2);color:#ef4444;cursor:pointer;font-size:11px;padding:4px 8px;border-radius:6px;">×</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  el.innerHTML = `<div class="modal" style="max-width:420px;">
+    <div class="modal-title">
+      <span style="text-transform:capitalize;">📅 ${dataFormatada}</span>
+      <button class="modal-close" onclick="document.getElementById('modal-nota-overlay').remove()">✕</button>
+    </div>
+    <div style="max-height:50vh;overflow-y:auto;">${notasHTML}</div>
+    <button class="btn-save" style="margin-top:12px;" onclick="document.getElementById('modal-nota-overlay').remove();abrirModalNota('${dataISO}')">+ NOVA ANOTAÇÃO</button>
+  </div>`;
+
+  document.body.appendChild(el);
 }
 
 function abrirModalNota(dataPre) {
