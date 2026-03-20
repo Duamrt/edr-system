@@ -47,7 +47,7 @@ function resetarOrdemMenu() {
   nav.querySelectorAll('.sidebar-group').forEach(g => { g.style.display = ''; g.style.maxHeight = '500px'; g.classList.remove('collapsed'); });
   // Estrutura padrão com botões DENTRO dos grupos
   const estrutura = [
-    { label: 'VISAO', views: ['dashboard','relatorio','caixa'] },
+    { label: 'VISÃO', views: ['dashboard','relatorio','caixa'] },
     { label: 'OBRAS', views: ['obras','custos','garantias'] },
     { label: 'MATERIAIS', views: ['estoque','catalogo','notas','form'] },
     { label: 'FINANCEIRO', views: ['contas-pagar','creditos'] },

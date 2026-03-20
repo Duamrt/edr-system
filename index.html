@@ -101,85 +101,89 @@
 
 <div class="app-shell">
 <nav class="sidebar" id="main-nav">
-  <div class="sidebar-group-label" onclick="toggleSidebarGroup(this)">VISAO</div>
+  <div style="padding:16px 16px 12px;border-bottom:1px solid rgba(255,255,255,0.04);">
+    <div style="font-size:18px;font-weight:800;color:#fff;letter-spacing:-0.5px;">EDR<span style="color:var(--verde-hl);">System</span></div>
+    <div style="font-size:9px;color:var(--texto3);letter-spacing:0.5px;">Gestão de obras</div>
+  </div>
+  <div class="sidebar-group-label" onclick="toggleSidebarGroup(this)">VISÃO</div>
   <div class="sidebar-group">
     <button class="nav-btn active" id="nav-dashboard" data-view="dashboard" onclick="setView('dashboard')" draggable="true">
-      <span class="nav-icon">📊</span>RESUMO<span class="nav-key">F1</span>
+      <span class="nav-icon">📊</span>Resumo<span class="nav-key">F1</span>
     </button>
     <button class="nav-btn admin-mestre" id="nav-relatorio" data-view="relatorio" onclick="setView('relatorio')" draggable="true">
-      <span class="nav-icon">📈</span>RELATORIO<span class="nav-key">F2</span>
+      <span class="nav-icon">📈</span>Relatório<span class="nav-key">F2</span>
     </button>
     <button class="nav-btn admin-only" id="nav-caixa" data-view="caixa" onclick="setView('caixa')" draggable="true">
-      <span class="nav-icon">💵</span>CAIXA<span class="nav-key">F3</span>
+      <span class="nav-icon">💵</span>Caixa<span class="nav-key">F3</span>
     </button>
   </div>
 
   <div class="sidebar-group-label" onclick="toggleSidebarGroup(this)">OBRAS</div>
   <div class="sidebar-group">
     <button class="nav-btn" id="nav-obras" data-view="obras" onclick="setView('obras')" draggable="true">
-      <span class="nav-icon">🏗</span>OBRAS<span class="nav-key">F4</span>
+      <span class="nav-icon">🏗</span>Obras<span class="nav-key">F4</span>
     </button>
     <button class="nav-btn admin-only" id="nav-custos" data-view="custos" onclick="setView('custos')" draggable="true">
-      <span class="nav-icon">💰</span>CUSTOS CEF<span class="nav-key">F5</span>
+      <span class="nav-icon">💰</span>Custos CEF<span class="nav-key">F5</span>
     </button>
     <button class="nav-btn admin-only" id="nav-garantias" data-view="garantias" onclick="setView('garantias')" draggable="true">
-      <span class="nav-icon">🛡</span>GARANTIA<span class="nav-key">F6</span>
+      <span class="nav-icon">🛡</span>Garantia<span class="nav-key">F6</span>
     </button>
   </div>
 
   <div class="sidebar-group-label" onclick="toggleSidebarGroup(this)">MATERIAIS</div>
   <div class="sidebar-group">
     <button class="nav-btn" id="nav-estoque" data-view="estoque" onclick="setView('estoque')" draggable="true">
-      <span class="nav-icon">📦</span>ESTOQUE<span class="nav-key">F7</span>
+      <span class="nav-icon">📦</span>Estoque<span class="nav-key">F7</span>
     </button>
     <button class="nav-btn" id="nav-catalogo" data-view="catalogo" onclick="setView('catalogo')" draggable="true">
-      <span class="nav-icon">📂</span>CATALOGO<span class="nav-key">F8</span>
+      <span class="nav-icon">📂</span>Catálogo<span class="nav-key">F8</span>
     </button>
     <button class="nav-btn" id="nav-notas" data-view="notas" onclick="setView('notas')" draggable="true">
-      <span class="nav-icon">🧾</span>NOTAS<span class="nav-key">F9</span>
+      <span class="nav-icon">🧾</span>Notas Fiscais<span class="nav-key">F9</span>
     </button>
     <button class="nav-btn" id="nav-form" data-view="form" onclick="setView('form')" draggable="true">
-      <span class="nav-icon">➕</span>LANCAR NF<span class="nav-key">F10</span>
+      <span class="nav-icon">➕</span>Lançar NF<span class="nav-key">F10</span>
     </button>
   </div>
 
   <div class="sidebar-group-label" onclick="toggleSidebarGroup(this)">FINANCEIRO</div>
   <div class="sidebar-group">
     <button class="nav-btn admin-only" id="nav-contas-pagar" data-view="contas-pagar" onclick="setView('contas-pagar')" draggable="true">
-      <span class="nav-icon">📋</span>CONTAS<span class="nav-key">F11</span>
+      <span class="nav-icon">📋</span>Contas a Pagar<span class="nav-key">F11</span>
     </button>
     <button class="nav-btn" id="nav-creditos" data-view="creditos" onclick="setView('creditos')" draggable="true">
-      <span class="nav-icon">📖</span>CREDITOS<span class="nav-key">F12</span>
+      <span class="nav-icon">📖</span>Créditos<span class="nav-key">F12</span>
     </button>
   </div>
 
   <div class="sidebar-group-label" onclick="toggleSidebarGroup(this)">EQUIPE</div>
   <div class="sidebar-group">
     <button class="nav-btn" id="nav-diarias" data-view="diarias" onclick="setView('diarias')" draggable="true">
-      <span class="nav-icon">👷</span>DIARIAS<span class="nav-key"></span>
+      <span class="nav-icon">👷</span>Diárias<span class="nav-key"></span>
     </button>
   </div>
 
   <div class="sidebar-group-label" onclick="toggleSidebarGroup(this)">COMERCIAL</div>
   <div class="sidebar-group">
     <button class="nav-btn admin-only" id="nav-leads" data-view="leads" onclick="setView('leads')" draggable="true">
-      <span class="nav-icon">🎯</span>LEADS<span class="nav-key"></span>
+      <span class="nav-icon">🎯</span>Leads<span class="nav-key"></span>
     </button>
   </div>
 
   <div class="sidebar-group-label" onclick="toggleSidebarGroup(this)">CONFIG</div>
   <div class="sidebar-group">
     <button class="nav-btn admin-only" id="nav-banco" data-view="banco" onclick="setView('banco')" draggable="true">
-      <span class="nav-icon">🗄</span>DADOS<span class="nav-key"></span>
+      <span class="nav-icon">🗄</span>Dados<span class="nav-key"></span>
     </button>
     <button class="nav-btn admin-only" id="nav-setup" data-view="setup" onclick="setView('setup')" style="color:#dc2626;" draggable="true">
-      <span class="nav-icon">⚙</span>SETUP<span class="nav-key"></span>
+      <span class="nav-icon">⚙</span>Setup<span class="nav-key"></span>
     </button>
   </div>
 
   <div class="sidebar-bottom">
     <button class="nav-btn-reset-order" onclick="resetarOrdemMenu()" title="Restaurar ordem padrão do menu">
-      <span style="font-size:14px;">↻</span>RESETAR
+      ↻ Resetar menu
     </button>
   </div>
 </nav>
