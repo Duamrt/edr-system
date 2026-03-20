@@ -125,6 +125,106 @@ function calcDashEtapas(lancAtivos) {
 }
 
 // ── SEÇÕES HTML DO DASHBOARD ADMIN ──────────────────────────
+// ── AGENDA / ANOTAÇÕES ──────────────────────────────────────
+let _agendaNotas = [];
+
+async function loadAgendaNotas() {
+  try {
+    const r = await sbGet('agenda_notas', '?order=data.desc,criado_em.desc&limit=20');
+    _agendaNotas = Array.isArray(r) ? r : [];
+  } catch(e) { _agendaNotas = []; }
+}
+
+function dashBuildAgenda() {
+  const hoje = hojeISO();
+  const notasHoje = _agendaNotas.filter(n => n.data === hoje);
+  const CORES = { 'duam': '#3b82f6', 'elyda': '#a855f7', 'default': '#22c55e' };
+
+  let notasHTML = '';
+  if (notasHoje.length) {
+    notasHTML = notasHoje.map(n => {
+      const nome = (n.autor || '').toLowerCase();
+      const cor = CORES[nome] || CORES['default'];
+      return `<div style="display:flex;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.04);">
+        <div style="width:4px;border-radius:2px;background:${cor};flex-shrink:0;"></div>
+        <div style="flex:1;">
+          <div style="font-size:12px;color:var(--branco);font-weight:600;">${esc(n.texto)}</div>
+          <div style="font-size:10px;color:var(--texto3);margin-top:3px;">
+            <span style="color:${cor};font-weight:700;">${esc(n.autor || '—')}</span>
+            ${n.hora ? ' · ' + esc(n.hora) : ''}
+          </div>
+        </div>
+        <button onclick="excluirNota('${n.id}')" style="background:none;border:none;color:var(--texto3);cursor:pointer;font-size:14px;padding:0 4px;">×</button>
+      </div>`;
+    }).join('');
+  } else {
+    notasHTML = '<div style="text-align:center;padding:16px 0;font-size:12px;color:var(--texto3);">Nenhuma anotação pra hoje.</div>';
+  }
+
+  return `<div class="card" style="padding:22px;margin-bottom:16px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+      <div style="font-size:13px;font-weight:700;color:var(--texto2);letter-spacing:0.5px;display:flex;align-items:center;gap:8px;">
+        <span style="width:6px;height:6px;border-radius:50%;background:#3b82f6;"></span> Agenda do Dia
+      </div>
+      <button onclick="abrirModalNota()" style="padding:5px 12px;border-radius:8px;border:1px solid rgba(59,130,246,0.3);background:transparent;color:#3b82f6;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">+ NOTA</button>
+    </div>
+    <div id="agenda-notas-lista">${notasHTML}</div>
+  </div>`;
+}
+
+function abrirModalNota() {
+  const autor = usuarioAtual?.nome || 'Duam';
+  const hoje = hojeISO();
+
+  const el = document.createElement('div');
+  el.id = 'modal-nota-overlay';
+  el.className = 'modal-overlay';
+  el.onclick = function(e) { if (e.target === el) el.remove(); };
+
+  el.innerHTML = `<div class="modal" style="max-width:380px;">
+    <div class="modal-title"><span>📝 Nova Anotação</span><button class="modal-close" onclick="document.getElementById('modal-nota-overlay').remove()">✕</button></div>
+    <div class="field"><label>ANOTAÇÃO *</label><textarea id="nota-texto" rows="3" placeholder="Ex: Ligar pra Dayana sobre reboco" style="width:100%;padding:10px;background:rgba(255,255,255,0.03);border:1px solid var(--borda);border-radius:8px;color:var(--branco);font-size:13px;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea></div>
+    <div style="display:flex;gap:8px;">
+      <div class="field" style="flex:1;"><label>DATA</label><input type="date" id="nota-data" value="${hoje}" style="width:100%;padding:10px;background:rgba(255,255,255,0.03);border:1px solid var(--borda);border-radius:8px;color:var(--branco);font-size:13px;font-family:inherit;box-sizing:border-box;"></div>
+      <div class="field" style="flex:1;"><label>HORA</label><input type="time" id="nota-hora" style="width:100%;padding:10px;background:rgba(255,255,255,0.03);border:1px solid var(--borda);border-radius:8px;color:var(--branco);font-size:13px;font-family:inherit;box-sizing:border-box;"></div>
+    </div>
+    <input type="hidden" id="nota-autor" value="${esc(autor)}">
+    <button class="btn-save" onclick="salvarNota()">SALVAR</button>
+  </div>`;
+
+  document.body.appendChild(el);
+  setTimeout(() => document.getElementById('nota-texto').focus(), 100);
+}
+
+async function salvarNota() {
+  const texto = document.getElementById('nota-texto').value.trim();
+  const data = document.getElementById('nota-data').value;
+  const hora = document.getElementById('nota-hora').value || null;
+  const autor = document.getElementById('nota-autor').value;
+  if (!texto) { showToast('⚠ Digite a anotação.'); return; }
+
+  try {
+    await sbPost('agenda_notas', { texto, data, hora, autor });
+    document.getElementById('modal-nota-overlay')?.remove();
+    await loadAgendaNotas();
+    renderDashboard();
+    showToast('✅ Anotação salva!');
+  } catch(e) {
+    console.error(e);
+    showToast('❌ Erro ao salvar. Verifique se a tabela agenda_notas existe.');
+  }
+}
+
+async function excluirNota(id) {
+  if (!confirm('Excluir esta anotação?')) return;
+  try {
+    await sbDelete('agenda_notas', `?id=eq.${id}`);
+    _agendaNotas = _agendaNotas.filter(n => n.id !== id);
+    renderDashboard();
+    showToast('Anotação excluída.');
+  } catch(e) { showToast('Erro ao excluir.'); }
+}
+
 function dashBuildHeader(dataStr) {
   return `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-top:4px;padding-bottom:16px;border-bottom:1px solid rgba(255,255,255,0.06);">
     <div>
@@ -333,34 +433,27 @@ function renderDashboard() {
     ${dashBuildCardsSecundarios(m, porObra)}
     ${dashBuildAlertas(alertas)}
     ${dashBuildSaudeObras(porObra)}
-    <div class="card" style="padding:22px;margin-bottom:16px;">
-      <div style="font-size:13px;font-weight:700;color:var(--texto2);letter-spacing:0.5px;margin-bottom:16px;display:flex;align-items:center;gap:8px;"><span style="width:6px;height:6px;border-radius:50%;background:#22c55e;"></span> Fluxo de Caixa — Últimos 6 meses</div>
-      <div id="dash-fluxo-caixa"></div>
-    </div>
+    ${dashBuildAgenda()}
+    ${ultimos.length ? `<div class="card" style="padding:22px;margin-bottom:16px;">
+      <div style="font-size:13px;font-weight:700;color:var(--texto2);letter-spacing:0.5px;margin-bottom:16px;display:flex;align-items:center;gap:8px;"><span style="width:6px;height:6px;border-radius:50%;background:#3b82f6;"></span> Últimos Lançamentos</div>
+      ${ultimos.map(l => {
+        const usuario = l.usuario || l.criado_por || '—';
+        return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
+          <div>
+            <div style="font-size:12px;color:var(--branco);font-weight:600;">${esc(l.descricao)}</div>
+            <div style="font-size:10px;color:var(--texto3);margin-top:2px;">${esc(obraMap[l.obra_id]||'—')} · ${l.data||''} ${l.etapa ? '· '+esc(etapaLabel(l.etapa)) : ''} · <span style="color:#60a5fa;">${esc(usuario)}</span></div>
+          </div>
+          <span style="font-size:12px;font-weight:700;color:#f59e0b;font-family:'JetBrains Mono',monospace;">${fmtR(l.total)}</span>
+        </div>`;
+      }).join('')}
+    </div>` : ''}
     <div class="card" style="padding:22px;margin-bottom:16px;">
       <div style="font-size:13px;font-weight:700;color:var(--texto2);letter-spacing:0.5px;margin-bottom:16px;display:flex;align-items:center;gap:8px;"><span style="width:6px;height:6px;border-radius:50%;background:#f59e0b;"></span> Custo vs Receita por Obra</div>
       <div id="dash-custo-receita"></div>
-    </div>
-    <div class="card" style="padding:22px;margin-bottom:16px;">
-      <div style="font-size:13px;font-weight:700;color:var(--texto2);letter-spacing:0.5px;margin-bottom:16px;display:flex;align-items:center;gap:8px;"><span style="width:6px;height:6px;border-radius:50%;background:#f59e0b;"></span> Top Centros de Custo</div>
-      <div id="dash-top-etapas"></div>
-    </div>
-    ${ultimos.length ? `<div class="card" style="padding:22px;">
-      <div style="font-size:13px;font-weight:700;color:var(--texto2);letter-spacing:0.5px;margin-bottom:16px;display:flex;align-items:center;gap:8px;"><span style="width:6px;height:6px;border-radius:50%;background:#3b82f6;"></span> Últimos Lançamentos</div>
-      ${ultimos.map(l => `
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
-          <div>
-            <div style="font-size:12px;color:var(--branco);font-weight:600;">${esc(l.descricao)}</div>
-            <div style="font-size:10px;color:var(--texto3);margin-top:2px;">${esc(obraMap[l.obra_id]||'—')} · ${l.data||''} ${l.etapa ? '· '+esc(etapaLabel(l.etapa)) : ''}</div>
-          </div>
-          <span style="font-size:12px;font-weight:700;color:#f59e0b;font-family:'JetBrains Mono',monospace;">${fmtR(l.total)}</span>
-        </div>`).join('')}
-    </div>` : ''}`;
+    </div>`;
 
   // Renderizar gráficos
-  dashRenderFluxoCaixa(m.lancAtivos, m.obraAtivaIds);
   dashRenderCustoReceita(porObra);
-  dashRenderTopEtapas(etapaEntries);
 
   // Alerta de contas vencidas
   if (typeof getContasVencidas === 'function') {
