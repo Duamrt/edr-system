@@ -541,25 +541,27 @@ async function renderPlataformaClientes() {
         '</div>';
       }
 
-      return '<div style="background:' + (isActive ? 'rgba(168,85,247,0.06)' : 'rgba(255,255,255,0.02)') + ';border:1px solid ' + (isActive ? 'rgba(168,85,247,0.3)' : 'var(--borda)') + ';border-radius:12px;padding:16px 20px;margin-bottom:12px;">' +
-        '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+      return '<div class="empresa-card" data-nome="' + (c.name || '').toLowerCase() + '" style="background:' + (isActive ? 'rgba(168,85,247,0.06)' : 'rgba(255,255,255,0.02)') + ';border:1px solid ' + (isActive ? 'rgba(168,85,247,0.3)' : 'var(--borda)') + ';border-radius:12px;padding:16px 20px;margin-bottom:12px;">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="toggleEmpresaDetalhe(this)">' +
           '<div>' +
-            '<div style="font-weight:700;font-size:14px;margin-bottom:4px;">' + (c.name || 'Sem nome') + ' ' + planBadge + '</div>' +
+            '<div style="font-weight:700;font-size:14px;margin-bottom:4px;">' + (c.name || 'Sem nome') + ' ' + planBadge + ' <span style="font-size:10px;color:var(--texto3);">' + companyUsers.length + ' usr</span></div>' +
             '<div style="font-size:11px;color:var(--texto3);">' +
               (c.city ? c.city + ' · ' : '') +
-              (c.cnpj ? 'CNPJ ' + c.cnpj + ' · ' : '') +
-              companyUsers.length + ' usuario' + (companyUsers.length !== 1 ? 's' : '') +
-              (c.plan === 'trial' && trialEnd ? ' · Trial ate ' + trialEnd : '') +
-              ' · Criado ' + criado +
+              (c.plan === 'trial' && trialEnd ? 'Trial ate ' + trialEnd + ' · ' : '') +
+              'Criado ' + criado +
             '</div>' +
           '</div>' +
-          '<div style="display:flex;gap:6px;">' +
+          '<span class="empresa-toggle" style="font-size:14px;color:var(--texto3);transition:transform .2s;">▼</span>' +
+        '</div>' +
+        '<div class="empresa-detalhe" style="display:none;margin-top:12px;border-top:1px solid rgba(255,255,255,0.04);padding-top:12px;">' +
+          (c.cnpj ? '<div style="font-size:11px;color:var(--texto3);margin-bottom:8px;">CNPJ: ' + c.cnpj + (c.phone ? ' · Tel: ' + c.phone : '') + '</div>' : '') +
+          usersHtml +
+          '<div style="display:flex;gap:6px;margin-top:12px;">' +
             '<button onclick="event.stopPropagation();editarEmpresa(\'' + c.id + '\');" style="padding:6px 10px;border-radius:8px;border:1px solid var(--borda);background:rgba(255,255,255,0.03);color:var(--texto3);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">EDITAR</button>' +
             '<button onclick="event.stopPropagation();excluirEmpresa(\'' + c.id + '\',\'' + (c.name || '').replace(/'/g, '') + '\');" style="padding:6px 10px;border-radius:8px;border:1px solid rgba(239,68,68,0.2);background:rgba(239,68,68,0.05);color:#ef4444;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">EXCLUIR</button>' +
             '<button onclick="event.stopPropagation();switchCompany(\'' + c.id + '\');setView(\'dashboard\');" style="padding:6px 14px;border-radius:8px;border:1px solid rgba(168,85,247,0.3);background:rgba(168,85,247,0.08);color:#a855f7;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">ACESSAR</button>' +
           '</div>' +
         '</div>' +
-        usersHtml +
       '</div>';
     }).join('');
 
@@ -625,6 +627,38 @@ async function salvarEmpresa(companyId) {
 }
 
 // ── Excluir empresa ───────────────────────────────────
+// ── Toggle expandir/recolher empresa ──────────────────
+function toggleEmpresaDetalhe(headerEl) {
+  const detalhe = headerEl.nextElementSibling;
+  const toggle = headerEl.querySelector('.empresa-toggle');
+  if (!detalhe) return;
+  if (detalhe.style.display === 'none') {
+    detalhe.style.display = 'block';
+    if (toggle) toggle.style.transform = 'rotate(180deg)';
+  } else {
+    detalhe.style.display = 'none';
+    if (toggle) toggle.style.transform = '';
+  }
+}
+
+function toggleTodasEmpresas() {
+  const cards = document.querySelectorAll('.empresa-detalhe');
+  const btn = document.getElementById('btn-toggle-empresas');
+  const algumAberto = [...cards].some(c => c.style.display !== 'none');
+
+  cards.forEach(c => c.style.display = algumAberto ? 'none' : 'block');
+  document.querySelectorAll('.empresa-toggle').forEach(t => t.style.transform = algumAberto ? '' : 'rotate(180deg)');
+  if (btn) btn.textContent = algumAberto ? 'EXPANDIR TUDO' : 'RECOLHER TUDO';
+}
+
+function filtrarEmpresas() {
+  const busca = (document.getElementById('plataforma-busca')?.value || '').toLowerCase();
+  document.querySelectorAll('.empresa-card').forEach(card => {
+    const nome = card.getAttribute('data-nome') || '';
+    card.style.display = nome.includes(busca) ? '' : 'none';
+  });
+}
+
 async function excluirEmpresa(companyId, nome) {
   if (!confirm('Tem certeza que quer excluir "' + nome + '"?\n\nIsso vai apagar TODOS os dados dessa empresa (obras, estoque, financeiro, usuarios). Acao irreversivel.')) return;
   if (!confirm('ULTIMA CONFIRMACAO: Excluir "' + nome + '" permanentemente?')) return;
