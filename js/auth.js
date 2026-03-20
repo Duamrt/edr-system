@@ -524,18 +524,23 @@ async function renderPlataformaClientes() {
       if (companyUsers.length) {
         usersHtml = '<div style="margin-top:12px;border-top:1px solid rgba(255,255,255,0.04);padding-top:10px;">' +
           '<div style="font-size:10px;color:var(--texto3);font-weight:700;letter-spacing:1px;margin-bottom:6px;">USUARIOS</div>' +
+          '<table style="width:100%;border-collapse:collapse;font-size:11px;">' +
+          '<tr style="border-bottom:1px solid rgba(255,255,255,0.06);">' +
+            '<th style="text-align:left;padding:4px 6px;color:var(--texto3);font-size:9px;font-weight:700;">NOME</th>' +
+            '<th style="text-align:left;padding:4px 6px;color:var(--texto3);font-size:9px;font-weight:700;">LOGIN</th>' +
+            '<th style="text-align:left;padding:4px 6px;color:var(--texto3);font-size:9px;font-weight:700;">PERFIL</th>' +
+          '</tr>' +
           companyUsers.map(cu => {
             const email = cu.email || '—';
             const nome = cu.nome || '—';
-            const roleBadge = cu.role === 'admin'
-              ? '<span style="color:#22c55e;font-size:9px;font-weight:700;">ADMIN</span>'
-              : cu.role === 'mestre'
-              ? '<span style="color:#f59e0b;font-size:9px;font-weight:700;">MESTRE</span>'
-              : '<span style="color:#3b82f6;font-size:9px;font-weight:700;">' + (cu.role || 'OPERACIONAL').toUpperCase() + '</span>';
-            return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.02);font-size:12px;">' +
-              '<div><strong style="color:var(--texto1);">' + nome + '</strong> ' + roleBadge + '<div style="font-size:10px;color:var(--texto3);">' + email + '</div></div>' +
-            '</div>';
+            const roleColor = cu.role === 'admin' ? '#22c55e' : cu.role === 'mestre' ? '#f59e0b' : cu.role === 'visitante' ? '#6b7280' : '#3b82f6';
+            return '<tr style="border-bottom:1px solid rgba(255,255,255,0.02);">' +
+              '<td style="padding:6px;color:#fafafa;font-weight:600;">' + nome + '</td>' +
+              '<td style="padding:6px;color:var(--texto3);font-family:monospace;font-size:10px;">' + email + '</td>' +
+              '<td style="padding:6px;"><span style="color:' + roleColor + ';font-size:9px;font-weight:700;">' + (cu.role || 'OPERACIONAL').toUpperCase() + '</span></td>' +
+            '</tr>';
           }).join('') +
+          '</table>' +
         '</div>';
       }
 
@@ -553,7 +558,7 @@ async function renderPlataformaClientes() {
         '</div>' +
         '<div class="empresa-detalhe" style="display:none;margin-top:12px;border-top:1px solid rgba(255,255,255,0.04);padding-top:12px;">' +
           (c.cnpj ? '<div style="font-size:11px;color:var(--texto3);margin-bottom:8px;">CNPJ: ' + c.cnpj + (c.phone ? ' · Tel: ' + c.phone : '') + '</div>' : '') +
-          (c.notes ? '<div style="font-size:11px;color:#a855f7;background:rgba(168,85,247,0.06);border:1px solid rgba(168,85,247,0.15);border-radius:8px;padding:8px 10px;margin-bottom:8px;white-space:pre-wrap;font-family:monospace;">📝 ' + c.notes.replace(/</g,'&lt;') + '</div>' : '') +
+          (c.notes ? '<div style="font-size:11px;background:rgba(168,85,247,0.06);border:1px solid rgba(168,85,247,0.15);border-radius:8px;padding:10px;margin-bottom:8px;"><div style="font-size:9px;color:#a855f7;font-weight:700;letter-spacing:1px;margin-bottom:6px;">📝 OBSERVAÇÕES</div>' + c.notes.replace(/</g,'&lt;').split('\n').filter(l=>l.trim()).map(l => '<div style="padding:4px 0;border-bottom:1px solid rgba(168,85,247,0.08);color:#ccc;font-family:monospace;font-size:11px;">' + l + '</div>').join('') + '</div>' : '') +
           usersHtml +
           '<div style="display:flex;gap:6px;margin-top:12px;">' +
             '<button onclick="event.stopPropagation();editarEmpresa(\'' + c.id + '\');" style="padding:6px 10px;border-radius:8px;border:1px solid var(--borda);background:rgba(255,255,255,0.03);color:var(--texto3);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">EDITAR</button>' +
