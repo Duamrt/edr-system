@@ -135,46 +135,84 @@ async function loadAgendaNotas() {
   } catch(e) { _agendaNotas = []; }
 }
 
-function dashBuildAgenda() {
-  const hoje = hojeISO();
-  const notasHoje = _agendaNotas.filter(n => n.data === hoje);
-  const CORES = { 'duam': '#3b82f6', 'elyda': '#a855f7', 'default': '#22c55e' };
+let _agendaSemanaOffset = 0;
 
-  let notasHTML = '';
-  if (notasHoje.length) {
-    notasHTML = notasHoje.map(n => {
+function dashBuildAgenda() {
+  const CORES = { 'duam': '#3b82f6', 'elyda': '#a855f7', 'default': '#22c55e' };
+  const DIAS = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'];
+  const hoje = new Date();
+  hoje.setHours(0,0,0,0);
+
+  // Semana atual + offset
+  const inicioSemana = new Date(hoje);
+  inicioSemana.setDate(hoje.getDate() - hoje.getDay() + 1 + (_agendaSemanaOffset * 7)); // Começa segunda
+
+  const dias = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(inicioSemana);
+    d.setDate(inicioSemana.getDate() + i);
+    const iso = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    const notas = _agendaNotas.filter(n => n.data === iso);
+    const isHoje = iso === hojeISO();
+    dias.push({ date: d, iso, notas, isHoje, diaSemana: DIAS[d.getDay()], dia: d.getDate() });
+  }
+
+  const mesLabel = inicioSemana.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+
+  const diasHTML = dias.map(d => {
+    const notasHTML = d.notas.map(n => {
       const nome = (n.autor || '').toLowerCase();
       const cor = CORES[nome] || CORES['default'];
-      return `<div style="display:flex;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.04);">
-        <div style="width:4px;border-radius:2px;background:${cor};flex-shrink:0;"></div>
+      return `<div style="display:flex;gap:6px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.03);">
+        <div style="width:3px;border-radius:2px;background:${cor};flex-shrink:0;"></div>
         <div style="flex:1;">
-          <div style="font-size:12px;color:var(--branco);font-weight:600;">${esc(n.texto)}</div>
-          <div style="font-size:10px;color:var(--texto3);margin-top:3px;">
-            <span style="color:${cor};font-weight:700;">${esc(n.autor || '—')}</span>
-            ${n.hora ? ' · ' + esc(n.hora) : ''}
-          </div>
+          <div style="font-size:11px;color:var(--branco);font-weight:600;line-height:1.4;">${esc(n.texto)}</div>
+          <div style="font-size:9px;color:var(--texto3);margin-top:2px;"><span style="color:${cor};font-weight:700;">${esc(n.autor || '—')}</span>${n.hora ? ' · ' + n.hora : ''}</div>
         </div>
-        <button onclick="excluirNota('${n.id}')" style="background:none;border:none;color:var(--texto3);cursor:pointer;font-size:14px;padding:0 4px;">×</button>
+        <button onclick="excluirNota('${n.id}')" style="background:none;border:none;color:var(--texto3);cursor:pointer;font-size:12px;padding:0 2px;opacity:0.5;">×</button>
       </div>`;
     }).join('');
-  } else {
-    notasHTML = '<div style="text-align:center;padding:16px 0;font-size:12px;color:var(--texto3);">Nenhuma anotação pra hoje.</div>';
-  }
+
+    return `<div style="min-height:70px;background:${d.isHoje ? 'rgba(59,130,246,0.06)' : 'rgba(255,255,255,0.02)'};border:1px solid ${d.isHoje ? 'rgba(59,130,246,0.3)' : 'rgba(255,255,255,0.04)'};border-radius:10px;padding:10px;cursor:pointer;transition:all .15s;" onclick="abrirModalNota('${d.iso}')">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <div>
+          <span style="font-size:10px;font-weight:700;color:${d.isHoje ? '#3b82f6' : 'var(--texto3)'};letter-spacing:0.5px;">${d.diaSemana}</span>
+          <span style="font-size:14px;font-weight:800;color:${d.isHoje ? '#3b82f6' : 'var(--branco)'};margin-left:6px;">${d.dia}</span>
+        </div>
+        ${d.notas.length ? '<span style="font-size:9px;font-weight:700;background:rgba(59,130,246,0.15);color:#3b82f6;padding:2px 6px;border-radius:8px;">' + d.notas.length + '</span>' : ''}
+      </div>
+      ${notasHTML || ''}
+    </div>`;
+  }).join('');
 
   return `<div class="card" style="padding:22px;margin-bottom:16px;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-      <div style="font-size:13px;font-weight:700;color:var(--texto2);letter-spacing:0.5px;display:flex;align-items:center;gap:8px;">
-        <span style="width:6px;height:6px;border-radius:50%;background:#3b82f6;"></span> Agenda do Dia
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button onclick="_agendaSemanaOffset--;renderDashboard()" style="background:none;border:1px solid var(--borda);color:var(--texto3);width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:14px;">←</button>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:var(--texto2);">📅 Agenda</div>
+          <div style="font-size:10px;color:var(--texto3);text-transform:capitalize;">${mesLabel}</div>
+        </div>
+        <button onclick="_agendaSemanaOffset++;renderDashboard()" style="background:none;border:1px solid var(--borda);color:var(--texto3);width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:14px;">→</button>
       </div>
-      <button onclick="abrirModalNota()" style="padding:5px 12px;border-radius:8px;border:1px solid rgba(59,130,246,0.3);background:transparent;color:#3b82f6;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">+ NOTA</button>
+      <div style="display:flex;gap:6px;align-items:center;">
+        ${_agendaSemanaOffset !== 0 ? '<button onclick="_agendaSemanaOffset=0;renderDashboard()" style="padding:4px 10px;border-radius:6px;border:1px solid var(--borda);background:transparent;color:var(--texto3);font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;">HOJE</button>' : ''}
+        <button onclick="abrirModalNota()" style="padding:5px 12px;border-radius:8px;border:1px solid rgba(59,130,246,0.3);background:transparent;color:#3b82f6;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">+ NOTA</button>
+      </div>
     </div>
-    <div id="agenda-notas-lista">${notasHTML}</div>
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;" id="agenda-semana-grid">
+      ${diasHTML}
+    </div>
+    <div style="display:flex;gap:12px;margin-top:10px;justify-content:center;">
+      <div style="display:flex;align-items:center;gap:4px;font-size:9px;color:var(--texto3);"><div style="width:8px;height:8px;border-radius:2px;background:#3b82f6;"></div> Duam</div>
+      <div style="display:flex;align-items:center;gap:4px;font-size:9px;color:var(--texto3);"><div style="width:8px;height:8px;border-radius:2px;background:#a855f7;"></div> Elyda</div>
+    </div>
   </div>`;
 }
 
-function abrirModalNota() {
+function abrirModalNota(dataPre) {
   const autor = usuarioAtual?.nome || 'Duam';
-  const hoje = hojeISO();
+  const hoje = dataPre || hojeISO();
 
   const el = document.createElement('div');
   el.id = 'modal-nota-overlay';
