@@ -169,7 +169,10 @@ function dashBuildAgenda() {
           <div style="font-size:11px;color:var(--branco);font-weight:600;line-height:1.4;">${esc(n.texto)}</div>
           <div style="font-size:9px;color:var(--texto3);margin-top:2px;"><span style="color:${cor};font-weight:700;">${esc(n.autor || '—')}</span>${n.hora ? ' · ' + n.hora : ''}</div>
         </div>
-        <button onclick="excluirNota('${n.id}')" style="background:none;border:none;color:var(--texto3);cursor:pointer;font-size:12px;padding:0 2px;opacity:0.5;">×</button>
+        <div style="display:flex;flex-direction:column;gap:2px;">
+          <button onclick="event.stopPropagation();editarNota('${n.id}')" style="background:none;border:none;color:var(--texto3);cursor:pointer;font-size:10px;padding:0 2px;opacity:0.5;">✏</button>
+          <button onclick="event.stopPropagation();excluirNota('${n.id}')" style="background:none;border:none;color:var(--texto3);cursor:pointer;font-size:10px;padding:0 2px;opacity:0.5;">×</button>
+        </div>
       </div>`;
     }).join('');
 
@@ -250,6 +253,50 @@ async function salvarNota() {
   } catch(e) {
     console.error(e);
     showToast('❌ Erro ao salvar. Verifique se a tabela agenda_notas existe.');
+  }
+}
+
+function editarNota(id) {
+  const nota = _agendaNotas.find(n => n.id === id);
+  if (!nota) return;
+
+  const el = document.createElement('div');
+  el.id = 'modal-nota-overlay';
+  el.className = 'modal-overlay';
+  el.onclick = function(e) { if (e.target === el) el.remove(); };
+
+  el.innerHTML = `<div class="modal" style="max-width:380px;">
+    <div class="modal-title"><span>✏️ Editar Anotação</span><button class="modal-close" onclick="document.getElementById('modal-nota-overlay').remove()">✕</button></div>
+    <div class="field"><label>ANOTAÇÃO *</label><textarea id="nota-texto" rows="3" style="width:100%;padding:10px;background:rgba(255,255,255,0.03);border:1px solid var(--borda);border-radius:8px;color:var(--branco);font-size:13px;font-family:inherit;resize:vertical;box-sizing:border-box;">${esc(nota.texto)}</textarea></div>
+    <div style="display:flex;gap:8px;">
+      <div class="field" style="flex:1;"><label>DATA</label><input type="date" id="nota-data" value="${nota.data || ''}" style="width:100%;padding:10px;background:rgba(255,255,255,0.03);border:1px solid var(--borda);border-radius:8px;color:var(--branco);font-size:13px;font-family:inherit;box-sizing:border-box;"></div>
+      <div class="field" style="flex:1;"><label>HORA</label><input type="time" id="nota-hora" value="${nota.hora || ''}" style="width:100%;padding:10px;background:rgba(255,255,255,0.03);border:1px solid var(--borda);border-radius:8px;color:var(--branco);font-size:13px;font-family:inherit;box-sizing:border-box;"></div>
+    </div>
+    <input type="hidden" id="nota-edit-id" value="${id}">
+    <input type="hidden" id="nota-autor" value="${esc(nota.autor || '')}">
+    <button class="btn-save" onclick="salvarNotaEdit()">SALVAR</button>
+  </div>`;
+
+  document.body.appendChild(el);
+  setTimeout(() => document.getElementById('nota-texto').focus(), 100);
+}
+
+async function salvarNotaEdit() {
+  const id = document.getElementById('nota-edit-id').value;
+  const texto = document.getElementById('nota-texto').value.trim();
+  const data = document.getElementById('nota-data').value;
+  const hora = document.getElementById('nota-hora').value || null;
+  if (!texto) { showToast('⚠ Digite a anotação.'); return; }
+
+  try {
+    await sbPatch('agenda_notas', `?id=eq.${id}`, { texto, data, hora });
+    document.getElementById('modal-nota-overlay')?.remove();
+    await loadAgendaNotas();
+    renderDashboard();
+    showToast('✅ Anotação atualizada!');
+  } catch(e) {
+    console.error(e);
+    showToast('❌ Erro ao atualizar.');
   }
 }
 
