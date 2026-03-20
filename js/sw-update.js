@@ -1,8 +1,8 @@
 // Auto-update: detecta nova versao do service worker e recarrega automaticamente
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').then(reg => {
-    // Checar update a cada 2 minutos
-    setInterval(() => reg.update(), 120000);
+    // Checar update a cada 10 minutos
+    setInterval(() => reg.update(), 600000);
 
     reg.addEventListener('updatefound', () => {
       const newSW = reg.installing;
