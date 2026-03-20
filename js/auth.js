@@ -427,9 +427,15 @@ async function criarConta() {
           })
         });
       } catch(e) { console.warn('Erro ao salvar aceite:', e); }
+    } else {
+      // Empresa não foi criada — erro grave
+      errEl.textContent = 'Erro ao criar empresa. Tente novamente ou entre em contato.';
+      btn.disabled = false;
+      btn.textContent = 'CRIAR CONTA GRÁTIS';
+      return;
     }
 
-    // 5. Entrar no app
+    // 6. Entrar no app
     entrarNoApp();
 
   } catch(e) {

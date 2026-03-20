@@ -10,7 +10,12 @@ let _companyId = null;
 const _TABELAS_SEM_TENANT = ['companies', 'company_users'];
 
 function _addCompanyFilter(tabela, query) {
-  if (_TABELAS_SEM_TENANT.includes(tabela) || !_companyId) return query;
+  if (_TABELAS_SEM_TENANT.includes(tabela)) return query;
+  if (!_companyId) {
+    // Sem empresa vinculada — forçar filtro impossível pra não vazar dados
+    const sep = query.includes('?') ? '&' : '?';
+    return query + sep + 'company_id=eq.00000000-0000-0000-0000-000000000000';
+  }
   const sep = query.includes('?') ? '&' : '?';
   return query + sep + 'company_id=eq.' + _companyId;
 }
