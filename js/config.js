@@ -13,6 +13,62 @@ function notificarTelegram(chatId, texto) {
   }).catch(() => {});
 }
 
+// Planos e limites
+const PLANOS = {
+  trial:          { nome: 'Trial',          obras: 1, usuarios: 2,  dias: 14 },
+  obra:           { nome: 'Obra',           obras: 1, usuarios: 2  },
+  construtora:    { nome: 'Construtora',    obras: 3, usuarios: 5  },
+  incorporadora:  { nome: 'Incorporadora',  obras: 999, usuarios: 999 }
+};
+
+let _companyPlan = null;
+
+async function loadCompanyPlan() {
+  if (MODO_DEMO || !_companyId) return;
+  try {
+    const r = await sbGet('companies', '?id=eq.' + _companyId + '&select=plan,trial_ends_at');
+    if (r && r[0]) _companyPlan = r[0];
+  } catch(e) {}
+}
+
+function getLimites() {
+  const plan = _companyPlan?.plan || 'trial';
+  return PLANOS[plan] || PLANOS.trial;
+}
+
+let _isSuperAdmin = false;
+
+function isPlatformAdmin() {
+  return _isSuperAdmin;
+}
+
+async function checarLimiteObras() {
+  if (isPlatformAdmin()) return true;
+  const lim = getLimites();
+  const obrasAtivas = obras.filter(o => !o.arquivada);
+  if (obrasAtivas.length >= lim.obras) {
+    const plano = _companyPlan?.plan || 'trial';
+    const nomes = { trial: 'Trial', obra: 'Obra', construtora: 'Construtora' };
+    alert('Limite de obras atingido no plano ' + (nomes[plano] || plano) + ' (' + lim.obras + ' obra' + (lim.obras > 1 ? 's' : '') + ').\n\nFaça upgrade para criar mais obras.');
+    return false;
+  }
+  return true;
+}
+
+async function checarLimiteUsuarios() {
+  if (isPlatformAdmin()) return true;
+  const lim = getLimites();
+  try {
+    const users = await sbGet('company_users', '?company_id=eq.' + _companyId + '&select=id');
+    if (users && users.length >= lim.usuarios) {
+      const plano = _companyPlan?.plan || 'trial';
+      alert('Limite de usuarios atingido no plano ' + (PLANOS[plano]?.nome || plano) + ' (' + lim.usuarios + ').\n\nFaca upgrade para adicionar mais membros.');
+      return false;
+    }
+  } catch(e) {}
+  return true;
+}
+
 // Headers dinâmicos — usa token Auth se logado, senão anon key
 let _authToken = null;
 function getHdrs(preferOverride) {

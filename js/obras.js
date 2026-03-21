@@ -735,6 +735,8 @@ async function salvarNovaObra() {
   const area_m2 = parseFloat(document.getElementById('nova-obra-area').value) || 0;
   const editId = document.getElementById('obra-edit-id').value;
   if (!nome) { showToast('⚠ Informe o nome da obra.'); return; }
+  // Checar limite do plano (só pra obra nova, não edição)
+  if (!editId && !(await checarLimiteObras())) return;
   try {
     const payload = { nome, cidade, valor_venda: valorVenda, contratante, cpf_contratante, slug_entrega, area_m2 };
     if (editId) {

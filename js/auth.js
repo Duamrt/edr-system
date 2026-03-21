@@ -76,6 +76,7 @@ function entrarNoApp() {
   // Carregar company_id antes de carregar dados
   if (typeof loadCompanyId === 'function') {
     loadCompanyId().then(() => {
+      if (typeof loadCompanyPlan === 'function') loadCompanyPlan();
       iniciarApp();
       checkPlatformAdmin();
     }).catch(() => iniciarApp());
@@ -261,6 +262,7 @@ async function checkPlatformAdmin() {
     });
     const isAdmin = await r.json();
     if (!isAdmin) return;
+    _isSuperAdmin = true;
 
     // Carregar todas as empresas
     const cr = await fetch(`${SUPABASE_URL}/rest/v1/companies?select=id,name&order=name`, {
@@ -413,7 +415,8 @@ async function criarConta() {
         name: empresa,
         slug: slug + '-' + Date.now().toString(36),
         city: cidade || null,
-        plan: 'trial'
+        plan: 'trial',
+        trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString()
       })
     });
     const companyArr = await cr.json();
@@ -635,10 +638,10 @@ async function editarEmpresa(companyId) {
     usersHtml +
     '<div style="margin-bottom:12px;"><label style="font-size:11px;color:var(--texto3);font-weight:700;display:block;margin-bottom:4px;">OBSERVAÇÕES (senhas, contatos, etc)</label><textarea id="ed-emp-notes" rows="4" style="width:100%;padding:10px;background:var(--cinza-medio,#141414);border:1px solid var(--borda);border-radius:8px;color:#fafafa;font-size:12px;font-family:monospace;box-sizing:border-box;resize:vertical;">' + (c.notes || '') + '</textarea></div>' +
     '<div style="margin-bottom:16px;"><label style="font-size:11px;color:var(--texto3);font-weight:700;display:block;margin-bottom:4px;">PLANO</label><select id="ed-emp-plan" style="width:100%;padding:10px;background:var(--cinza-medio,#141414);border:1px solid var(--borda);border-radius:8px;color:#fafafa;font-size:13px;font-family:inherit;">' +
-      '<option value="trial"' + (c.plan === 'trial' ? ' selected' : '') + '>Trial</option>' +
-      '<option value="essencial"' + (c.plan === 'essencial' ? ' selected' : '') + '>Essencial</option>' +
-      '<option value="completo"' + (c.plan === 'completo' ? ' selected' : '') + '>Completo</option>' +
-      '<option value="premium"' + (c.plan === 'premium' ? ' selected' : '') + '>Premium</option>' +
+      '<option value="trial"' + (c.plan === 'trial' ? ' selected' : '') + '>Trial (14 dias)</option>' +
+      '<option value="obra"' + (c.plan === 'obra' ? ' selected' : '') + '>Obra — R$9,90 (1 obra, 2 usr)</option>' +
+      '<option value="construtora"' + (c.plan === 'construtora' ? ' selected' : '') + '>Construtora — R$29,90 (3 obras, 5 usr)</option>' +
+      '<option value="incorporadora"' + (c.plan === 'incorporadora' ? ' selected' : '') + '>Incorporadora — R$49,90 (ilimitado)</option>' +
     '</select></div>' +
     '<div style="display:flex;gap:8px;">' +
       '<button onclick="document.getElementById(\'edit-empresa-overlay\').remove();" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--borda);background:transparent;color:var(--texto3);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">CANCELAR</button>' +
