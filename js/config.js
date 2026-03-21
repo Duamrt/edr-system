@@ -1,6 +1,18 @@
 const SUPABASE_URL = 'https://mepzoxoahpwcvvlymlfh.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_Z9E8KLU8ZIMcWjD-bMG5gg_eM585qWq';
 
+// Telegram — notificações de novos clientes
+const TG_BOT = '8644194982:AAH6-26NFAbYYtq4TM45hOapqqMguid9qpI';
+const TG_CHAT_EDR = '-5239426430';
+
+function notificarTelegram(chatId, texto) {
+  fetch('https://api.telegram.org/bot' + TG_BOT + '/sendMessage', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chat_id: chatId, text: texto, parse_mode: 'HTML' })
+  }).catch(() => {});
+}
+
 // Headers dinâmicos — usa token Auth se logado, senão anon key
 let _authToken = null;
 function getHdrs(preferOverride) {

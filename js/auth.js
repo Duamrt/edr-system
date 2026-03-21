@@ -453,7 +453,17 @@ async function criarConta() {
       return;
     }
 
-    // 6. Entrar no app
+    // 6. Notificar no Telegram
+    notificarTelegram(TG_CHAT_EDR,
+      '🏗 <b>Novo cliente EDR System!</b>\n\n' +
+      '👤 ' + nome + '\n' +
+      '🏢 ' + empresa + '\n' +
+      '📍 ' + (cidade || 'N/I') + '\n' +
+      '📧 ' + email + '\n' +
+      '📅 ' + new Date().toLocaleString('pt-BR')
+    );
+
+    // 7. Entrar no app
     entrarNoApp();
 
   } catch(e) {
