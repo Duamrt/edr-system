@@ -71,7 +71,7 @@ async function fazerLogin() {
 
 function entrarNoApp() {
   document.getElementById('login-screen').classList.add('hidden');
-  ['obras','estoque','notas','form','creditos','setup','catalogo','banco','relatorio','diarias','usuarios','custos','leads','caixa','contas-pagar','garantias'].forEach(name => {
+  ['obras','estoque','notas','form','creditos','setup','catalogo','banco','relatorio','diarias','usuarios','custos','leads','caixa','contas-pagar','garantias','permissoes'].forEach(name => {
     const el = document.getElementById('view-'+name);
     if (el) el.classList.add('hidden');
   });
@@ -91,8 +91,10 @@ function entrarNoApp() {
   initMenuDragDrop();
   // Carregar company_id antes de carregar dados
   if (typeof loadCompanyId === 'function') {
-    loadCompanyId().then(() => {
+    loadCompanyId().then(async () => {
       if (typeof loadCompanyPlan === 'function') loadCompanyPlan();
+      // Carregar permissões extras do usuário
+      await _carregarPermissoesUsuario();
       iniciarApp();
       checkPlatformAdmin();
     }).catch(() => iniciarApp());
@@ -227,6 +229,48 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 });
 
+// Permissões extras carregadas do company_users
+let _userPermissions = {};
+
+// Permissões da empresa (template por perfil)
+let _companyRolePerms = {};
+
+async function _carregarPermissoesUsuario() {
+  if (MODO_DEMO || !_companyId || !usuarioAtual?.id) return;
+  try {
+    // Carregar permissões individuais + role
+    const rows = await fetch(`${SUPABASE_URL}/rest/v1/company_users?company_id=eq.${_companyId}&user_id=eq.${usuarioAtual.id}&select=permissions,role`, {
+      headers: getHdrs()
+    }).then(r => r.json());
+    if (rows && rows[0]) {
+      _userPermissions = rows[0].permissions || {};
+      if (rows[0].role) usuarioAtual.perfil = rows[0].role;
+    }
+    // Carregar template de permissões da empresa
+    const comp = await fetch(`${SUPABASE_URL}/rest/v1/companies?id=eq.${_companyId}&select=role_permissions`, {
+      headers: getHdrs()
+    }).then(r => r.json());
+    if (comp && comp[0] && comp[0].role_permissions) {
+      _companyRolePerms = comp[0].role_permissions;
+    }
+  } catch(e) {}
+}
+
+// Checar se o usuário tem acesso a um módulo
+// Prioridade: override individual → template empresa → padrão do perfil
+function temPermissao(modulo) {
+  if (usuarioAtual?.perfil === 'admin' || _isSuperAdmin) return true;
+  // 1. Override individual (se definido)
+  if (_userPermissions[modulo] !== undefined) return !!_userPermissions[modulo];
+  // 2. Template da empresa
+  const perfil = usuarioAtual?.perfil || 'operacional';
+  if (_companyRolePerms[perfil] && _companyRolePerms[perfil][modulo] !== undefined) {
+    return !!_companyRolePerms[perfil][modulo];
+  }
+  // 3. Padrão do perfil
+  return !!(_PERMS_PADRAO[perfil]?.[modulo]);
+}
+
 function aplicarPerfil() {
   const isAdmin = usuarioAtual.perfil === 'admin';
   const isMestre = usuarioAtual.perfil === 'mestre';
@@ -235,35 +279,52 @@ function aplicarPerfil() {
   if (isVisitante) MODO_DEMO = true;
   else MODO_DEMO = false;
 
-  ['nav-dashboard','nav-obras','nav-estoque','nav-notas','nav-form','nav-creditos',
-   'nav-catalogo','nav-relatorio','nav-banco','nav-setup','nav-diarias','nav-custos','nav-leads','nav-caixa','nav-contas-pagar','nav-garantias'].forEach(id => {
+  // Mapa nav-id → chave de permissão
+  const navPerms = {
+    'nav-dashboard': 'dashboard', 'nav-obras': 'obras', 'nav-estoque': 'estoque',
+    'nav-notas': 'notas', 'nav-form': 'lancamentos', 'nav-creditos': 'lancamentos',
+    'nav-catalogo': 'catalogo', 'nav-relatorio': 'relatorio', 'nav-banco': 'financeiro',
+    'nav-setup': null, 'nav-permissoes': null, 'nav-diarias': 'diarias', 'nav-custos': 'custos',
+    'nav-leads': 'leads', 'nav-caixa': 'financeiro', 'nav-contas-pagar': 'financeiro',
+    'nav-garantias': 'garantias'
+  };
+
+  Object.entries(navPerms).forEach(([id, perm]) => {
     const el = document.getElementById(id);
-    if (el) el.classList.remove('hidden');
+    if (!el) return;
+    if (isAdmin) { el.classList.remove('hidden'); return; }
+    if (id === 'nav-setup' || id === 'nav-permissoes') { el.classList.add('hidden'); return; }
+    // Operacional/mestre: mostrar apenas se tem permissão
+    if (perm) {
+      el.classList.toggle('hidden', !temPermissao(perm));
+    }
   });
+
   const bnav = document.getElementById('bottom-nav');
   if (bnav) bnav.style.display = '';
   document.body.classList.remove('perfil-mestre');
   document.body.classList.toggle('perfil-mestre', isMestre);
 
-  document.querySelectorAll('.admin-only').forEach(el => el.classList.toggle('hidden', !isAdmin));
+  document.querySelectorAll('.admin-only').forEach(el => {
+    // Se tem permissão extra, mostrar mesmo sendo operacional
+    const modulo = el.dataset?.permissao;
+    if (!isAdmin && modulo && temPermissao(modulo)) el.classList.remove('hidden');
+    else el.classList.toggle('hidden', !isAdmin);
+  });
   document.querySelectorAll('.admin-mestre').forEach(el => el.classList.toggle('hidden', !isAdmin && !isMestre));
   document.querySelectorAll('.operacional-info').forEach(el => el.classList.toggle('hidden', isAdmin));
 
-  if (!isAdmin) {
-    document.getElementById('nav-setup').classList.add('hidden');
-  }
-
   if (isMestre) {
-    ['nav-dashboard','nav-obras','nav-estoque','nav-notas','nav-form','nav-creditos','nav-catalogo','nav-relatorio','nav-banco'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.classList.add('hidden');
-    });
-    const bnav = document.getElementById('bottom-nav');
-    if (bnav) bnav.style.display = 'none';
-    setTimeout(() => setView('diarias'), 100);
-    diarPanelRecolhido = false;
-    const pl = document.getElementById('diar-panelLeft');
-    if (pl) pl.classList.remove('recolhido');
+    // Mestre: se não tem nenhum módulo extra liberado, focar em diárias
+    const temAlgoExtra = _MODULOS_PERMISSAO.some(m => m.key !== 'diarias' && temPermissao(m.key));
+    if (!temAlgoExtra) {
+      const bnav = document.getElementById('bottom-nav');
+      if (bnav) bnav.style.display = 'none';
+      setTimeout(() => setView('diarias'), 100);
+      diarPanelRecolhido = false;
+      const pl = document.getElementById('diar-panelLeft');
+      if (pl) pl.classList.remove('recolhido');
+    }
   }
 }
 
@@ -799,11 +860,11 @@ async function renderUsuarios() {
     // Buscar senhas iniciais da company_users
     let cuData = [];
     try {
-      cuData = await sbGet('company_users', '?company_id=eq.' + _companyId + '&select=user_id,senha_inicial,role');
+      cuData = await sbGet('company_users', '?company_id=eq.' + _companyId + '&select=user_id,senha_inicial,role,active,permissions');
       if (!Array.isArray(cuData)) cuData = [];
     } catch(e) {}
-    const senhaMap = {};
-    cuData.forEach(cu => { senhaMap[cu.user_id] = cu.senha_inicial || ''; });
+    const cuMap = {};
+    cuData.forEach(cu => { cuMap[cu.user_id] = { senha: cu.senha_inicial || '', active: cu.active !== false, permissions: cu.permissions || {} }; });
     const lim = getLimites();
     const plano = PLANOS[_companyPlan?.plan] || PLANOS.trial;
 
@@ -825,20 +886,33 @@ async function renderUsuarios() {
       html += '<th style="padding:12px 16px;text-align:left;font-size:11px;color:var(--texto3);font-weight:700;">LOGIN</th>';
       html += '<th style="padding:12px 16px;text-align:left;font-size:11px;color:var(--texto3);font-weight:700;">SENHA</th>';
       html += '<th style="padding:12px 16px;text-align:left;font-size:11px;color:var(--texto3);font-weight:700;">PERFIL</th>';
-      html += '<th style="padding:12px 16px;text-align:center;font-size:11px;color:var(--texto3);font-weight:700;width:80px;"></th>';
+      html += '<th style="padding:12px 16px;text-align:center;font-size:11px;color:var(--texto3);font-weight:700;">STATUS</th>';
+      html += '<th style="padding:12px 16px;text-align:center;font-size:11px;color:var(--texto3);font-weight:700;width:100px;">ACOES</th>';
       html += '</tr></thead><tbody>';
       users.forEach(u => {
         const isMe = u.user_id === usuarioAtual.id;
-        const senhaInicial = senhaMap[u.user_id] || '';
-        html += '<tr style="border-bottom:1px solid var(--borda,#222);">';
+        const cu = cuMap[u.user_id] || { senha: '', active: true, permissions: {} };
+        const isActive = cu.active;
+        html += '<tr style="border-bottom:1px solid var(--borda,#222);' + (!isActive ? 'opacity:0.45;' : '') + '">';
         html += '<td style="padding:12px 16px;font-size:13px;">' + (u.nome || '-') + (isMe ? ' <span style="color:var(--verde);font-size:10px;font-weight:700;">(voce)</span>' : '') + '</td>';
         const loginDisplay = (u.email || '').endsWith('@edr.app') ? _formatarTelefone(u.email.replace('@edr.app','')) : (u.email || '-');
         html += '<td style="padding:12px 16px;font-size:13px;color:var(--texto3);">' + loginDisplay + '</td>';
-        html += '<td style="padding:12px 16px;font-size:12px;color:var(--texto3);font-family:\'JetBrains Mono\',monospace;">' + (senhaInicial || '<span style="color:var(--texto3);opacity:0.4;">-</span>') + '</td>';
+        html += '<td style="padding:12px 16px;font-size:12px;color:var(--texto3);font-family:\'JetBrains Mono\',monospace;">' + (cu.senha || '<span style="color:var(--texto3);opacity:0.4;">-</span>') + '</td>';
         html += '<td style="padding:12px 16px;font-size:13px;">' + formatPerfil(u.role) + '</td>';
+        // Status ativo/inativo com toggle
         html += '<td style="padding:12px 16px;text-align:center;">';
         if (!isMe) {
-          html += '<button onclick="removerMembro(\'' + (u.cu_id || u.id) + '\',\'' + (u.nome || u.email || '').replace(/'/g, '') + '\')" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:16px;" title="Remover">X</button>';
+          html += '<button onclick="toggleAtivoMembro(\'' + u.user_id + '\',' + isActive + ')" style="background:none;border:none;cursor:pointer;font-size:11px;font-weight:700;font-family:inherit;padding:4px 10px;border-radius:10px;' + (isActive ? 'color:#22c55e;background:rgba(34,197,94,0.1);' : 'color:#ef4444;background:rgba(239,68,68,0.1);') + '">' + (isActive ? 'ATIVO' : 'INATIVO') + '</button>';
+        } else {
+          html += '<span style="color:#22c55e;font-size:11px;font-weight:700;">ATIVO</span>';
+        }
+        html += '</td>';
+        // Ações: editar + remover
+        html += '<td style="padding:12px 16px;text-align:center;">';
+        if (!isMe) {
+          const permData = btoa(JSON.stringify(cu.permissions));
+          html += '<button onclick="abrirModalEditarUsuario(\'' + u.user_id + '\',\'' + (u.nome || '').replace(/'/g, '') + '\',\'' + (u.email || '').replace(/'/g, '') + '\',\'' + (u.role || 'operacional') + '\',\'' + permData + '\')" style="background:none;border:none;color:#3b82f6;cursor:pointer;font-size:14px;margin-right:6px;" title="Editar">&#9998;</button>';
+          html += '<button onclick="removerMembro(\'' + u.user_id + '\',\'' + (u.nome || u.email || '').replace(/'/g, '') + '\')" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:14px;" title="Remover">&#10005;</button>';
         }
         html += '</td></tr>';
       });
@@ -898,6 +972,267 @@ function fecharModalConvite() {
   if (modal) modal.style.display = 'none';
 }
 
+// ── TOGGLE ATIVO/INATIVO ──────────────────────────────
+async function toggleAtivoMembro(userId, atualAtivo) {
+  const novoStatus = !atualAtivo;
+  try {
+    const hdrs = { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + _authToken, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' };
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/company_users?company_id=eq.${_companyId}&user_id=eq.${userId}`, {
+      method: 'PATCH', headers: hdrs,
+      body: JSON.stringify({ active: novoStatus })
+    });
+    if (!r.ok) throw new Error(await r.text());
+    showToast(novoStatus ? 'Usuario ativado.' : 'Usuario desativado.');
+    renderUsuarios();
+  } catch(e) {
+    alert('Erro: ' + e.message);
+  }
+}
+
+// ── MODAL EDITAR USUARIO ──────────────────────────────
+const _MODULOS_PERMISSAO = [
+  { key: 'dashboard', nome: 'Resumo / Dashboard' },
+  { key: 'obras', nome: 'Obras' },
+  { key: 'estoque', nome: 'Estoque' },
+  { key: 'catalogo', nome: 'Catalogo de Materiais' },
+  { key: 'notas', nome: 'Notas Fiscais' },
+  { key: 'lancamentos', nome: 'Lancamentos' },
+  { key: 'financeiro', nome: 'Financeiro (Caixa, Contas)' },
+  { key: 'diarias', nome: 'Diarias / Equipe' },
+  { key: 'relatorio', nome: 'Relatorios' },
+  { key: 'leads', nome: 'Comercial / Leads' },
+  { key: 'custos', nome: 'Custos de Obra' },
+  { key: 'garantias', nome: 'Garantias' }
+];
+
+function abrirModalEditarUsuario(userId, nome, email, role, permB64) {
+  let perms = {};
+  try { perms = JSON.parse(atob(permB64 || '')); } catch(e) {}
+
+  const loginDisplay = email.endsWith('@edr.app') ? _formatarTelefone(email.replace('@edr.app','')) : email;
+
+  let html = '<div id="modal-editar-user" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;">';
+  html += '<div style="background:var(--cinza-escuro,#1a1a1a);border:1px solid var(--borda);border-radius:16px;padding:30px;width:90%;max-width:450px;max-height:85vh;overflow-y:auto;">';
+  html += '<h3 style="margin:0 0 6px;font-size:16px;">Editar Usuario</h3>';
+  html += '<div style="font-size:12px;color:var(--texto3);margin-bottom:20px;">' + loginDisplay + '</div>';
+
+  // Nome
+  html += '<label style="font-size:11px;color:var(--texto3);font-weight:700;display:block;margin-bottom:4px;">NOME</label>';
+  html += '<input id="edit-nome" type="text" value="' + nome + '" style="width:100%;padding:10px;background:var(--bg);border:1px solid var(--borda);border-radius:8px;color:#fafafa;font-size:13px;font-family:inherit;margin-bottom:12px;box-sizing:border-box;">';
+
+  // Perfil
+  html += '<label style="font-size:11px;color:var(--texto3);font-weight:700;display:block;margin-bottom:4px;">PERFIL</label>';
+  html += '<select id="edit-perfil" style="width:100%;padding:10px;background:var(--bg);border:1px solid var(--borda);border-radius:8px;color:#fafafa;font-size:13px;font-family:inherit;margin-bottom:12px;">';
+  html += '<option value="operacional"' + (role==='operacional' ? ' selected' : '') + '>Operacional</option>';
+  html += '<option value="mestre"' + (role==='mestre' ? ' selected' : '') + '>Mestre de Obra</option>';
+  html += '<option value="admin"' + (role==='admin' ? ' selected' : '') + '>Administrador</option>';
+  html += '</select>';
+
+  // Nova senha
+  html += '<label style="font-size:11px;color:var(--texto3);font-weight:700;display:block;margin-bottom:4px;">NOVA SENHA <span style="font-weight:400;opacity:0.6;">(deixe vazio para manter)</span></label>';
+  html += '<input id="edit-senha" type="text" placeholder="Nova senha (min 6)" style="width:100%;padding:10px;background:var(--bg);border:1px solid var(--borda);border-radius:8px;color:#fafafa;font-size:13px;font-family:inherit;margin-bottom:16px;box-sizing:border-box;">';
+
+  // Permissões extras (só aparece pra operacional/mestre)
+  html += '<div id="edit-perms-container">';
+  html += '<label style="font-size:11px;color:var(--texto3);font-weight:700;display:block;margin-bottom:8px;">PERMISSOES EXTRAS</label>';
+  html += '<div style="font-size:11px;color:var(--texto3);margin-bottom:10px;opacity:0.7;">Liberar modulos que normalmente sao exclusivos do admin:</div>';
+  _MODULOS_PERMISSAO.forEach(m => {
+    const checked = perms[m.key] ? ' checked' : '';
+    html += '<label style="display:flex;align-items:center;gap:8px;padding:6px 0;font-size:13px;color:var(--texto2);cursor:pointer;">';
+    html += '<input type="checkbox" class="perm-check" data-key="' + m.key + '"' + checked + ' style="accent-color:var(--verde);width:16px;height:16px;cursor:pointer;">';
+    html += m.nome + '</label>';
+  });
+  html += '</div>';
+
+  // Erro + botões
+  html += '<div id="edit-erro" style="color:#ef4444;font-size:12px;margin:12px 0;"></div>';
+  html += '<div style="display:flex;gap:10px;">';
+  html += '<button onclick="document.getElementById(\'modal-editar-user\')?.remove()" style="flex:1;padding:12px;border-radius:10px;border:1px solid var(--borda);background:none;color:var(--texto3);font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;">CANCELAR</button>';
+  html += '<button onclick="salvarEdicaoUsuario(\'' + userId + '\',\'' + email.replace(/'/g, '') + '\')" style="flex:1;padding:12px;border-radius:10px;border:none;background:var(--verde);color:#000;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;">SALVAR</button>';
+  html += '</div></div></div>';
+
+  document.getElementById('modal-editar-user')?.remove();
+  document.body.insertAdjacentHTML('beforeend', html);
+
+  // Mostrar/ocultar permissões conforme perfil
+  const selPerfil = document.getElementById('edit-perfil');
+  const permsContainer = document.getElementById('edit-perms-container');
+  function togglePermsVisibility() {
+    permsContainer.style.display = selPerfil.value === 'admin' ? 'none' : '';
+  }
+  selPerfil.addEventListener('change', togglePermsVisibility);
+  togglePermsVisibility();
+}
+
+async function salvarEdicaoUsuario(userId, email) {
+  const nome = document.getElementById('edit-nome').value.trim();
+  const perfil = document.getElementById('edit-perfil').value;
+  const novaSenha = document.getElementById('edit-senha').value;
+  const errEl = document.getElementById('edit-erro');
+  errEl.textContent = '';
+
+  if (!nome) { errEl.textContent = 'Nome obrigatorio.'; return; }
+  if (novaSenha && novaSenha.length < 6) { errEl.textContent = 'Senha deve ter pelo menos 6 caracteres.'; return; }
+
+  // Montar permissões
+  const perms = {};
+  document.querySelectorAll('.perm-check').forEach(cb => {
+    if (cb.checked) perms[cb.dataset.key] = true;
+  });
+
+  try {
+    const hdrs = { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + _authToken, 'Content-Type': 'application/json' };
+
+    // 1. Atualizar company_users (perfil + permissões)
+    const cuBody = { role: perfil, permissions: perms };
+    if (novaSenha) cuBody.senha_inicial = novaSenha;
+    const r1 = await fetch(`${SUPABASE_URL}/rest/v1/company_users?company_id=eq.${_companyId}&user_id=eq.${userId}`, {
+      method: 'PATCH', headers: { ...hdrs, 'Prefer': 'return=minimal' },
+      body: JSON.stringify(cuBody)
+    });
+    if (!r1.ok) throw new Error(await r1.text());
+
+    // 2. Atualizar auth.users (nome, perfil, senha)
+    const updates = { user_metadata: { nome, perfil } };
+    if (novaSenha) updates.password = novaSenha;
+    const r2 = await fetch(`${SUPABASE_URL}/rest/v1/rpc/admin_update_auth_user`, {
+      method: 'POST', headers: hdrs,
+      body: JSON.stringify({ p_email: email, p_updates: JSON.stringify(updates) })
+    });
+    if (!r2.ok) {
+      const err = await r2.json().catch(() => ({}));
+      throw new Error(err.message || 'Erro ao atualizar auth');
+    }
+
+    document.getElementById('modal-editar-user')?.remove();
+    showToast('Usuario atualizado.');
+    renderUsuarios();
+  } catch(e) {
+    errEl.textContent = 'Erro: ' + e.message;
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// PERMISSÕES POR PERFIL — Configuração da empresa
+// ══════════════════════════════════════════════════════
+
+// Padrão de permissões por perfil (o que já funciona hoje)
+const _PERMS_PADRAO = {
+  admin: {
+    dashboard: true, obras: true, estoque: true, catalogo: true,
+    notas: true, lancamentos: true, financeiro: true, diarias: true,
+    relatorio: true, leads: true, custos: true, garantias: true
+  },
+  operacional: {
+    dashboard: true, obras: true, estoque: true, catalogo: false,
+    notas: false, lancamentos: false, financeiro: false, diarias: true,
+    relatorio: false, leads: false, custos: false, garantias: false
+  },
+  mestre: {
+    dashboard: false, obras: false, estoque: false, catalogo: false,
+    notas: false, lancamentos: false, financeiro: false, diarias: true,
+    relatorio: false, leads: false, custos: false, garantias: false
+  }
+};
+
+async function renderPermissoes() {
+  const el = document.getElementById('permissoes-container');
+  if (!el || !_companyId) return;
+
+  el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--texto3);">Carregando...</div>';
+
+  // Carregar config atual da empresa
+  let rolePerms = {};
+  try {
+    const comp = await fetch(`${SUPABASE_URL}/rest/v1/companies?id=eq.${_companyId}&select=role_permissions`, {
+      headers: getHdrs()
+    }).then(r => r.json());
+    if (comp && comp[0] && comp[0].role_permissions) rolePerms = comp[0].role_permissions;
+  } catch(e) {}
+
+  const perfis = ['operacional', 'mestre'];
+  let html = '<div style="max-width:600px;margin:0 auto;padding:20px;">';
+  html += '<div style="margin-bottom:20px;">';
+  html += '<div style="font-size:12px;color:var(--texto3);line-height:1.6;">Configure quais modulos cada perfil pode acessar. Admin sempre tem acesso total.</div>';
+  html += '</div>';
+
+  perfis.forEach(perfil => {
+    const permsAtuais = rolePerms[perfil] || _PERMS_PADRAO[perfil] || {};
+    const nomesPerfil = { operacional: 'OPERACIONAL', mestre: 'MESTRE DE OBRA' };
+    const coresPerfil = { operacional: '#3b82f6', mestre: '#f59e0b' };
+    const cor = coresPerfil[perfil];
+
+    html += '<div style="background:var(--cinza-escuro,#141414);border:1px solid var(--borda);border-radius:12px;margin-bottom:16px;overflow:hidden;">';
+    // Header
+    html += '<div style="padding:16px;border-bottom:1px solid var(--borda);display:flex;align-items:center;gap:10px;">';
+    html += '<span style="background:' + cor + '20;color:' + cor + ';padding:4px 12px;border-radius:8px;font-size:11px;font-weight:800;letter-spacing:1px;">' + nomesPerfil[perfil] + '</span>';
+    html += '</div>';
+    // Módulos
+    html += '<div style="padding:8px 0;">';
+    _MODULOS_PERMISSAO.forEach(m => {
+      const ativo = permsAtuais[m.key] !== undefined ? permsAtuais[m.key] : (_PERMS_PADRAO[perfil]?.[m.key] || false);
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.03);">';
+      html += '<span style="font-size:13px;color:var(--texto2);">' + m.nome + '</span>';
+      html += '<label style="position:relative;display:inline-block;width:44px;height:24px;flex-shrink:0;">';
+      html += '<input type="checkbox" class="perm-toggle" data-perfil="' + perfil + '" data-modulo="' + m.key + '"' + (ativo ? ' checked' : '') + ' onchange="marcarPermissoesAlteradas()" style="opacity:0;width:0;height:0;">';
+      html += '<span style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:' + (ativo ? 'var(--verde)' : 'rgba(255,255,255,0.1)') + ';border-radius:24px;transition:all .3s;"></span>';
+      html += '<span style="position:absolute;height:18px;width:18px;left:' + (ativo ? '23px' : '3px') + ';bottom:3px;background:#fff;border-radius:50%;transition:all .3s;"></span>';
+      html += '</label>';
+      html += '</div>';
+    });
+    html += '</div></div>';
+  });
+
+  // Botão salvar
+  html += '<div style="text-align:center;margin-top:8px;">';
+  html += '<button id="btn-salvar-perms" onclick="salvarPermissoesPerfis()" style="width:100%;padding:14px;border-radius:10px;border:none;background:var(--verde);color:#000;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;opacity:0.5;" disabled>SALVAR PERMISSOES</button>';
+  html += '</div>';
+
+  html += '</div>';
+  el.innerHTML = html;
+
+  // Atualizar visual dos toggles ao mudar
+  el.querySelectorAll('.perm-toggle').forEach(cb => {
+    cb.addEventListener('change', function() {
+      const slider = this.nextElementSibling;
+      const dot = slider.nextElementSibling;
+      slider.style.background = this.checked ? 'var(--verde)' : 'rgba(255,255,255,0.1)';
+      dot.style.left = this.checked ? '23px' : '3px';
+    });
+  });
+}
+
+function marcarPermissoesAlteradas() {
+  const btn = document.getElementById('btn-salvar-perms');
+  if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
+}
+
+async function salvarPermissoesPerfis() {
+  const btn = document.getElementById('btn-salvar-perms');
+  if (btn) { btn.disabled = true; btn.textContent = 'SALVANDO...'; }
+
+  const perms = { operacional: {}, mestre: {} };
+  document.querySelectorAll('.perm-toggle').forEach(cb => {
+    const perfil = cb.dataset.perfil;
+    const modulo = cb.dataset.modulo;
+    if (perms[perfil]) perms[perfil][modulo] = cb.checked;
+  });
+
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/companies?id=eq.${_companyId}`, {
+      method: 'PATCH',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + _authToken, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+      body: JSON.stringify({ role_permissions: perms })
+    });
+    if (!r.ok) throw new Error(await r.text());
+    showToast('Permissoes salvas.');
+    if (btn) { btn.textContent = 'SALVAR PERMISSOES'; btn.style.opacity = '0.5'; }
+  } catch(e) {
+    alert('Erro: ' + e.message);
+    if (btn) { btn.disabled = false; btn.textContent = 'SALVAR PERMISSOES'; btn.style.opacity = '1'; }
+  }
+}
+
 async function convidarUsuario() {
   const nome = document.getElementById('conv-nome').value.trim();
   const inputLogin = document.getElementById('conv-email').value.trim().toLowerCase();
@@ -941,7 +1276,7 @@ async function convidarUsuario() {
 
     // 2. Vincular a empresa
     const hdrs = { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + _authToken, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' };
-    await fetch(`${SUPABASE_URL}/rest/v1/company_users`, {
+    const rVinc = await fetch(`${SUPABASE_URL}/rest/v1/company_users`, {
       method: 'POST',
       headers: hdrs,
       body: JSON.stringify({
@@ -951,6 +1286,13 @@ async function convidarUsuario() {
         active: true
       })
     });
+    if (!rVinc.ok) {
+      const errVinc = await rVinc.text().catch(() => '');
+      errEl.textContent = 'Usuario criado mas erro ao vincular a empresa: ' + errVinc;
+      btn.disabled = false;
+      btn.textContent = 'CONVIDAR';
+      return;
+    }
 
     // Salvar senha inicial no vínculo
     try {
@@ -1000,11 +1342,18 @@ async function convidarUsuario() {
   btn.textContent = 'CONVIDAR';
 }
 
-async function removerMembro(companyUserId, nome) {
+async function removerMembro(userId, nome) {
   if (!confirm('Remover "' + nome + '" da equipe?')) return;
   try {
-    const hdrs = { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + _authToken, 'Prefer': 'return=minimal' };
-    await fetch(`${SUPABASE_URL}/rest/v1/company_users?id=eq.${companyUserId}`, { method: 'DELETE', headers: hdrs });
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/admin_delete_auth_user`, {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + _authToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ p_user_id: userId })
+    });
+    if (!r.ok) {
+      const err = await r.json().catch(() => ({}));
+      throw new Error(err.message || 'Erro ao remover');
+    }
     renderUsuarios();
     showToast('Usuario removido.');
   } catch(e) {

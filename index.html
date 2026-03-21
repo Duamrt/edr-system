@@ -221,6 +221,9 @@
     <button class="nav-btn admin-only" id="nav-banco" data-view="banco" onclick="setView('banco')">
       <span class="nav-icon">🗄</span>Dados
     </button>
+    <button class="nav-btn admin-only" id="nav-permissoes" data-view="permissoes" onclick="setView('permissoes')">
+      <span class="nav-icon">🔐</span>Permissoes
+    </button>
     <button class="nav-btn admin-only" id="nav-setup" data-view="setup" onclick="setView('setup')" style="color:#dc2626;">
       <span class="nav-icon">⚙</span>Setup
     </button>
@@ -773,6 +776,12 @@
       <div class="alert-title">✅ SEGURO</div>
       <div class="alert-text">O SQL cria/atualiza apenas as tabelas do EDR System. As tabelas obras e lancamentos do EDR Obras não são afetadas.</div>
     </div>
+  </div>
+
+  <!-- PERMISSÕES POR PERFIL -->
+  <div id="view-permissoes" class="hidden">
+    <div class="modulo-badge">🔐 PERMISSOES POR PERFIL</div>
+    <div id="permissoes-container"></div>
   </div>
 
   <!-- LEADS (Duda chatbot) -->
