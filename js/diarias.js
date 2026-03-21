@@ -931,16 +931,18 @@ function diarRenderRegistros() {
   container.innerHTML = dias.map(dia => {
     const items = porDia[dia];
     const df = new Date(dia + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' }).toUpperCase();
+    const isAdmin = usuarioAtual?.perfil === 'admin' || _isSuperAdmin;
     const rows = items.map(r => {
       const periodos = typeof r.periodos === 'string' ? JSON.parse(r.periodos||'[]') : (r.periodos||[]);
       const obrasTexto = periodos.map(p => {
         const t = p.turno === 'manha' ? '☀' : p.turno === 'tarde' ? '🌤' : '📅';
         return `${t} ${p.obra}`;
       }).join(' · ');
+      const btnEdit = isAdmin ? `<button onclick="event.stopPropagation();diarEditarRegistro('${r.id}')" style="background:none;border:none;color:var(--texto3);cursor:pointer;font-size:11px;padding:2px 6px;opacity:0.5;" title="Editar">✏</button>` : '';
       return `<div class="diarias-registro-row">
         <div class="diarias-rr-nome">${r.funcionario}</div>
         <div class="diarias-rr-obras">${obrasTexto}</div>
-        <div class="diarias-rr-val">R$ ${r.valor.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
+        <div class="diarias-rr-val">R$ ${r.valor.toLocaleString('pt-BR',{minimumFractionDigits:2})} ${btnEdit}</div>
       </div>`;
     }).join('');
     const faltas = diarGetFaltasDia(dia, items);
@@ -977,6 +979,118 @@ function diarToggleDia(headerEl) {
     body.style.display = 'none';
     if (chevron) chevron.style.transform = '';
   }
+}
+
+// ── Editar registro individual (admin) ──────────────
+function diarEditarRegistro(regId) {
+  const reg = diarRegistros.find(r => r.id === regId);
+  if (!reg) return;
+  const periodos = typeof reg.periodos === 'string' ? JSON.parse(reg.periodos||'[]') : (reg.periodos||[]);
+  const obrasOpts = obras.map(o => `<option value="${esc(o.nome)}">${o.nome}</option>`).join('');
+
+  let periodosHtml = periodos.map((p, i) => {
+    return `<div style="display:flex;gap:8px;margin-bottom:8px;align-items:center;" data-idx="${i}">
+      <select class="ed-turno" style="flex:1;padding:8px;background:var(--bg);border:1px solid var(--borda);border-radius:6px;color:#fafafa;font-size:12px;font-family:inherit;">
+        <option value="dia" ${p.turno==='dia'?'selected':''}>Dia inteiro (1.0)</option>
+        <option value="manha" ${p.turno==='manha'?'selected':''}>Manha (0.5)</option>
+        <option value="tarde" ${p.turno==='tarde'?'selected':''}>Tarde (0.5)</option>
+      </select>
+      <select class="ed-obra" style="flex:1;padding:8px;background:var(--bg);border:1px solid var(--borda);border-radius:6px;color:#fafafa;font-size:12px;font-family:inherit;">
+        <option value="Nao especificada">Nao especificada</option>
+        ${obrasOpts}
+      </select>
+      <button onclick="this.parentElement.remove()" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:14px;">X</button>
+    </div>`;
+  }).join('');
+
+  const modal = document.createElement('div');
+  modal.id = 'diar-modalEdit';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;';
+  modal.innerHTML = `<div style="background:var(--cinza-escuro,#1a1a1a);border:1px solid var(--borda);border-radius:16px;padding:24px;width:90%;max-width:420px;">
+    <div style="font-family:'Rajdhani',sans-serif;font-weight:800;font-size:14px;letter-spacing:2px;color:var(--verde-hl);margin-bottom:16px">EDITAR DIARIA</div>
+    <div style="margin-bottom:12px;">
+      <span style="font-size:13px;font-weight:700;">${esc(reg.funcionario)}</span>
+      <span style="font-size:11px;color:var(--texto3);margin-left:8px;">${reg.data} · R$ ${reg.diaria_base}/dia</span>
+    </div>
+    <div style="font-size:11px;color:var(--texto3);font-weight:700;margin-bottom:6px;">PERIODOS</div>
+    <div id="ed-periodos">${periodosHtml}</div>
+    <button onclick="diarEditAddPeriodo()" style="background:none;border:1px dashed var(--borda);border-radius:6px;padding:6px 12px;color:var(--texto3);font-size:11px;cursor:pointer;font-family:inherit;margin-bottom:16px;width:100%;">+ Adicionar periodo</button>
+    <div style="display:flex;gap:10px;">
+      <button onclick="document.getElementById('diar-modalEdit')?.remove()" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--borda);background:none;color:var(--texto3);font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;cursor:pointer;">CANCELAR</button>
+      <button onclick="diarSalvarEdicao('${regId}')" style="flex:2;background:var(--verde-hl);border:none;border-radius:8px;padding:10px;color:#000;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:800;cursor:pointer;">SALVAR</button>
+      <button onclick="diarExcluirRegistro('${regId}')" style="flex:1;padding:10px;border-radius:8px;border:1px solid rgba(239,68,68,0.3);background:rgba(239,68,68,0.05);color:#ef4444;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;cursor:pointer;">EXCLUIR</button>
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
+
+  // Setar obras selecionadas
+  setTimeout(() => {
+    const selects = modal.querySelectorAll('.ed-obra');
+    periodos.forEach((p, i) => { if (selects[i]) selects[i].value = p.obra || 'Nao especificada'; });
+  }, 10);
+}
+
+function diarEditAddPeriodo() {
+  const container = document.getElementById('ed-periodos');
+  if (!container) return;
+  const obrasOpts = obras.map(o => `<option value="${esc(o.nome)}">${o.nome}</option>`).join('');
+  const div = document.createElement('div');
+  div.style.cssText = 'display:flex;gap:8px;margin-bottom:8px;align-items:center;';
+  div.innerHTML = `
+    <select class="ed-turno" style="flex:1;padding:8px;background:var(--bg);border:1px solid var(--borda);border-radius:6px;color:#fafafa;font-size:12px;font-family:inherit;">
+      <option value="dia">Dia inteiro (1.0)</option>
+      <option value="manha">Manha (0.5)</option>
+      <option value="tarde">Tarde (0.5)</option>
+    </select>
+    <select class="ed-obra" style="flex:1;padding:8px;background:var(--bg);border:1px solid var(--borda);border-radius:6px;color:#fafafa;font-size:12px;font-family:inherit;">
+      <option value="Nao especificada">Nao especificada</option>
+      ${obrasOpts}
+    </select>
+    <button onclick="this.parentElement.remove()" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:14px;">X</button>`;
+  container.appendChild(div);
+}
+
+async function diarSalvarEdicao(regId) {
+  const modal = document.getElementById('diar-modalEdit');
+  if (!modal) return;
+  const reg = diarRegistros.find(r => r.id === regId);
+  if (!reg) return;
+
+  const rows = modal.querySelectorAll('#ed-periodos > div');
+  const periodos = [];
+  let totalFracoes = 0;
+  rows.forEach(row => {
+    const turno = row.querySelector('.ed-turno')?.value || 'dia';
+    const obra = row.querySelector('.ed-obra')?.value || 'Nao especificada';
+    const fracao = turno === 'dia' ? 1.0 : 0.5;
+    periodos.push({ turno, obra, fracao });
+    totalFracoes += fracao;
+  });
+
+  if (!periodos.length) { showToast('Adicione pelo menos um periodo.'); return; }
+
+  try {
+    await sbPatch('diarias', `?id=eq.${regId}`, {
+      periodos: periodos,
+      total_fracoes: totalFracoes,
+      valor: reg.diaria_base * totalFracoes
+    });
+    modal.remove();
+    await diarCarregarRegistros();
+    diarRenderRegistros();
+    showToast('Diaria atualizada!');
+  } catch(e) { showToast('Erro ao salvar: ' + e.message); }
+}
+
+async function diarExcluirRegistro(regId) {
+  if (!confirm('Excluir este registro de diaria?')) return;
+  try {
+    await sbDelete('diarias', `?id=eq.${regId}`);
+    document.getElementById('diar-modalEdit')?.remove();
+    await diarCarregarRegistros();
+    diarRenderRegistros();
+    showToast('Registro excluido.');
+  } catch(e) { showToast('Erro ao excluir: ' + e.message); }
 }
 
 async function diarDeletarDia(data) {
