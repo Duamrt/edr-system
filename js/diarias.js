@@ -612,6 +612,10 @@ function diarInterpretar() {
     diarInterpretado = { data, registros: regs };
     diarRenderPreview(regs);
     document.getElementById('diar-btnConfirmar').disabled = false;
+    // Avisar nomes não reconhecidos
+    if (regs._naoReconhecidos && regs._naoReconhecidos.length) {
+      showToast('⚠ Nomes nao reconhecidos: ' + regs._naoReconhecidos.join(', ') + ' — cadastre em Funcionarios');
+    }
   } catch(err) {
     document.getElementById('diar-previewBox').innerHTML =
       '<div class="diarias-empty"><div class="diarias-empty-icon">⚠️</div><div class="diarias-empty-text diarias-error-text">Erro ao interpretar. Verifique a mensagem.</div></div>';
@@ -799,7 +803,29 @@ function diarParseMensagem(msgOriginal) {
     funcs.forEach(f => addPeriodo(f, turno, obra));
   }
 
-  return Object.values(resultMap);
+  // Detectar possíveis nomes não reconhecidos
+  const nomesConhecidos = Object.keys(DIAR_FUNCIONARIOS);
+  const palavras = msgOriginal.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').split(/[\s,.!?;:]+/).filter(p => p.length >= 3);
+  const IGNORAR = ['casa','obra','ate','meio','dia','manha','tarde','todo','cimento','argamassa','areia','brita','tijolo','ferro','madeira','prego','tinta','cal','saco','sacos','bloco','telha','vergalhao','pra','para','com','que','foi','uma','uns','umas','mais','tambem','ainda','hoje','ontem','esta','esse','essa','nao','sim','bem','bom','boa','muito','pouco','todo','toda','todos','todas','aqui','ali','tem','vai','vem','dia','mes','ano'];
+  const naoReconhecidos = [];
+  palavras.forEach(p => {
+    if (IGNORAR.includes(p)) return;
+    if (nomesConhecidos.includes(p)) return;
+    // Verificar se parece nome próprio (começa com maiúscula no original)
+    const idx = msgOriginal.toLowerCase().indexOf(p);
+    if (idx >= 0) {
+      const charOriginal = msgOriginal[idx];
+      if (charOriginal === charOriginal.toUpperCase() && charOriginal !== charOriginal.toLowerCase()) {
+        if (!naoReconhecidos.includes(p) && !Object.values(resultMap).find(r => r.funcionario.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').includes(p))) {
+          naoReconhecidos.push(p);
+        }
+      }
+    }
+  });
+
+  const resultado = Object.values(resultMap);
+  resultado._naoReconhecidos = naoReconhecidos;
+  return resultado;
 }
 
 function diarRenderPreview(regs) {
