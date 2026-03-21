@@ -936,7 +936,8 @@ async function convidarUsuario() {
       body: JSON.stringify({
         company_id: _companyId,
         user_id: data.user.id,
-        role: perfil
+        role: perfil,
+        active: true
       })
     });
 

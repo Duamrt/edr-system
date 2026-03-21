@@ -71,7 +71,7 @@ async function sbDelete(t, q) {
 async function loadCompanyId() {
   if (MODO_DEMO) return;
   try {
-    const rows = await fetch(`${SUPABASE_URL}/rest/v1/company_users?user_id=eq.${usuarioAtual.id}&active=eq.true&select=company_id&limit=1`, { headers: getHdrs() }).then(r => r.json());
+    const rows = await fetch(`${SUPABASE_URL}/rest/v1/company_users?user_id=eq.${usuarioAtual.id}&select=company_id&limit=1`, { headers: getHdrs() }).then(r => r.json());
     if (rows && rows.length > 0) {
       _companyId = rows[0].company_id;
       // Mostrar nome da empresa no header
