@@ -331,13 +331,24 @@ function aplicarPerfil() {
   }
 
   // Esconder labels de grupo do sidebar se todos os itens dentro estão hidden
+  // E recolher todos os grupos por padrão (exceto VISÃO que tem o Resumo)
   document.querySelectorAll('.sidebar-group-label').forEach(label => {
+    if (label.id === 'label-superadmin') return;
     const group = label.nextElementSibling;
     if (!group || !group.classList.contains('sidebar-group')) return;
     const btns = [...group.querySelectorAll('.nav-btn')];
     const todosHidden = btns.length > 0 && btns.every(b => b.classList.contains('hidden'));
     label.style.display = todosHidden ? 'none' : '';
     group.style.display = todosHidden ? 'none' : '';
+    if (!todosHidden) {
+      // Recolher todos exceto VISÃO
+      const isVisao = label.textContent.trim() === 'VISÃO';
+      if (!isVisao) {
+        group.classList.add('collapsed');
+        label.classList.add('collapsed');
+        group.style.maxHeight = '0px';
+      }
+    }
   });
 }
 
