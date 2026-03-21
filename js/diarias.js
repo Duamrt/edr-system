@@ -430,8 +430,8 @@ async function initDiarias() {
 // ────────────────────────────────────────────
 async function diarCarregarQuinzenas() {
   try {
-    diarQuinzenas = await sbGet('diarias_quinzenas', '?order=data_inicio.desc&limit=20');
-    if (!Array.isArray(diarQuinzenas)) diarQuinzenas = [];
+    const todas = await sbGet('diarias_quinzenas', '?order=data_inicio.desc&limit=20');
+    diarQuinzenas = Array.isArray(todas) ? todas.filter(q => !q.excluida) : [];
   } catch(e) { diarQuinzenas = []; }
   if (!diarQuinzenas.length) { await diarCriarQuinzenaAuto(); return; }
   if (!diarQuinzenaAtiva) {
@@ -470,31 +470,103 @@ function diarAtualizarSelectQuinzena() {
 
 async function diarExcluirQuinzena() {
   if (!diarQuinzenaAtiva) return;
-  // Contar registros antes de excluir
   const regsCount = diarRegistros.filter(r => r.quinzena_id === diarQuinzenaAtiva.id).length;
   const extrasCount = (diarExtras || []).filter(e => e.quinzena_id === diarQuinzenaAtiva.id).length;
-  const totalRegs = regsCount + extrasCount;
 
-  if (totalRegs > 0) {
-    // Quinzena com dados — exigir digitação pra confirmar
-    const confirmacao = prompt(`CUIDADO! A quinzena "${diarQuinzenaAtiva.label}" tem ${regsCount} registros de diarias e ${extrasCount} extras.\n\nDigite EXCLUIR para confirmar:`);
-    if (!confirmacao || confirmacao.trim().toUpperCase() !== 'EXCLUIR') {
-      showToast('Exclusao cancelada.');
-      return;
-    }
+  if (regsCount > 0 || extrasCount > 0) {
+    if (!confirm(`Mover "${diarQuinzenaAtiva.label}" para a lixeira?\n\n${regsCount} registros e ${extrasCount} extras serao arquivados.\nVoce pode restaurar depois.`)) return;
   } else {
-    // Quinzena vazia — confirmação simples
     if (!confirm(`Excluir a quinzena vazia "${diarQuinzenaAtiva.label}"?`)) return;
+    // Vazia — pode deletar de verdade
+    try {
+      await sbDelete('diarias_quinzenas', `?id=eq.${diarQuinzenaAtiva.id}`);
+      diarQuinzenas = diarQuinzenas.filter(q => q.id !== diarQuinzenaAtiva.id);
+      diarQuinzenaAtiva = diarQuinzenas[0] || null;
+      diarAtualizarSelectQuinzena();
+      diarRenderRegistros(); diarRenderExtras();
+      showToast('Quinzena vazia excluida.');
+    } catch(e) { showToast('Erro ao excluir.'); }
+    return;
   }
+
+  // Soft delete — marca como excluída mas NÃO apaga os dados
   try {
-    await sbDelete('diarias_quinzenas', `?id=eq.${diarQuinzenaAtiva.id}`);
+    await sbPatch('diarias_quinzenas', `?id=eq.${diarQuinzenaAtiva.id}`, {
+      excluida: true,
+      excluida_em: new Date().toISOString()
+    });
     diarQuinzenas = diarQuinzenas.filter(q => q.id !== diarQuinzenaAtiva.id);
     diarQuinzenaAtiva = diarQuinzenas[0] || null;
     diarRegistros = []; diarExtras = [];
     diarAtualizarSelectQuinzena();
     diarRenderRegistros(); diarRenderExtras();
-    showToast('✅ Quinzena excluída.');
-  } catch(e) { showToast('❌ Não foi possível excluir a quinzena.'); }
+    showToast('Quinzena movida pra lixeira. Pode restaurar clicando em Lixeira.');
+  } catch(e) { showToast('Erro: ' + e.message); }
+}
+
+// ── Lixeira de quinzenas ────────────────────────────
+async function diarAbrirLixeira() {
+  try {
+    const hdrs = { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + _authToken };
+    const excluidas = await fetch(`${SUPABASE_URL}/rest/v1/diarias_quinzenas?excluida=eq.true&order=excluida_em.desc`, { headers: hdrs }).then(r => r.json());
+
+    if (!excluidas || !excluidas.length) {
+      showToast('Lixeira vazia.');
+      return;
+    }
+
+    const modal = document.createElement('div');
+    modal.id = 'diar-modalLixeira';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;';
+
+    let lista = excluidas.map(q => {
+      const dataExc = q.excluida_em ? new Date(q.excluida_em).toLocaleDateString('pt-BR') : '';
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:12px;border-bottom:1px solid var(--borda,#222);">
+        <div>
+          <div style="font-weight:700;font-size:13px;">${q.label}</div>
+          <div style="font-size:11px;color:var(--texto3);">Excluida em ${dataExc}</div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button onclick="diarRestaurarQuinzena('${q.id}')" style="padding:6px 14px;border-radius:8px;border:none;background:var(--verde-hl);color:#000;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">RESTAURAR</button>
+          <button onclick="diarExcluirDefinitivo('${q.id}','${(q.label||'').replace(/'/g,'')}')" style="padding:6px 14px;border-radius:8px;border:1px solid rgba(239,68,68,0.3);background:rgba(239,68,68,0.05);color:#ef4444;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">APAGAR</button>
+        </div>
+      </div>`;
+    }).join('');
+
+    modal.innerHTML = `<div style="background:var(--cinza-escuro,#1a1a1a);border:1px solid var(--borda);border-radius:16px;padding:24px;width:90%;max-width:500px;max-height:80vh;overflow-y:auto;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div style="font-family:'Rajdhani',sans-serif;font-weight:800;font-size:14px;letter-spacing:2px;color:#f59e0b;">LIXEIRA</div>
+        <button onclick="document.getElementById('diar-modalLixeira')?.remove()" style="background:none;border:none;color:var(--texto3);cursor:pointer;font-size:18px;">X</button>
+      </div>
+      ${lista}
+    </div>`;
+    document.body.appendChild(modal);
+  } catch(e) { showToast('Erro ao abrir lixeira: ' + e.message); }
+}
+
+async function diarRestaurarQuinzena(id) {
+  try {
+    await sbPatch('diarias_quinzenas', `?id=eq.${id}`, { excluida: false, excluida_em: null });
+    document.getElementById('diar-modalLixeira')?.remove();
+    await diarCarregarQuinzenas();
+    diarQuinzenaAtiva = diarQuinzenas.find(q => q.id === id) || diarQuinzenaAtiva;
+    diarAtualizarSelectQuinzena();
+    await diarCarregarRegistros();
+    diarRenderRegistros(); diarRenderExtras();
+    showToast('Quinzena restaurada com todos os dados!');
+  } catch(e) { showToast('Erro ao restaurar: ' + e.message); }
+}
+
+async function diarExcluirDefinitivo(id, label) {
+  const confirmacao = prompt('EXCLUIR DEFINITIVAMENTE "' + label + '" e todos os registros?\n\nDigite EXCLUIR para confirmar:');
+  if (!confirmacao || confirmacao.trim().toUpperCase() !== 'EXCLUIR') return;
+  try {
+    await sbDelete('diarias', `?quinzena_id=eq.${id}`);
+    await sbDelete('diarias_extras', `?quinzena_id=eq.${id}`);
+    await sbDelete('diarias_quinzenas', `?id=eq.${id}`);
+    document.getElementById('diar-modalLixeira')?.remove();
+    showToast('Quinzena excluida definitivamente.');
+  } catch(e) { showToast('Erro: ' + e.message); }
 }
 
 async function diarTrocarQuinzena(id) {
