@@ -796,6 +796,14 @@ async function renderUsuarios() {
     });
     const allUsers = await r.json();
     const users = Array.isArray(allUsers) ? allUsers.filter(u => u.company_id === _companyId) : [];
+    // Buscar senhas iniciais da company_users
+    let cuData = [];
+    try {
+      cuData = await sbGet('company_users', '?company_id=eq.' + _companyId + '&select=user_id,senha_inicial,role');
+      if (!Array.isArray(cuData)) cuData = [];
+    } catch(e) {}
+    const senhaMap = {};
+    cuData.forEach(cu => { senhaMap[cu.user_id] = cu.senha_inicial || ''; });
     const lim = getLimites();
     const plano = PLANOS[_companyPlan?.plan] || PLANOS.trial;
 
@@ -815,15 +823,18 @@ async function renderUsuarios() {
       html += '<thead><tr style="border-bottom:1px solid var(--borda);">';
       html += '<th style="padding:12px 16px;text-align:left;font-size:11px;color:var(--texto3);font-weight:700;">NOME</th>';
       html += '<th style="padding:12px 16px;text-align:left;font-size:11px;color:var(--texto3);font-weight:700;">LOGIN</th>';
+      html += '<th style="padding:12px 16px;text-align:left;font-size:11px;color:var(--texto3);font-weight:700;">SENHA</th>';
       html += '<th style="padding:12px 16px;text-align:left;font-size:11px;color:var(--texto3);font-weight:700;">PERFIL</th>';
       html += '<th style="padding:12px 16px;text-align:center;font-size:11px;color:var(--texto3);font-weight:700;width:80px;"></th>';
       html += '</tr></thead><tbody>';
       users.forEach(u => {
         const isMe = u.user_id === usuarioAtual.id;
+        const senhaInicial = senhaMap[u.user_id] || '';
         html += '<tr style="border-bottom:1px solid var(--borda,#222);">';
         html += '<td style="padding:12px 16px;font-size:13px;">' + (u.nome || '-') + (isMe ? ' <span style="color:var(--verde);font-size:10px;font-weight:700;">(voce)</span>' : '') + '</td>';
         const loginDisplay = (u.email || '').endsWith('@edr.app') ? _formatarTelefone(u.email.replace('@edr.app','')) : (u.email || '-');
         html += '<td style="padding:12px 16px;font-size:13px;color:var(--texto3);">' + loginDisplay + '</td>';
+        html += '<td style="padding:12px 16px;font-size:12px;color:var(--texto3);font-family:\'JetBrains Mono\',monospace;">' + (senhaInicial || '<span style="color:var(--texto3);opacity:0.4;">-</span>') + '</td>';
         html += '<td style="padding:12px 16px;font-size:13px;">' + formatPerfil(u.role) + '</td>';
         html += '<td style="padding:12px 16px;text-align:center;">';
         if (!isMe) {
@@ -941,25 +952,44 @@ async function convidarUsuario() {
       })
     });
 
+    // Salvar senha inicial no vínculo
+    try {
+      await fetch(`${SUPABASE_URL}/rest/v1/company_users?company_id=eq.${_companyId}&user_id=eq.${data.user.id}`, {
+        method: 'PATCH',
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + _authToken, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ senha_inicial: senha })
+      });
+    } catch(e) {}
+
     fecharModalConvite();
     renderUsuarios();
 
     // Montar mensagem WhatsApp com credenciais
     const telefone = inputLogin.replace(/\D/g, '');
     const loginExibido = inputLogin.includes('@') ? inputLogin : inputLogin;
-    const msgWpp = encodeURIComponent(
-      'Ola ' + nome + '! Voce foi convidado para o EDR System.\n\n' +
+    const msgWpp = 'Ola ' + nome + '! Voce foi convidado para o EDR System.\n\n' +
       'Acesse: sistema.edreng.com.br\n' +
       'Login: ' + loginExibido + '\n' +
       'Senha: ' + senha + '\n\n' +
-      'Troque sua senha no primeiro acesso.'
-    );
+      'Troque sua senha no primeiro acesso.';
     const wppNum = telefone.length >= 10 ? (telefone.startsWith('55') ? telefone : '55' + telefone) : '';
 
     if (wppNum) {
-      if (confirm('Usuario criado! Enviar credenciais por WhatsApp para ' + nome + '?')) {
-        window.open('https://wa.me/' + wppNum + '?text=' + msgWpp, '_blank');
-      }
+      // Mostrar modal com link WhatsApp + botão copiar
+      const wppLink = 'https://wa.me/' + wppNum + '?text=' + encodeURIComponent(msgWpp);
+      const modalWpp = document.createElement('div');
+      modalWpp.id = 'modal-wpp';
+      modalWpp.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;';
+      modalWpp.innerHTML = '<div style="background:var(--cinza-escuro,#1a1a1a);border:1px solid var(--borda);border-radius:16px;padding:24px;width:90%;max-width:400px;">' +
+        '<div style="font-size:14px;font-weight:700;margin-bottom:16px;color:var(--verde);">Usuario criado!</div>' +
+        '<div style="background:var(--bg);border:1px solid var(--borda);border-radius:8px;padding:12px;font-size:12px;white-space:pre-line;margin-bottom:16px;color:var(--texto2);line-height:1.6;">' + msgWpp + '</div>' +
+        '<div style="display:flex;gap:8px;">' +
+        '<button onclick="navigator.clipboard.writeText(\'' + msgWpp.replace(/'/g,"\\'").replace(/\n/g,'\\n') + '\');showToast(\'Copiado!\')" style="flex:1;padding:12px;border-radius:10px;border:1px solid var(--borda);background:none;color:var(--texto2);font-weight:700;font-size:12px;cursor:pointer;font-family:inherit;">COPIAR</button>' +
+        '<a href="' + wppLink + '" target="_blank" style="flex:1;padding:12px;border-radius:10px;border:none;background:#25D366;color:#fff;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit;text-align:center;text-decoration:none;display:flex;align-items:center;justify-content:center;">ENVIAR WHATSAPP</a>' +
+        '</div>' +
+        '<button onclick="document.getElementById(\'modal-wpp\')?.remove()" style="width:100%;margin-top:10px;padding:10px;border-radius:10px;border:1px solid var(--borda);background:none;color:var(--texto3);font-size:12px;cursor:pointer;font-family:inherit;">FECHAR</button>' +
+        '</div>';
+      document.body.appendChild(modalWpp);
     } else {
       showToast('Usuario ' + nome + ' convidado com sucesso!');
     }
