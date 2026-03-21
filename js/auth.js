@@ -292,8 +292,9 @@ function aplicarPerfil() {
   Object.entries(navPerms).forEach(([id, perm]) => {
     const el = document.getElementById(id);
     if (!el) return;
+    if (el.classList.contains('superadmin-only')) return; // controlado por checkPlatformAdmin
     if (isAdmin) { el.classList.remove('hidden'); return; }
-    if (id === 'nav-setup' || id === 'nav-permissoes') { el.classList.add('hidden'); return; }
+    if (id === 'nav-permissoes') { el.classList.add('hidden'); return; }
     // Operacional/mestre: mostrar apenas se tem permissão
     if (perm) {
       el.classList.toggle('hidden', !temPermissao(perm));
@@ -369,6 +370,9 @@ async function checkPlatformAdmin() {
     const groupSA = document.getElementById('group-superadmin');
     if (labelSA) labelSA.style.display = '';
     if (groupSA) groupSA.style.display = '';
+
+    // Mostrar itens exclusivos de super admin
+    document.querySelectorAll('.superadmin-only').forEach(el => el.classList.remove('hidden'));
 
     // Recolher todos os grupos do sidebar exceto SUPER ADMIN
     document.querySelectorAll('.sidebar-group-label').forEach(label => {
