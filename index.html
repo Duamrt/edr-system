@@ -203,6 +203,9 @@
     <button class="nav-btn" id="nav-diarias" data-view="diarias" onclick="setView('diarias')">
       <span class="nav-icon">👷</span>Diárias
     </button>
+    <button class="nav-btn admin-only" id="nav-usuarios" data-view="usuarios" onclick="setView('usuarios')">
+      <span class="nav-icon">👥</span>Usuários
+    </button>
   </div>
 
   <div class="sidebar-group-label" onclick="toggleSidebarGroup(this)">COMERCIAL</div>
@@ -826,6 +829,11 @@
       </div>
     </div>
     <div id="catalogo-lista"></div>
+  </div>
+
+  <!-- ════ VIEW USUÁRIOS ════ -->
+  <div id="view-usuarios" class="hidden">
+    <div id="usuarios-container"></div>
   </div>
 
   <!-- ════ VIEW DIÁRIAS ════ -->

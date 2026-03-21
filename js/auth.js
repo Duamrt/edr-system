@@ -55,7 +55,7 @@ async function fazerLogin() {
 
 function entrarNoApp() {
   document.getElementById('login-screen').classList.add('hidden');
-  ['obras','estoque','notas','form','creditos','setup','catalogo','banco','relatorio','diarias','custos','leads','caixa','contas-pagar','garantias'].forEach(name => {
+  ['obras','estoque','notas','form','creditos','setup','catalogo','banco','relatorio','diarias','usuarios','custos','leads','caixa','contas-pagar','garantias'].forEach(name => {
     const el = document.getElementById('view-'+name);
     if (el) el.classList.add('hidden');
   });
@@ -749,6 +749,188 @@ function filtrarEmpresas() {
     const nome = card.getAttribute('data-nome') || '';
     card.style.display = nome.includes(busca) ? '' : 'none';
   });
+}
+
+// ══════════════════════════════════════════
+// TELA USUÁRIOS (admin da empresa)
+// ══════════════════════════════════════════
+
+async function renderUsuarios() {
+  const el = document.getElementById('usuarios-container');
+  if (!el || !_companyId) return;
+
+  el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--texto3);">Carregando...</div>';
+
+  try {
+    const hdrs = { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + _authToken };
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/list_company_users`, {
+      method: 'POST',
+      headers: { ...hdrs, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ p_company_id: _companyId })
+    });
+    const users = await r.json();
+    const lim = getLimites();
+    const plano = PLANOS[_companyPlan?.plan] || PLANOS.trial;
+
+    let html = '<div style="max-width:700px;margin:0 auto;padding:20px;">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">';
+    html += '<div><h2 style="margin:0;font-size:20px;">Usuarios</h2>';
+    html += '<span style="font-size:12px;color:var(--texto3);">' + users.length + ' de ' + (lim.usuarios >= 999 ? 'ilimitado' : lim.usuarios) + ' no plano ' + plano.nome + '</span></div>';
+    html += '<button onclick="abrirModalConvite()" style="padding:10px 20px;border-radius:10px;border:none;background:var(--verde);color:#000;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;">+ CONVIDAR</button>';
+    html += '</div>';
+
+    // Tabela de usuarios
+    html += '<div style="background:var(--cinza-escuro,#141414);border:1px solid var(--borda);border-radius:12px;overflow:hidden;">';
+    if (users.length === 0) {
+      html += '<div style="padding:40px;text-align:center;color:var(--texto3);">Nenhum usuario encontrado.</div>';
+    } else {
+      html += '<table style="width:100%;border-collapse:collapse;">';
+      html += '<thead><tr style="border-bottom:1px solid var(--borda);">';
+      html += '<th style="padding:12px 16px;text-align:left;font-size:11px;color:var(--texto3);font-weight:700;">NOME</th>';
+      html += '<th style="padding:12px 16px;text-align:left;font-size:11px;color:var(--texto3);font-weight:700;">EMAIL</th>';
+      html += '<th style="padding:12px 16px;text-align:left;font-size:11px;color:var(--texto3);font-weight:700;">PERFIL</th>';
+      html += '<th style="padding:12px 16px;text-align:center;font-size:11px;color:var(--texto3);font-weight:700;width:80px;"></th>';
+      html += '</tr></thead><tbody>';
+      users.forEach(u => {
+        const isMe = u.user_id === usuarioAtual.id;
+        html += '<tr style="border-bottom:1px solid var(--borda,#222);">';
+        html += '<td style="padding:12px 16px;font-size:13px;">' + (u.nome || '-') + (isMe ? ' <span style="color:var(--verde);font-size:10px;font-weight:700;">(voce)</span>' : '') + '</td>';
+        html += '<td style="padding:12px 16px;font-size:13px;color:var(--texto3);">' + (u.email || '-') + '</td>';
+        html += '<td style="padding:12px 16px;font-size:13px;">' + formatPerfil(u.role) + '</td>';
+        html += '<td style="padding:12px 16px;text-align:center;">';
+        if (!isMe) {
+          html += '<button onclick="removerMembro(\'' + u.id + '\',\'' + (u.nome || u.email || '').replace(/'/g, '') + '\')" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:16px;" title="Remover">X</button>';
+        }
+        html += '</td></tr>';
+      });
+      html += '</tbody></table>';
+    }
+    html += '</div></div>';
+
+    // Modal convite
+    html += '<div id="modal-convite" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:none;align-items:center;justify-content:center;">';
+    html += '<div style="background:var(--cinza-escuro,#1a1a1a);border:1px solid var(--borda);border-radius:16px;padding:30px;width:90%;max-width:400px;">';
+    html += '<h3 style="margin:0 0 20px;font-size:16px;">Convidar Usuario</h3>';
+    html += '<label style="font-size:11px;color:var(--texto3);font-weight:700;display:block;margin-bottom:4px;">NOME</label>';
+    html += '<input id="conv-nome" type="text" placeholder="Nome completo" style="width:100%;padding:10px;background:var(--bg);border:1px solid var(--borda);border-radius:8px;color:#fafafa;font-size:13px;font-family:inherit;margin-bottom:12px;box-sizing:border-box;">';
+    html += '<label style="font-size:11px;color:var(--texto3);font-weight:700;display:block;margin-bottom:4px;">EMAIL</label>';
+    html += '<input id="conv-email" type="email" placeholder="email@exemplo.com" style="width:100%;padding:10px;background:var(--bg);border:1px solid var(--borda);border-radius:8px;color:#fafafa;font-size:13px;font-family:inherit;margin-bottom:12px;box-sizing:border-box;">';
+    html += '<label style="font-size:11px;color:var(--texto3);font-weight:700;display:block;margin-bottom:4px;">SENHA INICIAL</label>';
+    html += '<input id="conv-senha" type="text" placeholder="Minimo 6 caracteres" style="width:100%;padding:10px;background:var(--bg);border:1px solid var(--borda);border-radius:8px;color:#fafafa;font-size:13px;font-family:inherit;margin-bottom:12px;box-sizing:border-box;">';
+    html += '<label style="font-size:11px;color:var(--texto3);font-weight:700;display:block;margin-bottom:4px;">PERFIL</label>';
+    html += '<select id="conv-perfil" style="width:100%;padding:10px;background:var(--bg);border:1px solid var(--borda);border-radius:8px;color:#fafafa;font-size:13px;font-family:inherit;margin-bottom:20px;">';
+    html += '<option value="operacional">Operacional</option>';
+    html += '<option value="mestre">Mestre de Obra</option>';
+    html += '<option value="admin">Administrador</option>';
+    html += '</select>';
+    html += '<div id="conv-erro" style="color:#ef4444;font-size:12px;margin-bottom:12px;"></div>';
+    html += '<div style="display:flex;gap:10px;">';
+    html += '<button onclick="fecharModalConvite()" style="flex:1;padding:12px;border-radius:10px;border:1px solid var(--borda);background:none;color:var(--texto3);font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;">CANCELAR</button>';
+    html += '<button id="btn-convidar" onclick="convidarUsuario()" style="flex:1;padding:12px;border-radius:10px;border:none;background:var(--verde);color:#000;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;">CONVIDAR</button>';
+    html += '</div></div></div>';
+
+    el.innerHTML = html;
+  } catch(e) {
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:#ef4444;">Erro ao carregar usuarios.</div>';
+  }
+}
+
+function formatPerfil(role) {
+  const cores = { admin: '#a855f7', operacional: '#3b82f6', mestre: '#f59e0b', visitante: '#6b7280' };
+  const nomes = { admin: 'Admin', operacional: 'Operacional', mestre: 'Mestre', visitante: 'Visitante' };
+  const cor = cores[role] || '#6b7280';
+  return '<span style="background:' + cor + '20;color:' + cor + ';padding:3px 10px;border-radius:10px;font-size:11px;font-weight:700;">' + (nomes[role] || role || '-') + '</span>';
+}
+
+function abrirModalConvite() {
+  const modal = document.getElementById('modal-convite');
+  if (modal) {
+    modal.style.display = 'flex';
+    document.getElementById('conv-nome').value = '';
+    document.getElementById('conv-email').value = '';
+    document.getElementById('conv-senha').value = '';
+    document.getElementById('conv-perfil').value = 'operacional';
+    document.getElementById('conv-erro').textContent = '';
+  }
+}
+
+function fecharModalConvite() {
+  const modal = document.getElementById('modal-convite');
+  if (modal) modal.style.display = 'none';
+}
+
+async function convidarUsuario() {
+  const nome = document.getElementById('conv-nome').value.trim();
+  const email = document.getElementById('conv-email').value.trim().toLowerCase();
+  const senha = document.getElementById('conv-senha').value;
+  const perfil = document.getElementById('conv-perfil').value;
+  const errEl = document.getElementById('conv-erro');
+  const btn = document.getElementById('btn-convidar');
+
+  errEl.textContent = '';
+  if (!nome || !email || !senha) { errEl.textContent = 'Preencha todos os campos.'; return; }
+  if (!email.includes('@')) { errEl.textContent = 'Email invalido.'; return; }
+  if (senha.length < 6) { errEl.textContent = 'Senha deve ter pelo menos 6 caracteres.'; return; }
+
+  // Checar limite do plano
+  if (!(await checarLimiteUsuarios())) return;
+
+  btn.disabled = true;
+  btn.textContent = 'CRIANDO...';
+
+  try {
+    // 1. Criar usuario no Supabase Auth
+    const r = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email,
+        password: senha,
+        data: { nome, perfil, usuario: email.split('@')[0] }
+      })
+    });
+    const data = await r.json();
+
+    if (!r.ok || data.error) {
+      const msg = data.error_description || data.msg || data.error?.message || '';
+      errEl.textContent = msg.includes('already registered') ? 'Este email ja esta cadastrado.' : 'Erro: ' + msg;
+      btn.disabled = false;
+      btn.textContent = 'CONVIDAR';
+      return;
+    }
+
+    // 2. Vincular a empresa
+    const hdrs = { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + _authToken, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' };
+    await fetch(`${SUPABASE_URL}/rest/v1/company_users`, {
+      method: 'POST',
+      headers: hdrs,
+      body: JSON.stringify({
+        company_id: _companyId,
+        user_id: data.user.id,
+        role: perfil
+      })
+    });
+
+    fecharModalConvite();
+    renderUsuarios();
+    showToast('Usuario ' + nome + ' convidado com sucesso!');
+  } catch(e) {
+    errEl.textContent = 'Erro de conexao. Tente novamente.';
+  }
+  btn.disabled = false;
+  btn.textContent = 'CONVIDAR';
+}
+
+async function removerMembro(companyUserId, nome) {
+  if (!confirm('Remover "' + nome + '" da equipe?')) return;
+  try {
+    const hdrs = { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + _authToken, 'Prefer': 'return=minimal' };
+    await fetch(`${SUPABASE_URL}/rest/v1/company_users?id=eq.${companyUserId}`, { method: 'DELETE', headers: hdrs });
+    renderUsuarios();
+    showToast('Usuario removido.');
+  } catch(e) {
+    alert('Erro ao remover: ' + e.message);
+  }
 }
 
 async function excluirEmpresa(companyId, nome) {
