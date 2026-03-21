@@ -2,17 +2,33 @@
 // AUTENTICAÇÃO — Supabase Auth (GoTrue)
 // ══════════════════════════════════════════
 
+// Resolver input de login: email direto ou telefone → email virtual
+function _resolverLogin(input) {
+  if (input.includes('@')) return input;
+  // Limpar telefone (só números)
+  const nums = input.replace(/\D/g, '');
+  if (nums.length >= 10) return nums + '@edr.app';
+  return input; // vai falhar na validação
+}
+
+// Formatar número de telefone pra exibição
+function _formatarTelefone(nums) {
+  if (nums.length === 11) return '(' + nums.slice(0,2) + ') ' + nums[2] + ' ' + nums.slice(3,7) + '-' + nums.slice(7);
+  if (nums.length === 10) return '(' + nums.slice(0,2) + ') ' + nums.slice(2,6) + '-' + nums.slice(6);
+  return nums;
+}
+
 async function fazerLogin() {
   const u = document.getElementById('login-user').value.trim().toLowerCase();
   const s = document.getElementById('login-pass').value;
   const btn = document.querySelector('.btn-login');
   const errEl = document.getElementById('login-error');
-  if (!u || !s || !u.includes('@')) { errEl.textContent = 'Informe seu email completo e senha.'; return; }
+  if (!u || !s) { errEl.textContent = 'Informe email ou telefone e senha.'; return; }
   if (btn) { btn.disabled = true; btn.textContent = 'AGUARDE...'; }
   errEl.textContent = '';
 
   try {
-    const email = u;
+    const email = _resolverLogin(u);
     const r = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
       method: 'POST',
       headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
@@ -798,7 +814,7 @@ async function renderUsuarios() {
       html += '<table style="width:100%;border-collapse:collapse;">';
       html += '<thead><tr style="border-bottom:1px solid var(--borda);">';
       html += '<th style="padding:12px 16px;text-align:left;font-size:11px;color:var(--texto3);font-weight:700;">NOME</th>';
-      html += '<th style="padding:12px 16px;text-align:left;font-size:11px;color:var(--texto3);font-weight:700;">EMAIL</th>';
+      html += '<th style="padding:12px 16px;text-align:left;font-size:11px;color:var(--texto3);font-weight:700;">LOGIN</th>';
       html += '<th style="padding:12px 16px;text-align:left;font-size:11px;color:var(--texto3);font-weight:700;">PERFIL</th>';
       html += '<th style="padding:12px 16px;text-align:center;font-size:11px;color:var(--texto3);font-weight:700;width:80px;"></th>';
       html += '</tr></thead><tbody>';
@@ -806,7 +822,8 @@ async function renderUsuarios() {
         const isMe = u.user_id === usuarioAtual.id;
         html += '<tr style="border-bottom:1px solid var(--borda,#222);">';
         html += '<td style="padding:12px 16px;font-size:13px;">' + (u.nome || '-') + (isMe ? ' <span style="color:var(--verde);font-size:10px;font-weight:700;">(voce)</span>' : '') + '</td>';
-        html += '<td style="padding:12px 16px;font-size:13px;color:var(--texto3);">' + (u.email || '-') + '</td>';
+        const loginDisplay = (u.email || '').endsWith('@edr.app') ? _formatarTelefone(u.email.replace('@edr.app','')) : (u.email || '-');
+        html += '<td style="padding:12px 16px;font-size:13px;color:var(--texto3);">' + loginDisplay + '</td>';
         html += '<td style="padding:12px 16px;font-size:13px;">' + formatPerfil(u.role) + '</td>';
         html += '<td style="padding:12px 16px;text-align:center;">';
         if (!isMe) {
@@ -824,8 +841,8 @@ async function renderUsuarios() {
     html += '<h3 style="margin:0 0 20px;font-size:16px;">Convidar Usuario</h3>';
     html += '<label style="font-size:11px;color:var(--texto3);font-weight:700;display:block;margin-bottom:4px;">NOME</label>';
     html += '<input id="conv-nome" type="text" placeholder="Nome completo" style="width:100%;padding:10px;background:var(--bg);border:1px solid var(--borda);border-radius:8px;color:#fafafa;font-size:13px;font-family:inherit;margin-bottom:12px;box-sizing:border-box;">';
-    html += '<label style="font-size:11px;color:var(--texto3);font-weight:700;display:block;margin-bottom:4px;">EMAIL</label>';
-    html += '<input id="conv-email" type="email" placeholder="email@exemplo.com" style="width:100%;padding:10px;background:var(--bg);border:1px solid var(--borda);border-radius:8px;color:#fafafa;font-size:13px;font-family:inherit;margin-bottom:12px;box-sizing:border-box;">';
+    html += '<label style="font-size:11px;color:var(--texto3);font-weight:700;display:block;margin-bottom:4px;">TELEFONE OU EMAIL</label>';
+    html += '<input id="conv-email" type="text" placeholder="(87) 9 8171-3987 ou email@exemplo.com" style="width:100%;padding:10px;background:var(--bg);border:1px solid var(--borda);border-radius:8px;color:#fafafa;font-size:13px;font-family:inherit;margin-bottom:12px;box-sizing:border-box;">';
     html += '<label style="font-size:11px;color:var(--texto3);font-weight:700;display:block;margin-bottom:4px;">SENHA INICIAL</label>';
     html += '<input id="conv-senha" type="text" placeholder="Minimo 6 caracteres" style="width:100%;padding:10px;background:var(--bg);border:1px solid var(--borda);border-radius:8px;color:#fafafa;font-size:13px;font-family:inherit;margin-bottom:12px;box-sizing:border-box;">';
     html += '<label style="font-size:11px;color:var(--texto3);font-weight:700;display:block;margin-bottom:4px;">PERFIL</label>';
@@ -872,15 +889,16 @@ function fecharModalConvite() {
 
 async function convidarUsuario() {
   const nome = document.getElementById('conv-nome').value.trim();
-  const email = document.getElementById('conv-email').value.trim().toLowerCase();
+  const inputLogin = document.getElementById('conv-email').value.trim().toLowerCase();
   const senha = document.getElementById('conv-senha').value;
   const perfil = document.getElementById('conv-perfil').value;
   const errEl = document.getElementById('conv-erro');
   const btn = document.getElementById('btn-convidar');
 
   errEl.textContent = '';
-  if (!nome || !email || !senha) { errEl.textContent = 'Preencha todos os campos.'; return; }
-  if (!email.includes('@')) { errEl.textContent = 'Email invalido.'; return; }
+  if (!nome || !inputLogin || !senha) { errEl.textContent = 'Preencha todos os campos.'; return; }
+  const email = _resolverLogin(inputLogin);
+  if (!email.includes('@')) { errEl.textContent = 'Informe um telefone valido ou email.'; return; }
   if (senha.length < 6) { errEl.textContent = 'Senha deve ter pelo menos 6 caracteres.'; return; }
 
   // Checar limite do plano
