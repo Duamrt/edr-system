@@ -305,8 +305,10 @@ function aplicarPerfil() {
   document.body.classList.remove('perfil-mestre');
   document.body.classList.toggle('perfil-mestre', isMestre);
 
+  // Nav-btns gerenciados por navPerms não devem ser tocados pelo admin-only
+  const navPermIds = new Set(Object.keys(navPerms));
   document.querySelectorAll('.admin-only').forEach(el => {
-    // Se tem permissão extra, mostrar mesmo sendo operacional
+    if (navPermIds.has(el.id)) return; // já controlado acima
     const modulo = el.dataset?.permissao;
     if (!isAdmin && modulo && temPermissao(modulo)) el.classList.remove('hidden');
     else el.classList.toggle('hidden', !isAdmin);
@@ -326,6 +328,16 @@ function aplicarPerfil() {
       if (pl) pl.classList.remove('recolhido');
     }
   }
+
+  // Esconder labels de grupo do sidebar se todos os itens dentro estão hidden
+  document.querySelectorAll('.sidebar-group-label').forEach(label => {
+    const group = label.nextElementSibling;
+    if (!group || !group.classList.contains('sidebar-group')) return;
+    const btns = [...group.querySelectorAll('.nav-btn')];
+    const todosHidden = btns.length > 0 && btns.every(b => b.classList.contains('hidden'));
+    label.style.display = todosHidden ? 'none' : '';
+    group.style.display = todosHidden ? 'none' : '';
+  });
 }
 
 // ── Super Admin — seletor de empresa ──────────────────
