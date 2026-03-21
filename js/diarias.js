@@ -470,9 +470,22 @@ function diarAtualizarSelectQuinzena() {
 
 async function diarExcluirQuinzena() {
   if (!diarQuinzenaAtiva) return;
-  if (!confirm(`Excluir a quinzena "${diarQuinzenaAtiva.label}" e TODOS os registros?
+  // Contar registros antes de excluir
+  const regsCount = diarRegistros.filter(r => r.quinzena_id === diarQuinzenaAtiva.id).length;
+  const extrasCount = (diarExtras || []).filter(e => e.quinzena_id === diarQuinzenaAtiva.id).length;
+  const totalRegs = regsCount + extrasCount;
 
-Essa ação não pode ser desfeita.`)) return;
+  if (totalRegs > 0) {
+    // Quinzena com dados — exigir digitação pra confirmar
+    const confirmacao = prompt(`CUIDADO! A quinzena "${diarQuinzenaAtiva.label}" tem ${regsCount} registros de diarias e ${extrasCount} extras.\n\nDigite EXCLUIR para confirmar:`);
+    if (!confirmacao || confirmacao.trim().toUpperCase() !== 'EXCLUIR') {
+      showToast('Exclusao cancelada.');
+      return;
+    }
+  } else {
+    // Quinzena vazia — confirmação simples
+    if (!confirm(`Excluir a quinzena vazia "${diarQuinzenaAtiva.label}"?`)) return;
+  }
   try {
     await sbDelete('diarias_quinzenas', `?id=eq.${diarQuinzenaAtiva.id}`);
     diarQuinzenas = diarQuinzenas.filter(q => q.id !== diarQuinzenaAtiva.id);
