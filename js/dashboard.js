@@ -138,7 +138,6 @@ async function loadAgendaNotas() {
 let _agendaSemanaOffset = 0;
 
 function dashBuildAgenda() {
-  const CORES = { 'duam': '#3b82f6', 'elyda': '#a855f7', 'default': '#22c55e' };
   const DIAS = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'];
   const hoje = new Date();
   hoje.setHours(0,0,0,0);
@@ -162,7 +161,7 @@ function dashBuildAgenda() {
   const diasHTML = dias.map(d => {
     const notasHTML = d.notas.map(n => {
       const nome = (n.autor || '').toLowerCase();
-      const cor = CORES[nome] || CORES['default'];
+      const cor = _getCorAutor(n.autor);
       return `<div style="display:flex;gap:6px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.03);">
         <div style="width:3px;border-radius:2px;background:${cor};flex-shrink:0;"></div>
         <div style="flex:1;">
@@ -179,7 +178,7 @@ function dashBuildAgenda() {
     const clickAction = d.notas.length ? `abrirDiaAgenda('${d.iso}')` : `abrirModalNota('${d.iso}')`;
     // No grid, mostrar preview truncado
     const previewHTML = d.notas.length ? d.notas.slice(0, 2).map(n => {
-      const cor = CORES[(n.autor||'').toLowerCase()] || CORES['default'];
+      const cor = _getCorAutor(n.autor);
       return `<div style="display:flex;gap:4px;align-items:flex-start;margin-top:3px;">
         <div style="width:3px;height:12px;border-radius:2px;background:${cor};flex-shrink:0;margin-top:1px;"></div>
         <div style="font-size:9px;color:var(--texto2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(n.texto)}</div>
@@ -216,15 +215,34 @@ function dashBuildAgenda() {
     <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;" id="agenda-semana-grid">
       ${diasHTML}
     </div>
-    <div style="display:flex;gap:12px;margin-top:10px;justify-content:center;">
-      <div style="display:flex;align-items:center;gap:4px;font-size:9px;color:var(--texto3);"><div style="width:8px;height:8px;border-radius:2px;background:#3b82f6;"></div> Duam</div>
-      <div style="display:flex;align-items:center;gap:4px;font-size:9px;color:var(--texto3);"><div style="width:8px;height:8px;border-radius:2px;background:#a855f7;"></div> Elyda</div>
-    </div>
+    <div style="display:flex;gap:12px;margin-top:10px;justify-content:center;" id="agenda-legenda"></div>
   </div>`;
 }
 
+// Cores dinâmicas para autores da agenda
+const _AGENDA_CORES = ['#3b82f6','#a855f7','#f59e0b','#ef4444','#06b6d4','#ec4899','#84cc16','#f97316'];
+let _agendaAutorCores = {};
+function _getCorAutor(nome) {
+  if (!nome) return '#22c55e';
+  const key = nome.toLowerCase();
+  if (!_agendaAutorCores[key]) {
+    const idx = Object.keys(_agendaAutorCores).length % _AGENDA_CORES.length;
+    _agendaAutorCores[key] = _AGENDA_CORES[idx];
+  }
+  return _agendaAutorCores[key];
+}
+function _renderAgendaLegenda() {
+  const el = document.getElementById('agenda-legenda');
+  if (!el) return;
+  // Pegar autores únicos das notas
+  const autores = [...new Set(_agendaNotas.map(n => n.autor).filter(Boolean))];
+  if (!autores.length && usuarioAtual?.nome) autores.push(usuarioAtual.nome);
+  el.innerHTML = autores.map(a =>
+    '<div style="display:flex;align-items:center;gap:4px;font-size:9px;color:var(--texto3);"><div style="width:8px;height:8px;border-radius:2px;background:' + _getCorAutor(a) + ';"></div> ' + a + '</div>'
+  ).join('');
+}
+
 function abrirDiaAgenda(dataISO) {
-  const CORES = { 'duam': '#3b82f6', 'elyda': '#a855f7', 'default': '#22c55e' };
   const notas = _agendaNotas.filter(n => n.data === dataISO);
   const dataFormatada = new Date(dataISO + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' });
 
@@ -234,7 +252,7 @@ function abrirDiaAgenda(dataISO) {
   el.onclick = function(e) { if (e.target === el) el.remove(); };
 
   const notasHTML = notas.map(n => {
-    const cor = CORES[(n.autor||'').toLowerCase()] || CORES['default'];
+    const cor = _getCorAutor(n.autor);
     return `<div style="display:flex;gap:10px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.04);">
       <div style="width:4px;border-radius:2px;background:${cor};flex-shrink:0;"></div>
       <div style="flex:1;">
@@ -624,4 +642,5 @@ function renderDashboard() {
   }
 
   setTimeout(autoFitStatValues, 50);
+  _renderAgendaLegenda();
 }
