@@ -7,12 +7,12 @@ async function fazerLogin() {
   const s = document.getElementById('login-pass').value;
   const btn = document.querySelector('.btn-login');
   const errEl = document.getElementById('login-error');
-  if (!u || !s) { errEl.textContent = 'Informe usuário e senha.'; return; }
+  if (!u || !s || !u.includes('@')) { errEl.textContent = 'Informe seu email completo e senha.'; return; }
   if (btn) { btn.disabled = true; btn.textContent = 'AGUARDE...'; }
   errEl.textContent = '';
 
   try {
-    const email = u.includes('@') ? u : u + '@edreng.com.br';
+    const email = u;
     const r = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
       method: 'POST',
       headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
