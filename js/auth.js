@@ -350,7 +350,7 @@ async function checkPlatformAdmin() {
       body: '{}'
     });
     const isAdmin = await r.json();
-    if (!isAdmin) return;
+    if (isAdmin !== true) return;
     _isSuperAdmin = true;
 
     // Carregar todas as empresas
