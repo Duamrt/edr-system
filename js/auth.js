@@ -942,7 +942,26 @@ async function convidarUsuario() {
 
     fecharModalConvite();
     renderUsuarios();
-    showToast('Usuario ' + nome + ' convidado com sucesso!');
+
+    // Montar mensagem WhatsApp com credenciais
+    const telefone = inputLogin.replace(/\D/g, '');
+    const loginExibido = inputLogin.includes('@') ? inputLogin : inputLogin;
+    const msgWpp = encodeURIComponent(
+      'Ola ' + nome + '! Voce foi convidado para o EDR System.\n\n' +
+      'Acesse: sistema.edreng.com.br\n' +
+      'Login: ' + loginExibido + '\n' +
+      'Senha: ' + senha + '\n\n' +
+      'Troque sua senha no primeiro acesso.'
+    );
+    const wppNum = telefone.length >= 10 ? (telefone.startsWith('55') ? telefone : '55' + telefone) : '';
+
+    if (wppNum) {
+      if (confirm('Usuario criado! Enviar credenciais por WhatsApp para ' + nome + '?')) {
+        window.open('https://wa.me/' + wppNum + '?text=' + msgWpp, '_blank');
+      }
+    } else {
+      showToast('Usuario ' + nome + ' convidado com sucesso!');
+    }
   } catch(e) {
     errEl.textContent = 'Erro de conexao. Tente novamente.';
   }
