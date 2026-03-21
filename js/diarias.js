@@ -444,6 +444,11 @@ async function diarCarregarQuinzenas() {
 }
 
 async function diarCriarQuinzenaAuto() {
+  if (!_companyId) {
+    // Aguardar loadCompanyId se ainda não carregou
+    if (typeof loadCompanyId === 'function') await loadCompanyId();
+    if (!_companyId) { showToast('Erro: empresa nao carregada. Recarregue a pagina.'); return; }
+  }
   const h = new Date();
   const ano = h.getFullYear(), mes = h.getMonth() + 1;
   const mesStr = h.toLocaleString('pt-BR', { month: 'long' }).toUpperCase();
@@ -454,7 +459,7 @@ async function diarCriarQuinzenaAuto() {
   try {
     const [nova] = await sbPost('diarias_quinzenas', { label, data_inicio: inicio, data_fim: fim });
     diarQuinzenas = [nova]; diarQuinzenaAtiva = nova;
-  } catch(e) {}
+  } catch(e) { showToast('Erro ao criar quinzena: ' + (e.message || '')); }
   diarAtualizarSelectQuinzena();
   await diarCarregarRegistros();
 }
@@ -646,6 +651,7 @@ async function diarSalvarNovaQuinzena() {
   const inicio = document.getElementById('nq-inicio')?.value;
   const fim    = document.getElementById('nq-fim')?.value;
   if (!label||!inicio||!fim) { showToast('⚠ Preencha todos os campos.'); return; }
+  if (!_companyId) { showToast('Erro: empresa nao carregada. Recarregue a pagina.'); return; }
   // Bloquear quinzena duplicada (mesma data de inicio ou mesmo label)
   const jaExiste = diarQuinzenas.find(q => q.data_inicio === inicio || q.label.trim().toLowerCase() === label.toLowerCase());
   if (jaExiste) { showToast('⚠ Ja existe uma quinzena com esse periodo: ' + jaExiste.label); return; }
