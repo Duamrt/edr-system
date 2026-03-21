@@ -8,15 +8,20 @@ let _companyId = null;
 
 // Tabelas que NÃO recebem filtro de company_id
 const _TABELAS_SEM_TENANT = ['companies', 'company_users'];
+// Tabelas que incluem registros globais (company_id IS NULL) + da empresa
+const _TABELAS_COM_GLOBAL = ['materiais'];
 
 function _addCompanyFilter(tabela, query) {
   if (_TABELAS_SEM_TENANT.includes(tabela)) return query;
   if (!_companyId) {
-    // Sem empresa vinculada — forçar filtro impossível pra não vazar dados
     const sep = query.includes('?') ? '&' : '?';
     return query + sep + 'company_id=eq.00000000-0000-0000-0000-000000000000';
   }
   const sep = query.includes('?') ? '&' : '?';
+  // Materiais: trazer globais (NULL) + da empresa
+  if (_TABELAS_COM_GLOBAL.includes(tabela)) {
+    return query + sep + 'or=(company_id.eq.' + _companyId + ',company_id.is.null)';
+  }
   return query + sep + 'company_id=eq.' + _companyId;
 }
 
