@@ -299,6 +299,16 @@ async function checkPlatformAdmin() {
 
 async function switchCompany(companyId) {
   _companyId = companyId;
+  if (typeof loadCompanyPlan === 'function') await loadCompanyPlan();
+  // Mostrar nome da empresa no header
+  try {
+    const r = await sbGet('companies', '?id=eq.' + companyId + '&select=name');
+    const badge = document.getElementById('empresa-badge');
+    if (badge && r && r[0]) {
+      badge.textContent = r[0].name;
+      badge.style.display = 'inline-block';
+    }
+  } catch(e) {}
   // Recarregar dados com a nova empresa
   if (typeof iniciarApp === 'function') iniciarApp();
 }
@@ -766,9 +776,10 @@ async function renderUsuarios() {
     const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/list_company_users`, {
       method: 'POST',
       headers: { ...hdrs, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ p_company_id: _companyId })
+      body: '{}'
     });
-    const users = await r.json();
+    const allUsers = await r.json();
+    const users = Array.isArray(allUsers) ? allUsers.filter(u => u.company_id === _companyId) : [];
     const lim = getLimites();
     const plano = PLANOS[_companyPlan?.plan] || PLANOS.trial;
 
@@ -799,7 +810,7 @@ async function renderUsuarios() {
         html += '<td style="padding:12px 16px;font-size:13px;">' + formatPerfil(u.role) + '</td>';
         html += '<td style="padding:12px 16px;text-align:center;">';
         if (!isMe) {
-          html += '<button onclick="removerMembro(\'' + u.id + '\',\'' + (u.nome || u.email || '').replace(/'/g, '') + '\')" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:16px;" title="Remover">X</button>';
+          html += '<button onclick="removerMembro(\'' + (u.cu_id || u.id) + '\',\'' + (u.nome || u.email || '').replace(/'/g, '') + '\')" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:16px;" title="Remover">X</button>';
         }
         html += '</td></tr>';
       });

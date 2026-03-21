@@ -561,6 +561,9 @@ async function diarSalvarNovaQuinzena() {
   const inicio = document.getElementById('nq-inicio')?.value;
   const fim    = document.getElementById('nq-fim')?.value;
   if (!label||!inicio||!fim) { showToast('⚠ Preencha todos os campos.'); return; }
+  // Bloquear quinzena duplicada (mesma data de inicio ou mesmo label)
+  const jaExiste = diarQuinzenas.find(q => q.data_inicio === inicio || q.label.trim().toLowerCase() === label.toLowerCase());
+  if (jaExiste) { showToast('⚠ Ja existe uma quinzena com esse periodo: ' + jaExiste.label); return; }
   try {
     const result = await sbPost('diarias_quinzenas', { label, data_inicio: inicio, data_fim: fim, fechada: false });
     const nova = Array.isArray(result) ? result[0] : result;
