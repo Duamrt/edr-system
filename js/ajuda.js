@@ -398,6 +398,47 @@ const AJUDA_CONTEUDO = {
       ]},
       { dica: 'O menu lateral pode ser reorganizado arrastando os botoes. O reset desfaz isso.' }
     ]
+  },
+
+  usuarios: {
+    titulo: 'Usuarios da Empresa',
+    perfis: ['admin'],
+    secoes: [
+      { titulo: 'Convidar usuario', passos: [
+        'Clique em + CONVIDAR',
+        'Preencha nome, telefone (ou email), senha e perfil',
+        'O sistema cria a conta e mostra opcao de enviar via WhatsApp'
+      ]},
+      { titulo: 'Editar usuario', passos: [
+        'Clique no icone de lapis ao lado do usuario',
+        'Altere nome, perfil, senha ou permissoes individuais',
+        'Clique SALVAR'
+      ]},
+      { titulo: 'Ativar / Desativar', passos: [
+        'Clique no botao ATIVO ou INATIVO ao lado do usuario',
+        'Usuarios inativos nao conseguem acessar o sistema'
+      ]},
+      { titulo: 'Remover usuario', passos: [
+        'Clique no X vermelho ao lado do usuario',
+        'Confirme a remocao — o telefone/email e liberado para novo cadastro'
+      ]},
+      { dica: 'O limite de usuarios depende do plano da empresa. Faca upgrade para adicionar mais membros.' }
+    ]
+  },
+
+  permissoes: {
+    titulo: 'Permissoes por Perfil',
+    perfis: ['admin'],
+    secoes: [
+      { titulo: 'Como funciona', info: 'Configure quais modulos cada perfil pode acessar. Admin sempre tem acesso total. Operacional e Mestre veem apenas os modulos habilitados aqui.' },
+      { titulo: 'Configurar permissoes', passos: [
+        'Escolha o perfil (Operacional ou Mestre)',
+        'Ligue ou desligue os toggles de cada modulo',
+        'Clique SALVAR PERMISSOES',
+        'As mudancas valem para todos os usuarios daquele perfil na empresa'
+      ]},
+      { dica: 'Para liberar um modulo apenas para um usuario especifico (sem afetar os outros), use a edicao individual na tela de Usuarios.' }
+    ]
   }
 };
 
@@ -492,7 +533,7 @@ function fecharAjudaFora(e) {
 
 // ── DETECTAR VIEW ATIVA ─────────────────────────────────
 function getViewAtiva() {
-  const views = ['dashboard','obras','estoque','notas','form','creditos','diarias','catalogo','relatorio','custos','banco','setup','leads','caixa','contas-pagar','garantias'];
+  const views = ['dashboard','obras','estoque','notas','form','creditos','diarias','catalogo','relatorio','custos','banco','setup','leads','caixa','contas-pagar','garantias','usuarios','permissoes'];
   for (const v of views) {
     const el = document.getElementById('view-' + v);
     if (el && !el.classList.contains('hidden')) return v;
