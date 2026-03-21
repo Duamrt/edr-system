@@ -691,6 +691,21 @@ async function removerUsuarioEmpresa(companyUserId, nome) {
 }
 
 // ── Excluir empresa ───────────────────────────────────
+async function excluirEmpresa(id, nome) {
+  if (!confirm('Excluir a empresa "' + nome + '"?\n\nTodos os dados vinculados serão removidos. Essa ação não pode ser desfeita.')) return;
+  if (!confirm('TEM CERTEZA? Digite OK pra confirmar.')) return;
+  try {
+    // 1. Remover vínculos de usuários
+    await sbDelete('company_users', '?company_id=eq.' + id);
+    // 2. Remover a empresa
+    await sbDelete('companies', '?id=eq.' + id);
+    alert('Empresa "' + nome + '" excluída.');
+    renderPainelEmpresas();
+  } catch(e) {
+    alert('Erro ao excluir empresa: ' + e.message);
+  }
+}
+
 // ── Toggle expandir/recolher empresa ──────────────────
 function toggleEmpresaDetalhe(headerEl) {
   const detalhe = headerEl.nextElementSibling;
