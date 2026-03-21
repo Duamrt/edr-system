@@ -961,7 +961,10 @@ function diarRenderRegistros() {
           <span class="diarias-registro-count">${items.length} func.</span>
           ${faltas.length ? `<span style="font-size:9px;font-weight:700;color:#f87171;font-family:'Rajdhani',sans-serif;">⚠ ${faltas.length} falta(s)</span>` : ''}
         </div>
-        <button class="diarias-btn-del" onclick="event.stopPropagation();diarDeletarDia('${dia}')" title="Remover dia">✕</button>
+        <div style="display:flex;gap:4px;">
+          ${isAdmin ? `<button style="background:none;border:none;color:var(--verde-hl);cursor:pointer;font-size:11px;font-weight:700;padding:2px 8px;font-family:'Rajdhani',sans-serif;" onclick="event.stopPropagation();diarAdicionarNoDia('${dia}')" title="Adicionar funcionario">+ ADD</button>` : ''}
+          <button class="diarias-btn-del" onclick="event.stopPropagation();diarDeletarDia('${dia}')" title="Remover dia">✕</button>
+        </div>
       </div>
       <div class="diar-dia-body" style="${isFirst?'':'display:none;'}">${rows}${faltasHtml}</div>
     </div>`;
@@ -1080,6 +1083,118 @@ async function diarSalvarEdicao(regId) {
     diarRenderRegistros();
     showToast('Diaria atualizada!');
   } catch(e) { showToast('Erro ao salvar: ' + e.message); }
+}
+
+// ── Adicionar funcionário avulso num dia já lançado ──
+function diarAdicionarNoDia(data) {
+  const regs = diarRegistros.filter(r => r.data === data && r.quinzena_id === diarQuinzenaAtiva?.id);
+  const jaLancados = regs.map(r => r.funcionario);
+  const ativos = diarGetFuncionariosAtivos().filter(f => !jaLancados.includes(f.nome));
+  const obrasOpts = obras.map(o => `<option value="${esc(o.nome)}">${o.nome}</option>`).join('');
+
+  if (!ativos.length) { showToast('Todos os funcionarios ja foram lancados neste dia.'); return; }
+
+  const funcOpts = ativos.map(f => `<option value="${esc(f.nome)}" data-cargo="${f.cargo||''}" data-diaria="${f.diaria||0}">${f.nome} (${f.cargo||'-'})</option>`).join('');
+
+  const modal = document.createElement('div');
+  modal.id = 'diar-modalAdd';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;';
+  modal.innerHTML = `<div style="background:var(--cinza-escuro,#1a1a1a);border:1px solid var(--borda);border-radius:16px;padding:24px;width:90%;max-width:420px;">
+    <div style="font-family:'Rajdhani',sans-serif;font-weight:800;font-size:14px;letter-spacing:2px;color:var(--verde-hl);margin-bottom:16px">+ ADICIONAR FUNCIONARIO</div>
+    <div style="font-size:12px;color:var(--texto3);margin-bottom:16px;">${new Date(data + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit' })}</div>
+    <label style="font-size:11px;color:var(--texto3);font-weight:700;display:block;margin-bottom:4px;">FUNCIONARIO</label>
+    <select id="add-func" style="width:100%;padding:10px;background:var(--bg);border:1px solid var(--borda);border-radius:8px;color:#fafafa;font-size:13px;font-family:inherit;margin-bottom:12px;">
+      ${funcOpts}
+    </select>
+    <div id="add-periodos">
+      <div style="display:flex;gap:8px;margin-bottom:8px;">
+        <div style="flex:1;">
+          <label style="font-size:11px;color:var(--texto3);font-weight:700;display:block;margin-bottom:4px;">TURNO</label>
+          <select class="add-turno" style="width:100%;padding:10px;background:var(--bg);border:1px solid var(--borda);border-radius:8px;color:#fafafa;font-size:13px;font-family:inherit;">
+            <option value="dia">Dia inteiro (1.0)</option>
+            <option value="manha">Manha (0.5)</option>
+            <option value="tarde">Tarde (0.5)</option>
+          </select>
+        </div>
+        <div style="flex:1;">
+          <label style="font-size:11px;color:var(--texto3);font-weight:700;display:block;margin-bottom:4px;">OBRA</label>
+          <select class="add-obra" style="width:100%;padding:10px;background:var(--bg);border:1px solid var(--borda);border-radius:8px;color:#fafafa;font-size:13px;font-family:inherit;">
+            ${obrasOpts}
+          </select>
+        </div>
+      </div>
+    </div>
+    <button onclick="diarAddPeriodoModal()" style="background:none;border:1px dashed var(--borda);border-radius:6px;padding:6px;color:var(--texto3);font-size:11px;cursor:pointer;font-family:inherit;margin-bottom:16px;width:100%;">+ Segundo turno (outra obra)</button>
+    <div style="display:flex;gap:10px;">
+      <button onclick="document.getElementById('diar-modalAdd')?.remove()" style="flex:1;padding:12px;border-radius:8px;border:1px solid var(--borda);background:none;color:var(--texto3);font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;cursor:pointer;">CANCELAR</button>
+      <button onclick="diarConfirmarAdd('${data}')" style="flex:2;background:var(--verde-hl);border:none;border-radius:8px;padding:12px;color:#000;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:800;cursor:pointer;">ADICIONAR</button>
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
+}
+
+function diarAddPeriodoModal() {
+  const container = document.getElementById('add-periodos');
+  if (!container) return;
+  const obrasOpts = obras.map(o => `<option value="${esc(o.nome)}">${o.nome}</option>`).join('');
+  const div = document.createElement('div');
+  div.style.cssText = 'display:flex;gap:8px;margin-bottom:8px;';
+  div.innerHTML = `
+    <div style="flex:1;">
+      <select class="add-turno" style="width:100%;padding:10px;background:var(--bg);border:1px solid var(--borda);border-radius:8px;color:#fafafa;font-size:13px;font-family:inherit;">
+        <option value="dia">Dia inteiro (1.0)</option>
+        <option value="manha">Manha (0.5)</option>
+        <option value="tarde">Tarde (0.5)</option>
+      </select>
+    </div>
+    <div style="flex:1;">
+      <select class="add-obra" style="width:100%;padding:10px;background:var(--bg);border:1px solid var(--borda);border-radius:8px;color:#fafafa;font-size:13px;font-family:inherit;">
+        ${obrasOpts}
+      </select>
+    </div>
+    <button onclick="this.parentElement.remove()" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:14px;align-self:center;">X</button>`;
+  container.appendChild(div);
+}
+
+async function diarConfirmarAdd(data) {
+  const modal = document.getElementById('diar-modalAdd');
+  if (!modal) return;
+  const sel = modal.querySelector('#add-func');
+  const nome = sel.value;
+  const opt = sel.selectedOptions[0];
+  const cargo = opt?.dataset.cargo || '';
+  const diaria = Number(opt?.dataset.diaria) || 0;
+
+  const rows = modal.querySelectorAll('#add-periodos > div');
+  const periodos = [];
+  let totalFracoes = 0;
+  rows.forEach(row => {
+    const turno = row.querySelector('.add-turno')?.value || 'dia';
+    const obra = row.querySelector('.add-obra')?.value || 'Nao especificada';
+    const fracao = turno === 'dia' ? 1.0 : 0.5;
+    periodos.push({ turno, obra, fracao });
+    totalFracoes += fracao;
+  });
+
+  if (!periodos.length) { showToast('Selecione pelo menos um turno.'); return; }
+
+  try {
+    await sbPostMinimal('diarias', [{
+      quinzena_id: diarQuinzenaAtiva.id,
+      data: data,
+      funcionario: nome,
+      cargo: cargo,
+      diaria_base: diaria,
+      periodos: periodos,
+      total_fracoes: totalFracoes,
+      valor: diaria * totalFracoes,
+      criado_por: usuarioAtual?.nome || ''
+    }]);
+    modal.remove();
+    await diarCarregarRegistros();
+    diarRenderRegistros();
+    showToast(nome + ' adicionado!');
+  } catch(e) { showToast('Erro: ' + e.message); }
 }
 
 async function diarExcluirRegistro(regId) {
