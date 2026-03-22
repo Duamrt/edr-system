@@ -619,18 +619,34 @@ function filtrarLanc() {
     detEl.classList.add('hidden');
   }
   el.innerHTML = lista.map(l => `
-    <div class="lanc-item">
+    <div class="lanc-item" style="cursor:pointer;" onclick="abrirNotaDoLancamento('${esc(l.descricao)}','${esc(l.obra_id)}')">
       <div class="lanc-top">
         <div class="lanc-desc">${l.descricao}</div>
         <div style="display:flex;align-items:center;gap:4px;">
           <span class="lanc-val admin-only">${fmtR(l.total)}</span>
-          <button class="lanc-del admin-only" onclick="excluirLanc('${esc(l.id)}')">🗑</button>
+          <button class="lanc-del admin-only" onclick="event.stopPropagation();excluirLanc('${esc(l.id)}')">🗑</button>
         </div>
       </div>
       ${l.etapa ? `<div style="margin-bottom:3px;"><span style="font-size:9px;font-weight:700;background:rgba(34,197,94,0.08);color:var(--verde3);border:1px solid rgba(34,197,94,0.15);border-radius:4px;padding:1px 6px;font-family:'JetBrains Mono',monospace;">${esc(etapaLabel(l.etapa))}</span></div>` : ''}
       <div class="lanc-meta">${obraMap[l.obra_id]||'—'} · ${(()=>{ const q=Number(l.qtd||1); const oNome=(obraMap[l.obra_id]||'').toUpperCase(); if(oNome.includes('ESCRIT')||q<=0||String(l.qtd).includes('e')||q!==Math.round(q*100)/100) return l.data||''; return q+' un · '+(l.data||''); })()}${l.criado_por ? `<span class="admin-only" style="margin-left:6px;font-size:9px;color:var(--texto4);"> · 👤 ${l.criado_por}</span>` : ''}</div>
     </div>`).join('');
   aplicarPerfil();
+}
+
+function abrirNotaDoLancamento(descricao, obraId) {
+  const desc = descricao.toUpperCase();
+  const obraObj = obras.find(o => o.id === obraId) || obrasArquivadas.find(o => o.id === obraId);
+  const obraNome = obraObj?.nome || '';
+  // Buscar nota que contém esse item (na obra ou no almoxarifado)
+  for (const n of notas) {
+    if (n.obra !== obraNome && n.obra !== 'EDR' && n.obra_id !== obraId) continue;
+    const itens = parseItens(n);
+    if (itens.find(i => i.desc.toUpperCase() === desc)) {
+      abrirNota(n.id);
+      return;
+    }
+  }
+  showToast('Nota não encontrada para este item.');
 }
 
 // ══════════════════════════════════════════
