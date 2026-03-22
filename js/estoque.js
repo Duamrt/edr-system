@@ -205,11 +205,13 @@ function toggleLimparBusca() {
 function _popularSelectObraEstoque() {
   const sel = document.getElementById('estoque-filtro-obra');
   if (!sel) return;
-  const valAtual = sel.value;
   const obrasAtivas = obras.filter(o => !o.arquivada);
-  if (!obrasAtivas.length && sel.options.length <= 1) return;
+  // Só recria se quantidade de opções mudou (obra nova/removida)
+  if (sel.options.length === obrasAtivas.length + 1) return;
+  const valAtual = sel.value;
   sel.innerHTML = '<option value="">ALMOXARIFADO</option>' +
-    obrasAtivas.map(o => `<option value="${o.id}" ${o.id===valAtual?'selected':''}>${esc(o.nome)}</option>`).join('');
+    obrasAtivas.map(o => `<option value="${o.id}">${esc(o.nome)}</option>`).join('');
+  if (valAtual) sel.value = valAtual;
 }
 
 function _consolidarEstoqueObra(obraId) {
