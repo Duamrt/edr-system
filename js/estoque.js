@@ -240,16 +240,13 @@ function _consolidarEstoqueObra(obraId) {
     });
   });
 
-  // 2. Descontar saídas (distribuições pra outras obras) de itens que têm nota direta
-  // Se o item entrou por nota na obra, saídas dele reduzem o estoque da obra
-  distribuicoes.forEach(d => {
+  // 2. Descontar distribuições (saídas/consumo) de itens que têm nota direta
+  // Distribuição = consumo, independente do destino
+  distribuicoes.filter(d => d.obra_id === obraId).forEach(d => {
     const key = getEstoqueKey(d.item_desc);
     if (itensComNota.has(key) && map[key]) {
-      // Distribuição pra OUTRA obra = saída do estoque desta obra
-      if (d.obra_id !== obraId) {
-        map[key].saldoTotal -= Number(d.qtd);
-        map[key]._distribuicoes.push(d);
-      }
+      map[key].saldoTotal -= Number(d.qtd);
+      map[key]._distribuicoes.push(d);
     }
   });
 
