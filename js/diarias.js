@@ -832,7 +832,7 @@ function diarParseMensagem(msgOriginal) {
     // Substitui marcadores de turno por separador "|" para depois dividir
     // Suporta: "i atarde", "e atarde", "i manha", "e de tarde", etc.
     const marcado = bloco
-      .replace(/\b(e|i)\s+(ate meio.?dia|de manha|a tarde|atarde|de tarde)/g, '|$2')
+      .replace(/\b(e|i)\s+(ate meio.?dia|de manha|a tarde|atarde|de tarde|meio.?dia)/g, '|$2')
       .replace(/\b(e|i)\s+(manha)\b/g, '|$2')
       .replace(/,\s*(meio.?dia|manha|de manha|tarde|atarde|a tarde|de tarde|ate meio.?dia)/gi, '|$1'); // vírgula antes de turno
     const partes = marcado.split('|').map(s => s.trim()).filter(Boolean);
