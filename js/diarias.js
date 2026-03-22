@@ -419,6 +419,10 @@ async function initDiarias() {
   if (!document.getElementById('diar-dataInput').value) {
     document.getElementById('diar-dataInput').value = hojeISO();
   }
+  // Garantir company_id carregado antes de buscar dados
+  if (!_companyId && typeof loadCompanyId === 'function') await loadCompanyId();
+  // Resetar cache para forçar recarregar com empresa atual
+  diarQuinzenas = []; diarQuinzenaAtiva = null; diarRegistros = []; diarExtras = [];
   await diarCarregarFuncionarios();
   await diarCarregarQuinzenas();
   diarRenderRegistros();
