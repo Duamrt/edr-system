@@ -1,6 +1,15 @@
 // ══════════════════════════════════════════
 // ESTOQUE
 // ══════════════════════════════════════════
+let estoqueOrdem = 'az'; // 'az' | 'maior' | 'menor'
+
+function estoqueAtualizarOrdem() {
+  ['az','maior','menor'].forEach(k => {
+    const el = document.getElementById('estoque-ord-' + k);
+    if (el) el.classList.toggle('ativo', estoqueOrdem === k);
+  });
+}
+
 const CATS_ESTOQUE = [
   { key:'prelim',     lb:'⛏ Serv. Preliminar',   fn: d => /andaime|tapume|demolic|terraplan|escavac|aterro|compactac|reaterro|locacao de obra|limpeza de terreno|placa de obra/i.test(d) },
   { key:'fundacao',   lb:'🏗 Fundação',           fn: d => /sapata|estaca|bloco de fundc|baldrame|radier|viga baldr|cinta|fundac|brocas|microestaca/i.test(d) },
@@ -200,6 +209,10 @@ function renderEstoque() {
   const busca = norm(document.getElementById('estoque-busca') ? document.getElementById('estoque-busca').value : '');
   let filtrados = busca ? materiais.filter(m => norm(m.desc).includes(busca)) : materiais;
   if (catEstoqueFiltro) filtrados = filtrados.filter(m => (m.categoria || getCatEstoque(m.desc)) === catEstoqueFiltro);
+  // Ordenação
+  if (estoqueOrdem === 'az') filtrados.sort((a, b) => a.desc.localeCompare(b.desc, 'pt-BR'));
+  else if (estoqueOrdem === 'maior') filtrados.sort((a, b) => b.saldoTotal - a.saldoTotal);
+  else if (estoqueOrdem === 'menor') filtrados.sort((a, b) => a.saldoTotal - b.saldoTotal);
   if (!filtrados.length) { lista.innerHTML = '<div class="empty">Nenhum material nesta categoria.</div>'; return; }
   lista.innerHTML = filtrados.map((m, i) => {
     const negativo = m.saldoTotal < 0;

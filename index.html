@@ -445,6 +445,11 @@
         <input type="text" id="estoque-busca" placeholder="🔍 Buscar material..." oninput="renderEstoque();toggleLimparBusca()" style="text-transform:none;padding-right:90px;">
         <button id="btn-limpar-busca" onclick="document.getElementById('estoque-busca').value='';renderEstoque();toggleLimparBusca();document.getElementById('estoque-busca').focus();" style="display:none;position:absolute;right:8px;top:50%;transform:translateY(-50%);background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.25);color:#f87171;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:1px;min-height:32px;">✕ LIMPAR</button>
       </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <button class="cat-btn ativo" id="estoque-ord-az" onclick="estoqueOrdem='az';renderEstoque();estoqueAtualizarOrdem()" style="font-size:10px;padding:5px 10px;">A-Z</button>
+        <button class="cat-btn" id="estoque-ord-maior" onclick="estoqueOrdem='maior';renderEstoque();estoqueAtualizarOrdem()" style="font-size:10px;padding:5px 10px;">MAIOR ESTOQUE</button>
+        <button class="cat-btn" id="estoque-ord-menor" onclick="estoqueOrdem='menor';renderEstoque();estoqueAtualizarOrdem()" style="font-size:10px;padding:5px 10px;">MENOR / NEGATIVO</button>
+      </div>
     </div>
 
     <div id="estoque-loading" class="loading">Carregando...</div>
