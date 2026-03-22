@@ -202,16 +202,14 @@ function toggleLimparBusca() {
   if (btn) btn.style.display = document.getElementById('estoque-busca').value.trim() ? 'block' : 'none';
 }
 
-let _estoqueObraSelectPopulado = false;
 function _popularSelectObraEstoque() {
   const sel = document.getElementById('estoque-filtro-obra');
-  if (!sel || _estoqueObraSelectPopulado) return;
-  // Todas as obras ativas
+  if (!sel) return;
+  const valAtual = sel.value;
   const obrasAtivas = obras.filter(o => !o.arquivada);
-  if (!obrasAtivas.length) return;
+  if (!obrasAtivas.length && sel.options.length <= 1) return;
   sel.innerHTML = '<option value="">ALMOXARIFADO</option>' +
-    obrasAtivas.map(o => `<option value="${o.id}">${esc(o.nome)}</option>`).join('');
-  _estoqueObraSelectPopulado = true;
+    obrasAtivas.map(o => `<option value="${o.id}" ${o.id===valAtual?'selected':''}>${esc(o.nome)}</option>`).join('');
 }
 
 function _consolidarEstoqueObra(obraId) {
@@ -227,17 +225,31 @@ function _consolidarEstoqueObra(obraId) {
     return { key, entry: map[key] };
   };
 
-  // Apenas notas lançadas direto na obra = estoque real da obra
-  // Distribuições do almoxarifado = consumo, não entra como estoque
+  // 1. Notas lançadas direto na obra = entrada de estoque
+  const itensComNota = new Set(); // chaves de itens que vieram por nota direta
   notas.filter(n => n.obra === obraNome || n.obra_id === obraId).forEach(n => {
     const itens = parseItens(n);
     itens.forEach((it, idx) => {
-      const { entry } = getOrCreate(it.desc);
+      const { key, entry } = getOrCreate(it.desc);
       entry.saldoTotal += Number(it.qtd);
       entry.qtdNF += Number(it.qtd);
       if (Number(it.preco) > 0) entry.totalValor += Number(it.qtd) * Number(it.preco);
       entry.lotes.push({ notaId: n.id, itemIdx: idx, nota: n, item: it, saldo: Number(it.qtd) });
+      itensComNota.add(key);
     });
+  });
+
+  // 2. Descontar saídas (distribuições pra outras obras) de itens que têm nota direta
+  // Se o item entrou por nota na obra, saídas dele reduzem o estoque da obra
+  distribuicoes.forEach(d => {
+    const key = getEstoqueKey(d.item_desc);
+    if (itensComNota.has(key) && map[key]) {
+      // Distribuição pra OUTRA obra = saída do estoque desta obra
+      if (d.obra_id !== obraId) {
+        map[key].saldoTotal -= Number(d.qtd);
+        map[key]._distribuicoes.push(d);
+      }
+    }
   });
 
   Object.values(map).forEach(m => {
