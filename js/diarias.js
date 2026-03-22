@@ -855,6 +855,10 @@ function diarParseMensagem(msgOriginal) {
         total_fracoes: 0
       };
     }
+    // Se turno é 'manha' (vindo de "meio dia") e já existe 'manha', promover pra 'tarde'
+    if (turno === 'manha' && resultMap[func.nome].periodos.find(p => p.turno === 'manha')) {
+      turno = 'tarde';
+    }
     // Evitar duplicar mesmo turno+obra
     const already = resultMap[func.nome].periodos.find(p => p.turno === turno && p.obra === obra);
     if (already) return;
@@ -896,12 +900,23 @@ function diarParseMensagem(msgOriginal) {
 
   // Detectar possíveis nomes não reconhecidos
   const nomesConhecidos = Object.keys(DIAR_FUNCIONARIOS);
+  // Nomes de obras cadastradas + aliases de obras (não são funcionários)
+  const nomesObras = new Set();
+  obrasNomes.forEach(o => {
+    o.norm.split(/\s+/).forEach(p => { if (p.length >= 3) nomesObras.add(p); });
+    nomesObras.add(o.norm);
+  });
+  Object.entries(OBRAS_ALIASES).forEach(([nome, aliases]) => {
+    nome.split(/\s+/).forEach(p => { if (p.length >= 3) nomesObras.add(p); });
+    aliases.forEach(a => nomesObras.add(a));
+  });
   const palavras = msgOriginal.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').split(/[\s,.!?;:]+/).filter(p => p.length >= 3);
   const IGNORAR = ['casa','obra','ate','meio','dia','manha','tarde','todo','cimento','argamassa','areia','brita','tijolo','ferro','madeira','prego','tinta','cal','saco','sacos','bloco','telha','vergalhao','pra','para','com','que','foi','uma','uns','umas','mais','tambem','ainda','hoje','ontem','esta','esse','essa','nao','sim','bem','bom','boa','muito','pouco','todo','toda','todos','todas','aqui','ali','tem','vai','vem','dia','mes','ano'];
   const naoReconhecidos = [];
   palavras.forEach(p => {
     if (IGNORAR.includes(p)) return;
     if (nomesConhecidos.includes(p)) return;
+    if (nomesObras.has(p)) return; // É nome de obra, não funcionário
     // Verificar se parece nome próprio (começa com maiúscula no original)
     const idx = msgOriginal.toLowerCase().indexOf(p);
     if (idx >= 0) {
