@@ -272,7 +272,9 @@ function renderEstoque() {
     const negativo = m.saldoTotal < 0;
     const corSaldo = negativo ? 'var(--vermelho)' : m.saldoTotal === 0 ? 'var(--texto3)' : 'var(--verde-hl)';
     const bordaEsq = negativo ? 'var(--vermelho)' : m.credito ? 'var(--verde3)' : 'var(--borda2)';
-    return `<div onclick="abrirHistoricoMaterial(${i})" style="cursor:pointer;display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--bg2);border:1px solid var(--borda);border-radius:12px;margin-bottom:8px;border-left:3px solid ${bordaEsq};">
+    const bgCard = negativo ? 'rgba(239,68,68,0.06)' : 'var(--bg2)';
+    const bordaCard = negativo ? 'rgba(239,68,68,0.25)' : 'var(--borda)';
+    return `<div onclick="abrirHistoricoMaterial(${i})" style="cursor:pointer;display:flex;align-items:center;gap:12px;padding:12px 14px;background:${bgCard};border:1px solid ${bordaCard};border-radius:12px;margin-bottom:8px;border-left:3px solid ${bordaEsq};">`
       <div style="flex:1;">
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
           <span style="font-weight:700;font-size:14px;color:var(--branco);">${esc(m.desc)}</span>
