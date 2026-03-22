@@ -413,8 +413,9 @@ async function switchCompany(companyId) {
       badge.style.display = 'inline-block';
     }
   } catch(e) {}
-  // Recarregar dados com a nova empresa
-  if (typeof iniciarApp === 'function') iniciarApp();
+  // Recarregar dados com a nova empresa e voltar pro dashboard
+  if (typeof iniciarApp === 'function') await iniciarApp();
+  if (typeof setView === 'function') setView('dashboard');
 }
 
 // ── Tabs Login / Criar Conta ──────────────────────────
