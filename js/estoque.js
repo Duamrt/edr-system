@@ -202,25 +202,26 @@ function toggleLimparBusca() {
   if (btn) btn.style.display = document.getElementById('estoque-busca').value.trim() ? 'block' : 'none';
 }
 
+let _estoqueObraSelectPopulado = false;
 function _popularSelectObraEstoque() {
   const sel = document.getElementById('estoque-filtro-obra');
-  if (!sel) return;
-  const valAtual = sel.value;
+  if (!sel || _estoqueObraSelectPopulado) return;
   // Obras com distribuições OU notas lançadas direto
   const idsComDist = new Set(distribuicoes.map(d => d.obra_id).filter(Boolean));
-  const obrasComNota = new Set();
   notas.forEach(n => {
     if (n.obra && n.obra !== 'EDR' && n.obra !== 'EDR_ESCRITORIO') {
       const o = obras.find(ob => ob.nome === n.obra);
-      if (o) obrasComNota.add(o.id);
+      if (o) idsComDist.add(o.id);
     }
   });
-  const todosIds = [...new Set([...idsComDist, ...obrasComNota])];
+  const todosIds = [...idsComDist];
+  if (!todosIds.length) return;
   sel.innerHTML = '<option value="">ALMOXARIFADO</option>' +
     todosIds.map(id => {
       const o = obras.find(ob => ob.id === id);
-      return o ? `<option value="${id}" ${id===valAtual?'selected':''}>${esc(o.nome)}</option>` : '';
+      return o ? `<option value="${id}">${esc(o.nome)}</option>` : '';
     }).filter(Boolean).join('');
+  _estoqueObraSelectPopulado = true;
 }
 
 function _consolidarEstoqueObra(obraId) {
@@ -304,7 +305,7 @@ function renderEstoque() {
     const bordaEsq = negativo ? 'var(--vermelho)' : m.credito ? 'var(--verde3)' : 'var(--borda2)';
     const bgCard = negativo ? 'rgba(239,68,68,0.06)' : 'var(--bg2)';
     const bordaCard = negativo ? 'rgba(239,68,68,0.25)' : 'var(--borda)';
-    return `<div onclick="abrirHistoricoMaterial(${i})" style="cursor:pointer;display:flex;align-items:center;gap:12px;padding:12px 14px;background:${bgCard};border:1px solid ${bordaCard};border-radius:12px;margin-bottom:8px;border-left:3px solid ${bordaEsq};">`
+    return `<div onclick="abrirHistoricoMaterial(${i})" style="cursor:pointer;display:flex;align-items:center;gap:12px;padding:12px 14px;background:${bgCard};border:1px solid ${bordaCard};border-radius:12px;margin-bottom:8px;border-left:3px solid ${bordaEsq};">
       <div style="flex:1;">
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
           <span style="font-weight:700;font-size:14px;color:var(--branco);">${esc(m.desc)}</span>
