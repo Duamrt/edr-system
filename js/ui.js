@@ -285,9 +285,13 @@ function _checarPrecoSaida() {
   const container = document.getElementById('saida-preco-container');
   if (!container) return;
   let temPreco = (estoqueItem?.valorMedio || 0) > 0;
-  // Buscar preço em qualquer nota se não achou no almoxarifado
+  // Buscar preço nas notas da obra destino selecionada
   if (!temPreco) {
+    const obraId = document.getElementById('saida-obra')?.value || '';
+    const obraObj = obras.find(o => o.id === obraId);
+    const obraNome = obraObj?.nome || '';
     for (const n of notas) {
+      if (obraId && n.obra !== obraNome && n.obra_id !== obraId) continue;
       const itens = parseItens(n);
       if (itens.find(i => i.desc.toUpperCase() === desc && Number(i.preco) > 0)) { temPreco = true; break; }
     }
@@ -341,10 +345,12 @@ async function salvarSaidaMaterial() {
     showToast(`⚠ Saldo atual: ${saldo} ${unidade} — saída de ${qtd} vai gerar negativo.`);
   }
 
-  // Se não tem valor médio no almoxarifado, buscar em qualquer nota
+  // Se não tem valor médio no almoxarifado, buscar nas notas da obra destino
+  const obraNome = obraObj?.nome || '';
   let valorUnit = estoqueItem?.valorMedio || 0;
   if (valorUnit <= 0) {
     for (const n of notas) {
+      if (n.obra !== obraNome && n.obra_id !== obraId) continue;
       const itens = parseItens(n);
       const it = itens.find(i => i.desc.toUpperCase() === desc && Number(i.preco) > 0);
       if (it) { valorUnit = Number(it.preco); break; }
