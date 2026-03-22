@@ -206,21 +206,11 @@ let _estoqueObraSelectPopulado = false;
 function _popularSelectObraEstoque() {
   const sel = document.getElementById('estoque-filtro-obra');
   if (!sel || _estoqueObraSelectPopulado) return;
-  // Só obras que têm notas lançadas direto (não EDR/escritório)
-  const idsComNota = new Set();
-  notas.forEach(n => {
-    if (n.obra && n.obra !== 'EDR' && n.obra !== 'EDR_ESCRITORIO') {
-      const o = obras.find(ob => ob.nome === n.obra);
-      if (o) idsComNota.add(o.id);
-    }
-  });
-  const todosIds = [...idsComNota];
-  if (!todosIds.length) return;
+  // Todas as obras ativas
+  const obrasAtivas = obras.filter(o => !o.arquivada);
+  if (!obrasAtivas.length) return;
   sel.innerHTML = '<option value="">ALMOXARIFADO</option>' +
-    todosIds.map(id => {
-      const o = obras.find(ob => ob.id === id);
-      return o ? `<option value="${id}">${esc(o.nome)}</option>` : '';
-    }).filter(Boolean).join('');
+    obrasAtivas.map(o => `<option value="${o.id}">${esc(o.nome)}</option>`).join('');
   _estoqueObraSelectPopulado = true;
 }
 
