@@ -202,13 +202,14 @@ function toggleLimparBusca() {
   if (btn) btn.style.display = document.getElementById('estoque-busca').value.trim() ? 'block' : 'none';
 }
 
+let _estoqueSelectPronto = false;
 function _popularSelectObraEstoque() {
+  if (_estoqueSelectPronto) return;
   const sel = document.getElementById('estoque-filtro-obra');
   if (!sel || !obras.length) return;
-  const valAtual = sel.value;
   sel.innerHTML = '<option value="">ALMOXARIFADO</option>' +
     obras.map(o => `<option value="${o.id}">${esc(o.nome)}</option>`).join('');
-  sel.value = valAtual;
+  _estoqueSelectPronto = true;
 }
 
 function _consolidarEstoqueObra(obraId) {
