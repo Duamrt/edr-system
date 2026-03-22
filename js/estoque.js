@@ -156,11 +156,30 @@ function consolidarEstoque() {
   });
 
   // 3. Calcular saldo real = (NF + entrada direta + ajustes) - distribuições
-  // Pré-computa chave de cada distribuição uma vez (evita recálculo O(n²))
+  // Pré-computa distribuições por chave
   const distByKey = {};
+  const distListByKey = {};
   distribuicoes.forEach(d => {
     const k = getEstoqueKey(d.item_desc);
     distByKey[k] = (distByKey[k] || 0) + Number(d.qtd);
+    if (!distListByKey[k]) distListByKey[k] = [];
+    distListByKey[k].push(d);
+  });
+
+  // Pré-computa entradas diretas por chave
+  const edListByKey = {};
+  entradasDiretas.forEach(e => {
+    const k = getEstoqueKey(e.item_desc);
+    if (!edListByKey[k]) edListByKey[k] = [];
+    edListByKey[k].push(e);
+  });
+
+  // Pré-computa ajustes por chave
+  const ajListByKey = {};
+  ajustesEstoque.forEach(a => {
+    const k = getEstoqueKey(a.item_desc);
+    if (!ajListByKey[k]) ajListByKey[k] = [];
+    ajListByKey[k].push(a);
   });
 
   Object.entries(map).forEach(([myKey, m]) => {
@@ -168,6 +187,9 @@ function consolidarEstoque() {
     m.saldoTotal = m.qtdNF + m.qtdDireta + (m.qtdAjuste||0) - totalDistribuido;
     m.temNFPendente = m.qtdDireta > 0;
     m.valorMedio = (m.qtdNF + m.qtdDireta) > 0 ? m.totalValor / (m.qtdNF + m.qtdDireta) : 0;
+    m._distribuicoes = distListByKey[myKey] || [];
+    m._entradasDiretas = edListByKey[myKey] || [];
+    m._ajustes = ajListByKey[myKey] || [];
   });
 
   return Object.values(map)
@@ -218,7 +240,7 @@ function renderEstoque() {
     const negativo = m.saldoTotal < 0;
     const corSaldo = negativo ? 'var(--vermelho)' : m.saldoTotal === 0 ? 'var(--texto3)' : 'var(--verde-hl)';
     const bordaEsq = negativo ? 'var(--vermelho)' : m.credito ? 'var(--verde3)' : 'var(--borda2)';
-    return `<div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--bg2);border:1px solid var(--borda);border-radius:12px;margin-bottom:8px;border-left:3px solid ${bordaEsq};">
+    return `<div onclick="abrirHistoricoMaterial(${i})" style="cursor:pointer;display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--bg2);border:1px solid var(--borda);border-radius:12px;margin-bottom:8px;border-left:3px solid ${bordaEsq};">
       <div style="flex:1;">
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
           <span style="font-weight:700;font-size:14px;color:var(--branco);">${esc(m.desc)}</span>
@@ -237,11 +259,93 @@ function renderEstoque() {
         <div style="font-weight:800;font-size:20px;color:${corSaldo};">${m.saldoTotal}</div>
         <div style="font-size:10px;color:var(--texto3);">${m.unidade}</div>
       </div>
-      <button class="btn-dist-item" onclick="abrirSaidaDoItem(${i})">📤</button>
+      <button class="btn-dist-item" onclick="event.stopPropagation();abrirSaidaDoItem(${i})">📤</button>
     </div>`;
   }).join('');
   window._materiaisEstoque = filtrados;
   aplicarPerfil();
+}
+
+// ── HISTÓRICO DO MATERIAL ──────────────────────────────
+function abrirHistoricoMaterial(idx) {
+  const m = (window._materiaisEstoque||[])[idx]; if (!m) return;
+  const fmtData = d => { if (!d) return '—'; const dt = new Date(d+'T00:00:00'); return dt.toLocaleDateString('pt-BR'); };
+
+  // Montar movimentações
+  const movs = [];
+
+  // Entradas via NF
+  m.lotes.forEach(l => {
+    const nf = l.nota;
+    const numero = nf.numero || nf.nf || '—';
+    const forn = nf.fornecedor || '—';
+    const data = nf.data_emissao || nf.criado_em?.split('T')[0] || '';
+    movs.push({ tipo: 'entrada_nf', data, desc: `NF ${numero} — ${forn}`, qtd: +l.item.qtd, preco: +l.item.preco || 0 });
+  });
+
+  // Entradas diretas
+  (m._entradasDiretas||[]).forEach(e => {
+    movs.push({ tipo: 'entrada_direta', data: e.data || e.criado_em?.split('T')[0] || '', desc: e.fornecedor || 'Entrada direta', qtd: +e.qtd, preco: +e.preco || 0 });
+  });
+
+  // Ajustes
+  (m._ajustes||[]).forEach(a => {
+    movs.push({ tipo: 'ajuste', data: a.data || a.criado_em?.split('T')[0] || '', desc: a.motivo || 'Ajuste de estoque', qtd: +a.qtd, preco: 0 });
+  });
+
+  // Saídas (distribuições)
+  (m._distribuicoes||[]).forEach(d => {
+    const obraNome = d.obra_nome || (obras.find(o => o.id === d.obra_id)?.nome) || '—';
+    movs.push({ tipo: 'saida', data: d.data || d.criado_em?.split('T')[0] || '', desc: `→ ${obraNome}`, qtd: -Number(d.qtd), preco: 0 });
+  });
+
+  // Ordenar por data
+  movs.sort((a, b) => (a.data||'').localeCompare(b.data||''));
+
+  const corTipo = t => t === 'saida' ? 'var(--vermelho)' : t === 'ajuste' ? '#60a5fa' : 'var(--verde-hl)';
+  const lblTipo = t => t === 'entrada_nf' ? 'NF' : t === 'entrada_direta' ? 'ENTRADA' : t === 'ajuste' ? 'AJUSTE' : 'SAÍDA';
+
+  const linhas = movs.length ? movs.map(mv => `
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg3);border-radius:8px;margin-bottom:4px;border-left:3px solid ${corTipo(mv.tipo)};">
+      <div style="min-width:70px;font-size:11px;color:var(--texto3);">${fmtData(mv.data)}</div>
+      <div style="flex:1;">
+        <span style="font-size:9px;font-weight:700;color:${corTipo(mv.tipo)};background:${mv.tipo==='saida'?'var(--verm-bg)':mv.tipo==='ajuste'?'rgba(96,165,250,0.12)':'rgba(34,197,94,0.12)'};border-radius:4px;padding:2px 6px;margin-right:6px;">${lblTipo(mv.tipo)}</span>
+        <span style="font-size:12px;color:var(--branco);">${esc(mv.desc)}</span>
+      </div>
+      <div style="font-weight:700;font-size:14px;color:${mv.qtd >= 0 ? 'var(--verde-hl)' : 'var(--vermelho)'};">${mv.qtd >= 0 ? '+' : ''}${mv.qtd}</div>
+    </div>
+  `).join('') : '<div style="text-align:center;color:var(--texto3);padding:20px;">Nenhuma movimentação encontrada.</div>';
+
+  const negativo = m.saldoTotal < 0;
+  const corSaldo = negativo ? 'var(--vermelho)' : m.saldoTotal === 0 ? 'var(--texto3)' : 'var(--verde-hl)';
+
+  const modal = document.createElement('div');
+  modal.id = 'modal-hist-material';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+  modal.onclick = e => { if (e.target === modal) modal.remove(); };
+  modal.innerHTML = `
+    <div style="background:var(--bg2);border:1px solid rgba(255,255,255,0.1);border-radius:14px;padding:22px;width:min(500px,94vw);max-height:85vh;overflow-y:auto;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div>
+          <div style="font-family:'Rajdhani',sans-serif;font-weight:800;font-size:14px;letter-spacing:2px;color:var(--verde-hl);">HISTÓRICO</div>
+          <div style="font-weight:700;font-size:16px;color:var(--branco);margin-top:4px;">${esc(m.desc)}</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-weight:800;font-size:24px;color:${corSaldo};">${m.saldoTotal}</div>
+          <div style="font-size:10px;color:var(--texto3);">${m.unidade} em estoque</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+        <span style="font-size:10px;background:rgba(34,197,94,0.12);color:var(--verde-hl);border-radius:4px;padding:3px 8px;font-weight:700;">+${m.qtdNF} NF</span>
+        ${m.qtdDireta > 0 ? `<span style="font-size:10px;background:rgba(245,158,11,0.12);color:var(--amarelo);border-radius:4px;padding:3px 8px;font-weight:700;">+${m.qtdDireta} direta</span>` : ''}
+        ${(m.qtdAjuste||0) !== 0 ? `<span style="font-size:10px;background:rgba(96,165,250,0.12);color:#60a5fa;border-radius:4px;padding:3px 8px;font-weight:700;">${m.qtdAjuste > 0?'+':''}${m.qtdAjuste} ajuste</span>` : ''}
+        ${m._distribuicoes.length ? `<span style="font-size:10px;background:var(--verm-bg);color:var(--vermelho);border-radius:4px;padding:3px 8px;font-weight:700;">-${m._distribuicoes.reduce((s,d)=>s+Number(d.qtd),0)} saída</span>` : ''}
+      </div>
+      <div style="font-size:11px;font-weight:700;color:var(--texto3);letter-spacing:1px;margin-bottom:8px;font-family:'Rajdhani',sans-serif;">MOVIMENTAÇÕES (${movs.length})</div>
+      ${linhas}
+      <button onclick="document.getElementById('modal-hist-material').remove()" style="width:100%;margin-top:14px;padding:10px;background:var(--bg3);border:1px solid var(--borda2);border-radius:8px;color:var(--texto2);font-weight:700;cursor:pointer;font-family:inherit;">FECHAR</button>
+    </div>`;
+  document.body.appendChild(modal);
 }
 
 // Saída direto de um item do estoque (botão 📤 no card do material)
