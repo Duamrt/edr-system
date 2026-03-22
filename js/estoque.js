@@ -206,30 +206,60 @@ function _popularSelectObraEstoque() {
   const sel = document.getElementById('estoque-filtro-obra');
   if (!sel) return;
   const valAtual = sel.value;
-  const obrasComDist = [...new Set(distribuicoes.map(d => d.obra_id).filter(Boolean))];
+  // Obras com distribuições OU notas lançadas direto
+  const idsComDist = new Set(distribuicoes.map(d => d.obra_id).filter(Boolean));
+  const obrasComNota = new Set();
+  notas.forEach(n => {
+    if (n.obra && n.obra !== 'EDR' && n.obra !== 'EDR_ESCRITORIO') {
+      const o = obras.find(ob => ob.nome === n.obra);
+      if (o) obrasComNota.add(o.id);
+    }
+  });
+  const todosIds = [...new Set([...idsComDist, ...obrasComNota])];
   sel.innerHTML = '<option value="">ALMOXARIFADO</option>' +
-    obrasComDist.map(id => {
+    todosIds.map(id => {
       const o = obras.find(ob => ob.id === id);
       return o ? `<option value="${id}" ${id===valAtual?'selected':''}>${esc(o.nome)}</option>` : '';
     }).filter(Boolean).join('');
 }
 
 function _consolidarEstoqueObra(obraId) {
-  // Mostra o que foi distribuído pra uma obra específica
+  const obraObj = obras.find(o => o.id === obraId);
+  const obraNome = obraObj?.nome || '';
   const map = {};
-  distribuicoes.filter(d => d.obra_id === obraId).forEach(d => {
-    const key = getEstoqueKey(d.item_desc);
-    const mat = getMaterialCatalogo(d.item_desc);
-    const descPadrao = mat ? mat.nome : d.item_desc;
+
+  const getOrCreate = (desc) => {
+    const key = getEstoqueKey(desc);
+    const mat = getMaterialCatalogo(desc);
+    const descPadrao = mat ? mat.nome : desc;
     if (!map[key]) map[key] = { desc: descPadrao, unidade: mat?.unidade || 'UN', saldoTotal: 0, categoria: mat?.categoria || null, codigo: mat?.codigo || null, credito: false, qtdNF: 0, qtdDireta: 0, totalValor: 0, lotes: [], temNFPendente: false, _distribuicoes: [], _entradasDiretas: [], _ajustes: [] };
-    map[key].saldoTotal += Number(d.qtd);
-    map[key].totalValor += Number(d.valor || 0);
-    map[key]._distribuicoes.push(d);
+    return { key, entry: map[key] };
+  };
+
+  // 1. Notas lançadas direto na obra (entrada positiva)
+  notas.filter(n => n.obra === obraNome || n.obra_id === obraId).forEach(n => {
+    const itens = parseItens(n);
+    itens.forEach((it, idx) => {
+      const { entry } = getOrCreate(it.desc);
+      entry.saldoTotal += Number(it.qtd);
+      entry.qtdNF += Number(it.qtd);
+      if (Number(it.preco) > 0) entry.totalValor += Number(it.qtd) * Number(it.preco);
+      entry.lotes.push({ notaId: n.id, itemIdx: idx, nota: n, item: it, saldo: Number(it.qtd) });
+    });
   });
+
+  // 2. Distribuições do almoxarifado pra obra (entrada positiva)
+  distribuicoes.filter(d => d.obra_id === obraId).forEach(d => {
+    const { entry } = getOrCreate(d.item_desc);
+    entry.saldoTotal += Number(d.qtd);
+    entry.totalValor += Number(d.valor || 0);
+    entry._distribuicoes.push(d);
+  });
+
   Object.values(map).forEach(m => {
-    m.valorMedio = m.saldoTotal > 0 ? m.totalValor / m.saldoTotal : 0;
+    m.valorMedio = (m.qtdNF + m.saldoTotal) > 0 ? m.totalValor / Math.max(m.saldoTotal, 1) : 0;
   });
-  return Object.values(map).sort((a,b) => a.desc.localeCompare(b.desc));
+  return Object.values(map).filter(m => m.saldoTotal !== 0).sort((a,b) => a.desc.localeCompare(b.desc));
 }
 
 function renderEstoque() {
