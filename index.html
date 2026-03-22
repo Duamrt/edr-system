@@ -390,6 +390,10 @@
           <option value="">Todos centros de custo</option>
         </select>
       </div>
+      <div style="display:flex;gap:6px;margin-top:6px;">
+        <button class="cat-btn ativo" id="obras-ord-az" onclick="obrasOrdem='az';filtrarLanc();obrasAtualizarOrdem()" style="font-size:10px;padding:5px 10px;">A-Z</button>
+        <button class="cat-btn" id="obras-ord-valor" onclick="obrasOrdem='valor';filtrarLanc();obrasAtualizarOrdem()" style="font-size:10px;padding:5px 10px;">VALOR + ALTO</button>
+      </div>
       <!-- Abas — dentro do sticky para ficarem sempre visíveis -->
       <div style="display:flex;gap:6px;border-bottom:1px solid var(--borda);margin-top:8px;">
         <button id="obras-tab-lanc" onclick="obrasSwitchTab('lanc')" style="padding:7px 16px;font-size:12px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;background:transparent;border:none;border-bottom:2px solid var(--verde-hl);color:var(--verde-hl);cursor:pointer;margin-bottom:-1px;">📋 LANÇAMENTOS</button>

@@ -1,3 +1,12 @@
+// ── ORDENAÇÃO LANÇAMENTOS ────────────────────────────────────────
+let obrasOrdem = 'az';
+function obrasAtualizarOrdem() {
+  ['az','valor'].forEach(k => {
+    const el = document.getElementById('obras-ord-' + k);
+    if (el) el.classList.toggle('ativo', obrasOrdem === k);
+  });
+}
+
 // ── CATS: fonte única de categorias ──────────────────────────────
 // Derivado do CATS_ESTOQUE (definido abaixo). Inicializado após CATS_ESTOQUE.
 // fn recebe o objeto lançamento (r) e testa r.descricao normalizado.
@@ -565,6 +574,9 @@ function filtrarLanc() {
   if (busca) lista = lista.filter(l => norm(l.descricao||'').includes(busca));
   if (obraId) lista = lista.filter(l => l.obra_id === obraId);
   if (catFiltroAtual) lista = lista.filter(l => resolveEtapaKey(l.etapa || '36_outros') === catFiltroAtual);
+  // Ordenação
+  if (obrasOrdem === 'az') lista.sort((a, b) => (a.descricao||'').localeCompare(b.descricao||'', 'pt-BR'));
+  else if (obrasOrdem === 'valor') lista.sort((a, b) => Number(b.total||0) - Number(a.total||0));
   const el = document.getElementById('obras-lanc-lista'), empty = document.getElementById('obras-empty');
   if (!el || !empty) return;
   if (!lista.length) { el.innerHTML = ''; empty.classList.remove('hidden');
