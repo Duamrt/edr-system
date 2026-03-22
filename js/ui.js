@@ -212,6 +212,8 @@ function abrirSaidaMaterial(descPreenchida, unidadePreenchida) {
   document.getElementById('saida-obs').value = '';
   if (unidadePreenchida) document.getElementById('saida-unidade').value = unidadePreenchida;
   document.getElementById('ac-saida-list').classList.add('hidden');
+  const precoContainer = document.getElementById('saida-preco-container');
+  if (precoContainer) precoContainer.innerHTML = '';
   document.getElementById('modal-saida').classList.remove('hidden');
   // Se veio com material, foca direto na quantidade
   if (descPreenchida) {
@@ -219,6 +221,24 @@ function abrirSaidaMaterial(descPreenchida, unidadePreenchida) {
   } else {
     setTimeout(() => document.getElementById('saida-desc').focus(), 100);
   }
+}
+
+function _mostrarCampoPrecoSaida(desc) {
+  const container = document.getElementById('saida-preco-container');
+  if (!container) return;
+  if (container.querySelector('#saida-preco-manual')) { container.querySelector('#saida-preco-manual').focus(); return; }
+  const busca = encodeURIComponent(desc);
+  container.innerHTML = `
+    <div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:10px;padding:12px;margin-top:8px;">
+      <div style="font-size:10px;font-weight:700;color:var(--amarelo);letter-spacing:1px;margin-bottom:6px;font-family:'Rajdhani',sans-serif;">⚠ ITEM SEM PREÇO REGISTRADO</div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input type="number" id="saida-preco-manual" placeholder="Custo unitário (R$)" step="0.01" min="0.01"
+          style="flex:1;background:var(--bg3);border:1px solid rgba(245,158,11,0.3);border-radius:8px;padding:10px 12px;color:var(--branco);font-size:13px;">
+        <a href="https://lista.mercadolivre.com.br/${busca}" target="_blank" rel="noopener"
+          style="background:rgba(255,214,0,0.12);border:1px solid rgba(255,214,0,0.3);color:#fde047;border-radius:8px;padding:10px 12px;font-size:10px;font-weight:700;text-decoration:none;white-space:nowrap;font-family:'Rajdhani',sans-serif;letter-spacing:1px;">CONSULTAR ML</a>
+      </div>
+    </div>`;
+  setTimeout(() => document.getElementById('saida-preco-manual')?.focus(), 100);
 }
 
 function onSaidaDescInput() {
@@ -297,8 +317,21 @@ async function salvarSaidaMaterial() {
     if (!confirm(`⚠ Saldo em estoque: ${saldo.toFixed(2)} ${unidade}. Deseja registrar saída de ${qtd} mesmo assim?`)) return;
   }
 
+  // Se não tem valor médio, pedir preço manualmente
+  let valorUnit = estoqueItem?.valorMedio || 0;
+  if (valorUnit <= 0) {
+    const precoInput = document.getElementById('saida-preco-manual');
+    if (precoInput) {
+      valorUnit = parseFloat(precoInput.value) || 0;
+    }
+    if (valorUnit <= 0) {
+      showToast('⚠ Informe o custo unitário — este item não tem preço registrado.');
+      _mostrarCampoPrecoSaida(desc);
+      return;
+    }
+  }
+
   try {
-    const valorUnit = estoqueItem?.valorMedio || 0;
     const valor = qtd * valorUnit;
     const [nova] = await sbPost('distribuicoes', {
       item_desc: desc, item_idx: -1,
