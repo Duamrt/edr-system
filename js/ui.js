@@ -275,6 +275,20 @@ function selecionarSaidaItem(desc, unidade) {
   document.getElementById('saida-unidade').value = unidade;
   document.getElementById('ac-saida-list').classList.add('hidden');
   document.getElementById('saida-qtd').focus();
+  _checarPrecoSaida();
+}
+
+function _checarPrecoSaida() {
+  const desc = (document.getElementById('saida-desc').value||'').toUpperCase().trim();
+  if (!desc) return;
+  const estoqueItem = consolidarEstoque().find(m => m.desc.toUpperCase() === desc);
+  const container = document.getElementById('saida-preco-container');
+  if (!container) return;
+  if (!estoqueItem || (estoqueItem.valorMedio || 0) <= 0) {
+    _mostrarCampoPrecoSaida(desc);
+  } else {
+    container.innerHTML = '';
+  }
 }
 
 // Calcular saldo atual do estoque por item
@@ -313,11 +327,13 @@ async function salvarSaidaMaterial() {
   // Verificar saldo disponível
   const estoqueItem = consolidarEstoque().find(m => m.desc.toUpperCase() === desc);
   const saldo = estoqueItem?.saldoTotal || 0;
+
+  // Aviso se saldo vai ficar negativo (não bloqueia)
   if (saldo < qtd) {
-    if (!confirm(`⚠ Saldo em estoque: ${saldo.toFixed(2)} ${unidade}. Deseja registrar saída de ${qtd} mesmo assim?`)) return;
+    showToast(`⚠ Saldo atual: ${saldo} ${unidade} — saída de ${qtd} vai gerar negativo.`);
   }
 
-  // Se não tem valor médio, pedir preço manualmente
+  // Se não tem valor médio, pegar preço manual (campo já visível)
   let valorUnit = estoqueItem?.valorMedio || 0;
   if (valorUnit <= 0) {
     const precoInput = document.getElementById('saida-preco-manual');
@@ -325,7 +341,7 @@ async function salvarSaidaMaterial() {
       valorUnit = parseFloat(precoInput.value) || 0;
     }
     if (valorUnit <= 0) {
-      showToast('⚠ Informe o custo unitário — este item não tem preço registrado.');
+      showToast('⚠ Informe o custo unitário.');
       _mostrarCampoPrecoSaida(desc);
       return;
     }

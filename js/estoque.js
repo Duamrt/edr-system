@@ -202,10 +202,42 @@ function toggleLimparBusca() {
   if (btn) btn.style.display = document.getElementById('estoque-busca').value.trim() ? 'block' : 'none';
 }
 
+function _popularSelectObraEstoque() {
+  const sel = document.getElementById('estoque-filtro-obra');
+  if (!sel) return;
+  const valAtual = sel.value;
+  const obrasComDist = [...new Set(distribuicoes.map(d => d.obra_id).filter(Boolean))];
+  sel.innerHTML = '<option value="">ALMOXARIFADO</option>' +
+    obrasComDist.map(id => {
+      const o = obras.find(ob => ob.id === id);
+      return o ? `<option value="${id}" ${id===valAtual?'selected':''}>${esc(o.nome)}</option>` : '';
+    }).filter(Boolean).join('');
+}
+
+function _consolidarEstoqueObra(obraId) {
+  // Mostra o que foi distribuído pra uma obra específica
+  const map = {};
+  distribuicoes.filter(d => d.obra_id === obraId).forEach(d => {
+    const key = getEstoqueKey(d.item_desc);
+    const mat = getMaterialCatalogo(d.item_desc);
+    const descPadrao = mat ? mat.nome : d.item_desc;
+    if (!map[key]) map[key] = { desc: descPadrao, unidade: mat?.unidade || 'UN', saldoTotal: 0, categoria: mat?.categoria || null, codigo: mat?.codigo || null, credito: false, qtdNF: 0, qtdDireta: 0, totalValor: 0, lotes: [], temNFPendente: false, _distribuicoes: [], _entradasDiretas: [], _ajustes: [] };
+    map[key].saldoTotal += Number(d.qtd);
+    map[key].totalValor += Number(d.valor || 0);
+    map[key]._distribuicoes.push(d);
+  });
+  Object.values(map).forEach(m => {
+    m.valorMedio = m.saldoTotal > 0 ? m.totalValor / m.saldoTotal : 0;
+  });
+  return Object.values(map).sort((a,b) => a.desc.localeCompare(b.desc));
+}
+
 function renderEstoque() {
   document.getElementById('estoque-loading').classList.add('hidden');
   const lista = document.getElementById('estoque-lista'), empty = document.getElementById('estoque-empty');
-  const materiais = consolidarEstoque();
+  _popularSelectObraEstoque();
+  const obraFiltro = document.getElementById('estoque-filtro-obra')?.value || '';
+  const materiais = obraFiltro ? _consolidarEstoqueObra(obraFiltro) : consolidarEstoque();
   // Renderizar sidebar de categorias
   const catsEl = document.getElementById('estoque-cats');
   if (catsEl) {
