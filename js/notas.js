@@ -3,8 +3,21 @@
 // ══════════════════════════════════════════
 function renderNotas() {
   const fo = document.getElementById('filtro-obra').value, fc = document.getElementById('filtro-credito').value;
+  const ff = document.getElementById('filtro-fornecedor')?.value || '';
+  // Popular select de fornecedores (uma vez por render)
+  const selForn = document.getElementById('filtro-fornecedor');
+  if (selForn) {
+    const fornAtuais = new Set();
+    selForn.querySelectorAll('option').forEach(o => { if (o.value) fornAtuais.add(o.value); });
+    const fornNovos = [...new Set(notas.map(n => n.fornecedor).filter(Boolean))].sort((a,b) => a.localeCompare(b, 'pt-BR'));
+    if (fornNovos.length !== fornAtuais.size || fornNovos.some(f => !fornAtuais.has(f))) {
+      const valAtual = selForn.value;
+      selForn.innerHTML = '<option value="">TODOS OS FORNECEDORES</option>' + fornNovos.map(f => `<option value="${esc(f)}" ${f===valAtual?'selected':''}>${esc(f)}</option>`).join('');
+    }
+  }
   let lista = [...notas];
   if (fo) lista = lista.filter(n => n.obra === fo);
+  if (ff) lista = lista.filter(n => n.fornecedor === ff);
   if (fc === 'sim') lista = lista.filter(n => n.gera_credito && n.obra !== 'EDR' && n.obra !== 'EDR_ESCRITORIO');
   if (fc === 'nao') lista = lista.filter(n => !n.gera_credito && n.obra !== 'EDR' && n.obra !== 'EDR_ESCRITORIO');
   if (fc === 'estoque') lista = lista.filter(n => n.obra === 'EDR');
