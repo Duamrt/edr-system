@@ -206,15 +206,15 @@ let _estoqueObraSelectPopulado = false;
 function _popularSelectObraEstoque() {
   const sel = document.getElementById('estoque-filtro-obra');
   if (!sel || _estoqueObraSelectPopulado) return;
-  // Obras com distribuições OU notas lançadas direto
-  const idsComDist = new Set(distribuicoes.map(d => d.obra_id).filter(Boolean));
+  // Só obras que têm notas lançadas direto (não EDR/escritório)
+  const idsComNota = new Set();
   notas.forEach(n => {
     if (n.obra && n.obra !== 'EDR' && n.obra !== 'EDR_ESCRITORIO') {
       const o = obras.find(ob => ob.nome === n.obra);
-      if (o) idsComDist.add(o.id);
+      if (o) idsComNota.add(o.id);
     }
   });
-  const todosIds = [...idsComDist];
+  const todosIds = [...idsComNota];
   if (!todosIds.length) return;
   sel.innerHTML = '<option value="">ALMOXARIFADO</option>' +
     todosIds.map(id => {
@@ -237,7 +237,8 @@ function _consolidarEstoqueObra(obraId) {
     return { key, entry: map[key] };
   };
 
-  // 1. Notas lançadas direto na obra (entrada positiva)
+  // Apenas notas lançadas direto na obra = estoque real da obra
+  // Distribuições do almoxarifado = consumo, não entra como estoque
   notas.filter(n => n.obra === obraNome || n.obra_id === obraId).forEach(n => {
     const itens = parseItens(n);
     itens.forEach((it, idx) => {
@@ -249,16 +250,8 @@ function _consolidarEstoqueObra(obraId) {
     });
   });
 
-  // 2. Distribuições do almoxarifado pra obra (entrada positiva)
-  distribuicoes.filter(d => d.obra_id === obraId).forEach(d => {
-    const { entry } = getOrCreate(d.item_desc);
-    entry.saldoTotal += Number(d.qtd);
-    entry.totalValor += Number(d.valor || 0);
-    entry._distribuicoes.push(d);
-  });
-
   Object.values(map).forEach(m => {
-    m.valorMedio = (m.qtdNF + m.saldoTotal) > 0 ? m.totalValor / Math.max(m.saldoTotal, 1) : 0;
+    m.valorMedio = m.qtdNF > 0 ? m.totalValor / m.qtdNF : 0;
   });
   return Object.values(map).filter(m => m.saldoTotal !== 0).sort((a,b) => a.desc.localeCompare(b.desc));
 }
