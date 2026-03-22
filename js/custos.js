@@ -1,3 +1,12 @@
+function verLancamentosObra(obraId) {
+  setView('obras');
+  const sel = document.getElementById('obras-filtro-obra');
+  if (sel) { sel.value = obraId; onChangeObraFiltro(); }
+  obrasOrdem = 'valor';
+  obrasAtualizarOrdem();
+  filtrarLanc();
+}
+
 // ══════════════════════════════════════════
 // CUSTOS CEF — REPASSES
 // ══════════════════════════════════════════
@@ -203,9 +212,10 @@ function renderCustosResumo() {
             <div style="font-size:10px;color:var(--texto3);letter-spacing:1px;margin-bottom:4px;">SALDO A RECEBER</div>
             <div style="font-size:18px;font-weight:700;color:${corSaldo};font-family:'Rajdhani',sans-serif;">${valorVenda > 0 ? fmt(saldoReceber) : '-'}</div>
           </div>
-          <div style="text-align:center;padding:10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;">
+          <div onclick="verLancamentosObra('${obraFiltro}')" style="cursor:pointer;text-align:center;padding:10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;">
             <div style="font-size:10px;color:var(--texto3);letter-spacing:1px;margin-bottom:4px;">CUSTO TOTAL</div>
             <div style="font-size:18px;font-weight:700;color:#f59e0b;font-family:'Rajdhani',sans-serif;">${fmt(custoTotal)}</div>
+            <div style="font-size:9px;color:var(--texto3);margin-top:3px;">ver lançamentos →</div>
           </div>
           ${adds.qtd > 0 ? `<div style="text-align:center;padding:10px;background:rgba(139,92,246,0.04);border:1px solid rgba(139,92,246,0.15);border-radius:10px;">
             <div style="font-size:10px;color:#a78bfa;letter-spacing:1px;margin-bottom:4px;">📝 ADICIONAIS (${adds.qtd})</div>
