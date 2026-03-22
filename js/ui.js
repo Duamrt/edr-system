@@ -284,7 +284,15 @@ function _checarPrecoSaida() {
   const estoqueItem = consolidarEstoque().find(m => m.desc.toUpperCase() === desc);
   const container = document.getElementById('saida-preco-container');
   if (!container) return;
-  if (!estoqueItem || (estoqueItem.valorMedio || 0) <= 0) {
+  let temPreco = (estoqueItem?.valorMedio || 0) > 0;
+  // Buscar preço em qualquer nota se não achou no almoxarifado
+  if (!temPreco) {
+    for (const n of notas) {
+      const itens = parseItens(n);
+      if (itens.find(i => i.desc.toUpperCase() === desc && Number(i.preco) > 0)) { temPreco = true; break; }
+    }
+  }
+  if (!temPreco) {
     _mostrarCampoPrecoSaida(desc);
   } else {
     container.innerHTML = '';
@@ -333,8 +341,15 @@ async function salvarSaidaMaterial() {
     showToast(`⚠ Saldo atual: ${saldo} ${unidade} — saída de ${qtd} vai gerar negativo.`);
   }
 
-  // Se não tem valor médio, pegar preço manual (campo já visível)
+  // Se não tem valor médio no almoxarifado, buscar em qualquer nota
   let valorUnit = estoqueItem?.valorMedio || 0;
+  if (valorUnit <= 0) {
+    for (const n of notas) {
+      const itens = parseItens(n);
+      const it = itens.find(i => i.desc.toUpperCase() === desc && Number(i.preco) > 0);
+      if (it) { valorUnit = Number(it.preco); break; }
+    }
+  }
   if (valorUnit <= 0) {
     const precoInput = document.getElementById('saida-preco-manual');
     if (precoInput) {
