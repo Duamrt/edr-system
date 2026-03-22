@@ -1,10 +1,12 @@
 function verLancamentosObra(obraId) {
   setView('obras');
-  const sel = document.getElementById('obras-filtro-obra');
-  if (sel) { sel.value = obraId; onChangeObraFiltro(); }
-  obrasOrdem = 'valor';
-  obrasAtualizarOrdem();
-  filtrarLanc();
+  setTimeout(() => {
+    const sel = document.getElementById('obras-filtro-obra');
+    if (sel) { sel.value = obraId; onChangeObraFiltro(); }
+    obrasOrdem = 'valor';
+    obrasAtualizarOrdem();
+    filtrarLanc();
+  }, 50);
 }
 
 // ══════════════════════════════════════════
