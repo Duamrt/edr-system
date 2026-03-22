@@ -1,11 +1,9 @@
 function verLancamentosObra(obraId) {
+  obrasOrdem = 'valor';
   setView('obras');
   setTimeout(() => {
-    const sel = document.getElementById('obras-filtro-obra');
-    if (sel) { sel.value = obraId; onChangeObraFiltro(); }
-    obrasOrdem = 'valor';
+    obrasAbrirDetalhe(obraId);
     obrasAtualizarOrdem();
-    filtrarLanc();
   }, 50);
 }
 
