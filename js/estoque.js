@@ -280,7 +280,7 @@ function abrirHistoricoMaterial(idx) {
     const numero = nf.numero || nf.nf || '—';
     const forn = nf.fornecedor || '—';
     const data = nf.data_emissao || nf.criado_em?.split('T')[0] || '';
-    movs.push({ tipo: 'entrada_nf', data, desc: `NF ${numero} — ${forn}`, qtd: +l.item.qtd, preco: +l.item.preco || 0 });
+    movs.push({ tipo: 'entrada_nf', data, desc: `NF ${numero} — ${forn}`, qtd: +l.item.qtd, preco: +l.item.preco || 0, notaId: nf.id });
   });
 
   // Entradas diretas
@@ -305,16 +305,18 @@ function abrirHistoricoMaterial(idx) {
   const corTipo = t => t === 'saida' ? 'var(--vermelho)' : t === 'ajuste' ? '#60a5fa' : 'var(--verde-hl)';
   const lblTipo = t => t === 'entrada_nf' ? 'NF' : t === 'entrada_direta' ? 'ENTRADA' : t === 'ajuste' ? 'AJUSTE' : 'SAÍDA';
 
-  const linhas = movs.length ? movs.map(mv => `
-    <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg3);border-radius:8px;margin-bottom:4px;border-left:3px solid ${corTipo(mv.tipo)};">
+  const linhas = movs.length ? movs.map(mv => {
+    const clicavel = mv.notaId ? `onclick="document.getElementById('modal-hist-material').remove();abrirNota('${mv.notaId}')" style="cursor:pointer;` : `style="`;
+    return `<div ${clicavel}display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg3);border-radius:8px;margin-bottom:4px;border-left:3px solid ${corTipo(mv.tipo)};">
       <div style="min-width:70px;font-size:11px;color:var(--texto3);">${fmtData(mv.data)}</div>
       <div style="flex:1;">
         <span style="font-size:9px;font-weight:700;color:${corTipo(mv.tipo)};background:${mv.tipo==='saida'?'var(--verm-bg)':mv.tipo==='ajuste'?'rgba(96,165,250,0.12)':'rgba(34,197,94,0.12)'};border-radius:4px;padding:2px 6px;margin-right:6px;">${lblTipo(mv.tipo)}</span>
         <span style="font-size:12px;color:var(--branco);">${esc(mv.desc)}</span>
+        ${mv.notaId ? '<span style="font-size:9px;color:var(--texto3);margin-left:4px;">ver nota →</span>' : ''}
       </div>
       <div style="font-weight:700;font-size:14px;color:${mv.qtd >= 0 ? 'var(--verde-hl)' : 'var(--vermelho)'};">${mv.qtd >= 0 ? '+' : ''}${mv.qtd}</div>
-    </div>
-  `).join('') : '<div style="text-align:center;color:var(--texto3);padding:20px;">Nenhuma movimentação encontrada.</div>';
+    </div>`;
+  }).join('') : '<div style="text-align:center;color:var(--texto3);padding:20px;">Nenhuma movimentação encontrada.</div>';
 
   const negativo = m.saldoTotal < 0;
   const corSaldo = negativo ? 'var(--vermelho)' : m.saldoTotal === 0 ? 'var(--texto3)' : 'var(--verde-hl)';
