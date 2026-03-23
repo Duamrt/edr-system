@@ -197,9 +197,15 @@ function selectAC(idx) {
   document.getElementById('ac-list').classList.add('hidden');
   acSelectedIdx = -1; currentCredito = m.credito;
   const badge = document.getElementById('i-credito-badge');
-  badge.className = `credito-badge ${m.credito?'sim':'nao'}`;
-  badge.textContent = m.credito ? `GERA CREDITO IBS/CBS - ${m.cat}` : `NAO GERA CREDITO - ${m.cat}`;
-  document.getElementById('i-manual-wrap').classList.add('hidden');
+  if (m.credito === null) {
+    badge.className = 'credito-badge duvida';
+    badge.textContent = '❓ NÃO RECONHECIDO — classifique abaixo';
+    document.getElementById('i-manual-wrap').classList.remove('hidden');
+  } else {
+    badge.className = `credito-badge ${m.credito?'sim':'nao'}`;
+    badge.textContent = m.credito ? `GERA CREDITO IBS/CBS - ${m.cat}` : `NAO GERA CREDITO - ${m.cat}`;
+    document.getElementById('i-manual-wrap').classList.add('hidden');
+  }
   if (m.unidade) document.getElementById('i-unidade').value = m.unidade;
   document.getElementById('i-qtd').focus();
 }
