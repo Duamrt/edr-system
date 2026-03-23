@@ -122,7 +122,9 @@
   .ev-prio.media{background:#fffbeb;color:#d97706}
   [data-theme="dark"] .ev-prio.alta{background:#450a0a;color:#fca5a5}
   [data-theme="dark"] .ev-prio.media{background:#451a03;color:#fcd34d}
-  .ev-del{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1.1rem;padding:8px;min-width:40px;min-height:40px;display:flex;align-items:center;justify-content:center;opacity:.4;transition:color .2s}
+  .ev-actions{display:flex;flex-direction:column;gap:2px;align-items:center}
+  .ev-edit,.ev-del{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1rem;padding:6px;min-width:36px;min-height:36px;display:flex;align-items:center;justify-content:center;opacity:.4;transition:color .2s;border-radius:6px}
+  .ev-edit:hover{color:var(--accent);opacity:1;background:var(--accent-light)}
   .ev-del:hover{color:#ef4444;opacity:1}
 
   /* Form novo (compartilhado) */
@@ -293,8 +295,8 @@
 <div class="modal-overlay" id="modal">
   <div class="modal-content">
     <div class="modal-header">
-      <h3>Novo compromisso</h3>
-      <button class="modal-close" onclick="fecharModal()" aria-label="Fechar">&#10005;</button>
+      <h3 id="modalTitulo">Novo compromisso</h3>
+      <button class="modal-close" onclick="fecharModal();resetModal()" aria-label="Fechar">&#10005;</button>
     </div>
     <div class="form-novo">
       <input type="text" id="mTit" placeholder="O que precisa fazer?" aria-label="Titulo">
@@ -304,7 +306,7 @@
       </div>
       <select id="mPrio" aria-label="Prioridade"><option value="baixa">Normal</option><option value="media">Media</option><option value="alta">Alta</option></select>
       <textarea id="mObs" placeholder="Observacoes (opcional)" aria-label="Observacoes"></textarea>
-      <button class="btn-add" onclick="addEvento('m')">Adicionar</button>
+      <button class="btn-add" id="modalBtnAdd" onclick="addEvento('m')">Adicionar</button>
     </div>
   </div>
 </div>
@@ -370,7 +372,10 @@ function renderEv(ev){
         ${pr!=='baixa'?`<span class="ev-prio ${pr}">${pl[pr]}</span>`:''}
       </div>
     </div>
-    <button class="ev-del" onclick="del(${ev.id})" aria-label="Remover">&#10005;</button>
+    <div class="ev-actions">
+      <button class="ev-edit" onclick="editEv(${ev.id})" aria-label="Editar">&#9998;</button>
+      <button class="ev-del" onclick="del(${ev.id})" aria-label="Remover">&#10005;</button>
+    </div>
   </div>`}
 
 // ── Desktop: calendario ──
@@ -459,6 +464,45 @@ function renderMob(){
 async function toggle(id){const ev=state.find(e=>e.id===id);if(ev)ev.concluido=!ev.concluido;refresh();await save(state)}
 async function del(id){state=state.filter(e=>e.id!==id);refresh();await save(state)}
 
+let editandoId=null;
+function editEv(id){
+  const ev=state.find(e=>e.id===id);if(!ev)return;
+  editandoId=id;
+  // Preencher modal mobile com dados do evento
+  document.getElementById('mTit').value=ev.titulo;
+  document.getElementById('mHora').value=ev.hora||'08:00';
+  document.getElementById('mCat').value=ev.categoria;
+  document.getElementById('mPrio').value=ev.prioridade||'baixa';
+  document.getElementById('mObs').value=ev.obs||'';
+  document.getElementById('modalTitulo').textContent='Editar compromisso';
+  document.getElementById('modalBtnAdd').textContent='Salvar';
+  document.getElementById('modalBtnAdd').onclick=()=>salvarEdicao();
+  document.getElementById('modal').classList.add('show');
+}
+
+async function salvarEdicao(){
+  const ev=state.find(e=>e.id===editandoId);if(!ev)return;
+  const t=document.getElementById('mTit').value.trim();if(!t){document.getElementById('mTit').focus();return}
+  ev.titulo=t;
+  ev.hora=document.getElementById('mHora').value;
+  ev.categoria=document.getElementById('mCat').value;
+  ev.prioridade=document.getElementById('mPrio').value;
+  ev.obs=document.getElementById('mObs').value.trim();
+  editandoId=null;
+  fecharModal();resetModal();
+  refresh();await save(state);
+}
+
+function resetModal(){
+  document.getElementById('mTit').value='';document.getElementById('mObs').value='';
+  document.getElementById('mHora').value='08:00';document.getElementById('mCat').value='trabalho';
+  document.getElementById('mPrio').value='baixa';
+  document.getElementById('modalTitulo').textContent='Novo compromisso';
+  document.getElementById('modalBtnAdd').textContent='Adicionar';
+  document.getElementById('modalBtnAdd').onclick=()=>addEvento('m');
+  editandoId=null;
+}
+
 async function addEvento(src){
   const t=document.getElementById(src+'Tit'),h=document.getElementById(src+'Hora'),
     cat=document.getElementById(src+'Cat'),pr=document.getElementById(src+'Prio'),
@@ -490,7 +534,7 @@ function irHoje(){const h=new Date();mesAt=h.getMonth();anoAt=h.getFullYear();di
 // ── Modal mobile ──
 function abrirModal(){document.getElementById('modal').classList.add('show')}
 function fecharModal(){document.getElementById('modal').classList.remove('show')}
-document.getElementById('modal').addEventListener('click',e=>{if(e.target.classList.contains('modal-overlay'))fecharModal()});
+document.getElementById('modal').addEventListener('click',e=>{if(e.target.classList.contains('modal-overlay')){fecharModal();resetModal()}});
 
 // ── Tema ──
 function toggleTema(){const a=document.documentElement.getAttribute('data-theme'),n=a==='dark'?'light':'dark';
