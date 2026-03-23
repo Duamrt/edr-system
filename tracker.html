@@ -501,7 +501,21 @@
   async function loadPlanData() {
     try {
       const { data } = await db.from('tracker_sync').select('data').eq('key','tracker-planejamento-v1').single();
-      if (data && data.data && data.data.obras) planData = data.data;
+      if (data && data.data && data.data.obras) {
+        const defaults = JSON.parse(JSON.stringify(planData.obras));
+        const saved = data.data.obras;
+        planData.obras = defaults.map(defObra => {
+          const savedObra = saved.find(s => s.id === defObra.id);
+          if (!savedObra) return defObra;
+          const mergedTasks = defObra.tasks.map(defTask => {
+            const savedTask = savedObra.tasks.find(s => s.id === defTask.id);
+            if (!savedTask) return defTask;
+            return { ...defTask, done: savedTask.done, dataPrevista: savedTask.dataPrevista||'', dataConcluida: savedTask.dataConcluida||'', obs: savedTask.obs||'' };
+          });
+          return { ...defObra, tasks: mergedTasks };
+        });
+        await savePlan();
+      }
     } catch(e) {}
   }
 
