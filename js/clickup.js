@@ -87,12 +87,11 @@ async function clickupCriarObra(nomeObra, obraId) {
           body: JSON.stringify({ name: etapa, status: 'pendente' })
         });
         criadas++;
-      } catch(e) {}
+      } catch(e) { console.error('Erro:', e); }
     }
 
-    console.log(`[ClickUp] Obra "${nomeObra}" criada: ${criadas}/62 etapas (List: ${list.id})`);
     showToast(`📋 Obra criada no ClickUp com ${criadas} etapas!`);
-  } catch(e) { console.log('Erro ClickUp criar:', e.message); }
+  } catch(e) { console.error('Erro:', e); }
 }
 
 // ── RENOMEAR obra no ClickUp ──
@@ -107,8 +106,7 @@ async function clickupRenomearObra(clickupListId, novoNome) {
       headers: { 'Authorization': config.key, 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: novoNome })
     });
-    console.log(`[ClickUp] Obra renomeada: ${novoNome}`);
-  } catch(e) { console.log('Erro ClickUp renomear:', e.message); }
+  } catch(e) { console.error('Erro:', e); }
 }
 
 // ── ARQUIVAR obra no ClickUp ──
@@ -131,8 +129,7 @@ async function clickupArquivarObra(clickupListId) {
         body: JSON.stringify({ name: `[ARQUIVADA] ${nome}` })
       });
     }
-    console.log(`[ClickUp] Obra arquivada: ${nome}`);
-  } catch(e) { console.log('Erro ClickUp arquivar:', e.message); }
+  } catch(e) { console.error('Erro:', e); }
 }
 
 // ── DELETAR obra no ClickUp ──
@@ -146,6 +143,5 @@ async function clickupDeletarObra(clickupListId) {
       method: 'DELETE',
       headers: { 'Authorization': config.key }
     });
-    console.log(`[ClickUp] Obra deletada: ${clickupListId}`);
-  } catch(e) { console.log('Erro ClickUp deletar:', e.message); }
+  } catch(e) { console.error('Erro:', e); }
 }

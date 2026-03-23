@@ -122,6 +122,8 @@ async function fazerLogout() {
   obras = []; obrasArquivadas = []; notas = []; lancamentos = []; distribuicoes = [];
   // Limpar estados de filtro pra não herdar IDs da sessão anterior
   obraFiltroAtual = null; catFiltroAtual = null; catEstoqueFiltro = null;
+  if(typeof mostandoArquivadas!=='undefined') mostandoArquivadas=false;
+  if(typeof currentCredito!=='undefined') currentCredito=null;
   entradasDiretas = []; catalogoMateriais = []; repassesCef = []; ajustesEstoque = [];
   itensForm = []; distItemAtual = null; currentCredito = null;
   leadsData = []; diarQuinzenas = []; diarQuinzenaAtiva = null; contasPagar = []; projecoesCaixa = []; garantiaChamados = [];

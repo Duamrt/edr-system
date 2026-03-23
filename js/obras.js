@@ -1,3 +1,5 @@
+let obraTabAtual = 'lanc';
+
 // ── ORDENAÇÃO LANÇAMENTOS ────────────────────────────────────────
 let obrasOrdem = 'az';
 function obrasAtualizarOrdem() {
@@ -347,7 +349,6 @@ function reimprimirTermo(obraId) {
   });
 }
 
-let obraTabAtual = 'lanc';
 function obrasSwitchTab(tab) {
   obraTabAtual = tab;
   const tabs = ['lanc','mat','add','cef'];

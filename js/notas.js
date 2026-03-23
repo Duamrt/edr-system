@@ -137,7 +137,7 @@ function classificarItem(desc) {
 
 function getItensAnteriores(val) {
   const v = norm(val), map = {};
-  notas.forEach(n => { try { JSON.parse(n.itens||'[]').forEach(i => { if (norm(i.desc).includes(v) && !map[i.desc]) map[i.desc] = { desc: i.desc, credito: i.credito, cat: i.cat||'', unidade: i.unidade||'' }; }); } catch(e) {} });
+  notas.forEach(n => { try { JSON.parse(n.itens||'[]').forEach(i => { if (norm(i.desc).includes(v) && !map[i.desc]) map[i.desc] = { desc: i.desc, credito: i.credito, cat: i.cat||'', unidade: i.unidade||'' }; }); } catch(e) { console.error('Erro:', e); } });
   return Object.values(map).slice(0, 4);
 }
 

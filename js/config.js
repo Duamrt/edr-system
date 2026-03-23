@@ -28,7 +28,7 @@ async function loadCompanyPlan() {
   try {
     const r = await sbGet('companies', '?id=eq.' + _companyId + '&select=plan,trial_ends_at');
     if (r && r[0]) _companyPlan = r[0];
-  } catch(e) {}
+  } catch(e) { console.error('Erro:', e); }
 }
 
 function getLimites() {
@@ -65,7 +65,7 @@ async function checarLimiteUsuarios() {
       alert('Limite de usuarios atingido no plano ' + (PLANOS[plano]?.nome || plano) + ' (' + lim.usuarios + ').\n\nFaca upgrade para adicionar mais membros.');
       return false;
     }
-  } catch(e) {}
+  } catch(e) { console.error('Erro:', e); }
   return true;
 }
 
