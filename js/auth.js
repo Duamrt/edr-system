@@ -16,7 +16,9 @@ function _resolverLogin(input) {
   // Limpar telefone (só números)
   const nums = input.replace(/\D/g, '');
   if (nums.length >= 10) return nums + '@edr.app';
-  return input; // vai falhar na validação
+  // Atalho: só o usuário sem @ → completa com @edreng.com.br
+  if (input.length >= 3) return input + '@edreng.com.br';
+  return input;
 }
 
 // Formatar número de telefone pra exibição
