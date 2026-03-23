@@ -1540,6 +1540,7 @@ function diarExportarFolha() {
 
 function diarGerarPDF(regs) {
   try {
+  if (!window.jspdf) { showToast('Erro ao carregar exportação. Tente novamente.'); return; }
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const W = 210, margem = 14;

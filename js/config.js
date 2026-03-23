@@ -1,6 +1,9 @@
 const SUPABASE_URL = 'https://mepzoxoahpwcvvlymlfh.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_Z9E8KLU8ZIMcWjD-bMG5gg_eM585qWq';
 
+// Constantes de destino padrão (evita hardcodes espalhados)
+const COMPANY_DEFAULTS = { estoqueGeral: 'EDR', escritorio: 'EDR_ESCRITORIO', estoqueLabel: 'EDR ENGENHARIA', escritorioLabel: 'EDR ESCRITÓRIO' };
+
 // Telegram — notificações de novos clientes
 const TG_BOT = '8644194982:AAH6-26NFAbYYtq4TM45hOapqqMguid9qpI';
 const TG_CHAT_EDR = '-5239426430';

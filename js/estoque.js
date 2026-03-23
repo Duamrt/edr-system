@@ -524,6 +524,7 @@ async function exportarEstoqueExcel() {
       document.head.appendChild(s);
     });
   }
+  if (!window.ExcelJS) { showToast('Erro ao carregar exportação. Tente novamente.'); return; }
 
   const wb = new ExcelJS.Workbook();
   wb.creator = 'EDR Engenharia';

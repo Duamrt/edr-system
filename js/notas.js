@@ -18,16 +18,16 @@ function renderNotas() {
   let lista = [...notas];
   if (fo) lista = lista.filter(n => n.obra === fo);
   if (ff) lista = lista.filter(n => n.fornecedor === ff);
-  if (fc === 'sim') lista = lista.filter(n => n.gera_credito && n.obra !== 'EDR' && n.obra !== 'EDR_ESCRITORIO');
-  if (fc === 'nao') lista = lista.filter(n => !n.gera_credito && n.obra !== 'EDR' && n.obra !== 'EDR_ESCRITORIO');
-  if (fc === 'estoque') lista = lista.filter(n => n.obra === 'EDR');
-  if (fc === 'escritorio') lista = lista.filter(n => n.obra === 'EDR_ESCRITORIO');
+  if (fc === 'sim') lista = lista.filter(n => n.gera_credito && n.obra !== COMPANY_DEFAULTS.estoqueGeral && n.obra !== COMPANY_DEFAULTS.escritorio);
+  if (fc === 'nao') lista = lista.filter(n => !n.gera_credito && n.obra !== COMPANY_DEFAULTS.estoqueGeral && n.obra !== COMPANY_DEFAULTS.escritorio);
+  if (fc === 'estoque') lista = lista.filter(n => n.obra === COMPANY_DEFAULTS.estoqueGeral);
+  if (fc === 'escritorio') lista = lista.filter(n => n.obra === COMPANY_DEFAULTS.escritorio);
   const el = document.getElementById('notas-lista'), empty = document.getElementById('notas-empty');
   if (!lista.length) { el.innerHTML = ''; empty.classList.remove('hidden'); return; }
   empty.classList.add('hidden');
   el.innerHTML = lista.map(n => {
     const itens = parseItens(n);
-    const classe = n.obra==='EDR'?'estoque':n.credito_status==='sim'?'':n.credito_status==='misto'?'misto':'sem-credito';
+    const classe = n.obra===COMPANY_DEFAULTS.estoqueGeral?'estoque':n.credito_status==='sim'?'':n.credito_status==='misto'?'misto':'sem-credito';
     return `<div class="nota-card ${classe}" onclick="abrirNota('${esc(n.id)}')" style="cursor:pointer;">
       <div class="nota-top">
         <span class="nota-fornecedor">${esc(n.fornecedor)} <span style="font-weight:400;font-size:11px;color:var(--texto3)">NF ${n.numero_nf||''}</span></span>
@@ -38,9 +38,9 @@ function renderNotas() {
       </div>
       <div class="nota-desc">${n.natureza||''} · ${itens.length} ITEN${itens.length!==1?'S':''} · ${n.data}${n.frete>0?' · 🚚 '+fmtR(n.frete):''}</div>
       <div class="tags">
-        <span class="tag ${n.obra==='EDR'?'tag-estoque':n.obra==='EDR_ESCRITORIO'?'tag-nat':'tag-obra'}">${n.obra==='EDR'?'📦 ESTOQUE':n.obra==='EDR_ESCRITORIO'?'🏢 ESCRITÓRIO':n.obra}</span>
+        <span class="tag ${n.obra===COMPANY_DEFAULTS.estoqueGeral?'tag-estoque':n.obra===COMPANY_DEFAULTS.escritorio?'tag-nat':'tag-obra'}">${n.obra===COMPANY_DEFAULTS.estoqueGeral?'📦 ESTOQUE':n.obra===COMPANY_DEFAULTS.escritorio?'🏢 ESCRITÓRIO':n.obra}</span>
         <span class="tag tag-nat">${n.natureza||''}</span>
-        <span class="tag ${n.credito_status==='sim'?'tag-credito':n.credito_status==='misto'?'tag-misto':'tag-semcredito'}">${n.obra==='EDR'?'AGUARD. DISTRIBUIÇÃO':n.obra==='EDR_ESCRITORIO'?'CONSUMO DIRETO':n.credito_status==='sim'?'✓ CRÉDITO':n.credito_status==='misto'?'⚡ CRÉDITO PARCIAL':'✗ SEM CRÉDITO'}</span>
+        <span class="tag ${n.credito_status==='sim'?'tag-credito':n.credito_status==='misto'?'tag-misto':'tag-semcredito'}">${n.obra===COMPANY_DEFAULTS.estoqueGeral?'AGUARD. DISTRIBUIÇÃO':n.obra===COMPANY_DEFAULTS.escritorio?'CONSUMO DIRETO':n.credito_status==='sim'?'✓ CRÉDITO':n.credito_status==='misto'?'⚡ CRÉDITO PARCIAL':'✗ SEM CRÉDITO'}</span>
       </div>
       <div class="nota-meta">${n.cnpj||'SEM CNPJ'}</div>
     </div>`;
@@ -395,7 +395,7 @@ async function salvarNota() {
     }
 
     // Baixa automática para itens de escritório (limpeza/alimentação/expediente)
-    if (destino === 'EDR') {
+    if (destino === COMPANY_DEFAULTS.estoqueGeral) {
       const CATS_ESCRITORIO = ['limpeza','alimentacao','expediente'];
       const itensEscritorio = itensForm.filter(it => CATS_ESCRITORIO.includes(getCatEstoque(it.desc)));
       if (itensEscritorio.length > 0) {
@@ -439,13 +439,13 @@ async function salvarNota() {
 function onDestinoChange() {
   const val = document.getElementById('f-obra').value;
   const aviso = document.getElementById('aviso-escritorio');
-  if (aviso) aviso.classList.toggle('hidden', val !== 'EDR_ESCRITORIO');
+  if (aviso) aviso.classList.toggle('hidden', val !== COMPANY_DEFAULTS.escritorio);
 }
 
 function resetForm() {
   itensForm = []; currentCredito = null; renderItensForm();
   ['f-numero','f-fornecedor','f-cnpj','f-obs','f-frete'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('f-obra').value = 'EDR';
+  document.getElementById('f-obra').value = COMPANY_DEFAULTS.estoqueGeral;
   document.getElementById('frete-total-row').classList.add('hidden');
   setToday();
 }

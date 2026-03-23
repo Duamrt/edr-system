@@ -32,6 +32,7 @@ async function fazerLogin() {
   const btn = document.querySelector('.btn-login');
   const errEl = document.getElementById('login-error');
   if (!u || !s) { errEl.textContent = 'Informe email ou telefone e senha.'; return; }
+  if (u.includes('@') && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(u)) { errEl.textContent = 'Email inválido.'; return; }
   if (btn) { btn.disabled = true; btn.textContent = 'AGUARDE...'; }
   errEl.textContent = '';
 
@@ -117,7 +118,7 @@ async function fazerLogout() {
     try {
       await fetch(`${SUPABASE_URL}/auth/v1/logout`, {
         method: 'POST',
-        headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${_authToken}`, 'Content-Type': 'application/json' }
+        headers: getHdrs()
       });
     } catch(e) {}
   }
@@ -368,7 +369,7 @@ async function checkPlatformAdmin() {
   try {
     const r = await fetchWithTimeout(`${SUPABASE_URL}/rest/v1/rpc/is_platform_admin`, {
       method: 'POST',
-      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + _authToken, 'Content-Type': 'application/json' },
+      headers: getHdrs(),
       body: '{}'
     });
     const isAdmin = await r.json();
@@ -377,7 +378,7 @@ async function checkPlatformAdmin() {
 
     // Carregar todas as empresas
     const cr = await fetch(`${SUPABASE_URL}/rest/v1/companies?select=id,name&order=name`, {
-      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + _authToken }
+      headers: getHdrs()
     });
     const companies = await cr.json();
     if (!companies || !companies.length) return;
@@ -450,6 +451,10 @@ async function criarConta() {
 
   if (!nome || !empresa || !email || !senha) {
     errEl.textContent = 'Preencha todos os campos.';
+    return;
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    errEl.textContent = 'Email inválido.';
     return;
   }
   if (senha.length < 6) {
@@ -1259,7 +1264,7 @@ async function salvarPermissoesPerfis() {
   try {
     const r = await fetch(`${SUPABASE_URL}/rest/v1/companies?id=eq.${_companyId}`, {
       method: 'PATCH',
-      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + _authToken, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+      headers: getHdrs('return=minimal'),
       body: JSON.stringify({ role_permissions: perms })
     });
     if (!r.ok) throw new Error(await r.text());
@@ -1336,7 +1341,7 @@ async function convidarUsuario() {
     try {
       await fetch(`${SUPABASE_URL}/rest/v1/company_users?company_id=eq.${_companyId}&user_id=eq.${data.user.id}`, {
         method: 'PATCH',
-        headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + _authToken, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+        headers: getHdrs('return=minimal'),
         body: JSON.stringify({ senha_inicial: senha })
       });
     } catch(e) {}
@@ -1385,7 +1390,7 @@ async function removerMembro(userId, nome) {
   try {
     const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/admin_delete_auth_user`, {
       method: 'POST',
-      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + _authToken, 'Content-Type': 'application/json' },
+      headers: getHdrs(),
       body: JSON.stringify({ p_user_id: userId })
     });
     if (!r.ok) {
