@@ -201,13 +201,22 @@
   .plan-bar-fill { height: 100%; border-radius: 2px; }
   .plan-body { display: none; border-top: 1px solid var(--border); background: var(--bg4); padding: 14px 16px; }
   .plan-body.open { display: block; }
-  .plan-task { display: flex; align-items: center; gap: 10px; padding: 8px 10px; background: var(--bg3); border: 1px solid var(--border); border-radius: 3px; margin-bottom: 6px; cursor: pointer; transition: border-color 0.2s; }
+  .plan-task { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; background: var(--bg3); border: 1px solid var(--border); border-radius: 3px; margin-bottom: 6px; transition: border-color 0.2s; }
   .plan-task:hover { border-color: #a78bfa; }
-  .plan-check { width: 18px; height: 18px; border: 2px solid var(--border); border-radius: 3px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.2s; background: var(--bg2); }
+  .plan-check { width: 18px; height: 18px; border: 2px solid var(--border); border-radius: 3px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.2s; background: var(--bg2); cursor: pointer; margin-top: 2px; }
   .plan-check.checked { background: #2d1b69; border-color: #a78bfa; }
   .plan-check.checked::after { content: '✓'; font-size: 11px; color: #a78bfa; font-weight: 600; }
-  .plan-text { flex: 1; font-size: 13px; color: var(--text-dim); line-height: 1.4; }
-  .plan-text.done { text-decoration: line-through; color: var(--text-muted); }
+  .plan-text { flex: 1; font-size: 13px; color: var(--text-dim); line-height: 1.4; font-weight: 500; }
+  .plan-text.done { text-decoration: line-through; color: var(--text-muted); font-weight: 400; }
+  .plan-details { display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; align-items: center; }
+  .plan-detail-field { display: flex; align-items: center; gap: 4px; }
+  .plan-detail-label { font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .plan-detail-input { background: var(--bg2); border: 1px solid var(--border); border-radius: 3px; color: var(--text); font-family: 'IBM Plex Mono', monospace; font-size: 11px; padding: 3px 6px; outline: none; transition: border-color 0.2s; width: 100px; }
+  .plan-detail-input:focus { border-color: #a78bfa; }
+  .plan-detail-input.date-done { color: var(--accent); }
+  .plan-obs-input { background: var(--bg2); border: 1px solid var(--border); border-radius: 3px; color: var(--text-dim); font-family: 'IBM Plex Sans', sans-serif; font-size: 11px; padding: 3px 6px; outline: none; transition: border-color 0.2s; flex: 1; min-width: 120px; }
+  .plan-obs-input:focus { border-color: #a78bfa; }
+  .plan-obs-input::placeholder { color: var(--text-muted); }
   .stat-purple .stat-num { color: #a78bfa; }
 
   .empty { text-align: center; padding: 24px; color: var(--text-muted); font-family: 'IBM Plex Mono', monospace; font-size: 12px; border: 1px dashed var(--border); border-radius: 4px; }
@@ -514,9 +523,25 @@
     const obra = planData.obras.find(o=>o.id===obraId);
     if (!obra) return;
     const t = obra.tasks.find(t=>t.id===taskId);
-    if (t) t.done = !t.done;
+    if (t) {
+      t.done = !t.done;
+      if (t.done && !t.dataConcluida) {
+        t.dataConcluida = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
+      } else if (!t.done) {
+        t.dataConcluida = '';
+      }
+    }
     await savePlan();
     renderPlan();
+  }
+
+  async function updatePlanField(obraId, taskId, field, value) {
+    const obra = planData.obras.find(o=>o.id===obraId);
+    if (!obra) return;
+    const t = obra.tasks.find(t=>t.id===taskId);
+    if (t) t[field] = value;
+    clearTimeout(window._planSaveTimer);
+    window._planSaveTimer = setTimeout(savePlan, 800);
   }
 
   function calcPlanProgress(obra) {
@@ -570,9 +595,25 @@
         </div>
         <div class="plan-body ${isOpen?'open':''}">
           ${obra.tasks.map(t=>`
-            <div class="plan-task" onclick="togglePlanTask('${obra.id}','${t.id}')">
-              <div class="plan-check ${t.done?'checked':''}"></div>
-              <div class="plan-text ${t.done?'done':''}">${t.text}</div>
+            <div class="plan-task">
+              <div class="plan-check ${t.done?'checked':''}" onclick="togglePlanTask('${obra.id}','${t.id}')"></div>
+              <div style="flex:1">
+                <div class="plan-text ${t.done?'done':''}">${t.text}</div>
+                <div class="plan-details">
+                  <div class="plan-detail-field">
+                    <span class="plan-detail-label">Prev:</span>
+                    <input type="text" class="plan-detail-input" placeholder="dd/mm" value="${t.dataPrevista||''}" onchange="updatePlanField('${obra.id}','${t.id}','dataPrevista',this.value)" onclick="event.stopPropagation()" />
+                  </div>
+                  <div class="plan-detail-field">
+                    <span class="plan-detail-label">Feito:</span>
+                    <input type="text" class="plan-detail-input date-done" placeholder="—" value="${t.dataConcluida||''}" onchange="updatePlanField('${obra.id}','${t.id}','dataConcluida',this.value)" onclick="event.stopPropagation()" />
+                  </div>
+                  <div class="plan-detail-field" style="flex:1">
+                    <span class="plan-detail-label">Obs:</span>
+                    <input type="text" class="plan-obs-input" placeholder="observação..." value="${t.obs||''}" onchange="updatePlanField('${obra.id}','${t.id}','obs',this.value)" onclick="event.stopPropagation()" />
+                  </div>
+                </div>
+              </div>
             </div>`).join('')}
         </div>
       </div>`;
