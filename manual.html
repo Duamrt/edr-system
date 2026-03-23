@@ -3,761 +3,1642 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Manual do Sistema — EDR Engenharia</title>
-<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<title>Manual EDR System</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg: #050505; --bg2: rgba(12,18,12,0.85); --bg3: rgba(18,26,18,0.9);
-    --verde: #1a7a3a; --verde2: #22a050; --verde-hl: #2ecc71;
-    --texto: #ddeadd; --texto2: #a0b8a0; --borda: rgba(46,204,113,0.12);
-    --borda2: rgba(46,204,113,0.2);
-  }
-  * { margin:0; padding:0; box-sizing:border-box; }
-  html { scroll-behavior: smooth; }
-  body { font-family:'Rajdhani',sans-serif; background:var(--bg); color:var(--texto); line-height:1.6; padding:0 16px 60px; }
+:root {
+  --verde: #0a3d18;
+  --verde-med: #1a5c28;
+  --verde-claro: #2d7a3a;
+  --verde-acao: #2ecc71;
+  --preto: #0a0a0a;
+  --card: #111111;
+  --card2: #181818;
+  --borda: #222;
+  --off-white: #f5f2eb;
+  --texto: #cccccc;
+  --muted: #666;
+  --alerta: #f39c12;
+  --erro: #e74c3c;
+}
 
-  /* HEADER */
-  .manual-header { text-align:center; padding:40px 0 20px; border-bottom:1px solid var(--borda2); margin-bottom:32px; }
-  .manual-header h1 { font-size:2rem; color:var(--verde-hl); font-weight:700; letter-spacing:1px; }
-  .manual-header p { color:var(--texto2); font-size:1rem; margin-top:4px; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
 
-  /* FILTRO PERFIL */
-  .perfil-filter { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-bottom:32px; position:sticky; top:0; z-index:10; background:var(--bg); padding:12px 0; border-bottom:1px solid var(--borda); }
-  .perfil-btn { padding:8px 20px; border-radius:8px; border:1px solid var(--borda2); background:var(--bg2); color:var(--texto2); font-family:inherit; font-size:.95rem; font-weight:600; cursor:pointer; transition:.2s; }
-  .perfil-btn:hover { border-color:var(--verde2); color:var(--verde-hl); }
-  .perfil-btn.active { background:var(--verde); color:#fff; border-color:var(--verde2); }
+body {
+  background: var(--preto);
+  color: var(--texto);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+  display: flex;
+  min-height: 100vh;
+}
 
-  /* CONTAINER */
-  .container { max-width:800px; margin:0 auto; }
+/* ── SIDEBAR ─────────────────────────── */
+.sidebar {
+  width: 260px;
+  min-height: 100vh;
+  background: #080808;
+  border-right: 1px solid var(--borda);
+  position: fixed;
+  top: 0; left: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  z-index: 100;
+}
 
-  /* SEÇÕES */
-  .modulo { margin-bottom:40px; border:1px solid var(--borda); border-radius:12px; overflow:hidden; }
-  .modulo-header { background:var(--bg3); padding:16px 20px; display:flex; align-items:center; gap:12px; cursor:pointer; user-select:none; }
-  .modulo-header:hover { background:rgba(26,122,58,0.15); }
-  .modulo-icon { font-size:1.5rem; }
-  .modulo-title { font-size:1.2rem; font-weight:700; color:var(--verde-hl); flex:1; }
-  .modulo-atalho { font-family:'JetBrains Mono',monospace; font-size:.75rem; background:rgba(46,204,113,0.15); color:var(--verde-hl); padding:2px 8px; border-radius:4px; }
-  .modulo-toggle { color:var(--texto2); font-size:1.2rem; transition:.3s; }
-  .modulo.open .modulo-toggle { transform:rotate(180deg); }
-  .modulo-body { display:none; padding:20px; }
-  .modulo.open .modulo-body { display:block; }
+.sidebar-brand {
+  padding: 28px 24px 20px;
+  border-bottom: 1px solid var(--borda);
+}
 
-  /* PERFIL BADGES */
-  .perfil-badges { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:16px; }
-  .badge { font-size:.7rem; padding:2px 8px; border-radius:4px; font-weight:600; text-transform:uppercase; letter-spacing:.5px; }
-  .badge-admin { background:rgba(231,76,60,0.2); color:#e74c3c; }
-  .badge-operacional { background:rgba(52,152,219,0.2); color:#3498db; }
-  .badge-mestre { background:rgba(243,156,18,0.2); color:#f39c12; }
+.brand-shield {
+  width: 48px;
+  height: 48px;
+  background: var(--verde);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 18px;
+  color: var(--off-white);
+  letter-spacing: -1px;
+}
 
-  /* PASSO A PASSO */
-  .steps { counter-reset:step; }
-  .step { position:relative; padding:12px 16px 12px 52px; margin-bottom:8px; background:var(--bg2); border-radius:8px; border-left:3px solid var(--verde); }
-  .step::before { counter-increment:step; content:counter(step); position:absolute; left:14px; top:12px; width:26px; height:26px; background:var(--verde); color:#fff; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:.85rem; font-weight:700; }
-  .step strong { color:var(--verde-hl); }
-  .step em { color:var(--texto2); font-style:normal; font-size:.85rem; }
+.brand-name {
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  color: white;
+  letter-spacing: 0.5px;
+}
 
-  /* DICA */
-  .dica { background:rgba(243,156,18,0.1); border:1px solid rgba(243,156,18,0.25); border-radius:8px; padding:12px 16px; margin:12px 0; font-size:.9rem; color:#f1c40f; }
-  .dica::before { content:'💡 '; }
+.brand-sub {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+}
 
-  /* ALERTA */
-  .alerta { background:rgba(231,76,60,0.1); border:1px solid rgba(231,76,60,0.25); border-radius:8px; padding:12px 16px; margin:12px 0; font-size:.9rem; color:#e74c3c; }
-  .alerta::before { content:'⚠ '; }
+.nav-group {
+  padding: 16px 0 8px;
+}
 
-  /* INFO */
-  .info { background:rgba(52,152,219,0.1); border:1px solid rgba(52,152,219,0.25); border-radius:8px; padding:12px 16px; margin:12px 0; font-size:.9rem; color:#3498db; }
+.nav-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 0 24px 6px;
+}
 
-  /* SUB-SEÇÕES */
-  h3 { color:var(--verde2); font-size:1rem; margin:20px 0 10px; padding-bottom:4px; border-bottom:1px solid var(--borda); }
-  h4 { color:var(--texto); font-size:.95rem; margin:16px 0 8px; }
-  p { color:var(--texto2); margin-bottom:8px; font-size:.92rem; }
-  ul { color:var(--texto2); margin:8px 0 8px 20px; font-size:.9rem; }
-  li { margin-bottom:4px; }
-  code { font-family:'JetBrains Mono',monospace; background:rgba(46,204,113,0.1); color:var(--verde-hl); padding:1px 6px; border-radius:3px; font-size:.8rem; }
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 24px;
+  cursor: pointer;
+  color: #888;
+  font-size: 13.5px;
+  font-weight: 500;
+  transition: all 0.15s;
+  border-left: 3px solid transparent;
+}
 
-  /* TABELA */
-  table { width:100%; border-collapse:collapse; margin:12px 0; font-size:.85rem; }
-  th { background:var(--bg3); color:var(--verde-hl); padding:8px 12px; text-align:left; border-bottom:1px solid var(--borda2); }
-  td { padding:8px 12px; border-bottom:1px solid var(--borda); color:var(--texto2); }
+.nav-item:hover { color: white; background: #141414; }
+.nav-item.active {
+  color: var(--verde-acao);
+  background: rgba(46,204,113,0.06);
+  border-left-color: var(--verde-acao);
+}
 
-  /* PRINT */
-  @media print {
-    body { background:#fff; color:#222; }
-    .perfil-filter { display:none; }
-    .modulo { break-inside:avoid; border-color:#ccc; }
-    .modulo-body { display:block !important; }
-    .step { background:#f5f5f5; border-left-color:#1a7a3a; }
-    .badge-admin { color:#c0392b; } .badge-operacional { color:#2980b9; } .badge-mestre { color:#d68910; }
-    code { background:#eee; color:#1a7a3a; }
-  }
+.nav-icon {
+  width: 16px;
+  text-align: center;
+  font-size: 14px;
+  flex-shrink: 0;
+}
 
-  /* MOBILE */
-  @media(max-width:600px) {
-    .manual-header h1 { font-size:1.4rem; }
-    .perfil-btn { font-size:.8rem; padding:6px 12px; }
-    .modulo-body { padding:14px; }
-  }
+.nav-badge {
+  margin-left: auto;
+  background: var(--verde);
+  color: var(--verde-acao);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 10px;
+}
 
-  /* INDICE */
-  .indice { background:var(--bg2); border:1px solid var(--borda); border-radius:12px; padding:20px; margin-bottom:32px; }
-  .indice h2 { color:var(--verde-hl); font-size:1.1rem; margin-bottom:12px; }
-  .indice a { color:var(--texto2); text-decoration:none; display:block; padding:4px 0; font-size:.9rem; }
-  .indice a:hover { color:var(--verde-hl); }
-  .indice .idx-num { color:var(--verde2); font-family:'JetBrains Mono',monospace; font-size:.8rem; margin-right:8px; }
+.sidebar-footer {
+  margin-top: auto;
+  padding: 16px 24px;
+  border-top: 1px solid var(--borda);
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.sidebar-footer a {
+  color: var(--verde-acao);
+  text-decoration: none;
+}
+
+/* ── MAIN ────────────────────────────── */
+.main {
+  margin-left: 260px;
+  flex: 1;
+  min-height: 100vh;
+}
+
+.section {
+  display: none;
+  padding: 48px 52px;
+  max-width: 880px;
+  animation: fadeIn 0.25s ease;
+}
+
+.section.active { display: block; }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ── TYPOGRAPHY ──────────────────────── */
+.section-tag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--verde-acao);
+  margin-bottom: 10px;
+}
+
+.section-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 36px;
+  font-weight: 800;
+  color: white;
+  line-height: 1.1;
+  margin-bottom: 12px;
+}
+
+.section-subtitle {
+  font-size: 15px;
+  color: #888;
+  margin-bottom: 36px;
+  max-width: 580px;
+}
+
+h3 {
+  font-family: 'Syne', sans-serif;
+  font-size: 17px;
+  font-weight: 700;
+  color: white;
+  margin: 32px 0 12px;
+}
+
+h4 {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--verde-acao);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 20px 0 8px;
+}
+
+p {
+  color: var(--texto);
+  margin-bottom: 12px;
+  line-height: 1.7;
+}
+
+/* ── CARDS ───────────────────────────── */
+.card-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin: 20px 0;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--borda);
+  border-radius: 14px;
+  padding: 20px 22px;
+  transition: border-color 0.2s;
+}
+
+.card:hover { border-color: var(--verde-claro); }
+
+.card-icon {
+  font-size: 22px;
+  margin-bottom: 10px;
+}
+
+.card-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 6px;
+}
+
+.card-text {
+  font-size: 13px;
+  color: #777;
+  line-height: 1.6;
+}
+
+/* ── PROFILE CARDS ───────────────────── */
+.profile-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin: 20px 0;
+}
+
+.profile-card {
+  background: var(--card);
+  border: 1px solid var(--borda);
+  border-radius: 14px;
+  padding: 18px 20px;
+}
+
+.profile-card.admin { border-top: 2px solid var(--verde-acao); }
+.profile-card.op { border-top: 2px solid var(--alerta); }
+.profile-card.mestre { border-top: 2px solid #3498db; }
+.profile-card.visitante { border-top: 2px solid var(--muted); }
+
+.profile-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+}
+
+.badge-admin { background: rgba(46,204,113,0.15); color: var(--verde-acao); }
+.badge-op { background: rgba(243,156,18,0.15); color: var(--alerta); }
+.badge-mestre { background: rgba(52,152,219,0.15); color: #3498db; }
+.badge-visitante { background: rgba(102,102,102,0.15); color: #888; }
+
+.profile-name {
+  font-family: 'Syne', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 8px;
+}
+
+.profile-list {
+  list-style: none;
+  font-size: 12.5px;
+  color: #777;
+  line-height: 2;
+}
+
+.profile-list li::before {
+  content: "→ ";
+  color: var(--verde-claro);
+}
+
+/* ── STEPS ───────────────────────────── */
+.steps {
+  margin: 20px 0;
+  counter-reset: step;
+}
+
+.step {
+  display: flex;
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid #151515;
+}
+
+.step:last-child { border-bottom: none; }
+
+.step-num {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--verde);
+  color: var(--verde-acao);
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.step-content {}
+.step-title { font-size: 14px; font-weight: 600; color: white; margin-bottom: 3px; }
+.step-desc { font-size: 13px; color: #666; }
+
+/* ── TABLE ───────────────────────────── */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+  font-size: 13px;
+}
+
+.data-table th {
+  text-align: left;
+  padding: 10px 14px;
+  background: #111;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  border-bottom: 1px solid var(--borda);
+}
+
+.data-table td {
+  padding: 11px 14px;
+  border-bottom: 1px solid #151515;
+  color: #aaa;
+  vertical-align: top;
+}
+
+.data-table tr:hover td { background: #111; }
+
+.data-table td:first-child {
+  font-weight: 600;
+  color: white;
+  font-size: 12px;
+}
+
+/* ── TAGS / CHIPS ────────────────────── */
+.tag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 6px;
+  margin-right: 4px;
+}
+
+.tag-green { background: rgba(46,204,113,0.12); color: var(--verde-acao); }
+.tag-yellow { background: rgba(243,156,18,0.12); color: var(--alerta); }
+.tag-red { background: rgba(231,76,60,0.12); color: var(--erro); }
+.tag-blue { background: rgba(52,152,219,0.12); color: #3498db; }
+.tag-gray { background: rgba(102,102,102,0.12); color: #888; }
+
+/* ── INFO BOX ────────────────────────── */
+.info-box {
+  background: rgba(46,204,113,0.06);
+  border: 1px solid rgba(46,204,113,0.2);
+  border-radius: 10px;
+  padding: 16px 18px;
+  margin: 16px 0;
+  font-size: 13.5px;
+  color: #aaa;
+}
+
+.info-box strong { color: var(--verde-acao); }
+
+.warn-box {
+  background: rgba(243,156,18,0.06);
+  border: 1px solid rgba(243,156,18,0.2);
+  border-radius: 10px;
+  padding: 16px 18px;
+  margin: 16px 0;
+  font-size: 13.5px;
+  color: #aaa;
+}
+
+.warn-box strong { color: var(--alerta); }
+
+/* ── MODULE GRID ─────────────────────── */
+.module-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin: 24px 0;
+}
+
+.module-card {
+  background: var(--card);
+  border: 1px solid var(--borda);
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.module-card:hover {
+  border-color: var(--verde-claro);
+  transform: translateY(-2px);
+}
+
+.module-card .emoji { font-size: 24px; display: block; margin-bottom: 8px; }
+.module-card .label { font-size: 12px; font-weight: 600; color: #aaa; }
+
+/* ── ETAPAS GRID ─────────────────────── */
+.etapas-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px;
+  margin: 16px 0;
+}
+
+.etapa-item {
+  background: var(--card);
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: #888;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.etapa-num {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--verde-claro);
+  flex-shrink: 0;
+  min-width: 20px;
+}
+
+/* ── DIVIDER ─────────────────────────── */
+.divider {
+  height: 1px;
+  background: var(--borda);
+  margin: 32px 0;
+}
+
+/* ── HERO (capa) ─────────────────────── */
+#home.section {
+  padding: 0;
+  max-width: 100%;
+}
+
+.hero {
+  background: linear-gradient(135deg, #080808 0%, #0a1f0e 50%, #080808 100%);
+  border-bottom: 1px solid var(--borda);
+  padding: 72px 52px 56px;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  top: -80px; right: -80px;
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, rgba(10,61,24,0.4) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.hero-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--verde-acao);
+  background: rgba(46,204,113,0.08);
+  border: 1px solid rgba(46,204,113,0.2);
+  padding: 5px 12px;
+  border-radius: 20px;
+  margin-bottom: 24px;
+}
+
+.hero-dot {
+  width: 6px; height: 6px;
+  background: var(--verde-acao);
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.hero-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 52px;
+  font-weight: 800;
+  color: white;
+  line-height: 1.0;
+  margin-bottom: 18px;
+}
+
+.hero-title span { color: var(--verde-acao); }
+
+.hero-desc {
+  font-size: 16px;
+  color: #777;
+  max-width: 520px;
+  margin-bottom: 36px;
+  line-height: 1.7;
+}
+
+.hero-stats {
+  display: flex;
+  gap: 36px;
+}
+
+.hero-stat {}
+.stat-num {
+  font-family: 'Syne', sans-serif;
+  font-size: 28px;
+  font-weight: 800;
+  color: white;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.hero-content {
+  padding: 48px 52px;
+  max-width: 880px;
+}
+
+/* ── SHORTCUT ────────────────────────── */
+.shortcut-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 16px 0;
+}
+
+.shortcut-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--card);
+  border: 1px solid var(--borda);
+  border-radius: 10px;
+}
+
+.shortcut-key {
+  background: #222;
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 6px;
+  border-bottom: 2px solid #333;
+  font-family: monospace;
+  flex-shrink: 0;
+}
+
+.shortcut-desc { font-size: 13px; color: #888; }
+
+/* ── TOAST DEMO ──────────────────────── */
+.toast-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 16px 0;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 500;
+}
+
+.toast-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.toast.success { background: rgba(46,204,113,0.08); border: 1px solid rgba(46,204,113,0.2); color: var(--verde-acao); }
+.toast.success .toast-dot { background: var(--verde-acao); }
+.toast.warn { background: rgba(243,156,18,0.08); border: 1px solid rgba(243,156,18,0.2); color: var(--alerta); }
+.toast.warn .toast-dot { background: var(--alerta); }
+.toast.error { background: rgba(231,76,60,0.08); border: 1px solid rgba(231,76,60,0.2); color: var(--erro); }
+.toast.error .toast-dot { background: var(--erro); }
+
+/* ── MOBILE TOGGLE ───────────────────── */
+.mob-toggle {
+  display: none;
+  position: fixed;
+  top: 16px; left: 16px;
+  z-index: 200;
+  background: var(--verde);
+  border: none;
+  color: white;
+  width: 40px; height: 40px;
+  border-radius: 8px;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+@media (max-width: 768px) {
+  .mob-toggle { display: flex; align-items: center; justify-content: center; }
+  .sidebar { transform: translateX(-100%); transition: transform 0.25s; }
+  .sidebar.open { transform: translateX(0); }
+  .main { margin-left: 0; }
+  .section { padding: 24px 20px; }
+  .hero { padding: 56px 20px 36px; }
+  .hero-content { padding: 32px 20px; }
+  .hero-title { font-size: 34px; }
+  .card-grid, .profile-grid, .module-grid { grid-template-columns: 1fr; }
+  .etapas-grid { grid-template-columns: 1fr 1fr; }
+}
 </style>
-  <link rel="manifest" href="manifest.json">
-  <link rel="icon" type="image/png" sizes="192x192" href="img/icon-192.png">
-  <link rel="apple-touch-icon" href="img/icon-192.png">
 </head>
 <body>
 
-<div class="container">
+<button class="mob-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰</button>
 
-<!-- HEADER -->
-<div class="manual-header">
-  <h1>MANUAL DO SISTEMA EDR</h1>
-  <p>Guia completo de uso — por perfil e por menu</p>
-</div>
-
-<!-- FILTRO POR PERFIL -->
-<div class="perfil-filter">
-  <button class="perfil-btn active" onclick="filtrar('todos')">Todos</button>
-  <button class="perfil-btn" onclick="filtrar('admin')">Admin</button>
-  <button class="perfil-btn" onclick="filtrar('operacional')">Operacional</button>
-  <button class="perfil-btn" onclick="filtrar('mestre')">Mestre</button>
-</div>
-
-<!-- INDICE -->
-<div class="indice">
-  <h2>Navegue pelo manual</h2>
-  <a href="#mod-login"><span class="idx-num">00</span> Login e Perfis de Acesso</a>
-  <a href="#mod-f1"><span class="idx-num">F1</span> Resumo (Dashboard)</a>
-  <a href="#mod-f2"><span class="idx-num">F2</span> Obras</a>
-  <a href="#mod-f3"><span class="idx-num">F3</span> Estoque</a>
-  <a href="#mod-f4"><span class="idx-num">F4</span> Historico de NFs</a>
-  <a href="#mod-f5"><span class="idx-num">F5</span> Lancar Nota Fiscal</a>
-  <a href="#mod-f6"><span class="idx-num">F6</span> Guia de Creditos NF</a>
-  <a href="#mod-f7"><span class="idx-num">F7</span> Diarias</a>
-  <a href="#mod-f8"><span class="idx-num">F8</span> Catalogo de Materiais</a>
-  <a href="#mod-f9"><span class="idx-num">F9</span> Relatorio Financeiro</a>
-  <a href="#mod-f10"><span class="idx-num">F10</span> Custos CEF</a>
-  <a href="#mod-f11"><span class="idx-num">F11</span> Dados (Usuarios)</a>
-  <a href="#mod-f12"><span class="idx-num">F12</span> Setup</a>
-</div>
-
-<!-- ═══════════════════════════════════════ -->
-<!-- LOGIN -->
-<!-- ═══════════════════════════════════════ -->
-<div class="modulo open" id="mod-login" data-perfis="admin,operacional,mestre">
-  <div class="modulo-header" onclick="toggleMod(this)">
-    <span class="modulo-icon">🔐</span>
-    <span class="modulo-title">Login e Perfis de Acesso</span>
-    <span class="modulo-toggle">▼</span>
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-shield">EDR</div>
+    <div class="brand-name">EDR System</div>
+    <div class="brand-sub">Manual de Uso · v2026</div>
   </div>
-  <div class="modulo-body">
-    <p>O sistema possui 4 perfis com acessos diferentes:</p>
-    <table>
-      <tr><th>Perfil</th><th>Acesso</th><th>Sessao</th></tr>
-      <tr><td><strong>Admin</strong></td><td>Todos os menus (F1 a F12)</td><td>30 dias</td></tr>
-      <tr><td><strong>Operacional</strong></td><td>F1 a F8 (sem relatorios, custos, dados e setup)</td><td>8 horas</td></tr>
-      <tr><td><strong>Mestre</strong></td><td>Somente Diarias (F7)</td><td>8 horas</td></tr>
-      <tr><td><strong>Visitante</strong></td><td>Leitura completa, sem gravar nada</td><td>8 horas</td></tr>
-    </table>
+
+  <div class="nav-group">
+    <div class="nav-label">Início</div>
+    <div class="nav-item active" data-target="home">
+      <span class="nav-icon">🏠</span> Visão Geral
+    </div>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-label">Acesso</div>
+    <div class="nav-item" data-target="acesso">
+      <span class="nav-icon">🔐</span> Login e Perfis
+    </div>
+    <div class="nav-item" data-target="dashboard">
+      <span class="nav-icon">📊</span> Dashboard
+    </div>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-label">Gestão de Obras</div>
+    <div class="nav-item" data-target="obras">
+      <span class="nav-icon">🏗️</span> Obras
+    </div>
+    <div class="nav-item" data-target="notas">
+      <span class="nav-icon">🧾</span> Notas Fiscais
+    </div>
+    <div class="nav-item" data-target="estoque">
+      <span class="nav-icon">📦</span> Estoque
+    </div>
+    <div class="nav-item" data-target="diarias">
+      <span class="nav-icon">👷</span> Diárias
+    </div>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-label">Financeiro</div>
+    <div class="nav-item" data-target="financeiro">
+      <span class="nav-icon">💰</span> Financeiro
+    </div>
+    <div class="nav-item" data-target="catalogo">
+      <span class="nav-icon">🗂️</span> Catálogo
+    </div>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-label">Outros Módulos</div>
+    <div class="nav-item" data-target="garantia">
+      <span class="nav-icon">🛡️</span> Garantia Pós-Entrega
+    </div>
+    <div class="nav-item" data-target="leads">
+      <span class="nav-icon">📋</span> Leads (CRM)
+    </div>
+    <div class="nav-item" data-target="admin">
+      <span class="nav-icon">⚙️</span> Administração
+    </div>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-label">Referência</div>
+    <div class="nav-item" data-target="dicas">
+      <span class="nav-icon">⚡</span> Dicas Rápidas
+    </div>
+    <div class="nav-item" data-target="superadmin">
+      <span class="nav-icon">👑</span> Super Admin
+      <span class="nav-badge">DUAM</span>
+    </div>
+  </div>
+
+  <div class="sidebar-footer">
+    <a href="https://sistema.edreng.com.br" target="_blank">sistema.edreng.com.br</a><br>
+    WhatsApp: (87) 9 8171-3987<br>
+    @elydaedr
+  </div>
+</nav>
+
+<!-- MAIN CONTENT -->
+<main class="main">
+
+  <!-- HOME -->
+  <section class="section active" id="home">
+    <div class="hero">
+      <div class="hero-tag"><span class="hero-dot"></span> Sistema Ativo</div>
+      <h1 class="hero-title">EDR<br><span>System</span></h1>
+      <p class="hero-desc">Gestão completa de obras MCMV — do lançamento da nota fiscal ao Termo de Entrega. Desenvolvido pela EDR Engenharia para a EDR Engenharia.</p>
+      <div class="hero-stats">
+        <div class="hero-stat">
+          <div class="stat-num">36</div>
+          <div class="stat-label">Centros de custo</div>
+        </div>
+        <div class="hero-stat">
+          <div class="stat-num">4</div>
+          <div class="stat-label">Perfis de acesso</div>
+        </div>
+        <div class="hero-stat">
+          <div class="stat-num">12+</div>
+          <div class="stat-label">Módulos</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-content">
+      <div class="section-tag">O que você encontra aqui</div>
+      <h2 class="section-title" style="font-size:28px">Tudo no sistema</h2>
+      <p class="section-subtitle">Navegue pelos módulos no menu lateral. Este manual cobre todas as funcionalidades.</p>
+
+      <div class="module-grid">
+        <div class="module-card" onclick="navigate('acesso')"><span class="emoji">🔐</span><span class="label">Login & Perfis</span></div>
+        <div class="module-card" onclick="navigate('dashboard')"><span class="emoji">📊</span><span class="label">Dashboard</span></div>
+        <div class="module-card" onclick="navigate('obras')"><span class="emoji">🏗️</span><span class="label">Obras</span></div>
+        <div class="module-card" onclick="navigate('notas')"><span class="emoji">🧾</span><span class="label">Notas Fiscais</span></div>
+        <div class="module-card" onclick="navigate('estoque')"><span class="emoji">📦</span><span class="label">Estoque</span></div>
+        <div class="module-card" onclick="navigate('diarias')"><span class="emoji">👷</span><span class="label">Diárias</span></div>
+        <div class="module-card" onclick="navigate('financeiro')"><span class="emoji">💰</span><span class="label">Financeiro</span></div>
+        <div class="module-card" onclick="navigate('garantia')"><span class="emoji">🛡️</span><span class="label">Garantia</span></div>
+        <div class="module-card" onclick="navigate('leads')"><span class="emoji">📋</span><span class="label">Leads / CRM</span></div>
+      </div>
+
+      <div class="info-box">
+        <strong>Acesso:</strong> sistema.edreng.com.br · Funciona em computador, tablet e celular. Após o primeiro acesso, fica salvo para consultas offline.
+      </div>
+    </div>
+  </section>
+
+  <!-- ACESSO -->
+  <section class="section" id="acesso">
+    <span class="section-tag">Primeiros Passos</span>
+    <h1 class="section-title">Login e Perfis</h1>
+    <p class="section-subtitle">Como acessar o sistema e o que cada perfil consegue fazer.</p>
 
     <h3>Como fazer login</h3>
     <div class="steps">
-      <div class="step">Acesse <strong>sistema.edreng.com.br</strong> no navegador</div>
-      <div class="step">Digite seu <strong>usuario</strong> e <strong>senha</strong></div>
-      <div class="step">Clique em <strong>ENTRAR</strong> ou pressione Enter</div>
-    </div>
-    <div class="dica">No computador, use as teclas <code>F1</code> a <code>F12</code> para navegar rapidamente entre os menus.</div>
-    <div class="dica">No celular, use o menu inferior. Toque em <strong>MAIS</strong> para ver todos os modulos.</div>
-  </div>
-</div>
-
-<!-- ═══════════════════════════════════════ -->
-<!-- F1 DASHBOARD -->
-<!-- ═══════════════════════════════════════ -->
-<div class="modulo" id="mod-f1" data-perfis="admin,operacional">
-  <div class="modulo-header" onclick="toggleMod(this)">
-    <span class="modulo-icon">📊</span>
-    <span class="modulo-title">Resumo (Dashboard)</span>
-    <span class="modulo-atalho">F1</span>
-    <span class="modulo-toggle">▼</span>
-  </div>
-  <div class="modulo-body">
-    <div class="perfil-badges">
-      <span class="badge badge-admin">Admin</span>
-      <span class="badge badge-operacional">Operacional</span>
-    </div>
-
-    <h3>Visao Admin</h3>
-    <p>Painel completo com dados financeiros de todas as obras:</p>
-    <ul>
-      <li><strong>Painel financeiro</strong> — receita total, custo total e saldo</li>
-      <li><strong>Grafico mensal</strong> — evolucao de entradas mes a mes</li>
-      <li><strong>Detalhe por obra</strong> — custos separados por etapa</li>
-      <li><strong>Comparativo</strong> — variacao mes anterior vs atual</li>
-    </ul>
-
-    <h3>Visao Operacional</h3>
-    <p>Dashboard simplificado com foco na operacao:</p>
-    <ul>
-      <li><strong>Obras ativas</strong> — cards com obras em andamento</li>
-      <li><strong>Estoque</strong> — top 8 materiais disponiveis</li>
-      <li><strong>Ultimos lancamentos</strong> — 8 mais recentes</li>
-      <li><strong>Botoes rapidos</strong> — atalho para Lancar NF e Estoque</li>
-    </ul>
-  </div>
-</div>
-
-<!-- ═══════════════════════════════════════ -->
-<!-- F2 OBRAS -->
-<!-- ═══════════════════════════════════════ -->
-<div class="modulo" id="mod-f2" data-perfis="admin,operacional">
-  <div class="modulo-header" onclick="toggleMod(this)">
-    <span class="modulo-icon">🏗</span>
-    <span class="modulo-title">Obras</span>
-    <span class="modulo-atalho">F2</span>
-    <span class="modulo-toggle">▼</span>
-  </div>
-  <div class="modulo-body">
-    <div class="perfil-badges">
-      <span class="badge badge-admin">Admin</span>
-      <span class="badge badge-operacional">Operacional</span>
-    </div>
-    <p>Gerenciamento completo das obras/projetos da empresa.</p>
-
-    <h3>Visualizar obras</h3>
-    <div class="steps">
-      <div class="step">Acesse <strong>OBRAS (F2)</strong> — as obras ativas aparecem em cards</div>
-      <div class="step">Clique em um card para abrir o <strong>detalhe da obra</strong></div>
-      <div class="step">Na aba <strong>Materiais</strong>, veja todos os lancamentos separados por etapa (centro de custo)</div>
-      <div class="step">Na aba <strong>Adicionais</strong>, veja servicos extras contratados</div>
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <div class="step-title">Abra o navegador</div>
+          <div class="step-desc">Chrome, Edge ou Safari. Acesse: sistema.edreng.com.br</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <div class="step-title">Digite e-mail ou telefone</div>
+          <div class="step-desc">Use o usuário que foi cadastrado pelo admin.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <div class="step-title">Digite a senha e clique em ENTRAR</div>
+          <div class="step-desc">Se errar, aparece "Usuário ou senha incorretos".</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-content">
+          <div class="step-title">Sessão salva automaticamente</div>
+          <div class="step-desc">Admin: 30 dias. Operador: 8 horas. Não precisa fazer login toda vez.</div>
+        </div>
+      </div>
     </div>
 
-    <h3>Criar nova obra</h3>
-    <div class="steps">
-      <div class="step">Clique no botao <strong>+ NOVA OBRA</strong></div>
-      <div class="step">Preencha: <strong>nome da obra</strong>, proprietario, endereco</div>
-      <div class="step">Clique em <strong>SALVAR</strong></div>
-    </div>
+    <div class="divider"></div>
 
-    <h3>Arquivar obra concluida</h3>
-    <div class="steps">
-      <div class="step">Abra o detalhe da obra</div>
-      <div class="step">Clique em <strong>CONCLUIR OBRA</strong></div>
-      <div class="step">O sistema gera automaticamente o <strong>Termo de Entrega</strong> (Kit Digital)</div>
-      <div class="step">A obra vai para a secao de <strong>arquivadas</strong></div>
-    </div>
-    <div class="dica">Para ver obras arquivadas, ative o botao <strong>Mostrar Arquivadas</strong> na tela de obras.</div>
+    <h3>Perfis de acesso</h3>
+    <p>Cada perfil tem uma visão diferente do sistema. O admin controla o que cada um acessa.</p>
 
-    <h3>Gerar Termo de Entrega</h3>
-    <div class="steps">
-      <div class="step">No detalhe da obra, clique em <strong>GERAR TERMO</strong></div>
-      <div class="step">O sistema abre uma pagina com o termo pronto para impressao/PDF</div>
-      <div class="step">Use <code>Ctrl+P</code> para salvar como PDF ou imprimir</div>
-    </div>
-
-    <h3>Filtrar lancamentos</h3>
-    <div class="steps">
-      <div class="step">Dentro do detalhe da obra, use o <strong>filtro por categoria</strong> ou <strong>por data</strong></div>
-      <div class="step">Clique na categoria para <strong>expandir/recolher</strong> os itens</div>
-    </div>
-  </div>
-</div>
-
-<!-- ═══════════════════════════════════════ -->
-<!-- F3 ESTOQUE -->
-<!-- ═══════════════════════════════════════ -->
-<div class="modulo" id="mod-f3" data-perfis="admin,operacional">
-  <div class="modulo-header" onclick="toggleMod(this)">
-    <span class="modulo-icon">📦</span>
-    <span class="modulo-title">Estoque</span>
-    <span class="modulo-atalho">F3</span>
-    <span class="modulo-toggle">▼</span>
-  </div>
-  <div class="modulo-body">
-    <div class="perfil-badges">
-      <span class="badge badge-admin">Admin</span>
-      <span class="badge badge-operacional">Operacional</span>
-    </div>
-    <p>Controle completo de materiais no almoxarifado. O saldo e calculado automaticamente:</p>
-    <div class="info"><strong>Saldo = (Notas Fiscais + Entradas Diretas + Ajustes) &minus; Distribuicoes para obras</strong></div>
-
-    <h3>Consultar saldo</h3>
-    <div class="steps">
-      <div class="step">Acesse <strong>ESTOQUE (F3)</strong></div>
-      <div class="step">Os materiais aparecem em cards com o <strong>saldo atual</strong></div>
-      <div class="step">Use a <strong>barra de busca</strong> para filtrar por nome do material</div>
-    </div>
-    <div class="dica">Cards com saldo zerado ou negativo ficam sinalizados com cores diferentes.</div>
-
-    <h3>Entrada Direta (material sem NF)</h3>
-    <p>Para registrar material que chegou sem nota fiscal (fiado, doacao, sobra de outra obra):</p>
-    <div class="steps">
-      <div class="step">Clique no botao <strong>📥 ENTRADA</strong> (barra superior)</div>
-      <div class="step">Escolha o destino: <strong>Estoque</strong> ou <strong>Direto na Obra</strong></div>
-      <div class="step">Preencha: material, quantidade, unidade, preco, fornecedor</div>
-      <div class="step">Clique em <strong>SALVAR</strong></div>
-    </div>
-    <div class="alerta"><strong>Estoque</strong> = material fica guardado, voce distribui depois. <strong>Obra</strong> = material ja vai direto pro custo da obra, sem passar pelo estoque.</div>
-
-    <h3>Saida de material (distribuir para obra)</h3>
-    <p>Para enviar material do estoque para uma obra:</p>
-    <div class="steps">
-      <div class="step">Clique no botao <strong>📤 SAIDA</strong> na barra superior, ou clique no botao 📤 do proprio card do material</div>
-      <div class="step">Selecione a <strong>obra destino</strong></div>
-      <div class="step">Selecione a <strong>etapa</strong> (centro de custo: alvenaria, eletrica, etc.)</div>
-      <div class="step">Informe a <strong>quantidade</strong></div>
-      <div class="step">Clique em <strong>CONFIRMAR</strong></div>
-    </div>
-    <div class="info">O sistema usa logica <strong>FIFO</strong> (primeiro que entrou, primeiro que sai). O custo e calculado automaticamente pelo preco de entrada e o lancamento e criado na obra.</div>
-
-    <h3>Ajuste de estoque (somente Admin)</h3>
-    <div class="perfil-badges"><span class="badge badge-admin">Somente Admin</span></div>
-    <p>Para corrigir diferencas entre o sistema e a realidade:</p>
-    <div class="steps">
-      <div class="step">Clique no botao <strong>📋 AJUSTE</strong> (barra superior)</div>
-      <div class="step">Busque o <strong>material</strong> pelo nome</div>
-      <div class="step">O sistema mostra o <strong>saldo atual</strong></div>
-      <div class="step">Escolha o tipo:
-        <ul>
-          <li><strong>Inventario</strong> — material que ja existia (sempre positivo)</li>
-          <li><strong>Contagem Fisica</strong> — diferenca da contagem real (+ ou &minus;)</li>
-          <li><strong>Correcao</strong> — erro, perda ou extravio (+ ou &minus;)</li>
+    <div class="profile-grid">
+      <div class="profile-card admin">
+        <span class="profile-badge badge-admin">Admin</span>
+        <div class="profile-name">Administrador</div>
+        <ul class="profile-list">
+          <li>Acesso total ao sistema</li>
+          <li>Ver custos, lucros, margens</li>
+          <li>Criar e editar obras</li>
+          <li>Gerenciar usuários</li>
+          <li>Concluir obras</li>
         </ul>
       </div>
-      <div class="step">Informe a quantidade e o motivo</div>
-      <div class="step">Clique em <strong>SALVAR</strong></div>
-    </div>
-    <div class="dica">Ajustes nao geram custo em obra. Servem apenas para corrigir o saldo do estoque.</div>
-  </div>
-</div>
-
-<!-- ═══════════════════════════════════════ -->
-<!-- F4 HISTORICO NFS -->
-<!-- ═══════════════════════════════════════ -->
-<div class="modulo" id="mod-f4" data-perfis="admin,operacional">
-  <div class="modulo-header" onclick="toggleMod(this)">
-    <span class="modulo-icon">🧾</span>
-    <span class="modulo-title">Historico de Notas Fiscais</span>
-    <span class="modulo-atalho">F4</span>
-    <span class="modulo-toggle">▼</span>
-  </div>
-  <div class="modulo-body">
-    <div class="perfil-badges">
-      <span class="badge badge-admin">Admin</span>
-      <span class="badge badge-operacional">Operacional</span>
-    </div>
-    <p>Lista completa de todas as notas fiscais lancadas no sistema.</p>
-
-    <h3>Consultar notas</h3>
-    <div class="steps">
-      <div class="step">Acesse <strong>HISTORICO (F4)</strong></div>
-      <div class="step">As notas aparecem em ordem cronologica (mais recente primeiro)</div>
-      <div class="step">Clique em uma nota para ver os <strong>itens detalhados</strong></div>
-    </div>
-
-    <h3>Informacoes de cada nota</h3>
-    <ul>
-      <li><strong>Numero da NF</strong>, data, fornecedor, CNPJ</li>
-      <li><strong>Valor bruto</strong>, frete, imposto</li>
-      <li><strong>Itens</strong> — descricao, quantidade, unidade, preco, total</li>
-      <li><strong>Credito</strong> — se gera credito fiscal ou nao</li>
-      <li><strong>Obra destino</strong> — pra onde foi o material</li>
-    </ul>
-  </div>
-</div>
-
-<!-- ═══════════════════════════════════════ -->
-<!-- F5 LANCAR NF -->
-<!-- ═══════════════════════════════════════ -->
-<div class="modulo" id="mod-f5" data-perfis="admin,operacional">
-  <div class="modulo-header" onclick="toggleMod(this)">
-    <span class="modulo-icon">➕</span>
-    <span class="modulo-title">Lancar Nota Fiscal</span>
-    <span class="modulo-atalho">F5</span>
-    <span class="modulo-toggle">▼</span>
-  </div>
-  <div class="modulo-body">
-    <div class="perfil-badges">
-      <span class="badge badge-admin">Admin</span>
-      <span class="badge badge-operacional">Operacional</span>
-    </div>
-    <p>Formulario para registrar novas notas fiscais no sistema.</p>
-
-    <h3>Lancamento manual</h3>
-    <div class="steps">
-      <div class="step">Acesse <strong>LANCAR NF (F5)</strong></div>
-      <div class="step">Preencha o cabecalho: <strong>data, numero da NF, fornecedor, CNPJ</strong></div>
-      <div class="step">Selecione a <strong>obra destino</strong>:
-        <ul>
-          <li><strong>EDR</strong> = material vai para o estoque</li>
-          <li><strong>Nome da obra</strong> = custo vai direto para a obra</li>
+      <div class="profile-card op">
+        <span class="profile-badge badge-op">Operacional</span>
+        <div class="profile-name">Operador</div>
+        <ul class="profile-list">
+          <li>Módulos liberados pelo admin</li>
+          <li>Lançar notas fiscais</li>
+          <li>Entrada/saída de estoque</li>
+          <li>Não vê valores financeiros</li>
         </ul>
       </div>
-      <div class="step">Adicione os <strong>itens</strong>: descricao, quantidade, unidade, preco unitario</div>
-      <div class="step">Marque se o item <strong>gera credito</strong> fiscal ou nao</div>
-      <div class="step">Preencha <strong>frete</strong> e <strong>imposto</strong> se houver</div>
-      <div class="step">Clique em <strong>SALVAR NOTA</strong></div>
+      <div class="profile-card mestre">
+        <span class="profile-badge badge-mestre">Mestre</span>
+        <div class="profile-name">Mestre de Obra</div>
+        <ul class="profile-list">
+          <li>Acesso apenas a Diárias</li>
+          <li>Registra presença da equipe</li>
+          <li>Não vê salários ou custos</li>
+        </ul>
+      </div>
+      <div class="profile-card visitante">
+        <span class="profile-badge badge-visitante">Visitante</span>
+        <div class="profile-name">Demonstração</div>
+        <ul class="profile-list">
+          <li>Modo demonstração</li>
+          <li>Nada é salvo de verdade</li>
+          <li>Ideal para conhecer o sistema</li>
+        </ul>
+      </div>
     </div>
-    <div class="dica">O sistema sugere materiais do catalogo conforme voce digita. Isso padroniza os nomes e categoriza automaticamente.</div>
+  </section>
 
-    <h3>Importacao Rapida (copiar/colar)</h3>
-    <p>Para notas com muitos itens, voce pode colar o texto direto:</p>
-    <div class="steps">
-      <div class="step">Clique em <strong>IMPORTAR</strong></div>
-      <div class="step">Cole o texto da nota (formato: descricao, qtd, preco — separados por tab, ponto-e-virgula ou pipe)</div>
-      <div class="step">O sistema interpreta automaticamente e mostra um <strong>preview</strong></div>
-      <div class="step">Revise, ajuste se necessario, e clique em <strong>CONFIRMAR</strong></div>
+  <!-- DASHBOARD -->
+  <section class="section" id="dashboard">
+    <span class="section-tag">Módulo</span>
+    <h1 class="section-title">Dashboard</h1>
+    <p class="section-subtitle">Tela inicial do sistema. Muda conforme o perfil do usuário logado.</p>
+
+    <h3>Dashboard do Admin</h3>
+    <p>Visão completa do negócio em tempo real:</p>
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-icon">💵</div>
+        <div class="card-title">Receita Total</div>
+        <div class="card-text">Soma dos valores de venda de todos os imóveis + adicionais.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">📤</div>
+        <div class="card-title">Custo Total</div>
+        <div class="card-text">Soma de todos os lançamentos: notas, materiais, mão de obra.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">📈</div>
+        <div class="card-title">Lucro e Margem</div>
+        <div class="card-text">Receita menos custo. Percentual de lucro sobre a receita.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">🏦</div>
+        <div class="card-title">Recebido</div>
+        <div class="card-text">Total de repasses já creditados pela CEF + entradas + terreno.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">⚠️</div>
+        <div class="card-title">Contas Vencidas</div>
+        <div class="card-text">Alerta vermelho se existem contas a pagar em atraso.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">📅</div>
+        <div class="card-title">Agenda Semanal</div>
+        <div class="card-text">7 dias com anotações. Clique em um dia para adicionar nota.</div>
+      </div>
     </div>
 
-    <h3>Importacao XML (NF-e)</h3>
-    <div class="steps">
-      <div class="step">Clique em <strong>IMPORTAR XML</strong></div>
-      <div class="step">Selecione o arquivo <strong>.xml</strong> da nota fiscal eletronica</div>
-      <div class="step">O sistema extrai automaticamente: fornecedor, CNPJ, itens, valores</div>
-      <div class="step">Revise e confirme</div>
-    </div>
-    <div class="alerta">Confira sempre a obra destino antes de salvar. Material com obra = EDR vai pro estoque. Qualquer outra obra vai direto pro custo.</div>
-  </div>
-</div>
+    <div class="divider"></div>
 
-<!-- ═══════════════════════════════════════ -->
-<!-- F6 GUIA CREDITOS -->
-<!-- ═══════════════════════════════════════ -->
-<div class="modulo" id="mod-f6" data-perfis="admin,operacional">
-  <div class="modulo-header" onclick="toggleMod(this)">
-    <span class="modulo-icon">📖</span>
-    <span class="modulo-title">Guia de Creditos NF</span>
-    <span class="modulo-atalho">F6</span>
-    <span class="modulo-toggle">▼</span>
-  </div>
-  <div class="modulo-body">
-    <div class="perfil-badges">
-      <span class="badge badge-admin">Admin</span>
-      <span class="badge badge-operacional">Operacional</span>
+    <h3>Dashboard do Operador</h3>
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-icon">⚡</div>
+        <div class="card-title">Botões Rápidos</div>
+        <div class="card-text">LANÇAR NF e ESTOQUE em destaque para acesso imediato.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">🏗️</div>
+        <div class="card-title">Obras em Andamento</div>
+        <div class="card-text">Lista com quantidade de lançamentos por obra.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">📦</div>
+        <div class="card-title">Top 8 Estoque</div>
+        <div class="card-text">Materiais com mais saldo disponível no almoxarifado.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">🕐</div>
+        <div class="card-title">Últimos Lançamentos</div>
+        <div class="card-text">Registros mais recentes no sistema.</div>
+      </div>
     </div>
-    <p>Tabela de referencia para saber quais materiais geram credito fiscal na construcao civil.</p>
+  </section>
 
-    <h3>Como usar</h3>
-    <div class="steps">
-      <div class="step">Acesse <strong>GUIA NF (F6)</strong></div>
-      <div class="step">Consulte a tabela: itens com <strong>✓</strong> geram credito, itens com <strong>✗</strong> nao geram</div>
+  <!-- OBRAS -->
+  <section class="section" id="obras">
+    <span class="section-tag">Módulo</span>
+    <h1 class="section-title">Obras</h1>
+    <p class="section-subtitle">Controle completo de cada obra — lançamentos, materiais, adicionais e dados da CEF.</p>
+
+    <h3>Visão geral das obras</h3>
+    <p>A tela mostra cards com todas as obras ativas. Cada card exibe:</p>
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-title">📍 Identificação</div>
+        <div class="card-text">Nome da obra e cidade.</div>
+      </div>
+      <div class="card">
+        <div class="card-title">💰 Valor total</div>
+        <div class="card-text">Soma dos lançamentos (visível apenas para admin).</div>
+      </div>
+      <div class="card">
+        <div class="card-title">📊 Top 3 categorias</div>
+        <div class="card-text">Exemplo: Alvenaria 40%, Elétrica 25%.</div>
+      </div>
+      <div class="card">
+        <div class="card-title">🕐 Última atividade</div>
+        <div class="card-text">Data do último lançamento registrado.</div>
+      </div>
     </div>
 
-    <h3>Exemplos</h3>
-    <table>
-      <tr><th>Gera Credito ✓</th><th>Nao Gera ✗</th></tr>
-      <tr><td>Cimento, ferro, madeira</td><td>Combustivel</td></tr>
-      <tr><td>Argamassa, tinta, piso</td><td>Alimentacao</td></tr>
-      <tr><td>Telhas, portas, janelas</td><td>Limpeza, ferramentas</td></tr>
-      <tr><td>Tubos, fios, concreto</td><td>Mobiliario, multas</td></tr>
-      <tr><td>Frete de materiais</td><td>EPI (em geral)</td></tr>
+    <div class="divider"></div>
+
+    <h3>Detalhe da obra — 4 abas</h3>
+    <p>Clique no card de uma obra para abrir a visão detalhada com 4 abas:</p>
+
+    <table class="data-table">
+      <thead><tr><th>Aba</th><th>O que mostra</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>📋 Lançamentos</td>
+          <td>Todos os lançamentos da obra. Filtre por centro de custo, busque por nome, ordene A-Z ou por valor. Clique para ver ou editar.</td>
+        </tr>
+        <tr>
+          <td>🔩 Materiais</td>
+          <td>Todos os materiais usados na obra. Quantidade, valor médio e total por item.</td>
+        </tr>
+        <tr>
+          <td>➕ Adicionais</td>
+          <td>Serviços extras contratados pelo cliente após a venda. Valor, recebido e saldo pendente.</td>
+        </tr>
+        <tr>
+          <td>🏦 Resumo CEF</td>
+          <td>Contrato com a Caixa: valor financiado, subsídio, FGTS, entrada, repasses (PLS, entrada, terreno), custo total e lucro.</td>
+        </tr>
+      </tbody>
     </table>
-    <div class="dica">Ao lancar uma NF, o sistema tenta classificar automaticamente o credito baseado no catalogo.</div>
-  </div>
-</div>
 
-<!-- ═══════════════════════════════════════ -->
-<!-- F7 DIARIAS -->
-<!-- ═══════════════════════════════════════ -->
-<div class="modulo" id="mod-f7" data-perfis="admin,operacional,mestre">
-  <div class="modulo-header" onclick="toggleMod(this)">
-    <span class="modulo-icon">👷</span>
-    <span class="modulo-title">Diarias</span>
-    <span class="modulo-atalho">F7</span>
-    <span class="modulo-toggle">▼</span>
-  </div>
-  <div class="modulo-body">
-    <div class="perfil-badges">
-      <span class="badge badge-admin">Admin</span>
-      <span class="badge badge-operacional">Operacional</span>
-      <span class="badge badge-mestre">Mestre</span>
+    <div class="divider"></div>
+
+    <h3>Centro de Custo — 36 etapas</h3>
+    <p>Todo lançamento é classificado em uma das 36 etapas. O sistema tenta classificar automaticamente. Se não conseguir, aparece como "Não classificado" para você escolher.</p>
+
+    <div class="etapas-grid">
+      <div class="etapa-item"><span class="etapa-num">01</span>Acabamento Final</div>
+      <div class="etapa-item"><span class="etapa-num">02</span>Aço / Ferro</div>
+      <div class="etapa-item"><span class="etapa-num">03</span>Alimentação</div>
+      <div class="etapa-item"><span class="etapa-num">04</span>Alvenaria</div>
+      <div class="etapa-item"><span class="etapa-num">05</span>Área Externa</div>
+      <div class="etapa-item"><span class="etapa-num">06</span>Cobertura</div>
+      <div class="etapa-item"><span class="etapa-num">07</span>Combustível</div>
+      <div class="etapa-item"><span class="etapa-num">08</span>Documentação</div>
+      <div class="etapa-item"><span class="etapa-num">09</span>Elétrica</div>
+      <div class="etapa-item"><span class="etapa-num">10</span>EPI / Segurança</div>
+      <div class="etapa-item"><span class="etapa-num">11</span>Esquadrias</div>
+      <div class="etapa-item"><span class="etapa-num">12</span>Esgoto</div>
+      <div class="etapa-item"><span class="etapa-num">13</span>Estrutura</div>
+      <div class="etapa-item"><span class="etapa-num">14</span>Expediente</div>
+      <div class="etapa-item"><span class="etapa-num">15</span>Ferramentas</div>
+      <div class="etapa-item"><span class="etapa-num">16</span>Forma e Madeira</div>
+      <div class="etapa-item"><span class="etapa-num">17</span>Fundação</div>
+      <div class="etapa-item"><span class="etapa-num">18</span>Genérico</div>
+      <div class="etapa-item"><span class="etapa-num">19</span>Gesso</div>
+      <div class="etapa-item"><span class="etapa-num">20</span>Granito / Pedra</div>
+      <div class="etapa-item"><span class="etapa-num">21</span>Hidráulica</div>
+      <div class="etapa-item"><span class="etapa-num">22</span>Imobilizado</div>
+      <div class="etapa-item"><span class="etapa-num">23</span>Impermeabilização</div>
+      <div class="etapa-item"><span class="etapa-num">24</span>Impostos / Encargos</div>
+      <div class="etapa-item"><span class="etapa-num">25</span>Limpeza</div>
+      <div class="etapa-item"><span class="etapa-num">26</span>Locação / Equip.</div>
+      <div class="etapa-item"><span class="etapa-num">27</span>Louças e Metais</div>
+      <div class="etapa-item"><span class="etapa-num">28</span>Mão de Obra</div>
+      <div class="etapa-item"><span class="etapa-num">29</span>Movimento de Terra</div>
+      <div class="etapa-item"><span class="etapa-num">30</span>Pintura</div>
+      <div class="etapa-item"><span class="etapa-num">31</span>Serviços Prelim.</div>
+      <div class="etapa-item"><span class="etapa-num">32</span>Revestimento Arg.</div>
+      <div class="etapa-item"><span class="etapa-num">33</span>Revestimento Cer.</div>
+      <div class="etapa-item"><span class="etapa-num">34</span>Tecnologia / Ass.</div>
+      <div class="etapa-item"><span class="etapa-num">35</span>Terreno</div>
+      <div class="etapa-item"><span class="etapa-num">36</span>Não classificado</div>
     </div>
-    <p>Controle de diarias da equipe de obra. O mestre de obras tem acesso exclusivo a este modulo.</p>
 
-    <h3>Entendendo a estrutura</h3>
-    <ul>
-      <li><strong>Quinzena</strong> — periodo de pagamento (ex: 01/03 a 15/03)</li>
-      <li><strong>Periodos</strong> — manha, tarde, noite (cada um conta como 0,5 ou 1 diaria)</li>
-      <li><strong>Extras</strong> — bonus ou descontos por quinzena</li>
+    <div class="divider"></div>
+
+    <h3>Concluir uma obra</h3>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <div class="step-title">Clique em CONCLUIR no card da obra</div>
+          <div class="step-desc">Apenas o admin pode concluir.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <div class="step-title">Preencha os dados do proprietário</div>
+          <div class="step-desc">Nome, CPF, endereço e data de entrega.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <div class="step-title">Termo de Entrega gerado automaticamente</div>
+          <div class="step-desc">Abre em nova aba. Pode reimprimir clicando em "TERMO" depois.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-content">
+          <div class="step-title">Obra vai para "Concluídas"</div>
+          <div class="step-desc">Pode reativar a obra clicando em "REATIVAR" se necessário.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- NOTAS FISCAIS -->
+  <section class="section" id="notas">
+    <span class="section-tag">Módulo</span>
+    <h1 class="section-title">Notas Fiscais</h1>
+    <p class="section-subtitle">Lançamento, importação e histórico de NFs. O sistema classifica automaticamente os itens.</p>
+
+    <h3>Lançar uma nota fiscal</h3>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <div class="step-title">Menu lateral → "Lançar NF"</div>
+          <div class="step-desc">Ou botão LANÇAR NF no Dashboard do operador.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <div class="step-title">Preencha cabeçalho</div>
+          <div class="step-desc">Fornecedor, CNPJ (autopreenchido), número NF, data, obra destino e frete.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <div class="step-title">Adicione os itens</div>
+          <div class="step-desc">Descrição (autocomplete do catálogo), quantidade, preço unitário e unidade. Clique em ADICIONAR para cada item.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-content">
+          <div class="step-title">Clique em SALVAR NOTA</div>
+          <div class="step-desc">O sistema classifica automaticamente no centro de custo correto.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="info-box">
+      <strong>Destino da NF:</strong> Selecione a obra para classificar o custo nela. Use <strong>ESTOQUE</strong> para materiais do almoxarifado. Use <strong>ESCRITÓRIO</strong> para despesas administrativas.
+    </div>
+
+    <div class="divider"></div>
+
+    <h3>Importação rápida de itens</h3>
+    <p>Clique em "IMPORTAR ITENS" e cole o texto da nota. Formatos aceitos:</p>
+    <table class="data-table">
+      <thead><tr><th>Formato</th><th>Separador</th><th>Exemplo</th></tr></thead>
+      <tbody>
+        <tr><td>TAB</td><td>[tab]</td><td>Cimento[tab]50[tab]32,00</td></tr>
+        <tr><td>Ponto-e-vírgula</td><td>;</td><td>Cimento;50;32,00</td></tr>
+        <tr><td>Pipe</td><td>|</td><td>Cimento|50|32,00</td></tr>
+        <tr><td>Espaços duplos</td><td>  </td><td>Cimento    50    32,00</td></tr>
+      </tbody>
+    </table>
+
+    <div class="divider"></div>
+
+    <h3>Créditos Tributários (IBS/CBS)</h3>
+    <p>O sistema classifica automaticamente cada item para a reforma tributária:</p>
+    <table class="data-table">
+      <thead><tr><th>Tipo</th><th>Exemplos</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="tag tag-green">COM CRÉDITO</span></td>
+          <td>Materiais de construção, mão de obra, serviços, equipamentos</td>
+        </tr>
+        <tr>
+          <td><span class="tag tag-red">SEM CRÉDITO</span></td>
+          <td>Combustível, alimentação, ferramentas de uso próprio, limpeza</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ESTOQUE -->
+  <section class="section" id="estoque">
+    <span class="section-tag">Módulo</span>
+    <h1 class="section-title">Estoque</h1>
+    <p class="section-subtitle">Almoxarifado central e controle de materiais por obra.</p>
+
+    <h3>Dois níveis de estoque</h3>
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-icon">🏭</div>
+        <div class="card-title">Almoxarifado (geral)</div>
+        <div class="card-text">Materiais comprados com NF destinada ao "ESTOQUE". Depósito central disponível para qualquer obra.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">🏗️</div>
+        <div class="card-title">Estoque por Obra</div>
+        <div class="card-text">Filtre pelo nome da obra. Mostra materiais comprados direto para aquela obra + distribuídos do almoxarifado.</div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <h3>Indicadores visuais</h3>
+    <table class="data-table">
+      <thead><tr><th>Cor</th><th>Significa</th></tr></thead>
+      <tbody>
+        <tr><td><span class="tag tag-green">Verde</span></td><td>Saldo positivo — material disponível</td></tr>
+        <tr><td><span class="tag tag-yellow">Amarelo</span></td><td>"NF PENDENTE" — entrada direta sem nota, aguardando vincular</td></tr>
+        <tr><td><span class="tag tag-red">Vermelho</span></td><td>Saldo negativo — material foi usado antes de dar entrada</td></tr>
+      </tbody>
+    </table>
+
+    <div class="divider"></div>
+
+    <h3>Como dar entrada no estoque</h3>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">①</div>
+        <div class="step-content">
+          <div class="step-title">Via Nota Fiscal</div>
+          <div class="step-desc">Lance uma NF com obra = "ESTOQUE". Os itens entram automaticamente no almoxarifado.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">②</div>
+        <div class="step-content">
+          <div class="step-title">Entrada Direta (sem nota)</div>
+          <div class="step-desc">Clique em "ENTRADA DIRETA". Útil para material fiado ou sem nota. Fica marcado com "NF PENDENTE".</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">③</div>
+        <div class="step-content">
+          <div class="step-title">Ajuste de Estoque</div>
+          <div class="step-desc">Para correções de inventário — contagem física, perdas. Informe quantidade (positiva ou negativa) e motivo.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <h3>Como dar saída (distribuir para obra)</h3>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <div class="step-title">Clique no ícone de saída do material</div>
+          <div class="step-desc">Ou clique em "SAÍDA" no topo da tela.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <div class="step-title">Selecione obra destino e centro de custo</div>
+          <div class="step-desc">A etapa é obrigatória — é ela que classifica o custo na obra.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <div class="step-title">Informe quantidade e data</div>
+          <div class="step-desc">Se o item não tem preço cadastrado, o sistema pede para você informar. Use o botão "CONSULTAR ML" para pesquisar no Mercado Livre.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="warn-box">
+      <strong>Saldo negativo:</strong> o sistema permite saída mesmo com saldo zero ou negativo (confirma com "Material fiado"). Útil para não travar o fluxo quando o caminhão chegou mas a NF ainda não.
+    </div>
+  </section>
+
+  <!-- DIÁRIAS -->
+  <section class="section" id="diarias">
+    <span class="section-tag">Módulo</span>
+    <h1 class="section-title">Diárias</h1>
+    <p class="section-subtitle">Registro de presença da equipe por quinzena. Acessível também pelo perfil Mestre.</p>
+
+    <h3>Como lançar diárias</h3>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <div class="step-title">Selecione a data</div>
+          <div class="step-desc">Use o campo de data no topo da tela.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <div class="step-title">Digite os funcionários no campo de texto</div>
+          <div class="step-desc">Formato: <strong>Nome - tipo</strong> (uma por linha)</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <div class="step-title">Selecione a obra</div>
+          <div class="step-desc">Onde o funcionário trabalhou naquele dia.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-content">
+          <div class="step-title">Clique em REGISTRAR</div>
+        </div>
+      </div>
+    </div>
+
+    <h3>Tipos aceitos</h3>
+    <table class="data-table">
+      <thead><tr><th>Tipo</th><th>O que significa</th><th>Exemplo</th></tr></thead>
+      <tbody>
+        <tr><td>inteira / completa</td><td>Dia inteiro</td><td>Anderson - inteira</td></tr>
+        <tr><td>meia / manhã / tarde</td><td>Meio dia</td><td>Marcone - meia (manhã)</td></tr>
+      </tbody>
+    </table>
+
+    <div class="info-box">
+      <strong>Meio dia duplo:</strong> se o funcionário trabalhou de manhã em uma obra e de tarde em outra, lance dois "meia" em obras diferentes. O sistema soma automaticamente: meia + meia = diária completa.
+    </div>
+
+    <div class="info-box">
+      <strong>Apelidos:</strong> você pode usar apelidos cadastrados. Ex: "Binlade" = Josimar. O sistema reconhece e converte para o nome oficial.
+    </div>
+
+    <div class="divider"></div>
+
+    <h3>Resumo da quinzena</h3>
+    <p>O painel lateral mostra automaticamente:</p>
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-title">📊 Por funcionário</div>
+        <div class="card-text">Nome, cargo, dias trabalhados e valor total a receber.</div>
+      </div>
+      <div class="card">
+        <div class="card-title">❌ Faltas</div>
+        <div class="card-text">Quem faltou e em quais dias.</div>
+      </div>
+      <div class="card">
+        <div class="card-title">📅 Calendário individual</div>
+        <div class="card-text">Clique no nome do funcionário para ver dia a dia: trabalhou, faltou, fim de semana.</div>
+      </div>
+      <div class="card">
+        <div class="card-title">💸 Extras / Vale</div>
+        <div class="card-text">Registre vale, bônus ou desconto. São considerados no fechamento da quinzena.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FINANCEIRO -->
+  <section class="section" id="financeiro">
+    <span class="section-tag">Módulo</span>
+    <h1 class="section-title">Financeiro</h1>
+    <p class="section-subtitle">Repasses CEF, contas a pagar, fluxo de caixa e relatórios por obra.</p>
+
+    <h3>Custos CEF (Repasses)</h3>
+    <p>Cards por obra mostrando:</p>
+    <div class="card-grid">
+      <div class="card"><div class="card-title">💰 Valor do imóvel</div><div class="card-text">Preço de venda do imóvel.</div></div>
+      <div class="card"><div class="card-title">📊 PLS recebido</div><div class="card-text">Planilha de Levantamento de Serviços — valor pago pela CEF.</div></div>
+      <div class="card"><div class="card-title">🏠 Entrada + Terreno</div><div class="card-text">Valores recebidos do comprador e do terreno.</div></div>
+      <div class="card"><div class="card-title">📈 Lucro e Margem</div><div class="card-text">Resultado calculado automaticamente. Com barra de progresso de recebimento.</div></div>
+    </div>
+
+    <div class="divider"></div>
+
+    <h3>Contas a Pagar</h3>
+    <table class="data-table">
+      <thead><tr><th>Status</th><th>Significado</th></tr></thead>
+      <tbody>
+        <tr><td><span class="tag tag-yellow">Pendente</span></td><td>Conta registrada, dentro do prazo.</td></tr>
+        <tr><td><span class="tag tag-red">Vencido</span></td><td>Passou da data de vencimento — identificado automaticamente.</td></tr>
+        <tr><td><span class="tag tag-green">Pago</span></td><td>Baixa dada manualmente ao mudar o status.</td></tr>
+        <tr><td><span class="tag tag-gray">Cancelado</span></td><td>Conta descartada.</td></tr>
+      </tbody>
+    </table>
+    <p>Para cadastrar: clique em "+ NOVA CONTA" e preencha descrição, valor, vencimento e fornecedor. Para dar baixa: abra a conta e mude para PAGO.</p>
+
+    <div class="divider"></div>
+
+    <h3>Fluxo de Caixa</h3>
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-title">💳 Saldo atual</div>
+        <div class="card-text">Entradas (repasses + adicionais) − Saídas (lançamentos + contas pagas).</div>
+      </div>
+      <div class="card">
+        <div class="card-title">📉 Média semanal</div>
+        <div class="card-text">Baseada nos últimos 90 dias de gastos reais.</div>
+      </div>
+      <div class="card">
+        <div class="card-title">🔮 Projeção mensal</div>
+        <div class="card-text">Simula os próximos meses considerando repasses previstos e média de gastos.</div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <h3>Relatórios</h3>
+    <p>Selecione uma obra no filtro. O sistema mostra:</p>
+    <ul style="padding-left: 20px; color: #888; font-size: 14px; line-height: 2.2;">
+      <li>Custos divididos por etapa (centro de custo)</li>
+      <li>Gráfico de barras com as categorias que mais gastam</li>
+      <li>Clique em uma categoria para ver os lançamentos detalhados</li>
     </ul>
+  </section>
 
-    <h3>Lancar diarias do dia</h3>
-    <div class="steps">
-      <div class="step">Acesse <strong>DIARIAS (F7)</strong> — a aba <strong>Registro</strong> ja vem selecionada</div>
-      <div class="step">No campo de texto, digite no formato: <strong>nome quantidade</strong>
-        <ul>
-          <li>Exemplo: <code>anderson 3</code> = Anderson trabalhou 3 periodos</li>
-          <li>Exemplo: <code>nego 2,5</code> = Nego trabalhou 2,5 periodos</li>
-          <li>Funciona com <strong>apelidos</strong> (nego, val, zezao, etc.)</li>
-        </ul>
+  <!-- CATÁLOGO -->
+  <section class="section" id="catalogo">
+    <span class="section-tag">Módulo</span>
+    <h1 class="section-title">Catálogo de Materiais</h1>
+    <p class="section-subtitle">Base global de todos os materiais. Garante padronização de nomes e classificação automática nas notas.</p>
+
+    <p>Cada material no catálogo tem: <strong>Código</strong> (gerado automaticamente), <strong>Nome</strong> padronizado, <strong>Unidade</strong> e <strong>Categoria</strong> (centro de custo).</p>
+
+    <h3>Como adicionar material</h3>
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-icon">📂</div>
+        <div class="card-title">Pelo Catálogo</div>
+        <div class="card-text">Menu → Catálogo → "+ Novo Material". Preencha nome, unidade e categoria. Salve.</div>
       </div>
-      <div class="step">O sistema interpreta e mostra o <strong>resumo</strong></div>
-      <div class="step">Confirme clicando em <strong>LANCAR</strong></div>
-    </div>
-    <div class="dica">Voce pode lancar varios funcionarios de uma vez, um por linha.</div>
-
-    <h3>Ver calendario de diarias</h3>
-    <div class="steps">
-      <div class="step">Na aba <strong>Registro</strong>, role para baixo</div>
-      <div class="step">Os dias aparecem em ordem, clique para <strong>expandir</strong> e ver quem trabalhou</div>
-      <div class="step">Para excluir um dia inteiro, clique no botao de <strong>excluir</strong> do dia</div>
-    </div>
-
-    <h3>Ver folha de pagamento</h3>
-    <div class="steps">
-      <div class="step">Clique na aba <strong>Folha</strong></div>
-      <div class="step">A folha mostra: funcionario, dias trabalhados, valor da diaria, total, extras, valor final</div>
-      <div class="step">Clique em <strong>EXPORTAR PDF</strong> para salvar/imprimir</div>
-    </div>
-
-    <h3>Adicionar extras (bonus/desconto)</h3>
-    <div class="steps">
-      <div class="step">Clique na aba <strong>Extras</strong></div>
-      <div class="step">Clique em <strong>+ EXTRA</strong></div>
-      <div class="step">Selecione o funcionario, informe o valor (positivo = bonus, negativo = desconto) e a descricao</div>
-      <div class="step">Clique em <strong>SALVAR</strong></div>
-    </div>
-
-    <h3>Gerenciar quinzenas</h3>
-    <div class="steps">
-      <div class="step">No topo do modulo, veja a <strong>quinzena ativa</strong></div>
-      <div class="step">Para criar uma nova, clique em <strong>NOVA QUINZENA</strong> — o sistema sugere as datas automaticamente</div>
-      <div class="step">Para trocar de quinzena, use o <strong>seletor</strong> no topo</div>
-    </div>
-
-    <h3>Gerenciar equipe (Admin)</h3>
-    <div class="perfil-badges"><span class="badge badge-admin">Somente Admin</span></div>
-    <div class="steps">
-      <div class="step">Clique em <strong>EQUIPE</strong></div>
-      <div class="step">Para adicionar: preencha nome, cargo, valor da diaria, apelidos</div>
-      <div class="step">Para desativar: clique no botao ao lado do nome (ex: funcionario que saiu)</div>
-      <div class="step">Para editar valor: clique no nome e altere</div>
-    </div>
-
-    <h3>Lancar diarias como custo na obra (Admin)</h3>
-    <div class="perfil-badges"><span class="badge badge-admin">Somente Admin</span></div>
-    <div class="steps">
-      <div class="step">Clique em <strong>LANCAR EDR</strong></div>
-      <div class="step">Selecione a obra</div>
-      <div class="step">O sistema calcula o custo total de diarias da quinzena</div>
-      <div class="step">Confirme para gerar o lancamento na obra</div>
-    </div>
-  </div>
-</div>
-
-<!-- ═══════════════════════════════════════ -->
-<!-- F8 CATALOGO -->
-<!-- ═══════════════════════════════════════ -->
-<div class="modulo" id="mod-f8" data-perfis="admin,operacional">
-  <div class="modulo-header" onclick="toggleMod(this)">
-    <span class="modulo-icon">📂</span>
-    <span class="modulo-title">Catalogo de Materiais</span>
-    <span class="modulo-atalho">F8</span>
-    <span class="modulo-toggle">▼</span>
-  </div>
-  <div class="modulo-body">
-    <div class="perfil-badges">
-      <span class="badge badge-admin">Admin</span>
-      <span class="badge badge-operacional">Operacional</span>
-    </div>
-    <p>Base de materiais padronizados. Quando voce lanca uma NF, o sistema usa o catalogo para sugerir nomes e categorizar automaticamente.</p>
-
-    <h3>Consultar materiais</h3>
-    <div class="steps">
-      <div class="step">Acesse <strong>CATALOGO (F8)</strong></div>
-      <div class="step">Use a <strong>busca</strong> ou filtre por <strong>categoria</strong></div>
-      <div class="step">Cada material mostra: codigo, nome, unidade, categoria, preco medio</div>
-    </div>
-
-    <h3>Cadastrar novo material</h3>
-    <div class="steps">
-      <div class="step">Clique em <strong>+ NOVO MATERIAL</strong></div>
-      <div class="step">Preencha: nome, unidade (UN, m2, kg, etc.), categoria</div>
-      <div class="step">Clique em <strong>SALVAR</strong> — o codigo e gerado automaticamente</div>
-    </div>
-    <div class="dica">Materiais tambem sao cadastrados automaticamente quando voce lanca uma NF com itens novos. Eles aparecem com um badge de "auto-cadastrado" para voce revisar.</div>
-
-    <h3>Reconciliacao (Admin)</h3>
-    <div class="perfil-badges"><span class="badge badge-admin">Somente Admin</span></div>
-    <p>Ferramenta para vincular itens orfaos (lancados sem match no catalogo) a materiais existentes:</p>
-    <div class="steps">
-      <div class="step">Clique em <strong>RECONCILIAR</strong></div>
-      <div class="step">O sistema escaneia itens que nao tem vinculo com o catalogo</div>
-      <div class="step">Para cada item, voce pode: <strong>vincular</strong> a um material existente, <strong>cadastrar</strong> como novo, ou <strong>excluir</strong></div>
-    </div>
-  </div>
-</div>
-
-<!-- ═══════════════════════════════════════ -->
-<!-- F9 RELATORIO -->
-<!-- ═══════════════════════════════════════ -->
-<div class="modulo" id="mod-f9" data-perfis="admin">
-  <div class="modulo-header" onclick="toggleMod(this)">
-    <span class="modulo-icon">📈</span>
-    <span class="modulo-title">Relatorio Financeiro</span>
-    <span class="modulo-atalho">F9</span>
-    <span class="modulo-toggle">▼</span>
-  </div>
-  <div class="modulo-body">
-    <div class="perfil-badges"><span class="badge badge-admin">Somente Admin</span></div>
-    <p>Relatorios financeiros completos com graficos e comparativos.</p>
-
-    <h3>Gerar relatorio</h3>
-    <div class="steps">
-      <div class="step">Acesse <strong>RELATORIO (F9)</strong></div>
-      <div class="step">Selecione o <strong>mes/ano</strong> desejado</div>
-      <div class="step">O sistema gera automaticamente:
-        <ul>
-          <li><strong>Painel financeiro</strong> — receita, custo, saldo do periodo</li>
-          <li><strong>Grafico mensal</strong> — evolucao visual</li>
-          <li><strong>Detalhe por obra</strong> — custos por etapa em cada obra</li>
-          <li><strong>Comparativo</strong> — mes atual vs anterior</li>
-        </ul>
+      <div class="card">
+        <div class="card-icon">⚡</div>
+        <div class="card-title">Cadastro Rápido (via NF)</div>
+        <div class="card-text">Ao digitar um item na NF que não existe, aparece "CADASTRAR NO CATÁLOGO". O item fica salvo e já aparece selecionado.</div>
       </div>
     </div>
 
-    <h3>Exportar PDF</h3>
-    <div class="steps">
-      <div class="step">Com o relatorio na tela, clique em <strong>EXPORTAR PDF</strong></div>
-      <div class="step">O sistema gera o PDF para download/impressao</div>
+    <div class="divider"></div>
+
+    <h3>Revisão de itens automáticos</h3>
+    <p>Itens cadastrados automaticamente ficam com tag <span class="tag tag-yellow">AUTO</span>. O admin pode revisar o nome e a categoria e confirmar clicando em "OK". Isso mantém o catálogo limpo.</p>
+
+    <div class="info-box">
+      <strong>Itens similares:</strong> ao cadastrar um material novo, o sistema mostra itens parecidos já cadastrados para evitar duplicatas.
     </div>
-  </div>
-</div>
+  </section>
 
-<!-- ═══════════════════════════════════════ -->
-<!-- F10 CUSTOS CEF -->
-<!-- ═══════════════════════════════════════ -->
-<div class="modulo" id="mod-f10" data-perfis="admin">
-  <div class="modulo-header" onclick="toggleMod(this)">
-    <span class="modulo-icon">💰</span>
-    <span class="modulo-title">Custos CEF (Repasses)</span>
-    <span class="modulo-atalho">F10</span>
-    <span class="modulo-toggle">▼</span>
-  </div>
-  <div class="modulo-body">
-    <div class="perfil-badges"><span class="badge badge-admin">Somente Admin</span></div>
-    <p>Controle de repasses da Caixa Economica Federal e custos por obra.</p>
+  <!-- GARANTIA -->
+  <section class="section" id="garantia">
+    <span class="section-tag">Módulo</span>
+    <h1 class="section-title">Garantia Pós-Entrega</h1>
+    <p class="section-subtitle">Controle de chamados de garantia após a entrega do imóvel.</p>
 
-    <h3>Visualizar custos por obra</h3>
-    <div class="steps">
-      <div class="step">Acesse <strong>CUSTOS CEF (F10)</strong></div>
-      <div class="step">As obras aparecem em cards com resumo: lancamentos, adicionais, repasses</div>
-      <div class="step">Clique em uma obra para ver o <strong>detalhe completo</strong> com tabela mensal</div>
-    </div>
+    <h3>Prazos de garantia por categoria</h3>
+    <table class="data-table">
+      <thead><tr><th>Categoria</th><th>Prazo</th></tr></thead>
+      <tbody>
+        <tr><td>Fundações / Estrutura</td><td><span class="tag tag-red">5 anos</span></td></tr>
+        <tr><td>Impermeabilização</td><td><span class="tag tag-yellow">3 anos</span></td></tr>
+        <tr><td>Elétrica / Hidráulica</td><td><span class="tag tag-blue">2 anos</span></td></tr>
+        <tr><td>Revestimento, Pintura, Esquadrias, Gesso</td><td><span class="tag tag-gray">1 ano</span></td></tr>
+      </tbody>
+    </table>
 
-    <h3>Registrar repasse CEF</h3>
-    <div class="steps">
-      <div class="step">No detalhe da obra, clique em <strong>+ REPASSE</strong></div>
-      <div class="step">Preencha: numero da medicao, valor, data do credito, tipo (PLS ou outro)</div>
-      <div class="step">Clique em <strong>SALVAR</strong></div>
+    <h3>Status dos chamados</h3>
+    <div class="card-grid">
+      <div class="card"><div class="card-title"><span class="tag tag-red">Aberto</span></div><div class="card-text">Problema reportado, ainda não iniciado.</div></div>
+      <div class="card"><div class="card-title"><span class="tag tag-yellow">Em Andamento</span></div><div class="card-text">Equipe já está tratando o chamado.</div></div>
+      <div class="card"><div class="card-title"><span class="tag tag-green">Resolvido</span></div><div class="card-text">Problema solucionado e registrado.</div></div>
     </div>
 
-    <h3>Gerar relatorio de custos</h3>
+    <h3>Abrir um chamado</h3>
     <div class="steps">
-      <div class="step">No detalhe da obra, clique em <strong>RELATORIO</strong></div>
-      <div class="step">O sistema gera um relatorio completo de custos vs repasses</div>
+      <div class="step"><div class="step-num">1</div><div class="step-content"><div class="step-title">Clique em "+ NOVO CHAMADO"</div></div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-content"><div class="step-title">Selecione a obra (deve estar concluída)</div></div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-content"><div class="step-title">Escolha a categoria e descreva o defeito</div></div></div>
+      <div class="step"><div class="step-num">4</div><div class="step-content"><div class="step-title">Acompanhe mudando o status conforme evolui</div></div></div>
     </div>
-  </div>
-</div>
+  </section>
 
-<!-- ═══════════════════════════════════════ -->
-<!-- F11 DADOS -->
-<!-- ═══════════════════════════════════════ -->
-<div class="modulo" id="mod-f11" data-perfis="admin">
-  <div class="modulo-header" onclick="toggleMod(this)">
-    <span class="modulo-icon">🗄</span>
-    <span class="modulo-title">Dados (Gestao de Usuarios)</span>
-    <span class="modulo-atalho">F11</span>
-    <span class="modulo-toggle">▼</span>
-  </div>
-  <div class="modulo-body">
-    <div class="perfil-badges"><span class="badge badge-admin">Somente Admin</span></div>
-    <p>Gerenciamento de usuarios que acessam o sistema.</p>
+  <!-- LEADS -->
+  <section class="section" id="leads">
+    <span class="section-tag">Módulo</span>
+    <h1 class="section-title">Leads (CRM)</h1>
+    <p class="section-subtitle">Funil comercial para acompanhar clientes interessados em imóveis MCMV.</p>
 
-    <h3>Criar novo usuario</h3>
+    <h3>Status do funil</h3>
+    <table class="data-table">
+      <thead><tr><th>Status</th><th>Significado</th></tr></thead>
+      <tbody>
+        <tr><td><span class="tag tag-blue">Qualificado</span></td><td>Lead com perfil MCMV confirmado.</td></tr>
+        <tr><td><span class="tag tag-yellow">Conversa</span></td><td>Já houve contato inicial.</td></tr>
+        <tr><td><span class="tag tag-yellow">Contatado</span></td><td>Em negociação ativa.</td></tr>
+        <tr><td><span class="tag tag-green">Convertido</span></td><td>Virou cliente — contrato assinado.</td></tr>
+        <tr><td><span class="tag tag-gray">Descartado</span></td><td>Não tem perfil ou desistiu.</td></tr>
+      </tbody>
+    </table>
+
+    <div class="info-box">
+      <strong>Captação automática:</strong> leads chegam automaticamente quando alguém conversa com a assistente virtual (Duda) no site e informa os dados. Também pode cadastrar manualmente.
+    </div>
+
+    <h3>Ações registradas por lead</h3>
+    <div class="card-grid">
+      <div class="card"><div class="card-title">📞 Ligação</div><div class="card-text">Registro de chamada com anotações.</div></div>
+      <div class="card"><div class="card-title">🏠 Visita</div><div class="card-text">Visita ao terreno ou imóvel em andamento.</div></div>
+      <div class="card"><div class="card-title">📄 Proposta</div><div class="card-text">Proposta comercial enviada.</div></div>
+      <div class="card"><div class="card-title">🤝 Reunião</div><div class="card-text">Reunião presencial ou online.</div></div>
+    </div>
+  </section>
+
+  <!-- ADMINISTRAÇÃO -->
+  <section class="section" id="admin">
+    <span class="section-tag">Configuração</span>
+    <h1 class="section-title">Administração</h1>
+    <p class="section-subtitle">Gerenciamento de usuários, permissões e estrutura do sistema.</p>
+
+    <h3>Gerenciar usuários</h3>
+    <p>Menu lateral → CONFIG → Usuários (apenas admin).</p>
     <div class="steps">
-      <div class="step">Acesse <strong>DADOS (F11)</strong></div>
-      <div class="step">Clique em <strong>+ NOVO USUARIO</strong></div>
-      <div class="step">Preencha: nome de usuario (login), senha, nome completo</div>
-      <div class="step">Selecione o <strong>perfil</strong>:
-        <ul>
-          <li><strong>Admin</strong> — acesso total</li>
-          <li><strong>Operacional</strong> — lanca NF, estoque, obras, diarias</li>
-          <li><strong>Mestre</strong> — somente diarias</li>
-        </ul>
+      <div class="step"><div class="step-num">1</div><div class="step-content"><div class="step-title">Novo usuário</div><div class="step-desc">Clique em "+ Novo Usuário". Preencha nome, login, senha e perfil. O sistema cria o acesso automaticamente.</div></div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-content"><div class="step-title">Editar</div><div class="step-desc">Clique em "EDITAR" para mudar nome, perfil ou senha.</div></div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-content"><div class="step-title">Desativar / Ativar</div><div class="step-desc">Bloqueia o acesso sem excluir o usuário. Pode reativar depois.</div></div></div>
+    </div>
+
+    <div class="divider"></div>
+
+    <h3>Permissões por perfil</h3>
+    <p>Menu lateral → CONFIG → Permissões. Para operacional e mestre, você pode liberar ou bloquear:</p>
+    <div class="etapas-grid" style="grid-template-columns: 1fr 1fr;">
+      <div class="etapa-item">📊 Dashboard</div>
+      <div class="etapa-item">🏗️ Obras</div>
+      <div class="etapa-item">📦 Estoque</div>
+      <div class="etapa-item">🧾 Notas</div>
+      <div class="etapa-item">💰 Financeiro</div>
+      <div class="etapa-item">👷 Diárias</div>
+      <div class="etapa-item">🗂️ Catálogo</div>
+      <div class="etapa-item">📋 Leads</div>
+      <div class="etapa-item">🛡️ Garantias</div>
+      <div class="etapa-item">📊 Relatório</div>
+    </div>
+
+    <div class="info-box">
+      <strong>Permissões individuais:</strong> além do perfil geral, é possível configurar permissões por usuário específico.
+    </div>
+
+    <div class="divider"></div>
+
+    <h3>Menu lateral — grupos</h3>
+    <table class="data-table">
+      <thead><tr><th>Grupo</th><th>Itens</th></tr></thead>
+      <tbody>
+        <tr><td>VISÃO</td><td>Dashboard, Relatório, Caixa</td></tr>
+        <tr><td>OBRAS</td><td>Obras, Custos, Garantias</td></tr>
+        <tr><td>MATERIAIS</td><td>Estoque, Catálogo, Notas, Lançar NF</td></tr>
+        <tr><td>FINANCEIRO</td><td>Contas a Pagar, Créditos</td></tr>
+        <tr><td>EQUIPE</td><td>Diárias</td></tr>
+        <tr><td>COMERCIAL</td><td>Leads</td></tr>
+        <tr><td>CONFIG</td><td>Banco, Permissões, Setup</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:13px; color:#666;">Grupos recolhíveis: clique no título para abrir/fechar. Grupos com todos os itens bloqueados ficam escondidos.</p>
+  </section>
+
+  <!-- DICAS -->
+  <section class="section" id="dicas">
+    <span class="section-tag">Referência</span>
+    <h1 class="section-title">Dicas Rápidas</h1>
+    <p class="section-subtitle">Atalhos, filtros, autocomplete e mensagens do sistema.</p>
+
+    <h3>Atalhos de teclado</h3>
+    <div class="shortcut-grid">
+      <div class="shortcut-item">
+        <span class="shortcut-key">ESC</span>
+        <span class="shortcut-desc">Fecha janela aberta ou volta para tela anterior</span>
       </div>
-      <div class="step">Clique em <strong>SALVAR</strong></div>
+      <div class="shortcut-item">
+        <span class="shortcut-key">ENTER</span>
+        <span class="shortcut-desc">Avança para o próximo campo em formulários</span>
+      </div>
+      <div class="shortcut-item">
+        <span class="shortcut-key">↑ ↓</span>
+        <span class="shortcut-desc">Navega nas sugestões do autocomplete</span>
+      </div>
+      <div class="shortcut-item">
+        <span class="shortcut-key">ENTER</span>
+        <span class="shortcut-desc">Seleciona a sugestão destacada</span>
+      </div>
     </div>
 
-    <h3>Editar ou desativar usuario</h3>
+    <div class="divider"></div>
+
+    <h3>Filtros por módulo</h3>
+    <table class="data-table">
+      <thead><tr><th>Onde</th><th>Como filtrar</th></tr></thead>
+      <tbody>
+        <tr><td>Obras</td><td>Chips coloridos de centro de custo no topo</td></tr>
+        <tr><td>Estoque</td><td>Sidebar de categorias na esquerda</td></tr>
+        <tr><td>Notas</td><td>Por obra, fornecedor e tipo de crédito</td></tr>
+        <tr><td>Garantias</td><td>Por status (todos, abertos, em andamento, resolvidos)</td></tr>
+        <tr><td>Leads</td><td>Por status do funil</td></tr>
+      </tbody>
+    </table>
+
+    <div class="divider"></div>
+
+    <h3>Mensagens do sistema (Toasts)</h3>
+    <div class="toast-grid">
+      <div class="toast success">
+        <div class="toast-dot"></div>
+        Verde = Sucesso — ex: "Nota salva com sucesso!"
+      </div>
+      <div class="toast warn">
+        <div class="toast-dot"></div>
+        Amarelo = Atenção — ex: "Informe o preço do item"
+      </div>
+      <div class="toast error">
+        <div class="toast-dot"></div>
+        Vermelho = Erro — ex: "Não foi possível salvar"
+      </div>
+    </div>
+  </section>
+
+  <!-- SUPER ADMIN -->
+  <section class="section" id="superadmin">
+    <span class="section-tag">Exclusivo · Duam</span>
+    <h1 class="section-title">Super Admin</h1>
+    <p class="section-subtitle">Funcionalidades exclusivas do administrador da plataforma. Não aparece para outros usuários.</p>
+
+    <div class="warn-box">
+      <strong>Acesso restrito:</strong> estas funções só aparecem para o login Super Admin. Com elas você gerencia toda a plataforma multi-tenant.
+    </div>
+
+    <h3>Seletor de empresa</h3>
+    <p>No topo do sidebar, aparece o menu "SUPER ADMIN". Permite trocar entre empresas cadastradas na plataforma. Ao selecionar, todos os dados carregados são daquela empresa — útil para dar suporte sem precisar do login do cliente.</p>
+
+    <h3>Painel de empresas</h3>
     <div class="steps">
-      <div class="step">Na lista de usuarios, clique em <strong>EDITAR</strong></div>
-      <div class="step">Altere nome, senha ou perfil conforme necessario</div>
-      <div class="step">Para desativar (ex: funcionario que saiu), clique em <strong>DESATIVAR</strong></div>
-    </div>
-    <div class="dica">Usuarios desativados nao conseguem fazer login, mas o historico de lancamentos deles e mantido.</div>
-  </div>
-</div>
-
-<!-- ═══════════════════════════════════════ -->
-<!-- F12 SETUP -->
-<!-- ═══════════════════════════════════════ -->
-<div class="modulo" id="mod-f12" data-perfis="admin">
-  <div class="modulo-header" onclick="toggleMod(this)">
-    <span class="modulo-icon">⚙</span>
-    <span class="modulo-title">Setup</span>
-    <span class="modulo-atalho">F12</span>
-    <span class="modulo-toggle">▼</span>
-  </div>
-  <div class="modulo-body">
-    <div class="perfil-badges"><span class="badge badge-admin">Somente Admin</span></div>
-    <p>Configuracoes tecnicas do sistema.</p>
-
-    <h3>SQL de Setup</h3>
-    <p>Contem o SQL completo para criar todas as tabelas do sistema no Supabase. Usar apenas na primeira instalacao ou quando uma nova tabela for adicionada.</p>
-    <div class="steps">
-      <div class="step">Clique em <strong>COPIAR SQL</strong></div>
-      <div class="step">Abra o <strong>Supabase SQL Editor</strong></div>
-      <div class="step">Cole e execute</div>
+      <div class="step"><div class="step-num">1</div><div class="step-content"><div class="step-title">Listar empresas</div><div class="step-desc">Mostra todas as empresas com nome.</div></div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-content"><div class="step-title">Criar nova empresa</div><div class="step-desc">Clique em "+ Nova Empresa", informe o nome. O sistema cria a estrutura completa (tabelas, permissões).</div></div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-content"><div class="step-title">Editar ou excluir</div><div class="step-desc">Cada empresa tem seus próprios dados completamente isolados (multi-tenant).</div></div></div>
     </div>
 
-    <h3>Resetar menu</h3>
-    <p>Se a ordem dos menus ficou bagunçada:</p>
-    <div class="steps">
-      <div class="step">Clique em <strong>RESETAR MENU</strong></div>
-      <div class="step">A ordem volta ao padrao (F1 a F12)</div>
+    <div class="info-box">
+      <strong>Isolamento total:</strong> cada empresa tem seus próprios usuários, obras, notas, estoque, diárias e relatórios. Nenhuma empresa vê os dados da outra.
     </div>
-    <div class="dica">O menu lateral pode ser reorganizado arrastando os botoes. O setup reseta isso.</div>
-  </div>
-</div>
+  </section>
 
-</div><!-- /container -->
+</main>
 
 <script>
-function toggleMod(header) {
-  header.closest('.modulo').classList.toggle('open');
+function navigate(target) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const sec = document.getElementById(target);
+  if (sec) { sec.classList.add('active'); sec.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  document.querySelectorAll('.nav-item[data-target="' + target + '"]').forEach(n => n.classList.add('active'));
+  if (window.innerWidth <= 768) document.querySelector('.sidebar').classList.remove('open');
 }
 
-function filtrar(perfil) {
-  document.querySelectorAll('.perfil-btn').forEach(b => b.classList.remove('active'));
-  event.target.classList.add('active');
+document.querySelectorAll('.nav-item[data-target]').forEach(item => {
+  item.addEventListener('click', () => navigate(item.dataset.target));
+});
 
-  document.querySelectorAll('.modulo').forEach(m => {
-    if (perfil === 'todos') { m.style.display = ''; return; }
-    const perfis = (m.dataset.perfis || '').split(',');
-    m.style.display = perfis.includes(perfil) ? '' : 'none';
-  });
-}
-
-// Abre o primeiro modulo por padrao
-document.addEventListener('DOMContentLoaded', () => {
-  document.querySelectorAll('.modulo')[0]?.classList.add('open');
+document.querySelectorAll('.module-card[onclick]').forEach(card => {
+  card.style.cursor = 'pointer';
 });
 </script>
-<script src="js/sw-update.js?v=03231028"></script>
 </body>
 </html>
