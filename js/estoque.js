@@ -3,12 +3,21 @@
 // ══════════════════════════════════════════
 let estoqueOrdem = 'az'; // 'az' | 'maior' | 'menor'
 let _materiaisEstoque = [];
+let filtroSoNegativos = false;
 
 function estoqueAtualizarOrdem() {
   ['az','maior','menor'].forEach(k => {
     const el = document.getElementById('estoque-ord-' + k);
     if (el) el.classList.toggle('ativo', estoqueOrdem === k);
   });
+}
+
+function toggleFiltroNegativo() {
+  filtroSoNegativos = !filtroSoNegativos;
+  const btn = document.getElementById('estoque-filtro-neg');
+  if (btn) btn.classList.toggle('ativo', filtroSoNegativos);
+  if (filtroSoNegativos) { estoqueOrdem = 'menor'; estoqueAtualizarOrdem(); }
+  renderEstoque();
 }
 
 const CATS_ESTOQUE = [
@@ -287,6 +296,7 @@ function renderEstoque() {
   const busca = norm(document.getElementById('estoque-busca') ? document.getElementById('estoque-busca').value : '');
   let filtrados = busca ? materiais.filter(m => norm(m.desc).includes(busca)) : materiais;
   if (catEstoqueFiltro) filtrados = filtrados.filter(m => (m.categoria || getCatEstoque(m.desc)) === catEstoqueFiltro);
+  if (filtroSoNegativos) filtrados = filtrados.filter(m => m.saldoTotal < 0);
   // Ordenação
   if (estoqueOrdem === 'az') filtrados.sort((a, b) => a.desc.localeCompare(b.desc, 'pt-BR'));
   else if (estoqueOrdem === 'maior') filtrados.sort((a, b) => b.saldoTotal - a.saldoTotal);

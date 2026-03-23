@@ -457,6 +457,8 @@
         <button class="cat-btn ativo" id="estoque-ord-az" onclick="estoqueOrdem='az';renderEstoque();estoqueAtualizarOrdem()" style="font-size:10px;padding:5px 10px;">A-Z</button>
         <button class="cat-btn" id="estoque-ord-maior" onclick="estoqueOrdem='maior';renderEstoque();estoqueAtualizarOrdem()" style="font-size:10px;padding:5px 10px;">MAIOR ESTOQUE</button>
         <button class="cat-btn" id="estoque-ord-menor" onclick="estoqueOrdem='menor';renderEstoque();estoqueAtualizarOrdem()" style="font-size:10px;padding:5px 10px;">MENOR / NEGATIVO</button>
+        <span style="color:var(--borda2);">|</span>
+        <button class="cat-btn" id="estoque-filtro-neg" onclick="toggleFiltroNegativo()" style="font-size:10px;padding:5px 10px;color:var(--vermelho);">⚠ SÓ NEGATIVOS</button>
       </div>
     </div>
 
