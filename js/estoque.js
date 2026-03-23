@@ -192,6 +192,23 @@ function consolidarEstoque() {
     ajListByKey[k].push(a);
   });
 
+  // 3b. Incluir itens que só têm distribuição (saíram sem entrada registrada)
+  Object.entries(distListByKey).forEach(([k, dists]) => {
+    if (!map[k]) {
+      const d0 = dists[0];
+      const mat = getMaterialCatalogo(d0.item_desc);
+      const descPadrao = mat ? mat.nome : d0.item_desc;
+      map[k] = {
+        desc: descPadrao,
+        unidade: mat?.unidade || d0.unidade || 'UN',
+        credito: false,
+        codigo: mat?.codigo || null,
+        categoria: mat?.categoria || null,
+        qtdNF: 0, qtdDireta: 0, qtdAjuste: 0, totalValor: 0, lotes: [], temNFPendente: false
+      };
+    }
+  });
+
   Object.entries(map).forEach(([myKey, m]) => {
     const totalDistribuido = distByKey[myKey] || 0;
     m.saldoTotal = m.qtdNF + m.qtdDireta + (m.qtdAjuste||0) - totalDistribuido;
