@@ -6,1326 +6,529 @@
 <title>Agenda Elyda — EDR Engenharia</title>
 <style>
   :root {
-    --bg: #f0f2f5;
-    --bg-card: #ffffff;
-    --bg-item: #f9fafb;
-    --bg-item-hover: #f3f4f6;
-    --text: #1a1a2e;
-    --text-secondary: #374151;
-    --text-muted: #9ca3af;
-    --text-obs: #6b7280;
-    --border: #e5e7eb;
-    --hover-dia: #f5f3ff;
-    --hover-dia-border: #c4b5fd;
-    --hoje-bg: #ecfdf5;
-    --hoje-border: #10b981;
-    --selecionado-bg: #f0fdf4;
-    --accent: #059669;
-    --accent2: #10b981;
+    --bg: #f0f2f5; --bg-card: #fff; --bg-item: #f9fafb; --bg-item-hover: #f3f4f6;
+    --text: #1a1a2e; --text-sec: #374151; --text-muted: #9ca3af; --text-obs: #6b7280;
+    --border: #e5e7eb; --accent: #059669; --accent2: #10b981;
     --accent-light: rgba(16,185,129,.15);
-    --input-bg: #ffffff;
-    --shadow: rgba(0,0,0,.06);
-    --header-shadow: rgba(0,71,4,.3);
-    --done-bg: #f0fdf4;
-    --done-text: #6b7280;
+    --input-bg: #fff; --shadow: rgba(0,0,0,.06);
+    --hoje-bg: #ecfdf5; --hoje-border: #10b981;
+    --sel-bg: #f0fdf4; --done-bg: #f0fdf4; --done-text: #6b7280;
   }
-
   [data-theme="dark"] {
-    --bg: #0f1117;
-    --bg-card: #1a1d27;
-    --bg-item: #232733;
-    --bg-item-hover: #2a2e3d;
-    --text: #e4e6eb;
-    --text-secondary: #c9cdd5;
-    --text-muted: #8b95a5;
-    --text-obs: #9ba3b5;
-    --border: #2d3140;
-    --hover-dia: #1a2420;
-    --hover-dia-border: #059669;
-    --hoje-bg: #0d2818;
-    --hoje-border: #10b981;
-    --selecionado-bg: #122620;
-    --accent: #34d399;
-    --accent2: #6ee7b7;
+    --bg: #0f1117; --bg-card: #1a1d27; --bg-item: #232733; --bg-item-hover: #2a2e3d;
+    --text: #e4e6eb; --text-sec: #c9cdd5; --text-muted: #8b95a5; --text-obs: #9ba3b5;
+    --border: #2d3140; --accent: #34d399; --accent2: #6ee7b7;
     --accent-light: rgba(52,211,153,.15);
-    --input-bg: #232733;
-    --shadow: rgba(0,0,0,.3);
-    --header-shadow: rgba(0,0,0,.5);
-    --done-bg: #1a2420;
-    --done-text: #6b7280;
+    --input-bg: #232733; --shadow: rgba(0,0,0,.3);
+    --hoje-bg: #0d2818; --hoje-border: #10b981;
+    --sel-bg: #122620; --done-bg: #1a2420; --done-text: #6b7280;
   }
-
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-
-  body {
-    font-family: 'Segoe UI', system-ui, sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    transition: background .3s, color .3s;
-  }
-
-  .header {
-    background: linear-gradient(135deg, #004704, #006608);
-    color: white;
-    padding: 14px 32px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    box-shadow: 0 2px 12px var(--header-shadow);
-  }
-
-  [data-theme="dark"] .header {
-    background: linear-gradient(135deg, #071a09, #0d2f10);
-  }
-
-  .header-left {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-  }
-
-  .header-logo { height: 42px; width: auto; }
-
-  .header-title { display: flex; flex-direction: column; }
-
-  .header-title h1 {
-    font-size: 1.15rem;
-    font-weight: 700;
-    line-height: 1.2;
-  }
-
-  .header-title .subtitle {
-    font-size: .75rem;
-    opacity: .7;
-    font-weight: 400;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-  }
-
-  .header-right {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .header .hoje-btn, .theme-toggle, .filtro-btn {
-    background: rgba(255,255,255,.12);
-    border: 1px solid rgba(255,255,255,.25);
-    color: white;
-    padding: 7px 16px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: .8rem;
-    transition: background .2s;
-  }
-
-  .theme-toggle, .filtro-btn {
-    width: 44px;
-    height: 44px;
-    padding: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1rem;
-  }
-
-  .header .hoje-btn:hover, .theme-toggle:hover, .filtro-btn:hover {
-    background: rgba(255,255,255,.22);
-  }
-
-  .filtro-btn.active {
-    background: rgba(255,255,255,.3);
-    border-color: rgba(255,255,255,.5);
-  }
-
-  .container {
-    display: grid;
-    grid-template-columns: 1fr 400px;
-    gap: 20px;
-    padding: 20px 28px;
-    max-width: 1440px;
-    margin: 0 auto;
-    height: calc(100vh - 70px);
-  }
-
-  /* ── Nav mes ── */
-  .mes-nav {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 14px;
-  }
-
-  .mes-nav h2 {
-    font-size: 1.2rem;
-    font-weight: 600;
-    color: var(--text-secondary);
-    text-transform: capitalize;
-  }
-
-  .mes-nav button {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    width: 44px;
-    height: 44px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 1rem;
-    color: var(--accent);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all .2s;
-  }
-
-  .mes-nav button:hover {
-    background: var(--accent);
-    color: white;
-    border-color: var(--accent);
-  }
-
-  /* ── Calendario ── */
-  .calendario {
-    background: var(--bg-card);
-    border-radius: 14px;
-    padding: 18px;
-    box-shadow: 0 1px 8px var(--shadow);
-    display: flex;
-    flex-direction: column;
-    transition: background .3s;
-  }
-
-  .dias-semana {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    text-align: center;
-    font-size: .75rem;
-    font-weight: 600;
-    color: var(--text-muted);
-    margin-bottom: 6px;
-    text-transform: uppercase;
-    letter-spacing: .5px;
-  }
-
-  .grid-dias {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 3px;
-    flex: 1;
-  }
-
-  .dia {
-    border-radius: 8px;
-    padding: 5px 6px;
-    min-height: 76px;
-    cursor: pointer;
-    transition: all .15s;
-    border: 2px solid transparent;
-    position: relative;
-  }
-
-  .dia:hover { background: var(--hover-dia); border-color: var(--hover-dia-border); }
-
-  .dia.hoje {
-    background: var(--hoje-bg);
-    border-color: var(--hoje-border);
-  }
-
-  .dia.selecionado {
-    background: var(--selecionado-bg);
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px var(--accent-light);
-  }
-
-  .dia.outro-mes { opacity: .25; }
-
-  .dia .numero {
-    font-size: .8rem;
-    font-weight: 600;
-    color: var(--text-secondary);
-    margin-bottom: 3px;
-  }
-
-  .dia.hoje .numero {
-    background: var(--accent);
-    color: white;
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: .75rem;
-  }
-
-  .dia .eventos { display: flex; flex-direction: column; gap: 1px; }
-
-  .dia .evento-mini {
-    font-size: .7rem;
-    padding: 2px 4px;
-    border-radius: 3px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    font-weight: 500;
-  }
-
-  .dia .evento-mini.concluido {
-    opacity: .4;
-    text-decoration: line-through;
-  }
-
-  /* Cores por categoria */
-  .evento-mini.pessoal, .evento-cat.pessoal { background: #dbeafe; color: #1e40af; }
-  .evento-mini.trabalho, .evento-cat.trabalho { background: #fef3c7; color: #92400e; }
-  .evento-mini.compra, .evento-cat.compra { background: #fce7f3; color: #9d174d; }
-  .evento-mini.lembrete, .evento-cat.lembrete { background: #e0e7ff; color: #3730a3; }
-
-  [data-theme="dark"] .evento-mini.pessoal, [data-theme="dark"] .evento-cat.pessoal { background: #1e3a5f; color: #93c5fd; }
-  [data-theme="dark"] .evento-mini.trabalho, [data-theme="dark"] .evento-cat.trabalho { background: #422006; color: #fcd34d; }
-  [data-theme="dark"] .evento-mini.compra, [data-theme="dark"] .evento-cat.compra { background: #500724; color: #f9a8d4; }
-  [data-theme="dark"] .evento-mini.lembrete, [data-theme="dark"] .evento-cat.lembrete { background: #312e81; color: #a5b4fc; }
-
-  /* Prioridade — borda esquerda */
-  .prio-alta { border-left: 3px solid #ef4444 !important; }
-  .prio-media { border-left: 3px solid #f59e0b !important; }
-  .prio-baixa { border-left: 3px solid #6b7280 !important; }
-
-  /* Mini dot de prioridade no calendario */
-  .dia .evento-mini.prio-dot-alta { border-left: 2px solid #ef4444; }
-  .dia .evento-mini.prio-dot-media { border-left: 2px solid #f59e0b; }
-  .dia .evento-mini.prio-dot-baixa { border-left: 2px solid transparent; }
-
-  .dia .mais {
-    font-size: .7rem;
-    color: var(--accent);
-    font-weight: 600;
-    margin-top: 1px;
-  }
-
-  /* ── Painel lateral ── */
-  .painel-lateral {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    overflow-y: auto;
-  }
-
-  .card {
-    background: var(--bg-card);
-    border-radius: 14px;
-    padding: 16px;
-    box-shadow: 0 1px 8px var(--shadow);
-    transition: background .3s;
-  }
-
-  .card h3 {
-    font-size: .95rem;
-    font-weight: 600;
-    color: var(--text-secondary);
-    margin-bottom: 10px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .card h3 .icon { font-size: 1.1rem; }
-
-  .eventos-dia { display: flex; flex-direction: column; gap: 6px; }
-
-  .evento-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-    padding: 9px 10px;
-    border-radius: 10px;
-    background: var(--bg-item);
-    transition: all .2s;
-  }
-
-  .evento-item:hover { background: var(--bg-item-hover); }
-
-  .evento-item.done {
-    background: var(--done-bg);
-    opacity: .6;
-  }
-
-  .evento-item.done .evento-titulo {
-    text-decoration: line-through;
-    color: var(--done-text);
-  }
-
-  .evento-check {
-    appearance: none;
-    -webkit-appearance: none;
-    width: 28px;
-    height: 28px;
-    min-width: 28px;
-    border: 2px solid var(--border);
-    border-radius: 50%;
-    cursor: pointer;
-    margin-top: 0;
-    transition: all .2s;
-    position: relative;
-  }
-
-  .evento-check:checked {
-    background: var(--accent);
-    border-color: var(--accent);
-  }
-
-  .evento-check:checked::after {
-    content: '\\2713';
-    color: white;
-    font-size: .7rem;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-  }
-
-  .evento-hora {
-    font-size: .78rem;
-    font-weight: 600;
-    color: var(--accent);
-    min-width: 40px;
-    padding-top: 3px;
-  }
-
-  .evento-info { flex: 1; }
-
-  .evento-titulo {
-    font-size: .82rem;
-    font-weight: 500;
-    color: var(--text);
-  }
-
-  .evento-meta {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-top: 3px;
-    flex-wrap: wrap;
-  }
-
-  .evento-cat {
-    font-size: .75rem;
-    padding: 1px 7px;
-    border-radius: 20px;
-    display: inline-block;
-  }
-
-  .evento-prio {
-    font-size: .72rem;
-    padding: 1px 6px;
-    border-radius: 20px;
-    font-weight: 600;
-  }
-
-  .evento-prio.alta { background: #fef2f2; color: #dc2626; }
-  .evento-prio.media { background: #fffbeb; color: #d97706; }
-  .evento-prio.baixa { background: var(--bg-item); color: var(--text-muted); }
-
-  [data-theme="dark"] .evento-prio.alta { background: #450a0a; color: #fca5a5; }
-  [data-theme="dark"] .evento-prio.media { background: #451a03; color: #fcd34d; }
-
-  .evento-del {
-    background: none;
-    border: none;
-    color: var(--text-muted);
-    cursor: pointer;
-    font-size: 1rem;
-    padding: 8px;
-    min-width: 36px;
-    min-height: 36px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: color .2s;
-    opacity: .4;
-  }
-
-  .evento-del:hover { color: #ef4444; opacity: 1; }
-
-  .sem-eventos {
-    text-align: center;
-    color: var(--text-muted);
-    font-size: .82rem;
-    padding: 16px 0;
-  }
-
-  /* Form novo */
-  .form-novo {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .form-novo input, .form-novo select, .form-novo textarea {
-    padding: 10px 12px;
-    border: 1.5px solid var(--border);
-    border-radius: 8px;
-    font-size: 1rem;
-    font-family: inherit;
-    outline: none;
-    transition: border-color .2s, background .3s;
-    background: var(--input-bg);
-    color: var(--text);
-  }
-
-  .form-novo input:focus, .form-novo select:focus, .form-novo textarea:focus {
-    border-color: var(--accent);
-  }
-
-  .form-novo textarea { resize: none; height: 64px; }
-
-  .form-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 6px;
-  }
-
-  .form-row-3 {
-    display: grid;
-    grid-template-columns: auto 1fr 1fr;
-    gap: 6px;
-  }
-
-  .btn-add {
-    background: linear-gradient(135deg, #004704, #059669);
-    color: white;
-    border: none;
-    padding: 14px;
-    border-radius: 8px;
-    font-size: .85rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: opacity .2s;
-  }
-
-  .btn-add:hover { opacity: .9; }
-
-  /* Proximos */
-  .proximos-lista { display: flex; flex-direction: column; gap: 4px; }
-
-  .proximo-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 7px 9px;
-    border-radius: 8px;
-    background: var(--bg-item);
-    font-size: .78rem;
-    cursor: pointer;
-    transition: background .2s;
-  }
-
-  .proximo-item:hover { background: var(--hover-dia); }
-
-  .proximo-item.done { opacity: .4; text-decoration: line-through; }
-
-  .proximo-data {
-    font-weight: 600;
-    color: var(--accent);
-    min-width: 42px;
-    font-size: .78rem;
-  }
-
-  .proximo-texto {
-    color: var(--text-secondary);
-    flex: 1;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  /* Contadores */
-  .contadores { display: flex; gap: 14px; }
-
-  .contador { text-align: center; }
-
-  .contador .num { font-size: 1.2rem; font-weight: 700; }
-
-  .contador .label {
-    font-size: .7rem;
-    opacity: .8;
-    text-transform: uppercase;
-    letter-spacing: .5px;
-  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;transition:background .3s,color .3s}
+
+  /* ── HEADER ── */
+  .header{background:linear-gradient(135deg,#004704,#006608);color:#fff;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+  [data-theme="dark"] .header{background:linear-gradient(135deg,#071a09,#0d2f10)}
+  .header-left{display:flex;align-items:center;gap:12px}
+  .header-logo{height:36px;width:auto}
+  .header-title h1{font-size:1.1rem;font-weight:700;line-height:1.2}
+  .header-title .sub{font-size:.75rem;opacity:.7;letter-spacing:1px;text-transform:uppercase}
+  .header-right{display:flex;align-items:center;gap:8px}
+  .hbtn{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:.85rem;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center;transition:background .2s}
+  .hbtn:hover{background:rgba(255,255,255,.22)}
+  .contadores{display:flex;gap:16px}
+  .contador{text-align:center}
+  .contador .num{font-size:1.2rem;font-weight:700}
+  .contador .lbl{font-size:.7rem;opacity:.8;text-transform:uppercase;letter-spacing:.5px}
+
+  /* ── DESKTOP: calendario + painel ── */
+  .desktop-view{display:grid;grid-template-columns:1fr 400px;gap:20px;padding:20px 24px;max-width:1440px;margin:0 auto;height:calc(100vh - 62px)}
+  .calendario{background:var(--bg-card);border-radius:14px;padding:18px;box-shadow:0 1px 8px var(--shadow);display:flex;flex-direction:column}
+  .mes-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .mes-nav h2{font-size:1.2rem;font-weight:600;color:var(--text-sec);text-transform:capitalize}
+  .mes-nav button{background:var(--bg-card);border:1px solid var(--border);width:44px;height:44px;border-radius:8px;cursor:pointer;font-size:1rem;color:var(--accent);display:flex;align-items:center;justify-content:center;transition:all .2s}
+  .mes-nav button:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .dias-semana{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;font-size:.78rem;font-weight:600;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase}
+  .grid-dias{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;flex:1}
+  .dia{border-radius:8px;padding:5px 6px;min-height:76px;cursor:pointer;transition:all .15s;border:2px solid transparent}
+  .dia:hover{background:var(--accent-light);border-color:var(--accent)}
+  .dia.hoje{background:var(--hoje-bg);border-color:var(--hoje-border)}
+  .dia.sel{background:var(--sel-bg);border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-light)}
+  .dia.out{opacity:.25}
+  .dia .num{font-size:.8rem;font-weight:600;color:var(--text-sec);margin-bottom:2px}
+  .dia.hoje .num{background:var(--accent);color:#fff;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.75rem}
+  .dia .evs{display:flex;flex-direction:column;gap:1px}
+  .ev-mini{font-size:.7rem;padding:2px 4px;border-radius:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500}
+  .ev-mini.done{opacity:.4;text-decoration:line-through}
+  .ev-mini.pessoal{background:#dbeafe;color:#1e40af}
+  .ev-mini.trabalho{background:#fef3c7;color:#92400e}
+  .ev-mini.compra{background:#fce7f3;color:#9d174d}
+  .ev-mini.lembrete{background:#e0e7ff;color:#3730a3}
+  [data-theme="dark"] .ev-mini.pessoal{background:#1e3a5f;color:#93c5fd}
+  [data-theme="dark"] .ev-mini.trabalho{background:#422006;color:#fcd34d}
+  [data-theme="dark"] .ev-mini.compra{background:#500724;color:#f9a8d4}
+  [data-theme="dark"] .ev-mini.lembrete{background:#312e81;color:#a5b4fc}
+  .ev-mini.p-alta{border-left:2px solid #ef4444}
+  .ev-mini.p-media{border-left:2px solid #f59e0b}
+  .dia .mais{font-size:.7rem;color:var(--accent);font-weight:600}
+
+  .painel-lat{display:flex;flex-direction:column;gap:14px;overflow-y:auto}
+  .card{background:var(--bg-card);border-radius:14px;padding:16px;box-shadow:0 1px 8px var(--shadow)}
+  .card h3{font-size:.95rem;font-weight:600;color:var(--text-sec);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+
+  /* ── MOBILE: vista lista ── */
+  .mobile-view{display:none;padding:0;min-height:calc(100vh - 62px)}
+
+  .mob-tabs{display:flex;background:var(--bg-card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10}
+  .mob-tab{flex:1;padding:14px 8px;text-align:center;font-size:.9rem;font-weight:600;color:var(--text-muted);cursor:pointer;border-bottom:3px solid transparent;transition:all .2s}
+  .mob-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+
+  .mob-daynav{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--bg-card);border-bottom:1px solid var(--border)}
+  .mob-daynav button{background:none;border:none;color:var(--accent);font-size:1.4rem;cursor:pointer;padding:8px;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center}
+  .mob-daynav .dia-label{text-align:center}
+  .mob-daynav .dia-label .dia-nome{font-size:1rem;font-weight:700;color:var(--text)}
+  .mob-daynav .dia-label .dia-data{font-size:.82rem;color:var(--text-muted)}
+
+  .mob-lista{padding:12px 16px;display:flex;flex-direction:column;gap:8px;padding-bottom:90px}
+  .mob-vazio{text-align:center;color:var(--text-muted);padding:40px 20px;font-size:.95rem}
+
+  /* Evento item (compartilhado desktop/mobile) */
+  .ev-item{display:flex;align-items:flex-start;gap:10px;padding:12px;border-radius:12px;background:var(--bg-item);transition:all .2s}
+  .ev-item:hover{background:var(--bg-item-hover)}
+  .ev-item.done{opacity:.55}
+  .ev-item.done .ev-titulo{text-decoration:line-through;color:var(--done-text)}
+  .ev-item.p-alta{border-left:3px solid #ef4444}
+  .ev-item.p-media{border-left:3px solid #f59e0b}
+  .ev-check{appearance:none;-webkit-appearance:none;width:28px;height:28px;min-width:28px;border:2px solid var(--border);border-radius:50%;cursor:pointer;transition:all .2s;position:relative;margin-top:2px}
+  .ev-check:checked{background:var(--accent);border-color:var(--accent)}
+  .ev-check:checked::after{content:'\\2713';color:#fff;font-size:.75rem;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}
+  .ev-hora{font-size:.82rem;font-weight:600;color:var(--accent);min-width:44px;padding-top:3px}
+  .ev-info{flex:1}
+  .ev-titulo{font-size:.9rem;font-weight:500;color:var(--text)}
+  .ev-obs{font-size:.8rem;color:var(--text-obs);margin-top:2px}
+  .ev-meta{display:flex;align-items:center;gap:6px;margin-top:4px;flex-wrap:wrap}
+  .ev-cat{font-size:.75rem;padding:2px 8px;border-radius:20px}
+  .ev-cat.pessoal{background:#dbeafe;color:#1e40af}
+  .ev-cat.trabalho{background:#fef3c7;color:#92400e}
+  .ev-cat.compra{background:#fce7f3;color:#9d174d}
+  .ev-cat.lembrete{background:#e0e7ff;color:#3730a3}
+  [data-theme="dark"] .ev-cat.pessoal{background:#1e3a5f;color:#93c5fd}
+  [data-theme="dark"] .ev-cat.trabalho{background:#422006;color:#fcd34d}
+  [data-theme="dark"] .ev-cat.compra{background:#500724;color:#f9a8d4}
+  [data-theme="dark"] .ev-cat.lembrete{background:#312e81;color:#a5b4fc}
+  .ev-prio{font-size:.72rem;padding:2px 7px;border-radius:20px;font-weight:600}
+  .ev-prio.alta{background:#fef2f2;color:#dc2626}
+  .ev-prio.media{background:#fffbeb;color:#d97706}
+  [data-theme="dark"] .ev-prio.alta{background:#450a0a;color:#fca5a5}
+  [data-theme="dark"] .ev-prio.media{background:#451a03;color:#fcd34d}
+  .ev-del{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1.1rem;padding:8px;min-width:40px;min-height:40px;display:flex;align-items:center;justify-content:center;opacity:.4;transition:color .2s}
+  .ev-del:hover{color:#ef4444;opacity:1}
+
+  /* Form novo (compartilhado) */
+  .form-novo{display:flex;flex-direction:column;gap:8px}
+  .form-novo input,.form-novo select,.form-novo textarea{padding:12px;border:1.5px solid var(--border);border-radius:10px;font-size:1rem;font-family:inherit;outline:none;background:var(--input-bg);color:var(--text);transition:border-color .2s}
+  .form-novo input:focus,.form-novo select:focus,.form-novo textarea:focus{border-color:var(--accent)}
+  .form-novo textarea{resize:none;height:64px}
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .form-row-3{display:grid;grid-template-columns:auto 1fr 1fr;gap:8px}
+  .btn-add{background:linear-gradient(135deg,#004704,#059669);color:#fff;border:none;padding:14px;border-radius:10px;font-size:.95rem;font-weight:600;cursor:pointer;transition:opacity .2s;min-height:48px}
+  .btn-add:hover{opacity:.9}
+
+  /* FAB mobile */
+  .fab{display:none;position:fixed;bottom:20px;right:20px;width:56px;height:56px;border-radius:50%;background:var(--accent);color:#fff;border:none;font-size:1.8rem;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.3);z-index:50;align-items:center;justify-content:center;transition:transform .2s}
+  .fab:active{transform:scale(.9)}
+
+  /* Modal mobile novo evento */
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:flex-end;justify-content:center}
+  .modal-overlay.show{display:flex}
+  .modal-content{background:var(--bg-card);border-radius:20px 20px 0 0;padding:20px;width:100%;max-width:500px;max-height:80vh;overflow-y:auto}
+  .modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+  .modal-header h3{font-size:1.1rem;font-weight:600;color:var(--text)}
+  .modal-close{background:none;border:none;font-size:1.5rem;color:var(--text-muted);cursor:pointer;padding:8px;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center}
+
+  /* Proximos (desktop) */
+  .prox-lista{display:flex;flex-direction:column;gap:4px}
+  .prox-item{display:flex;align-items:center;gap:10px;padding:10px;border-radius:8px;background:var(--bg-item);font-size:.82rem;cursor:pointer;transition:background .2s}
+  .prox-item:hover{background:var(--accent-light)}
+  .prox-data{font-weight:600;color:var(--accent);min-width:42px;font-size:.78rem}
+  .prox-texto{color:var(--text-sec);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+  /* Sem eventos */
+  .vazio{text-align:center;color:var(--text-muted);font-size:.88rem;padding:20px 0}
+
+  /* Sync/loading/offline */
+  .saving-ind{position:fixed;top:12px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;padding:6px 16px;border-radius:20px;font-size:.78rem;font-weight:600;display:flex;align-items:center;gap:8px;opacity:0;transition:opacity .3s;z-index:999;pointer-events:none}
+  .saving-ind.vis{opacity:1}
+  .saving-dot{width:8px;height:8px;background:#fff;border-radius:50%;animation:pulse 1s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+  .offline-bar{display:none;position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#dc2626;color:#fff;padding:8px 20px;border-radius:20px;font-size:.82rem;font-weight:600;z-index:999;box-shadow:0 4px 12px rgba(0,0,0,.3)}
+  .offline-bar.vis{display:block}
+  .load-overlay{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1000;gap:12px;transition:opacity .3s}
+  .load-overlay.gone{opacity:0;pointer-events:none}
+  .load-spin{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
 
   /* Filtro dropdown */
-  .filtro-wrapper { position: relative; }
+  .filtro-wrap{position:relative}
+  .filtro-dd{display:none;position:absolute;top:48px;right:0;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:8px;min-width:180px;box-shadow:0 4px 20px var(--shadow);z-index:100}
+  .filtro-dd.show{display:block}
+  .filtro-dd label{display:flex;align-items:center;gap:8px;padding:8px;border-radius:6px;font-size:.85rem;color:var(--text-sec);cursor:pointer}
+  .filtro-dd label:hover{background:var(--bg-item)}
+  .filtro-dd input[type="checkbox"]{accent-color:var(--accent);width:18px;height:18px}
+  .filtro-sec{font-size:.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;padding:8px 8px 2px;font-weight:600}
+  .filtro-div{height:1px;background:var(--border);margin:4px 0}
 
-  .filtro-dropdown {
-    display: none;
-    position: absolute;
-    top: 42px;
-    right: 0;
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 8px;
-    min-width: 160px;
-    box-shadow: 0 4px 20px var(--shadow);
-    z-index: 100;
-  }
-
-  .filtro-dropdown.show { display: block; }
-
-  .filtro-dropdown label {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 8px;
-    border-radius: 6px;
-    font-size: .78rem;
-    color: var(--text-secondary);
-    cursor: pointer;
-    transition: background .15s;
-  }
-
-  .filtro-dropdown label:hover { background: var(--bg-item); }
-
-  .filtro-dropdown input[type="checkbox"] {
-    accent-color: var(--accent);
-  }
-
-  .filtro-section {
-    font-size: .75rem;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: .5px;
-    padding: 6px 8px 2px;
-    font-weight: 600;
-  }
-
-  .filtro-divider {
-    height: 1px;
-    background: var(--border);
-    margin: 4px 0;
-  }
-
-  /* Indicador de sync */
-  .saving-indicator {
-    position: fixed;
-    top: 12px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: var(--accent);
-    color: white;
-    padding: 6px 16px;
-    border-radius: 20px;
-    font-size: .72rem;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    opacity: 0;
-    transition: opacity .3s;
-    z-index: 999;
-    pointer-events: none;
-  }
-
-  .saving-indicator.visible { opacity: 1; }
-
-  .saving-dot {
-    width: 8px;
-    height: 8px;
-    background: white;
-    border-radius: 50%;
-    animation: pulse 1s infinite;
-  }
-
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: .3; }
-  }
-
-  @media (max-width: 900px) {
-    .container { grid-template-columns: 1fr; height: auto; }
-    .painel-lateral { overflow-y: visible; }
-  }
-
-  @media (max-width: 600px) {
-    .header {
-      padding: 10px 14px;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-    .header-left { gap: 10px; }
-    .header-logo { height: 32px; }
-    .header-title h1 { font-size: 1rem; }
-    .contadores {
-      order: 3;
-      width: 100%;
-      justify-content: center;
-      gap: 20px;
-      padding-top: 4px;
-      border-top: 1px solid rgba(255,255,255,.1);
-    }
-    .header-right { gap: 6px; }
-    .container {
-      padding: 10px;
-      gap: 10px;
-    }
-    .calendario { padding: 10px; border-radius: 12px; }
-    .mes-nav { margin-bottom: 10px; }
-    .mes-nav h2 { font-size: 1.05rem; }
-    .grid-dias { gap: 2px; }
-    .dia {
-      min-height: 48px;
-      padding: 3px 2px;
-      border-radius: 6px;
-    }
-    .dia .numero { font-size: .75rem; margin-bottom: 1px; }
-    .dia.hoje .numero { width: 22px; height: 22px; font-size: .7rem; }
-    .dia .evento-mini {
-      font-size: .55rem;
-      padding: 1px 2px;
-    }
-    .dia .mais { font-size: .6rem; }
-    .card { padding: 12px; border-radius: 12px; }
-    .form-row-3 {
-      grid-template-columns: 1fr 1fr;
-    }
-    .form-row-3 input[type="time"] {
-      grid-column: 1 / -1;
-    }
-    .evento-item { padding: 10px; gap: 10px; }
-    .evento-check {
-      width: 32px;
-      height: 32px;
-      min-width: 32px;
-    }
-    .proximo-item { padding: 10px; }
-    .filtro-dropdown {
-      right: -40px;
-      min-width: 200px;
-    }
-    .filtro-dropdown label { padding: 10px 8px; }
-  }
-
-  @media (max-width: 380px) {
-    .header-title .subtitle { display: none; }
-    .dia .evento-mini { display: none; }
-    .dia .mais { display: none; }
-    .dia { min-height: 40px; }
-    .dia .numero { font-size: .72rem; }
-  }
-
-  /* Offline banner */
-  .offline-banner {
-    display: none;
-    position: fixed;
-    bottom: 16px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: #dc2626;
-    color: white;
-    padding: 8px 20px;
-    border-radius: 20px;
-    font-size: .78rem;
-    font-weight: 600;
-    z-index: 999;
-    box-shadow: 0 4px 12px rgba(0,0,0,.3);
-  }
-
-  .offline-banner.visible { display: flex; align-items: center; gap: 8px; }
-
-  /* Loading state */
-  .loading-overlay {
-    position: fixed;
-    inset: 0;
-    background: var(--bg);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    gap: 12px;
-    transition: opacity .3s;
-  }
-
-  .loading-overlay.hidden { opacity: 0; pointer-events: none; }
-
-  .loading-spinner {
-    width: 32px;
-    height: 32px;
-    border: 3px solid var(--border);
-    border-top-color: var(--accent);
-    border-radius: 50%;
-    animation: spin .8s linear infinite;
-  }
-
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  .loading-text {
-    font-size: .85rem;
-    color: var(--text-muted);
+  /* ── RESPONSIVE ── */
+  @media(max-width:768px){
+    .desktop-view{display:none!important}
+    .mobile-view{display:flex!important;flex-direction:column}
+    .fab{display:flex!important}
+    .contadores{gap:20px}
+    .header{padding:10px 16px;flex-wrap:wrap;gap:6px}
+    .header-logo{height:28px}
+    .header-title h1{font-size:.95rem}
+    .header-title .sub{display:none}
+    .contadores{order:3;width:100%;justify-content:center;padding-top:6px;border-top:1px solid rgba(255,255,255,.1)}
+    .filtro-dd{right:-20px}
   }
 </style>
 </head>
 <body>
 
-<div class="loading-overlay" id="loadingOverlay">
-  <div class="loading-spinner"></div>
-  <div class="loading-text">Carregando agenda...</div>
-</div>
+<div class="load-overlay" id="loadO"><div class="load-spin"></div><div style="font-size:.85rem;color:var(--text-muted)">Carregando agenda...</div></div>
+<div class="saving-ind" id="saveInd"><div class="saving-dot"></div>sincronizando</div>
+<div class="offline-bar" id="offBar">Sem internet — modo offline</div>
 
-<div class="saving-indicator" id="savingIndicator">
-  <div class="saving-dot"></div>sincronizando
-</div>
-
-<div class="offline-banner" id="offlineBanner">Sem internet — modo offline</div>
-
+<!-- HEADER -->
 <div class="header">
   <div class="header-left">
-    <svg class="header-logo" viewBox="0 0 12500 12500" xmlns="http://www.w3.org/2000/svg" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
-      <g transform="matrix(17.2764,0,0,17.2764,-17.0066,-10.9962)">
-        <g>
-          <path d="M265.547,223.821C163.627,223.821 163.642,223.819 163.546,223.84C161.626,224.261 161.66,224.664 161.642,226.641C161.408,252.651 161.618,336.502 161.642,346.056C161.652,350.39 163.509,349.419 167.84,349.419C351.09,349.419 351.088,349.424 351.324,349.381C353.361,349.005 353.035,348.124 353.035,334.116C353.035,211.907 353.012,211.892 353.229,211.316C353.727,209.993 354.212,210.205 368.683,210.205C448.09,210.205 448.092,210.169 453.357,210.495C464.991,211.216 467.108,210.898 473.898,212.864C474.234,212.962 492.592,216.398 509.427,233.531C524.399,248.768 527.637,263.351 529.42,268.956C530.989,273.89 532.859,293.349 529.02,305.783C527.503,310.696 527.827,310.79 525.827,315.544C524.445,318.831 521.607,326.603 511.524,338.021C509.77,340.007 502.857,345.976 501.856,346.655C494.169,351.87 489.741,354.815 472.8,359.815C468.43,361.105 466.313,360.879 465.868,362.115C465.447,363.286 466.714,365.152 467.068,365.812C467.227,366.106 488.138,406.141 490.919,411.416C492.423,414.269 504.615,437.396 509.567,447.153C510.677,449.34 510.852,449.221 511.831,451.44C512.354,452.624 527.853,481.864 530.897,488.053C531.205,488.68 533.212,492.76 535.044,495.738C537.927,500.423 533.576,499.485 530.444,499.482C526.01,499.478 523.771,499.842 522.719,498.132C521.766,496.58 519.354,491.596 518.166,489.552C517.771,488.873 513.791,481.133 512.549,478.769C502.631,459.899 483.525,423.074 472.702,402.623C467.586,392.956 467.794,392.877 462.661,383.235C452.148,363.491 452.366,363.101 451.054,362.679C450.19,362.401 450.169,362.444 370.855,362.443C367.705,362.443 366.633,362.271 366.613,365.6C366.548,376.124 366.754,497.065 366.496,498.043C366.148,499.366 364.589,499.467 364.385,499.48C362.111,499.627 356.338,499.5 355.639,499.485C352.359,499.413 353.039,498.076 353.035,494.791C353.031,491.626 353.046,364.664 353.027,364.546C352.588,361.832 350.094,362.441 348.056,362.441C159.713,362.409 159.693,362.549 158.08,362.263C156.571,361.995 152.393,361.539 149.753,356.714C148.497,354.418 148.658,354.274 148.658,324.345C148.658,84.392 148.641,84.41 148.794,83.408C149.445,79.137 153.384,75.059 156.893,74.317C159.408,73.785 159.425,73.845 228.636,73.845C295.709,73.845 295.714,73.839 295.884,73.895C297.644,74.475 297.529,75.202 297.472,83.341C297.452,86.239 296.677,86.315 293.773,86.316C232.571,86.329 163.892,86.276 163.455,86.357C161.303,86.76 161.642,87.658 161.642,101.788C161.642,209.078 161.637,209.08 161.677,209.215C162.228,211.103 162.621,211.016 164.59,211.03C178.518,211.129 268.8,210.805 269.987,211.222C271.501,211.754 271.181,214.427 271.178,219.038C271.178,219.369 271.176,222.581 270.707,223.152C269.966,224.054 266.667,223.818 265.547,223.821ZM519.102,287.442C518.817,283.253 518.638,260.148 500.893,242.07C481.704,222.521 460.209,223.473 453.364,223.473C367.326,223.473 367.29,223.443 366.7,223.743C365.491,224.356 365.744,226.369 365.744,233.151C365.744,348.06 365.741,348.061 365.774,348.18C366.155,349.586 366.212,349.757 367.642,349.983C369.352,350.253 453.498,350.022 460.963,350.001C462.31,349.997 469.156,349.979 477.408,346.429C488.368,341.715 493.664,337.219 497.016,334.394C498.63,333.034 507.352,325.685 513.185,313.548C519.232,300.967 519.094,287.577 519.102,287.442Z" style="fill:white;"/>
-          <path d="M318.744,72.968C321.166,73.052 321.166,73.044 427.308,73.044C557.274,73.044 557.31,73.002 558.722,73.383C568.326,75.976 569.278,83.629 569.647,86.576C569.806,87.838 569.789,87.846 569.789,505.647C569.789,508.099 571.501,523.031 559.794,524.411C558.151,524.604 159.871,524.517 159.125,524.456C151.655,523.849 149.175,516.992 148.828,515.314C148.667,514.537 148.685,514.536 148.685,425.31C148.685,402.139 148.595,401.977 149.259,401.304C149.828,400.727 150.001,400.648 160.237,400.694C160.708,400.696 163.037,400.345 163.358,402.533C163.442,403.104 163.356,506.896 163.405,507.826C163.492,509.521 164.25,510.001 165.654,510.136C166.073,510.176 519.239,510.152 549.986,510.149C551.972,510.149 554.567,510.807 554.937,507.792C554.982,507.429 554.879,126.278 554.87,93.103C554.869,89.529 555.729,88.007 552.15,87.932C552.032,87.93 331.828,87.931 331.776,87.932C329.813,87.954 329.399,87.941 329.044,89.887C329.018,90.033 329.046,221.817 329.029,222.317C328.931,225.102 328.049,224.934 325.257,224.933C314.068,224.931 312.979,225.052 312.308,224.386C311.64,223.723 311.746,220.467 311.757,220.123L311.757,110.473C311.757,74.27 311.689,74.122 312.246,73.577C313.08,72.761 316.2,72.97 318.744,72.968Z" style="fill:#2dd44b;"/>
-        </g>
-        <g>
-          <path d="M89.705,599.599C95.692,600.503 108.124,603.336 105.72,621.778C105.006,627.256 100.722,632.394 94.106,634.068C89.368,635.266 89.367,635.467 80.988,635.469C63.797,635.473 63.501,635.602 62.863,634.621C62.488,634.044 62.487,633.981 62.496,604.441C62.497,602.847 61.849,599.516 64.731,599.415C65.01,599.405 85.514,599.399 86.405,599.42C88.188,599.461 88.166,599.515 89.705,599.599ZM96.757,620.613C96.788,620.356 98.099,614.476 95.48,610.71C92.235,606.046 89.631,606.361 74.473,606.42C70.424,606.436 71.04,608.009 71.04,612.04C71.04,626.499 70.982,626.548 71.345,627.17C71.911,628.138 72.148,628.359 85.326,628.124C95.484,627.943 96.728,620.685 96.757,620.613Z" style="fill:white;"/>
-          <path d="M128.156,629.411C128.271,634.662 128.569,636.081 125.506,636.132C121.366,636.202 119.774,636.443 119.546,633.812C119.358,631.645 119.455,605.795 119.464,603.359C119.477,599.812 120.858,600.354 124.414,600.353C153.965,600.346 154.139,600.235 155.804,601.34C159.219,603.609 158.431,605.662 158.674,615.293C158.93,625.427 149.335,622.084 148.356,622.976C147.226,624.005 149.001,625.177 149.164,625.285C153.522,628.164 153.135,628.634 157.722,632.024C157.819,632.095 157.789,632.087 158.907,632.958C160.166,633.938 161.191,634.506 161.259,634.866C161.537,636.337 159.407,636.289 159.208,636.284C150.246,636.081 150.192,636.05 149.516,635.668C148.613,635.157 139.966,627.138 139.832,627.009C136.197,623.514 136.209,622.812 130.929,622.972C127.983,623.061 128.272,624.174 128.156,629.411ZM128.158,612.039C128.435,615.191 127.758,616.464 130.923,616.541C132.226,616.572 144.428,616.867 147.216,616.405C149.439,616.036 150.704,615.272 150.521,610.953C150.312,606.054 148.108,606.788 137.442,606.788C131.586,606.788 129.093,606.574 128.591,607.579C128.431,607.899 128.283,608.197 128.158,612.039Z" style="fill:white;"/>
-          <path d="M630.956,617.415C630.557,618.886 630.502,622.357 624.888,622.825C624.181,622.884 620.984,622.652 620.632,622.995C619.576,624.024 621.316,625.13 621.477,625.233C624.039,626.861 623.878,627.061 629.348,631.441C631.045,632.8 633.549,634.448 633.626,634.82C633.654,634.958 633.873,636.02 632.648,636.281C632.041,636.41 632.038,636.197 624.894,636.132C621.21,636.098 621.14,634.904 617.904,632.11C613.797,628.564 613.934,628.445 609.909,624.826C607.89,623.011 607.024,622.885 603.185,622.97C599.973,623.041 600.607,624.707 600.595,632.665C600.59,635.404 600.481,636.096 597.758,636.132C594.77,636.172 592.189,636.624 592.029,633.78C592.004,633.339 592.017,606.787 592.018,604.44C592.019,602.638 591.638,600.437 594.511,600.357C594.64,600.354 621.678,600.345 622.72,600.359C624.537,600.382 629.431,600.225 630.64,604.336C630.935,605.34 631.334,606.698 630.956,617.415ZM600.595,612.04C600.766,615.153 600.044,616.415 603.175,616.545C605.011,616.621 615.167,616.554 616.21,616.548C619.858,616.524 623.311,616.998 623.031,610.945C622.804,606.055 620.308,606.788 609.696,606.788C602.717,606.788 600.959,606.308 600.619,608.722L600.595,612.04Z" style="fill:white;"/>
-          <path d="M352.905,620.725L352.905,625.068C352.905,625.388 353.647,633.501 349.356,635.296C347.052,636.26 346.958,636.136 322.001,636.131C313.722,636.129 310.475,636.163 310.385,627.234C310.169,605.668 310.359,605.109 310.975,603.295C311.631,601.363 313.974,599.943 315.412,599.71C315.715,599.661 315.704,599.358 341.542,599.408C347.002,599.419 351.334,599.079 352.674,605.462C353.594,609.843 351.359,609.054 347.013,610.052C343.278,610.909 344.642,607.891 343.475,606.875C342.803,606.289 342.68,606.347 324.172,606.352C322.389,606.353 319.115,605.677 319.014,608.799C318.864,613.44 318.987,624.76 319.003,626.148C319.021,627.86 319.139,628.86 322.006,628.955C322.025,628.956 341.454,628.956 341.529,628.955C344.521,628.912 344.23,626.617 344.125,623.952C344,620.763 341.081,621.447 339.371,621.445C337.924,621.445 336.476,621.444 335.029,621.444C332.144,621.44 330.22,622.171 330.414,617.455C330.544,614.294 331.951,614.852 340.457,614.852C351.486,614.852 352.376,614.564 352.815,616.246C352.9,616.571 352.904,620.367 352.905,620.725Z" style="fill:white;"/>
-          <path d="M462.555,604.441L462.555,629.411C462.554,631.901 463.205,634.793 461.126,635.376C457.808,636.307 455.52,634.548 455.133,634.251C451.092,631.144 451.296,630.915 447.236,627.848C446.076,626.972 440.824,622.367 440.273,621.884C436.209,618.32 433.696,616.382 433.105,615.926C431.782,614.905 430.648,613.145 429.484,613.163C428.613,613.176 428.591,613.385 428.565,614.25C428.519,615.723 428.957,615.696 428.7,632.676C428.663,635.073 428.033,635.788 422.992,635.52C420.204,635.373 420.688,633.685 420.688,625.068C420.688,600.925 420.638,600.861 421.019,600.227C421.507,599.414 422.815,599.342 422.988,599.333C428.145,599.049 428.087,601.204 432.754,604.419C432.914,604.529 440.667,611.123 444.582,614.332C448.124,617.235 448.119,617.21 451.61,620.195C452.198,620.698 452.711,621.323 453.404,621.668C454.791,622.36 454.825,619.887 454.827,619.693C454.846,618.299 454.644,618.305 454.757,602.273C454.782,598.639 456.24,599.28 459.871,599.329C463.422,599.378 462.554,600.907 462.555,604.441Z" style="fill:white;"/>
-          <path d="M259.539,618.554C259.539,626.316 259.522,626.302 259.614,631.581C259.618,631.849 259.661,634.26 259.1,634.895C258.68,635.369 252.122,636.771 251.747,633.71C251.693,633.269 251.708,601.506 251.738,601.219C252.054,598.232 257.018,599.149 258.793,600.427C259.187,600.711 259.073,600.843 263.481,604.301C266.855,606.947 272.725,611.999 273.518,612.681C277.337,615.968 281.203,619.036 281.883,619.575C282.989,620.454 283.914,621.528 284.879,621.356C285.789,621.194 285.355,620.694 285.488,602.273C285.514,598.698 286.922,599.29 290.512,599.326C292.986,599.35 293.252,599.813 293.334,602.274C293.335,602.3 293.334,631.531 293.334,631.581C293.317,633.939 293.897,635.658 289.442,635.521C286.556,635.433 285.256,633.76 272.866,623.233C266.326,617.677 266.293,617.733 265.726,617.251C265.137,616.75 265.149,616.78 264.549,616.277C263.371,615.292 263.313,615.393 262.236,614.277C261.359,613.369 261.407,613.091 260.153,613.194C259.288,613.265 259.639,613.617 259.633,613.916C259.609,615.149 259.528,615.132 259.6,616.368C259.611,616.543 259.596,616.53 259.539,618.554Z" style="fill:white;"/>
-          <path d="M697.325,605.714C711.726,630.813 713.619,633.771 713.551,634.752C713.491,635.615 711.884,635.589 711.723,635.586C705.192,635.479 704.587,635.812 702.867,632.783C700.992,629.48 701.026,627.822 697.627,627.688C697.479,627.682 681.542,627.684 681.351,627.685C677.335,627.718 677.764,629.075 675.631,632.5C674.181,634.828 674.31,635.398 671.57,635.523C666.235,635.767 666.133,635.334 666.032,634.9C665.677,633.393 667.499,631.468 672.002,623.112C672.517,622.156 672.623,622.231 678.586,611.245C678.755,610.933 678.819,610.975 680.857,607.426C684.507,601.071 684.492,599.428 687.87,599.331C692.485,599.199 693.766,599.173 695.427,602.29C696.669,604.617 696.701,604.575 697.325,605.714ZM692.395,613.013C691.069,610.934 690.555,609.37 690.161,608.653C689.814,608.023 689.703,608.095 688.998,608.126C688.301,608.156 688.262,608.2 687.981,608.866C686.672,611.971 684.873,615.305 683.675,617.544C681.769,621.106 684.937,620.701 685.692,620.692C691.64,620.618 694.653,620.874 695.213,620.398C696.204,619.553 695.072,618.315 692.395,613.013Z" style="fill:white;"/>
-          <path d="M537.354,626.388C537.809,625.631 537.801,625.639 541.941,618.308C542.667,617.022 550.465,603.215 550.989,602.221C552.38,599.582 552.712,599.114 558.66,599.336C558.904,599.345 560.695,599.412 561.518,600.424C561.661,600.6 579.434,631.78 580.119,632.817C580.236,632.995 581.475,634.872 580.191,635.476C579.586,635.76 579.558,635.57 577.126,635.531C574.294,635.485 571.867,636.017 570.649,633.732C567.672,628.143 567.44,627.704 564.098,627.684C546.965,627.585 546.895,627.551 545.575,628.225C544.429,628.809 542.696,633.553 541.248,634.778C540.853,635.113 540.17,635.691 534.823,635.568C534.707,635.565 533.659,635.541 533.485,635.011C532.939,633.349 533.603,633.375 537.354,626.388ZM558.968,611.864C557.188,608.467 557.429,608.318 557.161,608.121C557.144,608.109 555.713,608.056 555.691,608.066C555.528,608.148 552.009,615.508 551.698,616.159C551.096,617.418 548.222,620.698 552.158,620.712C552.853,620.715 560.101,620.741 560.841,620.715C562.117,620.67 562.451,620.86 562.76,619.609C562.914,618.985 559.424,612.749 558.968,611.864Z" style="fill:white;"/>
-          <path d="M39.734,628.905C42.454,628.905 42.431,628.911 45.156,628.829C48.041,628.742 47.807,629.776 47.898,632.665C47.906,632.915 47.974,635.051 47.151,635.7C46.523,636.195 46.418,636.133 19.107,636.132C14.01,636.132 11.623,636.407 11.082,635.087C10.719,634.203 10.774,634.162 10.774,605.526C10.774,603.95 10.571,601.716 11.286,600.985C12.005,600.25 12.174,600.353 31.049,600.353C46.269,600.353 46.516,600.201 47.334,601.183C47.58,601.479 48.456,606.238 46.353,606.894C45.352,607.207 21.817,606.941 21.329,607.06C19.425,607.524 19.494,607.933 19.484,609.876C19.482,610.155 19.468,612.838 19.902,613.338C20.807,614.38 21.084,614.169 31.049,614.175C31.376,614.175 34.534,614.177 35.118,614.592C35.994,615.215 36.756,620.06 34.264,620.526C32.73,620.814 21.534,620.192 20.344,620.972C19.537,621.502 19.495,622.75 19.489,622.921C19.346,627.127 19.504,628.472 21.178,628.791C21.971,628.942 33.331,628.684 39.734,628.905Z" style="fill:white;"/>
-          <path d="M397.996,628.905C400.712,628.905 400.69,628.911 403.418,628.829C406.304,628.741 406.061,629.781 406.152,632.665C406.16,632.915 406.227,635.05 405.411,635.699C404.787,636.195 404.681,636.133 377.369,636.132C372.257,636.132 369.876,636.404 369.335,635.097C368.965,634.202 369.02,634.16 369.02,605.526C369.02,603.976 368.813,601.721 369.542,600.976C370.246,600.256 370.413,600.353 391.482,600.353C404.28,600.353 404.742,600.187 405.575,601.196C405.838,601.514 406.673,606.225 404.615,606.885C403.583,607.216 380.097,606.94 379.587,607.057C377.671,607.496 377.706,607.896 377.696,609.875C377.694,610.157 377.68,612.837 378.144,613.366C379.036,614.383 379.44,614.167 389.311,614.175C389.636,614.175 392.762,614.178 393.351,614.616C394.175,615.23 394.918,620.032 392.52,620.515C391.012,620.818 379.777,620.206 378.587,620.953C377.757,621.475 377.709,622.747 377.703,622.919C377.535,627.354 377.799,628.507 379.446,628.796C380.253,628.937 391.644,628.685 397.996,628.905Z" style="fill:white;"/>
-          <path d="M230.807,628.905C235.678,628.792 237.396,628.565 237.775,630.395C237.811,630.567 237.87,632.483 237.875,632.664C237.883,632.914 237.948,635.046 237.134,635.697C236.429,636.26 236.301,636.115 204.751,636.134C202.596,636.135 201.912,636.282 201.057,635.1C200.709,634.618 200.736,634.55 200.74,605.527C200.74,603.993 200.534,601.727 201.268,600.975C201.969,600.256 202.136,600.353 223.207,600.353C235.728,600.353 236.592,600.176 237.292,601.202C237.579,601.623 238.346,606.226 236.341,606.88C235.305,607.219 212.09,606.94 211.311,607.058C209.886,607.273 209.819,607.431 209.42,608.829C209.38,608.97 209.339,612.35 209.544,612.967C209.936,614.144 212.107,614.17 212.352,614.173C220.761,614.275 224.879,613.658 225.519,615.224C225.52,615.226 226.723,619.988 224.241,620.508C222.741,620.822 211.503,620.212 210.304,620.945C209.457,621.463 209.405,622.744 209.398,622.918C209.213,627.51 209.554,628.53 211.175,628.799C212.26,628.979 219.485,628.644 230.807,628.905Z" style="fill:white;"/>
-          <path d="M488.604,630.496C488.725,633.985 489.426,635.379 485.925,635.529C481.361,635.725 480.812,635.149 480.511,634.833C479.986,634.282 480.064,634.147 480.059,603.355C480.058,600.409 479.749,599.379 482.688,599.327C484.593,599.292 487.467,599.176 488.231,600C489.227,601.074 487.785,611.616 489.337,612.946C490.048,613.556 490.178,613.453 507.645,613.457C510.934,613.458 513.427,614.046 513.58,611.001C513.703,608.534 513.253,600.866 514.036,600.003C514.893,599.061 515.047,599.336 516.336,599.324C520.547,599.282 522.192,598.87 522.229,602.26C522.229,602.307 522.231,632.598 522.229,632.682C522.155,635.873 520.611,635.584 516.339,635.529C512.841,635.484 513.663,633.998 513.663,630.496C513.662,622.542 514.263,620.692 510.907,620.6C510.478,620.588 491.611,620.59 491.357,620.6C487.929,620.738 488.879,622.341 488.604,630.496Z" style="fill:white;"/>
-          <path d="M646.944,610.955C646.944,605.985 646.94,602.506 646.958,602.304C647.152,600.125 649.019,600.361 649.868,600.352C652.614,600.325 655.256,599.939 655.601,602.224C655.639,602.476 655.616,633.715 655.613,633.78C655.478,636.659 653.002,636.166 649.861,636.127C648.087,636.106 647.713,636.364 647.036,634.727C646.929,634.468 646.944,634.469 646.944,610.955Z" style="fill:white;"/>
-        </g>
-      </g>
-    </svg>
-    <div class="header-title">
-      <h1>Agenda da Elyda</h1>
-      <span class="subtitle">EDR Engenharia</span>
-    </div>
+    <svg class="header-logo" viewBox="0 0 12500 12500" xmlns="http://www.w3.org/2000/svg" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2"><g transform="matrix(17.2764,0,0,17.2764,-17.0066,-10.9962)"><g><path d="M265.547,223.821C163.627,223.821 163.642,223.819 163.546,223.84C161.626,224.261 161.66,224.664 161.642,226.641C161.408,252.651 161.618,336.502 161.642,346.056C161.652,350.39 163.509,349.419 167.84,349.419C351.09,349.419 351.088,349.424 351.324,349.381C353.361,349.005 353.035,348.124 353.035,334.116C353.035,211.907 353.012,211.892 353.229,211.316C353.727,209.993 354.212,210.205 368.683,210.205C448.09,210.205 448.092,210.169 453.357,210.495C464.991,211.216 467.108,210.898 473.898,212.864C474.234,212.962 492.592,216.398 509.427,233.531C524.399,248.768 527.637,263.351 529.42,268.956C530.989,273.89 532.859,293.349 529.02,305.783C527.503,310.696 527.827,310.79 525.827,315.544C524.445,318.831 521.607,326.603 511.524,338.021C509.77,340.007 502.857,345.976 501.856,346.655C494.169,351.87 489.741,354.815 472.8,359.815C468.43,361.105 466.313,360.879 465.868,362.115C465.447,363.286 466.714,365.152 467.068,365.812C467.227,366.106 488.138,406.141 490.919,411.416C492.423,414.269 504.615,437.396 509.567,447.153C510.677,449.34 510.852,449.221 511.831,451.44C512.354,452.624 527.853,481.864 530.897,488.053C531.205,488.68 533.212,492.76 535.044,495.738C537.927,500.423 533.576,499.485 530.444,499.482C526.01,499.478 523.771,499.842 522.719,498.132C521.766,496.58 519.354,491.596 518.166,489.552C517.771,488.873 513.791,481.133 512.549,478.769C502.631,459.899 483.525,423.074 472.702,402.623C467.586,392.956 467.794,392.877 462.661,383.235C452.148,363.491 452.366,363.101 451.054,362.679C450.19,362.401 450.169,362.444 370.855,362.443C367.705,362.443 366.633,362.271 366.613,365.6C366.548,376.124 366.754,497.065 366.496,498.043C366.148,499.366 364.589,499.467 364.385,499.48C362.111,499.627 356.338,499.5 355.639,499.485C352.359,499.413 353.039,498.076 353.035,494.791C353.031,491.626 353.046,364.664 353.027,364.546C352.588,361.832 350.094,362.441 348.056,362.441C159.713,362.409 159.693,362.549 158.08,362.263C156.571,361.995 152.393,361.539 149.753,356.714C148.497,354.418 148.658,354.274 148.658,324.345C148.658,84.392 148.641,84.41 148.794,83.408C149.445,79.137 153.384,75.059 156.893,74.317C159.408,73.785 159.425,73.845 228.636,73.845C295.709,73.845 295.714,73.839 295.884,73.895C297.644,74.475 297.529,75.202 297.472,83.341C297.452,86.239 296.677,86.315 293.773,86.316C232.571,86.329 163.892,86.276 163.455,86.357C161.303,86.76 161.642,87.658 161.642,101.788C161.642,209.078 161.637,209.08 161.677,209.215C162.228,211.103 162.621,211.016 164.59,211.03C178.518,211.129 268.8,210.805 269.987,211.222C271.501,211.754 271.181,214.427 271.178,219.038C271.178,219.369 271.176,222.581 270.707,223.152C269.966,224.054 266.667,223.818 265.547,223.821ZM519.102,287.442C518.817,283.253 518.638,260.148 500.893,242.07C481.704,222.521 460.209,223.473 453.364,223.473C367.326,223.473 367.29,223.443 366.7,223.743C365.491,224.356 365.744,226.369 365.744,233.151C365.744,348.06 365.741,348.061 365.774,348.18C366.155,349.586 366.212,349.757 367.642,349.983C369.352,350.253 453.498,350.022 460.963,350.001C462.31,349.997 469.156,349.979 477.408,346.429C488.368,341.715 493.664,337.219 497.016,334.394C498.63,333.034 507.352,325.685 513.185,313.548C519.232,300.967 519.094,287.577 519.102,287.442Z" style="fill:white"/><path d="M318.744,72.968C321.166,73.052 321.166,73.044 427.308,73.044C557.274,73.044 557.31,73.002 558.722,73.383C568.326,75.976 569.278,83.629 569.647,86.576C569.806,87.838 569.789,87.846 569.789,505.647C569.789,508.099 571.501,523.031 559.794,524.411C558.151,524.604 159.871,524.517 159.125,524.456C151.655,523.849 149.175,516.992 148.828,515.314C148.667,514.537 148.685,514.536 148.685,425.31C148.685,402.139 148.595,401.977 149.259,401.304C149.828,400.727 150.001,400.648 160.237,400.694C160.708,400.696 163.037,400.345 163.358,402.533C163.442,403.104 163.356,506.896 163.405,507.826C163.492,509.521 164.25,510.001 165.654,510.136C166.073,510.176 519.239,510.152 549.986,510.149C551.972,510.149 554.567,510.807 554.937,507.792C554.982,507.429 554.879,126.278 554.87,93.103C554.869,89.529 555.729,88.007 552.15,87.932C552.032,87.93 331.828,87.931 331.776,87.932C329.813,87.954 329.399,87.941 329.044,89.887C329.018,90.033 329.046,221.817 329.029,222.317C328.931,225.102 328.049,224.934 325.257,224.933C314.068,224.931 312.979,225.052 312.308,224.386C311.64,223.723 311.746,220.467 311.757,220.123L311.757,110.473C311.757,74.27 311.689,74.122 312.246,73.577C313.08,72.761 316.2,72.97 318.744,72.968Z" style="fill:#2dd44b"/></g><g><path d="M89.705,599.599C95.692,600.503 108.124,603.336 105.72,621.778C105.006,627.256 100.722,632.394 94.106,634.068C89.368,635.266 89.367,635.467 80.988,635.469C63.797,635.473 63.501,635.602 62.863,634.621C62.488,634.044 62.487,633.981 62.496,604.441C62.497,602.847 61.849,599.516 64.731,599.415C65.01,599.405 85.514,599.399 86.405,599.42C88.188,599.461 88.166,599.515 89.705,599.599ZM96.757,620.613C96.788,620.356 98.099,614.476 95.48,610.71C92.235,606.046 89.631,606.361 74.473,606.42C70.424,606.436 71.04,608.009 71.04,612.04C71.04,626.499 70.982,626.548 71.345,627.17C71.911,628.138 72.148,628.359 85.326,628.124C95.484,627.943 96.728,620.685 96.757,620.613Z" style="fill:white"/><path d="M128.156,629.411C128.271,634.662 128.569,636.081 125.506,636.132C121.366,636.202 119.774,636.443 119.546,633.812C119.358,631.645 119.455,605.795 119.464,603.359C119.477,599.812 120.858,600.354 124.414,600.353C153.965,600.346 154.139,600.235 155.804,601.34C159.219,603.609 158.431,605.662 158.674,615.293C158.93,625.427 149.335,622.084 148.356,622.976C147.226,624.005 149.001,625.177 149.164,625.285C153.522,628.164 153.135,628.634 157.722,632.024C157.819,632.095 157.789,632.087 158.907,632.958C160.166,633.938 161.191,634.506 161.259,634.866C161.537,636.337 159.407,636.289 159.208,636.284C150.246,636.081 150.192,636.05 149.516,635.668C148.613,635.157 139.966,627.138 139.832,627.009C136.197,623.514 136.209,622.812 130.929,622.972C127.983,623.061 128.272,624.174 128.156,629.411ZM128.158,612.039C128.435,615.191 127.758,616.464 130.923,616.541C132.226,616.572 144.428,616.867 147.216,616.405C149.439,616.036 150.704,615.272 150.521,610.953C150.312,606.054 148.108,606.788 137.442,606.788C131.586,606.788 129.093,606.574 128.591,607.579C128.431,607.899 128.283,608.197 128.158,612.039Z" style="fill:white"/><path d="M352.905,620.725L352.905,625.068C352.905,625.388 353.647,633.501 349.356,635.296C347.052,636.26 346.958,636.136 322.001,636.131C313.722,636.129 310.475,636.163 310.385,627.234C310.169,605.668 310.359,605.109 310.975,603.295C311.631,601.363 313.974,599.943 315.412,599.71C315.715,599.661 315.704,599.358 341.542,599.408C347.002,599.419 351.334,599.079 352.674,605.462C353.594,609.843 351.359,609.054 347.013,610.052C343.278,610.909 344.642,607.891 343.475,606.875C342.803,606.289 342.68,606.347 324.172,606.352C322.389,606.353 319.115,605.677 319.014,608.799C318.864,613.44 318.987,624.76 319.003,626.148C319.021,627.86 319.139,628.86 322.006,628.955C322.025,628.956 341.454,628.956 341.529,628.955C344.521,628.912 344.23,626.617 344.125,623.952C344,620.763 341.081,621.447 339.371,621.445C337.924,621.445 336.476,621.444 335.029,621.444C332.144,621.44 330.22,622.171 330.414,617.455C330.544,614.294 331.951,614.852 340.457,614.852C351.486,614.852 352.376,614.564 352.815,616.246C352.9,616.571 352.904,620.367 352.905,620.725Z" style="fill:white"/><path d="M462.555,604.441L462.555,629.411C462.554,631.901 463.205,634.793 461.126,635.376C457.808,636.307 455.52,634.548 455.133,634.251C451.092,631.144 451.296,630.915 447.236,627.848C446.076,626.972 440.824,622.367 440.273,621.884C436.209,618.32 433.696,616.382 433.105,615.926C431.782,614.905 430.648,613.145 429.484,613.163C428.613,613.176 428.591,613.385 428.565,614.25C428.519,615.723 428.957,615.696 428.7,632.676C428.663,635.073 428.033,635.788 422.992,635.52C420.204,635.373 420.688,633.685 420.688,625.068C420.688,600.925 420.638,600.861 421.019,600.227C421.507,599.414 422.815,599.342 422.988,599.333C428.145,599.049 428.087,601.204 432.754,604.419C432.914,604.529 440.667,611.123 444.582,614.332C448.124,617.235 448.119,617.21 451.61,620.195C452.198,620.698 452.711,621.323 453.404,621.668C454.791,622.36 454.825,619.887 454.827,619.693C454.846,618.299 454.644,618.305 454.757,602.273C454.782,598.639 456.24,599.28 459.871,599.329C463.422,599.378 462.554,600.907 462.555,604.441Z" style="fill:white"/><path d="M259.539,618.554C259.539,626.316 259.522,626.302 259.614,631.581C259.618,631.849 259.661,634.26 259.1,634.895C258.68,635.369 252.122,636.771 251.747,633.71C251.693,633.269 251.708,601.506 251.738,601.219C252.054,598.232 257.018,599.149 258.793,600.427C259.187,600.711 259.073,600.843 263.481,604.301C266.855,606.947 272.725,611.999 273.518,612.681C277.337,615.968 281.203,619.036 281.883,619.575C282.989,620.454 283.914,621.528 284.879,621.356C285.789,621.194 285.355,620.694 285.488,602.273C285.514,598.698 286.922,599.29 290.512,599.326C292.986,599.35 293.252,599.813 293.334,602.274C293.335,602.3 293.334,631.531 293.334,631.581C293.317,633.939 293.897,635.658 289.442,635.521C286.556,635.433 285.256,633.76 272.866,623.233C266.326,617.677 266.293,617.733 265.726,617.251C265.137,616.75 265.149,616.78 264.549,616.277C263.371,615.292 263.313,615.393 262.236,614.277C261.359,613.369 261.407,613.091 260.153,613.194C259.288,613.265 259.639,613.617 259.633,613.916C259.609,615.149 259.528,615.132 259.6,616.368C259.611,616.543 259.596,616.53 259.539,618.554Z" style="fill:white"/><path d="M697.325,605.714C711.726,630.813 713.619,633.771 713.551,634.752C713.491,635.615 711.884,635.589 711.723,635.586C705.192,635.479 704.587,635.812 702.867,632.783C700.992,629.48 701.026,627.822 697.627,627.688C697.479,627.682 681.542,627.684 681.351,627.685C677.335,627.718 677.764,629.075 675.631,632.5C674.181,634.828 674.31,635.398 671.57,635.523C666.235,635.767 666.133,635.334 666.032,634.9C665.677,633.393 667.499,631.468 672.002,623.112C672.517,622.156 672.623,622.231 678.586,611.245C678.755,610.933 678.819,610.975 680.857,607.426C684.507,601.071 684.492,599.428 687.87,599.331C692.485,599.199 693.766,599.173 695.427,602.29C696.669,604.617 696.701,604.575 697.325,605.714ZM692.395,613.013C691.069,610.934 690.555,609.37 690.161,608.653C689.814,608.023 689.703,608.095 688.998,608.126C688.301,608.156 688.262,608.2 687.981,608.866C686.672,611.971 684.873,615.305 683.675,617.544C681.769,621.106 684.937,620.701 685.692,620.692C691.64,620.618 694.653,620.874 695.213,620.398C696.204,619.553 695.072,618.315 692.395,613.013Z" style="fill:white"/><path d="M537.354,626.388C537.809,625.631 537.801,625.639 541.941,618.308C542.667,617.022 550.465,603.215 550.989,602.221C552.38,599.582 552.712,599.114 558.66,599.336C558.904,599.345 560.695,599.412 561.518,600.424C561.661,600.6 579.434,631.78 580.119,632.817C580.236,632.995 581.475,634.872 580.191,635.476C579.586,635.76 579.558,635.57 577.126,635.531C574.294,635.485 571.867,636.017 570.649,633.732C567.672,628.143 567.44,627.704 564.098,627.684C546.965,627.585 546.895,627.551 545.575,628.225C544.429,628.809 542.696,633.553 541.248,634.778C540.853,635.113 540.17,635.691 534.823,635.568C534.707,635.565 533.659,635.541 533.485,635.011C532.939,633.349 533.603,633.375 537.354,626.388ZM558.968,611.864C557.188,608.467 557.429,608.318 557.161,608.121C557.144,608.109 555.713,608.056 555.691,608.066C555.528,608.148 552.009,615.508 551.698,616.159C551.096,617.418 548.222,620.698 552.158,620.712C552.853,620.715 560.101,620.741 560.841,620.715C562.117,620.67 562.451,620.86 562.76,619.609C562.914,618.985 559.424,612.749 558.968,611.864Z" style="fill:white"/><path d="M39.734,628.905C42.454,628.905 42.431,628.911 45.156,628.829C48.041,628.742 47.807,629.776 47.898,632.665C47.906,632.915 47.974,635.051 47.151,635.7C46.523,636.195 46.418,636.133 19.107,636.132C14.01,636.132 11.623,636.407 11.082,635.087C10.719,634.203 10.774,634.162 10.774,605.526C10.774,603.95 10.571,601.716 11.286,600.985C12.005,600.25 12.174,600.353 31.049,600.353C46.269,600.353 46.516,600.201 47.334,601.183C47.58,601.479 48.456,606.238 46.353,606.894C45.352,607.207 21.817,606.941 21.329,607.06C19.425,607.524 19.494,607.933 19.484,609.876C19.482,610.155 19.468,612.838 19.902,613.338C20.807,614.38 21.084,614.169 31.049,614.175C31.376,614.175 34.534,614.177 35.118,614.592C35.994,615.215 36.756,620.06 34.264,620.526C32.73,620.814 21.534,620.192 20.344,620.972C19.537,621.502 19.495,622.75 19.489,622.921C19.346,627.127 19.504,628.472 21.178,628.791C21.971,628.942 33.331,628.684 39.734,628.905Z" style="fill:white"/><path d="M397.996,628.905C400.712,628.905 400.69,628.911 403.418,628.829C406.304,628.741 406.061,629.781 406.152,632.665C406.16,632.915 406.227,635.05 405.411,635.699C404.787,636.195 404.681,636.133 377.369,636.132C372.257,636.132 369.876,636.404 369.335,635.097C368.965,634.202 369.02,634.16 369.02,605.526C369.02,603.976 368.813,601.721 369.542,600.976C370.246,600.256 370.413,600.353 391.482,600.353C404.28,600.353 404.742,600.187 405.575,601.196C405.838,601.514 406.673,606.225 404.615,606.885C403.583,607.216 380.097,606.94 379.587,607.057C377.671,607.496 377.706,607.896 377.696,609.875C377.694,610.157 377.68,612.837 378.144,613.366C379.036,614.383 379.44,614.167 389.311,614.175C389.636,614.175 392.762,614.178 393.351,614.616C394.175,615.23 394.918,620.032 392.52,620.515C391.012,620.818 379.777,620.206 378.587,620.953C377.757,621.475 377.709,622.747 377.703,622.919C377.535,627.354 377.799,628.507 379.446,628.796C380.253,628.937 391.644,628.685 397.996,628.905Z" style="fill:white"/><path d="M230.807,628.905C235.678,628.792 237.396,628.565 237.775,630.395C237.811,630.567 237.87,632.483 237.875,632.664C237.883,632.914 237.948,635.046 237.134,635.697C236.429,636.26 236.301,636.115 204.751,636.134C202.596,636.135 201.912,636.282 201.057,635.1C200.709,634.618 200.736,634.55 200.74,605.527C200.74,603.993 200.534,601.727 201.268,600.975C201.969,600.256 202.136,600.353 223.207,600.353C235.728,600.353 236.592,600.176 237.292,601.202C237.579,601.623 238.346,606.226 236.341,606.88C235.305,607.219 212.09,606.94 211.311,607.058C209.886,607.273 209.819,607.431 209.42,608.829C209.38,608.97 209.339,612.35 209.544,612.967C209.936,614.144 212.107,614.17 212.352,614.173C220.761,614.275 224.879,613.658 225.519,615.224C225.52,615.226 226.723,619.988 224.241,620.508C222.741,620.822 211.503,620.212 210.304,620.945C209.457,621.463 209.405,622.744 209.398,622.918C209.213,627.51 209.554,628.53 211.175,628.799C212.26,628.979 219.485,628.644 230.807,628.905Z" style="fill:white"/><path d="M488.604,630.496C488.725,633.985 489.426,635.379 485.925,635.529C481.361,635.725 480.812,635.149 480.511,634.833C479.986,634.282 480.064,634.147 480.059,603.355C480.058,600.409 479.749,599.379 482.688,599.327C484.593,599.292 487.467,599.176 488.231,600C489.227,601.074 487.785,611.616 489.337,612.946C490.048,613.556 490.178,613.453 507.645,613.457C510.934,613.458 513.427,614.046 513.58,611.001C513.703,608.534 513.253,600.866 514.036,600.003C514.893,599.061 515.047,599.336 516.336,599.324C520.547,599.282 522.192,598.87 522.229,602.26C522.229,602.307 522.231,632.598 522.229,632.682C522.155,635.873 520.611,635.584 516.339,635.529C512.841,635.484 513.663,633.998 513.663,630.496C513.662,622.542 514.263,620.692 510.907,620.6C510.478,620.588 491.611,620.59 491.357,620.6C487.929,620.738 488.879,622.341 488.604,630.496Z" style="fill:white"/><path d="M646.944,610.955C646.944,605.985 646.94,602.506 646.958,602.304C647.152,600.125 649.019,600.361 649.868,600.352C652.614,600.325 655.256,599.939 655.601,602.224C655.639,602.476 655.616,633.715 655.613,633.78C655.478,636.659 653.002,636.166 649.861,636.127C648.087,636.106 647.713,636.364 647.036,634.727C646.929,634.468 646.944,634.469 646.944,610.955Z" style="fill:white"/></g></g></svg>
+    <div class="header-title"><h1>Agenda da Elyda</h1><span class="sub">EDR Engenharia</span></div>
   </div>
   <div class="contadores">
-    <div class="contador">
-      <div class="num" id="cont-hoje">0</div>
-      <div class="label">Hoje</div>
-    </div>
-    <div class="contador">
-      <div class="num" id="cont-semana">0</div>
-      <div class="label">Semana</div>
-    </div>
-    <div class="contador">
-      <div class="num" id="cont-mes">0</div>
-      <div class="label">Mes</div>
-    </div>
+    <div class="contador"><div class="num" id="cHoje">0</div><div class="lbl">Hoje</div></div>
+    <div class="contador"><div class="num" id="cSem">0</div><div class="lbl">Semana</div></div>
+    <div class="contador"><div class="num" id="cMes">0</div><div class="lbl">Mes</div></div>
   </div>
   <div class="header-right">
-    <div class="filtro-wrapper">
-      <button class="filtro-btn" onclick="toggleFiltro()" id="filtro-btn" title="Filtros" aria-label="Abrir filtros">&#9881;</button>
-      <div class="filtro-dropdown" id="filtro-dropdown">
-        <div class="filtro-section">Mostrar</div>
-        <label><input type="checkbox" checked onchange="filtroChanged()" data-filtro="pendentes"> Pendentes</label>
-        <label><input type="checkbox" checked onchange="filtroChanged()" data-filtro="concluidos"> Concluidos</label>
-        <div class="filtro-divider"></div>
-        <div class="filtro-section">Prioridade</div>
-        <label><input type="checkbox" checked onchange="filtroChanged()" data-filtro="alta"> Alta</label>
-        <label><input type="checkbox" checked onchange="filtroChanged()" data-filtro="media"> Media</label>
-        <label><input type="checkbox" checked onchange="filtroChanged()" data-filtro="baixa"> Normal</label>
-        <div class="filtro-divider"></div>
-        <div class="filtro-section">Categoria</div>
-        <label><input type="checkbox" checked onchange="filtroChanged()" data-filtro="trabalho"> Trabalho</label>
-        <label><input type="checkbox" checked onchange="filtroChanged()" data-filtro="pessoal"> Pessoal</label>
-        <label><input type="checkbox" checked onchange="filtroChanged()" data-filtro="compra"> Compra</label>
-        <label><input type="checkbox" checked onchange="filtroChanged()" data-filtro="lembrete"> Lembrete</label>
+    <div class="filtro-wrap">
+      <button class="hbtn" onclick="toggleFiltro()" aria-label="Filtros">&#9881;</button>
+      <div class="filtro-dd" id="filtroDD">
+        <div class="filtro-sec">Mostrar</div>
+        <label><input type="checkbox" checked onchange="refresh()" data-f="pend"> Pendentes</label>
+        <label><input type="checkbox" checked onchange="refresh()" data-f="done"> Concluidos</label>
+        <div class="filtro-div"></div>
+        <div class="filtro-sec">Prioridade</div>
+        <label><input type="checkbox" checked onchange="refresh()" data-f="alta"> Alta</label>
+        <label><input type="checkbox" checked onchange="refresh()" data-f="media"> Media</label>
+        <label><input type="checkbox" checked onchange="refresh()" data-f="baixa"> Normal</label>
+        <div class="filtro-div"></div>
+        <div class="filtro-sec">Categoria</div>
+        <label><input type="checkbox" checked onchange="refresh()" data-f="trabalho"> Trabalho</label>
+        <label><input type="checkbox" checked onchange="refresh()" data-f="pessoal"> Pessoal</label>
+        <label><input type="checkbox" checked onchange="refresh()" data-f="compra"> Compra</label>
+        <label><input type="checkbox" checked onchange="refresh()" data-f="lembrete"> Lembrete</label>
       </div>
     </div>
-    <button class="hoje-btn" onclick="irParaHoje()" aria-label="Ir para hoje">Hoje</button>
-    <button class="theme-toggle" onclick="toggleTema()" id="theme-btn" title="Alternar tema" aria-label="Alternar modo claro/escuro">&#9788;</button>
+    <button class="hbtn" onclick="irHoje()" aria-label="Ir para hoje">Hoje</button>
+    <button class="hbtn" onclick="toggleTema()" id="temaBtn" aria-label="Alternar tema">&#9788;</button>
   </div>
 </div>
 
-<div class="container">
+<!-- ══════ DESKTOP VIEW ══════ -->
+<div class="desktop-view" id="deskView">
   <div class="calendario">
     <div class="mes-nav">
       <button onclick="mudarMes(-1)" aria-label="Mes anterior">&#9664;</button>
-      <h2 id="titulo-mes"></h2>
+      <h2 id="tituloMes"></h2>
       <button onclick="mudarMes(1)" aria-label="Proximo mes">&#9654;</button>
     </div>
-    <div class="dias-semana">
-      <span>Dom</span><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sab</span>
-    </div>
-    <div class="grid-dias" id="grid-dias"></div>
+    <div class="dias-semana"><span>Dom</span><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sab</span></div>
+    <div class="grid-dias" id="gridDias"></div>
   </div>
-
-  <div class="painel-lateral">
+  <div class="painel-lat">
     <div class="card">
-      <h3><span class="icon">&#128203;</span> <span id="titulo-dia">Selecione um dia</span></h3>
-      <div class="eventos-dia" id="eventos-dia">
-        <div class="sem-eventos">Clique em um dia para ver os compromissos</div>
-      </div>
+      <h3>&#128203; <span id="tituloDia">Selecione um dia</span></h3>
+      <div id="eventosDia"><div class="vazio">Clique em um dia</div></div>
     </div>
-
     <div class="card">
-      <h3><span class="icon">&#10133;</span> Novo compromisso</h3>
-      <div class="form-novo">
-        <input type="text" id="novo-titulo" placeholder="O que precisa fazer?" aria-label="Titulo do compromisso">
+      <h3>&#10133; Novo compromisso</h3>
+      <div class="form-novo" id="formDesk">
+        <input type="text" id="dTit" placeholder="O que precisa fazer?" aria-label="Titulo">
         <div class="form-row-3">
-          <input type="time" id="novo-hora" value="08:00" aria-label="Horario">
-          <select id="novo-cat" aria-label="Categoria">
-            <option value="trabalho">Trabalho</option>
-            <option value="pessoal">Pessoal</option>
-            <option value="compra">Compra</option>
-            <option value="lembrete">Lembrete</option>
-          </select>
-          <select id="novo-prio" aria-label="Prioridade">
-            <option value="baixa">Normal</option>
-            <option value="media">Media</option>
-            <option value="alta">Alta</option>
-          </select>
+          <input type="time" id="dHora" value="08:00" aria-label="Horario">
+          <select id="dCat" aria-label="Categoria"><option value="trabalho">Trabalho</option><option value="pessoal">Pessoal</option><option value="compra">Compra</option><option value="lembrete">Lembrete</option></select>
+          <select id="dPrio" aria-label="Prioridade"><option value="baixa">Normal</option><option value="media">Media</option><option value="alta">Alta</option></select>
         </div>
-        <textarea id="novo-obs" placeholder="Observacoes (opcional)" aria-label="Observacoes"></textarea>
-        <button class="btn-add" onclick="adicionarEvento()">Adicionar</button>
+        <textarea id="dObs" placeholder="Observacoes (opcional)" aria-label="Observacoes"></textarea>
+        <button class="btn-add" onclick="addEvento('d')">Adicionar</button>
       </div>
     </div>
-
     <div class="card">
-      <h3><span class="icon">&#128204;</span> Proximos compromissos</h3>
-      <div class="proximos-lista" id="proximos-lista"></div>
+      <h3>&#128204; Proximos</h3>
+      <div class="prox-lista" id="proxLista"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ MOBILE VIEW ══════ -->
+<div class="mobile-view" id="mobView">
+  <div class="mob-tabs">
+    <div class="mob-tab active" onclick="setMobTab('hoje')">Hoje</div>
+    <div class="mob-tab" onclick="setMobTab('amanha')">Amanha</div>
+    <div class="mob-tab" onclick="setMobTab('semana')">Semana</div>
+  </div>
+  <div class="mob-daynav" id="mobDayNav" style="display:none">
+    <button onclick="mobDia(-1)" aria-label="Dia anterior">&#9664;</button>
+    <div class="dia-label"><div class="dia-nome" id="mobDiaNome"></div><div class="dia-data" id="mobDiaData"></div></div>
+    <button onclick="mobDia(1)" aria-label="Proximo dia">&#9654;</button>
+  </div>
+  <div class="mob-lista" id="mobLista"></div>
+</div>
+
+<button class="fab" onclick="abrirModal()" aria-label="Novo compromisso">+</button>
+
+<!-- Modal mobile -->
+<div class="modal-overlay" id="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Novo compromisso</h3>
+      <button class="modal-close" onclick="fecharModal()" aria-label="Fechar">&#10005;</button>
+    </div>
+    <div class="form-novo">
+      <input type="text" id="mTit" placeholder="O que precisa fazer?" aria-label="Titulo">
+      <div class="form-row">
+        <input type="time" id="mHora" value="08:00" aria-label="Horario">
+        <select id="mCat" aria-label="Categoria"><option value="trabalho">Trabalho</option><option value="pessoal">Pessoal</option><option value="compra">Compra</option><option value="lembrete">Lembrete</option></select>
+      </div>
+      <select id="mPrio" aria-label="Prioridade"><option value="baixa">Normal</option><option value="media">Media</option><option value="alta">Alta</option></select>
+      <textarea id="mObs" placeholder="Observacoes (opcional)" aria-label="Observacoes"></textarea>
+      <button class="btn-add" onclick="addEvento('m')">Adicionar</button>
     </div>
   </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  // ── Supabase (mesmo padrao do tracker) + cache offline ──
-  const SUPA_URL = 'https://mepzoxoahpwcvvlymlfh.supabase.co';
-  const SUPA_KEY = 'sb_publishable_Z9E8KLU8ZIMcWjD-bMG5gg_eM585qWq';
-  let db;
-  try { db = window.supabase.createClient(SUPA_URL, SUPA_KEY); }
-  catch(e) { db = null; console.warn('Supabase SDK nao carregou — modo offline'); }
-  const SYNC_KEY = 'elyda-agenda-v1';
-  const CACHE_KEY = 'elyda_agenda_cache';
+// ── Supabase + cache offline ──
+const SU='https://mepzoxoahpwcvvlymlfh.supabase.co',SK='sb_publishable_Z9E8KLU8ZIMcWjD-bMG5gg_eM585qWq';
+let db;try{db=window.supabase.createClient(SU,SK)}catch(e){db=null}
+const SYNC='elyda-agenda-v1',CACHE='elyda_agenda_cache';
+let state=[],mesAt=new Date().getMonth(),anoAt=new Date().getFullYear(),diaSel=null,mobTab='hoje',mobDate=new Date();
+let isOff=!navigator.onLine;
+window.addEventListener('online',()=>{isOff=false;document.getElementById('offBar').classList.remove('vis');save(state)});
+window.addEventListener('offline',()=>{isOff=true;document.getElementById('offBar').classList.add('vis')});
 
-  let mesAtual = new Date().getMonth();
-  let anoAtual = new Date().getFullYear();
-  let diaSelecionado = null;
-  let state = [];
-  let isOffline = !navigator.onLine;
+function cache(ev){try{localStorage.setItem(CACHE,JSON.stringify(ev))}catch(e){}}
+function fromCache(){try{return JSON.parse(localStorage.getItem(CACHE))||[]}catch{return[]}}
 
-  // Offline detection
-  window.addEventListener('online', () => {
-    isOffline = false;
-    document.getElementById('offlineBanner').classList.remove('visible');
-    salvarEventos(state); // sync pendente
-  });
-  window.addEventListener('offline', () => {
-    isOffline = true;
-    document.getElementById('offlineBanner').classList.add('visible');
-  });
+async function save(ev){
+  state=ev;cache(ev);
+  if(!db||isOff)return;
+  const i=document.getElementById('saveInd');i.classList.add('vis');
+  try{await db.from('tracker_sync').upsert({key:SYNC,data:{eventos:ev},updated_at:new Date().toISOString()})}catch(e){}
+  setTimeout(()=>i.classList.remove('vis'),1200);
+}
 
-  function getEventos() { return state; }
+async function load(){
+  if(db&&!isOff){
+    try{const{data}=await db.from('tracker_sync').select('data').eq('key',SYNC).single();
+    if(data?.data?.eventos){state=data.data.eventos;cache(state);return true}}catch(e){}}
+  const c=fromCache();if(c.length){state=c;if(isOff)document.getElementById('offBar').classList.add('vis');return true}
+  return false;
+}
 
-  // Cache local (fallback)
-  function cacheLocal(ev) {
-    try { localStorage.setItem(CACHE_KEY, JSON.stringify(ev)); } catch(e) {}
+// ── Helpers ──
+function fmt(y,m,d){return`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`}
+function fmtHoje(){const h=new Date();return fmt(h.getFullYear(),h.getMonth(),h.getDate())}
+function esc(t){const d=document.createElement('div');d.textContent=t;return d.innerHTML}
+function catNome(c){return{pessoal:'Pessoal',trabalho:'Trabalho',compra:'Compra',lembrete:'Lembrete'}[c]||c}
+const DIAS=['Domingo','Segunda','Terca','Quarta','Quinta','Sexta','Sabado'];
+const MESES=['Janeiro','Fevereiro','Marco','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+function getFiltros(){const f={};document.querySelectorAll('#filtroDD input[type=checkbox]').forEach(c=>f[c.dataset.f]=c.checked);return f}
+function filtrar(evs){const f=getFiltros();return evs.filter(e=>{
+  if(e.concluido&&!f.done)return false;if(!e.concluido&&!f.pend)return false;
+  if(!f[e.prioridade||'baixa'])return false;if(!f[e.categoria])return false;return true})}
+function ordenar(evs){return[...evs].sort((a,b)=>{
+  if(a.concluido!==b.concluido)return a.concluido?1:-1;
+  const p={alta:0,media:1,baixa:2};const pa=p[a.prioridade||'baixa']||2,pb=p[b.prioridade||'baixa']||2;
+  if(pa!==pb)return pa-pb;return(a.hora||'').localeCompare(b.hora||'')})}
+
+// ── Render evento HTML (compartilhado) ──
+function renderEv(ev){
+  const pr=ev.prioridade||'baixa';const pl={alta:'URGENTE',media:'Media',baixa:''};
+  return`<div class="ev-item ${ev.concluido?'done':''} p-${pr}">
+    <input type="checkbox" class="ev-check" ${ev.concluido?'checked':''} onchange="toggle(${ev.id})" aria-label="Marcar como ${ev.concluido?'pendente':'concluido'}">
+    <div class="ev-hora">${ev.hora||'--:--'}</div>
+    <div class="ev-info">
+      <div class="ev-titulo">${esc(ev.titulo)}</div>
+      ${ev.obs?`<div class="ev-obs">${esc(ev.obs)}</div>`:''}
+      <div class="ev-meta">
+        <span class="ev-cat ${ev.categoria}">${catNome(ev.categoria)}</span>
+        ${pr!=='baixa'?`<span class="ev-prio ${pr}">${pl[pr]}</span>`:''}
+      </div>
+    </div>
+    <button class="ev-del" onclick="del(${ev.id})" aria-label="Remover">&#10005;</button>
+  </div>`}
+
+// ── Desktop: calendario ──
+function renderCal(){
+  const g=document.getElementById('gridDias');g.innerHTML='';
+  document.getElementById('tituloMes').textContent=`${MESES[mesAt]} ${anoAt}`;
+  const p1=new Date(anoAt,mesAt,1).getDay(),ult=new Date(anoAt,mesAt+1,0).getDate();
+  const hoje=new Date(),evs=filtrar(state);
+  const prev=new Date(anoAt,mesAt,0).getDate();
+  for(let i=p1-1;i>=0;i--)g.appendChild(mkDia(prev-i,true));
+  for(let d=1;d<=ult;d++){
+    const ds=fmt(anoAt,mesAt,d),de=evs.filter(e=>e.data===ds);
+    const eh=hoje.getDate()===d&&hoje.getMonth()===mesAt&&hoje.getFullYear()===anoAt;
+    g.appendChild(mkDia(d,false,eh,diaSel===ds,de,ds))}
+  const tot=p1+ult,rest=tot%7===0?0:7-tot%7;
+  for(let d=1;d<=rest;d++)g.appendChild(mkDia(d,true));
+  updContadores();renderProx()}
+
+function mkDia(n,out,hoje,sel,evs,ds){
+  const d=document.createElement('div');d.className='dia';
+  if(out)d.classList.add('out');if(hoje)d.classList.add('hoje');if(sel)d.classList.add('sel');
+  const nm=document.createElement('div');nm.className='num';nm.textContent=n;d.appendChild(nm);
+  if(evs&&evs.length){const ev=document.createElement('div');ev.className='evs';
+    const sorted=ordenar(evs);sorted.slice(0,3).forEach(e=>{
+      const s=document.createElement('div');s.className=`ev-mini ${e.categoria} p-${e.prioridade||'baixa'}`;
+      if(e.concluido)s.classList.add('done');s.textContent=e.hora?`${e.hora} ${e.titulo}`:e.titulo;ev.appendChild(s)});
+    if(evs.length>3){const m=document.createElement('div');m.className='mais';m.textContent=`+${evs.length-3}`;ev.appendChild(m)}
+    d.appendChild(ev)}
+  if(ds)d.onclick=()=>{diaSel=ds;renderCal();renderDia()};return d}
+
+function renderDia(){
+  const c=document.getElementById('eventosDia'),t=document.getElementById('tituloDia');
+  if(!diaSel){c.innerHTML='<div class="vazio">Clique em um dia</div>';t.textContent='Selecione um dia';return}
+  const[a,m,d]=diaSel.split('-');const dt=new Date(+a,+m-1,+d);
+  t.textContent=`${DIAS[dt.getDay()]}, ${d}/${m}`;
+  let evs=ordenar(filtrar(state.filter(e=>e.data===diaSel)));
+  c.innerHTML=evs.length?evs.map(renderEv).join(''):'<div class="vazio">Nenhum compromisso</div>'}
+
+function renderProx(){
+  const c=document.getElementById('proxLista'),h=fmtHoje();
+  const prox=state.filter(e=>e.data>=h&&!e.concluido).sort((a,b)=>a.data.localeCompare(b.data)||(a.hora||'').localeCompare(b.hora||'')).slice(0,8);
+  if(!prox.length){c.innerHTML='<div class="vazio">Tudo em dia!</div>';return}
+  c.innerHTML=prox.map(e=>{const[a,m,d]=e.data.split('-');return`<div class="prox-item p-${e.prioridade||'baixa'}" onclick="diaSel='${e.data}';renderCal();renderDia()">
+    <div class="prox-data">${d}/${m}</div><div class="prox-texto">${e.hora?e.hora+' — ':''}${esc(e.titulo)}</div>
+    <span class="ev-cat ${e.categoria}" style="font-size:.72rem">${catNome(e.categoria)}</span></div>`}).join('')}
+
+// ── Mobile: lista ──
+function setMobTab(tab){
+  mobTab=tab;document.querySelectorAll('.mob-tab').forEach((t,i)=>{t.classList.toggle('active',['hoje','amanha','semana'][i]===tab)});
+  document.getElementById('mobDayNav').style.display='none';
+  if(tab==='hoje')mobDate=new Date();
+  else if(tab==='amanha'){mobDate=new Date();mobDate.setDate(mobDate.getDate()+1)}
+  renderMob()}
+
+function mobDia(delta){mobDate.setDate(mobDate.getDate()+delta);renderMob()}
+
+function renderMob(){
+  const c=document.getElementById('mobLista'),nav=document.getElementById('mobDayNav');
+  const h=fmtHoje();let evs;
+  if(mobTab==='semana'){
+    nav.style.display='none';
+    const d7=new Date();d7.setDate(d7.getDate()+7);const s7=fmt(d7.getFullYear(),d7.getMonth(),d7.getDate());
+    evs=state.filter(e=>e.data>=h&&e.data<=s7);
+    evs=ordenar(filtrar(evs)).sort((a,b)=>a.data.localeCompare(b.data)||(a.hora||'').localeCompare(b.hora||''));
+    if(!evs.length){c.innerHTML='<div class="mob-vazio">Semana livre!</div>';return}
+    let html='',lastDate='';
+    evs.forEach(e=>{if(e.data!==lastDate){lastDate=e.data;const[a,m,d]=e.data.split('-');const dt=new Date(+a,+m-1,+d);
+      html+=`<div style="font-size:.82rem;font-weight:600;color:var(--accent);padding:8px 0 4px">${DIAS[dt.getDay()]} ${d}/${m}</div>`}
+      html+=renderEv(e)});c.innerHTML=html;
+  } else {
+    nav.style.display='flex';
+    const ds=fmt(mobDate.getFullYear(),mobDate.getMonth(),mobDate.getDate());
+    document.getElementById('mobDiaNome').textContent=DIAS[mobDate.getDay()];
+    const dd=String(mobDate.getDate()).padStart(2,'0'),mm=String(mobDate.getMonth()+1).padStart(2,'0');
+    document.getElementById('mobDiaData').textContent=`${dd}/${mm}/${mobDate.getFullYear()}`;
+    const isHoje=ds===h;
+    if(isHoje)document.getElementById('mobDiaNome').textContent='Hoje';
+    evs=ordenar(filtrar(state.filter(e=>e.data===ds)));
+    c.innerHTML=evs.length?evs.map(renderEv).join(''):`<div class="mob-vazio">${isHoje?'Nada pra hoje!':'Dia livre'}</div>`;
+    // Atualizar diaSel pro form desktop sync
+    diaSel=ds;
   }
+}
 
-  function lerCacheLocal() {
-    try { return JSON.parse(localStorage.getItem(CACHE_KEY)) || []; }
-    catch { return []; }
-  }
+// ── Acoes ──
+async function toggle(id){const ev=state.find(e=>e.id===id);if(ev)ev.concluido=!ev.concluido;refresh();await save(state)}
+async function del(id){state=state.filter(e=>e.id!==id);refresh();await save(state)}
 
-  async function salvarEventos(ev) {
-    state = ev;
-    cacheLocal(ev);
-    if (!db || isOffline) return;
-    const ind = document.getElementById('savingIndicator');
-    ind.classList.add('visible');
-    try {
-      await db.from('tracker_sync').upsert({
-        key: SYNC_KEY,
-        data: { eventos: ev },
-        updated_at: new Date().toISOString()
-      });
-    } catch(e) { console.error('Erro ao salvar:', e); }
-    setTimeout(() => ind.classList.remove('visible'), 1200);
-  }
+async function addEvento(src){
+  const t=document.getElementById(src+'Tit'),h=document.getElementById(src+'Hora'),
+    cat=document.getElementById(src+'Cat'),pr=document.getElementById(src+'Prio'),
+    obs=document.getElementById(src+'Obs');
+  if(!t.value.trim()){t.focus();return}
+  // No mobile, usar a data do mobDate. No desktop, usar diaSel
+  let data;
+  if(src==='m'){data=fmt(mobDate.getFullYear(),mobDate.getMonth(),mobDate.getDate())}
+  else{if(!diaSel){alert('Selecione um dia!');return}data=diaSel}
+  state.push({id:Date.now(),data,titulo:t.value.trim(),hora:h.value,categoria:cat.value,prioridade:pr.value,obs:obs.value.trim(),concluido:false});
+  t.value='';obs.value='';
+  if(src==='m')fecharModal();
+  refresh();await save(state)}
 
-  async function carregarEventos() {
-    // Tentar Supabase primeiro
-    if (db && !isOffline) {
-      try {
-        const { data } = await db.from('tracker_sync')
-          .select('data')
-          .eq('key', SYNC_KEY)
-          .single();
-        if (data && data.data && data.data.eventos) {
-          state = data.data.eventos;
-          cacheLocal(state);
-          return true;
-        }
-      } catch(e) { console.warn('Supabase falhou, usando cache local'); }
-    }
-    // Fallback: cache local
-    const cached = lerCacheLocal();
-    if (cached.length > 0) {
-      state = cached;
-      if (isOffline) document.getElementById('offlineBanner').classList.add('visible');
-      return true;
-    }
-    return false;
-  }
+function refresh(){renderCal();renderDia();renderMob();updContadores()}
 
-  function getFiltros() {
-    const checks = document.querySelectorAll('#filtro-dropdown input[type="checkbox"]');
-    const f = {};
-    checks.forEach(c => f[c.dataset.filtro] = c.checked);
-    return f;
-  }
+function updContadores(){
+  const h=fmtHoje(),p=state.filter(e=>!e.concluido);
+  document.getElementById('cHoje').textContent=p.filter(e=>e.data===h).length;
+  const d7=new Date();d7.setDate(d7.getDate()+7);const s7=fmt(d7.getFullYear(),d7.getMonth(),d7.getDate());
+  document.getElementById('cSem').textContent=p.filter(e=>e.data>=h&&e.data<=s7).length;
+  document.getElementById('cMes').textContent=p.filter(e=>{const[a,m]=e.data.split('-');return+a===anoAt&&+m===mesAt+1}).length}
 
-  function filtroChanged() { renderCalendario(); renderEventosDia(); }
+// ── Nav ──
+function mudarMes(d){mesAt+=d;if(mesAt>11){mesAt=0;anoAt++}if(mesAt<0){mesAt=11;anoAt--}renderCal()}
+function irHoje(){const h=new Date();mesAt=h.getMonth();anoAt=h.getFullYear();diaSel=fmtHoje();mobDate=new Date();mobTab='hoje';
+  document.querySelectorAll('.mob-tab').forEach((t,i)=>t.classList.toggle('active',i===0));refresh();renderDia()}
 
-  function filtrarEventos(eventos) {
-    const f = getFiltros();
-    return eventos.filter(ev => {
-      if (ev.concluido && !f.concluidos) return false;
-      if (!ev.concluido && !f.pendentes) return false;
-      const prio = ev.prioridade || 'baixa';
-      if (!f[prio]) return false;
-      if (!f[ev.categoria]) return false;
-      return true;
-    });
-  }
+// ── Modal mobile ──
+function abrirModal(){document.getElementById('modal').classList.add('show')}
+function fecharModal(){document.getElementById('modal').classList.remove('show')}
+document.getElementById('modal').addEventListener('click',e=>{if(e.target.classList.contains('modal-overlay'))fecharModal()});
 
-  // ── Tema ──
-  function toggleTema() {
-    const atual = document.documentElement.getAttribute('data-theme');
-    const novo = atual === 'dark' ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', novo);
-    localStorage.setItem('elyda_tema', novo);
-    document.getElementById('theme-btn').innerHTML = novo === 'dark' ? '&#9788;' : '&#9790;';
-  }
+// ── Tema ──
+function toggleTema(){const a=document.documentElement.getAttribute('data-theme'),n=a==='dark'?'light':'dark';
+  document.documentElement.setAttribute('data-theme',n);localStorage.setItem('elyda_tema',n);
+  document.getElementById('temaBtn').innerHTML=n==='dark'?'&#9788;':'&#9790;'}
+function loadTema(){const s=localStorage.getItem('elyda_tema')||'dark';document.documentElement.setAttribute('data-theme',s);
+  document.getElementById('temaBtn').innerHTML=s==='dark'?'&#9788;':'&#9790;'}
 
-  function carregarTema() {
-    const salvo = localStorage.getItem('elyda_tema') || 'dark';
-    document.documentElement.setAttribute('data-theme', salvo);
-    document.getElementById('theme-btn').innerHTML = salvo === 'dark' ? '&#9788;' : '&#9790;';
-  }
+// ── Filtro ──
+function toggleFiltro(){document.getElementById('filtroDD').classList.toggle('show')}
+document.addEventListener('click',e=>{if(!e.target.closest('.filtro-wrap'))document.getElementById('filtroDD').classList.remove('show')});
 
-  // ── Filtro dropdown ──
-  function toggleFiltro() {
-    document.getElementById('filtro-dropdown').classList.toggle('show');
-  }
+// ── Seed ──
+function seed(){const h=new Date(),y=h.getFullYear(),m=h.getMonth(),d=h.getDate();
+  const ex=[
+    {data:fmt(y,m,d),titulo:'Consulta pediatra — Joao',hora:'09:00',categoria:'pessoal',prioridade:'alta',obs:'Levar cartao do SUS',concluido:false},
+    {data:fmt(y,m,d),titulo:'Visita obra Junior',hora:'14:00',categoria:'trabalho',prioridade:'alta',obs:'Conferir fundacao',concluido:false},
+    {data:fmt(y,m,d),titulo:'Comprar cimento (30 sacos)',hora:'16:00',categoria:'compra',prioridade:'media',obs:'Deposito Silva',concluido:true},
+    {data:fmt(y,m,d+1),titulo:'Reuniao cliente Dayana',hora:'10:00',categoria:'trabalho',prioridade:'alta',obs:'Apresentar orcamento',concluido:false},
+    {data:fmt(y,m,d+1),titulo:'Buscar meninos na escola',hora:'17:30',categoria:'pessoal',prioridade:'baixa',obs:'',concluido:false},
+    {data:fmt(y,m,d+2),titulo:'Entrega de laudo — Pedro',hora:'08:00',categoria:'trabalho',prioridade:'alta',obs:'Imprimir 2 vias',concluido:false},
+    {data:fmt(y,m,d+2),titulo:'Comprar vergalhao',hora:'11:00',categoria:'compra',prioridade:'media',obs:'3/8 e 5/16',concluido:false},
+    {data:fmt(y,m,d+3),titulo:'Dentista Elyda',hora:'14:30',categoria:'pessoal',prioridade:'baixa',obs:'',concluido:false},
+    {data:fmt(y,m,d+4),titulo:'Pagar CREA',hora:'08:00',categoria:'lembrete',prioridade:'alta',obs:'Vence dia 30',concluido:false},
+    {data:fmt(y,m,d+5),titulo:'Visita obra Leonardo',hora:'09:00',categoria:'trabalho',prioridade:'media',obs:'Medir laje',concluido:false},
+    {data:fmt(y,m,d+7),titulo:'Vacina meninos',hora:'10:00',categoria:'pessoal',prioridade:'media',obs:'',concluido:false}];
+  ex.forEach(e=>e.id=Date.now()+Math.random()*10000);return ex}
 
-  document.addEventListener('click', e => {
-    if (!e.target.closest('.filtro-wrapper')) {
-      document.getElementById('filtro-dropdown').classList.remove('show');
-    }
-  });
+// ── Keyboard ──
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='dTit')addEvento('d');if(e.key==='Enter'&&e.target.id==='mTit')addEvento('m')});
 
-  // ── Calendario ──
-  function renderCalendario() {
-    const grid = document.getElementById('grid-dias');
-    grid.innerHTML = '';
-
-    const meses = ['Janeiro','Fevereiro','Marco','Abril','Maio','Junho',
-                   'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-    document.getElementById('titulo-mes').textContent = `${meses[mesAtual]} ${anoAtual}`;
-
-    const primeiroDia = new Date(anoAtual, mesAtual, 1).getDay();
-    const ultimoDia = new Date(anoAtual, mesAtual + 1, 0).getDate();
-    const hoje = new Date();
-    const todosEventos = getEventos();
-    const eventos = filtrarEventos(todosEventos);
-
-    const diasMesAnterior = new Date(anoAtual, mesAtual, 0).getDate();
-    for (let i = primeiroDia - 1; i >= 0; i--) {
-      grid.appendChild(criarDia(diasMesAnterior - i, true));
-    }
-
-    for (let d = 1; d <= ultimoDia; d++) {
-      const dataStr = formatarData(anoAtual, mesAtual, d);
-      const evDia = eventos.filter(e => e.data === dataStr);
-      const ehHoje = hoje.getDate() === d && hoje.getMonth() === mesAtual && hoje.getFullYear() === anoAtual;
-      grid.appendChild(criarDia(d, false, ehHoje, diaSelecionado === dataStr, evDia, dataStr));
-    }
-
-    const totalCells = primeiroDia + ultimoDia;
-    const restante = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
-    for (let d = 1; d <= restante; d++) {
-      grid.appendChild(criarDia(d, true));
-    }
-
-    atualizarContadores(todosEventos);
-    renderProximos(todosEventos);
-  }
-
-  function criarDia(numero, outroMes, ehHoje, ehSelecionado, eventos, dataStr) {
-    const div = document.createElement('div');
-    div.className = 'dia';
-    if (outroMes) div.classList.add('outro-mes');
-    if (ehHoje) div.classList.add('hoje');
-    if (ehSelecionado) div.classList.add('selecionado');
-
-    const numDiv = document.createElement('div');
-    numDiv.className = 'numero';
-    numDiv.textContent = numero;
-    div.appendChild(numDiv);
-
-    if (eventos && eventos.length > 0) {
-      const evDiv = document.createElement('div');
-      evDiv.className = 'eventos';
-      // Ordenar: alta primeiro, concluidos por ultimo
-      const sorted = [...eventos].sort((a, b) => {
-        if (a.concluido !== b.concluido) return a.concluido ? 1 : -1;
-        const prioOrder = { alta: 0, media: 1, baixa: 2 };
-        return (prioOrder[a.prioridade || 'baixa'] || 2) - (prioOrder[b.prioridade || 'baixa'] || 2);
-      });
-      sorted.slice(0, 3).forEach(ev => {
-        const span = document.createElement('div');
-        const prio = ev.prioridade || 'baixa';
-        span.className = `evento-mini ${ev.categoria} prio-dot-${prio}`;
-        if (ev.concluido) span.classList.add('concluido');
-        span.textContent = ev.hora ? `${ev.hora} ${ev.titulo}` : ev.titulo;
-        evDiv.appendChild(span);
-      });
-      if (eventos.length > 3) {
-        const mais = document.createElement('div');
-        mais.className = 'mais';
-        mais.textContent = `+${eventos.length - 3} mais`;
-        evDiv.appendChild(mais);
-      }
-      div.appendChild(evDiv);
-    }
-
-    if (dataStr) div.onclick = () => { diaSelecionado = dataStr; renderCalendario(); renderEventosDia(); };
-    return div;
-  }
-
-  function renderEventosDia() {
-    const container = document.getElementById('eventos-dia');
-    const titulo = document.getElementById('titulo-dia');
-
-    if (!diaSelecionado) {
-      container.innerHTML = '<div class="sem-eventos">Clique em um dia para ver</div>';
-      titulo.textContent = 'Selecione um dia';
-      return;
-    }
-
-    const [a, m, d] = diaSelecionado.split('-');
-    const diasSemana = ['Domingo','Segunda','Terca','Quarta','Quinta','Sexta','Sabado'];
-    const data = new Date(+a, +m - 1, +d);
-    titulo.textContent = `${diasSemana[data.getDay()]}, ${d}/${m}`;
-
-    let eventos = getEventos().filter(e => e.data === diaSelecionado);
-    eventos = filtrarEventos(eventos);
-    eventos.sort((a, b) => {
-      if (a.concluido !== b.concluido) return a.concluido ? 1 : -1;
-      const prioOrder = { alta: 0, media: 1, baixa: 2 };
-      const pa = prioOrder[a.prioridade || 'baixa'] || 2;
-      const pb = prioOrder[b.prioridade || 'baixa'] || 2;
-      if (pa !== pb) return pa - pb;
-      return (a.hora || '').localeCompare(b.hora || '');
-    });
-
-    if (eventos.length === 0) {
-      container.innerHTML = '<div class="sem-eventos">Nenhum compromisso neste dia</div>';
-      return;
-    }
-
-    container.innerHTML = eventos.map(ev => {
-      const prio = ev.prioridade || 'baixa';
-      const prioLabel = { alta: 'URGENTE', media: 'Media', baixa: '' };
-      return `
-      <div class="evento-item ${ev.concluido ? 'done' : ''} prio-${prio}">
-        <input type="checkbox" class="evento-check" ${ev.concluido ? 'checked' : ''} onchange="toggleConcluido(${ev.id})">
-        <div class="evento-hora">${ev.hora || '--:--'}</div>
-        <div class="evento-info">
-          <div class="evento-titulo">${escapeHtml(ev.titulo)}</div>
-          ${ev.obs ? `<div style="font-size:.78rem;color:var(--text-obs);margin-top:2px">${escapeHtml(ev.obs)}</div>` : ''}
-          <div class="evento-meta">
-            <span class="evento-cat ${ev.categoria}">${nomeCategoria(ev.categoria)}</span>
-            ${prio !== 'baixa' ? `<span class="evento-prio ${prio}">${prioLabel[prio]}</span>` : ''}
-          </div>
-        </div>
-        <button class="evento-del" onclick="removerEvento(${ev.id})" title="Remover">&#10005;</button>
-      </div>`;
-    }).join('');
-  }
-
-  async function toggleConcluido(id) {
-    const eventos = getEventos();
-    const ev = eventos.find(e => e.id === id);
-    if (ev) ev.concluido = !ev.concluido;
-    renderCalendario();
-    renderEventosDia();
-    await salvarEventos(eventos);
-  }
-
-  function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-  }
-
-  function nomeCategoria(cat) {
-    return { pessoal: 'Pessoal', trabalho: 'Trabalho', compra: 'Compra', lembrete: 'Lembrete' }[cat] || cat;
-  }
-
-  async function adicionarEvento() {
-    const titulo = document.getElementById('novo-titulo').value.trim();
-    if (!titulo) { document.getElementById('novo-titulo').focus(); return; }
-    if (!diaSelecionado) { alert('Selecione um dia primeiro!'); return; }
-
-    const eventos = getEventos();
-    eventos.push({
-      id: Date.now(),
-      data: diaSelecionado,
-      titulo,
-      hora: document.getElementById('novo-hora').value,
-      categoria: document.getElementById('novo-cat').value,
-      prioridade: document.getElementById('novo-prio').value,
-      obs: document.getElementById('novo-obs').value.trim(),
-      concluido: false
-    });
-
-    document.getElementById('novo-titulo').value = '';
-    document.getElementById('novo-obs').value = '';
-
-    renderCalendario();
-    renderEventosDia();
-    await salvarEventos(eventos);
-  }
-
-  async function removerEvento(id) {
-    const eventos = getEventos().filter(e => e.id !== id);
-    state = eventos;
-    renderCalendario();
-    renderEventosDia();
-    await salvarEventos(eventos);
-  }
-
-  function mudarMes(delta) {
-    mesAtual += delta;
-    if (mesAtual > 11) { mesAtual = 0; anoAtual++; }
-    if (mesAtual < 0) { mesAtual = 11; anoAtual--; }
-    renderCalendario();
-  }
-
-  function irParaHoje() {
-    const hoje = new Date();
-    mesAtual = hoje.getMonth();
-    anoAtual = hoje.getFullYear();
-    diaSelecionado = formatarData(anoAtual, mesAtual, hoje.getDate());
-    renderCalendario();
-    renderEventosDia();
-  }
-
-  function renderProximos(todosEventos) {
-    const container = document.getElementById('proximos-lista');
-    const eventos = todosEventos || getEventos();
-    const hojeStr = formatarData(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
-
-    const proximos = eventos
-      .filter(e => e.data >= hojeStr && !e.concluido)
-      .sort((a, b) => {
-        const prioOrder = { alta: 0, media: 1, baixa: 2 };
-        const pa = prioOrder[a.prioridade || 'baixa'] || 2;
-        const pb = prioOrder[b.prioridade || 'baixa'] || 2;
-        if (a.data !== b.data) return a.data.localeCompare(b.data);
-        if (pa !== pb) return pa - pb;
-        return (a.hora || '').localeCompare(b.hora || '');
-      })
-      .slice(0, 8);
-
-    if (proximos.length === 0) {
-      container.innerHTML = '<div class="sem-eventos">Tudo em dia!</div>';
-      return;
-    }
-
-    container.innerHTML = proximos.map(ev => {
-      const [a, m, d] = ev.data.split('-');
-      const prio = ev.prioridade || 'baixa';
-      return `
-        <div class="proximo-item prio-${prio}" onclick="diaSelecionado='${ev.data}'; renderCalendario(); renderEventosDia();">
-          <div class="proximo-data">${d}/${m}</div>
-          <div class="proximo-texto">${ev.hora ? ev.hora + ' — ' : ''}${escapeHtml(ev.titulo)}</div>
-          <div class="evento-mini ${ev.categoria}" style="font-size:.72rem">${nomeCategoria(ev.categoria)}</div>
-        </div>`;
-    }).join('');
-  }
-
-  function atualizarContadores(todosEventos) {
-    const eventos = todosEventos || getEventos();
-    const hoje = new Date();
-    const hojeStr = formatarData(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
-
-    const pendentes = eventos.filter(e => !e.concluido);
-
-    document.getElementById('cont-hoje').textContent = pendentes.filter(e => e.data === hojeStr).length;
-
-    const em7dias = new Date(hoje);
-    em7dias.setDate(em7dias.getDate() + 7);
-    const sem7Str = formatarData(em7dias.getFullYear(), em7dias.getMonth(), em7dias.getDate());
-    document.getElementById('cont-semana').textContent = pendentes.filter(e => e.data >= hojeStr && e.data <= sem7Str).length;
-
-    document.getElementById('cont-mes').textContent = pendentes.filter(e => {
-      const [a, m] = e.data.split('-');
-      return +a === anoAtual && +m === mesAtual + 1;
-    }).length;
-  }
-
-  function formatarData(ano, mes, dia) {
-    return `${ano}-${String(mes + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
-  }
-
-  function gerarExemplos() {
-    const hoje = new Date();
-    const y = hoje.getFullYear(), m = hoje.getMonth(), d = hoje.getDate();
-
-    const exemplos = [
-      { data: formatarData(y, m, d), titulo: 'Consulta pediatra — Joao', hora: '09:00', categoria: 'pessoal', prioridade: 'alta', obs: 'Levar cartao do SUS', concluido: false },
-      { data: formatarData(y, m, d), titulo: 'Visita obra Junior', hora: '14:00', categoria: 'trabalho', prioridade: 'alta', obs: 'Conferir fundacao', concluido: false },
-      { data: formatarData(y, m, d), titulo: 'Comprar cimento (30 sacos)', hora: '16:00', categoria: 'compra', prioridade: 'media', obs: 'Deposito Silva', concluido: true },
-      { data: formatarData(y, m, d + 1), titulo: 'Reuniao cliente Dayana', hora: '10:00', categoria: 'trabalho', prioridade: 'alta', obs: 'Apresentar orcamento', concluido: false },
-      { data: formatarData(y, m, d + 1), titulo: 'Buscar meninos na escola', hora: '17:30', categoria: 'pessoal', prioridade: 'baixa', obs: '', concluido: false },
-      { data: formatarData(y, m, d + 2), titulo: 'Entrega de laudo — Pedro', hora: '08:00', categoria: 'trabalho', prioridade: 'alta', obs: 'Imprimir 2 vias', concluido: false },
-      { data: formatarData(y, m, d + 2), titulo: 'Comprar vergalhao', hora: '11:00', categoria: 'compra', prioridade: 'media', obs: '3/8 e 5/16', concluido: false },
-      { data: formatarData(y, m, d + 3), titulo: 'Dentista Elyda', hora: '14:30', categoria: 'pessoal', prioridade: 'baixa', obs: '', concluido: false },
-      { data: formatarData(y, m, d + 4), titulo: 'Pagar CREA', hora: '08:00', categoria: 'lembrete', prioridade: 'alta', obs: 'Vence dia 30', concluido: false },
-      { data: formatarData(y, m, d + 5), titulo: 'Visita obra Leonardo', hora: '09:00', categoria: 'trabalho', prioridade: 'media', obs: 'Medir laje', concluido: false },
-      { data: formatarData(y, m, d + 7), titulo: 'Vacina meninos', hora: '10:00', categoria: 'pessoal', prioridade: 'media', obs: '', concluido: false },
-    ];
-
-    exemplos.forEach(e => e.id = Date.now() + Math.random() * 10000);
-    return exemplos;
-  }
-
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Enter' && document.activeElement.id === 'novo-titulo') adicionarEvento();
-  });
-
-  // ── Init (igual tracker) ──
-  async function init() {
-    carregarTema();
-    const carregou = await carregarEventos();
-    if (!carregou || state.length === 0) {
-      state = gerarExemplos();
-      await salvarEventos(state);
-    }
-    irParaHoje();
-    // Esconder loading
-    const overlay = document.getElementById('loadingOverlay');
-    overlay.classList.add('hidden');
-    setTimeout(() => overlay.remove(), 300);
-  }
-
-  init();
+// ── Init ──
+async function init(){
+  loadTema();
+  const ok=await load();
+  if(!ok||!state.length){state=seed();await save(state)}
+  diaSel=fmtHoje();irHoje();
+  const o=document.getElementById('loadO');o.classList.add('gone');setTimeout(()=>o.remove(),300)}
+init();
 </script>
-
 </body>
 </html>
