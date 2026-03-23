@@ -2,6 +2,14 @@
 // AUTENTICAÇÃO — Supabase Auth (GoTrue)
 // ══════════════════════════════════════════
 
+// Fetch com timeout (evita travamento em rede lenta)
+async function fetchWithTimeout(url, opts, ms=10000) {
+  const c = new AbortController();
+  const t = setTimeout(() => c.abort(), ms);
+  try { return await fetch(url, {...opts, signal: c.signal}); }
+  finally { clearTimeout(t); }
+}
+
 // Resolver input de login: email direto ou telefone → email virtual
 function _resolverLogin(input) {
   if (input.includes('@')) return input;
@@ -29,7 +37,7 @@ async function fazerLogin() {
 
   try {
     const email = _resolverLogin(u);
-    const r = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+    const r = await fetchWithTimeout(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
       method: 'POST',
       headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password: s })
@@ -358,7 +366,7 @@ function aplicarPerfil() {
 async function checkPlatformAdmin() {
   if (MODO_DEMO || !_authToken) return;
   try {
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/is_platform_admin`, {
+    const r = await fetchWithTimeout(`${SUPABASE_URL}/rest/v1/rpc/is_platform_admin`, {
       method: 'POST',
       headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + _authToken, 'Content-Type': 'application/json' },
       body: '{}'
@@ -458,7 +466,7 @@ async function criarConta() {
 
   try {
     // 1. Criar usuário no Supabase Auth
-    const r = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
+    const r = await fetchWithTimeout(`${SUPABASE_URL}/auth/v1/signup`, {
       method: 'POST',
       headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1285,7 +1293,7 @@ async function convidarUsuario() {
 
   try {
     // 1. Criar usuario no Supabase Auth
-    const r = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
+    const r = await fetchWithTimeout(`${SUPABASE_URL}/auth/v1/signup`, {
       method: 'POST',
       headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1306,7 +1314,7 @@ async function convidarUsuario() {
 
     // 2. Vincular a empresa
     const hdrs = { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + _authToken, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' };
-    const rVinc = await fetch(`${SUPABASE_URL}/rest/v1/company_users`, {
+    const rVinc = await fetchWithTimeout(`${SUPABASE_URL}/rest/v1/company_users`, {
       method: 'POST',
       headers: hdrs,
       body: JSON.stringify({

@@ -16,5 +16,5 @@ const TABELA_CREDITOS = [
   {cat:'Material de limpeza',credito:false},{cat:'Ferramentas (uso próprio)',credito:false},
   {cat:'Mobiliário e administrativo',credito:false},{cat:'Multas e encargos financeiros',credito:false},
 ];
-function renderTabelaCreditos() { document.getElementById('creditos-tbody').innerHTML = TABELA_CREDITOS.map(c => { if (c.credito === null) return `<tr><td colspan="2" style="color:#94a3b8;font-size:11px;padding:4px 10px;">${c.cat}</td></tr>`; return `<tr><td>${c.cat}</td><td><span class="${c.credito?'badge-sim':'badge-nao'}">${c.credito?'✓ SIM':'✗ NÃO'}</span></td></tr>`; }).join(''); }
+function renderTabelaCreditos() { document.getElementById('creditos-tbody').innerHTML = TABELA_CREDITOS.map(c => { if (c.credito === null) return `<tr><td colspan="2" style="color:#94a3b8;font-size:11px;padding:4px 10px;">${esc(c.cat)}</td></tr>`; return `<tr><td>${esc(c.cat)}</td><td><span class="${c.credito?'badge-sim':'badge-nao'}">${c.credito?'✓ SIM':'✗ NÃO'}</span></td></tr>`; }).join(''); }
 

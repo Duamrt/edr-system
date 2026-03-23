@@ -8,7 +8,7 @@ function norm(s) { return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u03
 // Datas padronizadas — usar em todo o sistema
 function hojeISO() { return new Date().toISOString().split('T')[0]; }
 function fmtData(iso) { if (!iso) return '—'; return iso.split('T')[0].split('-').reverse().join('/'); }
-function parseItens(n) { try { return JSON.parse(n.itens||'[]'); } catch { return []; } }
+function parseItens(n) { try { return JSON.parse(n.itens||'[]'); } catch(e) { console.error('parseItens JSON inválido:', e); return []; } }
 // Sanitização XSS — escapar HTML em dados de usuário
 function esc(s) { if (!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 

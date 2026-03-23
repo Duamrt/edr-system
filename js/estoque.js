@@ -2,6 +2,7 @@
 // ESTOQUE
 // ══════════════════════════════════════════
 let estoqueOrdem = 'az'; // 'az' | 'maior' | 'menor'
+let _materiaisEstoque = [];
 
 function estoqueAtualizarOrdem() {
   ['az','maior','menor'].forEach(k => {
@@ -319,13 +320,13 @@ function renderEstoque() {
       <button class="btn-dist-item" onclick="event.stopPropagation();abrirSaidaDoItem(${i})">📤</button>
     </div>`;
   }).join('');
-  window._materiaisEstoque = filtrados;
+  _materiaisEstoque = filtrados;
   aplicarPerfil();
 }
 
 // ── HISTÓRICO DO MATERIAL ──────────────────────────────
 function abrirHistoricoMaterial(idx) {
-  const m = (window._materiaisEstoque||[])[idx]; if (!m) return;
+  const m = (_materiaisEstoque||[])[idx]; if (!m) return;
   const fmtData = d => { if (!d) return '—'; const dt = new Date(d+'T00:00:00'); return dt.toLocaleDateString('pt-BR'); };
 
   // Montar movimentações
@@ -409,7 +410,7 @@ function abrirHistoricoMaterial(idx) {
 
 // Saída direto de um item do estoque (botão 📤 no card do material)
 function abrirSaidaDoItem(idx) {
-  const m = (window._materiaisEstoque||[])[idx]; if (!m) return;
+  const m = (_materiaisEstoque||[])[idx]; if (!m) return;
   // Abre o modal genérico de saída já preenchido com o material
   abrirSaidaMaterial(m.desc, m.unidade);
 }

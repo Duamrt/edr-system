@@ -59,17 +59,21 @@ function atualizarTotalComFrete() {
 }
 
 // AUTOCOMPLETE FORNECEDOR
+let _fornecedorTimer;
 function onFornecedorInput() {
-  const val = document.getElementById('f-fornecedor').value.trim();
-  const list = document.getElementById('ac-forn-list'); acFornIdx = -1;
-  if (!val || val.length < 2) { list.classList.add('hidden'); cachedFornecedores = []; return; }
-  const v = norm(val), map = {};
-  notas.forEach(n => { if (norm(n.fornecedor).includes(v) && !map[n.fornecedor]) map[n.fornecedor] = { nome: n.fornecedor, cnpj: n.cnpj||'' }; });
-  cachedFornecedores = Object.values(map).slice(0, 6);
-  if (!cachedFornecedores.length) { list.classList.add('hidden'); return; }
-  list.innerHTML = cachedFornecedores.map((m, i) => `<div class="autocomplete-item" data-forn-idx="${i}"><span class="ac-label">${m.nome}</span><span class="ac-forn-cnpj">${m.cnpj||'SEM CNPJ'}</span></div>`).join('');
-  list.querySelectorAll('.autocomplete-item').forEach(el => { const fn = e => { e.preventDefault(); selectFornecedor(parseInt(el.dataset.fornIdx)); }; el.addEventListener('mousedown', fn); el.addEventListener('touchstart', fn, {passive:false}); });
-  list.classList.remove('hidden');
+  clearTimeout(_fornecedorTimer);
+  _fornecedorTimer = setTimeout(() => {
+    const val = document.getElementById('f-fornecedor').value.trim();
+    const list = document.getElementById('ac-forn-list'); acFornIdx = -1;
+    if (!val || val.length < 2) { list.classList.add('hidden'); cachedFornecedores = []; return; }
+    const v = norm(val), map = {};
+    notas.forEach(n => { if (norm(n.fornecedor).includes(v) && !map[n.fornecedor]) map[n.fornecedor] = { nome: n.fornecedor, cnpj: n.cnpj||'' }; });
+    cachedFornecedores = Object.values(map).slice(0, 6);
+    if (!cachedFornecedores.length) { list.classList.add('hidden'); return; }
+    list.innerHTML = cachedFornecedores.map((m, i) => `<div class="autocomplete-item" data-forn-idx="${i}"><span class="ac-label">${m.nome}</span><span class="ac-forn-cnpj">${m.cnpj||'SEM CNPJ'}</span></div>`).join('');
+    list.querySelectorAll('.autocomplete-item').forEach(el => { const fn = e => { e.preventDefault(); selectFornecedor(parseInt(el.dataset.fornIdx)); }; el.addEventListener('mousedown', fn); el.addEventListener('touchstart', fn, {passive:false}); });
+    list.classList.remove('hidden');
+  }, 300);
 }
 function selectFornecedor(idx) {
   const m = cachedFornecedores[idx]; if (!m) return;

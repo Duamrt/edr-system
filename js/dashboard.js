@@ -2,6 +2,7 @@
 
 // ── DASHBOARD OPERADOR ──────────────────────────────────────
 function renderDashboardOperador() {
+  if (!usuarioAtual) return;
   const el = document.getElementById('oper-welcome');
   el.classList.remove('hidden');
 

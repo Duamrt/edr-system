@@ -37,9 +37,12 @@ window.addEventListener('online', () => _showOfflineBanner(false));
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible' && usuarioAtual && !_logoutInProgress) {
     // Recarrega dados silenciosamente ao voltar pra aba (resolve sync entre 2 usuários)
-    Promise.all([loadLancamentos(), loadDistribuicoes(), loadEntradasDiretas(), loadAjustesEstoque()])
-      .then(() => { renderEstoque(); renderDashboard(); })
-      .catch(() => {});
+    Promise.all([
+      loadLancamentos().catch(e => console.error('loadLancamentos:', e)),
+      loadDistribuicoes().catch(e => console.error('loadDistribuicoes:', e)),
+      loadEntradasDiretas().catch(e => console.error('loadEntradasDiretas:', e)),
+      loadAjustesEstoque().catch(e => console.error('loadAjustesEstoque:', e))
+    ]).then(() => { renderEstoque(); renderDashboard(); });
   }
 });
 
@@ -50,7 +53,21 @@ async function iniciarApp() {
   populateSelects();
   renderTabelaCreditos();
   renderUsuarios();
-  await Promise.all([loadNotas(), loadLancamentos(), loadDistribuicoes(), loadEntradasDiretas(), loadMateriais(), loadRepassesCef(), loadAdicionais(), loadAjustesEstoque(), loadLeads(), loadContasPagar(), loadProjecoes(), loadGarantiaChamados(), loadAgendaNotas()]);
+  await Promise.all([
+    loadNotas().catch(e => console.error('loadNotas:', e)),
+    loadLancamentos().catch(e => console.error('loadLancamentos:', e)),
+    loadDistribuicoes().catch(e => console.error('loadDistribuicoes:', e)),
+    loadEntradasDiretas().catch(e => console.error('loadEntradasDiretas:', e)),
+    loadMateriais().catch(e => console.error('loadMateriais:', e)),
+    loadRepassesCef().catch(e => console.error('loadRepassesCef:', e)),
+    loadAdicionais().catch(e => console.error('loadAdicionais:', e)),
+    loadAjustesEstoque().catch(e => console.error('loadAjustesEstoque:', e)),
+    loadLeads().catch(e => console.error('loadLeads:', e)),
+    loadContasPagar().catch(e => console.error('loadContasPagar:', e)),
+    loadProjecoes().catch(e => console.error('loadProjecoes:', e)),
+    loadGarantiaChamados().catch(e => console.error('loadGarantiaChamados:', e)),
+    loadAgendaNotas().catch(e => console.error('loadAgendaNotas:', e))
+  ]);
   const mc = document.getElementById("main-content-inner"); if(mc) mc.style.visibility="visible";
   document.getElementById('sql-box').textContent = SQL_SETUP;
   renderDashboard();

@@ -188,10 +188,12 @@ function msgVazio() {
 
 // ── PAINEL FINANCEIRO (visão principal) ──────────────────────
 // Toggle: mostrar obras concluídas no relatório (default: não)
-if (typeof window._relMostrarConcluidas === 'undefined') window._relMostrarConcluidas = false;
+let _relMostrarConcluidas = false;
+let _relEntradasMes = [];
+let _relFiltrosEntrada = new Set();
 
 function toggleObrasConcluidas() {
-  window._relMostrarConcluidas = !window._relMostrarConcluidas;
+  _relMostrarConcluidas = !_relMostrarConcluidas;
   renderRelatorio();
 }
 
@@ -202,7 +204,7 @@ function getObrasIdsAtivas() {
 function buildPainelFinanceiro() {
   const [anoStr, mesStr] = relMesAtual.split('-');
   const mesLabel = MESES_FULL[parseInt(mesStr)-1] + ' ' + anoStr;
-  const mostrarConcluidas = window._relMostrarConcluidas;
+  const mostrarConcluidas = _relMostrarConcluidas;
   const idsAtivas = getObrasIdsAtivas();
 
   // SAÍDAS do mês (lançamentos) — filtrar por obras ativas se toggle desligado
@@ -286,8 +288,8 @@ function buildPainelFinanceiro() {
     const tipoConfig = { pls: { lb: '🏦 PLs', cor: '#3498db' }, entrada: { lb: '💵 Entrada', cor: '#2ecc71' }, terreno: { lb: '🏗 Terreno', cor: '#e67e22' }, extra: { lb: '⭐ Extras', cor: '#f1c40f' } };
 
     // Guardar dados no window pra filtro funcionar
-    window._relEntradasMes = todasEntradas;
-    window._relFiltrosEntrada = new Set(tiposPresentes); // todos ativos inicialmente
+    _relEntradasMes = todasEntradas;
+    _relFiltrosEntrada = new Set(tiposPresentes); // todos ativos inicialmente
 
     const chipStyle = (key) => `cursor:pointer;padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:0.5px;transition:all .2s;user-select:none;`;
 
@@ -394,7 +396,7 @@ function buildGraficoMensal() {
 
 // ── DETALHAMENTO POR OBRA ────────────────────────────────────
 function buildDetalheObras(ym) {
-  const mostrarConcluidas = window._relMostrarConcluidas;
+  const mostrarConcluidas = _relMostrarConcluidas;
   const obrasAtivas = mostrarConcluidas ? [...obras, ...obrasArquivadas] : obras.filter(o => !o.arquivada);
   if (!obrasAtivas.length) return '';
 
@@ -735,18 +737,18 @@ window.addEventListener('resize', () => {
 const _tipoConfig = { pls: { lb: '🏦 PLs', cor: '#3498db' }, entrada: { lb: '💵 Entrada', cor: '#2ecc71' }, terreno: { lb: '🏗 Terreno', cor: '#e67e22' }, extra: { lb: '⭐ Extras', cor: '#f1c40f' } };
 
 function toggleFiltroEntrada(key) {
-  if (!window._relFiltrosEntrada) return;
-  const filtros = window._relFiltrosEntrada;
+  if (!_relFiltrosEntrada) return;
+  const filtros = _relFiltrosEntrada;
   if (filtros.has(key)) filtros.delete(key); else filtros.add(key);
   atualizarChipsEntrada();
   renderTabelaEntradas();
 }
 
 function limparFiltrosEntrada() {
-  if (!window._relEntradasMes) return;
-  const todos = [...new Set(window._relEntradasMes.map(e => e.tipoKey))];
+  if (!_relEntradasMes) return;
+  const todos = [...new Set(_relEntradasMes.map(e => e.tipoKey))];
   // Se todos ativos, desativa todos. Se algum desativado, ativa todos.
-  const filtros = window._relFiltrosEntrada;
+  const filtros = _relFiltrosEntrada;
   const todosAtivos = todos.every(k => filtros.has(k));
   if (todosAtivos) { filtros.clear(); } else { todos.forEach(k => filtros.add(k)); }
   atualizarChipsEntrada();
@@ -754,7 +756,7 @@ function limparFiltrosEntrada() {
 }
 
 function atualizarChipsEntrada() {
-  const filtros = window._relFiltrosEntrada || new Set();
+  const filtros = _relFiltrosEntrada || new Set();
   Object.keys(_tipoConfig).forEach(key => {
     const chip = document.getElementById(`rel-chip-${key}`);
     if (!chip) return;
@@ -770,10 +772,10 @@ function atualizarChipsEntrada() {
 function renderTabelaEntradas() {
   const container = document.getElementById('rel-entradas-tabela');
   const totalEl = document.getElementById('rel-entradas-total');
-  if (!container || !window._relEntradasMes) return;
+  if (!container || !_relEntradasMes) return;
 
-  const filtros = window._relFiltrosEntrada || new Set();
-  const filtradas = window._relEntradasMes.filter(e => filtros.has(e.tipoKey));
+  const filtros = _relFiltrosEntrada || new Set();
+  const filtradas = _relEntradasMes.filter(e => filtros.has(e.tipoKey));
   const totalFiltrado = filtradas.reduce((s, e) => s + e.valor, 0);
 
   totalEl.innerHTML = filtradas.length
