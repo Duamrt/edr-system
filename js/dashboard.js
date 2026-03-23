@@ -298,14 +298,14 @@ function abrirModalNota(dataPre) {
       <div class="field" style="flex:1;"><label>HORA</label><input type="time" id="nota-hora" style="width:100%;padding:10px;background:rgba(255,255,255,0.03);border:1px solid var(--borda);border-radius:8px;color:var(--branco);font-size:13px;font-family:inherit;box-sizing:border-box;"></div>
     </div>
     <input type="hidden" id="nota-autor" value="${esc(autor)}">
-    <button class="btn-save" onclick="salvarNota()">SALVAR</button>
+    <button class="btn-save" onclick="salvarAgendaNota()">SALVAR</button>
   </div>`;
 
   document.body.appendChild(el);
   setTimeout(() => document.getElementById('nota-texto').focus(), 100);
 }
 
-async function salvarNota() {
+async function salvarAgendaNota() {
   const texto = document.getElementById('nota-texto').value.trim();
   const data = document.getElementById('nota-data').value;
   const hora = document.getElementById('nota-hora').value || null;
