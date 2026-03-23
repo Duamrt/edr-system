@@ -251,9 +251,8 @@
 <div class="tabs">
   <div class="tab active" onclick="switchTab('edr')" id="tab-edr"><span class="dot dot-edr"></span>EDR System</div>
   <div class="tab" onclick="switchTab('naregua')" id="tab-naregua"><span class="dot dot-naregua"></span>NaRegua</div>
-  <div class="tab" onclick="switchTab('engenharia')" id="tab-engenharia"><span class="dot dot-engenharia"></span>EDR Engenharia</div>
   <div class="tab" onclick="switchTab('code')" id="tab-code"><span class="dot dot-code"></span>Claude Code</div>
-  <div class="tab" onclick="switchTab('plan')" id="tab-plan"><span class="dot dot-plan"></span>Planejamento</div>
+  <div class="tab" onclick="switchTab('engenharia')" id="tab-engenharia"><span class="dot dot-engenharia"></span>EDR Engenharia</div>
 </div>
 
 <!-- ===== EDR SYSTEM ===== -->
@@ -361,6 +360,10 @@
       <div class="form-row"><button class="btn-primary" onclick="addEngItem('tasks')">Salvar</button><button class="btn-secondary" onclick="toggleForm('form-eng-task')">Cancelar</button></div>
     </div>
     <div id="list-eng-tasks"></div>
+
+    <div class="section-header"><div class="section-title">Obras — Pendências de Execução</div></div>
+    <div class="stats-row" id="stats-plan"></div>
+    <div id="list-plan-obras"></div>
   </div>
 </div>
 
@@ -415,13 +418,6 @@
 </div>
 
 <!-- ===== PLANEJAMENTO ===== -->
-<div class="project-view" id="view-plan">
-  <div class="container">
-    <div class="stats-row" id="stats-plan"></div>
-    <div class="section-header"><div class="section-title">Obras — Pendências de Execução</div></div>
-    <div id="list-plan-obras"></div>
-  </div>
-</div>
 
 <script>
   // ---- PLANEJAMENTO DATA ----
@@ -492,6 +488,19 @@
         {id:'pl13',text:'Mestras',done:false},
         {id:'pl14',text:'Grade de porta',done:false},
         {id:'pl15',text:'Reboco',done:false}
+      ]},
+      {id:'pde',name:'DUAM + ELYDA',entrega:'A definir',tasks:[
+        {id:'pde1',text:'Contrato CEF — assinatura',done:false},
+        {id:'pde2',text:'Terraplanagem terreno',done:false},
+        {id:'pde3',text:'Locação da obra',done:false},
+        {id:'pde4',text:'Fundação',done:false},
+        {id:'pde5',text:'Estrutura (pilares/vigas)',done:false},
+        {id:'pde6',text:'Alvenaria',done:false},
+        {id:'pde7',text:'Laje',done:false},
+        {id:'pde8',text:'Cobertura',done:false},
+        {id:'pde9',text:'Instalações (elétrica/hidráulica)',done:false},
+        {id:'pde10',text:'Reboco',done:false},
+        {id:'pde11',text:'Acabamento',done:false}
       ]}
     ]
   };
@@ -564,6 +573,7 @@
   }
 
   function diasRestantes(entrega) {
+    if (!entrega || !entrega.includes('/')) return 999;
     const parts = entrega.split('/');
     const d = new Date(parseInt(parts[2]), parseInt(parts[1])-1, parseInt(parts[0]));
     const hoje = new Date(); hoje.setHours(0,0,0,0);
@@ -591,13 +601,14 @@
       const dias = diasRestantes(obra.entrega);
       const isOpen = expandedPlans.has(obra.id);
       const done = obra.tasks.filter(t=>t.done).length;
-      const diasColor = dias<30?'var(--red)':dias<60?'var(--yellow)':'var(--text-muted)';
+      const diasColor = dias>=999?'var(--text-muted)':dias<30?'var(--red)':dias<60?'var(--yellow)':'var(--text-muted)';
+      const diasTxt = dias>=999?'sem prazo':`${dias} dias`;
       return `
       <div class="plan-card">
         <div class="plan-header" onclick="togglePlan('${obra.id}')">
           <div>
             <div class="plan-name">${obra.name}</div>
-            <div class="plan-meta">Entrega: ${obra.entrega} · <span style="color:${diasColor};font-weight:600">${dias} dias</span> · ${done}/${obra.tasks.length} tarefas</div>
+            <div class="plan-meta">Entrega: ${obra.entrega} · <span style="color:${diasColor};font-weight:600">${diasTxt}</span> · ${done}/${obra.tasks.length} tarefas</div>
           </div>
           <div style="display:flex;align-items:center;gap:14px">
             <div class="plan-bar">
@@ -839,7 +850,6 @@
     document.getElementById('tab-'+tab).classList.add('active');
     if (tab==='engenharia') renderEngenharia();
     else if (tab==='code') renderCode();
-    else if (tab==='plan') renderPlan();
     else renderAll(tab);
   }
 
@@ -1150,7 +1160,7 @@
       </div>`).join('');
   }
 
-  function renderEngenharia() { renderEngStats(); renderObras(); renderTerrenos(); renderEngTasks(); }
+  function renderEngenharia() { renderEngStats(); renderObras(); renderTerrenos(); renderEngTasks(); renderPlan(); }
 
   // ---- RENDER CODE ----
   function renderCodeStats() {
