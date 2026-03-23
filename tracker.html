@@ -716,7 +716,8 @@
         {id:'nf11',title:'Lembretes inteligentes',desc:'Ciclo por serviço + WhatsApp 1 toque.',status:'passou',date:'20/03/26'},
         {id:'nf12',title:'Tracking de abandonos',desc:'booking_attempts com step tracking + KPI no resumo.',status:'passou',date:'20/03/26'},
         {id:'nf13',title:'Demos por segmento',desc:'modelo-naregua, modelo-unha, modelo-estetica, modelo-sobrancelha.',status:'passou',date:'20/03/26'},
-        {id:'nf14',title:'RLS restritiva — 87 policies em 26 tabelas',desc:'4 papéis: owner, barber, anon, admin. Testado e funcionando.',status:'passou',date:'23/03/26'}
+        {id:'nf14',title:'RLS restritiva — 87 policies em 26 tabelas',desc:'4 papéis: owner, barber, anon, admin. Testado e funcionando.',status:'passou',date:'23/03/26'},
+        {id:'nf15',title:'Ondas 2-11 aplicadas no banco',desc:'5 views (aniversariantes, retenção, avaliações, fila, combos), planos/trial, settings, salary.',status:'passou',date:'23/03/26'}
       ],
       tasks: [
         {id:'nt1',title:'RLS restritiva pra produção',desc:'87 policies aplicadas em 26 tabelas. Testado OK.',status:'concluido',date:'23/03/26'},
@@ -725,7 +726,7 @@
         {id:'nt4',title:'Email transacional pós-signup',desc:'Edge Function pra boas-vindas e confirmação.',status:'pendente',date:'20/03/26'},
         {id:'nt5',title:'Gateway de pagamento',desc:'Integrar Stripe/Pix automático pra cobrar planos.',status:'pendente',date:'20/03/26'},
         {id:'nt6',title:'WhatsApp Business API',desc:'Lembretes e confirmações automáticas.',status:'pendente',date:'20/03/26'},
-        {id:'nt7',title:'Rodar SQLs ondas 2-11 no Supabase',desc:'Views, triggers, RPCs das ondas originais.',status:'pendente',date:'20/03/26'},
+        {id:'nt7',title:'Rodar SQLs ondas 2-11 no Supabase',desc:'5 views, 7 colunas barbershops, 1 coluna barbers, 30+ índices. Tudo aplicado.',status:'concluido',date:'23/03/26'},
         {id:'nt8',title:'Screenshots/vídeo pro landing',desc:'Capturas de tela reais pra substituir mocks.',status:'pendente',date:'20/03/26'}
       ],
       deploys: [
@@ -766,6 +767,7 @@
         {id:'cf10',title:'WhatsApp Business API',desc:'Lembretes e confirmações automáticas.',proj:'naregua',prio:'quando-der',date:'23/03/26'}
       ],
       feito: [
+        {id:'cc17',title:'SQLs ondas 2-11 aplicadas',desc:'5 views, 7 colunas, 30+ índices, trial automático.',proj:'naregua',date:'23/03/26'},
         {id:'cc13',title:'RLS restritiva — 87 policies',desc:'26 tabelas protegidas. 4 papéis. Testado e funcionando.',proj:'naregua',date:'23/03/26'},
         {id:'cc14',title:'Revisão código + 18 bugs corrigidos',desc:'4 críticos + 8 médios + 6 baixos. 4 deploys.',proj:'edr',date:'23/03/26'},
         {id:'cc15',title:'Revisão código + 16 bugs corrigidos',desc:'5 críticos + 7 médios + 4 baixos. 4 deploys.',proj:'naregua',date:'23/03/26'},
