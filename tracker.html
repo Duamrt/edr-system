@@ -647,7 +647,8 @@
         {id:'e8',title:'XSS potencial em fiscal.js',desc:'Campos agora usam esc() antes de renderizar.',status:'resolvido',date:'23/03/26'},
         {id:'e9',title:'Fetch sem timeout no auth.js',desc:'fetchWithTimeout criada e aplicada nos 5 fetch principais.',status:'resolvido',date:'23/03/26'},
         {id:'e10',title:'Hardcodes EDR ENGENHARIA espalhados',desc:'COMPANY_DEFAULTS centralizado em config.js. 10 hardcodes substituídos.',status:'resolvido',date:'23/03/26'},
-        {id:'e11',title:'hojeISO() com bug de timezone',desc:'Trocado toISOString por construção manual com getFullYear/getMonth/getDate.',status:'resolvido',date:'23/03/26'}
+        {id:'e11',title:'hojeISO() com bug de timezone',desc:'Trocado toISOString por construção manual com getFullYear/getMonth/getDate.',status:'resolvido',date:'23/03/26'},
+        {id:'e12',title:'NF travava ao selecionar material do catálogo',desc:'Material não reconhecido escondia botões de classificação. Usuário ficava preso sem poder salvar.',status:'resolvido',date:'23/03/26'}
       ],
       features: [
         {id:'ef1',title:'Multi-tenant — isolamento por empresa',desc:'21 tabelas com company_id, RLS funcionando. Dados isolados por empresa.',status:'passou',date:'20/03/26'},
@@ -758,8 +759,6 @@
       fila: [
         {id:'cf2',title:'Módulos premium (leads, ebooks)',desc:'companies.modulos jsonb. Toggle por empresa.',proj:'edr',prio:'normal',date:'23/03/26'},
         {id:'cf3',title:'Dashboard scroll horizontal',desc:'Cards com scroll lateral em mobile.',proj:'edr',prio:'normal',date:'23/03/26'},
-        {id:'cf4',title:'GitHub MCP',desc:'Precisa gerar Personal Access Token no GitHub.',proj:'ambos',prio:'normal',date:'23/03/26'},
-        {id:'cf5',title:'Google Analytics GA4',desc:'Criar property e trocar ID no utils.js.',proj:'naregua',prio:'normal',date:'23/03/26'},
         {id:'cf11',title:'Ícones profissionais',desc:'Criar no Freepik/Canva e aplicar nos dois projetos.',proj:'ambos',prio:'normal',date:'23/03/26'},
         {id:'cf7',title:'NCM catálogo / margens fornecedor / inventário',desc:'Mês 3 do roadmap.',proj:'edr',prio:'quando-der',date:'23/03/26'},
         {id:'cf8',title:'Push notifications',desc:'Edge Function + pg_cron.',proj:'naregua',prio:'quando-der',date:'23/03/26'},
@@ -767,6 +766,9 @@
         {id:'cf10',title:'WhatsApp Business API',desc:'Lembretes e confirmações automáticas.',proj:'naregua',prio:'quando-der',date:'23/03/26'}
       ],
       feito: [
+        {id:'cc19',title:'Google Analytics GA4 ativo',desc:'G-FH9DRF8LBR configurado no utils.js. Dados em 24-48h.',proj:'naregua',date:'23/03/26'},
+        {id:'cc18',title:'GitHub MCP configurado',desc:'Token ghp_*** no settings.json. Ativo na próxima sessão.',proj:'ambos',date:'23/03/26'},
+        {id:'cc20',title:'Fix NF — material não reconhecido',desc:'Botões de classificação agora aparecem quando material do catálogo não é reconhecido.',proj:'edr',date:'23/03/26'},
         {id:'cc17',title:'SQLs ondas 2-11 aplicadas',desc:'5 views, 7 colunas, 30+ índices, trial automático.',proj:'naregua',date:'23/03/26'},
         {id:'cc13',title:'RLS restritiva — 87 policies',desc:'26 tabelas protegidas. 4 papéis. Testado e funcionando.',proj:'naregua',date:'23/03/26'},
         {id:'cc14',title:'Revisão código + 18 bugs corrigidos',desc:'4 críticos + 8 médios + 6 baixos. 4 deploys.',proj:'edr',date:'23/03/26'},
