@@ -671,12 +671,13 @@
       tasks: [
         {id:'et1',title:'Módulos premium — leads, ebooks, entrega digital',desc:'Leads e ebooks exclusivos EDR precisam virar módulos premium com toggle por empresa.',status:'pendente',date:'21/03/26'},
         {id:'et2',title:'Dashboard scroll horizontal',desc:'Sugestão do Robert. Cards de resumo com scroll lateral em mobile.',status:'pendente',date:'21/03/26'},
-        {id:'et3',title:'Manual do sistema',desc:'Gerado em Downloads/manual-edr-system.txt. Pode virar página dentro do sistema.',status:'concluido',date:'23/03/26'},
+        {id:'et3',title:'Manual do sistema',desc:'Online em sistema.edreng.com.br/manual.html — visual profissional.',status:'concluido',date:'23/03/26'},
         {id:'et4',title:'NCM no catálogo de materiais',desc:'Mês 3 do roadmap — classificação fiscal dos materiais.',status:'pendente',date:'22/03/26'},
         {id:'et5',title:'Margens por fornecedor',desc:'Mês 3 — comparar preços entre fornecedores.',status:'pendente',date:'22/03/26'},
         {id:'et6',title:'Inventário / balanço',desc:'Mês 3 — conferência física vs estoque no sistema.',status:'pendente',date:'22/03/26'}
       ],
       deploys: [
+        {id:'ed9',title:'Manual online + fix NF + import editável',desc:'manual.html, salvarNota conflito, XML total editável.',status:'passou',date:'23/03/26'},
         {id:'ed5',title:'Sessão 29 — Bugs baixos',desc:'getHdrs, COMPANY_DEFAULTS, validação login, libs externas, timezone.',status:'passou',date:'23/03/26'},
         {id:'ed6',title:'Sessão 29 — Bugs médios',desc:'Promise.allSettled, fetchWithTimeout, XSS fiscal, debounce, cache local.',status:'passou',date:'23/03/26'},
         {id:'ed7',title:'Sessão 29 — Bugs críticos',desc:'obraTabAtual, catches vazios, reset logout, console.log removidos.',status:'passou',date:'23/03/26'},
@@ -766,6 +767,10 @@
         {id:'cf10',title:'WhatsApp Business API',desc:'Lembretes e confirmações automáticas.',proj:'naregua',prio:'quando-der',date:'23/03/26'}
       ],
       feito: [
+        {id:'cc24',title:'Manual NaRegua online',desc:'14 seções, mesmo visual do EDR. usenaregua.com.br/manual.html.',proj:'naregua',date:'23/03/26'},
+        {id:'cc23',title:'Manual EDR System online',desc:'sistema.edreng.com.br/manual.html — visual profissional com sidebar.',proj:'edr',date:'23/03/26'},
+        {id:'cc22',title:'Import XML — total editável + recalcula preço',desc:'Ajuste de unidade TO→M3 e total pra bater com NF.',proj:'edr',date:'23/03/26'},
+        {id:'cc21',title:'Fix NF — conflito salvarNota vs salvarAgendaNota',desc:'Duas funções com mesmo nome. Dashboard sobrescrevia notas. Renomeada.',proj:'edr',date:'23/03/26'},
         {id:'cc19',title:'Google Analytics GA4 ativo',desc:'G-FH9DRF8LBR configurado no utils.js. Dados em 24-48h.',proj:'naregua',date:'23/03/26'},
         {id:'cc18',title:'GitHub MCP configurado',desc:'Token ghp_*** no settings.json. Ativo na próxima sessão.',proj:'ambos',date:'23/03/26'},
         {id:'cc20',title:'Fix NF — material não reconhecido',desc:'Botões de classificação agora aparecem quando material do catálogo não é reconhecido.',proj:'edr',date:'23/03/26'},
