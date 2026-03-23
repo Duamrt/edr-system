@@ -1,0 +1,1162 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EDR Tracker</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+
+  :root {
+    --green: #0a3d18;
+    --green-light: #1a6b2e;
+    --accent: #4ade80;
+    --yellow: #fbbf24;
+    --orange: #fb923c;
+    --red: #f87171;
+    --blue: #60a5fa;
+    --purple: #c084fc;
+    --cyan: #22d3ee;
+    --bg: #080f0a;
+    --bg2: #0d1a0f;
+    --bg3: #111f14;
+    --bg4: #0a1a0c;
+    --border: #1e3a22;
+    --text: #d1fae5;
+    --text-dim: #6b9e78;
+    --text-muted: #3d6b48;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'IBM Plex Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; font-size: 14px; }
+
+  #loading { position: fixed; inset: 0; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; z-index: 999; }
+  .loading-logo { font-family: 'IBM Plex Mono', monospace; font-size: 20px; font-weight: 600; color: var(--accent); letter-spacing: 4px; }
+  .loading-bar { width: 200px; height: 2px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .loading-bar-inner { height: 100%; background: var(--accent); animation: loadBar 1.2s ease forwards; }
+  @keyframes loadBar { from{width:0%}to{width:100%} }
+  .loading-text { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-muted); letter-spacing: 1px; }
+
+  header { border-bottom: 1px solid var(--border); padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; background: var(--bg2); }
+  .logo { font-family: 'IBM Plex Mono', monospace; font-weight: 600; font-size: 16px; color: var(--accent); letter-spacing: 2px; }
+  .logo span { color: var(--text-dim); font-weight: 400; }
+  .header-right { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-muted); }
+
+  .tabs { display: flex; border-bottom: 1px solid var(--border); background: var(--bg2); padding: 0 24px; gap: 4px; overflow-x: auto; }
+  .tab { padding: 12px 20px; cursor: pointer; font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500; letter-spacing: 1px; color: var(--text-muted); border-bottom: 2px solid transparent; transition: all 0.2s; text-transform: uppercase; white-space: nowrap; }
+  .tab:hover { color: var(--text-dim); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 6px; }
+  .dot-edr { background: var(--accent); }
+  .dot-naregua { background: var(--blue); }
+  .dot-engenharia { background: var(--orange); }
+  .dot-code { background: var(--cyan); }
+  .dot-plan { background: #a78bfa; }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 24px; }
+  .project-view { display: none; }
+  .project-view.active { display: block; }
+
+  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; margin-top: 28px; }
+  .section-title { font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: var(--text-dim); }
+  .section-title::before { content: '//'; margin-right: 8px; color: var(--text-muted); }
+
+  .stats-row { display: flex; gap: 12px; margin-bottom: 28px; flex-wrap: wrap; }
+  .stat-card { background: var(--bg3); border: 1px solid var(--border); border-radius: 4px; padding: 14px 18px; flex: 1; min-width: 120px; }
+  .stat-num { font-family: 'IBM Plex Mono', monospace; font-size: 24px; font-weight: 600; line-height: 1; margin-bottom: 4px; }
+  .stat-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+  .stat-red .stat-num { color: var(--red); }
+  .stat-yellow .stat-num { color: var(--yellow); }
+  .stat-green .stat-num { color: var(--accent); }
+  .stat-blue .stat-num { color: var(--blue); }
+  .stat-orange .stat-num { color: var(--orange); }
+  .stat-purple .stat-num { color: var(--purple); }
+  .stat-cyan .stat-num { color: var(--cyan); }
+
+  .item-card { background: var(--bg3); border: 1px solid var(--border); border-radius: 4px; padding: 14px 16px; margin-bottom: 8px; display: flex; align-items: flex-start; gap: 12px; transition: border-color 0.2s; }
+  .item-card:hover { border-color: var(--green-light); }
+  .item-meta { flex: 1; }
+  .item-title { font-weight: 500; color: var(--text); font-size: 13px; margin-bottom: 4px; line-height: 1.4; }
+  .item-desc { color: var(--text-dim); font-size: 12px; line-height: 1.5; }
+  .item-date { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text-muted); white-space: nowrap; }
+
+  .status-pill { font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 2px; white-space: nowrap; cursor: pointer; border: none; transition: opacity 0.2s; }
+  .status-pill:hover { opacity: 0.8; }
+  .status-aberto { background: #3b0a0a; color: var(--red); }
+  .status-resolvido { background: #0a3d18; color: var(--accent); }
+  .status-pendente { background: #3b2a0a; color: var(--yellow); }
+  .status-concluido { background: #0a3d18; color: var(--accent); }
+  .status-em-andamento { background: #0a1f3b; color: var(--blue); }
+  .status-passou { background: #0a3d18; color: var(--accent); }
+  .status-falhou { background: #3b0a0a; color: var(--red); }
+  .status-negociando { background: #2a1f3b; color: var(--purple); }
+  .status-aprovado { background: #0a3d18; color: var(--accent); }
+  .status-cancelado { background: #2a1010; color: var(--red); }
+  .status-pausado { background: #3b2a0a; color: var(--yellow); }
+  .status-urgente { background: #3b1a0a; color: var(--orange); }
+  .status-normal { background: #0a1f3b; color: var(--blue); }
+  .status-quando-der { background: #1a1a2a; color: var(--text-muted); }
+  .status-feito { background: #0a3d18; color: var(--accent); }
+
+  .btn-delete { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 14px; padding: 2px 4px; transition: color 0.2s; }
+  .btn-delete:hover { color: var(--red); }
+
+  .add-form { background: var(--bg3); border: 1px dashed var(--border); border-radius: 4px; padding: 16px; margin-top: 8px; display: none; }
+  .add-form.visible { display: block; }
+  .form-row { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+  .form-row:last-child { margin-bottom: 0; }
+  input[type="text"], input[type="number"], textarea, select { background: var(--bg2); border: 1px solid var(--border); border-radius: 3px; color: var(--text); font-family: 'IBM Plex Sans', sans-serif; font-size: 13px; padding: 8px 12px; outline: none; transition: border-color 0.2s; }
+  input[type="text"]:focus, input[type="number"]:focus, textarea:focus, select:focus { border-color: var(--accent); }
+  input[type="text"] { flex: 1; min-width: 180px; }
+  input[type="number"] { width: 90px; }
+  textarea { width: 100%; resize: vertical; min-height: 56px; }
+  select { min-width: 140px; cursor: pointer; }
+  select option { background: var(--bg2); }
+
+  .btn-primary { background: var(--green); border: 1px solid var(--green-light); color: var(--accent); font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 600; letter-spacing: 1px; padding: 8px 16px; border-radius: 3px; cursor: pointer; text-transform: uppercase; transition: background 0.2s; }
+  .btn-primary:hover { background: var(--green-light); }
+  .btn-secondary { background: transparent; border: 1px solid var(--border); color: var(--text-dim); font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 1px; padding: 8px 14px; border-radius: 3px; cursor: pointer; text-transform: uppercase; transition: all 0.2s; }
+  .btn-secondary:hover { border-color: var(--text-dim); color: var(--text); }
+  .btn-add-toggle { background: transparent; border: 1px solid var(--border); color: var(--text-muted); font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 1px; padding: 6px 12px; border-radius: 3px; cursor: pointer; text-transform: uppercase; transition: all 0.2s; }
+  .btn-add-toggle:hover { border-color: var(--accent); color: var(--accent); }
+
+  .progress-wrap { margin-top: 8px; }
+  .progress-label { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+  .progress-pct { font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 600; color: var(--accent); }
+  .progress-bar-bg { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .progress-bar-fill { height: 100%; border-radius: 2px; background: var(--accent); transition: width 0.3s ease; }
+  .progress-bar-fill.low { background: var(--red); }
+  .progress-bar-fill.mid { background: var(--yellow); }
+  .progress-bar-fill.high { background: var(--accent); }
+  .progress-controls { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+  .progress-controls input[type=range] { flex: 1; -webkit-appearance: none; height: 3px; background: var(--border); border-radius: 2px; outline: none; cursor: pointer; }
+  .progress-controls input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--accent); cursor: pointer; border: 2px solid var(--bg3); }
+
+  /* OBRA */
+  .obra-card { background: var(--bg3); border: 1px solid var(--border); border-radius: 4px; margin-bottom: 10px; overflow: hidden; transition: border-color 0.2s; }
+  .obra-card:hover { border-color: var(--green-light); }
+  .obra-header { padding: 14px 16px; display: flex; align-items: flex-start; gap: 12px; cursor: pointer; user-select: none; }
+  .obra-toggle { font-family: 'IBM Plex Mono', monospace; font-size: 14px; color: var(--text-muted); min-width: 16px; padding-top: 1px; transition: transform 0.2s, color 0.2s; }
+  .obra-toggle.open { transform: rotate(90deg); color: var(--accent); }
+  .obra-info { flex: 1; }
+  .obra-name { font-weight: 600; font-size: 14px; color: var(--text); margin-bottom: 2px; }
+  .obra-meta { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-muted); }
+  .obra-side { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; min-width: 120px; }
+  .obra-mini-bar { width: 100px; }
+  .obra-mini-bar-bg { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; margin-top: 4px; }
+  .obra-mini-bar-fill { height: 100%; border-radius: 2px; }
+  .obra-body { display: none; border-top: 1px solid var(--border); background: var(--bg4); padding: 14px 16px; }
+  .obra-body.open { display: block; }
+  .obra-tasks-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .obra-tasks-title { font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: var(--text-muted); }
+  .obra-task-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; background: var(--bg3); border: 1px solid var(--border); border-radius: 3px; margin-bottom: 6px; }
+  .obra-task-check { width: 16px; height: 16px; border: 1px solid var(--border); border-radius: 2px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.2s; background: var(--bg2); }
+  .obra-task-check:hover { border-color: var(--accent); }
+  .obra-task-check.checked { background: var(--green); border-color: var(--accent); }
+  .obra-task-check.checked::after { content: '✓'; font-size: 10px; color: var(--accent); font-weight: 600; }
+  .obra-task-text { flex: 1; font-size: 12px; color: var(--text-dim); line-height: 1.4; }
+  .obra-task-text.done { text-decoration: line-through; color: var(--text-muted); }
+  .obra-task-add { display: flex; gap: 8px; margin-top: 10px; }
+  .obra-task-add input { flex: 1; font-size: 12px; padding: 6px 10px; }
+  .obra-task-add button { background: var(--green); border: 1px solid var(--green-light); color: var(--accent); font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 600; letter-spacing: 1px; padding: 6px 12px; border-radius: 3px; cursor: pointer; white-space: nowrap; text-transform: uppercase; transition: background 0.2s; }
+  .obra-task-add button:hover { background: var(--green-light); }
+  .obra-tasks-empty { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-muted); text-align: center; padding: 12px; }
+
+  /* TERRENO */
+  .terreno-card { background: var(--bg3); border: 1px solid var(--border); border-left: 3px solid var(--orange); border-radius: 4px; padding: 16px; margin-bottom: 8px; }
+  .terreno-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+  .terreno-name { font-weight: 600; font-size: 14px; color: var(--text); }
+  .terreno-area { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+  /* DEPLOY */
+  .deploy-card { background: var(--bg3); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 4px; padding: 14px 16px; margin-bottom: 8px; display: flex; align-items: flex-start; gap: 14px; }
+  .deploy-card.falhou { border-left-color: var(--red); }
+  .deploy-icon { font-family: 'IBM Plex Mono', monospace; font-size: 18px; font-weight: 600; color: var(--accent); min-width: 24px; padding-top: 2px; }
+  .deploy-card.falhou .deploy-icon { color: var(--red); }
+
+  /* CLAUDE CODE */
+  .proj-tag { display: inline-block; font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 2px; margin-right: 6px; }
+  .proj-tag-edr { background: #0a3d18; color: var(--accent); }
+  .proj-tag-naregua { background: #0a1f3b; color: var(--blue); }
+  .proj-tag-ambos { background: #2a1f0a; color: var(--yellow); }
+
+  .code-feito-card { background: var(--bg3); border: 1px solid var(--border); border-left: 3px solid var(--cyan); border-radius: 4px; padding: 14px 16px; margin-bottom: 8px; display: flex; align-items: flex-start; gap: 12px; transition: border-color 0.2s; }
+  .code-feito-card:hover { border-color: var(--cyan); }
+
+  .code-fila-card { background: var(--bg3); border: 1px solid var(--border); border-radius: 4px; padding: 14px 16px; margin-bottom: 8px; display: flex; align-items: flex-start; gap: 12px; transition: border-color 0.2s; }
+  .code-fila-card:hover { border-color: var(--green-light); }
+  .code-fila-card.prio-urgente { border-left: 3px solid var(--orange); }
+  .code-fila-card.prio-normal { border-left: 3px solid var(--blue); }
+  .code-fila-card.prio-quando-der { border-left: 3px solid var(--text-muted); }
+
+  /* PLANEJAMENTO */
+  .plan-card { background: var(--bg3); border: 1px solid var(--border); border-left: 3px solid #a78bfa; border-radius: 4px; margin-bottom: 12px; overflow: hidden; }
+  .plan-header { padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none; }
+  .plan-header:hover { background: var(--bg4); }
+  .plan-name { font-weight: 600; font-size: 14px; color: var(--text); }
+  .plan-meta { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .plan-bar { width: 120px; }
+  .plan-bar-bg { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; margin-top: 4px; }
+  .plan-bar-fill { height: 100%; border-radius: 2px; }
+  .plan-body { display: none; border-top: 1px solid var(--border); background: var(--bg4); padding: 14px 16px; }
+  .plan-body.open { display: block; }
+  .plan-task { display: flex; align-items: center; gap: 10px; padding: 8px 10px; background: var(--bg3); border: 1px solid var(--border); border-radius: 3px; margin-bottom: 6px; cursor: pointer; transition: border-color 0.2s; }
+  .plan-task:hover { border-color: #a78bfa; }
+  .plan-check { width: 18px; height: 18px; border: 2px solid var(--border); border-radius: 3px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.2s; background: var(--bg2); }
+  .plan-check.checked { background: #2d1b69; border-color: #a78bfa; }
+  .plan-check.checked::after { content: '✓'; font-size: 11px; color: #a78bfa; font-weight: 600; }
+  .plan-text { flex: 1; font-size: 13px; color: var(--text-dim); line-height: 1.4; }
+  .plan-text.done { text-decoration: line-through; color: var(--text-muted); }
+  .stat-purple .stat-num { color: #a78bfa; }
+
+  .empty { text-align: center; padding: 24px; color: var(--text-muted); font-family: 'IBM Plex Mono', monospace; font-size: 12px; border: 1px dashed var(--border); border-radius: 4px; }
+
+  .saving-indicator { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text-muted); display: none; align-items: center; gap: 6px; }
+  .saving-indicator.visible { display: flex; }
+  .saving-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.3} }
+
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--green-light); }
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="loading-logo">EDR TRACKER</div>
+  <div class="loading-bar"><div class="loading-bar-inner"></div></div>
+  <div class="loading-text" id="loadingMsg">carregando dados...</div>
+</div>
+
+<header>
+  <div class="logo">EDR <span>/ TRACKER</span></div>
+  <div style="display:flex;align-items:center;gap:16px">
+    <div class="saving-indicator" id="savingIndicator"><div class="saving-dot"></div>salvando</div>
+    <div class="header-right" id="currentDate"></div>
+  </div>
+</header>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('edr')" id="tab-edr"><span class="dot dot-edr"></span>EDR System</div>
+  <div class="tab" onclick="switchTab('naregua')" id="tab-naregua"><span class="dot dot-naregua"></span>NaRegua</div>
+  <div class="tab" onclick="switchTab('engenharia')" id="tab-engenharia"><span class="dot dot-engenharia"></span>EDR Engenharia</div>
+  <div class="tab" onclick="switchTab('code')" id="tab-code"><span class="dot dot-code"></span>Claude Code</div>
+  <div class="tab" onclick="switchTab('plan')" id="tab-plan"><span class="dot dot-plan"></span>Planejamento</div>
+</div>
+
+<!-- ===== EDR SYSTEM ===== -->
+<div class="project-view active" id="view-edr">
+  <div class="container">
+    <div class="stats-row" id="stats-edr"></div>
+    <div class="section-header"><div class="section-title">Bugs</div><button class="btn-add-toggle" onclick="toggleForm('form-edr-bug')">+ Registrar Bug</button></div>
+    <div class="add-form" id="form-edr-bug">
+      <div class="form-row"><input type="text" id="edr-bug-title" placeholder="Título do bug" /><select id="edr-bug-status"><option value="aberto">Aberto</option><option value="em-andamento">Em andamento</option><option value="resolvido">Resolvido</option></select></div>
+      <div class="form-row"><textarea id="edr-bug-desc" placeholder="O que aconteceu, onde, como reproduzir..."></textarea></div>
+      <div class="form-row"><button class="btn-primary" onclick="addItem('edr','bugs')">Salvar</button><button class="btn-secondary" onclick="toggleForm('form-edr-bug')">Cancelar</button></div>
+    </div>
+    <div id="list-edr-bugs"></div>
+
+    <div class="section-header"><div class="section-title">Funcionalidades Testadas</div><button class="btn-add-toggle" onclick="toggleForm('form-edr-feature')">+ Adicionar Teste</button></div>
+    <div class="add-form" id="form-edr-feature">
+      <div class="form-row"><input type="text" id="edr-feature-title" placeholder="Nome da funcionalidade" /><select id="edr-feature-status"><option value="passou">Passou</option><option value="falhou">Falhou</option><option value="pendente">Pendente</option></select></div>
+      <div class="form-row"><textarea id="edr-feature-desc" placeholder="Observações..."></textarea></div>
+      <div class="form-row"><button class="btn-primary" onclick="addItem('edr','features')">Salvar</button><button class="btn-secondary" onclick="toggleForm('form-edr-feature')">Cancelar</button></div>
+    </div>
+    <div id="list-edr-features"></div>
+
+    <div class="section-header"><div class="section-title">Tarefas de Dev</div><button class="btn-add-toggle" onclick="toggleForm('form-edr-task')">+ Nova Tarefa</button></div>
+    <div class="add-form" id="form-edr-task">
+      <div class="form-row"><input type="text" id="edr-task-title" placeholder="Descrição da tarefa" /><select id="edr-task-status"><option value="pendente">Pendente</option><option value="em-andamento">Em andamento</option><option value="concluido">Concluído</option></select></div>
+      <div class="form-row"><textarea id="edr-task-desc" placeholder="Detalhes..."></textarea></div>
+      <div class="form-row"><button class="btn-primary" onclick="addItem('edr','tasks')">Salvar</button><button class="btn-secondary" onclick="toggleForm('form-edr-task')">Cancelar</button></div>
+    </div>
+    <div id="list-edr-tasks"></div>
+
+    <div class="section-header"><div class="section-title">Histórico de Deploys</div><button class="btn-add-toggle" onclick="toggleForm('form-edr-deploy')">+ Registrar Deploy</button></div>
+    <div class="add-form" id="form-edr-deploy">
+      <div class="form-row"><input type="text" id="edr-deploy-title" placeholder="Ex: v2.4 — Centro de Custo" /><select id="edr-deploy-status"><option value="passou">Sucesso</option><option value="falhou">Falhou</option></select></div>
+      <div class="form-row"><textarea id="edr-deploy-desc" placeholder="O que foi deployado..."></textarea></div>
+      <div class="form-row"><button class="btn-primary" onclick="addItem('edr','deploys')">Salvar</button><button class="btn-secondary" onclick="toggleForm('form-edr-deploy')">Cancelar</button></div>
+    </div>
+    <div id="list-edr-deploys"></div>
+  </div>
+</div>
+
+<!-- ===== NAREGUA ===== -->
+<div class="project-view" id="view-naregua">
+  <div class="container">
+    <div class="stats-row" id="stats-naregua"></div>
+    <div class="section-header"><div class="section-title">Bugs</div><button class="btn-add-toggle" onclick="toggleForm('form-naregua-bug')">+ Registrar Bug</button></div>
+    <div class="add-form" id="form-naregua-bug">
+      <div class="form-row"><input type="text" id="naregua-bug-title" placeholder="Título do bug" /><select id="naregua-bug-status"><option value="aberto">Aberto</option><option value="em-andamento">Em andamento</option><option value="resolvido">Resolvido</option></select></div>
+      <div class="form-row"><textarea id="naregua-bug-desc" placeholder="O que aconteceu..."></textarea></div>
+      <div class="form-row"><button class="btn-primary" onclick="addItem('naregua','bugs')">Salvar</button><button class="btn-secondary" onclick="toggleForm('form-naregua-bug')">Cancelar</button></div>
+    </div>
+    <div id="list-naregua-bugs"></div>
+
+    <div class="section-header"><div class="section-title">Funcionalidades Testadas</div><button class="btn-add-toggle" onclick="toggleForm('form-naregua-feature')">+ Adicionar Teste</button></div>
+    <div class="add-form" id="form-naregua-feature">
+      <div class="form-row"><input type="text" id="naregua-feature-title" placeholder="Nome da funcionalidade" /><select id="naregua-feature-status"><option value="passou">Passou</option><option value="falhou">Falhou</option><option value="pendente">Pendente</option></select></div>
+      <div class="form-row"><textarea id="naregua-feature-desc" placeholder="Observações..."></textarea></div>
+      <div class="form-row"><button class="btn-primary" onclick="addItem('naregua','features')">Salvar</button><button class="btn-secondary" onclick="toggleForm('form-naregua-feature')">Cancelar</button></div>
+    </div>
+    <div id="list-naregua-features"></div>
+
+    <div class="section-header"><div class="section-title">Tarefas de Dev</div><button class="btn-add-toggle" onclick="toggleForm('form-naregua-task')">+ Nova Tarefa</button></div>
+    <div class="add-form" id="form-naregua-task">
+      <div class="form-row"><input type="text" id="naregua-task-title" placeholder="Descrição da tarefa" /><select id="naregua-task-status"><option value="pendente">Pendente</option><option value="em-andamento">Em andamento</option><option value="concluido">Concluído</option></select></div>
+      <div class="form-row"><textarea id="naregua-task-desc" placeholder="Detalhes..."></textarea></div>
+      <div class="form-row"><button class="btn-primary" onclick="addItem('naregua','tasks')">Salvar</button><button class="btn-secondary" onclick="toggleForm('form-naregua-task')">Cancelar</button></div>
+    </div>
+    <div id="list-naregua-tasks"></div>
+
+    <div class="section-header"><div class="section-title">Histórico de Deploys</div><button class="btn-add-toggle" onclick="toggleForm('form-naregua-deploy')">+ Registrar Deploy</button></div>
+    <div class="add-form" id="form-naregua-deploy">
+      <div class="form-row"><input type="text" id="naregua-deploy-title" placeholder="Ex: v1.2 — Agendamento online" /><select id="naregua-deploy-status"><option value="passou">Sucesso</option><option value="falhou">Falhou</option></select></div>
+      <div class="form-row"><textarea id="naregua-deploy-desc" placeholder="O que foi deployado..."></textarea></div>
+      <div class="form-row"><button class="btn-primary" onclick="addItem('naregua','deploys')">Salvar</button><button class="btn-secondary" onclick="toggleForm('form-naregua-deploy')">Cancelar</button></div>
+    </div>
+    <div id="list-naregua-deploys"></div>
+  </div>
+</div>
+
+<!-- ===== EDR ENGENHARIA ===== -->
+<div class="project-view" id="view-engenharia">
+  <div class="container">
+    <div class="stats-row" id="stats-engenharia"></div>
+    <div class="section-header"><div class="section-title">Obras em Andamento</div><button class="btn-add-toggle" onclick="toggleForm('form-eng-obra')">+ Nova Obra</button></div>
+    <div class="add-form" id="form-eng-obra">
+      <div class="form-row"><input type="text" id="eng-obra-title" placeholder="Nome da obra / cliente" /><select id="eng-obra-status"><option value="em-andamento">Em andamento</option><option value="pendente">Aguardando início</option><option value="concluido">Concluída</option><option value="pausado">Pausada</option></select></div>
+      <div class="form-row"><input type="text" id="eng-obra-area" placeholder="Área (ex: 68m²)" style="max-width:140px;flex:none" /><input type="number" id="eng-obra-progress" placeholder="% concluído" min="0" max="100" /></div>
+      <div class="form-row"><textarea id="eng-obra-desc" placeholder="Fase atual, próximo passo..."></textarea></div>
+      <div class="form-row"><button class="btn-primary" onclick="addObra()">Salvar</button><button class="btn-secondary" onclick="toggleForm('form-eng-obra')">Cancelar</button></div>
+    </div>
+    <div id="list-eng-obras"></div>
+
+    <div class="section-header"><div class="section-title">Aquisição de Terrenos</div><button class="btn-add-toggle" onclick="toggleForm('form-eng-terreno')">+ Novo Terreno</button></div>
+    <div class="add-form" id="form-eng-terreno">
+      <div class="form-row"><input type="text" id="eng-terreno-title" placeholder="Nome / localização" /><select id="eng-terreno-status"><option value="negociando">Negociando</option><option value="em-andamento">Em análise</option><option value="aprovado">Aprovado</option><option value="cancelado">Cancelado</option></select></div>
+      <div class="form-row"><input type="text" id="eng-terreno-area" placeholder="Área (ex: 4.519m²)" style="max-width:140px;flex:none" /><input type="text" id="eng-terreno-valor" placeholder="Valor (ex: R$380k)" style="max-width:160px;flex:none" /><input type="number" id="eng-terreno-progress" placeholder="% negociação" min="0" max="100" /></div>
+      <div class="form-row"><textarea id="eng-terreno-desc" placeholder="Status, próximo passo, bloqueios..."></textarea></div>
+      <div class="form-row"><button class="btn-primary" onclick="addEngItem('terrenos')">Salvar</button><button class="btn-secondary" onclick="toggleForm('form-eng-terreno')">Cancelar</button></div>
+    </div>
+    <div id="list-eng-terrenos"></div>
+
+    <div class="section-header"><div class="section-title">Pendências Operacionais</div><button class="btn-add-toggle" onclick="toggleForm('form-eng-task')">+ Nova Pendência</button></div>
+    <div class="add-form" id="form-eng-task">
+      <div class="form-row"><input type="text" id="eng-task-title" placeholder="Descrição da pendência" /><select id="eng-task-status"><option value="pendente">Pendente</option><option value="em-andamento">Em andamento</option><option value="concluido">Concluído</option></select></div>
+      <div class="form-row"><textarea id="eng-task-desc" placeholder="Detalhes, responsável..."></textarea></div>
+      <div class="form-row"><button class="btn-primary" onclick="addEngItem('tasks')">Salvar</button><button class="btn-secondary" onclick="toggleForm('form-eng-task')">Cancelar</button></div>
+    </div>
+    <div id="list-eng-tasks"></div>
+  </div>
+</div>
+
+<!-- ===== CLAUDE CODE ===== -->
+<div class="project-view" id="view-code">
+  <div class="container">
+    <div class="stats-row" id="stats-code"></div>
+
+    <!-- FILA -->
+    <div class="section-header">
+      <div class="section-title">Fila de Implementação</div>
+      <button class="btn-add-toggle" onclick="toggleForm('form-code-fila')">+ Adicionar à Fila</button>
+    </div>
+    <div class="add-form" id="form-code-fila">
+      <div class="form-row">
+        <input type="text" id="code-fila-title" placeholder="O que precisa ser implementado" />
+        <select id="code-fila-proj">
+          <option value="edr">EDR System</option>
+          <option value="naregua">NaRegua</option>
+          <option value="ambos">Ambos</option>
+        </select>
+        <select id="code-fila-prio">
+          <option value="urgente">🔴 Urgente</option>
+          <option value="normal">🔵 Normal</option>
+          <option value="quando-der">⚪ Quando der</option>
+        </select>
+      </div>
+      <div class="form-row"><textarea id="code-fila-desc" placeholder="Contexto, detalhes, o que esperar como resultado..."></textarea></div>
+      <div class="form-row"><button class="btn-primary" onclick="addCodeItem('fila')">Salvar</button><button class="btn-secondary" onclick="toggleForm('form-code-fila')">Cancelar</button></div>
+    </div>
+    <div id="list-code-fila"></div>
+
+    <!-- FEITO -->
+    <div class="section-header">
+      <div class="section-title">Implementado / Concluído</div>
+      <button class="btn-add-toggle" onclick="toggleForm('form-code-feito')">+ Registrar o que foi feito</button>
+    </div>
+    <div class="add-form" id="form-code-feito">
+      <div class="form-row">
+        <input type="text" id="code-feito-title" placeholder="O que foi implementado" />
+        <select id="code-feito-proj">
+          <option value="edr">EDR System</option>
+          <option value="naregua">NaRegua</option>
+          <option value="ambos">Ambos</option>
+        </select>
+      </div>
+      <div class="form-row"><textarea id="code-feito-desc" placeholder="O que mudou, arquivos alterados, observações importantes..."></textarea></div>
+      <div class="form-row"><button class="btn-primary" onclick="addCodeItem('feito')">Salvar</button><button class="btn-secondary" onclick="toggleForm('form-code-feito')">Cancelar</button></div>
+    </div>
+    <div id="list-code-feito"></div>
+  </div>
+</div>
+
+<!-- ===== PLANEJAMENTO ===== -->
+<div class="project-view" id="view-plan">
+  <div class="container">
+    <div class="stats-row" id="stats-plan"></div>
+    <div class="section-header"><div class="section-title">Obras — Pendências de Execução</div></div>
+    <div id="list-plan-obras"></div>
+  </div>
+</div>
+
+<script>
+  // ---- PLANEJAMENTO DATA ----
+  let planData = {
+    obras: [
+      {id:'pj',name:'JÚNIOR',entrega:'11/06/2026',tasks:[
+        {id:'pj1',text:'Calha garagem',done:false},
+        {id:'pj2',text:'Rufo',done:false},
+        {id:'pj3',text:'Granito janelas',done:false},
+        {id:'pj4',text:'Capeação porta de serviço',done:false},
+        {id:'pj5',text:'Furos do gesso elétrica',done:false},
+        {id:'pj6',text:'Capeação platibanda',done:false},
+        {id:'pj7',text:'Reboco do beiral + tubo 75mm p/ spot',done:false},
+        {id:'pj8',text:'Trilho porão',done:false},
+        {id:'pj9',text:'Esquadrias Fábio — medição',done:false},
+        {id:'pj10',text:'Tampa cisterna',done:false},
+        {id:'pj11',text:'Elétrica Audalio',done:false},
+        {id:'pj12',text:'Pintura Vagner',done:false},
+        {id:'pj13',text:'Revestimento piso + parede',done:false}
+      ]},
+      {id:'pd',name:'DAYANA',entrega:'02/07/2026',tasks:[
+        {id:'pd1',text:'CX 4x2 — chumbamento',done:false},
+        {id:'pd2',text:'Reboco interno + externo',done:false},
+        {id:'pd3',text:'Capeação janela',done:false},
+        {id:'pd4',text:'Grade de porta social',done:false},
+        {id:'pd5',text:'Tubulação elétrica (Audalio)',done:false},
+        {id:'pd6',text:'Gesso (Renato)',done:false},
+        {id:'pd7',text:'Rufo',done:false},
+        {id:'pd8',text:'Comprar cerâmica',done:false}
+      ]},
+      {id:'pp',name:'PEDRO',entrega:'24/07/2026',tasks:[
+        {id:'pp1',text:'Laje',done:false},
+        {id:'pp2',text:'Platibanda',done:false},
+        {id:'pp3',text:'Água fria coberta',done:false},
+        {id:'pp4',text:'Laje caixa d\'água',done:false},
+        {id:'pp5',text:'Instalação caixa d\'água',done:false},
+        {id:'pp6',text:'Cobertura',done:false},
+        {id:'pp7',text:'Rufo',done:false},
+        {id:'pp8',text:'Grade de porta',done:false},
+        {id:'pp9',text:'Mestras',done:false},
+        {id:'pp10',text:'Reboco interno',done:false},
+        {id:'pp11',text:'Reboco externo',done:false},
+        {id:'pp12',text:'CX 4x2',done:false},
+        {id:'pp13',text:'Capeação janela',done:false},
+        {id:'pp14',text:'Nicho banheiro',done:false},
+        {id:'pp15',text:'Alvenaria serviço',done:false},
+        {id:'pp16',text:'Finalizar vigas/pilares',done:false},
+        {id:'pp17',text:'Piso serviço',done:false},
+        {id:'pp18',text:'Ponto ar condicionado',done:false},
+        {id:'pp19',text:'CX gordura/passagem',done:false},
+        {id:'pp20',text:'Alvenaria muro p/ cobertura',done:false},
+        {id:'pp21',text:'Ponto esgoto serviço',done:false}
+      ]},
+      {id:'pl',name:'LEONARDO',entrega:'09/08/2026',tasks:[
+        {id:'pl1',text:'Viga superior',done:false},
+        {id:'pl2',text:'Piso',done:false},
+        {id:'pl3',text:'Alvenaria muro (já com parede da garagem)',done:false},
+        {id:'pl4',text:'Finalizar estrutura incluindo fachada',done:false},
+        {id:'pl5',text:'Cortar parede elétrica + chumbar eletroduto',done:false},
+        {id:'pl6',text:'Laje',done:false},
+        {id:'pl7',text:'Platibanda',done:false},
+        {id:'pl8',text:'Água fria laje',done:false},
+        {id:'pl9',text:'Base caixa d\'água',done:false},
+        {id:'pl10',text:'Instalação caixa d\'água',done:false},
+        {id:'pl11',text:'Cobertura',done:false},
+        {id:'pl12',text:'Rufo',done:false},
+        {id:'pl13',text:'Mestras',done:false},
+        {id:'pl14',text:'Grade de porta',done:false},
+        {id:'pl15',text:'Reboco',done:false}
+      ]}
+    ]
+  };
+
+  const expandedPlans = new Set();
+
+  async function loadPlanData() {
+    try {
+      const { data } = await db.from('tracker_sync').select('data').eq('key','tracker-planejamento-v1').single();
+      if (data && data.data && data.data.obras) planData = data.data;
+    } catch(e) {}
+  }
+
+  async function savePlan() {
+    const ind = document.getElementById('savingIndicator');
+    ind.classList.add('visible');
+    try {
+      await db.from('tracker_sync').upsert({ key:'tracker-planejamento-v1', data: planData, updated_at: new Date().toISOString() });
+    } catch(e) {}
+    setTimeout(() => ind.classList.remove('visible'), 1200);
+  }
+
+  function togglePlan(id) {
+    if (expandedPlans.has(id)) expandedPlans.delete(id); else expandedPlans.add(id);
+    renderPlan();
+  }
+
+  async function togglePlanTask(obraId, taskId) {
+    const obra = planData.obras.find(o=>o.id===obraId);
+    if (!obra) return;
+    const t = obra.tasks.find(t=>t.id===taskId);
+    if (t) t.done = !t.done;
+    await savePlan();
+    renderPlan();
+  }
+
+  function calcPlanProgress(obra) {
+    if (!obra.tasks.length) return 0;
+    return Math.round(obra.tasks.filter(t=>t.done).length / obra.tasks.length * 100);
+  }
+
+  function diasRestantes(entrega) {
+    const parts = entrega.split('/');
+    const d = new Date(parseInt(parts[2]), parseInt(parts[1])-1, parseInt(parts[0]));
+    const hoje = new Date(); hoje.setHours(0,0,0,0);
+    return Math.ceil((d - hoje) / 86400000);
+  }
+
+  function renderPlanStats() {
+    const total = planData.obras.length;
+    const totalTasks = planData.obras.reduce((s,o)=>s+o.tasks.length,0);
+    const doneTasks = planData.obras.reduce((s,o)=>s+o.tasks.filter(t=>t.done).length,0);
+    const proxEntrega = planData.obras.reduce((min,o)=>{ const d=diasRestantes(o.entrega); return d<min?d:min; },999);
+    document.getElementById('stats-plan').innerHTML=`
+      <div class="stat-card stat-purple"><div class="stat-num">${total}</div><div class="stat-label">Obras ativas</div></div>
+      <div class="stat-card stat-green"><div class="stat-num">${doneTasks}</div><div class="stat-label">Tarefas feitas</div></div>
+      <div class="stat-card stat-yellow"><div class="stat-num">${totalTasks-doneTasks}</div><div class="stat-label">Tarefas pendentes</div></div>
+      <div class="stat-card stat-orange"><div class="stat-num">${proxEntrega}d</div><div class="stat-label">Próx. entrega</div></div>`;
+  }
+
+  function renderPlan() {
+    renderPlanStats();
+    const el = document.getElementById('list-plan-obras');
+    el.innerHTML = planData.obras.map(obra => {
+      const p = calcPlanProgress(obra);
+      const pc = pClass(p);
+      const dias = diasRestantes(obra.entrega);
+      const isOpen = expandedPlans.has(obra.id);
+      const done = obra.tasks.filter(t=>t.done).length;
+      const diasColor = dias<30?'var(--red)':dias<60?'var(--yellow)':'var(--text-muted)';
+      return `
+      <div class="plan-card">
+        <div class="plan-header" onclick="togglePlan('${obra.id}')">
+          <div>
+            <div class="plan-name">${obra.name}</div>
+            <div class="plan-meta">Entrega: ${obra.entrega} · <span style="color:${diasColor};font-weight:600">${dias} dias</span> · ${done}/${obra.tasks.length} tarefas</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:14px">
+            <div class="plan-bar">
+              <div style="font-family:IBM Plex Mono,monospace;font-size:11px;color:#a78bfa;font-weight:600;text-align:right">${p}%</div>
+              <div class="plan-bar-bg"><div class="plan-bar-fill ${pc}" style="width:${p}%"></div></div>
+            </div>
+            <div style="font-family:IBM Plex Mono,monospace;font-size:14px;color:var(--text-muted);transition:transform 0.2s;${isOpen?'transform:rotate(90deg);color:#a78bfa':''}"">▶</div>
+          </div>
+        </div>
+        <div class="plan-body ${isOpen?'open':''}">
+          ${obra.tasks.map(t=>`
+            <div class="plan-task" onclick="togglePlanTask('${obra.id}','${t.id}')">
+              <div class="plan-check ${t.done?'checked':''}"></div>
+              <div class="plan-text ${t.done?'done':''}">${t.text}</div>
+            </div>`).join('')}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  let state = {
+    edr: {
+      bugs: [
+        {id:'e1',title:'Bloco cerâmico Duam — distribuição 8000 blocos',desc:'Entrada sem nota fiscal, precisa revisar se quantidade e valor estão corretos.',status:'aberto',date:'23/03/26'},
+        {id:'e2',title:'CONSTRUTORA TESTE no banco Supabase',desc:'Empresa criada durante testes da sessão 25. Mantida pra testes.',status:'resolvido',date:'23/03/26'},
+        {id:'e3',title:'Hardcode @edreng.com.br no login',desc:'Verificado: não existia. Login já aceita qualquer email.',status:'resolvido',date:'23/03/26'},
+        {id:'e4',title:'Variável obraTabAtual fora de ordem',desc:'Usada antes de declarada em obras.js. Movida pro topo.',status:'resolvido',date:'23/03/26'},
+        {id:'e5',title:'27 catch() vazios ignorando erros',desc:'Catches em config.js, notas.js, clickup.js preenchidos com console.error.',status:'resolvido',date:'23/03/26'},
+        {id:'e6',title:'State leak no logout (filtros sujos)',desc:'mostandoArquivadas e currentCredito agora resetam no logout.',status:'resolvido',date:'23/03/26'},
+        {id:'e7',title:'Promise.all derrubava tudo se uma função falhasse',desc:'Adicionado .catch() individual em cada função no app.js.',status:'resolvido',date:'23/03/26'},
+        {id:'e8',title:'XSS potencial em fiscal.js',desc:'Campos agora usam esc() antes de renderizar.',status:'resolvido',date:'23/03/26'},
+        {id:'e9',title:'Fetch sem timeout no auth.js',desc:'fetchWithTimeout criada e aplicada nos 5 fetch principais.',status:'resolvido',date:'23/03/26'},
+        {id:'e10',title:'Hardcodes EDR ENGENHARIA espalhados',desc:'COMPANY_DEFAULTS centralizado em config.js. 10 hardcodes substituídos.',status:'resolvido',date:'23/03/26'},
+        {id:'e11',title:'hojeISO() com bug de timezone',desc:'Trocado toISOString por construção manual com getFullYear/getMonth/getDate.',status:'resolvido',date:'23/03/26'}
+      ],
+      features: [
+        {id:'ef1',title:'Multi-tenant — isolamento por empresa',desc:'21 tabelas com company_id, RLS funcionando. Dados isolados por empresa.',status:'passou',date:'20/03/26'},
+        {id:'ef2',title:'Super Admin — seletor de empresa',desc:'Duam acessa qualquer empresa, vê usuários, edita, dá suporte.',status:'passou',date:'20/03/26'},
+        {id:'ef3',title:'Criar conta / Onboarding',desc:'Usuário cria conta → empresa → vínculo → termos → entra.',status:'passou',date:'20/03/26'},
+        {id:'ef4',title:'Permissões por perfil',desc:'Admin, operacional, mestre, visitante — cada um vê só o que pode.',status:'passou',date:'21/03/26'},
+        {id:'ef5',title:'Edição de usuário',desc:'Nome, perfil, senha, permissões individuais, toggle ativo/inativo.',status:'passou',date:'21/03/26'},
+        {id:'ef6',title:'Catálogo global de materiais',desc:'Materiais com company_id NULL visíveis por todas as empresas.',status:'passou',date:'21/03/26'},
+        {id:'ef7',title:'Estoque por obra',desc:'Select de obra mostra estoque filtrado. Distribuição desconta, nota direta soma.',status:'passou',date:'22/03/26'},
+        {id:'ef8',title:'Saída de material com preço obrigatório',desc:'Se item não tem valor médio, campo de preço aparece. Botão consultar ML funciona.',status:'passou',date:'22/03/26'},
+        {id:'ef9',title:'Filtro por fornecedor no histórico NFs',desc:'Funcionando corretamente.',status:'passou',date:'22/03/26'},
+        {id:'ef10',title:'Lançamento clicável abre nota fiscal',desc:'Clicar em lançamento no resumo de obra abre a NF correspondente.',status:'passou',date:'22/03/26'},
+        {id:'ef11',title:'Diárias — meio dia duplo e nomes de obra',desc:'Meio dia + meio dia = completa. Nomes de obra reconhecidos.',status:'passou',date:'22/03/26'},
+        {id:'ef12',title:'Cache busting e deploy automático',desc:'deploy.sh atualiza versão em todos HTMLs + SW. Merge dev→main automático.',status:'passou',date:'20/03/26'},
+        {id:'ef13',title:'Landing produto (produto.html)',desc:'sistema.edreng.com.br/produto.html — hero, funcionalidades, planos, FAQ.',status:'passou',date:'20/03/26'},
+        {id:'ef14',title:'Validação de email no login e criar conta',desc:'Formato de email validado antes do fetch. Telefone continua aceito.',status:'passou',date:'23/03/26'},
+        {id:'ef15',title:'Verificação libs externas (jsPDF/ExcelJS)',desc:'Toast de erro se lib não carregar em vez de travar.',status:'passou',date:'23/03/26'},
+        {id:'ef16',title:'Debounce no autocomplete fornecedor',desc:'onFornecedorInput agora espera 300ms antes de filtrar.',status:'passou',date:'23/03/26'}
+      ],
+      tasks: [
+        {id:'et1',title:'Módulos premium — leads, ebooks, entrega digital',desc:'Leads e ebooks exclusivos EDR precisam virar módulos premium com toggle por empresa.',status:'pendente',date:'21/03/26'},
+        {id:'et2',title:'Dashboard scroll horizontal',desc:'Sugestão do Robert. Cards de resumo com scroll lateral em mobile.',status:'pendente',date:'21/03/26'},
+        {id:'et3',title:'Manual do sistema',desc:'Gerado em Downloads/manual-edr-system.txt. Pode virar página dentro do sistema.',status:'concluido',date:'23/03/26'},
+        {id:'et4',title:'NCM no catálogo de materiais',desc:'Mês 3 do roadmap — classificação fiscal dos materiais.',status:'pendente',date:'22/03/26'},
+        {id:'et5',title:'Margens por fornecedor',desc:'Mês 3 — comparar preços entre fornecedores.',status:'pendente',date:'22/03/26'},
+        {id:'et6',title:'Inventário / balanço',desc:'Mês 3 — conferência física vs estoque no sistema.',status:'pendente',date:'22/03/26'}
+      ],
+      deploys: [
+        {id:'ed5',title:'Sessão 29 — Bugs baixos',desc:'getHdrs, COMPANY_DEFAULTS, validação login, libs externas, timezone.',status:'passou',date:'23/03/26'},
+        {id:'ed6',title:'Sessão 29 — Bugs médios',desc:'Promise.allSettled, fetchWithTimeout, XSS fiscal, debounce, cache local.',status:'passou',date:'23/03/26'},
+        {id:'ed7',title:'Sessão 29 — Bugs críticos',desc:'obraTabAtual, catches vazios, reset logout, console.log removidos.',status:'passou',date:'23/03/26'},
+        {id:'ed4',title:'Proteção .gitignore',desc:'.mcp.json adicionado ao .gitignore.',status:'passou',date:'23/03/26'},
+        {id:'ed1',title:'Sessão 27 — Estoque por obra + Saída com preço',desc:'Filtros A-Z/valor, histórico de material, consulta ML, diárias fix.',status:'passou',date:'22/03/26'},
+        {id:'ed2',title:'Sessão 26 — Permissões + RLS fix',desc:'Perfis, edição usuário, toggle ativo, catálogo global, sidebar.',status:'passou',date:'21/03/26'},
+        {id:'ed3',title:'Sessão 25 — SaaS Multi-tenant',desc:'21 tabelas com company_id, super admin, criar conta, landing produto.',status:'passou',date:'20/03/26'}
+      ]
+    },
+    naregua: {
+      bugs: [
+        {id:'nb2',title:'Google Analytics não configurado',desc:'G-XXXXXXXXXX no utils.js — precisa criar property GA4 e trocar o ID.',status:'aberto',date:'20/03/26'},
+        {id:'nb1',title:'RLS aberta (FOR ALL USING true)',desc:'87 policies restritivas aplicadas em 26 tabelas. Testado e funcionando.',status:'resolvido',date:'23/03/26'},
+        {id:'nb3',title:'Serviços não carregavam na lista de espera',desc:'Corrigido: duration → duration_min.',status:'resolvido',date:'22/03/26'},
+        {id:'nb4',title:'Login preso no onboarding',desc:'Botão "Trocar conta" adicionado.',status:'resolvido',date:'22/03/26'},
+        {id:'nb5',title:'Serviço contava 2x no pagamento',desc:'Filtro do serviço principal nos extras.',status:'resolvido',date:'20/03/26'},
+        {id:'nb6',title:'Duplo-clique criava 2 agendamentos',desc:'Botão desabilitado ao clicar, reabilitado após conclusão.',status:'resolvido',date:'23/03/26'},
+        {id:'nb7',title:'Profissional podia linkar a qualquer loja',desc:'Adicionado .limit(1) na query de vincular por telefone.',status:'resolvido',date:'23/03/26'},
+        {id:'nb8',title:'.single() sem try/catch no agendar',desc:'try/catch com toast de erro adicionado.',status:'resolvido',date:'23/03/26'},
+        {id:'nb9',title:'ADMIN_EMAILS repetido em 37 HTMLs',desc:'Centralizado no utils.js.',status:'resolvido',date:'23/03/26'},
+        {id:'nb10',title:'Fallback barbearia hardcoded em theme.js',desc:'Trocado pra outro (genérico).',status:'resolvido',date:'23/03/26'},
+        {id:'nb11',title:'Dashboard sem try/catch nas operações',desc:'Toast de erro em updateStatus, cancelar, confirmarPagamento.',status:'resolvido',date:'23/03/26'},
+        {id:'nb12',title:'Duplo-clique nos botões do dashboard',desc:'Debounce adicionado nos botões críticos.',status:'resolvido',date:'23/03/26'},
+        {id:'nb13',title:'setTimeout duplicado na sidebar',desc:'Unificado em um único de 3000ms com verificação DOM.',status:'resolvido',date:'23/03/26'},
+        {id:'nb14',title:'Sidebar "Meu Estabelecimento" hardcoded',desc:'Agora usa getTermos() dinâmico.',status:'resolvido',date:'23/03/26'}
+      ],
+      features: [
+        {id:'nf1',title:'Multi-segmento — 7 nichos',desc:'Barbearia, manicure, nail designer, sobrancelha, estética, salão, outro. getTermos() centraliza.',status:'passou',date:'22/03/26'},
+        {id:'nf2',title:'Agendamento online completo',desc:'Encaixe rápido + validação conflito + comanda automática + sugestão de volta.',status:'passou',date:'20/03/26'},
+        {id:'nf3',title:'Temas visuais por segmento',desc:'5 presets CSS + seletor + sync localStorage.',status:'passou',date:'20/03/26'},
+        {id:'nf4',title:'Anamnese / ficha de avaliação',desc:'5 templates por segmento em JSONB na tabela clients.',status:'passou',date:'20/03/26'},
+        {id:'nf5',title:'Landing multi-segmento',desc:'Pills de segmento, 6 cards nichos, FAQ 6 perguntas SEO.',status:'passou',date:'20/03/26'},
+        {id:'nf6',title:'Cache busting automático',desc:'deploy.sh com timestamp, SW network-first, auto-reload 2 min.',status:'passou',date:'20/03/26'},
+        {id:'nf7',title:'Horários ocupados escondidos',desc:'Esconde completamente em vez de mostrar cinza.',status:'passou',date:'22/03/26'},
+        {id:'nf8',title:'Banner lista de espera no dashboard',desc:'Contagem + link direto pra página.',status:'passou',date:'22/03/26'},
+        {id:'nf9',title:'Auditoria completa — 161 issues',desc:'XSS, RLS, SW 57 assets, touch 44px, 50+ typos, tokens CSS.',status:'passou',date:'20/03/26'},
+        {id:'nf10',title:'Tour guiado + ajuda contextual 37 páginas',desc:'Tour 8 passos no primeiro acesso. Botão (?) por página.',status:'passou',date:'20/03/26'},
+        {id:'nf11',title:'Lembretes inteligentes',desc:'Ciclo por serviço + WhatsApp 1 toque.',status:'passou',date:'20/03/26'},
+        {id:'nf12',title:'Tracking de abandonos',desc:'booking_attempts com step tracking + KPI no resumo.',status:'passou',date:'20/03/26'},
+        {id:'nf13',title:'Demos por segmento',desc:'modelo-naregua, modelo-unha, modelo-estetica, modelo-sobrancelha.',status:'passou',date:'20/03/26'},
+        {id:'nf14',title:'RLS restritiva — 87 policies em 26 tabelas',desc:'4 papéis: owner, barber, anon, admin. Testado e funcionando.',status:'passou',date:'23/03/26'}
+      ],
+      tasks: [
+        {id:'nt1',title:'RLS restritiva pra produção',desc:'87 policies aplicadas em 26 tabelas. Testado OK.',status:'concluido',date:'23/03/26'},
+        {id:'nt2',title:'Criar Google Analytics property',desc:'Gerar GA4 e substituir G-XXXXXXXXXX no utils.js.',status:'pendente',date:'20/03/26'},
+        {id:'nt3',title:'Push notifications automáticas',desc:'Supabase Edge Function + pg_cron pra lembretes.',status:'pendente',date:'20/03/26'},
+        {id:'nt4',title:'Email transacional pós-signup',desc:'Edge Function pra boas-vindas e confirmação.',status:'pendente',date:'20/03/26'},
+        {id:'nt5',title:'Gateway de pagamento',desc:'Integrar Stripe/Pix automático pra cobrar planos.',status:'pendente',date:'20/03/26'},
+        {id:'nt6',title:'WhatsApp Business API',desc:'Lembretes e confirmações automáticas.',status:'pendente',date:'20/03/26'},
+        {id:'nt7',title:'Rodar SQLs ondas 2-11 no Supabase',desc:'Views, triggers, RPCs das ondas originais.',status:'pendente',date:'20/03/26'},
+        {id:'nt8',title:'Screenshots/vídeo pro landing',desc:'Capturas de tela reais pra substituir mocks.',status:'pendente',date:'20/03/26'}
+      ],
+      deploys: [
+        {id:'nd7',title:'Sessão 29 — RLS restritiva',desc:'87 policies em 26 tabelas. 3 funções auxiliares. 4 papéis.',status:'passou',date:'23/03/26'},
+        {id:'nd5',title:'Sessão 29 — Bugs críticos',desc:'Duplo-clique, auth limit, try-catch agendar, fallback segmento, ADMIN_EMAILS.',status:'passou',date:'23/03/26'},
+        {id:'nd6',title:'Sessão 29 — Bugs médios + baixos',desc:'Dashboard try-catch, sidebar termos, debounce, setTimeout, push cleanup.',status:'passou',date:'23/03/26'},
+        {id:'nd4',title:'Proteção .gitignore',desc:'.mcp.json protegido.',status:'passou',date:'23/03/26'},
+        {id:'nd1',title:'Sessão 28 — Multi-segmento completo',desc:'7 nichos, getTermos(), labels genéricos.',status:'passou',date:'22/03/26'},
+        {id:'nd2',title:'Sessão 25 — Cache busting + Encaixe',desc:'deploy.sh, validação conflito, comanda automática, landing CRO.',status:'passou',date:'20/03/26'},
+        {id:'nd3',title:'Sessão 24 — Auditoria MONSTRO',desc:'161 issues, 130+ fixes.',status:'passou',date:'20/03/26'}
+      ]
+    },
+    engenharia: {
+      obras: [
+        {id:'eo1',title:'Júnior',area:'',progress:0,status:'em-andamento',desc:'Entrega: 11/06/2026',date:'23/03/26',tasks:[]},
+        {id:'eo2',title:'Dayana',area:'',progress:0,status:'em-andamento',desc:'Entrega: 02/07/2026',date:'23/03/26',tasks:[]},
+        {id:'eo3',title:'Pedro',area:'',progress:0,status:'em-andamento',desc:'Entrega: 24/07/2026',date:'23/03/26',tasks:[]},
+        {id:'eo4',title:'Leonardo',area:'',progress:0,status:'em-andamento',desc:'Entrega: 09/08/2026',date:'23/03/26',tasks:[]},
+        {id:'eo5',title:'Duam + Elyda',area:'',progress:0,status:'pendente',desc:'Após contrato CEF',date:'23/03/26',tasks:[]},
+        {id:'eo6',title:'Mireli',area:'',progress:0,status:'pendente',desc:'Após contrato CEF',date:'23/03/26',tasks:[]}
+      ],
+      terrenos: [],
+      tasks: [
+        {id:'egt1',title:'Fotos pessoais Elyda e Duam',desc:'Para seção "Quem Somos" do site EDR.',status:'pendente',date:'23/03/26'},
+        {id:'egt2',title:'Bloco cerâmico Duam — verificar distribuição',desc:'8000 blocos, entrada sem nota. Revisar se está correto no sistema.',status:'pendente',date:'22/03/26'}
+      ]
+    },
+    code: {
+      fila: [
+        {id:'cf2',title:'Módulos premium (leads, ebooks)',desc:'companies.modulos jsonb. Toggle por empresa.',proj:'edr',prio:'normal',date:'23/03/26'},
+        {id:'cf3',title:'Dashboard scroll horizontal',desc:'Cards com scroll lateral em mobile.',proj:'edr',prio:'normal',date:'23/03/26'},
+        {id:'cf4',title:'GitHub MCP',desc:'Precisa gerar Personal Access Token no GitHub.',proj:'ambos',prio:'normal',date:'23/03/26'},
+        {id:'cf5',title:'Google Analytics GA4',desc:'Criar property e trocar ID no utils.js.',proj:'naregua',prio:'normal',date:'23/03/26'},
+        {id:'cf11',title:'Ícones profissionais',desc:'Criar no Freepik/Canva e aplicar nos dois projetos.',proj:'ambos',prio:'normal',date:'23/03/26'},
+        {id:'cf7',title:'NCM catálogo / margens fornecedor / inventário',desc:'Mês 3 do roadmap.',proj:'edr',prio:'quando-der',date:'23/03/26'},
+        {id:'cf8',title:'Push notifications',desc:'Edge Function + pg_cron.',proj:'naregua',prio:'quando-der',date:'23/03/26'},
+        {id:'cf9',title:'Gateway pagamento',desc:'Stripe/Pix automático.',proj:'naregua',prio:'quando-der',date:'23/03/26'},
+        {id:'cf10',title:'WhatsApp Business API',desc:'Lembretes e confirmações automáticas.',proj:'naregua',prio:'quando-der',date:'23/03/26'}
+      ],
+      feito: [
+        {id:'cc13',title:'RLS restritiva — 87 policies',desc:'26 tabelas protegidas. 4 papéis. Testado e funcionando.',proj:'naregua',date:'23/03/26'},
+        {id:'cc14',title:'Revisão código + 18 bugs corrigidos',desc:'4 críticos + 8 médios + 6 baixos. 4 deploys.',proj:'edr',date:'23/03/26'},
+        {id:'cc15',title:'Revisão código + 16 bugs corrigidos',desc:'5 críticos + 7 médios + 4 baixos. 4 deploys.',proj:'naregua',date:'23/03/26'},
+        {id:'cc16',title:'Manual do EDR System gerado',desc:'15 seções, linguagem simples. Downloads/manual-edr-system.txt.',proj:'edr',date:'23/03/26'},
+        {id:'cc1',title:'CLAUDE.md do projeto',desc:'Stack, estrutura, regras — contexto automático toda sessão.',proj:'edr',date:'23/03/26'},
+        {id:'cc2',title:'CLAUDE.md do projeto',desc:'Stack, 7 segmentos, getTermos(), banco, planos.',proj:'naregua',date:'23/03/26'},
+        {id:'cc3',title:'CLAUDE.md global',desc:'Regras de trabalho, git silencioso, qualidade, proibições.',proj:'ambos',date:'23/03/26'},
+        {id:'cc4',title:'MCP Supabase configurado',desc:'Consulta banco direto pelo Claude Code.',proj:'ambos',date:'23/03/26'},
+        {id:'cc5',title:'MCP Playwright configurado',desc:'Teste visual automático — abrir navegador e testar telas.',proj:'ambos',date:'23/03/26'},
+        {id:'cc6',title:'.gitignore protegido',desc:'.mcp.json nunca vai pro GitHub.',proj:'ambos',date:'23/03/26'},
+        {id:'cc7',title:'Hook: block-dangerous.js',desc:'Bloqueia git reset --hard, rm -rf, DROP TABLE.',proj:'ambos',date:'23/03/26'},
+        {id:'cc8',title:'Hook: validate-js.js',desc:'Valida sintaxe JS após editar qualquer .js.',proj:'ambos',date:'23/03/26'},
+        {id:'cc9',title:'17 agentes IA instalados',desc:'5 Agency (QA, API, Code Review, Growth, Evidence) + 12 GSD.',proj:'ambos',date:'23/03/26'},
+        {id:'cc10',title:'Catálogo 193 agentes na memória',desc:'Sugerir quando situação encaixar.',proj:'ambos',date:'23/03/26'},
+        {id:'cc11',title:'Deploy automático com cache busting',desc:'deploy.sh: timestamp, SW update, merge dev→main.',proj:'ambos',date:'20/03/26'},
+        {id:'cc12',title:'Sistema de memória ativo',desc:'30+ arquivos de memória.',proj:'ambos',date:'20/03/26'}
+      ]
+    }
+  };
+
+  const expandedObras = new Set();
+
+  // ---- SUPABASE CLIENT ----
+  const SUPA_URL = 'https://mepzoxoahpwcvvlymlfh.supabase.co';
+  const SUPA_KEY = 'sb_publishable_Z9E8KLU8ZIMcWjD-bMG5gg_eM585qWq';
+  const db = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+
+  async function loadFromStorage() {
+    try {
+      const { data } = await db.from('tracker_sync').select('data').eq('key','tracker-data-v5').single();
+      if (data && data.data && data.data.edr) state = data.data;
+    } catch(e) {}
+  }
+
+  async function save() {
+    const ind = document.getElementById('savingIndicator');
+    ind.classList.add('visible');
+    try {
+      await db.from('tracker_sync').upsert({ key:'tracker-data-v5', data: state, updated_at: new Date().toISOString() });
+    } catch(e) {}
+    setTimeout(() => ind.classList.remove('visible'), 1200);
+  }
+
+  function today() { return new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit'}); }
+  function uid() { return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+  function pClass(p) { return p<30?'low':p<70?'mid':'high'; }
+
+  const statusLabels = {
+    aberto:'Aberto',resolvido:'Resolvido',pendente:'Pendente',concluido:'Concluído',
+    'em-andamento':'Em andamento',passou:'Passou',falhou:'Falhou',
+    negociando:'Negociando',aprovado:'Aprovado',cancelado:'Cancelado',pausado:'Pausado',
+    urgente:'Urgente',normal:'Normal','quando-der':'Quando der',feito:'Feito'
+  };
+
+  const projLabels = { edr:'EDR System', naregua:'NaRegua', ambos:'Ambos' };
+  const projTagClass = { edr:'proj-tag-edr', naregua:'proj-tag-naregua', ambos:'proj-tag-ambos' };
+
+  function switchTab(tab) {
+    document.querySelectorAll('.project-view').forEach(v=>v.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    document.getElementById('view-'+tab).classList.add('active');
+    document.getElementById('tab-'+tab).classList.add('active');
+    if (tab==='engenharia') renderEngenharia();
+    else if (tab==='code') renderCode();
+    else if (tab==='plan') renderPlan();
+    else renderAll(tab);
+  }
+
+  function toggleForm(id) { document.getElementById(id).classList.toggle('visible'); }
+
+  // ---- ADD DEV ----
+  async function addItem(proj, type) {
+    const s = {bugs:'bug',features:'feature',tasks:'task',deploys:'deploy'}[type];
+    const tEl = document.getElementById(`${proj}-${s}-title`);
+    const dEl = document.getElementById(`${proj}-${s}-desc`);
+    const sEl = document.getElementById(`${proj}-${s}-status`);
+    const title = tEl.value.trim();
+    if (!title) { tEl.style.borderColor='var(--red)'; return; }
+    tEl.style.borderColor='';
+    state[proj][type].unshift({id:uid(),title,desc:dEl.value.trim(),status:sEl.value,date:today()});
+    tEl.value=''; dEl.value=''; sEl.selectedIndex=0;
+    toggleForm(`form-${proj}-${s}`);
+    await save(); renderAll(proj);
+  }
+
+  // ---- ADD OBRA ----
+  async function addObra() {
+    const tEl = document.getElementById('eng-obra-title');
+    const title = tEl.value.trim();
+    if (!title) { tEl.style.borderColor='var(--red)'; return; }
+    tEl.style.borderColor='';
+    state.engenharia.obras.unshift({
+      id:uid(), title,
+      area: document.getElementById('eng-obra-area').value.trim(),
+      progress: parseInt(document.getElementById('eng-obra-progress').value)||0,
+      status: document.getElementById('eng-obra-status').value,
+      desc: document.getElementById('eng-obra-desc').value.trim(),
+      date: today(), tasks: []
+    });
+    tEl.value='';
+    ['eng-obra-area','eng-obra-progress','eng-obra-desc'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('eng-obra-status').selectedIndex=0;
+    toggleForm('form-eng-obra');
+    await save(); renderEngenharia();
+  }
+
+  async function addObraTask(obraId) {
+    const inp = document.getElementById(`obra-task-input-${obraId}`);
+    const text = inp.value.trim();
+    if (!text) return;
+    const obra = state.engenharia.obras.find(o=>o.id===obraId);
+    if (!obra) return;
+    if (!obra.tasks) obra.tasks=[];
+    obra.tasks.push({id:uid(),text,done:false});
+    inp.value='';
+    await save(); renderObras();
+  }
+
+  async function toggleObraTask(obraId, taskId) {
+    const obra = state.engenharia.obras.find(o=>o.id===obraId);
+    if (!obra) return;
+    const t = obra.tasks.find(t=>t.id===taskId);
+    if (t) t.done=!t.done;
+    await save(); renderObras();
+  }
+
+  async function deleteObraTask(obraId, taskId) {
+    const obra = state.engenharia.obras.find(o=>o.id===obraId);
+    if (!obra) return;
+    obra.tasks=obra.tasks.filter(t=>t.id!==taskId);
+    await save(); renderObras();
+  }
+
+  function toggleObra(id) {
+    if (expandedObras.has(id)) expandedObras.delete(id); else expandedObras.add(id);
+    renderObras();
+  }
+
+  // ---- ADD ENGENHARIA ----
+  async function addEngItem(type) {
+    const s = {terrenos:'terreno',tasks:'task'}[type];
+    const tEl = document.getElementById(`eng-${s}-title`);
+    const title = tEl.value.trim();
+    if (!title) { tEl.style.borderColor='var(--red)'; return; }
+    tEl.style.borderColor='';
+    const item = {id:uid(),title,desc:document.getElementById(`eng-${s}-desc`).value.trim(),status:document.getElementById(`eng-${s}-status`).value,date:today()};
+    if (type==='terrenos') {
+      item.area=document.getElementById('eng-terreno-area').value.trim();
+      item.valor=document.getElementById('eng-terreno-valor').value.trim();
+      item.progress=parseInt(document.getElementById('eng-terreno-progress').value)||0;
+    }
+    state.engenharia[type].unshift(item);
+    tEl.value=''; document.getElementById(`eng-${s}-desc`).value=''; document.getElementById(`eng-${s}-status`).selectedIndex=0;
+    if (type==='terrenos') { ['eng-terreno-area','eng-terreno-valor','eng-terreno-progress'].forEach(id=>document.getElementById(id).value=''); }
+    toggleForm(`form-eng-${s}`);
+    await save(); renderEngenharia();
+  }
+
+  // ---- ADD CODE ----
+  async function addCodeItem(type) {
+    const tEl = document.getElementById(`code-${type}-title`);
+    const title = tEl.value.trim();
+    if (!title) { tEl.style.borderColor='var(--red)'; return; }
+    tEl.style.borderColor='';
+    const item = {
+      id: uid(), title,
+      desc: document.getElementById(`code-${type}-desc`).value.trim(),
+      proj: document.getElementById(`code-${type}-proj`).value,
+      date: today()
+    };
+    if (type==='fila') item.prio = document.getElementById('code-fila-prio').value;
+    state.code[type].unshift(item);
+    tEl.value=''; document.getElementById(`code-${type}-desc`).value='';
+    document.getElementById(`code-${type}-proj`).selectedIndex=0;
+    if (type==='fila') document.getElementById('code-fila-prio').selectedIndex=0;
+    toggleForm(`form-code-${type}`);
+    await save(); renderCode();
+  }
+
+  // ---- MOVER FILA → FEITO ----
+  async function moverParaFeito(id) {
+    const item = state.code.fila.find(i=>i.id===id);
+    if (!item) return;
+    state.code.fila = state.code.fila.filter(i=>i.id!==id);
+    state.code.feito.unshift({...item, date: today(), prio: undefined});
+    await save(); renderCode();
+  }
+
+  // ---- UPDATE PROGRESS ----
+  async function updateProgress(type, id, val) {
+    const item = state.engenharia[type].find(i=>i.id===id);
+    if (!item) return;
+    item.progress=parseInt(val);
+    const pEl=document.getElementById(`pct-${id}`);
+    const fEl=document.getElementById(`fill-${id}`);
+    const mEl=document.getElementById(`mini-fill-${id}`);
+    if (pEl) pEl.textContent=val+'%';
+    if (fEl) { fEl.style.width=val+'%'; fEl.className=`progress-bar-fill ${pClass(parseInt(val))}`; }
+    if (mEl) { mEl.style.width=val+'%'; mEl.className=`obra-mini-bar-fill ${pClass(parseInt(val))}`; }
+    clearTimeout(window._saveTimer);
+    window._saveTimer=setTimeout(save,600);
+  }
+
+  // ---- CYCLE STATUS ----
+  async function cycleStatus(proj, type, id) {
+    const data = proj==='engenharia'?state.engenharia:state[proj];
+    const item = data[type].find(i=>i.id===id);
+    if (!item) return;
+    const cycles = {
+      bugs:['aberto','em-andamento','resolvido'],features:['pendente','passou','falhou'],
+      tasks:['pendente','em-andamento','concluido'],deploys:['passou','falhou'],
+      obras:['pendente','em-andamento','pausado','concluido'],terrenos:['negociando','em-andamento','aprovado','cancelado']
+    };
+    const opts=cycles[type];
+    item.status=opts[(opts.indexOf(item.status)+1)%opts.length];
+    await save();
+    if (proj==='engenharia') renderEngenharia(); else renderAll(proj);
+  }
+
+  // ---- DELETE ----
+  async function deleteItem(proj, type, id) {
+    if (proj==='engenharia') state.engenharia[type]=state.engenharia[type].filter(i=>i.id!==id);
+    else if (proj==='code') state.code[type]=state.code[type].filter(i=>i.id!==id);
+    else state[proj][type]=state[proj][type].filter(i=>i.id!==id);
+    await save();
+    if (proj==='engenharia') renderEngenharia();
+    else if (proj==='code') renderCode();
+    else renderAll(proj);
+  }
+
+  // ---- RENDER DEV ----
+  function renderStats(proj) {
+    const d=state[proj];
+    const ba=d.bugs.filter(b=>b.status==='aberto').length;
+    const tp=d.tasks.filter(t=>t.status!=='concluido').length;
+    const fo=d.features.filter(f=>f.status==='passou').length;
+    const dep=d.deploys.length;
+    document.getElementById(`stats-${proj}`).innerHTML=`
+      <div class="stat-card stat-red"><div class="stat-num">${ba}</div><div class="stat-label">Bugs abertos</div></div>
+      <div class="stat-card stat-yellow"><div class="stat-num">${tp}</div><div class="stat-label">Tarefas pendentes</div></div>
+      <div class="stat-card stat-green"><div class="stat-num">${fo}</div><div class="stat-label">Features ok</div></div>
+      <div class="stat-card stat-blue"><div class="stat-num">${dep}</div><div class="stat-label">Deploys</div></div>`;
+  }
+
+  function renderList(proj, type) {
+    const items=state[proj][type];
+    const el=document.getElementById(`list-${proj}-${type}`);
+    if (!items.length) { el.innerHTML=`<div class="empty">Nenhum registro ainda</div>`; return; }
+    if (type==='deploys') {
+      el.innerHTML=items.map(item=>`
+        <div class="deploy-card ${item.status==='falhou'?'falhou':''}">
+          <div class="deploy-icon">${item.status==='passou'?'✓':'✗'}</div>
+          <div class="item-meta"><div class="item-title">${item.title}</div>${item.desc?`<div class="item-desc">${item.desc}</div>`:''}</div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+            <div class="item-date">${item.date}</div>
+            <button class="status-pill status-${item.status}" onclick="cycleStatus('${proj}','${type}','${item.id}')">${statusLabels[item.status]}</button>
+            <button class="btn-delete" onclick="deleteItem('${proj}','${type}','${item.id}')">✕</button>
+          </div>
+        </div>`).join('');
+      return;
+    }
+    el.innerHTML=items.map(item=>`
+      <div class="item-card">
+        <div class="item-meta"><div class="item-title">${item.title}</div>${item.desc?`<div class="item-desc">${item.desc}</div>`:''}</div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;min-width:120px">
+          <div class="item-date">${item.date}</div>
+          <button class="status-pill status-${item.status}" onclick="cycleStatus('${proj}','${type}','${item.id}')">${statusLabels[item.status]}</button>
+          <button class="btn-delete" onclick="deleteItem('${proj}','${type}','${item.id}')">✕</button>
+        </div>
+      </div>`).join('');
+  }
+
+  function renderAll(proj) { renderStats(proj); ['bugs','features','tasks','deploys'].forEach(t=>renderList(proj,t)); }
+
+  // ---- RENDER ENGENHARIA ----
+  function renderEngStats() {
+    const d=state.engenharia;
+    document.getElementById('stats-engenharia').innerHTML=`
+      <div class="stat-card stat-orange"><div class="stat-num">${d.obras.filter(o=>o.status==='em-andamento').length}</div><div class="stat-label">Obras ativas</div></div>
+      <div class="stat-card stat-yellow"><div class="stat-num">${d.tasks.filter(t=>t.status!=='concluido').length}</div><div class="stat-label">Pendências</div></div>
+      <div class="stat-card stat-purple"><div class="stat-num">${d.terrenos.filter(t=>t.status==='negociando'||t.status==='em-andamento').length}</div><div class="stat-label">Terrenos em negoc.</div></div>
+      <div class="stat-card stat-green"><div class="stat-num">${d.obras.filter(o=>o.status==='concluido').length}</div><div class="stat-label">Obras entregues</div></div>`;
+  }
+
+  function renderObras() {
+    const items=state.engenharia.obras;
+    const el=document.getElementById('list-eng-obras');
+    if (!items.length) { el.innerHTML=`<div class="empty">Nenhuma obra registrada</div>`; return; }
+    el.innerHTML=items.map(obra=>{
+      const p=obra.progress||0; const pc=pClass(p);
+      const isOpen=expandedObras.has(obra.id);
+      const tasks=obra.tasks||[];
+      const done=tasks.filter(t=>t.done).length;
+      const taskSummary=tasks.length?`<span style="font-family:IBM Plex Mono,monospace;font-size:10px;color:var(--text-muted)">${done}/${tasks.length} tarefas</span>`:'';
+      const tasksHtml=tasks.length?tasks.map(t=>`
+        <div class="obra-task-item">
+          <div class="obra-task-check ${t.done?'checked':''}" onclick="toggleObraTask('${obra.id}','${t.id}')"></div>
+          <div class="obra-task-text ${t.done?'done':''}">${t.text}</div>
+          <button class="btn-delete" onclick="deleteObraTask('${obra.id}','${t.id}')">✕</button>
+        </div>`).join(''):`<div class="obra-tasks-empty">Nenhuma tarefa ainda</div>`;
+      return `
+      <div class="obra-card">
+        <div class="obra-header" onclick="toggleObra('${obra.id}')">
+          <div class="obra-toggle ${isOpen?'open':''}">▶</div>
+          <div class="obra-info">
+            <div class="obra-name">${obra.title} ${obra.area?`<span style="font-family:IBM Plex Mono,monospace;font-size:11px;color:var(--text-muted);font-weight:400">${obra.area}</span>`:''}</div>
+            ${obra.desc?`<div class="obra-meta">${obra.desc}</div>`:''}
+            <div style="margin-top:4px">${taskSummary}</div>
+          </div>
+          <div class="obra-side">
+            <div class="item-date">${obra.date}</div>
+            <button class="status-pill status-${obra.status}" onclick="event.stopPropagation();cycleStatus('engenharia','obras','${obra.id}')">${statusLabels[obra.status]}</button>
+            <div class="obra-mini-bar">
+              <div style="font-family:IBM Plex Mono,monospace;font-size:10px;color:var(--text-muted)">${p}%</div>
+              <div class="obra-mini-bar-bg"><div class="obra-mini-bar-fill ${pc}" id="mini-fill-${obra.id}" style="width:${p}%"></div></div>
+            </div>
+            <button class="btn-delete" onclick="event.stopPropagation();deleteItem('engenharia','obras','${obra.id}')">✕</button>
+          </div>
+        </div>
+        <div class="obra-body ${isOpen?'open':''}">
+          <div class="progress-wrap" style="margin-bottom:14px">
+            <div class="progress-label"><span style="font-size:11px;color:var(--text-muted)">Progresso geral</span><span class="progress-pct" id="pct-${obra.id}">${p}%</span></div>
+            <div class="progress-bar-bg"><div class="progress-bar-fill ${pc}" id="fill-${obra.id}" style="width:${p}%"></div></div>
+            <div class="progress-controls"><input type="range" min="0" max="100" value="${p}" oninput="updateProgress('obras','${obra.id}',this.value)" /></div>
+          </div>
+          <div class="obra-tasks-header"><div class="obra-tasks-title">Tarefas / Pendências</div></div>
+          ${tasksHtml}
+          <div class="obra-task-add">
+            <input type="text" id="obra-task-input-${obra.id}" placeholder="Nova tarefa para esta obra..." onkeydown="if(event.key==='Enter')addObraTask('${obra.id}')" />
+            <button onclick="addObraTask('${obra.id}')">+ Adicionar</button>
+          </div>
+        </div>
+      </div>`; }).join('');
+  }
+
+  function renderTerrenos() {
+    const items=state.engenharia.terrenos;
+    const el=document.getElementById('list-eng-terrenos');
+    if (!items.length) { el.innerHTML=`<div class="empty">Nenhum terreno registrado</div>`; return; }
+    el.innerHTML=items.map(item=>{
+      const p=item.progress||0; const pc=pClass(p);
+      return `
+      <div class="terreno-card">
+        <div class="terreno-header">
+          <div><div class="terreno-name">${item.title}</div><div class="terreno-area">${item.area||''} ${item.valor?'· '+item.valor:''}</div></div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+            <div class="item-date">${item.date}</div>
+            <button class="status-pill status-${item.status}" onclick="cycleStatus('engenharia','terrenos','${item.id}')">${statusLabels[item.status]}</button>
+            <button class="btn-delete" onclick="deleteItem('engenharia','terrenos','${item.id}')">✕</button>
+          </div>
+        </div>
+        ${item.desc?`<div class="item-desc" style="margin-bottom:10px">${item.desc}</div>`:''}
+        <div class="progress-wrap">
+          <div class="progress-label"><span style="font-size:11px;color:var(--text-muted)">Negociação</span><span class="progress-pct" id="pct-${item.id}">${p}%</span></div>
+          <div class="progress-bar-bg"><div class="progress-bar-fill ${pc}" id="fill-${item.id}" style="width:${p}%"></div></div>
+          <div class="progress-controls"><input type="range" min="0" max="100" value="${p}" oninput="updateProgress('terrenos','${item.id}',this.value)" /></div>
+        </div>
+      </div>`; }).join('');
+  }
+
+  function renderEngTasks() {
+    const items=state.engenharia.tasks;
+    const el=document.getElementById('list-eng-tasks');
+    if (!items.length) { el.innerHTML=`<div class="empty">Nenhuma pendência registrada</div>`; return; }
+    el.innerHTML=items.map(item=>`
+      <div class="item-card">
+        <div class="item-meta"><div class="item-title">${item.title}</div>${item.desc?`<div class="item-desc">${item.desc}</div>`:''}</div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;min-width:120px">
+          <div class="item-date">${item.date}</div>
+          <button class="status-pill status-${item.status}" onclick="cycleStatus('engenharia','tasks','${item.id}')">${statusLabels[item.status]}</button>
+          <button class="btn-delete" onclick="deleteItem('engenharia','tasks','${item.id}')">✕</button>
+        </div>
+      </div>`).join('');
+  }
+
+  function renderEngenharia() { renderEngStats(); renderObras(); renderTerrenos(); renderEngTasks(); }
+
+  // ---- RENDER CODE ----
+  function renderCodeStats() {
+    const urgentes = state.code.fila.filter(i=>i.prio==='urgente').length;
+    const fila = state.code.fila.length;
+    const feito = state.code.feito.length;
+    document.getElementById('stats-code').innerHTML=`
+      <div class="stat-card stat-orange"><div class="stat-num">${urgentes}</div><div class="stat-label">Urgentes na fila</div></div>
+      <div class="stat-card stat-yellow"><div class="stat-num">${fila}</div><div class="stat-label">Total na fila</div></div>
+      <div class="stat-card stat-cyan"><div class="stat-num">${feito}</div><div class="stat-label">Implementados</div></div>`;
+  }
+
+  function renderCodeFila() {
+    const items = state.code.fila;
+    const el = document.getElementById('list-code-fila');
+    if (!items.length) { el.innerHTML=`<div class="empty">Fila vazia — tudo certo por aqui</div>`; return; }
+    // ordena: urgente primeiro
+    const ordem = {urgente:0,normal:1,'quando-der':2};
+    const sorted = [...items].sort((a,b)=>(ordem[a.prio]||1)-(ordem[b.prio]||1));
+    el.innerHTML = sorted.map(item=>`
+      <div class="code-fila-card prio-${item.prio}">
+        <div class="item-meta">
+          <div class="item-title">
+            <span class="proj-tag ${projTagClass[item.proj]}">${projLabels[item.proj]}</span>${item.title}
+          </div>
+          ${item.desc?`<div class="item-desc">${item.desc}</div>`:''}
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;min-width:110px">
+          <div class="item-date">${item.date}</div>
+          <span class="status-pill status-${item.prio}">${statusLabels[item.prio]}</span>
+          <button style="background:var(--green);border:1px solid var(--green-light);color:var(--accent);font-family:IBM Plex Mono,monospace;font-size:10px;font-weight:600;padding:3px 8px;border-radius:2px;cursor:pointer;border:none;transition:opacity 0.2s" onclick="moverParaFeito('${item.id}')">✓ Feito</button>
+          <button class="btn-delete" onclick="deleteItem('code','fila','${item.id}')">✕</button>
+        </div>
+      </div>`).join('');
+  }
+
+  function renderCodeFeito() {
+    const items = state.code.feito;
+    const el = document.getElementById('list-code-feito');
+    if (!items.length) { el.innerHTML=`<div class="empty">Nenhum registro ainda</div>`; return; }
+    el.innerHTML = items.map(item=>`
+      <div class="code-feito-card">
+        <div style="font-size:16px;color:var(--cyan);padding-top:2px">✓</div>
+        <div class="item-meta">
+          <div class="item-title">
+            <span class="proj-tag ${projTagClass[item.proj]}">${projLabels[item.proj]}</span>${item.title}
+          </div>
+          ${item.desc?`<div class="item-desc">${item.desc}</div>`:''}
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+          <div class="item-date">${item.date}</div>
+          <button class="btn-delete" onclick="deleteItem('code','feito','${item.id}')">✕</button>
+        </div>
+      </div>`).join('');
+  }
+
+  function renderCode() { renderCodeStats(); renderCodeFila(); renderCodeFeito(); }
+
+  // ---- INIT ----
+  async function init() {
+    document.getElementById('currentDate').textContent = new Date().toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric'});
+    document.getElementById('loadingMsg').textContent = 'conectando ao storage...';
+    await loadFromStorage();
+    await loadPlanData();
+    // Se banco estiver vazio, salva dados iniciais
+    if (state.edr.bugs.length > 0) { await save(); await savePlan(); }
+    document.getElementById('loadingMsg').textContent = 'pronto';
+    setTimeout(()=>{ document.getElementById('loading').style.display='none'; renderAll('edr'); }, 800);
+  }
+
+  init();
+</script>
+</body>
+</html>
