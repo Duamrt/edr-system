@@ -300,6 +300,7 @@
     </div>
     <div class="form-novo">
       <input type="text" id="mTit" placeholder="O que precisa fazer?" aria-label="Titulo">
+      <input type="date" id="mData" aria-label="Data" style="display:none">
       <div class="form-row">
         <input type="time" id="mHora" value="08:00" aria-label="Horario">
         <select id="mCat" aria-label="Categoria"><option value="trabalho">Trabalho</option><option value="pessoal">Pessoal</option><option value="compra">Compra</option><option value="lembrete">Lembrete</option></select>
@@ -468,12 +469,13 @@ let editandoId=null;
 function editEv(id){
   const ev=state.find(e=>e.id===id);if(!ev)return;
   editandoId=id;
-  // Preencher modal mobile com dados do evento
   document.getElementById('mTit').value=ev.titulo;
   document.getElementById('mHora').value=ev.hora||'08:00';
   document.getElementById('mCat').value=ev.categoria;
   document.getElementById('mPrio').value=ev.prioridade||'baixa';
   document.getElementById('mObs').value=ev.obs||'';
+  const mData=document.getElementById('mData');
+  mData.value=ev.data;mData.style.display='block';
   document.getElementById('modalTitulo').textContent='Editar compromisso';
   document.getElementById('modalBtnAdd').textContent='Salvar';
   document.getElementById('modalBtnAdd').onclick=()=>salvarEdicao();
@@ -488,6 +490,8 @@ async function salvarEdicao(){
   ev.categoria=document.getElementById('mCat').value;
   ev.prioridade=document.getElementById('mPrio').value;
   ev.obs=document.getElementById('mObs').value.trim();
+  const novaData=document.getElementById('mData').value;
+  if(novaData)ev.data=novaData;
   editandoId=null;
   fecharModal();resetModal();
   refresh();await save(state);
@@ -496,7 +500,7 @@ async function salvarEdicao(){
 function resetModal(){
   document.getElementById('mTit').value='';document.getElementById('mObs').value='';
   document.getElementById('mHora').value='08:00';document.getElementById('mCat').value='trabalho';
-  document.getElementById('mPrio').value='baixa';
+  document.getElementById('mPrio').value='baixa';document.getElementById('mData').style.display='none';document.getElementById('mData').value='';
   document.getElementById('modalTitulo').textContent='Novo compromisso';
   document.getElementById('modalBtnAdd').textContent='Adicionar';
   document.getElementById('modalBtnAdd').onclick=()=>addEvento('m');
