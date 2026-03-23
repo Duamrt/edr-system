@@ -398,7 +398,7 @@ function renderImportPreview() {
         </div>
         <div>
           <label style="font-size:9px;color:var(--texto3);display:block;margin-bottom:2px;">TOTAL</label>
-          <div style="padding:5px 7px;font-size:12px;color:var(--verde-hl);font-weight:700;font-family:'JetBrains Mono',monospace;">${fmtR(item.total)}</div>
+          <input type="number" value="${item.total.toFixed(2)}" step="0.01" onchange="importEditarCampo(${i},'total',this.value)" style="width:100%;padding:5px 7px;background:var(--bg2);border:1px solid var(--borda);border-radius:5px;color:var(--verde-hl);font-size:12px;font-family:'JetBrains Mono',monospace;outline:none;font-weight:700;">
         </div>
       </div>
       ${item.credito !== null ? `
@@ -482,6 +482,9 @@ function importEditarCampo(idx, campo, valor) {
     item.total = item.qtd * item.preco;
   } else if (campo === 'unidade') {
     item.unidade = valor.toUpperCase();
+  } else if (campo === 'total') {
+    item.total = parseFloat(valor) || 0;
+    if (item.qtd > 0) item.preco = +(item.total / item.qtd).toFixed(6);
   }
   renderImportPreview();
 }
