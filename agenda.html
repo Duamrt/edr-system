@@ -37,8 +37,8 @@
     --bg-item-hover: #2a2e3d;
     --text: #e4e6eb;
     --text-secondary: #c9cdd5;
-    --text-muted: #6b7280;
-    --text-obs: #8b8fa3;
+    --text-muted: #8b95a5;
+    --text-obs: #9ba3b5;
     --border: #2d3140;
     --hover-dia: #1a2420;
     --hover-dia-border: #059669;
@@ -96,7 +96,7 @@
   }
 
   .header-title .subtitle {
-    font-size: .65rem;
+    font-size: .75rem;
     opacity: .7;
     font-weight: 400;
     letter-spacing: 1.5px;
@@ -121,8 +121,8 @@
   }
 
   .theme-toggle, .filtro-btn {
-    width: 36px;
-    height: 36px;
+    width: 44px;
+    height: 44px;
     padding: 0;
     display: flex;
     align-items: center;
@@ -167,8 +167,8 @@
   .mes-nav button {
     background: var(--bg-card);
     border: 1px solid var(--border);
-    width: 34px;
-    height: 34px;
+    width: 44px;
+    height: 44px;
     border-radius: 8px;
     cursor: pointer;
     font-size: 1rem;
@@ -262,8 +262,8 @@
   .dia .eventos { display: flex; flex-direction: column; gap: 1px; }
 
   .dia .evento-mini {
-    font-size: .6rem;
-    padding: 1px 4px;
+    font-size: .7rem;
+    padding: 2px 4px;
     border-radius: 3px;
     white-space: nowrap;
     overflow: hidden;
@@ -298,7 +298,7 @@
   .dia .evento-mini.prio-dot-baixa { border-left: 2px solid transparent; }
 
   .dia .mais {
-    font-size: .55rem;
+    font-size: .7rem;
     color: var(--accent);
     font-weight: 600;
     margin-top: 1px;
@@ -359,13 +359,13 @@
   .evento-check {
     appearance: none;
     -webkit-appearance: none;
-    width: 20px;
-    height: 20px;
-    min-width: 20px;
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
     border: 2px solid var(--border);
     border-radius: 50%;
     cursor: pointer;
-    margin-top: 2px;
+    margin-top: 0;
     transition: all .2s;
     position: relative;
   }
@@ -386,7 +386,7 @@
   }
 
   .evento-hora {
-    font-size: .7rem;
+    font-size: .78rem;
     font-weight: 600;
     color: var(--accent);
     min-width: 40px;
@@ -410,14 +410,14 @@
   }
 
   .evento-cat {
-    font-size: .65rem;
+    font-size: .75rem;
     padding: 1px 7px;
     border-radius: 20px;
     display: inline-block;
   }
 
   .evento-prio {
-    font-size: .6rem;
+    font-size: .72rem;
     padding: 1px 6px;
     border-radius: 20px;
     font-weight: 600;
@@ -435,8 +435,13 @@
     border: none;
     color: var(--text-muted);
     cursor: pointer;
-    font-size: .9rem;
-    padding: 2px;
+    font-size: 1rem;
+    padding: 8px;
+    min-width: 36px;
+    min-height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     transition: color .2s;
     opacity: .4;
   }
@@ -458,10 +463,10 @@
   }
 
   .form-novo input, .form-novo select, .form-novo textarea {
-    padding: 9px 11px;
+    padding: 10px 12px;
     border: 1.5px solid var(--border);
     border-radius: 8px;
-    font-size: .82rem;
+    font-size: 1rem;
     font-family: inherit;
     outline: none;
     transition: border-color .2s, background .3s;
@@ -473,7 +478,7 @@
     border-color: var(--accent);
   }
 
-  .form-novo textarea { resize: none; height: 50px; }
+  .form-novo textarea { resize: none; height: 64px; }
 
   .form-row {
     display: grid;
@@ -491,7 +496,7 @@
     background: linear-gradient(135deg, #004704, #059669);
     color: white;
     border: none;
-    padding: 10px;
+    padding: 14px;
     border-radius: 8px;
     font-size: .85rem;
     font-weight: 600;
@@ -524,7 +529,7 @@
     font-weight: 600;
     color: var(--accent);
     min-width: 42px;
-    font-size: .68rem;
+    font-size: .78rem;
   }
 
   .proximo-texto {
@@ -543,7 +548,7 @@
   .contador .num { font-size: 1.2rem; font-weight: 700; }
 
   .contador .label {
-    font-size: .6rem;
+    font-size: .7rem;
     opacity: .8;
     text-transform: uppercase;
     letter-spacing: .5px;
@@ -587,7 +592,7 @@
   }
 
   .filtro-section {
-    font-size: .65rem;
+    font-size: .75rem;
     color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: .5px;
@@ -639,14 +644,140 @@
 
   @media (max-width: 900px) {
     .container { grid-template-columns: 1fr; height: auto; }
+    .painel-lateral { overflow-y: visible; }
+  }
+
+  @media (max-width: 600px) {
+    .header {
+      padding: 10px 14px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .header-left { gap: 10px; }
+    .header-logo { height: 32px; }
+    .header-title h1 { font-size: 1rem; }
+    .contadores {
+      order: 3;
+      width: 100%;
+      justify-content: center;
+      gap: 20px;
+      padding-top: 4px;
+      border-top: 1px solid rgba(255,255,255,.1);
+    }
+    .header-right { gap: 6px; }
+    .container {
+      padding: 10px;
+      gap: 10px;
+    }
+    .calendario { padding: 10px; border-radius: 12px; }
+    .mes-nav { margin-bottom: 10px; }
+    .mes-nav h2 { font-size: 1.05rem; }
+    .grid-dias { gap: 2px; }
+    .dia {
+      min-height: 48px;
+      padding: 3px 2px;
+      border-radius: 6px;
+    }
+    .dia .numero { font-size: .75rem; margin-bottom: 1px; }
+    .dia.hoje .numero { width: 22px; height: 22px; font-size: .7rem; }
+    .dia .evento-mini {
+      font-size: .55rem;
+      padding: 1px 2px;
+    }
+    .dia .mais { font-size: .6rem; }
+    .card { padding: 12px; border-radius: 12px; }
+    .form-row-3 {
+      grid-template-columns: 1fr 1fr;
+    }
+    .form-row-3 input[type="time"] {
+      grid-column: 1 / -1;
+    }
+    .evento-item { padding: 10px; gap: 10px; }
+    .evento-check {
+      width: 32px;
+      height: 32px;
+      min-width: 32px;
+    }
+    .proximo-item { padding: 10px; }
+    .filtro-dropdown {
+      right: -40px;
+      min-width: 200px;
+    }
+    .filtro-dropdown label { padding: 10px 8px; }
+  }
+
+  @media (max-width: 380px) {
+    .header-title .subtitle { display: none; }
+    .dia .evento-mini { display: none; }
+    .dia .mais { display: none; }
+    .dia { min-height: 40px; }
+    .dia .numero { font-size: .72rem; }
+  }
+
+  /* Offline banner */
+  .offline-banner {
+    display: none;
+    position: fixed;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #dc2626;
+    color: white;
+    padding: 8px 20px;
+    border-radius: 20px;
+    font-size: .78rem;
+    font-weight: 600;
+    z-index: 999;
+    box-shadow: 0 4px 12px rgba(0,0,0,.3);
+  }
+
+  .offline-banner.visible { display: flex; align-items: center; gap: 8px; }
+
+  /* Loading state */
+  .loading-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    gap: 12px;
+    transition: opacity .3s;
+  }
+
+  .loading-overlay.hidden { opacity: 0; pointer-events: none; }
+
+  .loading-spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin .8s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loading-text {
+    font-size: .85rem;
+    color: var(--text-muted);
   }
 </style>
 </head>
 <body>
 
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-spinner"></div>
+  <div class="loading-text">Carregando agenda...</div>
+</div>
+
 <div class="saving-indicator" id="savingIndicator">
   <div class="saving-dot"></div>sincronizando
 </div>
+
+<div class="offline-banner" id="offlineBanner">Sem internet — modo offline</div>
 
 <div class="header">
   <div class="header-left">
@@ -694,7 +825,7 @@
   </div>
   <div class="header-right">
     <div class="filtro-wrapper">
-      <button class="filtro-btn" onclick="toggleFiltro()" id="filtro-btn" title="Filtros">&#9881;</button>
+      <button class="filtro-btn" onclick="toggleFiltro()" id="filtro-btn" title="Filtros" aria-label="Abrir filtros">&#9881;</button>
       <div class="filtro-dropdown" id="filtro-dropdown">
         <div class="filtro-section">Mostrar</div>
         <label><input type="checkbox" checked onchange="filtroChanged()" data-filtro="pendentes"> Pendentes</label>
@@ -712,17 +843,17 @@
         <label><input type="checkbox" checked onchange="filtroChanged()" data-filtro="lembrete"> Lembrete</label>
       </div>
     </div>
-    <button class="hoje-btn" onclick="irParaHoje()">Hoje</button>
-    <button class="theme-toggle" onclick="toggleTema()" id="theme-btn" title="Alternar tema">&#9788;</button>
+    <button class="hoje-btn" onclick="irParaHoje()" aria-label="Ir para hoje">Hoje</button>
+    <button class="theme-toggle" onclick="toggleTema()" id="theme-btn" title="Alternar tema" aria-label="Alternar modo claro/escuro">&#9788;</button>
   </div>
 </div>
 
 <div class="container">
   <div class="calendario">
     <div class="mes-nav">
-      <button onclick="mudarMes(-1)">&#9664;</button>
+      <button onclick="mudarMes(-1)" aria-label="Mes anterior">&#9664;</button>
       <h2 id="titulo-mes"></h2>
-      <button onclick="mudarMes(1)">&#9654;</button>
+      <button onclick="mudarMes(1)" aria-label="Proximo mes">&#9654;</button>
     </div>
     <div class="dias-semana">
       <span>Dom</span><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sab</span>
@@ -741,22 +872,22 @@
     <div class="card">
       <h3><span class="icon">&#10133;</span> Novo compromisso</h3>
       <div class="form-novo">
-        <input type="text" id="novo-titulo" placeholder="O que precisa fazer?">
+        <input type="text" id="novo-titulo" placeholder="O que precisa fazer?" aria-label="Titulo do compromisso">
         <div class="form-row-3">
-          <input type="time" id="novo-hora" value="08:00">
-          <select id="novo-cat">
+          <input type="time" id="novo-hora" value="08:00" aria-label="Horario">
+          <select id="novo-cat" aria-label="Categoria">
             <option value="trabalho">Trabalho</option>
             <option value="pessoal">Pessoal</option>
             <option value="compra">Compra</option>
             <option value="lembrete">Lembrete</option>
           </select>
-          <select id="novo-prio">
+          <select id="novo-prio" aria-label="Prioridade">
             <option value="baixa">Normal</option>
             <option value="media">Media</option>
             <option value="alta">Alta</option>
           </select>
         </div>
-        <textarea id="novo-obs" placeholder="Observacoes (opcional)"></textarea>
+        <textarea id="novo-obs" placeholder="Observacoes (opcional)" aria-label="Observacoes"></textarea>
         <button class="btn-add" onclick="adicionarEvento()">Adicionar</button>
       </div>
     </div>
@@ -770,23 +901,48 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  // ── Supabase (mesmo padrão do tracker) ──
+  // ── Supabase (mesmo padrao do tracker) + cache offline ──
   const SUPA_URL = 'https://mepzoxoahpwcvvlymlfh.supabase.co';
   const SUPA_KEY = 'sb_publishable_Z9E8KLU8ZIMcWjD-bMG5gg_eM585qWq';
-  const db = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+  let db;
+  try { db = window.supabase.createClient(SUPA_URL, SUPA_KEY); }
+  catch(e) { db = null; console.warn('Supabase SDK nao carregou — modo offline'); }
   const SYNC_KEY = 'elyda-agenda-v1';
+  const CACHE_KEY = 'elyda_agenda_cache';
 
   let mesAtual = new Date().getMonth();
   let anoAtual = new Date().getFullYear();
   let diaSelecionado = null;
-  let state = []; // array de eventos
+  let state = [];
+  let isOffline = !navigator.onLine;
 
-  function getEventos() {
-    return state;
+  // Offline detection
+  window.addEventListener('online', () => {
+    isOffline = false;
+    document.getElementById('offlineBanner').classList.remove('visible');
+    salvarEventos(state); // sync pendente
+  });
+  window.addEventListener('offline', () => {
+    isOffline = true;
+    document.getElementById('offlineBanner').classList.add('visible');
+  });
+
+  function getEventos() { return state; }
+
+  // Cache local (fallback)
+  function cacheLocal(ev) {
+    try { localStorage.setItem(CACHE_KEY, JSON.stringify(ev)); } catch(e) {}
+  }
+
+  function lerCacheLocal() {
+    try { return JSON.parse(localStorage.getItem(CACHE_KEY)) || []; }
+    catch { return []; }
   }
 
   async function salvarEventos(ev) {
     state = ev;
+    cacheLocal(ev);
+    if (!db || isOffline) return;
     const ind = document.getElementById('savingIndicator');
     ind.classList.add('visible');
     try {
@@ -800,16 +956,27 @@
   }
 
   async function carregarEventos() {
-    try {
-      const { data } = await db.from('tracker_sync')
-        .select('data')
-        .eq('key', SYNC_KEY)
-        .single();
-      if (data && data.data && data.data.eventos) {
-        state = data.data.eventos;
-        return true;
-      }
-    } catch(e) { console.error('Erro ao carregar:', e); }
+    // Tentar Supabase primeiro
+    if (db && !isOffline) {
+      try {
+        const { data } = await db.from('tracker_sync')
+          .select('data')
+          .eq('key', SYNC_KEY)
+          .single();
+        if (data && data.data && data.data.eventos) {
+          state = data.data.eventos;
+          cacheLocal(state);
+          return true;
+        }
+      } catch(e) { console.warn('Supabase falhou, usando cache local'); }
+    }
+    // Fallback: cache local
+    const cached = lerCacheLocal();
+    if (cached.length > 0) {
+      state = cached;
+      if (isOffline) document.getElementById('offlineBanner').classList.add('visible');
+      return true;
+    }
     return false;
   }
 
@@ -979,7 +1146,7 @@
         <div class="evento-hora">${ev.hora || '--:--'}</div>
         <div class="evento-info">
           <div class="evento-titulo">${escapeHtml(ev.titulo)}</div>
-          ${ev.obs ? `<div style="font-size:.68rem;color:var(--text-obs);margin-top:2px">${escapeHtml(ev.obs)}</div>` : ''}
+          ${ev.obs ? `<div style="font-size:.78rem;color:var(--text-obs);margin-top:2px">${escapeHtml(ev.obs)}</div>` : ''}
           <div class="evento-meta">
             <span class="evento-cat ${ev.categoria}">${nomeCategoria(ev.categoria)}</span>
             ${prio !== 'baixa' ? `<span class="evento-prio ${prio}">${prioLabel[prio]}</span>` : ''}
@@ -1087,7 +1254,7 @@
         <div class="proximo-item prio-${prio}" onclick="diaSelecionado='${ev.data}'; renderCalendario(); renderEventosDia();">
           <div class="proximo-data">${d}/${m}</div>
           <div class="proximo-texto">${ev.hora ? ev.hora + ' — ' : ''}${escapeHtml(ev.titulo)}</div>
-          <div class="evento-mini ${ev.categoria}" style="font-size:.58rem">${nomeCategoria(ev.categoria)}</div>
+          <div class="evento-mini ${ev.categoria}" style="font-size:.72rem">${nomeCategoria(ev.categoria)}</div>
         </div>`;
     }).join('');
   }
@@ -1151,6 +1318,10 @@
       await salvarEventos(state);
     }
     irParaHoje();
+    // Esconder loading
+    const overlay = document.getElementById('loadingOverlay');
+    overlay.classList.add('hidden');
+    setTimeout(() => overlay.remove(), 300);
   }
 
   init();
