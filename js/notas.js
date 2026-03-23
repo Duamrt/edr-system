@@ -356,6 +356,10 @@ async function autocadastrarMateriais(itens) {
 }
 
 async function salvarNota() {
+  // Garantir que botão está habilitado
+  const btnSalvar = document.getElementById('btn-salvar');
+  if (btnSalvar) btnSalvar.disabled = false;
+
   const numero = document.getElementById('f-numero').value.trim();
   const fornecedor = document.getElementById('f-fornecedor').value.trim().toUpperCase();
   const emissao = document.getElementById('f-emissao').value;
@@ -438,8 +442,9 @@ async function salvarNota() {
       showToast('✅ Nota fiscal lançada!');
     }
     resetForm(); renderDashboard(); renderEstoque(); renderNotas(); setView('estoque');
-  } catch(e) { console.error(e); if (e.message.includes('does not exist')) { showToast('⚠ Execute o SQL na aba Setup.'); setView('setup'); } else showToast('❌ Não foi possível salvar a nota.'); }
-  btn.disabled = false; btn.textContent = '💾 SALVAR NOTA FISCAL   Ctrl+S';
+  } catch(e) { console.error('Erro ao salvar nota:', e); if (e.message && e.message.includes('does not exist')) { showToast('⚠ Execute o SQL na aba Setup.'); setView('setup'); } else showToast('❌ Erro ao salvar: ' + (e.message||'verifique sua conexão.')); }
+  const btnFinal = document.getElementById('btn-salvar');
+  if (btnFinal) { btnFinal.disabled = false; btnFinal.textContent = '💾 SALVAR NOTA FISCAL   Ctrl+S'; }
 }
 
 function onDestinoChange() {
