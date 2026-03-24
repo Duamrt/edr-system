@@ -2,11 +2,12 @@
 // ORCAMENTO PARAMETRICO — Baseado em obras concluídas
 // ══════════════════════════════════════════
 
+let _orcDadosCalc = null; // cache do último cálculo para export
+
 function renderOrcamento() {
   const el = document.getElementById('orcamento-container');
   if (!el) return;
 
-  // Só obras arquivadas (concluídas) com área preenchida
   const concluidas = (typeof obrasArquivadas !== 'undefined' ? obrasArquivadas : [])
     .filter(o => Number(o.area_m2) > 0);
 
@@ -22,6 +23,10 @@ function renderOrcamento() {
       <div style="min-width:140px;">
         <label style="font-size:10px;font-weight:700;color:var(--texto3);text-transform:uppercase;letter-spacing:1px;">Area nova (m²)</label>
         <input id="orc-area" type="number" step="0.01" placeholder="Ex: 80" oninput="calcOrcamento()" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--borda);background:var(--bg2);color:var(--texto);font-size:13px;margin-top:4px;">
+      </div>
+      <div style="min-width:120px;">
+        <label style="font-size:10px;font-weight:700;color:var(--texto3);text-transform:uppercase;letter-spacing:1px;">Correção INCC %</label>
+        <input id="orc-correcao" type="number" step="0.1" value="0" placeholder="Ex: 8.5" oninput="calcOrcamento()" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--borda);background:var(--bg2);color:var(--texto);font-size:13px;margin-top:4px;">
       </div>
       <div style="flex:1;min-width:160px;">
         <label style="font-size:10px;font-weight:700;color:var(--texto3);text-transform:uppercase;letter-spacing:1px;">Cliente (opcional)</label>
@@ -55,6 +60,8 @@ function selecionarModelo(id) {
 function calcOrcamento() {
   const modeloId = document.getElementById('orc-modelo')?.value;
   const areaNova = parseFloat(document.getElementById('orc-area')?.value) || 0;
+  const correcaoPct = parseFloat(document.getElementById('orc-correcao')?.value) || 0;
+  const fatorCorrecao = 1 + (correcaoPct / 100);
   const avisoEl = document.getElementById('orc-aviso');
   const resumoEl = document.getElementById('orc-resumo');
   const tabelaEl = document.getElementById('orc-tabela');
@@ -64,50 +71,59 @@ function calcOrcamento() {
     if (avisoEl) avisoEl.style.display = '';
     if (resumoEl) resumoEl.style.display = 'none';
     if (tabelaEl) tabelaEl.innerHTML = '';
+    _orcDadosCalc = null;
     return;
   }
   if (avisoEl) avisoEl.style.display = 'none';
   if (resumoEl) resumoEl.style.display = '';
 
-  // Buscar obra modelo
   const modelo = obras.find(o => o.id === modeloId)
     || (typeof obrasArquivadas !== 'undefined' ? obrasArquivadas : []).find(o => o.id === modeloId);
   if (!modelo) return;
 
   const areaModelo = Number(modelo.area_m2) || 1;
-
-  // Agrupar lançamentos por etapa
   const lancModelo = lancamentos.filter(l => l.obra_id === modeloId);
+
+  // Agrupar por etapa COM detalhamento de itens
   const porEtapa = {};
   let totalModelo = 0;
 
   lancModelo.forEach(l => {
     const etapa = l.etapa || '36_outros';
-    if (!porEtapa[etapa]) porEtapa[etapa] = 0;
-    porEtapa[etapa] += Number(l.total || 0);
-    totalModelo += Number(l.total || 0);
+    if (!porEtapa[etapa]) porEtapa[etapa] = { total: 0, itens: [] };
+    const val = Number(l.total || 0);
+    porEtapa[etapa].total += val;
+    porEtapa[etapa].itens.push({
+      descricao: l.descricao || 'Sem descrição',
+      qtd: Number(l.qtd || 0),
+      preco: Number(l.preco || 0),
+      total: val,
+      data: l.data || ''
+    });
+    totalModelo += val;
   });
 
-  // Calcular índices e projetar
-  const custoM2Modelo = totalModelo / areaModelo;
+  // Calcular índices com correção
+  const custoM2Modelo = (totalModelo / areaModelo) * fatorCorrecao;
   const totalEstimado = custoM2Modelo * areaNova;
   const valorVenda = Number(modelo.valor_venda || 0);
-  const vendaM2 = valorVenda > 0 ? valorVenda / areaModelo : 0;
+  const vendaM2 = valorVenda > 0 ? (valorVenda / areaModelo) * fatorCorrecao : 0;
   const vendaEstimada = vendaM2 * areaNova;
   const lucroEstimado = vendaEstimada > 0 ? vendaEstimada - totalEstimado : 0;
   const margemEstimada = vendaEstimada > 0 ? (lucroEstimado / vendaEstimada * 100) : 0;
 
   // Cards resumo
+  const correcaoTag = correcaoPct > 0 ? `<span style="font-size:9px;color:#fbbf24;margin-left:4px;">+${correcaoPct}%</span>` : '';
   if (cardsEl) {
     cardsEl.innerHTML = `
       <div style="flex:1;min-width:140px;background:var(--bg2);border:1px solid var(--borda);border-radius:10px;padding:14px;text-align:center;">
-        <div style="font-size:10px;color:var(--texto3);font-weight:700;text-transform:uppercase;">Custo Estimado</div>
+        <div style="font-size:10px;color:var(--texto3);font-weight:700;text-transform:uppercase;">Custo Estimado${correcaoTag}</div>
         <div style="font-size:20px;font-weight:800;color:var(--vermelho);margin-top:4px;">R$ ${fmtN(totalEstimado)}</div>
         <div style="font-size:10px;color:var(--texto4);margin-top:2px;">R$ ${fmtN(custoM2Modelo)}/m²</div>
       </div>
       ${vendaEstimada > 0 ? `
       <div style="flex:1;min-width:140px;background:var(--bg2);border:1px solid var(--borda);border-radius:10px;padding:14px;text-align:center;">
-        <div style="font-size:10px;color:var(--texto3);font-weight:700;text-transform:uppercase;">Venda Estimada</div>
+        <div style="font-size:10px;color:var(--texto3);font-weight:700;text-transform:uppercase;">Venda Estimada${correcaoTag}</div>
         <div style="font-size:20px;font-weight:800;color:var(--azul);margin-top:4px;">R$ ${fmtN(vendaEstimada)}</div>
         <div style="font-size:10px;color:var(--texto4);margin-top:2px;">R$ ${fmtN(vendaM2)}/m²</div>
       </div>
@@ -125,20 +141,25 @@ function calcOrcamento() {
     `;
   }
 
-  // Tabela por etapa
+  // Tabela por etapa com detalhamento
   const etapasOrdenadas = Object.entries(porEtapa)
-    .map(([key, val]) => ({
+    .map(([key, dados]) => ({
       key,
       label: etapaLabel(key),
-      totalModelo: val,
-      porM2: val / areaModelo,
-      estimado: (val / areaModelo) * areaNova,
-      pct: totalModelo > 0 ? (val / totalModelo * 100) : 0
+      totalModelo: dados.total,
+      porM2: (dados.total / areaModelo) * fatorCorrecao,
+      estimado: (dados.total / areaModelo) * fatorCorrecao * areaNova,
+      pct: totalModelo > 0 ? (dados.total / totalModelo * 100) : 0,
+      itens: dados.itens.sort((a, b) => b.total - a.total)
     }))
     .sort((a, b) => b.estimado - a.estimado);
 
+  // Cache para export
+  _orcDadosCalc = { modelo, areaModelo, areaNova, custoM2Modelo, totalEstimado, vendaEstimada, lucroEstimado, margemEstimada, etapasOrdenadas, correcaoPct, fatorCorrecao };
+
   if (tabelaEl) {
     tabelaEl.innerHTML = `
+      <div style="font-size:10px;color:var(--texto4);margin-bottom:6px;">Clique na etapa para ver o detalhamento de insumos</div>
       <table style="width:100%;border-collapse:collapse;font-size:12px;">
         <thead>
           <tr style="background:var(--bg3);border-bottom:2px solid var(--borda);">
@@ -146,19 +167,48 @@ function calcOrcamento() {
             <th style="text-align:right;padding:10px 12px;font-size:10px;font-weight:700;color:var(--texto3);text-transform:uppercase;">R$/m²</th>
             <th style="text-align:right;padding:10px 12px;font-size:10px;font-weight:700;color:var(--texto3);text-transform:uppercase;">Estimado</th>
             <th style="text-align:right;padding:10px 12px;font-size:10px;font-weight:700;color:var(--texto3);text-transform:uppercase;">%</th>
-            <th style="text-align:left;padding:10px 12px;font-size:10px;font-weight:700;color:var(--texto3);text-transform:uppercase;width:30%;">Peso</th>
+            <th style="text-align:left;padding:10px 12px;font-size:10px;font-weight:700;color:var(--texto3);text-transform:uppercase;width:25%;">Peso</th>
           </tr>
         </thead>
         <tbody>
           ${etapasOrdenadas.map((e, i) => `
-            <tr style="border-bottom:1px solid var(--borda);${i % 2 ? 'background:var(--bg2);' : ''}">
-              <td style="padding:8px 12px;font-weight:600;color:var(--texto);">${e.label}</td>
+            <tr onclick="orcToggleDetalhe('orc-det-${i}')" style="border-bottom:1px solid var(--borda);cursor:pointer;${i % 2 ? 'background:var(--bg2);' : ''}transition:background 0.15s;" onmouseover="this.style.background='rgba(34,197,94,0.06)'" onmouseout="this.style.background='${i % 2 ? 'var(--bg2)' : ''}'">
+              <td style="padding:8px 12px;font-weight:600;color:var(--texto);"><span style="margin-right:6px;font-size:10px;color:var(--texto4);">▶</span>${e.label}</td>
               <td style="padding:8px 12px;text-align:right;color:var(--texto2);font-family:'JetBrains Mono',monospace;">R$ ${fmtN(e.porM2)}</td>
               <td style="padding:8px 12px;text-align:right;font-weight:700;color:var(--texto);font-family:'JetBrains Mono',monospace;">R$ ${fmtN(e.estimado)}</td>
               <td style="padding:8px 12px;text-align:right;color:var(--texto3);font-family:'JetBrains Mono',monospace;">${e.pct.toFixed(1)}%</td>
               <td style="padding:8px 12px;">
                 <div style="background:var(--borda);border-radius:4px;height:8px;overflow:hidden;">
                   <div style="background:var(--verde);height:100%;width:${e.pct}%;border-radius:4px;transition:width 0.3s;"></div>
+                </div>
+              </td>
+            </tr>
+            <tr id="orc-det-${i}" style="display:none;">
+              <td colspan="5" style="padding:0;">
+                <div style="background:rgba(34,197,94,0.03);border-left:3px solid var(--verde);padding:8px 12px 8px 24px;">
+                  <table style="width:100%;border-collapse:collapse;font-size:11px;">
+                    <thead>
+                      <tr>
+                        <th style="text-align:left;padding:4px 8px;color:var(--texto4);font-size:9px;font-weight:700;text-transform:uppercase;">Insumo</th>
+                        <th style="text-align:right;padding:4px 8px;color:var(--texto4);font-size:9px;font-weight:700;text-transform:uppercase;">Qtd</th>
+                        <th style="text-align:right;padding:4px 8px;color:var(--texto4);font-size:9px;font-weight:700;text-transform:uppercase;">Preço un.</th>
+                        <th style="text-align:right;padding:4px 8px;color:var(--texto4);font-size:9px;font-weight:700;text-transform:uppercase;">Total base</th>
+                        <th style="text-align:right;padding:4px 8px;color:var(--texto4);font-size:9px;font-weight:700;text-transform:uppercase;">Projetado</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${e.itens.map(item => {
+                        const proj = (item.total / areaModelo) * fatorCorrecao * areaNova;
+                        return '<tr style="border-bottom:1px solid rgba(255,255,255,0.03);">'
+                          + '<td style="padding:5px 8px;color:var(--texto2);">' + esc(item.descricao) + '</td>'
+                          + '<td style="padding:5px 8px;text-align:right;color:var(--texto3);font-family:\'JetBrains Mono\',monospace;">' + (item.qtd || '\u2014') + '</td>'
+                          + '<td style="padding:5px 8px;text-align:right;color:var(--texto3);font-family:\'JetBrains Mono\',monospace;">' + (item.preco ? 'R$ ' + fmtN(item.preco) : '\u2014') + '</td>'
+                          + '<td style="padding:5px 8px;text-align:right;color:var(--texto3);font-family:\'JetBrains Mono\',monospace;">R$ ' + fmtN(item.total) + '</td>'
+                          + '<td style="padding:5px 8px;text-align:right;color:var(--texto);font-weight:600;font-family:\'JetBrains Mono\',monospace;">R$ ' + fmtN(proj) + '</td>'
+                          + '</tr>';
+                      }).join('')}
+                    </tbody>
+                  </table>
                 </div>
               </td>
             </tr>
@@ -176,62 +226,55 @@ function calcOrcamento() {
   }
 }
 
+function orcToggleDetalhe(id) {
+  const row = document.getElementById(id);
+  if (!row) return;
+  const aberto = row.style.display !== 'none';
+  row.style.display = aberto ? 'none' : '';
+  // Atualizar seta
+  const etapaRow = row.previousElementSibling;
+  if (etapaRow) {
+    const seta = etapaRow.querySelector('span');
+    if (seta) seta.textContent = aberto ? '▶' : '▼';
+  }
+}
+
 function fmtN(n) {
   return Number(n).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function exportarOrcamento() {
-  const modeloId = document.getElementById('orc-modelo')?.value;
-  const areaNova = parseFloat(document.getElementById('orc-area')?.value) || 0;
+  const d = _orcDadosCalc;
+  if (!d) { showToast('Selecione modelo e informe a area.'); return; }
   const cliente = document.getElementById('orc-cliente')?.value || 'Sem nome';
-
-  if (!modeloId || areaNova <= 0) { showToast('Selecione modelo e informe a area.'); return; }
-
-  const modelo = obras.find(o => o.id === modeloId)
-    || (typeof obrasArquivadas !== 'undefined' ? obrasArquivadas : []).find(o => o.id === modeloId);
-  if (!modelo) return;
-
-  const areaModelo = Number(modelo.area_m2) || 1;
-  const lancModelo = lancamentos.filter(l => l.obra_id === modeloId);
-  const porEtapa = {};
-  let totalModelo = 0;
-
-  lancModelo.forEach(l => {
-    const etapa = l.etapa || '36_outros';
-    if (!porEtapa[etapa]) porEtapa[etapa] = 0;
-    porEtapa[etapa] += Number(l.total || 0);
-    totalModelo += Number(l.total || 0);
-  });
-
-  const custoM2 = totalModelo / areaModelo;
-  const totalEst = custoM2 * areaNova;
-
-  const etapas = Object.entries(porEtapa)
-    .map(([key, val]) => ({
-      label: etapaLabel(key).replace(/^[^\w]*/, ''),
-      porM2: val / areaModelo,
-      estimado: (val / areaModelo) * areaNova,
-      pct: totalModelo > 0 ? (val / totalModelo * 100) : 0
-    }))
-    .sort((a, b) => b.estimado - a.estimado);
 
   const hoje = new Date().toLocaleDateString('pt-BR');
   let csv = 'ORCAMENTO ESTIMADO - EDR ENGENHARIA\n';
   csv += `Cliente: ${cliente}\n`;
-  csv += `Area: ${areaNova} m2\n`;
-  csv += `Modelo base: ${modelo.nome} (${areaModelo} m2)\n`;
+  csv += `Area: ${d.areaNova} m2\n`;
+  csv += `Modelo base: ${d.modelo.nome} (${d.areaModelo} m2)\n`;
+  if (d.correcaoPct > 0) csv += `Correcao INCC: +${d.correcaoPct}%\n`;
   csv += `Data: ${hoje}\n\n`;
   csv += 'ETAPA;R$/M2;ESTIMADO;%\n';
-  etapas.forEach(e => {
-    csv += `${e.label};${e.porM2.toFixed(2)};${e.estimado.toFixed(2)};${e.pct.toFixed(1)}%\n`;
+  d.etapasOrdenadas.forEach(e => {
+    csv += `${e.label.replace(/^[^\w]*/, '')};${e.porM2.toFixed(2)};${e.estimado.toFixed(2)};${e.pct.toFixed(1)}%\n`;
+    // Detalhamento de itens
+    e.itens.forEach(item => {
+      const proj = (item.total / d.areaModelo) * d.fatorCorrecao * d.areaNova;
+      csv += `  ${item.descricao};${item.qtd || ''};${item.total.toFixed(2)};${proj.toFixed(2)}\n`;
+    });
   });
-  csv += `\nTOTAL;${custoM2.toFixed(2)};${totalEst.toFixed(2)};100%\n`;
+  csv += `\nTOTAL;${d.custoM2Modelo.toFixed(2)};${d.totalEstimado.toFixed(2)};100%\n`;
+  if (d.vendaEstimada > 0) {
+    csv += `\nVenda estimada;;${d.vendaEstimada.toFixed(2)}\n`;
+    csv += `Lucro estimado;;${d.lucroEstimado.toFixed(2)};${d.margemEstimada.toFixed(1)}%\n`;
+  }
 
   const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `orcamento-${cliente.replace(/\s+/g, '-').toLowerCase()}-${areaNova}m2.csv`;
+  a.download = `orcamento-${cliente.replace(/\s+/g, '-').toLowerCase()}-${d.areaNova}m2.csv`;
   a.click();
   URL.revokeObjectURL(url);
   showToast('Orcamento exportado!');
