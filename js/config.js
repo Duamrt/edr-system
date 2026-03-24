@@ -223,7 +223,7 @@ create table if not exists repasses_cef (
   criado_em timestamptz default now()
 );
 alter table repasses_cef enable row level security;
-create policy "repasses_cef_all" on repasses_cef for all using (true) with check (true);
+create policy "repasses_auth" on repasses_cef for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
 
 -- Rastreamento: quem fez cada lançamento
 alter table lancamentos add column if not exists criado_por text default '';
@@ -294,7 +294,7 @@ create table if not exists contas_pagar (
   criado_em timestamptz default now()
 );
 alter table contas_pagar enable row level security;
-create policy "contas_pagar_all" on contas_pagar for all using (true) with check (true);
+create policy "contas_pagar_auth" on contas_pagar for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
 
 -- Projecoes de caixa (fluxo de caixa projetado)
 create table if not exists projecoes_caixa (
@@ -307,7 +307,7 @@ create table if not exists projecoes_caixa (
   criado_em timestamptz default now()
 );
 alter table projecoes_caixa enable row level security;
-create policy "projecoes_caixa_all" on projecoes_caixa for all using (true) with check (true);
+create policy "projecoes_caixa_auth" on projecoes_caixa for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
 
 -- Chamados de garantia pós-entrega
 create table if not exists garantia_chamados (
@@ -324,7 +324,7 @@ create table if not exists garantia_chamados (
   atualizado_em timestamptz default now()
 );
 alter table garantia_chamados enable row level security;
-create policy "garantia_chamados_all" on garantia_chamados for all using (true) with check (true);`;
+create policy "garantia_chamados_auth" on garantia_chamados for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');`;
 
 // ══════════════════════════════════════════
 // ESTADO
