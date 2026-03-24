@@ -610,6 +610,7 @@ async function diarCarregarRegistros() {
 function diarGetRegistrosQuinzena() { return diarRegistros; }
 
 function diarAbrirModalNovaQuinzena() {
+  if (usuarioAtual?.perfil === 'mestre') { showToast('⚠ Sem permissão para criar quinzena.'); return; }
   const hoje = hojeISO();
   document.body.insertAdjacentHTML('beforeend', `
   <div id="diar-modalNQ" style="position:fixed;inset:0;background:rgba(0,0,0,0.82);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px">
@@ -651,13 +652,19 @@ function diarSugerirLabelNQ() {
 }
 
 async function diarSalvarNovaQuinzena() {
+  if (usuarioAtual?.perfil === 'mestre') { showToast('⚠ Sem permissão.'); return; }
   const label  = (document.getElementById('nq-label')?.value||'').trim();
   const inicio = document.getElementById('nq-inicio')?.value;
   const fim    = document.getElementById('nq-fim')?.value;
   if (!label||!inicio||!fim) { showToast('⚠ Preencha todos os campos.'); return; }
+  if (inicio > fim) { showToast('⚠ Data início não pode ser maior que data fim.'); return; }
   if (!_companyId) { showToast('Erro: empresa nao carregada. Recarregue a pagina.'); return; }
-  // Bloquear quinzena duplicada (mesma data de inicio ou mesmo label)
-  const jaExiste = diarQuinzenas.find(q => q.data_inicio === inicio || q.label.trim().toLowerCase() === label.toLowerCase());
+  // Bloquear quinzena duplicada (sobreposição de datas OU label igual)
+  const jaExiste = diarQuinzenas.find(q => {
+    const labelIgual = q.label.trim().toLowerCase() === label.toLowerCase();
+    const sobreposicao = q.data_inicio <= fim && q.data_fim >= inicio;
+    return labelIgual || sobreposicao;
+  });
   if (jaExiste) { showToast('⚠ Ja existe uma quinzena com esse periodo: ' + jaExiste.label); return; }
   try {
     const result = await sbPost('diarias_quinzenas', { label, data_inicio: inicio, data_fim: fim, fechada: false });

@@ -999,6 +999,11 @@ body::before {
   #view-diarias .diarias-tab { font-size: 10px; padding: 6px 10px; }
   #view-diarias .diarias-registro-row { flex-wrap: wrap; gap: 4px; padding: 7px 10px; }
   #view-diarias .diarias-rr-obras { flex: 1 1 100%; order: 3; }
+  /* Form manual — mobile fix (16px evita zoom iOS) */
+  #diar-formManual select,
+  #diar-formManual button { font-size: 16px !important; min-height: 44px; }
+  #diar-formManual select { padding: 12px !important; width: 100% !important; box-sizing: border-box; }
+  #diar-btnFormManual { font-size: 15px !important; min-height: 48px; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 }
 /* Perfil Mestre: sem valores, sem lançar no EDR, sem exportar */
 body.perfil-mestre .diarias-func-val,
