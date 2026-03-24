@@ -107,11 +107,26 @@ const SYNC='pci-medicoes-v1',CACHE='pci_cache';
 
 // ── Dados das PCIs (extraídos dos .xlsb) ──
 const ETAPAS_CEF = [
-  'Serviços Preliminares e Gerais','Infraestrutura','Superestrutura','Paredes e Painéis',
-  'Esquadrias','Vidros e Plásticos','Coberturas','Impermeabilizações',
-  'Revestimentos Internos','Forros','Revestimentos Externos','Pintura',
-  'Pisos','Acabamentos','Inst. Elétricas e Telefônicas','Instalações Hidráulicas',
-  'Inst. Esgoto e Águas Pluviais','Louças e Metais','Complementos','Outros Serviços'
+  {nome:'Serviços Preliminares e Gerais',desc:'Limpeza terreno, tapume, locação da obra, placa, canteiro'},
+  {nome:'Infraestrutura',desc:'Estacas, brocas, baldrames, sapatas, radier'},
+  {nome:'Superestrutura',desc:'Vigas, pilares, cintas, lajes, escadas'},
+  {nome:'Paredes e Painéis',desc:'Alvenaria de vedação, painéis, vergas, contravergas'},
+  {nome:'Esquadrias',desc:'Portas, janelas, batentes, ferragens'},
+  {nome:'Vidros e Plásticos',desc:'Vidros das esquadrias, box, espelhos'},
+  {nome:'Coberturas',desc:'Estrutura do telhado, telhas, calhas, rufos, cumeeiras'},
+  {nome:'Impermeabilizações',desc:'Laje, banheiros, áreas molhadas, baldrames'},
+  {nome:'Revestimentos Internos',desc:'Reboco interno, gesso, chapisco, massa corrida'},
+  {nome:'Forros',desc:'Forro de gesso, PVC, madeira'},
+  {nome:'Revestimentos Externos',desc:'Reboco externo, textura, grafiato, cerâmica fachada'},
+  {nome:'Pintura',desc:'Pintura interna e externa, selador, massa PVA'},
+  {nome:'Pisos',desc:'Contrapiso, cerâmica, porcelanato, cimentado, soleira'},
+  {nome:'Acabamentos',desc:'Soleiras, rodapés, peitoril, arremates gerais'},
+  {nome:'Inst. Elétricas e Telefônicas',desc:'Eletrodutos, fiação, quadro, tomadas, interruptores, interfone'},
+  {nome:'Instalações Hidráulicas',desc:'Água fria, água quente, registros, caixa d\'água, tubulação'},
+  {nome:'Inst. Esgoto e Águas Pluviais',desc:'Esgoto, caixa de gordura, caixa de passagem, águas pluviais'},
+  {nome:'Louças e Metais',desc:'Vasos, pias, torneiras, chuveiros, acessórios'},
+  {nome:'Complementos',desc:'Limpeza final, calafete, entrega de chaves'},
+  {nome:'Outros Serviços',desc:'Muro, portão, cisterna, fossa, calçada, área externa, paisagismo'}
 ];
 
 const OBRAS_PCI = [
@@ -193,7 +208,7 @@ function render(){
     const isOpen=expanded.has(obra.id);
 
     // Etapas não iniciadas com maior peso (sugestão de compensação)
-    const compens=obra.pesos.map((p,i)=>({nome:ETAPAS_CEF[i],peso:p,exec:obra.exec[i]||0,idx:i}))
+    const compens=obra.pesos.map((p,i)=>({nome:ETAPAS_CEF[i].nome,peso:p,exec:obra.exec[i]||0,idx:i}))
       .filter(e=>e.exec<1&&e.peso>0)
       .sort((a,b)=>b.peso-a.peso)
       .slice(0,5);
@@ -237,8 +252,8 @@ function render(){
               const e=obra.exec[i]||0;
               const pct=Math.round(e*100);
               const cls=pct===0?'exec-zero':pct>=100?'exec-done':'exec-partial';
-              return`<tr>
-                <td class="etapa-nome">${ETAPAS_CEF[i]}</td>
+              return`<tr title="${ETAPAS_CEF[i].desc}">
+                <td class="etapa-nome">${ETAPAS_CEF[i].nome}<div style="font-size:.68rem;color:#3d6b48;margin-top:1px">${ETAPAS_CEF[i].desc}</div></td>
                 <td class="etapa-peso">${p.toFixed(1)}%</td>
                 <td><div class="etapa-bar"><div class="etapa-bar-fill ${corProg(pct)}" style="width:${pct}%"></div></div><span class="etapa-exec ${cls}">${pct}%</span></td>
                 <td><input type="range" class="exec-slider" min="0" max="100" step="5" value="${pct}" onchange="setExec('${obra.id}',${i},this.value)" oninput="this.nextElementSibling.textContent=this.value+'%'" /><span style="font-size:.7rem;color:#6b9e78;margin-left:4px;font-family:monospace">${pct}%</span></td>
