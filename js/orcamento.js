@@ -6,27 +6,26 @@ function renderOrcamento() {
   const el = document.getElementById('orcamento-container');
   if (!el) return;
 
-  // Obras concluídas com área preenchida
-  const concluidas = (typeof obrasArquivadas !== 'undefined' ? obrasArquivadas : [])
-    .concat(obras.filter(o => o.status === 'concluida'))
-    .filter(o => Number(o.area_m2) > 0);
+  // Obras arquivadas (concluídas) + ativas com area — todas servem de modelo
+  const todas = (typeof obrasArquivadas !== 'undefined' ? obrasArquivadas : []).concat(obras);
+  const concluidas = todas.filter(o => Number(o.area_m2) > 0);
 
   el.innerHTML = `
     <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin:16px 0;">
       <div style="flex:1;min-width:200px;">
         <label style="font-size:10px;font-weight:700;color:var(--texto3);text-transform:uppercase;letter-spacing:1px;">Obra modelo (concluida)</label>
-        <select id="orc-modelo" onchange="calcOrcamento()" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--borda);background:var(--bg2);color:var(--texto);font-size:13px;margin-top:4px;">
+        <select id="orc-modelo" onchange="calcOrcamento()" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--borda);background:var(--card);color:var(--texto);font-size:13px;margin-top:4px;-webkit-appearance:none;">
           <option value="">Selecione uma obra concluida...</option>
           ${concluidas.map(o => `<option value="${o.id}">${o.nome} (${Number(o.area_m2).toFixed(0)}m²)</option>`).join('')}
         </select>
       </div>
       <div style="min-width:140px;">
         <label style="font-size:10px;font-weight:700;color:var(--texto3);text-transform:uppercase;letter-spacing:1px;">Area nova (m²)</label>
-        <input id="orc-area" type="number" step="0.01" placeholder="Ex: 80" oninput="calcOrcamento()" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--borda);background:var(--bg2);color:var(--texto);font-size:13px;margin-top:4px;">
+        <input id="orc-area" type="number" step="0.01" placeholder="Ex: 80" oninput="calcOrcamento()" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--borda);background:var(--card);color:var(--texto);font-size:13px;margin-top:4px;-webkit-appearance:none;">
       </div>
       <div style="min-width:160px;">
         <label style="font-size:10px;font-weight:700;color:var(--texto3);text-transform:uppercase;letter-spacing:1px;">Cliente (opcional)</label>
-        <input id="orc-cliente" type="text" placeholder="Nome do cliente" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--borda);background:var(--bg2);color:var(--texto);font-size:13px;margin-top:4px;">
+        <input id="orc-cliente" type="text" placeholder="Nome do cliente" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--borda);background:var(--card);color:var(--texto);font-size:13px;margin-top:4px;-webkit-appearance:none;">
       </div>
       <button class="btn-save" onclick="exportarOrcamento()" style="padding:10px 20px;font-size:12px;white-space:nowrap;">EXPORTAR</button>
     </div>
