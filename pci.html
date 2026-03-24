@@ -7,69 +7,69 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
-  body{font-family:'Segoe UI',system-ui,sans-serif;background:#0a0f0c;color:#d1fae5;min-height:100vh;font-size:14px}
+  body{font-family:'Segoe UI',system-ui,sans-serif;background:#111318;color:#e2e4e9;min-height:100vh;font-size:14px}
 
-  .header{background:linear-gradient(135deg,#004704,#006608);padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+  .header{background:#1a1d24;border-bottom:1px solid #2a2d35;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
   .header h1{font-size:1.1rem;font-weight:700;color:#fff}
-  .header .sub{font-size:.7rem;color:rgba(255,255,255,.6);letter-spacing:1px}
-  .header a{color:#4ade80;text-decoration:none;font-size:.8rem}
+  .header .sub{font-size:.7rem;color:#8b8fa0;letter-spacing:1px}
+  .header a{color:#60a5fa;text-decoration:none;font-size:.8rem}
 
   .container{max-width:1200px;margin:0 auto;padding:20px}
 
   /* Cards de obra */
-  .obra-card{background:#111f14;border:1px solid #1e3a22;border-radius:12px;margin-bottom:16px;overflow:hidden}
+  .obra-card{background:#1a1d24;border:1px solid #2a2d35;border-radius:12px;margin-bottom:16px;overflow:hidden}
   .obra-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;cursor:pointer;transition:background .2s}
-  .obra-header:hover{background:#152a18}
-  .obra-nome{font-size:1rem;font-weight:700;color:#4ade80}
-  .obra-meta-info{font-size:.78rem;color:#6b9e78;display:flex;gap:16px;margin-top:4px}
+  .obra-header:hover{background:#22252e}
+  .obra-nome{font-size:1rem;font-weight:700;color:#60a5fa}
+  .obra-meta-info{font-size:.78rem;color:#8b8fa0;display:flex;gap:16px;margin-top:4px}
   .obra-prog{display:flex;align-items:center;gap:12px}
   .obra-pct{font-size:1.4rem;font-weight:700;min-width:60px;text-align:right}
-  .obra-bar{width:120px;height:8px;background:#1e3a22;border-radius:4px;overflow:hidden}
+  .obra-bar{width:120px;height:8px;background:#2a2d35;border-radius:4px;overflow:hidden}
   .obra-bar-fill{height:100%;border-radius:4px;transition:width .3s}
-  .verde{background:#4ade80}
+  .verde{background:#34d399}
   .amarelo{background:#fbbf24}
   .vermelho{background:#f87171}
-  .obra-arrow{color:#3d6b48;font-size:1rem;transition:transform .2s}
-  .obra-arrow.open{transform:rotate(90deg);color:#4ade80}
+  .obra-arrow{color:#555;font-size:1rem;transition:transform .2s}
+  .obra-arrow.open{transform:rotate(90deg);color:#60a5fa}
 
   /* Corpo expandido */
-  .obra-body{display:none;padding:0 20px 20px;border-top:1px solid #1e3a22}
+  .obra-body{display:none;padding:0 20px 20px;border-top:1px solid #2a2d35}
   .obra-body.open{display:block}
 
   /* Stats da obra */
   .obra-stats{display:flex;gap:12px;margin:16px 0;flex-wrap:wrap}
-  .stat{background:#0d1a0f;border:1px solid #1e3a22;border-radius:8px;padding:10px 14px;flex:1;min-width:120px}
-  .stat .num{font-size:1.1rem;font-weight:700}
-  .stat .lbl{font-size:.7rem;color:#6b9e78;text-transform:uppercase;letter-spacing:.5px}
+  .stat{background:#15171e;border:1px solid #2a2d35;border-radius:8px;padding:10px 14px;flex:1;min-width:120px}
+  .stat .num{font-size:1.1rem;font-weight:700;color:#e2e4e9}
+  .stat .lbl{font-size:.7rem;color:#8b8fa0;text-transform:uppercase;letter-spacing:.5px}
   .stat.alerta .num{color:#f87171}
-  .stat.ok .num{color:#4ade80}
+  .stat.ok .num{color:#34d399}
   .stat.warn .num{color:#fbbf24}
 
   /* Tabela de etapas */
   .etapas{width:100%;border-collapse:collapse;margin-top:12px}
-  .etapas th{text-align:left;font-size:.7rem;color:#6b9e78;text-transform:uppercase;letter-spacing:.5px;padding:8px 10px;border-bottom:1px solid #1e3a22}
-  .etapas td{padding:8px 10px;border-bottom:1px solid #0d1a0f;font-size:.82rem;vertical-align:middle}
-  .etapas tr:hover{background:#152a18}
-  .etapas .etapa-nome{color:#d1fae5;font-weight:500}
-  .etapas .etapa-peso{color:#6b9e78;font-family:monospace}
-  .etapa-bar{width:80px;height:6px;background:#1e3a22;border-radius:3px;overflow:hidden;display:inline-block;vertical-align:middle;margin-right:6px}
+  .etapas th{text-align:left;font-size:.7rem;color:#8b8fa0;text-transform:uppercase;letter-spacing:.5px;padding:8px 10px;border-bottom:1px solid #2a2d35}
+  .etapas td{padding:8px 10px;border-bottom:1px solid #1e2028;font-size:.82rem;vertical-align:middle}
+  .etapas tr:hover{background:#22252e}
+  .etapas .etapa-nome{color:#e2e4e9;font-weight:500}
+  .etapas .etapa-peso{color:#8b8fa0;font-family:monospace}
+  .etapa-bar{width:80px;height:6px;background:#2a2d35;border-radius:3px;overflow:hidden;display:inline-block;vertical-align:middle;margin-right:6px}
   .etapa-bar-fill{height:100%;border-radius:3px}
   .etapa-exec{font-family:monospace;font-weight:600}
-  .exec-zero{color:#3d6b48}
+  .exec-zero{color:#555}
   .exec-partial{color:#fbbf24}
-  .exec-done{color:#4ade80}
+  .exec-done{color:#34d399}
 
   /* Slider de execução */
-  .exec-slider{width:80px;accent-color:#4ade80;cursor:pointer;vertical-align:middle}
+  .exec-slider{width:80px;accent-color:#60a5fa;cursor:pointer;vertical-align:middle}
 
   /* Sugestão de compensação */
-  .compensacao{background:#1a1400;border:1px solid #3d3000;border-radius:8px;padding:12px 16px;margin-top:12px}
+  .compensacao{background:#1c1a14;border:1px solid #3d3520;border-radius:8px;padding:12px 16px;margin-top:12px}
   .compensacao h4{font-size:.82rem;color:#fbbf24;margin-bottom:8px}
-  .comp-item{font-size:.8rem;color:#d1fae5;padding:4px 0;display:flex;justify-content:space-between}
-  .comp-ganho{color:#4ade80;font-weight:600;font-family:monospace}
+  .comp-item{font-size:.8rem;color:#e2e4e9;padding:4px 0;display:flex;justify-content:space-between}
+  .comp-ganho{color:#34d399;font-weight:600;font-family:monospace}
 
   /* Saving */
-  .saving{position:fixed;top:12px;left:50%;transform:translateX(-50%);background:#4ade80;color:#000;padding:6px 16px;border-radius:20px;font-size:.75rem;font-weight:600;opacity:0;transition:opacity .3s;z-index:999}
+  .saving{position:fixed;top:12px;left:50%;transform:translateX(-50%);background:#60a5fa;color:#000;padding:6px 16px;border-radius:20px;font-size:.75rem;font-weight:600;opacity:0;transition:opacity .3s;z-index:999}
   .saving.vis{opacity:1}
 
   /* Mobile */
