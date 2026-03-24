@@ -356,8 +356,9 @@ function filtrar(evs){const f=getFiltros();return evs.filter(e=>{
   if(!f[e.prioridade||'baixa'])return false;if(!f[e.categoria])return false;return true})}
 function ordenar(evs){return[...evs].sort((a,b)=>{
   if(a.concluido!==b.concluido)return a.concluido?1:-1;
-  const p={alta:0,media:1,baixa:2};const pa=p[a.prioridade||'baixa']||2,pb=p[b.prioridade||'baixa']||2;
-  if(pa!==pb)return pa-pb;return(a.hora||'').localeCompare(b.hora||'')})}
+  const ha=(a.hora||'99:99'),hb=(b.hora||'99:99');
+  if(ha!==hb)return ha.localeCompare(hb);
+  const p={alta:0,media:1,baixa:2};return(p[a.prioridade||'baixa']||2)-(p[b.prioridade||'baixa']||2)})}
 
 // ── Render evento HTML (compartilhado) ──
 function renderEv(ev){
