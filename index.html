@@ -182,6 +182,9 @@
     <button class="nav-btn admin-only" id="nav-garantias" data-view="garantias" onclick="setView('garantias')">
       <span class="nav-icon">🛡</span>Garantia
     </button>
+    <button class="nav-btn admin-only" id="nav-orcamento" data-view="orcamento" onclick="setView('orcamento')">
+      <span class="nav-icon">📐</span>Orcamento
+    </button>
   </div>
 
   <div class="sidebar-group-label" onclick="toggleSidebarGroup(this)">MATERIAIS</div>
@@ -835,6 +838,12 @@
       <div id="contas-stats" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;"></div>
     </div>
     <div id="contas-lista"></div>
+  </div>
+
+  <!-- ORCAMENTO PARAMETRICO -->
+  <div id="view-orcamento" class="hidden">
+    <div class="modulo-badge">📐 ORCAMENTO PARAMETRICO</div>
+    <div id="orcamento-container"></div>
   </div>
 
   <!-- GARANTIA POS-ENTREGA -->
@@ -1585,6 +1594,7 @@ VERGALHAO CA50" style="width:100%;min-height:140px;padding:14px;background:var(-
 <script src="js/garantias.js?v=03231103"></script>
 <script src="js/dashboard.js?v=03231103"></script>
 <script src="js/custos.js?v=03231103"></script>
+<script src="js/orcamento.js?v=03241600"></script>
 <script src="js/menu.js?v=03231103"></script>
 <script src="js/leads.js?v=03231103"></script>
 <script src="js/clickup.js?v=03231103"></script>
