@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PCI — Acompanhamento de Medições</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Segoe UI',system-ui,sans-serif;background:#0a0f0c;color:#d1fae5;min-height:100vh;font-size:14px}
+
+  .header{background:linear-gradient(135deg,#004704,#006608);padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+  .header h1{font-size:1.1rem;font-weight:700;color:#fff}
+  .header .sub{font-size:.7rem;color:rgba(255,255,255,.6);letter-spacing:1px}
+  .header a{color:#4ade80;text-decoration:none;font-size:.8rem}
+
+  .container{max-width:1200px;margin:0 auto;padding:20px}
+
+  /* Cards de obra */
+  .obra-card{background:#111f14;border:1px solid #1e3a22;border-radius:12px;margin-bottom:16px;overflow:hidden}
+  .obra-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;cursor:pointer;transition:background .2s}
+  .obra-header:hover{background:#152a18}
+  .obra-nome{font-size:1rem;font-weight:700;color:#4ade80}
+  .obra-meta-info{font-size:.78rem;color:#6b9e78;display:flex;gap:16px;margin-top:4px}
+  .obra-prog{display:flex;align-items:center;gap:12px}
+  .obra-pct{font-size:1.4rem;font-weight:700;min-width:60px;text-align:right}
+  .obra-bar{width:120px;height:8px;background:#1e3a22;border-radius:4px;overflow:hidden}
+  .obra-bar-fill{height:100%;border-radius:4px;transition:width .3s}
+  .verde{background:#4ade80}
+  .amarelo{background:#fbbf24}
+  .vermelho{background:#f87171}
+  .obra-arrow{color:#3d6b48;font-size:1rem;transition:transform .2s}
+  .obra-arrow.open{transform:rotate(90deg);color:#4ade80}
+
+  /* Corpo expandido */
+  .obra-body{display:none;padding:0 20px 20px;border-top:1px solid #1e3a22}
+  .obra-body.open{display:block}
+
+  /* Stats da obra */
+  .obra-stats{display:flex;gap:12px;margin:16px 0;flex-wrap:wrap}
+  .stat{background:#0d1a0f;border:1px solid #1e3a22;border-radius:8px;padding:10px 14px;flex:1;min-width:120px}
+  .stat .num{font-size:1.1rem;font-weight:700}
+  .stat .lbl{font-size:.7rem;color:#6b9e78;text-transform:uppercase;letter-spacing:.5px}
+  .stat.alerta .num{color:#f87171}
+  .stat.ok .num{color:#4ade80}
+  .stat.warn .num{color:#fbbf24}
+
+  /* Tabela de etapas */
+  .etapas{width:100%;border-collapse:collapse;margin-top:12px}
+  .etapas th{text-align:left;font-size:.7rem;color:#6b9e78;text-transform:uppercase;letter-spacing:.5px;padding:8px 10px;border-bottom:1px solid #1e3a22}
+  .etapas td{padding:8px 10px;border-bottom:1px solid #0d1a0f;font-size:.82rem;vertical-align:middle}
+  .etapas tr:hover{background:#152a18}
+  .etapas .etapa-nome{color:#d1fae5;font-weight:500}
+  .etapas .etapa-peso{color:#6b9e78;font-family:monospace}
+  .etapa-bar{width:80px;height:6px;background:#1e3a22;border-radius:3px;overflow:hidden;display:inline-block;vertical-align:middle;margin-right:6px}
+  .etapa-bar-fill{height:100%;border-radius:3px}
+  .etapa-exec{font-family:monospace;font-weight:600}
+  .exec-zero{color:#3d6b48}
+  .exec-partial{color:#fbbf24}
+  .exec-done{color:#4ade80}
+
+  /* Slider de execução */
+  .exec-slider{width:80px;accent-color:#4ade80;cursor:pointer;vertical-align:middle}
+
+  /* Sugestão de compensação */
+  .compensacao{background:#1a1400;border:1px solid #3d3000;border-radius:8px;padding:12px 16px;margin-top:12px}
+  .compensacao h4{font-size:.82rem;color:#fbbf24;margin-bottom:8px}
+  .comp-item{font-size:.8rem;color:#d1fae5;padding:4px 0;display:flex;justify-content:space-between}
+  .comp-ganho{color:#4ade80;font-weight:600;font-family:monospace}
+
+  /* Saving */
+  .saving{position:fixed;top:12px;left:50%;transform:translateX(-50%);background:#4ade80;color:#000;padding:6px 16px;border-radius:20px;font-size:.75rem;font-weight:600;opacity:0;transition:opacity .3s;z-index:999}
+  .saving.vis{opacity:1}
+
+  /* Mobile */
+  @media(max-width:600px){
+    .container{padding:12px}
+    .obra-stats{gap:8px}
+    .stat{min-width:80px;padding:8px 10px}
+    .obra-meta-info{flex-direction:column;gap:4px}
+    .exec-slider{width:60px}
+    .etapa-bar{width:50px}
+    .obra-prog{gap:8px}
+    .obra-bar{width:80px}
+  }
+</style>
+</head>
+<body>
+
+<div class="saving" id="saveInd">Sincronizando...</div>
+
+<div class="header">
+  <div>
+    <h1>PCI — Acompanhamento de Medicoes</h1>
+    <div class="sub">EDR Engenharia</div>
+  </div>
+  <a href="index.html">Voltar ao sistema</a>
+</div>
+
+<div class="container" id="app"></div>
+
+<script>
+// ── Supabase ──
+const SU='https://mepzoxoahpwcvvlymlfh.supabase.co',SK='sb_publishable_Z9E8KLU8ZIMcWjD-bMG5gg_eM585qWq';
+let db;try{db=window.supabase.createClient(SU,SK)}catch(e){db=null}
+const SYNC='pci-medicoes-v1',CACHE='pci_cache';
+
+// ── Dados das PCIs (extraídos dos .xlsb) ──
+const ETAPAS_CEF = [
+  'Serviços Preliminares e Gerais','Infraestrutura','Superestrutura','Paredes e Painéis',
+  'Esquadrias','Vidros e Plásticos','Coberturas','Impermeabilizações',
+  'Revestimentos Internos','Forros','Revestimentos Externos','Pintura',
+  'Pisos','Acabamentos','Inst. Elétricas e Telefônicas','Instalações Hidráulicas',
+  'Inst. Esgoto e Águas Pluviais','Louças e Metais','Complementos','Outros Serviços'
+];
+
+const OBRAS_PCI = [
+  {id:'junior',nome:'JÚNIOR',entrega:'11/06/2026',
+    pesos:[1.18,3.07,15.04,4.84,8.04,2.16,4.12,4.58,6.86,2.16,4.90,4.25,9.22,1.34,4.58,3.92,3.92,4.58,1.77,9.48],
+    exec:[1,1,0.7,0.8,0,0,0,0,0.3,0,0.3,0,0,0,0,0,0.5,0,0,0.5]},
+  {id:'dayana',nome:'DAYANA',entrega:'02/07/2026',
+    pesos:[1.89,4.62,12.50,6.36,6.06,2.42,4.92,4.92,7.05,1.74,4.47,4.09,9.09,1.06,4.24,4.17,3.94,4.70,1.74,10.00],
+    exec:[1,1,0,0,0,0,0,0.3,0,0,0,0,0,0,0,0,0.5,0,0,0.3]},
+  {id:'pedro',nome:'PEDRO',entrega:'24/07/2026',
+    pesos:[3.42,4.99,12.31,7.04,6.50,2.19,5.81,4.44,6.91,1.57,4.03,3.69,9.09,1.30,3.79,3.76,4.10,4.24,1.57,9.23],
+    exec:[1,1,0.5,0.5,0,0,0,0.5,0,0,0,0,0,0,0,0,0.5,0,0,0]},
+  {id:'leonardo',nome:'LEONARDO',entrega:'09/08/2026',
+    pesos:[3.42,4.99,12.31,7.04,6.50,2.19,5.81,4.44,6.91,1.57,4.03,3.69,9.09,1.30,3.79,3.76,4.10,4.24,1.57,9.23],
+    exec:[1,1,0.5,0.5,0,0,0,0.5,0,0,0,0,0,0,0,0,0.5,0,0,0]},
+  {id:'duamelyda',nome:'DUAM + ELYDA',entrega:'A definir',
+    pesos:[2.83,6.60,12.96,9.35,8.01,1.20,0,4.24,7.07,2.00,4.24,5.89,8.72,1.18,3.77,3.77,4.01,4.48,1.13,8.55],
+    exec:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]}
+];
+
+let state = JSON.parse(JSON.stringify(OBRAS_PCI));
+const expanded = new Set();
+
+// ── Sync ──
+function cacheLocal(){try{localStorage.setItem(CACHE,JSON.stringify(state))}catch(e){}}
+function fromCache(){try{return JSON.parse(localStorage.getItem(CACHE))}catch{return null}}
+
+async function salvar(){
+  cacheLocal();
+  if(!db)return;
+  document.getElementById('saveInd').classList.add('vis');
+  try{await db.from('tracker_sync').upsert({key:SYNC,data:{obras:state},updated_at:new Date().toISOString()})}catch(e){}
+  setTimeout(()=>document.getElementById('saveInd').classList.remove('vis'),1200);
+}
+
+async function carregar(){
+  if(db){
+    try{const{data}=await db.from('tracker_sync').select('data').eq('key',SYNC).single();
+    if(data?.data?.obras){
+      // Merge: manter pesos do seed, pegar exec do banco
+      const saved=data.data.obras;
+      state=OBRAS_PCI.map(o=>{
+        const s=saved.find(x=>x.id===o.id);
+        if(!s)return JSON.parse(JSON.stringify(o));
+        return{...JSON.parse(JSON.stringify(o)),exec:s.exec||o.exec};
+      });
+      cacheLocal();return;
+    }}catch(e){}}
+  const c=fromCache();
+  if(c)state=c;
+  else state=JSON.parse(JSON.stringify(OBRAS_PCI));
+}
+
+// ── Cálculos ──
+function calcExec(obra){
+  let total=0;
+  obra.pesos.forEach((p,i)=>{total+=p*(obra.exec[i]||0)});
+  return Math.round(total*100)/100;
+}
+
+function diasRestantes(entrega){
+  if(!entrega||!entrega.includes('/'))return 999;
+  const p=entrega.split('/');
+  const d=new Date(+p[2],+p[1]-1,+p[0]);
+  const h=new Date();h.setHours(0,0,0,0);
+  return Math.ceil((d-h)/86400000);
+}
+
+function corProg(pct){return pct>=80?'verde':pct>=40?'amarelo':'vermelho'}
+
+// ── Render ──
+function render(){
+  const app=document.getElementById('app');
+  app.innerHTML=state.map(obra=>{
+    const exec=calcExec(obra);
+    const dias=diasRestantes(obra.entrega);
+    const diasTxt=dias>=999?'Sem prazo':`${dias} dias`;
+    const diasCor=dias>=999?'#6b9e78':dias<30?'#f87171':dias<60?'#fbbf24':'#6b9e78';
+    const isOpen=expanded.has(obra.id);
+
+    // Etapas não iniciadas com maior peso (sugestão de compensação)
+    const compens=obra.pesos.map((p,i)=>({nome:ETAPAS_CEF[i],peso:p,exec:obra.exec[i]||0,idx:i}))
+      .filter(e=>e.exec<1&&e.peso>0)
+      .sort((a,b)=>b.peso-a.peso)
+      .slice(0,5);
+
+    // Stats
+    const feitas=obra.exec.filter((e,i)=>e>=1&&obra.pesos[i]>0).length;
+    const total=obra.pesos.filter(p=>p>0).length;
+
+    return`
+    <div class="obra-card">
+      <div class="obra-header" onclick="toggle('${obra.id}')">
+        <div>
+          <div class="obra-nome">${obra.nome}</div>
+          <div class="obra-meta-info">
+            <span>Entrega: ${obra.entrega}</span>
+            <span style="color:${diasCor};font-weight:600">${diasTxt}</span>
+            <span>${feitas}/${total} etapas concluídas</span>
+          </div>
+        </div>
+        <div class="obra-prog">
+          <div>
+            <div class="obra-bar"><div class="obra-bar-fill ${corProg(exec)}" style="width:${exec}%"></div></div>
+          </div>
+          <div class="obra-pct" style="color:${exec>=80?'#4ade80':exec>=40?'#fbbf24':'#f87171'}">${exec.toFixed(1)}%</div>
+          <div class="obra-arrow ${isOpen?'open':''}">▶</div>
+        </div>
+      </div>
+      <div class="obra-body ${isOpen?'open':''}">
+        <div class="obra-stats">
+          <div class="stat ${exec>=80?'ok':exec>=40?'warn':'alerta'}"><div class="num">${exec.toFixed(1)}%</div><div class="lbl">Executado</div></div>
+          <div class="stat"><div class="num">${(100-exec).toFixed(1)}%</div><div class="lbl">Faltando</div></div>
+          <div class="stat ${dias<30?'alerta':dias<60?'warn':'ok'}"><div class="num">${diasTxt}</div><div class="lbl">Pra entrega</div></div>
+          <div class="stat"><div class="num">${feitas}/${total}</div><div class="lbl">Etapas 100%</div></div>
+        </div>
+
+        <table class="etapas">
+          <thead><tr><th>Etapa</th><th>Peso</th><th>Execução</th><th>Ajustar</th></tr></thead>
+          <tbody>
+            ${obra.pesos.map((p,i)=>{
+              if(p===0)return'';
+              const e=obra.exec[i]||0;
+              const pct=Math.round(e*100);
+              const cls=pct===0?'exec-zero':pct>=100?'exec-done':'exec-partial';
+              return`<tr>
+                <td class="etapa-nome">${ETAPAS_CEF[i]}</td>
+                <td class="etapa-peso">${p.toFixed(1)}%</td>
+                <td><div class="etapa-bar"><div class="etapa-bar-fill ${corProg(pct)}" style="width:${pct}%"></div></div><span class="etapa-exec ${cls}">${pct}%</span></td>
+                <td><input type="range" class="exec-slider" min="0" max="100" step="5" value="${pct}" onchange="setExec('${obra.id}',${i},this.value)" oninput="this.nextElementSibling.textContent=this.value+'%'" /><span style="font-size:.7rem;color:#6b9e78;margin-left:4px;font-family:monospace">${pct}%</span></td>
+              </tr>`}).join('')}
+          </tbody>
+        </table>
+
+        ${compens.length?`
+        <div class="compensacao">
+          <h4>Onde compensar pra subir a medicao:</h4>
+          ${compens.map(c=>{
+            const ganho=c.peso*(1-c.exec);
+            return`<div class="comp-item"><span>${c.nome} (${Math.round(c.exec*100)}% feito)</span><span class="comp-ganho">+${ganho.toFixed(1)}% se completar</span></div>`
+          }).join('')}
+        </div>`:''}
+      </div>
+    </div>`}).join('');
+}
+
+function toggle(id){
+  if(expanded.has(id))expanded.delete(id);else expanded.add(id);
+  render();
+}
+
+async function setExec(obraId,idx,val){
+  const obra=state.find(o=>o.id===obraId);
+  if(!obra)return;
+  obra.exec[idx]=Number(val)/100;
+  render();
+  clearTimeout(window._saveTimer);
+  window._saveTimer=setTimeout(salvar,800);
+}
+
+// ── Init ──
+async function init(){
+  await carregar();
+  render();
+}
+init();
+</script>
+</body>
+</html>
