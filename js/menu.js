@@ -203,9 +203,11 @@ function collapseAllGroups() {
 }
 
 function initSidebarGroups() {
-  // Começa tudo fechado, abre só o grupo do Dashboard
+  // Começa tudo fechado, abre o grupo da view ativa (ou dashboard se nenhuma ativa)
   collapseAllGroups();
-  expandGroupForView('dashboard');
+  const activeBtn = document.querySelector('.nav-btn.active[data-view]');
+  const activeView = activeBtn ? activeBtn.getAttribute('data-view') : 'dashboard';
+  expandGroupForView(activeView);
 }
 
 function expandGroupForView(viewId) {

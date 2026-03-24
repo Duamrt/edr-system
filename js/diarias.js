@@ -688,6 +688,79 @@ async function diarEditarLabelQuinzena() {
 }
 
 // ────────────────────────────────────────────
+// FORMULÁRIO MANUAL — Alternativa ao texto livre
+// ────────────────────────────────────────────
+function diarToggleFormManual() {
+  const form = document.getElementById('diar-formManual');
+  const visivel = form.style.display !== 'none';
+  form.style.display = visivel ? 'none' : 'block';
+  if (!visivel) diarPopularFormManual();
+}
+
+function diarPopularFormManual() {
+  const selFunc = document.getElementById('diar-manual-func');
+  const selObra = document.getElementById('diar-manual-obra');
+  // Preencher funcionários ativos
+  const funcsAtivos = diarGetFuncionariosAtivos();
+  selFunc.innerHTML = '<option value="">Selecione o funcionario...</option>' +
+    funcsAtivos.map(f => '<option value="' + esc(f.nome) + '">' + esc(f.nome) + ' (' + esc(f.cargo) + ')</option>').join('');
+  // Preencher obras ativas
+  selObra.innerHTML = '<option value="">Selecione a obra...</option>' +
+    obras.map(o => '<option value="' + esc(o.nome) + '">' + esc(o.nome) + '</option>').join('');
+}
+
+function adicionarDiariaManual() {
+  const funcNome = document.getElementById('diar-manual-func').value;
+  const obraNome = document.getElementById('diar-manual-obra').value;
+  const turno = document.getElementById('diar-manual-turno').value;
+  const data = document.getElementById('diar-dataInput').value;
+  if (!funcNome) { showToast('Selecione o funcionario.'); return; }
+  if (!obraNome) { showToast('Selecione a obra.'); return; }
+  if (!data) { showToast('Selecione a data.'); return; }
+
+  // Buscar dados do funcionário
+  const funcEntry = DIAR_FUNCIONARIOS[funcNome.toLowerCase()];
+  if (!funcEntry) { showToast('Funcionario nao encontrado.'); return; }
+
+  const fracao = turno === 'dia' ? 1 : 0.5;
+  const valor = funcEntry.diaria * fracao;
+  const periodos = [{ obra: obraNome, turno: turno, fracao: fracao }];
+
+  const reg = {
+    nome: funcEntry.nome,
+    cargo: funcEntry.cargo,
+    diaria_base: funcEntry.diaria,
+    total_fracoes: fracao,
+    valor: valor,
+    periodos: periodos
+  };
+
+  // Adicionar ao interpretado (ou criar novo)
+  if (!diarInterpretado) {
+    diarInterpretado = { data: data, registros: [reg] };
+  } else {
+    // Se já existe registro do mesmo funcionário no mesmo dia, mesclar
+    const existente = diarInterpretado.registros.find(r => r.nome === reg.nome);
+    if (existente) {
+      existente.periodos.push(...periodos);
+      existente.total_fracoes += fracao;
+      existente.valor += valor;
+    } else {
+      diarInterpretado.registros.push(reg);
+    }
+    diarInterpretado.data = data;
+  }
+
+  diarRenderPreview(diarInterpretado.registros);
+  document.getElementById('diar-btnConfirmar').disabled = false;
+  showToast(funcEntry.nome + ' adicionado (' + (turno === 'dia' ? 'dia inteiro' : turno) + ' em ' + obraNome + ')');
+  // Resetar selects
+  document.getElementById('diar-manual-func').value = '';
+  document.getElementById('diar-manual-obra').value = '';
+  document.getElementById('diar-manual-turno').value = 'dia';
+}
+
+// ────────────────────────────────────────────
 // INTERPRETAÇÃO LOCAL (regex, sem API)
 // ────────────────────────────────────────────
 function diarInterpretar() {
@@ -745,12 +818,37 @@ function diarParseMensagem(msgOriginal) {
   // Nomes das obras cadastradas (normalizado para matching)
   const obrasNomes = obras.map(o => ({ original: o.nome, norm: norm(o.nome) }));
 
-  // Aliases de obras — variações e erros comuns do mestre
-  const OBRAS_ALIASES = {
+  // Aliases de obras — fallback hardcoded + dinâmicos gerados das obras cadastradas
+  const OBRAS_ALIASES_HARDCODED = {
     'josenaldo junior': ['jr', 'junior', 'junio', 'josenaldo jr', 'josenaldo junio', 'josenaldo junior'],
     'leonardo':         ['leonado', 'leanardo', 'leonaldo', 'loenardo', 'leoarndo'],
     'dayana':           ['daiana'],
   };
+  // Gerar aliases dinâmicos a partir das obras cadastradas
+  const OBRAS_ALIASES = { ...OBRAS_ALIASES_HARDCODED };
+  obras.forEach(o => {
+    const nomeNorm = norm(o.nome).toLowerCase();
+    const nomeOriginal = o.nome.toLowerCase();
+    if (!OBRAS_ALIASES[nomeOriginal]) OBRAS_ALIASES[nomeOriginal] = [];
+    // Adicionar nome completo normalizado (sem acentos)
+    if (nomeNorm !== nomeOriginal && !OBRAS_ALIASES[nomeOriginal].includes(nomeNorm)) {
+      OBRAS_ALIASES[nomeOriginal].push(nomeNorm);
+    }
+    // Adicionar primeira palavra do nome
+    const primeiraPalavra = nomeOriginal.split(' ')[0];
+    if (primeiraPalavra.length >= 3 && !OBRAS_ALIASES[nomeOriginal].includes(primeiraPalavra)) {
+      OBRAS_ALIASES[nomeOriginal].push(primeiraPalavra);
+    }
+    // Adicionar primeira palavra sem acentos
+    const primeiraSemAcento = norm(primeiraPalavra);
+    if (primeiraSemAcento !== primeiraPalavra && !OBRAS_ALIASES[nomeOriginal].includes(primeiraSemAcento)) {
+      OBRAS_ALIASES[nomeOriginal].push(primeiraSemAcento);
+    }
+    // Adicionar nome completo original como alias de si mesmo
+    if (!OBRAS_ALIASES[nomeOriginal].includes(nomeOriginal)) {
+      OBRAS_ALIASES[nomeOriginal].push(nomeOriginal);
+    }
+  });
   // Resolver alias → nome original da obra cadastrada
   const resolverAliasObra = (trecho) => {
     const t = trecho.toLowerCase().trim();

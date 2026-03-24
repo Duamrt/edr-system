@@ -448,7 +448,7 @@ async function salvarNota() {
   if (!itensForm.length) { showToast('⚠ Adicione pelo menos um item.'); return; }
   const cnpjVal = document.getElementById('f-cnpj').value.trim();
   if (!cnpjVal) {
-    const prosseguir = confirm('⚠ CNPJ não informado.\n\nSem CNPJ o lançamento fica incompleto para fins fiscais.\n\nDeseja salvar mesmo assim?');
+    const prosseguir = await confirmar('CNPJ NAO INFORMADO', 'Sem CNPJ o lancamento fica incompleto para fins fiscais.\n\nDeseja salvar mesmo assim?');
     if (!prosseguir) { document.getElementById('f-cnpj').focus(); return; }
   }
 
@@ -459,10 +459,8 @@ async function salvarNota() {
   );
   if (nfDup) {
     const dataLanc = fmtData(nfDup.data);
-    const confirmar = confirm(
-      `⚠ NOTA DUPLICADA DETECTADA!\n\nA NF Nº ${numero} do fornecedor ${fornecedor} já foi lançada em ${dataLanc}.\n\nSalvar mesmo assim causará duplicidade no estoque.\n\nClique CANCELAR para revisar ou OK apenas se tiver certeza de que são notas diferentes.`
-    );
-    if (!confirmar) return;
+    const confirmaDup = await confirmar('NOTA DUPLICADA DETECTADA', `A NF No ${numero} do fornecedor ${fornecedor} ja foi lancada em ${dataLanc}.\n\nSalvar mesmo assim causara duplicidade no estoque.\n\nCancele para revisar ou confirme apenas se tiver certeza de que sao notas diferentes.`);
+    if (!confirmaDup) return;
   }
   // ─────────────────────────────────────────────────────────
   const btn = document.getElementById('btn-salvar'); btn.disabled = true; btn.textContent = 'SALVANDO...';

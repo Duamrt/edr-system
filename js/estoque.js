@@ -473,7 +473,7 @@ async function confirmarDistribuicaoItem() {
   if (!etapaDistVal) { showToast('⚠ Selecione o centro de custo (etapa).'); document.getElementById('dist-etapa')?.focus(); return; }
   // Permite saldo negativo (material fiado)
   if (m.saldoTotal <= 0 && !m.temNFPendente && m.qtdDireta === 0) {
-    if (!confirm(`Saldo atual: ${m.saldoTotal} ${m.unidade}. Confirma saída mesmo assim? (Material fiado)`)) return;
+    if (!await confirmar('SALDO INSUFICIENTE', `Saldo atual: ${m.saldoTotal} ${m.unidade}.\n\nConfirma saida mesmo assim? (Material fiado)`)) return;
   }
   const hoje = hojeISO();
   const etapaVal = document.getElementById('dist-etapa')?.value || '';

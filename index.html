@@ -638,10 +638,10 @@
   </div>
 
   <!-- MODAL NOVO REPASSE CEF -->
-  <div id="modal-repasse" class="modal-overlay hidden" onclick="closeModalOutside(event,'repasse')">
+  <div id="modal-repasse" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-repasse-label" onclick="closeModalOutside(event,'repasse')">
     <div class="modal" style="max-width:440px;">
       <div class="modal-title">
-        <span>💰 NOVO REPASSE / ENTRADA</span>
+        <span id="modal-repasse-label">💰 NOVO REPASSE / ENTRADA</span>
         <button class="modal-close" onclick="fecharModal('repasse')">✕</button>
       </div>
       <input type="hidden" id="repasse-id">
@@ -683,10 +683,10 @@
   </div>
 
   <!-- MODAL CONTRATO CEF -->
-  <div id="modal-contrato-cef" class="modal-overlay hidden" onclick="closeModalOutside(event,'contrato-cef')">
+  <div id="modal-contrato-cef" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-contrato-cef-label" onclick="closeModalOutside(event,'contrato-cef')">
     <div class="modal" style="max-width:440px;">
       <div class="modal-title">
-        <span>📋 CONTRATO CEF</span>
+        <span id="modal-contrato-cef-label">📋 CONTRATO CEF</span>
         <button class="modal-close" onclick="fecharModal('contrato-cef')">✕</button>
       </div>
       <input type="hidden" id="contrato-obra-id">
@@ -899,6 +899,28 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
         <button class="btn-diarias-interpretar" onclick="diarInterpretar()">
           <span>⚡</span> INTERPRETAR MENSAGEM
         </button>
+        <!-- Link para formulário manual -->
+        <div style="text-align:center;margin:-6px 0 4px;">
+          <button onclick="diarToggleFormManual()" id="diar-btnFormManual" style="background:none;border:none;color:var(--verde-hl);font-size:11px;cursor:pointer;font-family:'JetBrains Mono',monospace;letter-spacing:0.5px;padding:4px 8px;">+ Adicionar manualmente</button>
+        </div>
+        <!-- Formulário manual (escondido por padrão) -->
+        <div id="diar-formManual" style="display:none;background:var(--bg3);border:1px solid var(--borda);border-radius:8px;padding:14px;margin-bottom:8px;">
+          <div style="font-size:10px;font-weight:700;color:var(--texto3);letter-spacing:1.5px;margin-bottom:10px;font-family:'JetBrains Mono',monospace;">LANCAMENTO MANUAL</div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <select id="diar-manual-func" style="padding:9px 12px;background:var(--bg2);border:1px solid var(--borda2);border-radius:8px;color:var(--branco);font-size:13px;font-family:inherit;">
+              <option value="">Selecione o funcionario...</option>
+            </select>
+            <select id="diar-manual-obra" style="padding:9px 12px;background:var(--bg2);border:1px solid var(--borda2);border-radius:8px;color:var(--branco);font-size:13px;font-family:inherit;">
+              <option value="">Selecione a obra...</option>
+            </select>
+            <select id="diar-manual-turno" style="padding:9px 12px;background:var(--bg2);border:1px solid var(--borda2);border-radius:8px;color:var(--branco);font-size:13px;font-family:inherit;">
+              <option value="dia">Dia inteiro</option>
+              <option value="manha">Meio dia manha</option>
+              <option value="tarde">Meio dia tarde</option>
+            </select>
+            <button onclick="adicionarDiariaManual()" style="padding:10px;background:var(--verde);color:var(--verde-hl);border:1px solid var(--verde3);border-radius:8px;font-weight:700;font-size:12px;cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:1px;">+ ADICIONAR</button>
+          </div>
+        </div>
         <div>
           <div class="diarias-panel-title" style="margin-bottom:6px">PRÉVIA INTERPRETADA</div>
           <div class="diarias-preview-box" id="diar-previewBox">
@@ -966,7 +988,7 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
 </div><!-- /app -->
 <!-- MODAL NOVO MATERIAL -->
 <!-- Modal Novo/Editar Usuário -->
-<div id="modal-usuario" class="modal-overlay hidden" onclick="closeModalOutside(event,'usuario')">
+<div id="modal-usuario" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-usuario-titulo" onclick="closeModalOutside(event,'usuario')">
   <div class="modal" style="max-width:400px;">
     <div class="modal-title">
       <span id="modal-usuario-titulo">NOVO USUÁRIO</span>
@@ -999,9 +1021,9 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
   </div>
 </div>
 
-<div id="modal-material" class="modal-overlay hidden" onclick="closeModalOutside(event,'material')">
+<div id="modal-material" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-material-label" onclick="closeModalOutside(event,'material')">
   <div class="modal" style="max-width:420px;">
-    <div class="modal-title">🏷 MATERIAL <button class="modal-close" onclick="fecharModal('material')">✕</button></div>
+    <div class="modal-title"><span id="modal-material-label">🏷 MATERIAL</span> <button class="modal-close" onclick="fecharModal('material')">✕</button></div>
     <div id="modal-material-aviso" class="hidden" style="background:#fef3c7;border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:12px;color:#92400e;"></div>
     <div class="field autocomplete-wrap"><label>NOME DO MATERIAL *</label>
       <input type="text" id="mat-nome" placeholder="EX: CIMENTO CPII 50KG" oninput="onMatNomeInput()" autocomplete="off" style="text-transform:uppercase;">
@@ -1024,17 +1046,17 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
 </div>
 
 <!-- MODAL DETALHE DA NOTA -->
-<div id="modal-nota" class="modal-overlay hidden" onclick="closeModalOutside(event,'nota')">
+<div id="modal-nota" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-nota-label" onclick="closeModalOutside(event,'nota')">
   <div class="modal" style="max-height:92vh;">
-    <div class="modal-title">🧾 NOTA FISCAL <button class="modal-close" onclick="fecharModal('nota')">✕</button></div>
+    <div class="modal-title"><span id="modal-nota-label">🧾 NOTA FISCAL</span> <button class="modal-close" onclick="fecharModal('nota')">✕</button></div>
     <div id="modal-nota-body"></div>
   </div>
 </div>
 
 <!-- MODAL ENTRADA DIRETA -->
-<div id="modal-entrada" class="modal-overlay hidden" onclick="closeModalOutside(event,'entrada')">
+<div id="modal-entrada" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-entrada-label" onclick="closeModalOutside(event,'entrada')">
   <div class="modal">
-    <div class="modal-title">📥 ENTRADA DIRETA (SEM NOTA) <button class="modal-close" onclick="fecharModal('entrada')">✕</button></div>
+    <div class="modal-title"><span id="modal-entrada-label">📥 ENTRADA DIRETA (SEM NOTA)</span> <button class="modal-close" onclick="fecharModal('entrada')">✕</button></div>
 
     <div class="field autocomplete-wrap">
       <label>MATERIAL *</label>
@@ -1079,9 +1101,9 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
 </div>
 
 <!-- MODAL SAÍDA / BAIXA DE ESTOQUE -->
-<div id="modal-saida" class="modal-overlay hidden" onclick="closeModalOutside(event,'saida')">
+<div id="modal-saida" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-saida-label" onclick="closeModalOutside(event,'saida')">
   <div class="modal">
-    <div class="modal-title">📤 SAÍDA / BAIXA DE ESTOQUE <button class="modal-close" onclick="fecharModal('saida')">✕</button></div>
+    <div class="modal-title"><span id="modal-saida-label">📤 SAÍDA / BAIXA DE ESTOQUE</span> <button class="modal-close" onclick="fecharModal('saida')">✕</button></div>
     <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:11px;color:#f87171;font-weight:600;">
       ⚠ Baixa definitiva do estoque. Use apenas para material consumido/retirado sem lançamento anterior.
     </div>
@@ -1105,9 +1127,9 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
 </div>
 
 <!-- MODAL DISTRIBUIÇÃO POR ITEM -->
-<div id="modal-dist" class="modal-overlay hidden" onclick="closeModalOutside(event,'dist')">
+<div id="modal-dist" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-dist-label" onclick="closeModalOutside(event,'dist')">
   <div class="modal">
-    <div class="modal-title">📤 DISTRIBUIR PARA OBRA <button class="modal-close" onclick="fecharModal('dist')">✕</button></div>
+    <div class="modal-title"><span id="modal-dist-label">📤 DISTRIBUIR PARA OBRA</span> <button class="modal-close" onclick="fecharModal('dist')">✕</button></div>
     <div class="modal-info" id="modal-nota-info"></div>
     <div class="field"><label>OBRA DE DESTINO *</label><select id="dist-obra"></select></div>
     <div class="field">
@@ -1131,9 +1153,9 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
 
 
 <!-- MODAL AJUSTE DE ESTOQUE -->
-<div id="modal-ajuste" class="modal-overlay hidden" onclick="closeModalOutside(event,'ajuste')">
+<div id="modal-ajuste" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-ajuste-label" onclick="closeModalOutside(event,'ajuste')">
   <div class="modal">
-    <div class="modal-title">📋 AJUSTE DE ESTOQUE <button class="modal-close" onclick="fecharModal('ajuste')">✕</button></div>
+    <div class="modal-title"><span id="modal-ajuste-label">📋 AJUSTE DE ESTOQUE</span> <button class="modal-close" onclick="fecharModal('ajuste')">✕</button></div>
     <div style="background:rgba(96,165,250,0.08);border:1px solid rgba(96,165,250,0.2);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:11px;color:#60a5fa;font-weight:600;">
       Registre contagem fisica, inventario inicial ou correcao de saldo. Ajustes nao geram custo em obra.
     </div>
@@ -1160,9 +1182,9 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
 </div>
 
 <!-- MODAL ADICIONAL -->
-<div id="modal-adicional" class="modal-overlay hidden" onclick="closeModalOutside(event,'adicional')">
+<div id="modal-adicional" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-adicional-label" onclick="closeModalOutside(event,'adicional')">
   <div class="modal" style="max-width:500px;">
-    <div class="modal-title">📝 SERVIÇO ADICIONAL <button class="modal-close" onclick="fecharModal('adicional')">✕</button></div>
+    <div class="modal-title"><span id="modal-adicional-label">📝 SERVIÇO ADICIONAL</span> <button class="modal-close" onclick="fecharModal('adicional')">✕</button></div>
     <input type="hidden" id="add-edit-id">
     <div class="field"><label>DESCRIÇÃO DO SERVIÇO *</label><textarea id="add-descricao" rows="3" placeholder="EX: COBERTA DE GARAGEM EM ESTRUTURA METÁLICA COM TELHA SANDUÍCHE..." style="text-transform:uppercase;"></textarea></div>
     <div class="field-row">
@@ -1177,9 +1199,9 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
 </div>
 
 <!-- MODAL PAGAMENTO ADICIONAL -->
-<div id="modal-add-pgto" class="modal-overlay hidden" onclick="closeModalOutside(event,'add-pgto')">
+<div id="modal-add-pgto" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-add-pgto-label" onclick="closeModalOutside(event,'add-pgto')">
   <div class="modal" style="max-width:400px;">
-    <div class="modal-title">💰 REGISTRAR PAGAMENTO <button class="modal-close" onclick="fecharModal('add-pgto')">✕</button></div>
+    <div class="modal-title"><span id="modal-add-pgto-label">💰 REGISTRAR PAGAMENTO</span> <button class="modal-close" onclick="fecharModal('add-pgto')">✕</button></div>
     <input type="hidden" id="pgto-add-id">
     <div id="pgto-saldo-info" style="font-size:12px;color:var(--texto2);margin-bottom:12px;padding:8px 12px;background:var(--bg3);border-radius:8px;"></div>
     <div class="field"><label>VALOR RECEBIDO (R$) *</label><input type="number" id="pgto-valor" placeholder="0,00" min="0" step="0.01"></div>
@@ -1191,7 +1213,7 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
 </div>
 
 <!-- MODAL NOVA OBRA -->
-<div id="modal-obra" class="modal-overlay hidden" onclick="closeModalOutside(event,'obra')">
+<div id="modal-obra" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-obra-titulo" onclick="closeModalOutside(event,'obra')">
   <div class="modal">
     <div class="modal-title"><span id="modal-obra-titulo">🏗 NOVA OBRA</span> <button class="modal-close" onclick="fecharModal('obra')">✕</button></div>
     <input type="hidden" id="obra-edit-id">
@@ -1216,9 +1238,9 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
 </div>
 
 <!-- MODAL CONCLUIR OBRA -->
-<div id="modal-concluir-obra" class="modal-overlay hidden" onclick="closeModalOutside(event,'concluir-obra')">
+<div id="modal-concluir-obra" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-concluir-obra-label" onclick="closeModalOutside(event,'concluir-obra')">
   <div class="modal" style="max-width:480px;">
-    <div class="modal-title"><span>✅ CONCLUIR OBRA</span> <button class="modal-close" onclick="fecharModal('concluir-obra')">✕</button></div>
+    <div class="modal-title"><span id="modal-concluir-obra-label">✅ CONCLUIR OBRA</span> <button class="modal-close" onclick="fecharModal('concluir-obra')">✕</button></div>
     <input type="hidden" id="concluir-obra-id">
     <div style="font-size:11px;color:var(--texto2);margin-bottom:12px;padding:8px;background:rgba(255,255,255,0.04);border:1px solid rgba(34,197,94,0.1);border-radius:6px;">
       Preencha os dados do imóvel para gerar o <strong>Termo de Entrega</strong> e arquivar a obra.
@@ -1255,9 +1277,9 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
 </div>
 
 <!-- MODAL ASSISTENTE TRIBUTÁRIO -->
-<div id="modal-ai" class="modal-overlay hidden" onclick="closeModalOutside(event,'ai')">
+<div id="modal-ai" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-ai-label" onclick="closeModalOutside(event,'ai')">
   <div class="modal">
-    <div class="modal-title">🤖 ASSISTENTE TRIBUTÁRIO <button class="modal-close" onclick="fecharModal('ai')">✕</button></div>
+    <div class="modal-title"><span id="modal-ai-label">🤖 ASSISTENTE TRIBUTÁRIO</span> <button class="modal-close" onclick="fecharModal('ai')">✕</button></div>
     <p style="font-size:13px;color:var(--texto2);margin-bottom:12px;line-height:1.6;">Base na LC 214/2025. Informe o item e descubra se gera crédito IBS/CBS.</p>
     <div class="field"><label>ITEM / DESCRIÇÃO</label><input type="text" id="ai-input" placeholder="EX: PAINEL LED, CONEXAO TE ESGOTO..."></div>
     <button class="btn-save" id="btn-ai-consultar" onclick="consultarAssistente()">🔍 CONSULTAR</button>
@@ -1341,11 +1363,11 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
 </div>
 
 <!-- MODAL IMPORTAÇÃO RÁPIDA -->
-<div class="modal-overlay hidden" id="modal-import">
+<div class="modal-overlay hidden" id="modal-import" role="dialog" aria-modal="true" aria-labelledby="modal-import-label">
   <div class="modal-box" style="max-width:700px;width:95vw;max-height:90vh;overflow-y:auto;">
     <div class="modal-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
       <div>
-        <div style="font-size:16px;font-weight:800;color:var(--branco);letter-spacing:1px;">📋 IMPORTAÇÃO RÁPIDA</div>
+        <div id="modal-import-label" style="font-size:16px;font-weight:800;color:var(--branco);letter-spacing:1px;">📋 IMPORTAÇÃO RÁPIDA</div>
         <div style="font-size:11px;color:var(--texto3);margin-top:2px;">Cole os itens da nota fiscal abaixo</div>
       </div>
       <button onclick="fecharModal('import')" style="background:none;border:none;color:var(--texto3);font-size:20px;cursor:pointer;padding:4px;">✕</button>
@@ -1389,9 +1411,9 @@ VERGALHAO CA50" style="width:100%;min-height:140px;padding:14px;background:var(-
 </div>
 
 <!-- MODAL RECONCILIAÇÃO DE ÓRFÃOS -->
-<div class="modal-overlay hidden" id="modal-reconciliar" style="z-index:9999;">
+<div class="modal-overlay hidden" id="modal-reconciliar" role="dialog" aria-modal="true" aria-labelledby="modal-reconciliar-label" style="z-index:9999;">
   <div class="modal" style="max-width:720px;max-height:90vh;overflow-y:auto;">
-    <div class="modal-title">🔗 RECONCILIAR ITENS ÓRFÃOS <button class="modal-close" onclick="fecharModal('reconciliar')">✕</button></div>
+    <div class="modal-title"><span id="modal-reconciliar-label">🔗 RECONCILIAR ITENS ÓRFÃOS</span> <button class="modal-close" onclick="fecharModal('reconciliar')">✕</button></div>
     <div style="font-size:11px;color:var(--texto3);margin-bottom:12px;line-height:1.5;">
       Itens encontrados em notas/entradas/distribuições que <strong style="color:#fbbf24;">não batem</strong> com nenhum item do catálogo.
       Para cada um, escolha: vincular a um item existente, cadastrar como novo, ou excluir.
@@ -1411,7 +1433,7 @@ VERGALHAO CA50" style="width:100%;min-height:140px;padding:14px;background:var(-
 </div>
 
 <!-- MODAL CONTA A PAGAR -->
-<div id="modal-conta" class="modal-overlay hidden" onclick="closeModalOutside(event,'conta')">
+<div id="modal-conta" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-conta-titulo" onclick="closeModalOutside(event,'conta')">
   <div class="modal" style="max-width:440px;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
       <span id="modal-conta-titulo" style="font-weight:800;font-size:15px;color:var(--branco);">Nova conta</span>
@@ -1450,7 +1472,7 @@ VERGALHAO CA50" style="width:100%;min-height:140px;padding:14px;background:var(-
 </div>
 
 <!-- MODAL PROJECAO CAIXA -->
-<div id="modal-projecao" class="modal-overlay hidden" onclick="closeModalOutside(event,'projecao')">
+<div id="modal-projecao" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-projecao-titulo" onclick="closeModalOutside(event,'projecao')">
   <div class="modal" style="max-width:440px;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
       <span id="modal-projecao-titulo" style="font-weight:800;font-size:15px;color:var(--branco);">Nova entrada prevista</span>
@@ -1489,7 +1511,7 @@ VERGALHAO CA50" style="width:100%;min-height:140px;padding:14px;background:var(-
 </div>
 
 <!-- MODAL CHAMADO GARANTIA -->
-<div id="modal-chamado" class="modal-overlay hidden" onclick="closeModalOutside(event,'chamado')">
+<div id="modal-chamado" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-chamado-titulo" onclick="closeModalOutside(event,'chamado')">
   <div class="modal" style="max-width:480px;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
       <span id="modal-chamado-titulo" style="font-weight:800;font-size:15px;color:var(--branco);">Novo chamado de garantia</span>

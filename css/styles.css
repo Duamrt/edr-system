@@ -245,12 +245,7 @@ body::before {
 .nav-btn-reset-order { width: 100%; padding: 8px 12px; border: 1px dashed rgba(255,255,255,0.1); background: transparent; font-size: 10px; color: var(--texto3); border-radius: 8px; cursor: pointer; font-family: inherit; letter-spacing: 0.5px; transition: all .2s; display: flex; align-items: center; justify-content: center; gap: 6px; }
 .nav-btn-reset-order:hover { color: var(--verde-hl); border-color: rgba(34,197,94,0.3); }
 .main-content { flex: 1; min-width: 0; overflow-x: hidden; overflow-y: auto; height: calc(100vh - 53px); }
-/* ── CATÁLOGO ── */
-.catalogo-item { background: var(--bg2); border: 1px solid var(--borda); border-radius: 10px; padding: 10px 14px; display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
-.catalogo-codigo { background: var(--verde-bg); color: var(--verde-hl); font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 6px; font-family: monospace; white-space: nowrap; min-width: 72px; text-align: center; }
-.catalogo-nome { flex: 1; font-size: 13px; font-weight: 600; color: var(--branco); }
-.catalogo-un { font-size: 11px; color: var(--texto3); }
-.catalogo-cat { font-size: 10px; color: var(--verde3); background: rgba(45,158,80,.1); padding: 2px 6px; border-radius: 4px; }
+/* ── CATÁLOGO — definições movidas para bloco unificado abaixo ── */
 .ac-codigo { font-family: monospace; font-size: 10px; color: var(--verde3); background: rgba(45,158,80,.15); padding: 1px 5px; border-radius: 4px; margin-right: 4px; }
 
 /* ── CONTENT ── */
@@ -375,21 +370,14 @@ body::before {
 .btn-voltar:hover { color: var(--branco); border-color: var(--borda2); }
 .detalhe-nome { font-weight: 700; font-size: 17px; flex: 1; color: var(--branco); font-family: 'Rajdhani', sans-serif; letter-spacing: 1px; }
 .detalhe-total { font-weight: 700; font-size: 16px; color: var(--verde-hl); }
-.cat-chip { display: inline-flex; align-items: center; gap: 4px; background: rgba(255,255,255,0.04); border: 1px solid var(--borda); border-radius: 20px; padding: 4px 11px; font-size: 10px; font-weight: 600; cursor: pointer; color: var(--texto2); white-space: nowrap; transition: all .2s; font-family: 'Inter', sans-serif; }
 .cat-chip.ativo { background: rgba(34,197,94,0.08); border-color: rgba(34,197,94,0.2); color: var(--verde-hl); }
 .cat-chip:hover:not(.ativo) { border-color: var(--borda2); color: var(--texto); background: var(--bg4); }
-.chips-wrap { display: flex; flex-wrap: wrap; gap: 5px; padding-bottom: 4px; margin-bottom: 4px; }
 .chips-wrap::-webkit-scrollbar { height: 3px; }
 .chips-wrap::-webkit-scrollbar-track { background: var(--bg3); border-radius: 3px; }
 .chips-wrap::-webkit-scrollbar-thumb { background: var(--verde3); border-radius: 3px; }
-.cat-chip { flex-shrink: 0; }
 
-/* ── FORM ── */
-.form-section { background: var(--bg2); border: 1px solid var(--borda); border-radius: 14px; padding: 16px; margin-bottom: 12px; }
-.form-title { font-weight: 800; font-size: 14px; color: var(--branco); margin-bottom: 14px; display: flex; align-items: center; gap: 8px; letter-spacing: .5px; }
-.form-step { background: var(--verde); color: var(--branco); border-radius: 50%; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; flex-shrink: 0; }
+/* ── FORM — definições de .form-section/.form-title/.form-step/.field label movidas para bloco unificado abaixo ── */
 .field { margin-bottom: 12px; }
-.field label { display: block; font-size: 10px; font-weight: 700; color: var(--texto3); margin-bottom: 5px; letter-spacing: 1px; text-transform: uppercase; }
 .field input, .field select, .field textarea { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--borda2); font-size: 14px; background: var(--bg3); color: var(--branco); outline: none; text-transform: uppercase; transition: border .15s, box-shadow .15s; font-family: inherit; }
 .field select { text-transform: none; }
 .field select option { background: var(--bg3); }
@@ -435,12 +423,8 @@ body::before {
 .btn-verde-outline { width: 100%; background: transparent; color: var(--verde-hl); border: 1px solid rgba(34,197,94,0.2); border-radius: 10px; padding: 11px; font-weight: 600; font-size: 12px; cursor: pointer; margin-top: 8px; font-family: 'Rajdhani', sans-serif; transition: all .2s; letter-spacing: 1px; text-transform: uppercase; }
 .btn-verde-outline:hover { background: rgba(34,197,94,0.06); }
 
-/* ── AUTOCOMPLETE ── */
+/* ── AUTOCOMPLETE — definições de .autocomplete-list/.autocomplete-item movidas para bloco unificado abaixo ── */
 .autocomplete-wrap { position: relative; }
-.autocomplete-list { position: absolute; top: 100%; left: 0; right: 0; background: var(--bg3); border: 1px solid var(--borda2); border-radius: 10px; z-index: 50; box-shadow: 0 8px 24px rgba(0,0,0,.4); max-height: 220px; overflow-y: auto; margin-top: 3px; }
-.autocomplete-item { padding: 10px 12px; cursor: pointer; font-size: 13px; border-bottom: 1px solid var(--borda); display: flex; justify-content: space-between; align-items: center; gap: 6px; transition: background .1s; }
-.autocomplete-item:hover, .autocomplete-item.selected { background: var(--bg4); }
-.autocomplete-item:last-child { border-bottom: none; }
 .ac-label { text-transform: uppercase; flex: 1; color: var(--branco); font-size: 12px; }
 .ac-credito { font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; white-space: nowrap; flex-shrink: 0; }
 .ac-sim { background: var(--verde-bg); color: var(--verde-hl); }
@@ -481,13 +465,7 @@ body::before {
 .credito-table tr:hover td { background: rgba(255,255,255,0.02); }
 .badge-sim { background: var(--verde-bg); color: var(--verde-hl); border: 1px solid var(--verde-bd); padding: 2px 8px; border-radius: 4px; font-weight: 700; font-size: 10px; }
 .badge-nao { background: var(--verm-bg); color: #f87171; border: 1px solid var(--verm-bd); padding: 2px 8px; border-radius: 4px; font-weight: 700; font-size: 10px; }
-.sql-box { background: #080808; border: 1px solid var(--borda); border-radius: 10px; padding: 14px; font-family: 'Courier New', monospace; font-size: 11px; color: #4ade80; white-space: pre-wrap; margin-bottom: 10px; overflow-x: auto; line-height: 1.7; }
-.btn-copy { background: linear-gradient(135deg, var(--verde), var(--verde2)); color: var(--branco); border: none; border-radius: 8px; padding: 10px 14px; font-size: 12px; font-weight: 700; cursor: pointer; width: 100%; margin-bottom: 8px; font-family: inherit; letter-spacing: .5px; }
-.shortcut-hint { background: var(--bg2); border: 1px solid var(--borda); border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; }
-.shortcut-title { color: var(--verde-hl); font-weight: 700; font-size: 11px; margin-bottom: 8px; letter-spacing: 1px; text-transform: uppercase; }
-.shortcut-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
-.shortcut-item { font-size: 11px; color: var(--texto3); }
-.shortcut-key { color: var(--branco); font-weight: 700; }
+/* .sql-box, .btn-copy, .shortcut-hint — definições movidas para bloco unificado abaixo */
 
 /* ── TOAST ── */
 .toast { position: fixed; top: 24px; left: 50%; transform: translateX(-50%); background: rgba(17,17,19,0.97); border: 1.5px solid rgba(255,255,255,0.1); color: #fff; padding: 16px 32px; border-radius: 14px; z-index: 9999; font-size: 15px; box-shadow: 0 12px 48px rgba(0,0,0,.7); pointer-events: none; font-weight: 700; backdrop-filter: blur(20px); font-family: 'Inter', sans-serif; letter-spacing: .5px; animation: toastIn 0.35s ease; }
