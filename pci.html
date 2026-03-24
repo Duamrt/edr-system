@@ -103,7 +103,7 @@
 // ── Supabase ──
 const SU='https://mepzoxoahpwcvvlymlfh.supabase.co',SK='sb_publishable_Z9E8KLU8ZIMcWjD-bMG5gg_eM585qWq';
 let db;try{db=window.supabase.createClient(SU,SK)}catch(e){db=null}
-const SYNC='pci-medicoes-v2',CACHE='pci_cache_v2';
+const SYNC='pci-medicoes-v3',CACHE='pci_cache_v3';
 
 // ── Dados das PCIs (extraídos dos .xlsb) ──
 const ETAPAS_CEF = [
@@ -132,19 +132,24 @@ const ETAPAS_CEF = [
 const OBRAS_PCI = [
   {id:'junior',nome:'JÚNIOR',entrega:'11/06/2026',valor:200000,medidoAnterior:3.84,
     pesos:[1.18,3.07,15.04,4.84,8.04,2.16,4.12,4.58,6.86,2.16,4.90,4.25,9.22,1.34,4.58,3.92,3.92,4.58,1.77,9.48],
-    exec:[1,1,1,1,0,0,1,1,0.8,1,0.7,0,0.3,0,0.6,1,0.9,0,0,0.8]},
+    exec:[1,1,1,1,0,0,1,1,0.8,1,0.7,0,0.3,0,0.6,1,0.9,0,0,0.8],
+    historico:[{parcela:0,data:'10/12/2025',execMes:3.84,execAcum:3.84}]},
   {id:'dayana',nome:'DAYANA',entrega:'02/07/2026',valor:191000,medidoAnterior:48.92,
     pesos:[1.89,4.62,12.50,6.36,6.06,2.42,4.92,4.92,7.05,1.74,4.47,4.09,9.09,1.06,4.24,4.17,3.94,4.70,1.74,10.00],
-    exec:[1,1,1,1,0,0,1,1,0.8,0,1,0,0.3,0,0.6,1,0.5,0,0,0.8]},
-  {id:'pedro',nome:'PEDRO',entrega:'24/07/2026',valor:190500,medidoAnterior:47.90,
+    exec:[1,1,1,1,0,0,1,1,0.8,0,1,0,0.3,0,0.6,1,0.5,0,0,0.8],
+    historico:[{parcela:1,data:'01/01/2026',execMes:16.12,execAcum:16.12},{parcela:2,data:'01/02/2026',execMes:16.04,execAcum:32.16},{parcela:3,data:'01/03/2026',execMes:16.76,execAcum:48.92}]},
+  {id:'pedro',nome:'PEDRO',entrega:'24/07/2026',valor:190500,medidoAnterior:79.48,
     pesos:[3.42,4.99,12.31,7.04,6.50,2.19,5.81,4.44,6.91,1.57,4.03,3.69,9.09,1.30,3.79,3.76,4.10,4.24,1.57,9.23],
-    exec:[1,1,1,1,0,0,1,1,1,0,1,0,0.3,0,0,1,0.5,0,0,0.6]},
-  {id:'leonardo',nome:'LEONARDO',entrega:'09/08/2026',valor:190025,medidoAnterior:13.18,
+    exec:[1,1,1,1,0,0,1,1,1,0,1,0,0.3,0,0,1,0.5,0,0,0.6],
+    historico:[{parcela:1,data:'23/01/2026',execMes:13.64,execAcum:13.64},{parcela:2,data:'23/02/2026',execMes:17.94,execAcum:31.58},{parcela:3,data:'23/03/2026',execMes:47.90,execAcum:79.48}]},
+  {id:'leonardo',nome:'LEONARDO',entrega:'09/08/2026',valor:190025,medidoAnterior:31.58,
     pesos:[3.42,4.99,12.31,7.04,6.50,2.19,5.81,4.44,6.91,1.57,4.03,3.69,9.09,1.30,3.79,3.76,4.10,4.24,1.57,9.23],
-    exec:[1,1,0.7,0.8,0,0,0,0.3,0,0,0,0,0,0,0,0,0.5,0,0,0.6]},
+    exec:[1,1,0.7,0.8,0,0,0,0.3,0,0,0,0,0,0,0,0,0.5,0,0,0.6],
+    historico:[{parcela:1,data:'08/02/2026',execMes:13.18,execAcum:13.18},{parcela:2,data:'08/03/2026',execMes:18.40,execAcum:31.58}]},
   {id:'duamelyda',nome:'DUAM + ELYDA',entrega:'A definir',valor:399891.20,medidoAnterior:0,
     pesos:[2.83,6.60,12.96,9.35,8.01,1.20,0,4.24,7.07,2.00,4.24,5.89,8.72,1.18,3.77,3.77,4.01,4.48,1.13,8.55],
-    exec:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]}
+    exec:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    historico:[]}
 ];
 
 let state = JSON.parse(JSON.stringify(OBRAS_PCI));
@@ -171,7 +176,7 @@ async function carregar(){
       state=OBRAS_PCI.map(o=>{
         const s=saved.find(x=>x.id===o.id);
         if(!s)return JSON.parse(JSON.stringify(o));
-        return{...JSON.parse(JSON.stringify(o)),exec:s.exec||o.exec,medidoAnterior:s.medidoAnterior!=null?s.medidoAnterior:o.medidoAnterior};
+        return{...JSON.parse(JSON.stringify(o)),exec:s.exec||o.exec,medidoAnterior:s.medidoAnterior!=null?s.medidoAnterior:o.medidoAnterior,historico:s.historico||o.historico||[]};
       });
       cacheLocal();return;
     }}catch(e){}}
@@ -287,8 +292,50 @@ function render(){
             return`<div class="comp-item"><span>${c.nome} (${Math.round(c.exec*100)}% feito)</span><span class="comp-ganho">+${ganho.toFixed(1)}% ${ganhoR?'= '+ganhoR:''}</span></div>`
           }).join('')}
         </div>`:''}
+
+        <div style="margin-top:16px;padding-top:16px;border-top:1px solid #2a2d35">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <h4 style="font-size:.85rem;color:#8b8fa0;font-weight:600">Historico de Medicoes</h4>
+            <button onclick="fecharMedicao('${obra.id}')" style="background:#1c3a1e;border:1px solid #2d5a30;color:#34d399;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:.8rem;font-weight:600;min-height:40px">Fechar medicao atual</button>
+          </div>
+          ${(obra.historico||[]).length?`
+          <table style="width:100%;border-collapse:collapse;font-size:.82rem">
+            <thead><tr>
+              <th style="text-align:left;padding:6px 10px;color:#8b8fa0;font-size:.7rem;border-bottom:1px solid #2a2d35">Parcela</th>
+              <th style="text-align:left;padding:6px 10px;color:#8b8fa0;font-size:.7rem;border-bottom:1px solid #2a2d35">Data</th>
+              <th style="text-align:right;padding:6px 10px;color:#8b8fa0;font-size:.7rem;border-bottom:1px solid #2a2d35">Exec. Mes</th>
+              <th style="text-align:right;padding:6px 10px;color:#8b8fa0;font-size:.7rem;border-bottom:1px solid #2a2d35">Acumulado</th>
+              <th style="text-align:right;padding:6px 10px;color:#8b8fa0;font-size:.7rem;border-bottom:1px solid #2a2d35">Valor</th>
+            </tr></thead>
+            <tbody>
+              ${obra.historico.map(h=>`<tr>
+                <td style="padding:6px 10px;color:#e2e4e9">${h.parcela}</td>
+                <td style="padding:6px 10px;color:#e2e4e9">${h.data}</td>
+                <td style="padding:6px 10px;text-align:right;color:#34d399;font-weight:600;font-family:monospace">${h.execMes.toFixed(2)}%</td>
+                <td style="padding:6px 10px;text-align:right;color:#60a5fa;font-weight:600;font-family:monospace">${h.execAcum.toFixed(2)}%</td>
+                <td style="padding:6px 10px;text-align:right;color:#e2e4e9;font-family:monospace">${obra.valor?R$(obra.valor*h.execMes/100):'—'}</td>
+              </tr>`).join('')}
+            </tbody>
+          </table>`:'<div style="color:#555;font-size:.82rem;text-align:center;padding:12px">Nenhuma medicao registrada</div>'}
+        </div>
       </div>
     </div>`}).join('');
+}
+
+async function fecharMedicao(obraId){
+  const obra=state.find(o=>o.id===obraId);if(!obra)return;
+  const exec=calcExec(obra);
+  const anterior=obra.medidoAnterior||0;
+  const diff=Math.round((exec-anterior)*100)/100;
+  if(diff<=0){alert('Nada novo pra medir. Ajuste os sliders primeiro.');return}
+  const hoje=new Date();
+  const dataStr=String(hoje.getDate()).padStart(2,'0')+'/'+String(hoje.getMonth()+1).padStart(2,'0')+'/'+hoje.getFullYear();
+  if(!confirm('Fechar medicao?\\n\\nExec. esta medicao: '+diff.toFixed(2)+'%\\nAcumulado: '+exec.toFixed(2)+'%\\nValor: '+R$(obra.valor*diff/100)+'\\nData: '+dataStr))return;
+  if(!obra.historico)obra.historico=[];
+  const parcela=obra.historico.length>0?obra.historico[obra.historico.length-1].parcela+1:1;
+  obra.historico.push({parcela,data:dataStr,execMes:diff,execAcum:exec});
+  obra.medidoAnterior=exec;
+  render();await salvar();
 }
 
 function toggle(id){
