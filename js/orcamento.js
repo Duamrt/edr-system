@@ -6,9 +6,9 @@ function renderOrcamento() {
   const el = document.getElementById('orcamento-container');
   if (!el) return;
 
-  // Obras arquivadas (concluídas) + ativas com area — todas servem de modelo
-  const todas = (typeof obrasArquivadas !== 'undefined' ? obrasArquivadas : []).concat(obras);
-  const concluidas = todas.filter(o => Number(o.area_m2) > 0);
+  // Só obras arquivadas (concluídas) com área preenchida
+  const concluidas = (typeof obrasArquivadas !== 'undefined' ? obrasArquivadas : [])
+    .filter(o => Number(o.area_m2) > 0);
 
   el.innerHTML = `
     <div style="margin:16px 0;">
