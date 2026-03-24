@@ -14,7 +14,7 @@ function renderOrcamento() {
     <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin:16px 0;">
       <div style="flex:1;min-width:200px;">
         <label style="font-size:10px;font-weight:700;color:var(--texto3);text-transform:uppercase;letter-spacing:1px;">Obra modelo (concluida)</label>
-        <select id="orc-modelo" onchange="calcOrcamento()" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--borda);background:var(--card);color:var(--texto);font-size:13px;margin-top:4px;-webkit-appearance:none;">
+        <select id="orc-modelo" onchange="calcOrcamento()" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--borda);background:var(--card);color:var(--texto);font-size:13px;margin-top:4px;color-scheme:dark;">
           <option value="">Selecione uma obra concluida...</option>
           ${concluidas.map(o => `<option value="${o.id}">${o.nome} (${Number(o.area_m2).toFixed(0)}m²)</option>`).join('')}
         </select>
