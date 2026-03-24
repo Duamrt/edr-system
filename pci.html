@@ -130,19 +130,19 @@ const ETAPAS_CEF = [
 ];
 
 const OBRAS_PCI = [
-  {id:'junior',nome:'JÚNIOR',entrega:'11/06/2026',
+  {id:'junior',nome:'JÚNIOR',entrega:'11/06/2026',valor:200000,
     pesos:[1.18,3.07,15.04,4.84,8.04,2.16,4.12,4.58,6.86,2.16,4.90,4.25,9.22,1.34,4.58,3.92,3.92,4.58,1.77,9.48],
     exec:[1,1,0.7,0.8,0,0,0,0,0.3,0,0.3,0,0,0,0,0,0.5,0,0,0.5]},
-  {id:'dayana',nome:'DAYANA',entrega:'02/07/2026',
+  {id:'dayana',nome:'DAYANA',entrega:'02/07/2026',valor:191000,
     pesos:[1.89,4.62,12.50,6.36,6.06,2.42,4.92,4.92,7.05,1.74,4.47,4.09,9.09,1.06,4.24,4.17,3.94,4.70,1.74,10.00],
     exec:[1,1,0,0,0,0,0,0.3,0,0,0,0,0,0,0,0,0.5,0,0,0.3]},
-  {id:'pedro',nome:'PEDRO',entrega:'24/07/2026',
+  {id:'pedro',nome:'PEDRO',entrega:'24/07/2026',valor:190500,
     pesos:[3.42,4.99,12.31,7.04,6.50,2.19,5.81,4.44,6.91,1.57,4.03,3.69,9.09,1.30,3.79,3.76,4.10,4.24,1.57,9.23],
     exec:[1,1,0.5,0.5,0,0,0,0.5,0,0,0,0,0,0,0,0,0.5,0,0,0]},
-  {id:'leonardo',nome:'LEONARDO',entrega:'09/08/2026',
+  {id:'leonardo',nome:'LEONARDO',entrega:'09/08/2026',valor:190025,
     pesos:[3.42,4.99,12.31,7.04,6.50,2.19,5.81,4.44,6.91,1.57,4.03,3.69,9.09,1.30,3.79,3.76,4.10,4.24,1.57,9.23],
     exec:[1,1,0.5,0.5,0,0,0,0.5,0,0,0,0,0,0,0,0,0.5,0,0,0]},
-  {id:'duamelyda',nome:'DUAM + ELYDA',entrega:'A definir',
+  {id:'duamelyda',nome:'DUAM + ELYDA',entrega:'A definir',valor:399891.20,
     pesos:[2.83,6.60,12.96,9.35,8.01,1.20,0,4.24,7.07,2.00,4.24,5.89,8.72,1.18,3.77,3.77,4.01,4.48,1.13,8.55],
     exec:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]}
 ];
@@ -181,10 +181,17 @@ async function carregar(){
 }
 
 // ── Cálculos ──
+function R$(v){return'R$ '+v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}
+
 function calcExec(obra){
   let total=0;
   obra.pesos.forEach((p,i)=>{total+=p*(obra.exec[i]||0)});
   return Math.round(total*100)/100;
+}
+
+function calcValorMedicao(obra){
+  const exec=calcExec(obra);
+  return(obra.valor||0)*exec/100;
 }
 
 function diasRestantes(entrega){
@@ -239,13 +246,14 @@ function render(){
       <div class="obra-body ${isOpen?'open':''}">
         <div class="obra-stats">
           <div class="stat ${exec>=80?'ok':exec>=40?'warn':'alerta'}"><div class="num">${exec.toFixed(1)}%</div><div class="lbl">Executado</div></div>
-          <div class="stat"><div class="num">${(100-exec).toFixed(1)}%</div><div class="lbl">Faltando</div></div>
+          <div class="stat"><div class="num">${R$(calcValorMedicao(obra))}</div><div class="lbl">Valor medicao</div></div>
+          <div class="stat"><div class="num">${obra.valor?R$(obra.valor):'—'}</div><div class="lbl">Contrato</div></div>
           <div class="stat ${dias<30?'alerta':dias<60?'warn':'ok'}"><div class="num">${diasTxt}</div><div class="lbl">Pra entrega</div></div>
           <div class="stat"><div class="num">${feitas}/${total}</div><div class="lbl">Etapas 100%</div></div>
         </div>
 
         <table class="etapas">
-          <thead><tr><th>Etapa</th><th>Peso</th><th>Execução</th><th>Ajustar</th></tr></thead>
+          <thead><tr><th>Etapa</th><th>Peso</th><th>Valor</th><th>Execução</th><th>Ajustar</th></tr></thead>
           <tbody>
             ${obra.pesos.map((p,i)=>{
               if(p===0)return'';
@@ -255,6 +263,7 @@ function render(){
               return`<tr title="${ETAPAS_CEF[i].desc}">
                 <td class="etapa-nome">${ETAPAS_CEF[i].nome}<div style="font-size:.68rem;color:#3d6b48;margin-top:1px">${ETAPAS_CEF[i].desc}</div></td>
                 <td class="etapa-peso">${p.toFixed(1)}%</td>
+                <td class="etapa-peso">${obra.valor?R$(obra.valor*p/100):'—'}</td>
                 <td><div class="etapa-bar"><div class="etapa-bar-fill ${corProg(pct)}" style="width:${pct}%"></div></div><span class="etapa-exec ${cls}">${pct}%</span></td>
                 <td><input type="range" class="exec-slider" min="0" max="100" step="5" value="${pct}" onchange="setExec('${obra.id}',${i},this.value)" oninput="this.nextElementSibling.textContent=this.value+'%'" /><span style="font-size:.7rem;color:#6b9e78;margin-left:4px;font-family:monospace">${pct}%</span></td>
               </tr>`}).join('')}
@@ -266,7 +275,8 @@ function render(){
           <h4>Onde compensar pra subir a medicao:</h4>
           ${compens.map(c=>{
             const ganho=c.peso*(1-c.exec);
-            return`<div class="comp-item"><span>${c.nome} (${Math.round(c.exec*100)}% feito)</span><span class="comp-ganho">+${ganho.toFixed(1)}% se completar</span></div>`
+            const ganhoR=obra.valor?R$(obra.valor*ganho/100):'';
+            return`<div class="comp-item"><span>${c.nome} (${Math.round(c.exec*100)}% feito)</span><span class="comp-ganho">+${ganho.toFixed(1)}% ${ganhoR?'= '+ganhoR:''}</span></div>`
           }).join('')}
         </div>`:''}
       </div>
