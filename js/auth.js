@@ -28,6 +28,36 @@ function _formatarTelefone(nums) {
   return nums;
 }
 
+async function enviarRecuperacaoSenha() {
+  const email = document.getElementById('forgot-email').value.trim().toLowerCase();
+  const msgEl = document.getElementById('forgot-msg');
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    msgEl.style.color = '#dc2626';
+    msgEl.textContent = 'Informe um e-mail válido.';
+    return;
+  }
+  msgEl.style.color = 'var(--texto3)';
+  msgEl.textContent = 'Enviando...';
+  try {
+    const r = await fetchWithTimeout(`${SUPABASE_URL}/auth/v1/recover`, {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    if (r.ok) {
+      msgEl.style.color = '#2ecc71';
+      msgEl.textContent = 'Email de recuperação enviado. Verifique sua caixa de entrada.';
+      document.getElementById('forgot-email').value = '';
+    } else {
+      msgEl.style.color = '#2ecc71';
+      msgEl.textContent = 'Se o e-mail estiver cadastrado, você receberá o link de recuperação.';
+    }
+  } catch(e) {
+    msgEl.style.color = '#dc2626';
+    msgEl.textContent = 'Erro de conexão. Tente novamente.';
+  }
+}
+
 async function fazerLogin() {
   const u = document.getElementById('login-user').value.trim().toLowerCase();
   const s = document.getElementById('login-pass').value;

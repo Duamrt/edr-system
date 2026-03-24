@@ -1,4 +1,84 @@
 // ══════════════════════════════════════════
+// RASCUNHO AUTOMÁTICO NF
+// ══════════════════════════════════════════
+let _rascunhoNFTimer = null;
+
+function salvarRascunhoNF() {
+  clearTimeout(_rascunhoNFTimer);
+  _rascunhoNFTimer = setTimeout(() => {
+    try {
+      const rascunho = {
+        fornecedor: document.getElementById('f-fornecedor')?.value || '',
+        cnpj: document.getElementById('f-cnpj')?.value || '',
+        numero: document.getElementById('f-numero')?.value || '',
+        emissao: document.getElementById('f-emissao')?.value || '',
+        recebimento: document.getElementById('f-recebimento')?.value || '',
+        obra: document.getElementById('f-obra')?.value || '',
+        natureza: document.getElementById('f-natureza')?.value || '',
+        frete: document.getElementById('f-frete')?.value || '',
+        obs: document.getElementById('f-obs')?.value || '',
+        itens: itensForm || [],
+        salvo_em: Date.now()
+      };
+      // Só salva se tem algo preenchido
+      if (rascunho.fornecedor || rascunho.numero || rascunho.itens.length) {
+        localStorage.setItem('edr_rascunho_nf', JSON.stringify(rascunho));
+      }
+    } catch(e) { /* silencioso */ }
+  }, 1000);
+}
+
+function restaurarRascunhoNF() {
+  try {
+    const raw = localStorage.getItem('edr_rascunho_nf');
+    if (!raw) return;
+    const r = JSON.parse(raw);
+    // Verificar se tem dados relevantes
+    if (!r.fornecedor && !r.numero && (!r.itens || !r.itens.length)) {
+      localStorage.removeItem('edr_rascunho_nf');
+      return;
+    }
+    // Rascunho velho demais (mais de 7 dias)
+    if (r.salvo_em && Date.now() - r.salvo_em > 7 * 24 * 60 * 60 * 1000) {
+      localStorage.removeItem('edr_rascunho_nf');
+      return;
+    }
+    if (!confirm('Você tem um lançamento incompleto. Deseja continuar?')) {
+      localStorage.removeItem('edr_rascunho_nf');
+      return;
+    }
+    // Restaurar campos
+    if (r.fornecedor) document.getElementById('f-fornecedor').value = r.fornecedor;
+    if (r.cnpj) document.getElementById('f-cnpj').value = r.cnpj;
+    if (r.numero) document.getElementById('f-numero').value = r.numero;
+    if (r.emissao) document.getElementById('f-emissao').value = r.emissao;
+    if (r.recebimento) document.getElementById('f-recebimento').value = r.recebimento;
+    if (r.obra) document.getElementById('f-obra').value = r.obra;
+    if (r.natureza) document.getElementById('f-natureza').value = r.natureza;
+    if (r.frete) document.getElementById('f-frete').value = r.frete;
+    if (r.obs) document.getElementById('f-obs').value = r.obs;
+    if (r.itens && r.itens.length) {
+      itensForm = r.itens;
+      renderItensForm();
+    }
+    atualizarTotalComFrete();
+    showToast('📋 Rascunho restaurado!');
+  } catch(e) { /* silencioso */ }
+}
+
+function limparRascunhoNF() {
+  try { localStorage.removeItem('edr_rascunho_nf'); } catch(e) {}
+}
+
+// Listeners de rascunho nos campos do form NF
+document.addEventListener('DOMContentLoaded', () => {
+  ['f-fornecedor','f-cnpj','f-numero','f-emissao','f-recebimento','f-obra','f-natureza','f-frete','f-obs'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', salvarRascunhoNF);
+  });
+});
+
+// ══════════════════════════════════════════
 // NOTAS
 // ══════════════════════════════════════════
 function renderNotas() {
@@ -308,8 +388,9 @@ function adicionarItem() {
   document.getElementById('i-credito-badge').textContent = 'Digite a descrição para classificação automática';
   document.getElementById('i-manual-wrap').classList.add('hidden');
   currentCredito = null; acSelectedIdx = -1; document.getElementById('i-desc').focus();
+  salvarRascunhoNF();
 }
-function removerItem(idx) { itensForm.splice(idx, 1); renderItensForm(); }
+function removerItem(idx) { itensForm.splice(idx, 1); renderItensForm(); salvarRascunhoNF(); }
 function renderItensForm() {
   const lista = document.getElementById('itens-lista'), totalRow = document.getElementById('item-total-row');
   if (!itensForm.length) { lista.innerHTML = ''; totalRow.classList.add('hidden'); return; }
@@ -454,6 +535,7 @@ function onDestinoChange() {
 }
 
 function resetForm() {
+  limparRascunhoNF();
   itensForm = []; currentCredito = null; renderItensForm();
   ['f-numero','f-fornecedor','f-cnpj','f-obs','f-frete'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('f-obra').value = COMPANY_DEFAULTS.estoqueGeral;

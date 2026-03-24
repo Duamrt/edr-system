@@ -234,7 +234,7 @@ function setView(v) {
     const nb = document.getElementById(`nav-${name}`);
     if (nb) nb.classList.toggle('active', name === v);
   });
-  if (v === 'form') setTimeout(() => { const el = document.getElementById('f-numero'); if (el) { el.focus(); el.select && el.select(); } }, 50);
+  if (v === 'form') { if (typeof restaurarRascunhoNF === 'function') restaurarRascunhoNF(); setTimeout(() => { const el = document.getElementById('f-numero'); if (el) { el.focus(); el.select && el.select(); } }, 50); }
   if (v === 'obras') renderObrasView();
   if (v === 'catalogo') renderCatalogo();
   if (v === 'banco') renderBanco();
