@@ -1428,7 +1428,7 @@ function diarAbrirModalExtra() {
   const sel = document.getElementById('diar-extra-obra');
   sel.innerHTML = '<option value="">Selecionar obra...</option>';
   [...obras, ...obrasArquivadas].forEach(o => {
-    sel.innerHTML += `<option value="${o.nome}">${o.nome}</option>`;
+    sel.innerHTML += `<option value="${esc(o.nome)}">${esc(o.nome)}</option>`;
   });
   // Limpar campos
   document.getElementById('diar-extra-func').value = '';

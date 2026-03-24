@@ -680,8 +680,8 @@ async function renderPlataformaClientes() {
             const nome = cu.nome || '—';
             const roleColor = cu.role === 'admin' ? '#22c55e' : cu.role === 'mestre' ? '#f59e0b' : cu.role === 'visitante' ? '#6b7280' : '#3b82f6';
             return '<tr style="border-bottom:1px solid rgba(255,255,255,0.02);">' +
-              '<td style="padding:6px;color:#fafafa;font-weight:600;">' + nome + '</td>' +
-              '<td style="padding:6px;color:var(--texto3);font-family:monospace;font-size:10px;">' + email + '</td>' +
+              '<td style="padding:6px;color:#fafafa;font-weight:600;">' + esc(nome) + '</td>' +
+              '<td style="padding:6px;color:var(--texto3);font-family:monospace;font-size:10px;">' + esc(email) + '</td>' +
               '<td style="padding:6px;"><span style="color:' + roleColor + ';font-size:9px;font-weight:700;">' + (cu.role || 'OPERACIONAL').toUpperCase() + '</span></td>' +
             '</tr>';
           }).join('') +
@@ -689,12 +689,12 @@ async function renderPlataformaClientes() {
         '</div>';
       }
 
-      return '<div class="empresa-card" data-nome="' + (c.name || '').toLowerCase() + '" style="background:' + (isActive ? 'rgba(168,85,247,0.06)' : 'rgba(255,255,255,0.02)') + ';border:1px solid ' + (isActive ? 'rgba(168,85,247,0.3)' : 'var(--borda)') + ';border-radius:12px;padding:16px 20px;margin-bottom:12px;">' +
+      return '<div class="empresa-card" data-nome="' + esc((c.name || '').toLowerCase()) + '" style="background:' + (isActive ? 'rgba(168,85,247,0.06)' : 'rgba(255,255,255,0.02)') + ';border:1px solid ' + (isActive ? 'rgba(168,85,247,0.3)' : 'var(--borda)') + ';border-radius:12px;padding:16px 20px;margin-bottom:12px;">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="toggleEmpresaDetalhe(this)">' +
           '<div>' +
-            '<div style="font-weight:700;font-size:14px;margin-bottom:4px;">' + (c.name || 'Sem nome') + ' ' + planBadge + ' <span style="font-size:10px;color:var(--texto3);">' + companyUsers.length + ' usr</span></div>' +
+            '<div style="font-weight:700;font-size:14px;margin-bottom:4px;">' + esc(c.name || 'Sem nome') + ' ' + planBadge + ' <span style="font-size:10px;color:var(--texto3);">' + companyUsers.length + ' usr</span></div>' +
             '<div style="font-size:11px;color:var(--texto3);">' +
-              (c.city ? c.city + ' · ' : '') +
+              (c.city ? esc(c.city) + ' · ' : '') +
               (c.plan === 'trial' && trialEnd ? 'Trial ate ' + trialEnd + ' · ' : '') +
               'Criado ' + criado +
             '</div>' +
@@ -702,8 +702,8 @@ async function renderPlataformaClientes() {
           '<span class="empresa-toggle" style="font-size:14px;color:var(--texto3);transition:transform .2s;">▼</span>' +
         '</div>' +
         '<div class="empresa-detalhe" style="display:none;margin-top:12px;border-top:1px solid rgba(255,255,255,0.04);padding-top:12px;">' +
-          (c.cnpj ? '<div style="font-size:11px;color:var(--texto3);margin-bottom:8px;">CNPJ: ' + c.cnpj + (c.phone ? ' · Tel: ' + c.phone : '') + '</div>' : '') +
-          (c.notes ? '<div style="font-size:11px;background:rgba(168,85,247,0.06);border:1px solid rgba(168,85,247,0.15);border-radius:8px;padding:10px;margin-bottom:8px;"><div style="font-size:9px;color:#a855f7;font-weight:700;letter-spacing:1px;margin-bottom:6px;">📝 OBSERVAÇÕES</div>' + c.notes.replace(/</g,'&lt;').split('\n').filter(l=>l.trim()).map(l => '<div style="padding:4px 0;border-bottom:1px solid rgba(168,85,247,0.08);color:#ccc;font-family:monospace;font-size:11px;">' + l + '</div>').join('') + '</div>' : '') +
+          (c.cnpj ? '<div style="font-size:11px;color:var(--texto3);margin-bottom:8px;">CNPJ: ' + esc(c.cnpj) + (c.phone ? ' · Tel: ' + esc(c.phone) : '') + '</div>' : '') +
+          (c.notes ? '<div style="font-size:11px;background:rgba(168,85,247,0.06);border:1px solid rgba(168,85,247,0.15);border-radius:8px;padding:10px;margin-bottom:8px;"><div style="font-size:9px;color:#a855f7;font-weight:700;letter-spacing:1px;margin-bottom:6px;">📝 OBSERVAÇÕES</div>' + esc(c.notes).split('\n').filter(l=>l.trim()).map(l => '<div style="padding:4px 0;border-bottom:1px solid rgba(168,85,247,0.08);color:#ccc;font-family:monospace;font-size:11px;">' + l + '</div>').join('') + '</div>' : '') +
           usersHtml +
           '<div style="display:flex;gap:6px;margin-top:12px;">' +
             '<button onclick="event.stopPropagation();editarEmpresa(\'' + c.id + '\');" style="padding:6px 10px;border-radius:8px;border:1px solid var(--borda);background:rgba(255,255,255,0.03);color:var(--texto3);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">EDITAR</button>' +
@@ -741,8 +741,8 @@ async function editarEmpresa(companyId) {
         const cuId = cu.cu_id || cu.id;
         return '<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;padding:8px;background:rgba(255,255,255,0.02);border:1px solid var(--borda);border-radius:8px;">' +
           '<div style="flex:1;min-width:0;">' +
-            '<div style="font-size:12px;font-weight:700;color:#fafafa;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + nome + '</div>' +
-            '<div style="font-size:10px;color:var(--texto3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + email + '</div>' +
+            '<div style="font-size:12px;font-weight:700;color:#fafafa;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc(nome) + '</div>' +
+            '<div style="font-size:10px;color:var(--texto3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc(email) + '</div>' +
           '</div>' +
           '<select data-cuid="' + cuId + '" class="ed-user-role" style="padding:4px 6px;background:var(--cinza-medio,#141414);border:1px solid var(--borda);border-radius:6px;color:#fafafa;font-size:10px;font-family:inherit;">' +
             '<option value="admin"' + (cu.role === 'admin' ? ' selected' : '') + '>Admin</option>' +
@@ -763,12 +763,12 @@ async function editarEmpresa(companyId) {
 
   overlay.innerHTML = '<div style="background:var(--cinza-escuro,#0a0a0a);border:1px solid var(--borda);border-radius:16px;padding:24px;width:100%;max-width:460px;max-height:90vh;overflow-y:auto;">' +
     '<div style="font-size:16px;font-weight:800;margin-bottom:16px;color:#a855f7;">Editar Empresa</div>' +
-    '<div style="margin-bottom:12px;"><label style="font-size:11px;color:var(--texto3);font-weight:700;display:block;margin-bottom:4px;">NOME</label><input id="ed-emp-nome" value="' + (c.name || '') + '" style="width:100%;padding:10px;background:var(--cinza-medio,#141414);border:1px solid var(--borda);border-radius:8px;color:#fafafa;font-size:13px;font-family:inherit;box-sizing:border-box;"></div>' +
-    '<div style="margin-bottom:12px;"><label style="font-size:11px;color:var(--texto3);font-weight:700;display:block;margin-bottom:4px;">CIDADE</label><input id="ed-emp-cidade" value="' + (c.city || '') + '" style="width:100%;padding:10px;background:var(--cinza-medio,#141414);border:1px solid var(--borda);border-radius:8px;color:#fafafa;font-size:13px;font-family:inherit;box-sizing:border-box;"></div>' +
-    '<div style="margin-bottom:12px;"><label style="font-size:11px;color:var(--texto3);font-weight:700;display:block;margin-bottom:4px;">CNPJ</label><input id="ed-emp-cnpj" value="' + (c.cnpj || '') + '" style="width:100%;padding:10px;background:var(--cinza-medio,#141414);border:1px solid var(--borda);border-radius:8px;color:#fafafa;font-size:13px;font-family:inherit;box-sizing:border-box;"></div>' +
-    '<div style="margin-bottom:12px;"><label style="font-size:11px;color:var(--texto3);font-weight:700;display:block;margin-bottom:4px;">TELEFONE</label><input id="ed-emp-phone" value="' + (c.phone || '') + '" style="width:100%;padding:10px;background:var(--cinza-medio,#141414);border:1px solid var(--borda);border-radius:8px;color:#fafafa;font-size:13px;font-family:inherit;box-sizing:border-box;"></div>' +
+    '<div style="margin-bottom:12px;"><label style="font-size:11px;color:var(--texto3);font-weight:700;display:block;margin-bottom:4px;">NOME</label><input id="ed-emp-nome" value="' + esc(c.name || '') + '" style="width:100%;padding:10px;background:var(--cinza-medio,#141414);border:1px solid var(--borda);border-radius:8px;color:#fafafa;font-size:13px;font-family:inherit;box-sizing:border-box;"></div>' +
+    '<div style="margin-bottom:12px;"><label style="font-size:11px;color:var(--texto3);font-weight:700;display:block;margin-bottom:4px;">CIDADE</label><input id="ed-emp-cidade" value="' + esc(c.city || '') + '" style="width:100%;padding:10px;background:var(--cinza-medio,#141414);border:1px solid var(--borda);border-radius:8px;color:#fafafa;font-size:13px;font-family:inherit;box-sizing:border-box;"></div>' +
+    '<div style="margin-bottom:12px;"><label style="font-size:11px;color:var(--texto3);font-weight:700;display:block;margin-bottom:4px;">CNPJ</label><input id="ed-emp-cnpj" value="' + esc(c.cnpj || '') + '" style="width:100%;padding:10px;background:var(--cinza-medio,#141414);border:1px solid var(--borda);border-radius:8px;color:#fafafa;font-size:13px;font-family:inherit;box-sizing:border-box;"></div>' +
+    '<div style="margin-bottom:12px;"><label style="font-size:11px;color:var(--texto3);font-weight:700;display:block;margin-bottom:4px;">TELEFONE</label><input id="ed-emp-phone" value="' + esc(c.phone || '') + '" style="width:100%;padding:10px;background:var(--cinza-medio,#141414);border:1px solid var(--borda);border-radius:8px;color:#fafafa;font-size:13px;font-family:inherit;box-sizing:border-box;"></div>' +
     usersHtml +
-    '<div style="margin-bottom:12px;"><label style="font-size:11px;color:var(--texto3);font-weight:700;display:block;margin-bottom:4px;">OBSERVAÇÕES (senhas, contatos, etc)</label><textarea id="ed-emp-notes" rows="4" style="width:100%;padding:10px;background:var(--cinza-medio,#141414);border:1px solid var(--borda);border-radius:8px;color:#fafafa;font-size:12px;font-family:monospace;box-sizing:border-box;resize:vertical;">' + (c.notes || '') + '</textarea></div>' +
+    '<div style="margin-bottom:12px;"><label style="font-size:11px;color:var(--texto3);font-weight:700;display:block;margin-bottom:4px;">OBSERVAÇÕES (senhas, contatos, etc)</label><textarea id="ed-emp-notes" rows="4" style="width:100%;padding:10px;background:var(--cinza-medio,#141414);border:1px solid var(--borda);border-radius:8px;color:#fafafa;font-size:12px;font-family:monospace;box-sizing:border-box;resize:vertical;">' + esc(c.notes || '') + '</textarea></div>' +
     '<div style="margin-bottom:16px;"><label style="font-size:11px;color:var(--texto3);font-weight:700;display:block;margin-bottom:4px;">PLANO</label><select id="ed-emp-plan" style="width:100%;padding:10px;background:var(--cinza-medio,#141414);border:1px solid var(--borda);border-radius:8px;color:#fafafa;font-size:13px;font-family:inherit;">' +
       '<option value="trial"' + (c.plan === 'trial' ? ' selected' : '') + '>Trial (14 dias)</option>' +
       '<option value="obra"' + (c.plan === 'obra' ? ' selected' : '') + '>Obra — R$9,90 (1 obra, 2 usr)</option>' +
@@ -845,7 +845,7 @@ async function excluirEmpresa(id, nome) {
     // 2. Remover a empresa
     await sbDelete('companies', '?id=eq.' + id);
     alert('Empresa "' + nome + '" excluída.');
-    renderPainelEmpresas();
+    renderPlataformaClientes();
   } catch(e) {
     alert('Erro ao excluir empresa: ' + e.message);
   }

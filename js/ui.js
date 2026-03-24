@@ -71,7 +71,7 @@ function abrirEntradaDireta() {
   document.getElementById('entrada-obs').value = '';
   document.getElementById('entrada-preco-alerta').classList.add('hidden');
   const sel = document.getElementById('entrada-obra-id');
-  sel.innerHTML = obras.map(o => `<option value="${o.id}">${o.nome}</option>`).join('');
+  sel.innerHTML = obras.map(o => `<option value="${o.id}">${esc(o.nome)}</option>`).join('');
   const selEt = document.getElementById('entrada-etapa');
   if (selEt) selEt.innerHTML = etapaSelectOpts('', true);
   setDestinoEntrada('estoque');
@@ -201,7 +201,7 @@ function abrirSaidaMaterial(descPreenchida, unidadePreenchida) {
   // Popular selects
   const obraSelect = document.getElementById('saida-obra');
   obraSelect.innerHTML = '<option value="">— Selecione a obra —</option>' +
-    obras.map(o => `<option value="${o.id}">${o.nome}</option>`).join('');
+    obras.map(o => `<option value="${o.id}">${esc(o.nome)}</option>`).join('');
   document.getElementById('saida-etapa').innerHTML = etapaSelectOpts('', false);
   // Data de hoje
   const hoje = hojeISO();

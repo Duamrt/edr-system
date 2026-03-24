@@ -256,7 +256,7 @@ function onMatNomeInput() {
   if (nome.length >= 3) {
     const similar = catalogoMateriais.find(m => norm(m.nome) === norm(nome) && m.id !== _editandoMaterialId);
     if (similar) {
-      aviso.innerHTML = `⚠ Material já existe: <b>${similar.codigo}</b> — ${similar.nome}`;
+      aviso.innerHTML = `⚠ Material já existe: <b>${esc(similar.codigo)}</b> — ${esc(similar.nome)}`;
       aviso.classList.remove('hidden');
       document.getElementById('btn-salvar-mat').disabled = true;
     } else {

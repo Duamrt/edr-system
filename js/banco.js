@@ -176,8 +176,8 @@ function renderBanco() {
       fornEl.innerHTML = forns.map(([nome, d]) =>
         `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--borda2);">
           <div>
-            <div style="font-weight:700;font-size:13px;">${nome}</div>
-            <div style="font-size:11px;color:var(--texto3);margin-top:2px;">${d.cnpj || 'CNPJ não informado'} · ${d.qtd} nota${d.qtd!==1?'s':''}</div>
+            <div style="font-weight:700;font-size:13px;">${esc(nome)}</div>
+            <div style="font-size:11px;color:var(--texto3);margin-top:2px;">${esc(d.cnpj || 'CNPJ não informado')} · ${d.qtd} nota${d.qtd!==1?'s':''}</div>
           </div>
           <div style="font-weight:700;color:var(--verde-hl);font-size:13px;">${fmtR(d.total)}</div>
         </div>`

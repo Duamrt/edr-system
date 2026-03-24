@@ -14,9 +14,9 @@ function esc(s) { if (!s) return ''; return String(s).replace(/&/g,'&amp;').repl
 
 function populateSelects() {
   const pool = mostandoArquivadas ? obrasArquivadas : obras;
-  const opts = pool.map(o => `<option value="${o.id}">${o.nome}</option>`).join('');
+  const opts = pool.map(o => `<option value="${o.id}">${esc(o.nome)}</option>`).join('');
   // Obras ativas apenas (arquivadas nunca aparecem no form NF, distrib ou lanç)
-  const optsNome = obras.map(o => `<option value="${o.nome}">${o.nome}</option>`).join('');
+  const optsNome = obras.map(o => `<option value="${esc(o.nome)}">${esc(o.nome)}</option>`).join('');
   document.getElementById('f-obra').innerHTML = `<option value="${COMPANY_DEFAULTS.estoqueGeral}">📦 ${COMPANY_DEFAULTS.estoqueLabel} (ESTOQUE)</option><option value="${COMPANY_DEFAULTS.escritorio}">🏢 ${COMPANY_DEFAULTS.escritorioLabel} (CONSUMO DIRETO)</option>${optsNome}`;
   document.getElementById('filtro-obra').innerHTML = `<option value="">TODAS AS OBRAS</option><option value="${COMPANY_DEFAULTS.estoqueGeral}">${COMPANY_DEFAULTS.estoqueLabel}</option>${optsNome}`;
   document.getElementById('dist-obra').innerHTML = opts;

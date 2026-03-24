@@ -70,7 +70,7 @@ function onFornecedorInput() {
     notas.forEach(n => { if (norm(n.fornecedor).includes(v) && !map[n.fornecedor]) map[n.fornecedor] = { nome: n.fornecedor, cnpj: n.cnpj||'' }; });
     cachedFornecedores = Object.values(map).slice(0, 6);
     if (!cachedFornecedores.length) { list.classList.add('hidden'); return; }
-    list.innerHTML = cachedFornecedores.map((m, i) => `<div class="autocomplete-item" data-forn-idx="${i}"><span class="ac-label">${m.nome}</span><span class="ac-forn-cnpj">${m.cnpj||'SEM CNPJ'}</span></div>`).join('');
+    list.innerHTML = cachedFornecedores.map((m, i) => `<div class="autocomplete-item" data-forn-idx="${i}"><span class="ac-label">${esc(m.nome)}</span><span class="ac-forn-cnpj">${esc(m.cnpj||'SEM CNPJ')}</span></div>`).join('');
     list.querySelectorAll('.autocomplete-item').forEach(el => { const fn = e => { e.preventDefault(); selectFornecedor(parseInt(el.dataset.fornIdx)); }; el.addEventListener('mousedown', fn); el.addEventListener('touchstart', fn, {passive:false}); });
     list.classList.remove('hidden');
   }, 300);

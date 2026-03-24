@@ -532,7 +532,7 @@ function renderObrasMateriais() {
 
       return `<div style="background:var(--bg2);border:1px solid var(--borda);border-radius:10px;margin-bottom:10px;overflow:hidden;">
         <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:rgba(255,255,255,0.03);">
-          <span style="font-weight:700;color:var(--branco);font-size:13px;">${m.desc}</span>
+          <span style="font-weight:700;color:var(--branco);font-size:13px;">${esc(m.desc)}</span>
           <div style="display:flex;gap:12px;align-items:center;">
             <span style="font-size:11px;color:var(--texto3)">${m.registros.length} mov.</span>
             <span style="font-weight:800;color:var(--roxo)">${totalQtd.toFixed(2)}</span>
