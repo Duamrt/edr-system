@@ -1047,7 +1047,22 @@ function diarParseMensagem(msgOriginal) {
     return partes.length > 1 ? partes : [bloco];
   };
 
-  const brutos = msg.split(/[.\n]+/).map(s => s.trim()).filter(Boolean);
+  // Pre-process: inserir quebras de linha antes de nomes de funcionários
+  // quando aparecem após contexto de obra (ex: texto sem quebra vindo do mic)
+  let msgPrep = msg;
+  const _funcNomes = [...new Set(Object.values(DIAR_FUNCIONARIOS).map(f => norm(f.nome)))];
+  _funcNomes.sort((a,b) => b.length - a.length);
+  const _skipWords = new Set(['e','i','de','da','do','di','na','no','em','casa','obra','seu']);
+  _funcNomes.forEach(nome => {
+    if (nome.length < 3) return;
+    const escaped = nome.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    msgPrep = msgPrep.replace(new RegExp('(\\b\\w+)\\s+(' + escaped + '\\b)', 'g'), (match, antes, n) => {
+      if (_skipWords.has(antes)) return match;
+      return antes + '\n' + n;
+    });
+  });
+
+  const brutos = msgPrep.split(/[.\r\n]+/).map(s => s.trim()).filter(Boolean);
   const blocos = brutos.flatMap(b => splitPorTurno(b));
 
   // Resultado final agrupado por funcionário
