@@ -94,22 +94,15 @@ async function renderCronograma() {
         <option value="">Todas as obras</option>
         ${obrasOpts}
       </select>
-      <div style="display:flex;gap:4px;">
-        <button onclick="cronSetView('Day')" id="cron-vm-Day" class="cron-vm-btn" style="padding:6px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.03);color:var(--texto2);font-size:12px;cursor:pointer;">Dia</button>
-        <button onclick="cronSetView('Week')" id="cron-vm-Week" class="cron-vm-btn" style="padding:6px 12px;border-radius:8px;border:1px solid rgba(74,222,128,0.3);background:rgba(74,222,128,0.1);color:#4ade80;font-size:12px;cursor:pointer;">Semana</button>
-        <button onclick="cronSetView('Month')" id="cron-vm-Month" class="cron-vm-btn" style="padding:6px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.03);color:var(--texto2);font-size:12px;cursor:pointer;">Mes</button>
-      </div>
-      <button onclick="cronScrollHoje()" style="padding:6px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.03);color:var(--texto2);font-size:12px;cursor:pointer;">Hoje</button>
       <button onclick="cronToggleTodos()" style="padding:6px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.03);color:var(--texto2);font-size:12px;cursor:pointer;" id="cron-btn-toggle">Expandir</button>
       <button onclick="cronAbrirModal()" class="btn-save" style="padding:8px 16px;font-size:12px;">+ TAREFA</button>
     </div>
-    <div id="cron-gantt-wrap" style="overflow-x:auto;background:rgba(255,255,255,0.02);border-radius:12px;border:1px solid rgba(255,255,255,0.06);min-height:120px;-webkit-overflow-scrolling:touch;"></div>
     <div id="cron-vazio" class="hidden" style="text-align:center;padding:60px 20px;color:var(--texto3);">
       <div style="font-size:32px;margin-bottom:12px;">📅</div>
       <div style="font-size:14px;margin-bottom:6px;">Nenhuma tarefa no cronograma</div>
       <div style="font-size:12px;">Clique em <strong>+ TAREFA</strong> para adicionar etapas da obra</div>
     </div>
-    <div id="cron-lista" style="margin-top:16px;"></div>
+    <div id="cron-lista" style="margin-top:8px;"></div>
   `;
 
   await cronCarregarTarefas();
@@ -122,86 +115,26 @@ async function cronCarregarTarefas() {
     const r = await sbGet('cronograma_tarefas', query);
     cronTarefas = Array.isArray(r) ? r : [];
   } catch(e) { cronTarefas = []; }
-  cronRenderGantt();
-}
-
-// ── GANTT ────────────────────────────────────────────────
-
-function cronCalcProgresso(t) {
-  const subs = t.subitens || [];
-  if (subs.length === 0) return Number(t.progresso) || 0;
-  const feitos = subs.filter(s => s.feito).length;
-  return Math.round(feitos / subs.length * 100);
-}
-
-function cronRenderGantt() {
-  const wrap = document.getElementById('cron-gantt-wrap');
-  const vazio = document.getElementById('cron-vazio');
-  if (!wrap) return;
-
-  if (cronTarefas.length === 0) {
-    wrap.style.display = 'none';
-    if (vazio) vazio.classList.remove('hidden');
-    cronGantt = null;
-    cronRenderLista();
-    return;
-  }
-
-  wrap.style.display = '';
-  if (vazio) vazio.classList.add('hidden');
 
   // Atribuir cores por obra
   const obrasUnicas = [...new Set(cronTarefas.map(t => t.obra_id))];
   cronObraCores = {};
   obrasUnicas.forEach((obraId, i) => { cronObraCores[obraId] = i % CRON_CORES.length; });
 
-  const idSet = new Set(cronTarefas.map(t => t.id));
-  const tasks = cronTarefas.map(t => {
-    const obraNome = obras.find(o => o.id === t.obra_id)?.nome || '';
-    const dep = t.dependencia && idSet.has(t.dependencia) ? t.dependencia : '';
-    const corIdx = cronObraCores[t.obra_id] || 0;
-    return {
-      id: t.id,
-      name: obraNome ? `${obraNome} — ${t.nome}` : t.nome,
-      start: t.data_inicio,
-      end: t.data_fim,
-      progress: cronCalcProgresso(t),
-      dependencies: dep,
-      custom_class: 'cron-bar cron-obra-' + corIdx
-    };
-  });
-
-  wrap.innerHTML = '';
-
-  try {
-    cronGantt = new Gantt(wrap, tasks, {
-      view_mode: cronViewMode,
-      date_format: 'YYYY-MM-DD',
-      language: 'ptBr',
-      on_click: task => cronToggleExpand(task.id),
-      on_date_change: (task, start, end) => cronAtualizarDatas(task.id, start, end),
-      on_progress_change: (task, progress) => cronAtualizarProgresso(task.id, progress),
-      custom_popup_html: task => {
-        const t = cronTarefas.find(x => x.id === task.id);
-        const obraNome = t ? (obras.find(o => o.id === t.obra_id)?.nome || '') : '';
-        const subs = t?.subitens || [];
-        const feitos = subs.filter(s => s.feito).length;
-        return `<div class="cron-popup">
-          <div style="font-weight:700;margin-bottom:4px;">${task.name}</div>
-          ${obraNome ? `<div style="font-size:11px;color:#8b8fa0;margin-bottom:4px;">${obraNome}</div>` : ''}
-          <div style="font-size:12px;">${formatDateBR(task._start)} → ${formatDateBR(task._end)}</div>
-          <div style="font-size:12px;margin-top:2px;">${subs.length ? `${feitos}/${subs.length} itens` : `${Math.round(task.progress)}%`}</div>
-        </div>`;
-      }
-    });
-    setTimeout(() => cronAplicarTemaEscuro(wrap), 100);
-    setTimeout(() => cronAplicarTemaEscuro(wrap), 500);
-  } catch(e) {
-    console.error('Gantt render error:', e);
-    wrap.innerHTML = '<div style="padding:20px;color:#ef4444;text-align:center;">Erro ao renderizar: ' + e.message + '</div>';
+  const vazio = document.getElementById('cron-vazio');
+  if (cronTarefas.length === 0) {
+    if (vazio) vazio.classList.remove('hidden');
+  } else {
+    if (vazio) vazio.classList.add('hidden');
   }
-
   cronRenderLista();
+}
+
+function cronCalcProgresso(t) {
+  const subs = t.subitens || [];
+  if (subs.length === 0) return Number(t.progresso) || 0;
+  const feitos = subs.filter(s => s.feito).length;
+  return Math.round(feitos / subs.length * 100);
 }
 
 // ── LISTA DE TAREFAS COM CHECKLIST ───────────────────────
