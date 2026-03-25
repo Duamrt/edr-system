@@ -910,8 +910,9 @@ function diarParseMensagem(msgOriginal) {
   // Detectar turno global da mensagem (se houver)
   // Padrões: "ate meio-dia", "manha", "tarde", "atarde", "meio dia em X"
   const detectarTurno = (texto) => {
+    if (/dia\s+inteiro|o dia (todo|inteiro)/.test(texto)) return 'dia';
     if (/ate meio.?dia|ate o meio.?dia|manha|de manha/.test(texto)) return 'manha';
-    if (/a tarde|atarde|de tarde|tarde/.test(texto)) return 'tarde';
+    if (/a ?tarde|atarde|de tarde|tarde/.test(texto)) return 'tarde';
     if (/meio.?dia/.test(texto)) return 'manha'; // "meio dia em X" = meia diária = 0.5
     return 'dia';
   };
@@ -1039,7 +1040,8 @@ function diarParseMensagem(msgOriginal) {
       .replace(/\b(e|i)\s+(ate meio.?dia|de manha|a ?tarde|atarde|de tarde|meio.?dia)/g, '|$2')
       .replace(/\b(e|i)\s+(manha)\b/g, '|$2')
       .replace(/,\s*(meio.?dia|manha|de manha|tarde|atarde|a ?tarde|de tarde|ate meio.?dia)/gi, '|$1')
-      .replace(/\b(a ?tarde|de tarde)\s+(na\s+)?casa/g, '|$1 casa'); // "à tarde na casa" como separador
+      .replace(/\b(a ?tarde|de tarde)\s+(na\s+)?casa/g, '|$1 casa')
+      .replace(/(em\s+\w+|casa\s+d[eio]\s+\w+)\s+(meio.?dia|manha|a ?tarde|de tarde|dia\s+inteiro)/g, '$1|$2');
     const partes = marcado.split('|').map(s => s.trim()).filter(Boolean);
     return partes.length > 1 ? partes : [bloco];
   };
