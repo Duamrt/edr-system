@@ -228,8 +228,7 @@ async function cronSalvar() {
     data_inicio: inicio,
     data_fim: fim,
     progresso: progresso,
-    dependencia: dep,
-    company_id: usuarioAtual?.company_id || null
+    dependencia: dep
   };
 
   try {
@@ -360,8 +359,7 @@ async function cronSalvarEtapas(obraId) {
         data_fim: fim,
         progresso: 0,
         dependencia: anteriorId,
-        ordem: i,
-        company_id: usuarioAtual?.company_id || null
+        ordem: i
       });
       if (r && r[0]?.id) anteriorId = r[0].id;
       criadas++;

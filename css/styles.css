@@ -1089,20 +1089,25 @@ body.perfil-mestre .main-content { padding-bottom: 0 !important; }
 }
 
 /* ── CRONOGRAMA GANTT ── */
-.gantt .grid-background { fill: #111113; }
-.gantt .grid-header { fill: #161618; stroke: rgba(255,255,255,0.06); }
-.gantt .grid-row { fill: #111113; }
-.gantt .grid-row:nth-child(even) { fill: #0e0e10; }
-.gantt .row-line { stroke: rgba(255,255,255,0.04); }
-.gantt .tick { stroke: rgba(255,255,255,0.06); }
-.gantt .today-highlight { fill: rgba(74,222,128,0.06); }
-.gantt .bar { fill: #1a7a3a; rx: 6; ry: 6; }
-.gantt .bar-progress { fill: #4ade80; }
-.gantt .bar-label { fill: #f0f0f0; font-size: 12px; font-family: 'Inter', sans-serif; }
-.gantt .bar-wrapper:hover .bar { fill: #22a050; }
-.gantt .handle { fill: #4ade80; }
-.gantt .upper-text, .gantt .lower-text { fill: #8b8fa0; font-family: 'Inter', sans-serif; font-size: 11px; }
-.gantt .arrow { stroke: rgba(74,222,128,0.4); fill: none; }
-.gantt-container .popup-wrapper { background: var(--bg3); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
-.gantt-container .popup-wrapper .pointer { display: none; }
-.cron-popup { padding: 10px 14px; color: var(--texto1, #e2e4e9); font-family: 'Inter', sans-serif; font-size: 13px; }
+.gantt .grid-background { fill: #111113 !important; }
+.gantt .grid-header { fill: #161618 !important; stroke: rgba(255,255,255,0.06) !important; }
+.gantt .grid-row { fill: #111113 !important; }
+.gantt .grid-row:nth-child(even) { fill: #0e0e10 !important; }
+.gantt .row-line { stroke: rgba(255,255,255,0.04) !important; }
+.gantt .tick { stroke: rgba(255,255,255,0.08) !important; }
+.gantt .today-highlight { fill: rgba(74,222,128,0.08) !important; }
+.gantt .bar { fill: #1a7a3a !important; }
+.gantt .bar-progress { fill: #4ade80 !important; }
+.gantt .bar-label { fill: #f0f0f0 !important; font-size: 12px !important; font-family: 'Inter', sans-serif !important; }
+.gantt .bar-wrapper:hover .bar { fill: #22a050 !important; }
+.gantt .bar-wrapper:hover .bar-progress { fill: #6ee7a0 !important; }
+.gantt .handle { fill: #4ade80 !important; opacity: 0; }
+.gantt .bar-wrapper:hover .handle { opacity: 1; }
+.gantt .upper-text, .gantt .lower-text { fill: #c0c4cc !important; font-family: 'Inter', sans-serif !important; font-size: 12px !important; }
+.gantt .arrow { stroke: rgba(74,222,128,0.5) !important; fill: none !important; }
+.gantt-container { overflow: auto; }
+.gantt-container .popup-wrapper { background: #1c1c1f !important; border: 1px solid rgba(255,255,255,0.12) !important; border-radius: 10px !important; box-shadow: 0 8px 24px rgba(0,0,0,0.6) !important; }
+.gantt-container .popup-wrapper .pointer { display: none !important; }
+.gantt-container .popup-wrapper .title { color: #f0f0f0 !important; }
+.gantt-container .popup-wrapper .subtitle { color: #8b8fa0 !important; }
+.cron-popup { padding: 10px 14px; color: #e2e4e9; font-family: 'Inter', sans-serif; font-size: 13px; }
