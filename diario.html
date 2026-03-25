@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EDR — Diário de Obra</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+  :root { --bg:#0a0a0a; --bg2:#111113; --bg3:#161618; --borda:rgba(255,255,255,0.06); --verde:#4ade80; --amarelo:#fbbf24; --vermelho:#f87171; --texto:#e2e4e9; --texto2:#8b8fa0; --texto3:#555; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--texto); min-height:100vh; padding:0 0 80px; }
+
+  .header { position:sticky; top:0; z-index:90; background:var(--bg2); border-bottom:1px solid var(--borda); padding:14px 16px; display:flex; align-items:center; justify-content:space-between; }
+  .header-title { font-size:16px; font-weight:800; letter-spacing:-0.5px; }
+  .header-title span { color:var(--verde); }
+  .header-date { font-size:11px; color:var(--texto2); }
+
+  .stats { display:flex; gap:8px; padding:12px 16px; overflow-x:auto; }
+  .stat-card { flex:1; min-width:80px; background:var(--bg2); border:1px solid var(--borda); border-radius:10px; padding:10px; text-align:center; }
+  .stat-num { font-size:20px; font-weight:800; }
+  .stat-label { font-size:9px; color:var(--texto2); text-transform:uppercase; letter-spacing:1px; margin-top:2px; }
+
+  .obra-section { margin:12px 16px; }
+  .obra-header { display:flex; align-items:center; justify-content:space-between; padding:10px 0; cursor:pointer; }
+  .obra-nome { font-size:14px; font-weight:700; }
+  .obra-prog { display:flex; align-items:center; gap:6px; }
+  .obra-bar { width:60px; height:6px; background:rgba(255,255,255,0.06); border-radius:3px; overflow:hidden; }
+  .obra-bar-fill { height:100%; border-radius:3px; transition:width 0.3s; }
+  .obra-pct { font-size:11px; font-weight:700; }
+
+  .etapa { background:var(--bg2); border:1px solid var(--borda); border-radius:10px; margin-bottom:8px; overflow:hidden; }
+  .etapa-header { padding:10px 12px; display:flex; align-items:center; justify-content:space-between; cursor:pointer; }
+  .etapa-nome { font-size:13px; font-weight:600; }
+  .etapa-info { display:flex; align-items:center; gap:6px; }
+  .etapa-count { font-size:11px; color:var(--texto2); }
+  .etapa-arrow { font-size:12px; color:var(--texto3); transition:transform 0.2s; }
+
+  .sub-list { padding:0 12px 10px 12px; }
+  .sub-item { display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.03); }
+  .sub-item:last-child { border-bottom:none; }
+  .sub-check { width:22px; height:22px; accent-color:var(--verde); cursor:pointer; }
+  .sub-nome { font-size:13px; flex:1; }
+  .sub-nome.feito { color:var(--texto3); text-decoration:line-through; }
+
+  .bottom-bar { position:fixed; bottom:0; left:0; right:0; background:var(--bg2); border-top:1px solid var(--borda); padding:12px 16px; display:flex; gap:8px; z-index:90; }
+  .bottom-btn { flex:1; padding:10px; border-radius:10px; border:none; font-family:inherit; font-size:12px; font-weight:700; cursor:pointer; text-align:center; }
+  .btn-voltar { background:rgba(255,255,255,0.04); color:var(--texto2); border:1px solid var(--borda); }
+  .btn-salvar { background:var(--verde); color:#000; }
+
+  .loading { text-align:center; padding:60px 20px; color:var(--texto3); }
+
+  select { background:var(--bg2); color:var(--texto); border:1px solid var(--borda); border-radius:8px; padding:6px 10px; font-family:inherit; font-size:12px; outline:none; }
+  select option { background:var(--bg2); color:var(--texto); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="header-title">EDR<span>Diário</span></div>
+    <div class="header-date" id="header-date"></div>
+  </div>
+  <select id="filtro-obra" onchange="carregarDados()">
+    <option value="">Todas as obras</option>
+  </select>
+</div>
+
+<div class="stats" id="stats"></div>
+<div id="conteudo"><div class="loading">Carregando...</div></div>
+
+<div class="bottom-bar">
+  <button class="bottom-btn btn-voltar" onclick="window.location.href='index.html'">← SISTEMA</button>
+  <button class="bottom-btn btn-salvar" onclick="salvarAlteracoes()">SALVAR ALTERAÇÕES</button>
+</div>
+
+<script>
+const SU = 'https://mepzoxoahpwcvvlymlfh.supabase.co';
+const SK = 'sb_publishable_Z9E8KLU8ZIMcWjD-bMG5gg_eM585qWq';
+let db;
+try { db = window.supabase.createClient(SU, SK); } catch(e) {}
+
+let tarefas = [];
+let obras = [];
+let alteracoes = {}; // { tarefaId: { subIdx: bool } }
+
+const hoje = new Date();
+document.getElementById('header-date').textContent = hoje.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+
+async function init() {
+  // Carregar company_id do usuário logado
+  let companyId = null;
+  try {
+    const usr = JSON.parse(localStorage.getItem('edr_user') || '{}');
+    if (usr.company_id) companyId = usr.company_id;
+  } catch(e) {}
+
+  // Carregar obras
+  try {
+    let q = db.from('obras').select('id,nome').eq('arquivada', false).order('nome');
+    if (companyId) q = q.eq('company_id', companyId);
+    const { data } = await q;
+    obras = data || [];
+    const sel = document.getElementById('filtro-obra');
+    obras.forEach(o => {
+      const opt = document.createElement('option');
+      opt.value = o.id;
+      opt.textContent = o.nome;
+      sel.appendChild(opt);
+    });
+  } catch(e) { obras = []; }
+
+  await carregarDados();
+}
+
+async function carregarDados() {
+  const obraId = document.getElementById('filtro-obra').value;
+  try {
+    let q = db.from('cronograma_tarefas').select('*').order('ordem').order('data_inicio');
+    if (obraId) q = q.eq('obra_id', obraId);
+    const { data } = await q;
+    tarefas = (data || []).filter(t => {
+      const subs = t.subitens || [];
+      // Mostrar só tarefas que têm sub-itens pendentes
+      return subs.length > 0 && subs.some(s => !s.feito);
+    });
+  } catch(e) { tarefas = []; }
+
+  alteracoes = {};
+  renderStats();
+  renderConteudo();
+}
+
+function renderStats() {
+  const totalSubs = tarefas.reduce((a, t) => a + (t.subitens || []).length, 0);
+  const feitos = tarefas.reduce((a, t) => a + (t.subitens || []).filter(s => s.feito).length, 0);
+  const pendentes = totalSubs - feitos;
+  const prog = totalSubs > 0 ? Math.round(feitos / totalSubs * 100) : 0;
+
+  // Tarefas que deveriam estar em andamento (data_inicio <= hoje)
+  const hojeStr = hoje.toISOString().split('T')[0];
+  const emAndamento = tarefas.filter(t => t.data_inicio <= hojeStr && t.data_fim >= hojeStr).length;
+  const atrasadas = tarefas.filter(t => t.data_fim < hojeStr).length;
+
+  const corProg = prog >= 70 ? 'var(--verde)' : prog >= 40 ? 'var(--amarelo)' : 'var(--vermelho)';
+
+  document.getElementById('stats').innerHTML = `
+    <div class="stat-card"><div class="stat-num" style="color:${corProg}">${prog}%</div><div class="stat-label">Progresso</div></div>
+    <div class="stat-card"><div class="stat-num">${pendentes}</div><div class="stat-label">Pendentes</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:var(--verde)">${emAndamento}</div><div class="stat-label">Em andamento</div></div>
+    ${atrasadas > 0 ? `<div class="stat-card"><div class="stat-num" style="color:var(--vermelho)">${atrasadas}</div><div class="stat-label">Atrasadas</div></div>` : ''}
+  `;
+}
+
+function renderConteudo() {
+  const el = document.getElementById('conteudo');
+  if (tarefas.length === 0) {
+    el.innerHTML = '<div class="loading">Tudo concluído! Nenhuma tarefa pendente.</div>';
+    return;
+  }
+
+  // Agrupar por obra
+  const porObra = {};
+  tarefas.forEach(t => {
+    const obraNome = obras.find(o => o.id === t.obra_id)?.nome || 'Sem obra';
+    if (!porObra[obraNome]) porObra[obraNome] = [];
+    porObra[obraNome].push(t);
+  });
+
+  const hojeStr = hoje.toISOString().split('T')[0];
+
+  let html = '';
+  Object.entries(porObra).forEach(([obraNome, tasks]) => {
+    const totalSubs = tasks.reduce((a, t) => a + (t.subitens || []).length, 0);
+    const feitos = tasks.reduce((a, t) => a + (t.subitens || []).filter(s => s.feito).length, 0);
+    const prog = totalSubs > 0 ? Math.round(feitos / totalSubs * 100) : 0;
+    const corProg = prog >= 70 ? 'var(--verde)' : prog >= 40 ? 'var(--amarelo)' : 'var(--vermelho)';
+
+    html += `<div class="obra-section">
+      <div class="obra-header">
+        <div class="obra-nome">${obraNome}</div>
+        <div class="obra-prog">
+          <div class="obra-bar"><div class="obra-bar-fill" style="width:${prog}%;background:${corProg}"></div></div>
+          <div class="obra-pct" style="color:${corProg}">${prog}%</div>
+        </div>
+      </div>`;
+
+    // Ordenar: em andamento primeiro, depois futuras
+    tasks.sort((a, b) => {
+      const aAtivo = a.data_inicio <= hojeStr ? 0 : 1;
+      const bAtivo = b.data_inicio <= hojeStr ? 0 : 1;
+      return aAtivo - bAtivo || a.ordem - b.ordem;
+    });
+
+    tasks.forEach(t => {
+      const subs = t.subitens || [];
+      const feitos = subs.filter(s => s.feito).length;
+      const ativo = t.data_inicio <= hojeStr;
+      const atrasado = t.data_fim < hojeStr;
+      const inicioFmt = new Date(t.data_inicio + 'T00:00:00').toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit' });
+      const fimFmt = new Date(t.data_fim + 'T00:00:00').toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit' });
+      const statusCor = atrasado ? 'var(--vermelho)' : ativo ? 'var(--verde)' : 'var(--texto3)';
+      const statusTxt = atrasado ? 'ATRASADA' : ativo ? 'EM ANDAMENTO' : 'FUTURA';
+
+      html += `<div class="etapa" id="etapa-${t.id}">
+        <div class="etapa-header" onclick="toggleEtapa('${t.id}')">
+          <div>
+            <div class="etapa-nome">${t.nome}</div>
+            <div style="font-size:10px;color:var(--texto3);margin-top:2px;">${inicioFmt} → ${fimFmt} · <span style="color:${statusCor};font-weight:600;">${statusTxt}</span></div>
+          </div>
+          <div class="etapa-info">
+            <div class="etapa-count">${feitos}/${subs.length}</div>
+            <div class="etapa-arrow" id="arrow-${t.id}">▶</div>
+          </div>
+        </div>
+        <div class="sub-list" id="subs-${t.id}" style="display:${ativo ? '' : 'none'};">
+          ${subs.map((s, i) => `
+            <div class="sub-item">
+              <input type="checkbox" class="sub-check" ${s.feito ? 'checked' : ''} onchange="marcarSub('${t.id}',${i},this.checked)" id="check-${t.id}-${i}">
+              <label for="check-${t.id}-${i}" class="sub-nome ${s.feito ? 'feito' : ''}">${s.nome}</label>
+            </div>
+          `).join('')}
+        </div>
+      </div>`;
+    });
+
+    html += '</div>';
+  });
+
+  el.innerHTML = html;
+
+  // Auto-expandir etapas ativas
+  tarefas.forEach(t => {
+    if (t.data_inicio <= hojeStr) {
+      const arrow = document.getElementById('arrow-' + t.id);
+      if (arrow) arrow.style.transform = 'rotate(90deg)';
+    }
+  });
+}
+
+function toggleEtapa(id) {
+  const subs = document.getElementById('subs-' + id);
+  const arrow = document.getElementById('arrow-' + id);
+  if (!subs) return;
+  const aberto = subs.style.display !== 'none';
+  subs.style.display = aberto ? 'none' : '';
+  if (arrow) arrow.style.transform = aberto ? 'rotate(0deg)' : 'rotate(90deg)';
+}
+
+function marcarSub(tarefaId, subIdx, feito) {
+  if (!alteracoes[tarefaId]) alteracoes[tarefaId] = {};
+  alteracoes[tarefaId][subIdx] = feito;
+
+  // Atualizar visual
+  const label = document.querySelector(`label[for="check-${tarefaId}-${subIdx}"]`);
+  if (label) {
+    label.classList.toggle('feito', feito);
+  }
+
+  // Atualizar tarefa local
+  const t = tarefas.find(x => x.id === tarefaId);
+  if (t && t.subitens && t.subitens[subIdx]) {
+    t.subitens[subIdx].feito = feito;
+  }
+
+  renderStats();
+
+  // Indicar que tem alterações pendentes
+  const btn = document.querySelector('.btn-salvar');
+  if (btn) {
+    const count = Object.values(alteracoes).reduce((a, o) => a + Object.keys(o).length, 0);
+    btn.textContent = `SALVAR (${count} alteração${count > 1 ? 'ões' : ''})`;
+  }
+}
+
+async function salvarAlteracoes() {
+  const ids = Object.keys(alteracoes);
+  if (ids.length === 0) { alert('Nenhuma alteração pra salvar'); return; }
+
+  const btn = document.querySelector('.btn-salvar');
+  if (btn) { btn.textContent = 'SALVANDO...'; btn.disabled = true; }
+
+  let salvos = 0;
+  for (const tarefaId of ids) {
+    const t = tarefas.find(x => x.id === tarefaId);
+    if (!t) continue;
+
+    // Aplicar alterações nos subitens
+    Object.entries(alteracoes[tarefaId]).forEach(([idx, feito]) => {
+      if (t.subitens && t.subitens[idx]) t.subitens[idx].feito = feito;
+    });
+
+    // Calcular progresso
+    const subs = t.subitens || [];
+    const prog = subs.length > 0 ? Math.round(subs.filter(s => s.feito).length / subs.length * 100) : 0;
+
+    try {
+      await db.from('cronograma_tarefas').update({
+        subitens: t.subitens,
+        progresso: prog
+      }).eq('id', tarefaId);
+      salvos++;
+    } catch(e) { console.error('Erro ao salvar', tarefaId, e); }
+  }
+
+  alteracoes = {};
+  if (btn) { btn.textContent = `SALVO! (${salvos})`; btn.disabled = false; }
+  setTimeout(() => { if (btn) btn.textContent = 'SALVAR ALTERAÇÕES'; }, 2000);
+}
+
+init();
+</script>
+</body>
+</html>
