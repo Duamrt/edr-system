@@ -1042,7 +1042,7 @@ body.perfil-mestre .main-content { padding-bottom: 0 !important; }
 
   /* Diárias — painel esquerdo compacto */
   body.perfil-mestre #view-diarias .diarias-panel-left { padding: 10px !important; gap: 10px !important; }
-  body.perfil-mestre #view-diarias .diarias-textarea { min-height: 100px; font-size: 14px; }
+  body.perfil-mestre #view-diarias .diarias-textarea { min-height: 200px; font-size: 15px; line-height: 1.8; }
   body.perfil-mestre #view-diarias .btn-diarias-interpretar { padding: 14px 16px; font-size: 14px; }
   body.perfil-mestre #view-diarias .btn-diarias-confirmar { padding: 14px 16px; font-size: 14px; min-height: 48px; }
 
@@ -1083,7 +1083,7 @@ body.perfil-mestre .main-content { padding-bottom: 0 !important; }
   body.perfil-mestre .app-shell { height: calc(100vh - 38px); }
   body.perfil-mestre .main-content { height: calc(100vh - 38px) !important; }
   body.perfil-mestre .user-badge { display: none; }
-  body.perfil-mestre #view-diarias .diarias-textarea { min-height: 80px; }
+  body.perfil-mestre #view-diarias .diarias-textarea { min-height: 160px; }
   body.perfil-mestre .diarias-folha-table th,
   body.perfil-mestre .diarias-folha-table td { padding: 6px 4px; font-size: 11px; }
 }
