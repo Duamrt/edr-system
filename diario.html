@@ -88,31 +88,41 @@ const hoje = new Date();
 document.getElementById('header-date').textContent = hoje.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
 
 async function init() {
-  // Carregar obras (RLS já filtra por empresa)
-  try {
-    const { data } = await db.from('obras').select('id,nome').eq('arquivada', false).order('nome');
-    obras = data || [];
-    const sel = document.getElementById('filtro-obra');
-    obras.forEach(o => {
-      const opt = document.createElement('option');
-      opt.value = o.id;
-      opt.textContent = o.nome;
-      sel.appendChild(opt);
-    });
-  } catch(e) { obras = []; }
-
   await carregarDados();
 }
 
 async function carregarDados() {
   const obraId = document.getElementById('filtro-obra').value;
   try {
-    let q = db.from('cronograma_tarefas').select('*').order('ordem').order('data_inicio');
+    // Puxar tarefas COM nome da obra via foreign key join
+    let q = db.from('cronograma_tarefas').select('*, obras(id,nome)').order('ordem').order('data_inicio');
     if (obraId) q = q.eq('obra_id', obraId);
     const { data } = await q;
-    tarefas = (data || []).filter(t => {
+
+    // Extrair obras únicas das tarefas
+    const obrasMap = {};
+    (data || []).forEach(t => {
+      if (t.obras && t.obras.id) obrasMap[t.obras.id] = t.obras.nome;
+    });
+    obras = Object.entries(obrasMap).map(([id, nome]) => ({ id, nome })).sort((a, b) => a.nome.localeCompare(b.nome));
+
+    // Popular select de obras (só na primeira vez)
+    const sel = document.getElementById('filtro-obra');
+    if (sel.options.length <= 1) {
+      obras.forEach(o => {
+        const opt = document.createElement('option');
+        opt.value = o.id;
+        opt.textContent = o.nome;
+        sel.appendChild(opt);
+      });
+    }
+
+    // Normalizar: colocar nome da obra direto na tarefa
+    tarefas = (data || []).map(t => ({
+      ...t,
+      _obraNome: t.obras?.nome || 'Sem obra'
+    })).filter(t => {
       const subs = t.subitens || [];
-      // Mostrar só tarefas que têm sub-itens pendentes
       return subs.length > 0 && subs.some(s => !s.feito);
     });
   } catch(e) { tarefas = []; }
@@ -153,7 +163,7 @@ function renderConteudo() {
   // Agrupar por obra
   const porObra = {};
   tarefas.forEach(t => {
-    const obraNome = obras.find(o => o.id === t.obra_id)?.nome || 'Sem obra';
+    const obraNome = t._obraNome || obras.find(o => o.id === t.obra_id)?.nome || 'Sem obra';
     if (!porObra[obraNome]) porObra[obraNome] = [];
     porObra[obraNome].push(t);
   });
