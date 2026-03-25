@@ -1078,7 +1078,8 @@ const _MODULOS_PERMISSAO = [
   { key: 'relatorio', nome: 'Relatorios' },
   { key: 'leads', nome: 'Comercial / Leads' },
   { key: 'custos', nome: 'Custos de Obra' },
-  { key: 'garantias', nome: 'Garantias' }
+  { key: 'garantias', nome: 'Garantias' },
+  { key: 'cronograma', nome: 'Cronograma de Obra' }
 ];
 
 function abrirModalEditarUsuario(userId, nome, email, role, permB64) {
