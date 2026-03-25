@@ -663,18 +663,44 @@ function renderDashboard() {
     // Touch swipe pra trocar abas
     _dashMobileSwipeInit();
   } else {
-    // ── DESKTOP: layout vertical normal ──
+    // ── DESKTOP: Abas horizontais ──
+    const deskPages = [
+      { label: 'Resumo', html: kpisHTML + dashBuildAlertas(alertas) + contasVencHTML },
+      { label: 'Agenda', html: dashBuildAgenda() },
+      { label: 'Obras', html: dashBuildSaudeObrasCompacta(porObra) },
+    ];
+
+    const deskTabsHTML = deskPages.map((p, i) =>
+      `<button onclick="dashDesktopTab(${i})" id="dash-dtab-${i}" style="background:none;border:none;color:${i === 0 ? '#3b82f6' : 'var(--texto3)'};font-size:13px;font-weight:700;font-family:'Rajdhani',sans-serif;letter-spacing:1.5px;cursor:pointer;padding:10px 24px;border-bottom:2px solid ${i === 0 ? '#3b82f6' : 'transparent'};transition:all .2s;">${p.label.toUpperCase()}</button>`
+    ).join('');
+
+    const deskPagesHTML = deskPages.map((p, i) =>
+      `<div id="dash-dpage-${i}" style="display:${i === 0 ? 'block' : 'none'};">${p.html}</div>`
+    ).join('');
+
     el.innerHTML = `
       ${dashBuildHeader(dataStr)}
-      ${kpisHTML}
-      ${dashBuildAlertas(alertas)}
-      ${dashBuildAgenda()}
-      ${dashBuildSaudeObrasCompacta(porObra)}
-      ${contasVencHTML}`;
+      <div style="display:flex;margin-bottom:18px;border-bottom:1px solid rgba(255,255,255,0.06);" id="dash-dtabs-bar">${deskTabsHTML}</div>
+      <div id="dash-dpages">${deskPagesHTML}</div>`;
   }
 
   setTimeout(autoFitStatValues, 50);
   _renderAgendaLegenda();
+}
+
+// ── DESKTOP TAB HELPERS ───────────────────────────────────
+function dashDesktopTab(idx) {
+  const count = 3;
+  for (let i = 0; i < count; i++) {
+    const page = document.getElementById('dash-dpage-' + i);
+    const tab = document.getElementById('dash-dtab-' + i);
+    if (page) page.style.display = i === idx ? 'block' : 'none';
+    if (tab) {
+      tab.style.color = i === idx ? '#3b82f6' : 'var(--texto3)';
+      tab.style.borderBottomColor = i === idx ? '#3b82f6' : 'transparent';
+    }
+  }
+  if (idx === 1) setTimeout(_renderAgendaLegenda, 50);
 }
 
 // ── MOBILE TAB/SWIPE HELPERS ──────────────────────────────
