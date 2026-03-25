@@ -1087,3 +1087,22 @@ body.perfil-mestre .main-content { padding-bottom: 0 !important; }
   body.perfil-mestre .diarias-folha-table th,
   body.perfil-mestre .diarias-folha-table td { padding: 6px 4px; font-size: 11px; }
 }
+
+/* ── CRONOGRAMA GANTT ── */
+.gantt .grid-background { fill: #111113; }
+.gantt .grid-header { fill: #161618; stroke: rgba(255,255,255,0.06); }
+.gantt .grid-row { fill: #111113; }
+.gantt .grid-row:nth-child(even) { fill: #0e0e10; }
+.gantt .row-line { stroke: rgba(255,255,255,0.04); }
+.gantt .tick { stroke: rgba(255,255,255,0.06); }
+.gantt .today-highlight { fill: rgba(74,222,128,0.06); }
+.gantt .bar { fill: #1a7a3a; rx: 6; ry: 6; }
+.gantt .bar-progress { fill: #4ade80; }
+.gantt .bar-label { fill: #f0f0f0; font-size: 12px; font-family: 'Inter', sans-serif; }
+.gantt .bar-wrapper:hover .bar { fill: #22a050; }
+.gantt .handle { fill: #4ade80; }
+.gantt .upper-text, .gantt .lower-text { fill: #8b8fa0; font-family: 'Inter', sans-serif; font-size: 11px; }
+.gantt .arrow { stroke: rgba(74,222,128,0.4); fill: none; }
+.gantt-container .popup-wrapper { background: var(--bg3); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+.gantt-container .popup-wrapper .pointer { display: none; }
+.cron-popup { padding: 10px 14px; color: var(--texto1, #e2e4e9); font-family: 'Inter', sans-serif; font-size: 13px; }

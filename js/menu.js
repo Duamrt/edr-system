@@ -230,7 +230,7 @@ function setView(v) {
   closeBnavMore();
   expandGroupForView(v);
   syncBnav(v);
-  const views = ['clientes-plataforma','dashboard','obras','estoque','notas','form','creditos','setup','catalogo','banco','relatorio','diarias','usuarios','custos','leads','caixa','contas-pagar','garantias','permissoes','orcamento'];
+  const views = ['clientes-plataforma','dashboard','obras','estoque','notas','form','creditos','setup','catalogo','banco','relatorio','diarias','usuarios','custos','leads','caixa','contas-pagar','garantias','permissoes','orcamento','cronograma'];
   views.forEach(name => {
     document.getElementById(`view-${name}`)?.classList.toggle('hidden', name !== v);
     const nb = document.getElementById(`nav-${name}`);
@@ -250,6 +250,7 @@ function setView(v) {
   if (v === 'usuarios') renderUsuarios();
   if (v === 'permissoes') renderPermissoes();
   if (v === 'orcamento') renderOrcamento();
+  if (v === 'cronograma') renderCronograma();
   if (v === 'clientes-plataforma') renderPlataformaClientes();
 }
 
