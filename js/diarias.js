@@ -1041,7 +1041,8 @@ function diarParseMensagem(msgOriginal) {
       .replace(/\b(e|i)\s+(manha)\b/g, '|$2')
       .replace(/,\s*(meio.?dia|manha|de manha|tarde|atarde|a ?tarde|de tarde|ate meio.?dia)/gi, '|$1')
       .replace(/\b(a ?tarde|de tarde)\s+(na\s+)?casa/g, '|$1 casa')
-      .replace(/(em\s+\w+|casa\s+d[eio]\s+\w+)\s+(meio.?dia|manha|a ?tarde|de tarde|dia\s+inteiro)/g, '$1|$2');
+      .replace(/((?:em|na)\s+\w+)\s+(meio.?dia\s+(?:em|na)\s)/g, '$1|$2')
+      .replace(/(casa\s+d[eio]\s+\w+)\s+(meio.?dia\s+(?:em|na|casa)\s)/g, '$1|$2');
     const partes = marcado.split('|').map(s => s.trim()).filter(Boolean);
     return partes.length > 1 ? partes : [bloco];
   };
