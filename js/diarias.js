@@ -921,9 +921,10 @@ function diarParseMensagem(msgOriginal) {
 
   // Aliases de obras — fallback hardcoded + dinâmicos gerados das obras cadastradas
   const OBRAS_ALIASES_HARDCODED = {
-    'josenaldo junior': ['jr', 'junior', 'junio', 'josenaldo jr', 'josenaldo junio', 'josenaldo junior'],
+    'josenaldo junior': ['jr', 'junior', 'junio', 'junho', 'josenaldo jr', 'josenaldo junio', 'josenaldo junior'],
     'leonardo':         ['leonado', 'leanardo', 'leonaldo', 'loenardo', 'leoarndo'],
     'dayana':           ['daiana'],
+    'pedro':            ['predro', 'predro'],
   };
   // Gerar aliases dinâmicos a partir das obras cadastradas
   const OBRAS_ALIASES = { ...OBRAS_ALIASES_HARDCODED };
@@ -1035,9 +1036,10 @@ function diarParseMensagem(msgOriginal) {
     // Substitui marcadores de turno por separador "|" para depois dividir
     // Suporta: "i atarde", "e atarde", "i manha", "e de tarde", etc.
     const marcado = bloco
-      .replace(/\b(e|i)\s+(ate meio.?dia|de manha|a tarde|atarde|de tarde|meio.?dia)/g, '|$2')
+      .replace(/\b(e|i)\s+(ate meio.?dia|de manha|a ?tarde|atarde|de tarde|meio.?dia)/g, '|$2')
       .replace(/\b(e|i)\s+(manha)\b/g, '|$2')
-      .replace(/,\s*(meio.?dia|manha|de manha|tarde|atarde|a tarde|de tarde|ate meio.?dia)/gi, '|$1'); // vírgula antes de turno
+      .replace(/,\s*(meio.?dia|manha|de manha|tarde|atarde|a ?tarde|de tarde|ate meio.?dia)/gi, '|$1')
+      .replace(/\b(a ?tarde|de tarde)\s+(na\s+)?casa/g, '|$1 casa'); // "à tarde na casa" como separador
     const partes = marcado.split('|').map(s => s.trim()).filter(Boolean);
     return partes.length > 1 ? partes : [bloco];
   };
