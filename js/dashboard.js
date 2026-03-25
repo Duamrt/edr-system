@@ -643,8 +643,7 @@ function renderDashboard() {
   if (isMobile) {
     // ── MOBILE: Abas com swipe (conteúdo rola vertical normalmente) ──
     const pages = [
-      { label: 'Resumo', html: kpisHTML + dashBuildAlertas(alertas) + contasVencHTML },
-      { label: 'Agenda', html: dashBuildAgenda() },
+      { label: 'Resumo', html: kpisHTML + dashBuildAlertas(alertas) + contasVencHTML + dashBuildAgenda() },
       { label: 'Obras', html: dashBuildSaudeObrasCompacta(porObra) },
     ];
 
@@ -680,7 +679,7 @@ function renderDashboard() {
 
 // ── MOBILE TAB/SWIPE HELPERS ──────────────────────────────
 let _dashCurrentTab = 0;
-const _DASH_TAB_COUNT = 3;
+const _DASH_TAB_COUNT = 2;
 
 function dashMobileTab(idx) {
   _dashCurrentTab = idx;
@@ -693,8 +692,8 @@ function dashMobileTab(idx) {
       tab.style.borderBottomColor = i === idx ? '#3b82f6' : 'transparent';
     }
   }
-  // Re-renderizar legenda da agenda se for a aba de agenda
-  if (idx === 1) setTimeout(_renderAgendaLegenda, 50);
+  // Re-renderizar legenda da agenda se for a aba de resumo
+  if (idx === 0) setTimeout(_renderAgendaLegenda, 50);
 }
 
 function _dashMobileSwipeInit() {
