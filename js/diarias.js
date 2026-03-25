@@ -701,6 +701,91 @@ async function diarEditarLabelQuinzena() {
 }
 
 // ────────────────────────────────────────────
+// VOZ — Speech Recognition (Web Speech API)
+// ────────────────────────────────────────────
+let _diarVozAtivo = false;
+let _diarRecognition = null;
+
+function diarToggleVoz() {
+  if (_diarVozAtivo) { diarPararVoz(); return; }
+
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    showToast('⚠ Seu navegador não suporta reconhecimento de voz. Use o Chrome.');
+    return;
+  }
+
+  const rec = new SpeechRecognition();
+  rec.lang = 'pt-BR';
+  rec.continuous = true;
+  rec.interimResults = true;
+
+  const textarea = document.getElementById('diar-msgInput');
+  const textoAntes = textarea.value;
+  let finalTranscript = '';
+
+  rec.onstart = function() {
+    _diarVozAtivo = true;
+    const btn = document.getElementById('diar-btnMic');
+    btn.style.background = 'rgba(239,68,68,0.3)';
+    btn.style.borderColor = '#ef4444';
+    btn.style.transform = 'scale(1.15)';
+    document.getElementById('diar-vozStatus').style.display = '';
+  };
+
+  rec.onresult = function(e) {
+    let interim = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const t = e.results[i][0].transcript;
+      if (e.results[i].isFinal) finalTranscript += t + '\n';
+      else interim = t;
+    }
+    textarea.value = textoAntes + (textoAntes && !textoAntes.endsWith('\n') ? '\n' : '') + finalTranscript + interim;
+  };
+
+  rec.onerror = function(e) {
+    if (e.error === 'not-allowed') showToast('⚠ Permissão de microfone negada. Libere nas configurações do navegador.');
+    else if (e.error !== 'aborted') showToast('⚠ Erro de voz: ' + e.error);
+    diarPararVoz();
+  };
+
+  rec.onend = function() {
+    // Se ainda tá ativo, reiniciar (continuous nem sempre funciona em mobile)
+    if (_diarVozAtivo) {
+      try { rec.start(); } catch(e) { diarPararVoz(); }
+    }
+  };
+
+  try {
+    rec.start();
+    _diarRecognition = rec;
+  } catch(e) {
+    showToast('⚠ Erro ao iniciar microfone.');
+  }
+}
+
+function diarPararVoz() {
+  _diarVozAtivo = false;
+  if (_diarRecognition) {
+    try { _diarRecognition.stop(); } catch(e) {}
+    _diarRecognition = null;
+  }
+  const btn = document.getElementById('diar-btnMic');
+  if (btn) {
+    btn.style.background = 'rgba(239,68,68,0.08)';
+    btn.style.borderColor = 'rgba(239,68,68,0.2)';
+    btn.style.transform = '';
+  }
+  const status = document.getElementById('diar-vozStatus');
+  if (status) status.style.display = 'none';
+
+  const textarea = document.getElementById('diar-msgInput');
+  if (textarea && textarea.value.trim()) {
+    showToast('✅ Voz capturada! Clique em INTERPRETAR.');
+  }
+}
+
+// ────────────────────────────────────────────
 // FORMULÁRIO MANUAL — Alternativa ao texto livre
 // ────────────────────────────────────────────
 function diarToggleFormManual() {
