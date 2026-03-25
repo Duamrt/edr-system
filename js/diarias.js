@@ -705,7 +705,9 @@ async function diarEditarLabelQuinzena() {
 // ────────────────────────────────────────────
 function diarToggleFormManual() {
   const form = document.getElementById('diar-formManual');
-  const visivel = form.style.display !== 'none';
+  if (!form) { showToast('Erro: form nao encontrado'); return; }
+  const computed = window.getComputedStyle(form).display;
+  const visivel = computed !== 'none';
   form.style.display = visivel ? 'none' : 'block';
   if (!visivel) diarPopularFormManual();
 }
@@ -723,13 +725,13 @@ function diarPopularFormManual() {
 }
 
 function adicionarDiariaManual() {
-  const funcNome = document.getElementById('diar-manual-func').value;
-  const obraNome = document.getElementById('diar-manual-obra').value;
-  const turno = document.getElementById('diar-manual-turno').value;
-  const data = document.getElementById('diar-dataInput').value;
-  if (!funcNome) { showToast('Selecione o funcionario.'); return; }
-  if (!obraNome) { showToast('Selecione a obra.'); return; }
-  if (!data) { showToast('Selecione a data.'); return; }
+  const funcNome = document.getElementById('diar-manual-func')?.value || '';
+  const obraNome = document.getElementById('diar-manual-obra')?.value || '';
+  const turno = document.getElementById('diar-manual-turno')?.value || 'dia';
+  const data = document.getElementById('diar-dataInput')?.value || '';
+  if (!funcNome) { showToast('⚠ Selecione o funcionario.'); return; }
+  if (!obraNome) { showToast('⚠ Selecione a obra.'); return; }
+  if (!data) { showToast('⚠ Selecione a data.'); return; }
 
   // Buscar dados do funcionário
   const funcEntry = DIAR_FUNCIONARIOS[funcNome.toLowerCase()];
