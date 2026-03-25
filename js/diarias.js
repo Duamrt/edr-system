@@ -439,7 +439,11 @@ async function diarCarregarQuinzenas() {
     const todas = await sbGet('diarias_quinzenas', '?order=data_inicio.desc&limit=20');
     diarQuinzenas = Array.isArray(todas) ? todas.filter(q => !q.excluida) : [];
   } catch(e) { diarQuinzenas = []; }
-  if (!diarQuinzenas.length) { await diarCriarQuinzenaAuto(); return; }
+  if (!diarQuinzenas.length) {
+    if (usuarioAtual?.perfil === 'admin') await diarCriarQuinzenaAuto();
+    else showToast('Nenhuma quinzena encontrada. Peça ao admin para criar.');
+    return;
+  }
   if (!diarQuinzenaAtiva) {
     diarQuinzenaAtiva = diarQuinzenas.find(q => !q.fechada) || diarQuinzenas[0];
   } else {
