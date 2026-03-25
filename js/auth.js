@@ -329,7 +329,7 @@ function aplicarPerfil() {
     'nav-catalogo': 'catalogo', 'nav-relatorio': 'relatorio', 'nav-banco': 'financeiro',
     'nav-setup': null, 'nav-permissoes': null, 'nav-diarias': 'diarias', 'nav-custos': 'custos',
     'nav-leads': 'leads', 'nav-caixa': 'financeiro', 'nav-contas-pagar': 'financeiro',
-    'nav-garantias': 'garantias'
+    'nav-garantias': 'garantias', 'nav-cronograma': 'cronograma'
   };
 
   Object.entries(navPerms).forEach(([id, perm]) => {
@@ -1197,17 +1197,17 @@ const _PERMS_PADRAO = {
   admin: {
     dashboard: true, obras: true, estoque: true, catalogo: true,
     notas: true, lancamentos: true, financeiro: true, diarias: true,
-    relatorio: true, leads: true, custos: true, garantias: true
+    relatorio: true, leads: true, custos: true, garantias: true, cronograma: true
   },
   operacional: {
     dashboard: true, obras: true, estoque: true, catalogo: false,
     notas: false, lancamentos: false, financeiro: false, diarias: true,
-    relatorio: false, leads: false, custos: false, garantias: false
+    relatorio: false, leads: false, custos: false, garantias: false, cronograma: false
   },
   mestre: {
     dashboard: false, obras: false, estoque: false, catalogo: false,
     notas: false, lancamentos: false, financeiro: false, diarias: true,
-    relatorio: false, leads: false, custos: false, garantias: false
+    relatorio: false, leads: false, custos: false, garantias: false, cronograma: true
   }
 };
 

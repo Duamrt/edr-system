@@ -225,8 +225,11 @@ function expandGroupForView(viewId) {
 }
 
 function setView(v) {
-  // Mestre só pode acessar diárias
-  if (usuarioAtual?.perfil === 'mestre' && v !== 'diarias') return;
+  // Mestre: verificar permissão do módulo
+  if (usuarioAtual?.perfil === 'mestre') {
+    const permKey = { diarias:'diarias', cronograma:'cronograma' }[v];
+    if (!permKey) return; // módulo sem permissão mapeada → bloqueia
+  }
   // Salvar página atual pra restaurar após reload
   try { localStorage.setItem('edr_last_view', v); } catch(e) {}
   closeBnavMore();

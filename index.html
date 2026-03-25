@@ -186,7 +186,7 @@
     <button class="nav-btn admin-only" id="nav-orcamento" data-view="orcamento" onclick="setView('orcamento')">
       <span class="nav-icon">📐</span>Orcamento
     </button>
-    <button class="nav-btn admin-only" id="nav-cronograma" data-view="cronograma" onclick="setView('cronograma')">
+    <button class="nav-btn" id="nav-cronograma" data-view="cronograma" onclick="setView('cronograma')">
       <span class="nav-icon">📅</span>Cronograma
     </button>
   </div>
@@ -290,7 +290,7 @@
   <button class="bnav-more-item admin-only" id="bnav-orcamento" onclick="setView('orcamento');closeBnavMore()">
     <span class="bnav-more-icon">📐</span>ORCAMENTO
   </button>
-  <button class="bnav-more-item admin-only" id="bnav-cronograma" onclick="setView('cronograma');closeBnavMore()">
+  <button class="bnav-more-item" id="bnav-cronograma" onclick="setView('cronograma');closeBnavMore()">
     <span class="bnav-more-icon">📅</span>CRONOGRAMA
   </button>
   <div style="font-size:8px;color:var(--texto3);letter-spacing:1px;padding:6px 8px 2px;font-weight:700;">MATERIAIS</div>
@@ -855,9 +855,10 @@
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding-top:4px;flex-wrap:wrap;gap:8px;">
       <div class="modulo-badge">📅 CRONOGRAMA DE OBRA</div>
       <div style="display:flex;gap:6px;">
-        <button onclick="window.open('gantt.html','_blank')" class="btn-outline" style="font-size:11px;padding:6px 12px;">📊 ABRIR GANTT</button>
-        <button onclick="cronGerarEtapas()" class="btn-outline" style="font-size:11px;padding:6px 12px;">⚡ ETAPAS PADRAO</button>
-        <button onclick="cronGerarPDF()" class="btn-outline" style="font-size:11px;padding:6px 12px;">📄 PDF</button>
+        <button onclick="window.open('diario.html','_blank')" class="btn-outline" style="font-size:11px;padding:6px 12px;">📋 DIÁRIO</button>
+        <button onclick="window.open('gantt.html','_blank')" class="btn-outline" style="font-size:11px;padding:6px 12px;">📊 GANTT</button>
+        <button onclick="cronGerarEtapas()" class="btn-outline admin-only" style="font-size:11px;padding:6px 12px;">⚡ ETAPAS</button>
+        <button onclick="cronGerarPDF()" class="btn-outline admin-only" style="font-size:11px;padding:6px 12px;">📄 PDF</button>
       </div>
     </div>
     <div id="cronograma-container"></div>
