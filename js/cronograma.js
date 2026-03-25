@@ -63,26 +63,29 @@ function cronRenderGantt() {
   if (vazio) vazio.classList.add('hidden');
 
   // Mapear tarefas pro formato Frappe Gantt
+  const idSet = new Set(cronTarefas.map(t => t.id));
   const tasks = cronTarefas.map(t => {
     const obraNome = obras.find(o => o.id === t.obra_id)?.nome || '';
+    // Só incluir dependência se o ID existe na lista
+    const dep = t.dependencia && idSet.has(t.dependencia) ? t.dependencia : '';
     return {
       id: t.id,
       name: obraNome ? `${obraNome} — ${t.nome}` : t.nome,
       start: t.data_inicio,
       end: t.data_fim,
       progress: Number(t.progresso) || 0,
-      dependencies: t.dependencia || '',
+      dependencies: dep,
       custom_class: 'cron-bar'
     };
   });
 
-  wrap.innerHTML = '<svg id="cron-gantt-svg"></svg>';
+  wrap.innerHTML = '';
 
   try {
-    cronGantt = new Gantt('#cron-gantt-svg', tasks, {
+    cronGantt = new Gantt(wrap, tasks, {
       view_mode: cronViewMode,
       date_format: 'YYYY-MM-DD',
-      language: 'pt-br',
+      language: 'ptBr',
       on_click: task => cronAbrirModal(task.id),
       on_date_change: (task, start, end) => cronAtualizarDatas(task.id, start, end),
       on_progress_change: (task, progress) => cronAtualizarProgresso(task.id, progress),
@@ -97,9 +100,36 @@ function cronRenderGantt() {
         </div>`;
       }
     });
+    // Forçar tema escuro nos elementos SVG (Frappe Gantt aplica inline styles)
+    setTimeout(() => cronAplicarTemaEscuro(wrap), 50);
   } catch(e) {
-    wrap.innerHTML = '<div style="padding:20px;color:var(--texto3);text-align:center;">Erro ao renderizar cronograma</div>';
+    console.error('Gantt render error:', e);
+    wrap.innerHTML = '<div style="padding:20px;color:#ef4444;text-align:center;">Erro ao renderizar: ' + e.message + '</div>';
   }
+}
+
+function cronAplicarTemaEscuro(wrap) {
+  if (!wrap) return;
+  // Grid background
+  wrap.querySelectorAll('.grid-background').forEach(el => { el.setAttribute('fill', '#111113'); });
+  // Grid header
+  wrap.querySelectorAll('.grid-header').forEach(el => { el.setAttribute('fill', '#161618'); });
+  // Grid rows
+  wrap.querySelectorAll('.grid-row').forEach((el, i) => { el.setAttribute('fill', i % 2 === 0 ? '#111113' : '#0e0e10'); });
+  // Row lines
+  wrap.querySelectorAll('.row-line').forEach(el => { el.setAttribute('stroke', 'rgba(255,255,255,0.04)'); });
+  // Ticks
+  wrap.querySelectorAll('.tick').forEach(el => { el.setAttribute('stroke', 'rgba(255,255,255,0.06)'); });
+  // Today highlight
+  wrap.querySelectorAll('.today-highlight').forEach(el => { el.setAttribute('fill', 'rgba(74,222,128,0.08)'); });
+  // Bars
+  wrap.querySelectorAll('.bar').forEach(el => { el.setAttribute('fill', '#1a7a3a'); });
+  wrap.querySelectorAll('.bar-progress').forEach(el => { el.setAttribute('fill', '#4ade80'); });
+  // Labels
+  wrap.querySelectorAll('.bar-label').forEach(el => { el.setAttribute('fill', '#f0f0f0'); el.style.fill = '#f0f0f0'; });
+  // Date texts
+  wrap.querySelectorAll('.upper-text').forEach(el => { el.setAttribute('fill', '#c0c4cc'); el.style.fill = '#c0c4cc'; });
+  wrap.querySelectorAll('.lower-text').forEach(el => { el.setAttribute('fill', '#8b8fa0'); el.style.fill = '#8b8fa0'; });
 }
 
 function formatDateBR(d) {
