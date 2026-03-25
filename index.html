@@ -855,8 +855,9 @@
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding-top:4px;flex-wrap:wrap;gap:8px;">
       <div class="modulo-badge">📅 CRONOGRAMA DE OBRA</div>
       <div style="display:flex;gap:6px;">
-        <button onclick="cronGerarEtapas()" class="btn-outline" style="font-size:11px;padding:6px 12px;">⚡ GERAR ETAPAS PADRAO</button>
-        <button onclick="cronGerarPDF()" class="btn-outline" style="font-size:11px;padding:6px 12px;">📄 GERAR PDF</button>
+        <button onclick="window.open('gantt.html','_blank')" class="btn-outline" style="font-size:11px;padding:6px 12px;">📊 ABRIR GANTT</button>
+        <button onclick="cronGerarEtapas()" class="btn-outline" style="font-size:11px;padding:6px 12px;">⚡ ETAPAS PADRAO</button>
+        <button onclick="cronGerarPDF()" class="btn-outline" style="font-size:11px;padding:6px 12px;">📄 PDF</button>
       </div>
     </div>
     <div id="cronograma-container"></div>

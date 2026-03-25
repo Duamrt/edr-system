@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0">
+<title>EDR — Cronograma Gantt</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+  :root { --bg:#0a0a0a; --bg2:#111113; --bg3:#161618; --borda:rgba(255,255,255,0.06); --verde:#4ade80; --texto:#e2e4e9; --texto2:#8b8fa0; --texto3:#555; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--texto); min-height:100vh; }
+
+  .toolbar { position:sticky; top:0; z-index:90; background:var(--bg2); border-bottom:1px solid var(--borda); padding:10px 16px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .toolbar-title { font-size:15px; font-weight:800; letter-spacing:-0.5px; margin-right:auto; }
+  .toolbar-title span { color:var(--verde); }
+
+  .tb-btn { padding:6px 14px; border-radius:8px; border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.03); color:var(--texto2); font-size:12px; cursor:pointer; font-family:inherit; }
+  .tb-btn.active { border-color:rgba(74,222,128,0.3); background:rgba(74,222,128,0.1); color:var(--verde); }
+  .tb-btn:hover { background:rgba(255,255,255,0.06); }
+
+  select { background:var(--bg2); color:var(--texto); border:1px solid var(--borda); border-radius:8px; padding:6px 10px; font-family:inherit; font-size:12px; outline:none; }
+  select option { background:var(--bg2); color:var(--texto); }
+
+  .gantt-area { overflow:auto; -webkit-overflow-scrolling:touch; padding:8px; }
+
+  .legenda { display:flex; gap:12px; flex-wrap:wrap; padding:8px 16px; background:var(--bg2); border-bottom:1px solid var(--borda); }
+  .legenda-item { display:flex; align-items:center; gap:4px; font-size:11px; }
+  .legenda-dot { width:10px; height:10px; border-radius:3px; }
+
+  .loading { text-align:center; padding:80px; color:var(--texto3); font-size:14px; }
+
+  /* Gantt dark theme */
+  .gantt .grid-background { fill: #111113 !important; }
+  .gantt .grid-header { fill: #161618 !important; }
+  .gantt .grid-row { fill: #111113 !important; }
+  .gantt .grid-row:nth-child(even) { fill: #0e0e10 !important; }
+  .gantt .row-line { stroke: rgba(255,255,255,0.04) !important; }
+  .gantt .tick { stroke: rgba(255,255,255,0.06) !important; }
+  .gantt .today-highlight { fill: rgba(74,222,128,0.08) !important; }
+  .gantt .bar-label { fill: #f0f0f0 !important; font-family: 'Inter',sans-serif !important; font-size: 12px !important; }
+  .gantt .upper-text, .gantt .lower-text { fill: #c0c4cc !important; font-family: 'Inter',sans-serif !important; }
+  .gantt .handle { opacity:0; }
+  .gantt .bar-wrapper:hover .handle { opacity:1; }
+  .gantt-container .popup-wrapper { background:#1c1c1f !important; border:1px solid rgba(255,255,255,0.12) !important; border-radius:10px !important; box-shadow:0 8px 24px rgba(0,0,0,0.6) !important; }
+  .gantt-container .popup-wrapper .pointer { display:none !important; }
+  .popup-inner { padding:10px 14px; color:#e2e4e9; font-size:13px; }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="toolbar-title">EDR<span>Gantt</span></div>
+  <select id="filtro-obra" onchange="carregar()">
+    <option value="">Todas as obras</option>
+  </select>
+  <button class="tb-btn" onclick="setVM('Day')" id="vm-Day">Dia</button>
+  <button class="tb-btn active" onclick="setVM('Week')" id="vm-Week">Semana</button>
+  <button class="tb-btn" onclick="setVM('Month')" id="vm-Month">Mês</button>
+  <button class="tb-btn" onclick="scrollHoje()">Hoje</button>
+  <button class="tb-btn" onclick="window.location.href='index.html'" style="color:var(--verde);">← Sistema</button>
+</div>
+<div class="legenda" id="legenda"></div>
+<div class="gantt-area" id="gantt-area">
+  <div class="loading">Carregando cronograma...</div>
+</div>
+
+<script>
+const SU = 'https://mepzoxoahpwcvvlymlfh.supabase.co';
+const SK = 'sb_publishable_Z9E8KLU8ZIMcWjD-bMG5gg_eM585qWq';
+let db; try { db = window.supabase.createClient(SU, SK); } catch(e) {}
+
+const CORES = [
+  { bar:'#2563eb', prog:'#60a5fa', label:'#93c5fd' },
+  { bar:'#9333ea', prog:'#c084fc', label:'#d8b4fe' },
+  { bar:'#ea580c', prog:'#fb923c', label:'#fdba74' },
+  { bar:'#0d9488', prog:'#2dd4bf', label:'#5eead4' },
+  { bar:'#dc2626', prog:'#f87171', label:'#fca5a5' },
+  { bar:'#ca8a04', prog:'#facc15', label:'#fde047' },
+  { bar:'#059669', prog:'#34d399', label:'#6ee7b7' },
+  { bar:'#4f46e5', prog:'#818cf8', label:'#a5b4fc' },
+];
+
+let tarefas = [];
+let obras = {};
+let obraCores = {};
+let gantt = null;
+let viewMode = 'Week';
+
+async function init() {
+  await carregar();
+}
+
+async function carregar() {
+  const obraId = document.getElementById('filtro-obra').value;
+  try {
+    let q = db.from('cronograma_tarefas').select('*, obras(id,nome)').order('ordem').order('data_inicio');
+    if (obraId) q = q.eq('obra_id', obraId);
+    const { data } = await q;
+    tarefas = data || [];
+
+    // Extrair obras
+    obras = {};
+    tarefas.forEach(t => { if (t.obras?.id) obras[t.obras.id] = t.obras.nome; });
+
+    // Popular select (só primeira vez)
+    const sel = document.getElementById('filtro-obra');
+    if (sel.options.length <= 1) {
+      Object.entries(obras).sort((a,b) => a[1].localeCompare(b[1])).forEach(([id, nome]) => {
+        const opt = document.createElement('option');
+        opt.value = id;
+        opt.textContent = nome;
+        sel.appendChild(opt);
+      });
+    }
+
+    // Atribuir cores
+    const obrasUnicas = [...new Set(tarefas.map(t => t.obra_id))];
+    obraCores = {};
+    obrasUnicas.forEach((id, i) => { obraCores[id] = i % CORES.length; });
+
+    renderLegenda();
+    renderGantt();
+  } catch(e) {
+    document.getElementById('gantt-area').innerHTML = '<div class="loading">Erro ao carregar: ' + e.message + '</div>';
+  }
+}
+
+function renderLegenda() {
+  const el = document.getElementById('legenda');
+  el.innerHTML = Object.entries(obraCores).map(([id, idx]) => {
+    const cor = CORES[idx];
+    const nome = obras[id] || '';
+    return `<div class="legenda-item"><div class="legenda-dot" style="background:${cor.bar}"></div><span style="color:${cor.label}">${nome}</span></div>`;
+  }).join('');
+}
+
+function renderGantt() {
+  const area = document.getElementById('gantt-area');
+  if (tarefas.length === 0) {
+    area.innerHTML = '<div class="loading">Nenhuma tarefa no cronograma</div>';
+    return;
+  }
+
+  const tasks = tarefas.map(t => {
+    const obraNome = obras[t.obra_id] || '';
+    const subs = t.subitens || [];
+    const feitos = subs.filter(s => s.feito).length;
+    const prog = subs.length > 0 ? Math.round(feitos / subs.length * 100) : Number(t.progresso) || 0;
+    return {
+      id: t.id,
+      name: obraNome ? obraNome + ' — ' + t.nome : t.nome,
+      start: t.data_inicio,
+      end: t.data_fim,
+      progress: prog,
+      dependencies: '',
+      custom_class: ''
+    };
+  });
+
+  area.innerHTML = '';
+
+  try {
+    gantt = new Gantt(area, tasks, {
+      view_mode: viewMode,
+      date_format: 'YYYY-MM-DD',
+      language: 'ptBr',
+      bar_height: 24,
+      padding: 20,
+      custom_popup_html: task => {
+        const t = tarefas.find(x => x.id === task.id);
+        const obraNome = t ? (obras[t.obra_id] || '') : '';
+        const subs = t?.subitens || [];
+        const feitos = subs.filter(s => s.feito).length;
+        const inicio = t?.data_inicio ? new Date(t.data_inicio + 'T00:00:00').toLocaleDateString('pt-BR') : '';
+        const fim = t?.data_fim ? new Date(t.data_fim + 'T00:00:00').toLocaleDateString('pt-BR') : '';
+        return `<div class="popup-inner">
+          <div style="font-weight:700;margin-bottom:4px;">${t?.nome || task.name}</div>
+          ${obraNome ? `<div style="font-size:11px;color:#8b8fa0;margin-bottom:4px;">${obraNome}</div>` : ''}
+          <div style="font-size:12px;">${inicio} → ${fim}</div>
+          <div style="font-size:12px;margin-top:2px;">${subs.length ? feitos + '/' + subs.length + ' itens' : Math.round(task.progress) + '%'}</div>
+        </div>`;
+      }
+    });
+
+    // Aplicar cores
+    setTimeout(() => aplicarCores(area), 100);
+    setTimeout(() => aplicarCores(area), 500);
+  } catch(e) {
+    area.innerHTML = '<div class="loading" style="color:#ef4444;">Erro: ' + e.message + '</div>';
+  }
+}
+
+function aplicarCores(wrap) {
+  wrap.querySelectorAll('.grid-background').forEach(el => el.setAttribute('fill', '#111113'));
+  wrap.querySelectorAll('.grid-header').forEach(el => el.setAttribute('fill', '#161618'));
+  wrap.querySelectorAll('.grid-row').forEach((el, i) => el.setAttribute('fill', i % 2 === 0 ? '#111113' : '#0e0e10'));
+  wrap.querySelectorAll('.row-line').forEach(el => el.setAttribute('stroke', 'rgba(255,255,255,0.04)'));
+  wrap.querySelectorAll('.tick').forEach(el => el.setAttribute('stroke', 'rgba(255,255,255,0.06)'));
+  wrap.querySelectorAll('.today-highlight').forEach(el => el.setAttribute('fill', 'rgba(74,222,128,0.08)'));
+  wrap.querySelectorAll('.bar-label').forEach(el => { el.setAttribute('fill', '#f0f0f0'); el.style.fill = '#f0f0f0'; });
+  wrap.querySelectorAll('.upper-text').forEach(el => { el.setAttribute('fill', '#c0c4cc'); el.style.fill = '#c0c4cc'; });
+  wrap.querySelectorAll('.lower-text').forEach(el => { el.setAttribute('fill', '#8b8fa0'); el.style.fill = '#8b8fa0'; });
+
+  // Cores por obra
+  const wrappers = wrap.querySelectorAll('.bar-wrapper');
+  wrappers.forEach((el, i) => {
+    const t = tarefas[i];
+    if (!t) return;
+    const idx = obraCores[t.obra_id] || 0;
+    const cor = CORES[idx];
+    const bar = el.querySelector('.bar');
+    const prog = el.querySelector('.bar-progress');
+    if (bar) bar.setAttribute('fill', cor.bar);
+    if (prog) prog.setAttribute('fill', cor.prog);
+  });
+}
+
+function setVM(mode) {
+  viewMode = mode;
+  document.querySelectorAll('.tb-btn').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('vm-' + mode);
+  if (btn) btn.classList.add('active');
+  if (gantt) {
+    try { gantt.change_view_mode(mode); } catch(e) {}
+    setTimeout(() => aplicarCores(document.getElementById('gantt-area')), 200);
+  }
+}
+
+function scrollHoje() {
+  const area = document.getElementById('gantt-area');
+  const h = area.querySelector('.today-highlight');
+  if (h) {
+    const x = Number(h.getAttribute('x')) || 0;
+    area.scrollTo({ left: Math.max(x - 100, 0), behavior: 'smooth' });
+  }
+}
+
+init();
+</script>
+</body>
+</html>
