@@ -194,7 +194,8 @@ function cronRenderGantt() {
         </div>`;
       }
     });
-    setTimeout(() => cronAplicarTemaEscuro(wrap), 50);
+    setTimeout(() => cronAplicarTemaEscuro(wrap), 100);
+    setTimeout(() => cronAplicarTemaEscuro(wrap), 500);
   } catch(e) {
     console.error('Gantt render error:', e);
     wrap.innerHTML = '<div style="padding:20px;color:#ef4444;text-align:center;">Erro ao renderizar: ' + e.message + '</div>';
@@ -230,7 +231,7 @@ function cronRenderLista() {
     const aberto = cronExpandido.has(t.id);
     const corIdx = cronObraCores[t.obra_id] || 0;
     const corObra = CRON_CORES[corIdx] || CRON_CORES[0];
-    const corProg = corObra.prog;
+    const corProg = prog >= 100 ? '#4ade80' : prog >= 50 ? '#fbbf24' : prog > 0 ? '#f97316' : '#ef4444';
 
     let subsHtml = '';
     if (aberto && subs.length > 0) {
