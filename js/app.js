@@ -76,7 +76,15 @@ async function iniciarApp() {
   // renderObrasView é chamado pelo setView quando o usuário abre a aba
   setToday();
   // Mestre vai direto pra diárias (não usa dashboard)
-  if (usuarioAtual && usuarioAtual.perfil === 'mestre') setView('diarias');
+  if (usuarioAtual && usuarioAtual.perfil === 'mestre') {
+    setView('diarias');
+  } else {
+    // Restaurar última página visitada
+    try {
+      const lastView = localStorage.getItem('edr_last_view');
+      if (lastView && lastView !== 'clientes-plataforma') setView(lastView);
+    } catch(e) {}
+  }
   setupEnterNav();
   setupKeyboardShortcuts();
   setupClickOutside();

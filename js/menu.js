@@ -227,6 +227,8 @@ function expandGroupForView(viewId) {
 function setView(v) {
   // Mestre só pode acessar diárias
   if (usuarioAtual?.perfil === 'mestre' && v !== 'diarias') return;
+  // Salvar página atual pra restaurar após reload
+  try { localStorage.setItem('edr_last_view', v); } catch(e) {}
   closeBnavMore();
   expandGroupForView(v);
   syncBnav(v);

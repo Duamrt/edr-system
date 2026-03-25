@@ -4,9 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0">
 <title>EDR — Cronograma Gantt</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.min.css?v=03250906">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.min.js?v=03250906"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
   :root { --bg:#0a0a0a; --bg2:#111113; --bg3:#161618; --borda:rgba(255,255,255,0.06); --verde:#4ade80; --texto:#e2e4e9; --texto2:#8b8fa0; --texto3:#555; }
@@ -16,37 +14,44 @@
   .toolbar { position:sticky; top:0; z-index:90; background:var(--bg2); border-bottom:1px solid var(--borda); padding:10px 16px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
   .toolbar-title { font-size:15px; font-weight:800; letter-spacing:-0.5px; margin-right:auto; }
   .toolbar-title span { color:var(--verde); }
-
   .tb-btn { padding:6px 14px; border-radius:8px; border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.03); color:var(--texto2); font-size:12px; cursor:pointer; font-family:inherit; }
-  .tb-btn.active { border-color:rgba(74,222,128,0.3); background:rgba(74,222,128,0.1); color:var(--verde); }
   .tb-btn:hover { background:rgba(255,255,255,0.06); }
-
   select { background:var(--bg2); color:var(--texto); border:1px solid var(--borda); border-radius:8px; padding:6px 10px; font-family:inherit; font-size:12px; outline:none; }
   select option { background:var(--bg2); color:var(--texto); }
-
-  .gantt-area { overflow:auto; -webkit-overflow-scrolling:touch; padding:8px; }
 
   .legenda { display:flex; gap:12px; flex-wrap:wrap; padding:8px 16px; background:var(--bg2); border-bottom:1px solid var(--borda); }
   .legenda-item { display:flex; align-items:center; gap:4px; font-size:11px; }
   .legenda-dot { width:10px; height:10px; border-radius:3px; }
 
-  .loading { text-align:center; padding:80px; color:var(--texto3); font-size:14px; }
+  /* Layout split: sidebar tarefas + timeline */
+  .gantt-split { display:flex; overflow:hidden; }
+  .gantt-sidebar { width:260px; min-width:260px; background:var(--bg2); border-right:1px solid var(--borda); overflow-y:auto; }
+  .gantt-timeline { flex:1; overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch; }
 
-  /* Gantt dark theme */
-  .gantt .grid-background { fill: #111113 !important; }
-  .gantt .grid-header { fill: #161618 !important; }
-  .gantt .grid-row { fill: #111113 !important; }
-  .gantt .grid-row:nth-child(even) { fill: #0e0e10 !important; }
-  .gantt .row-line { stroke: rgba(255,255,255,0.04) !important; }
-  .gantt .tick { stroke: rgba(255,255,255,0.06) !important; }
-  .gantt .today-highlight { fill: rgba(74,222,128,0.08) !important; }
-  .gantt .bar-label { fill: #f0f0f0 !important; font-family: 'Inter',sans-serif !important; font-size: 12px !important; }
-  .gantt .upper-text, .gantt .lower-text { fill: #c0c4cc !important; font-family: 'Inter',sans-serif !important; }
-  .gantt .handle { opacity:0; }
-  .gantt .bar-wrapper:hover .handle { opacity:1; }
-  .gantt-container .popup-wrapper { background:#1c1c1f !important; border:1px solid rgba(255,255,255,0.12) !important; border-radius:10px !important; box-shadow:0 8px 24px rgba(0,0,0,0.6) !important; }
-  .gantt-container .popup-wrapper .pointer { display:none !important; }
-  .popup-inner { padding:10px 14px; color:#e2e4e9; font-size:13px; }
+  /* Sidebar items */
+  .gs-group { padding:8px 12px; font-size:10px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; border-bottom:1px solid var(--borda); display:flex; align-items:center; gap:6px; }
+  .gs-item { display:flex; align-items:center; gap:8px; padding:6px 12px; border-bottom:1px solid rgba(255,255,255,0.03); height:40px; }
+  .gs-bar { width:4px; height:20px; border-radius:2px; flex-shrink:0; }
+  .gs-name { font-size:12px; color:var(--texto); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1; }
+  .gs-prog { font-size:10px; font-weight:600; min-width:30px; text-align:right; }
+  .gs-dates { font-size:9px; color:var(--texto3); }
+
+  /* Timeline bars */
+  .gt-header { display:flex; height:40px; border-bottom:1px solid var(--borda); background:var(--bg3); position:sticky; top:0; z-index:5; }
+  .gt-header-cell { height:40px; display:flex; align-items:center; justify-content:center; font-size:10px; color:var(--texto2); font-weight:600; border-right:1px solid rgba(255,255,255,0.04); flex-shrink:0; }
+  .gt-row { display:flex; height:40px; border-bottom:1px solid rgba(255,255,255,0.03); position:relative; }
+  .gt-row:nth-child(even) { background:rgba(255,255,255,0.01); }
+  .gt-cell { height:40px; border-right:1px solid rgba(255,255,255,0.02); flex-shrink:0; }
+  .gt-bar { position:absolute; height:22px; top:9px; border-radius:6px; display:flex; align-items:center; overflow:hidden; }
+  .gt-bar-progress { height:100%; border-radius:6px 0 0 6px; opacity:0.5; }
+  .gt-today { position:absolute; top:0; bottom:0; width:2px; background:var(--verde); opacity:0.4; z-index:4; }
+
+  .loading { text-align:center; padding:80px; color:var(--texto3); }
+
+  @media (max-width:768px) {
+    .gantt-sidebar { width:180px; min-width:180px; }
+    .gs-dates { display:none; }
+  }
 </style>
 </head>
 <body>
@@ -56,15 +61,15 @@
   <select id="filtro-obra" onchange="carregar()">
     <option value="">Todas as obras</option>
   </select>
-  <button class="tb-btn" onclick="setVM('Day')" id="vm-Day">Dia</button>
-  <button class="tb-btn active" onclick="setVM('Week')" id="vm-Week">Semana</button>
-  <button class="tb-btn" onclick="setVM('Month')" id="vm-Month">Mês</button>
+  <button class="tb-btn" onclick="setZoom(-1)">−</button>
+  <button class="tb-btn" onclick="setZoom(1)">+</button>
   <button class="tb-btn" onclick="scrollHoje()">Hoje</button>
   <button class="tb-btn" onclick="window.location.href='index.html'" style="color:var(--verde);">← Sistema</button>
 </div>
 <div class="legenda" id="legenda"></div>
-<div class="gantt-area" id="gantt-area">
-  <div class="loading">Carregando cronograma...</div>
+<div class="gantt-split">
+  <div class="gantt-sidebar" id="sidebar"></div>
+  <div class="gantt-timeline" id="timeline"></div>
 </div>
 
 <script>
@@ -73,25 +78,24 @@ const SK = 'sb_publishable_Z9E8KLU8ZIMcWjD-bMG5gg_eM585qWq';
 let db; try { db = window.supabase.createClient(SU, SK); } catch(e) {}
 
 const CORES = [
-  { bar:'#2563eb', prog:'#60a5fa', label:'#93c5fd' },
-  { bar:'#9333ea', prog:'#c084fc', label:'#d8b4fe' },
-  { bar:'#ea580c', prog:'#fb923c', label:'#fdba74' },
-  { bar:'#0d9488', prog:'#2dd4bf', label:'#5eead4' },
-  { bar:'#dc2626', prog:'#f87171', label:'#fca5a5' },
-  { bar:'#ca8a04', prog:'#facc15', label:'#fde047' },
-  { bar:'#059669', prog:'#34d399', label:'#6ee7b7' },
-  { bar:'#4f46e5', prog:'#818cf8', label:'#a5b4fc' },
+  { bar:'#2563eb', prog:'#60a5fa', label:'#93c5fd', bg:'rgba(37,99,235,0.15)' },
+  { bar:'#9333ea', prog:'#c084fc', label:'#d8b4fe', bg:'rgba(147,51,234,0.15)' },
+  { bar:'#ea580c', prog:'#fb923c', label:'#fdba74', bg:'rgba(234,88,12,0.15)' },
+  { bar:'#0d9488', prog:'#2dd4bf', label:'#5eead4', bg:'rgba(13,148,136,0.15)' },
+  { bar:'#dc2626', prog:'#f87171', label:'#fca5a5', bg:'rgba(220,38,38,0.15)' },
+  { bar:'#ca8a04', prog:'#facc15', label:'#fde047', bg:'rgba(202,138,4,0.15)' },
+  { bar:'#059669', prog:'#34d399', label:'#6ee7b7', bg:'rgba(5,150,105,0.15)' },
+  { bar:'#4f46e5', prog:'#818cf8', label:'#a5b4fc', bg:'rgba(79,70,229,0.15)' },
 ];
 
 let tarefas = [];
 let obras = {};
 let obraCores = {};
-let gantt = null;
-let viewMode = 'Week';
+let cellWidth = 40; // px por dia
+const HOJE = new Date();
+HOJE.setHours(0,0,0,0);
 
-async function init() {
-  await carregar();
-}
+async function init() { await carregar(); }
 
 async function carregar() {
   const obraId = document.getElementById('filtro-obra').value;
@@ -101,140 +105,166 @@ async function carregar() {
     const { data } = await q;
     tarefas = data || [];
 
-    // Extrair obras
     obras = {};
     tarefas.forEach(t => { if (t.obras?.id) obras[t.obras.id] = t.obras.nome; });
 
-    // Popular select (só primeira vez)
     const sel = document.getElementById('filtro-obra');
     if (sel.options.length <= 1) {
       Object.entries(obras).sort((a,b) => a[1].localeCompare(b[1])).forEach(([id, nome]) => {
         const opt = document.createElement('option');
-        opt.value = id;
-        opt.textContent = nome;
+        opt.value = id; opt.textContent = nome;
         sel.appendChild(opt);
       });
     }
 
-    // Atribuir cores
     const obrasUnicas = [...new Set(tarefas.map(t => t.obra_id))];
     obraCores = {};
     obrasUnicas.forEach((id, i) => { obraCores[id] = i % CORES.length; });
 
     renderLegenda();
-    renderGantt();
+    render();
   } catch(e) {
-    document.getElementById('gantt-area').innerHTML = '<div class="loading">Erro ao carregar: ' + e.message + '</div>';
+    document.getElementById('sidebar').innerHTML = '<div class="loading">Erro: ' + e.message + '</div>';
   }
 }
 
 function renderLegenda() {
-  const el = document.getElementById('legenda');
-  el.innerHTML = Object.entries(obraCores).map(([id, idx]) => {
+  document.getElementById('legenda').innerHTML = Object.entries(obraCores).map(([id, idx]) => {
     const cor = CORES[idx];
-    const nome = obras[id] || '';
-    return `<div class="legenda-item"><div class="legenda-dot" style="background:${cor.bar}"></div><span style="color:${cor.label}">${nome}</span></div>`;
+    return `<div class="legenda-item"><div class="legenda-dot" style="background:${cor.bar}"></div><span style="color:${cor.label}">${obras[id]||''}</span></div>`;
   }).join('');
 }
 
-function renderGantt() {
-  const area = document.getElementById('gantt-area');
+function render() {
   if (tarefas.length === 0) {
-    area.innerHTML = '<div class="loading">Nenhuma tarefa no cronograma</div>';
+    document.getElementById('sidebar').innerHTML = '<div class="loading">Nenhuma tarefa</div>';
+    document.getElementById('timeline').innerHTML = '';
     return;
   }
 
-  const tasks = tarefas.map(t => {
-    const obraNome = obras[t.obra_id] || '';
-    const subs = t.subitens || [];
-    const feitos = subs.filter(s => s.feito).length;
-    const prog = subs.length > 0 ? Math.round(feitos / subs.length * 100) : Number(t.progresso) || 0;
-    return {
-      id: t.id,
-      name: obraNome ? obraNome + ' — ' + t.nome : t.nome,
-      start: t.data_inicio,
-      end: t.data_fim,
-      progress: prog,
-      dependencies: '',
-      custom_class: ''
-    };
+  // Calcular range de datas
+  let minDate = new Date('2099-01-01'), maxDate = new Date('2000-01-01');
+  tarefas.forEach(t => {
+    const s = new Date(t.data_inicio + 'T00:00:00');
+    const e = new Date(t.data_fim + 'T00:00:00');
+    if (s < minDate) minDate = s;
+    if (e > maxDate) maxDate = e;
+  });
+  // Adicionar margem
+  minDate.setDate(minDate.getDate() - 7);
+  maxDate.setDate(maxDate.getDate() + 14);
+
+  const totalDias = Math.ceil((maxDate - minDate) / 86400000);
+  const totalWidth = totalDias * cellWidth;
+
+  // Agrupar por obra
+  const porObra = {};
+  tarefas.forEach(t => {
+    const obraId = t.obra_id;
+    if (!porObra[obraId]) porObra[obraId] = [];
+    porObra[obraId].push(t);
   });
 
-  area.innerHTML = '';
+  // Sidebar
+  let sideHtml = '';
+  // Timeline header (meses + semanas)
+  let headerHtml = '';
+  let rowsHtml = '';
 
-  try {
-    gantt = new Gantt(area, tasks, {
-      view_mode: viewMode,
-      date_format: 'YYYY-MM-DD',
-      language: 'ptBr',
-      bar_height: 24,
-      padding: 20,
-      custom_popup_html: task => {
-        const t = tarefas.find(x => x.id === task.id);
-        const obraNome = t ? (obras[t.obra_id] || '') : '';
-        const subs = t?.subitens || [];
-        const feitos = subs.filter(s => s.feito).length;
-        const inicio = t?.data_inicio ? new Date(t.data_inicio + 'T00:00:00').toLocaleDateString('pt-BR') : '';
-        const fim = t?.data_fim ? new Date(t.data_fim + 'T00:00:00').toLocaleDateString('pt-BR') : '';
-        return `<div class="popup-inner">
-          <div style="font-weight:700;margin-bottom:4px;">${t?.nome || task.name}</div>
-          ${obraNome ? `<div style="font-size:11px;color:#8b8fa0;margin-bottom:4px;">${obraNome}</div>` : ''}
-          <div style="font-size:12px;">${inicio} → ${fim}</div>
-          <div style="font-size:12px;margin-top:2px;">${subs.length ? feitos + '/' + subs.length + ' itens' : Math.round(task.progress) + '%'}</div>
-        </div>`;
-      }
-    });
-
-    // Aplicar cores
-    setTimeout(() => aplicarCores(area), 100);
-    setTimeout(() => aplicarCores(area), 500);
-  } catch(e) {
-    area.innerHTML = '<div class="loading" style="color:#ef4444;">Erro: ' + e.message + '</div>';
+  // Header: gerar células por semana
+  const semanas = [];
+  let d = new Date(minDate);
+  // Ir pra segunda-feira
+  while (d.getDay() !== 1) d.setDate(d.getDate() + 1);
+  while (d < maxDate) {
+    const semStart = new Date(d);
+    const semEnd = new Date(d); semEnd.setDate(semEnd.getDate() + 6);
+    const dayOffset = Math.floor((semStart - minDate) / 86400000);
+    semanas.push({ start: semStart, offset: dayOffset });
+    const label = semStart.toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit' });
+    headerHtml += `<div class="gt-header-cell" style="width:${cellWidth * 7}px;">${label}</div>`;
+    d.setDate(d.getDate() + 7);
   }
-}
 
-function aplicarCores(wrap) {
-  wrap.querySelectorAll('.grid-background').forEach(el => el.setAttribute('fill', '#111113'));
-  wrap.querySelectorAll('.grid-header').forEach(el => el.setAttribute('fill', '#161618'));
-  wrap.querySelectorAll('.grid-row').forEach((el, i) => el.setAttribute('fill', i % 2 === 0 ? '#111113' : '#0e0e10'));
-  wrap.querySelectorAll('.row-line').forEach(el => el.setAttribute('stroke', 'rgba(255,255,255,0.04)'));
-  wrap.querySelectorAll('.tick').forEach(el => el.setAttribute('stroke', 'rgba(255,255,255,0.06)'));
-  wrap.querySelectorAll('.today-highlight').forEach(el => el.setAttribute('fill', 'rgba(74,222,128,0.08)'));
-  wrap.querySelectorAll('.bar-label').forEach(el => { el.setAttribute('fill', '#f0f0f0'); el.style.fill = '#f0f0f0'; });
-  wrap.querySelectorAll('.upper-text').forEach(el => { el.setAttribute('fill', '#c0c4cc'); el.style.fill = '#c0c4cc'; });
-  wrap.querySelectorAll('.lower-text').forEach(el => { el.setAttribute('fill', '#8b8fa0'); el.style.fill = '#8b8fa0'; });
-
-  // Cores por obra
-  const wrappers = wrap.querySelectorAll('.bar-wrapper');
-  wrappers.forEach((el, i) => {
-    const t = tarefas[i];
-    if (!t) return;
-    const idx = obraCores[t.obra_id] || 0;
+  // Rows por obra
+  Object.entries(porObra).forEach(([obraId, tasks]) => {
+    const idx = obraCores[obraId] || 0;
     const cor = CORES[idx];
-    const bar = el.querySelector('.bar');
-    const prog = el.querySelector('.bar-progress');
-    if (bar) bar.setAttribute('fill', cor.bar);
-    if (prog) prog.setAttribute('fill', cor.prog);
+    const obraNome = obras[obraId] || '';
+
+    // Grupo header na sidebar
+    sideHtml += `<div class="gs-group" style="background:${cor.bg};color:${cor.label};"><div class="legenda-dot" style="background:${cor.bar}"></div>${obraNome}</div>`;
+    // Grupo header no timeline (linha vazia)
+    rowsHtml += `<div class="gt-row" style="background:${cor.bg};height:30px;"></div>`;
+
+    tasks.forEach(t => {
+      const subs = t.subitens || [];
+      const feitos = subs.filter(s => s.feito).length;
+      const prog = subs.length > 0 ? Math.round(feitos / subs.length * 100) : Number(t.progresso) || 0;
+      const corProg = prog >= 100 ? '#4ade80' : prog >= 50 ? '#fbbf24' : prog > 0 ? '#f97316' : '#ef4444';
+      const inicio = t.data_inicio ? new Date(t.data_inicio + 'T00:00:00').toLocaleDateString('pt-BR', {day:'2-digit',month:'2-digit'}) : '';
+      const fim = t.data_fim ? new Date(t.data_fim + 'T00:00:00').toLocaleDateString('pt-BR', {day:'2-digit',month:'2-digit'}) : '';
+
+      // Sidebar item
+      sideHtml += `<div class="gs-item">
+        <div class="gs-bar" style="background:${cor.bar};"></div>
+        <div style="flex:1;overflow:hidden;">
+          <div class="gs-name">${t.nome}</div>
+          <div class="gs-dates">${inicio} → ${fim}</div>
+        </div>
+        <div class="gs-prog" style="color:${corProg};">${subs.length ? feitos+'/'+subs.length : prog+'%'}</div>
+      </div>`;
+
+      // Timeline bar
+      const startDate = new Date(t.data_inicio + 'T00:00:00');
+      const endDate = new Date(t.data_fim + 'T00:00:00');
+      const leftDays = Math.floor((startDate - minDate) / 86400000);
+      const durDays = Math.max(Math.ceil((endDate - startDate) / 86400000), 1);
+      const left = leftDays * cellWidth;
+      const width = durDays * cellWidth;
+      const progWidth = Math.round(width * prog / 100);
+
+      rowsHtml += `<div class="gt-row">
+        <div class="gt-bar" style="left:${left}px;width:${width}px;background:${cor.bar};">
+          <div class="gt-bar-progress" style="width:${progWidth}px;background:${cor.prog};"></div>
+        </div>
+      </div>`;
+    });
   });
+
+  // Hoje marker
+  const hojeDays = Math.floor((HOJE - minDate) / 86400000);
+  const hojeLeft = hojeDays * cellWidth;
+
+  document.getElementById('sidebar').innerHTML = sideHtml;
+  document.getElementById('timeline').innerHTML = `
+    <div style="width:${totalWidth}px;position:relative;">
+      <div class="gt-header">${headerHtml}</div>
+      <div style="position:relative;">
+        ${rowsHtml}
+        <div class="gt-today" style="left:${hojeLeft}px;"></div>
+      </div>
+    </div>
+  `;
+
+  // Sincronizar scroll vertical
+  const sidebar = document.getElementById('sidebar');
+  const timeline = document.getElementById('timeline');
+  timeline.addEventListener('scroll', () => { sidebar.scrollTop = timeline.scrollTop; });
+  sidebar.addEventListener('scroll', () => { timeline.scrollTop = sidebar.scrollTop; });
 }
 
-function setVM(mode) {
-  viewMode = mode;
-  document.querySelectorAll('.tb-btn').forEach(b => b.classList.remove('active'));
-  const btn = document.getElementById('vm-' + mode);
-  if (btn) btn.classList.add('active');
-  if (gantt) {
-    try { gantt.change_view_mode(mode); } catch(e) {}
-    setTimeout(() => aplicarCores(document.getElementById('gantt-area')), 200);
-  }
+function setZoom(dir) {
+  cellWidth = Math.max(10, Math.min(80, cellWidth + dir * 10));
+  render();
 }
 
 function scrollHoje() {
-  const area = document.getElementById('gantt-area');
-  const h = area.querySelector('.today-highlight');
-  if (h) {
-    const x = Number(h.getAttribute('x')) || 0;
-    area.scrollTo({ left: Math.max(x - 100, 0), behavior: 'smooth' });
+  const timeline = document.getElementById('timeline');
+  const today = timeline.querySelector('.gt-today');
+  if (today) {
+    const left = parseInt(today.style.left) || 0;
+    timeline.scrollTo({ left: Math.max(left - 200, 0), behavior: 'smooth' });
   }
 }
 
