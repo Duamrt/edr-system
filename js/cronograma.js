@@ -32,6 +32,7 @@ async function renderCronograma() {
       <div style="font-size:14px;margin-bottom:6px;">Nenhuma tarefa no cronograma</div>
       <div style="font-size:12px;">Clique em <strong>+ TAREFA</strong> para adicionar etapas da obra</div>
     </div>
+    <div id="cron-lista" style="margin-top:16px;"></div>
   `;
 
   await cronCarregarTarefas();
@@ -106,6 +107,45 @@ function cronRenderGantt() {
     console.error('Gantt render error:', e);
     wrap.innerHTML = '<div style="padding:20px;color:#ef4444;text-align:center;">Erro ao renderizar: ' + e.message + '</div>';
   }
+
+  // Renderizar lista de tarefas editáveis
+  cronRenderLista();
+}
+
+function cronRenderLista() {
+  const lista = document.getElementById('cron-lista');
+  if (!lista || cronTarefas.length === 0) { if (lista) lista.innerHTML = ''; return; }
+
+  const rows = cronTarefas.map(t => {
+    const obra = obras.find(o => o.id === t.obra_id);
+    const prog = Math.round(Number(t.progresso) || 0);
+    const inicio = t.data_inicio ? new Date(t.data_inicio + 'T00:00:00').toLocaleDateString('pt-BR') : '';
+    const fim = t.data_fim ? new Date(t.data_fim + 'T00:00:00').toLocaleDateString('pt-BR') : '';
+    return `<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.04);flex-wrap:wrap;" class="cron-lista-item">
+      <div style="flex:1;min-width:150px;">
+        <div style="font-size:13px;color:#e2e4e9;font-weight:500;">${t.nome}</div>
+        <div style="font-size:11px;color:#8b8fa0;">${obra?.nome || ''}</div>
+      </div>
+      <div style="font-size:11px;color:#8b8fa0;min-width:130px;">${inicio} → ${fim}</div>
+      <div style="min-width:80px;">
+        <div style="background:rgba(255,255,255,0.06);border-radius:4px;height:6px;overflow:hidden;">
+          <div style="width:${prog}%;height:100%;background:#4ade80;border-radius:4px;"></div>
+        </div>
+        <div style="font-size:10px;color:#8b8fa0;text-align:center;margin-top:2px;">${prog}%</div>
+      </div>
+      <div style="display:flex;gap:4px;">
+        <button onclick="cronAbrirModal('${t.id}')" style="padding:4px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);color:#e2e4e9;font-size:11px;cursor:pointer;">Editar</button>
+        <button onclick="cronExcluir('${t.id}')" style="padding:4px 10px;border-radius:6px;border:1px solid rgba(239,68,68,0.2);background:rgba(239,68,68,0.06);color:#ef4444;font-size:11px;cursor:pointer;">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  lista.innerHTML = `
+    <div style="font-size:10px;color:var(--texto3);letter-spacing:2px;font-weight:700;margin-bottom:8px;padding-top:8px;">TAREFAS (${cronTarefas.length})</div>
+    <div style="background:rgba(255,255,255,0.02);border-radius:10px;border:1px solid rgba(255,255,255,0.06);overflow:hidden;">
+      ${rows}
+    </div>
+  `;
 }
 
 function cronAplicarTemaEscuro(wrap) {

@@ -1088,6 +1088,18 @@ body.perfil-mestre .main-content { padding-bottom: 0 !important; }
   body.perfil-mestre .diarias-folha-table td { padding: 6px 4px; font-size: 11px; }
 }
 
+/* ── CRONOGRAMA ── */
+#view-cronograma select,
+#view-cronograma select option,
+#modal-cron-tarefa select,
+#modal-cron-tarefa select option,
+#modal-cron-etapas select,
+#modal-cron-etapas select option {
+  background: #1c1c1f !important; color: #e2e4e9 !important;
+}
+#view-cronograma select option:checked { background: #1a7a3a !important; }
+.cron-lista-item:hover { background: rgba(255,255,255,0.03); }
+
 /* ── CRONOGRAMA GANTT ── */
 .gantt .grid-background { fill: #111113 !important; }
 .gantt .grid-header { fill: #161618 !important; stroke: rgba(255,255,255,0.06) !important; }
