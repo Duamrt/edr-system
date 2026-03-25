@@ -95,37 +95,44 @@ let cellWidth = 40; // px por dia
 const HOJE = new Date();
 HOJE.setHours(0,0,0,0);
 
-async function init() { await carregar(); }
+let todasTarefas = [];
+let initDone = false;
 
-async function carregar() {
-  const obraId = document.getElementById('filtro-obra').value;
+async function init() {
+  // Carregar tudo uma vez
   try {
-    let q = db.from('cronograma_tarefas').select('*, obras(id,nome)').order('ordem').order('data_inicio');
-    if (obraId) q = q.eq('obra_id', obraId);
-    const { data } = await q;
-    tarefas = data || [];
+    const { data } = await db.from('cronograma_tarefas').select('*, obras(id,nome)').order('ordem').order('data_inicio');
+    todasTarefas = data || [];
 
+    // Montar mapa de obras e cores (fixo, não muda ao filtrar)
     obras = {};
-    tarefas.forEach(t => { if (t.obras?.id) obras[t.obras.id] = t.obras.nome; });
+    todasTarefas.forEach(t => { if (t.obras?.id) obras[t.obras.id] = t.obras.nome; });
 
-    const sel = document.getElementById('filtro-obra');
-    if (sel.options.length <= 1) {
-      Object.entries(obras).sort((a,b) => a[1].localeCompare(b[1])).forEach(([id, nome]) => {
-        const opt = document.createElement('option');
-        opt.value = id; opt.textContent = nome;
-        sel.appendChild(opt);
-      });
-    }
-
-    const obrasUnicas = [...new Set(tarefas.map(t => t.obra_id))];
+    const obrasUnicas = [...new Set(todasTarefas.map(t => t.obra_id))];
     obraCores = {};
     obrasUnicas.forEach((id, i) => { obraCores[id] = i % CORES.length; });
 
-    renderLegenda();
-    render();
+    // Popular select
+    const sel = document.getElementById('filtro-obra');
+    Object.entries(obras).sort((a,b) => a[1].localeCompare(b[1])).forEach(([id, nome]) => {
+      const opt = document.createElement('option');
+      opt.value = id; opt.textContent = nome;
+      sel.appendChild(opt);
+    });
+
+    initDone = true;
+    carregar();
   } catch(e) {
     document.getElementById('sidebar').innerHTML = '<div class="loading">Erro: ' + e.message + '</div>';
   }
+}
+
+function carregar() {
+  if (!initDone) return;
+  const obraId = document.getElementById('filtro-obra').value;
+  tarefas = obraId ? todasTarefas.filter(t => t.obra_id === obraId) : [...todasTarefas];
+  renderLegenda();
+  render();
 }
 
 function renderLegenda() {
