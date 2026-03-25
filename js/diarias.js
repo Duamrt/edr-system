@@ -743,6 +743,7 @@ function adicionarDiariaManual() {
 
   const reg = {
     nome: funcEntry.nome,
+    funcionario: funcEntry.nome,
     cargo: funcEntry.cargo,
     diaria_base: funcEntry.diaria,
     total_fracoes: fracao,
