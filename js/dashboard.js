@@ -630,7 +630,8 @@ function renderDashboard() {
     }
   }
 
-  const kpisHTML = `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;">
+  const kpiCols = window.innerWidth <= 768 ? 2 : 3;
+  const kpisHTML = `<div style="display:grid;grid-template-columns:repeat(${kpiCols},1fr);gap:10px;margin-bottom:16px;">
     ${kpis.map(k => `<div style="background:${k.bg};border-radius:14px;padding:16px 12px;text-align:center;cursor:pointer;transition:all .2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
       <div style="font-size:18px;font-weight:800;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,0.3);line-height:1.2;">${k.num}</div>
       <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.85);letter-spacing:0.8px;text-transform:uppercase;margin-top:4px;">${k.label}</div>
