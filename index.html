@@ -851,7 +851,10 @@
   <div id="view-cronograma" class="hidden">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding-top:4px;flex-wrap:wrap;gap:8px;">
       <div class="modulo-badge">📅 CRONOGRAMA DE OBRA</div>
-      <button onclick="cronGerarEtapas()" class="btn-outline" style="font-size:11px;padding:6px 12px;">⚡ GERAR ETAPAS PADRAO</button>
+      <div style="display:flex;gap:6px;">
+        <button onclick="cronGerarEtapas()" class="btn-outline" style="font-size:11px;padding:6px 12px;">⚡ GERAR ETAPAS PADRAO</button>
+        <button onclick="cronGerarPDF()" class="btn-outline" style="font-size:11px;padding:6px 12px;">📄 GERAR PDF</button>
+      </div>
     </div>
     <div id="cronograma-container"></div>
   </div>
@@ -1592,6 +1595,8 @@ VERGALHAO CA50" style="width:100%;min-height:140px;padding:14px;background:var(-
 
 <!-- JS Modules -->
 <script src="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/vfs_fonts.js"></script>
 <script src="js/config.js?v=03241837"></script>
 <script src="js/demo.js?v=03241837"></script>
 <script src="js/api.js?v=03241837"></script>

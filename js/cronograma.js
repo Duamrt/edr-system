@@ -620,3 +620,141 @@ async function cronSalvarEtapas(obraId) {
   fecharModal('cron-etapas');
   await cronCarregarTarefas();
 }
+
+// ── GERAR PDF ────────────────────────────────────────────
+
+function cronGerarPDF() {
+  if (cronTarefas.length === 0) { showToast('Nenhuma tarefa no cronograma'); return; }
+
+  // Filtrar por obra se selecionada
+  const obraId = cronObraFiltro;
+  const tarefas = obraId ? cronTarefas.filter(t => t.obra_id === obraId) : cronTarefas;
+  if (tarefas.length === 0) { showToast('Nenhuma tarefa pra essa obra'); return; }
+
+  const obraNome = obraId ? (obras.find(o => o.id === obraId)?.nome || 'Obra') : 'Todas as Obras';
+  const hoje = new Date().toLocaleDateString('pt-BR');
+
+  // Stats gerais
+  const totalSubs = tarefas.reduce((a, t) => a + (t.subitens || []).length, 0);
+  const feitosSubs = tarefas.reduce((a, t) => a + (t.subitens || []).filter(s => s.feito).length, 0);
+  const progGeral = totalSubs > 0 ? Math.round(feitosSubs / totalSubs * 100) : 0;
+
+  // Montar conteúdo do PDF
+  const content = [];
+
+  // Header
+  content.push({ text: 'CRONOGRAMA DE OBRA', style: 'titulo' });
+  content.push({ text: obraNome.toUpperCase(), style: 'subtitulo' });
+  content.push({ text: `Gerado em ${hoje}`, style: 'data' });
+  content.push({ text: ' ', margin: [0, 5] });
+
+  // Resumo
+  content.push({
+    columns: [
+      { text: `${tarefas.length} etapas`, style: 'stat' },
+      { text: `${totalSubs} serviços`, style: 'stat' },
+      { text: `${feitosSubs} concluídos`, style: 'stat' },
+      { text: `${progGeral}% geral`, style: 'statDestaque' }
+    ],
+    margin: [0, 0, 0, 15]
+  });
+
+  // Linha separadora
+  content.push({ canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 0.5, lineColor: '#cccccc' }], margin: [0, 0, 0, 10] });
+
+  // Etapas com sub-itens
+  tarefas.forEach((t, idx) => {
+    const subs = t.subitens || [];
+    const feitos = subs.filter(s => s.feito).length;
+    const prog = subs.length > 0 ? Math.round(feitos / subs.length * 100) : Math.round(Number(t.progresso) || 0);
+    const inicio = t.data_inicio ? new Date(t.data_inicio + 'T00:00:00').toLocaleDateString('pt-BR') : '';
+    const fim = t.data_fim ? new Date(t.data_fim + 'T00:00:00').toLocaleDateString('pt-BR') : '';
+
+    // Header da etapa
+    content.push({
+      columns: [
+        { text: `${idx + 1}. ${t.nome}`, style: 'etapaNome', width: '*' },
+        { text: `${inicio} → ${fim}`, style: 'etapaDatas', width: 'auto', alignment: 'right' }
+      ],
+      margin: [0, idx > 0 ? 12 : 0, 0, 2]
+    });
+
+    // Barra de progresso visual
+    content.push({
+      columns: [
+        {
+          canvas: [
+            { type: 'rect', x: 0, y: 0, w: 300, h: 8, r: 3, color: '#e5e7eb' },
+            { type: 'rect', x: 0, y: 0, w: Math.max(prog * 3, 0), h: 8, r: 3, color: prog >= 100 ? '#22c55e' : prog >= 50 ? '#eab308' : '#ef4444' }
+          ],
+          width: 310
+        },
+        { text: subs.length > 0 ? `${feitos}/${subs.length} (${prog}%)` : `${prog}%`, style: 'progresso', width: 'auto' }
+      ],
+      margin: [0, 2, 0, 4]
+    });
+
+    // Sub-itens como checklist
+    if (subs.length > 0) {
+      const tabBody = [];
+      // 2 colunas de sub-itens pra economizar espaço
+      for (let i = 0; i < subs.length; i += 2) {
+        const row = [];
+        row.push({ text: `${subs[i].feito ? '☑' : '☐'} ${subs[i].nome}`, style: subs[i].feito ? 'subFeito' : 'subPendente' });
+        if (subs[i + 1]) {
+          row.push({ text: `${subs[i + 1].feito ? '☑' : '☐'} ${subs[i + 1].nome}`, style: subs[i + 1].feito ? 'subFeito' : 'subPendente' });
+        } else {
+          row.push({ text: '' });
+        }
+        tabBody.push(row);
+      }
+
+      content.push({
+        table: { widths: ['50%', '50%'], body: tabBody },
+        layout: {
+          hLineWidth: () => 0,
+          vLineWidth: () => 0,
+          paddingLeft: () => 8,
+          paddingRight: () => 4,
+          paddingTop: () => 2,
+          paddingBottom: () => 2
+        },
+        margin: [10, 0, 0, 0]
+      });
+    }
+  });
+
+  // Rodapé com info da empresa
+  content.push({ text: ' ', margin: [0, 20] });
+  content.push({ canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 0.5, lineColor: '#cccccc' }] });
+  content.push({ text: 'EDR Engenharia — sistema.edreng.com.br', style: 'rodape', margin: [0, 8, 0, 0] });
+
+  const docDefinition = {
+    pageSize: 'A4',
+    pageMargins: [40, 40, 40, 40],
+    content: content,
+    styles: {
+      titulo: { fontSize: 18, bold: true, color: '#111827', margin: [0, 0, 0, 2] },
+      subtitulo: { fontSize: 14, bold: true, color: '#059669', margin: [0, 0, 0, 2] },
+      data: { fontSize: 9, color: '#6b7280' },
+      stat: { fontSize: 10, color: '#374151', alignment: 'center' },
+      statDestaque: { fontSize: 11, bold: true, color: '#059669', alignment: 'center' },
+      etapaNome: { fontSize: 11, bold: true, color: '#111827' },
+      etapaDatas: { fontSize: 9, color: '#6b7280' },
+      progresso: { fontSize: 9, color: '#374151', margin: [6, 0, 0, 0] },
+      subFeito: { fontSize: 9, color: '#9ca3af' },
+      subPendente: { fontSize: 9, color: '#374151' },
+      rodape: { fontSize: 8, color: '#9ca3af', alignment: 'center' }
+    }
+  };
+
+  const nomeArquivo = `cronograma-${obraNome.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${new Date().toISOString().split('T')[0]}.pdf`;
+
+  try {
+    pdfMake.createPdf(docDefinition).download(nomeArquivo);
+    showToast('PDF gerado');
+  } catch(e) {
+    console.error('PDF error:', e);
+    showToast('Erro ao gerar PDF');
+  }
+}
