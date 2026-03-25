@@ -612,24 +612,13 @@ function renderDashboard() {
     { num: contasVenc, label: 'Contas Vencidas', cor: '#ef4444', bg: contasVenc > 0 ? 'linear-gradient(135deg,#922b21,#e74c3c)' : 'linear-gradient(135deg,#1e8449,#27ae60)' },
   ];
 
-  el.innerHTML = `
-    ${dashBuildHeader(dataStr)}
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;">
-      ${kpis.map(k => `<div style="background:${k.bg};border-radius:14px;padding:16px 12px;text-align:center;cursor:pointer;transition:all .2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
-        <div style="font-size:18px;font-weight:800;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,0.3);line-height:1.2;">${k.num}</div>
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.85);letter-spacing:0.8px;text-transform:uppercase;margin-top:4px;">${k.label}</div>
-      </div>`).join('')}
-    </div>
-    ${dashBuildAlertas(alertas)}
-    ${dashBuildAgenda()}
-    ${dashBuildSaudeObrasCompacta(porObra)}`;
-
-  // Alerta de contas vencidas
+  // Contas vencidas
+  let contasVencHTML = '';
   if (typeof getContasVencidas === 'function') {
     const vencidas = getContasVencidas();
     if (vencidas.length > 0) {
       const totalVenc = vencidas.reduce((s, c) => s + Number(c.valor || 0), 0);
-      const alertaHTML = `<div style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);border-radius:12px;padding:14px 16px;margin-top:14px;cursor:pointer;" onclick="setView('contas-pagar')">
+      contasVencHTML = `<div style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);border-radius:12px;padding:14px 16px;margin-top:14px;cursor:pointer;" onclick="setView('contas-pagar')">
         <div style="display:flex;align-items:center;justify-content:space-between;">
           <div>
             <div style="font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;color:#ef4444;letter-spacing:2px;">🚨 CONTAS VENCIDAS</div>
@@ -638,10 +627,97 @@ function renderDashboard() {
           <button style="padding:6px 14px;border-radius:8px;border:1px solid rgba(239,68,68,0.3);background:rgba(239,68,68,0.08);color:#ef4444;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">VER CONTAS</button>
         </div>
       </div>`;
-      el.insertAdjacentHTML('beforeend', alertaHTML);
     }
+  }
+
+  const kpisHTML = `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;">
+    ${kpis.map(k => `<div style="background:${k.bg};border-radius:14px;padding:16px 12px;text-align:center;cursor:pointer;transition:all .2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+      <div style="font-size:18px;font-weight:800;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,0.3);line-height:1.2;">${k.num}</div>
+      <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.85);letter-spacing:0.8px;text-transform:uppercase;margin-top:4px;">${k.label}</div>
+    </div>`).join('')}
+  </div>`;
+
+  const isMobile = window.innerWidth <= 768;
+
+  if (isMobile) {
+    // ── MOBILE: Swipe horizontal paginado ──
+    const pages = [
+      { label: 'Resumo', html: kpisHTML + dashBuildAlertas(alertas) + contasVencHTML },
+      { label: 'Agenda', html: dashBuildAgenda() },
+      { label: 'Obras', html: dashBuildSaudeObrasCompacta(porObra) },
+    ];
+
+    const dotsHTML = pages.map((p, i) =>
+      `<button onclick="dashSwipeTo(${i})" class="dash-dot${i === 0 ? ' active' : ''}" style="background:${i === 0 ? '#3b82f6' : 'rgba(255,255,255,0.15)'};border:none;width:8px;height:8px;border-radius:50%;cursor:pointer;transition:all .2s;padding:0;"></button>`
+    ).join('');
+
+    const labelsHTML = pages.map((p, i) =>
+      `<button onclick="dashSwipeTo(${i})" class="dash-tab${i === 0 ? ' active' : ''}" style="background:none;border:none;color:${i === 0 ? '#3b82f6' : 'var(--texto3)'};font-size:11px;font-weight:700;font-family:'Rajdhani',sans-serif;letter-spacing:1px;cursor:pointer;padding:6px 12px;border-bottom:2px solid ${i === 0 ? '#3b82f6' : 'transparent'};transition:all .2s;">${p.label.toUpperCase()}</button>`
+    ).join('');
+
+    const pagesHTML = pages.map(p =>
+      `<div class="dash-page" style="min-width:100%;width:100%;flex-shrink:0;box-sizing:border-box;padding:0 2px;">${p.html}</div>`
+    ).join('');
+
+    el.innerHTML = `
+      ${dashBuildHeader(dataStr)}
+      <div style="display:flex;justify-content:center;gap:4px;margin-bottom:8px;" id="dash-dots">${dotsHTML}</div>
+      <div style="display:flex;justify-content:center;gap:0;margin-bottom:14px;border-bottom:1px solid rgba(255,255,255,0.06);" id="dash-tabs">${labelsHTML}</div>
+      <div id="dash-swipe" style="display:flex;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;gap:0;">
+        ${pagesHTML}
+      </div>
+      <style>
+        #dash-swipe::-webkit-scrollbar{display:none}
+        #dash-swipe .dash-page{scroll-snap-align:start}
+      </style>`;
+
+    // Listener pra atualizar dots/tabs no scroll
+    const swipeEl = document.getElementById('dash-swipe');
+    if (swipeEl) {
+      swipeEl.addEventListener('scroll', _dashOnSwipeScroll, { passive: true });
+    }
+  } else {
+    // ── DESKTOP: layout vertical normal ──
+    el.innerHTML = `
+      ${dashBuildHeader(dataStr)}
+      ${kpisHTML}
+      ${dashBuildAlertas(alertas)}
+      ${dashBuildAgenda()}
+      ${dashBuildSaudeObrasCompacta(porObra)}
+      ${contasVencHTML}`;
   }
 
   setTimeout(autoFitStatValues, 50);
   _renderAgendaLegenda();
+}
+
+// ── SWIPE HELPERS ──────────────────────────────────────────
+function dashSwipeTo(idx) {
+  const swipeEl = document.getElementById('dash-swipe');
+  if (!swipeEl) return;
+  const page = swipeEl.children[idx];
+  if (page) page.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
+}
+
+function _dashOnSwipeScroll() {
+  const swipeEl = document.getElementById('dash-swipe');
+  if (!swipeEl) return;
+  const scrollLeft = swipeEl.scrollLeft;
+  const pageW = swipeEl.children[0]?.offsetWidth || 1;
+  const idx = Math.round(scrollLeft / pageW);
+
+  // Atualizar dots
+  const dots = document.querySelectorAll('#dash-dots .dash-dot');
+  dots.forEach((d, i) => {
+    d.style.background = i === idx ? '#3b82f6' : 'rgba(255,255,255,0.15)';
+    d.style.width = i === idx ? '20px' : '8px';
+    d.style.borderRadius = i === idx ? '4px' : '50%';
+  });
+
+  // Atualizar tabs
+  const tabs = document.querySelectorAll('#dash-tabs .dash-tab');
+  tabs.forEach((t, i) => {
+    t.style.color = i === idx ? '#3b82f6' : 'var(--texto3)';
+    t.style.borderBottomColor = i === idx ? '#3b82f6' : 'transparent';
+  });
 }
