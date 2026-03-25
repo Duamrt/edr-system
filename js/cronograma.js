@@ -351,11 +351,13 @@ function cronAplicarTemaEscuro(wrap) {
   wrap.querySelectorAll('.row-line').forEach(el => { el.setAttribute('stroke', 'rgba(255,255,255,0.04)'); });
   wrap.querySelectorAll('.tick').forEach(el => { el.setAttribute('stroke', 'rgba(255,255,255,0.06)'); });
   wrap.querySelectorAll('.today-highlight').forEach(el => { el.setAttribute('fill', 'rgba(74,222,128,0.08)'); });
-  // Cores por obra nas barras
-  wrap.querySelectorAll('.bar-wrapper').forEach(el => {
-    const cls = [...el.classList].find(c => c.startsWith('cron-obra-'));
-    const idx = cls ? parseInt(cls.replace('cron-obra-', '')) : 0;
-    const cor = CRON_CORES[idx] || CRON_CORES[0];
+  // Cores por obra nas barras (mapear por ordem das tarefas)
+  const wrappers = wrap.querySelectorAll('.bar-wrapper');
+  wrappers.forEach((el, i) => {
+    const tarefa = cronTarefas[i];
+    if (!tarefa) return;
+    const corIdx = cronObraCores[tarefa.obra_id] || 0;
+    const cor = CRON_CORES[corIdx] || CRON_CORES[0];
     const bar = el.querySelector('.bar');
     const prog = el.querySelector('.bar-progress');
     if (bar) bar.setAttribute('fill', cor.bar);
