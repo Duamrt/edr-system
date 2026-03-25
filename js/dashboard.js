@@ -640,42 +640,28 @@ function renderDashboard() {
   const isMobile = window.innerWidth <= 768;
 
   if (isMobile) {
-    // ── MOBILE: Swipe horizontal paginado ──
+    // ── MOBILE: Abas com swipe (conteúdo rola vertical normalmente) ──
     const pages = [
       { label: 'Resumo', html: kpisHTML + dashBuildAlertas(alertas) + contasVencHTML },
       { label: 'Agenda', html: dashBuildAgenda() },
       { label: 'Obras', html: dashBuildSaudeObrasCompacta(porObra) },
     ];
 
-    const dotsHTML = pages.map((p, i) =>
-      `<button onclick="dashSwipeTo(${i})" class="dash-dot${i === 0 ? ' active' : ''}" style="background:${i === 0 ? '#3b82f6' : 'rgba(255,255,255,0.15)'};border:none;width:8px;height:8px;border-radius:50%;cursor:pointer;transition:all .2s;padding:0;"></button>`
+    const tabsHTML = pages.map((p, i) =>
+      `<button onclick="dashMobileTab(${i})" id="dash-tab-${i}" style="flex:1;background:none;border:none;color:${i === 0 ? '#3b82f6' : 'var(--texto3)'};font-size:11px;font-weight:700;font-family:'Rajdhani',sans-serif;letter-spacing:1px;cursor:pointer;padding:10px 0;border-bottom:2px solid ${i === 0 ? '#3b82f6' : 'transparent'};transition:all .2s;">${p.label.toUpperCase()}</button>`
     ).join('');
 
-    const labelsHTML = pages.map((p, i) =>
-      `<button onclick="dashSwipeTo(${i})" class="dash-tab${i === 0 ? ' active' : ''}" style="background:none;border:none;color:${i === 0 ? '#3b82f6' : 'var(--texto3)'};font-size:11px;font-weight:700;font-family:'Rajdhani',sans-serif;letter-spacing:1px;cursor:pointer;padding:6px 12px;border-bottom:2px solid ${i === 0 ? '#3b82f6' : 'transparent'};transition:all .2s;">${p.label.toUpperCase()}</button>`
-    ).join('');
-
-    const pagesHTML = pages.map(p =>
-      `<div class="dash-page" style="min-width:100%;width:100%;flex-shrink:0;box-sizing:border-box;padding:0 2px;">${p.html}</div>`
+    const pagesHTML = pages.map((p, i) =>
+      `<div id="dash-page-${i}" style="display:${i === 0 ? 'block' : 'none'};">${p.html}</div>`
     ).join('');
 
     el.innerHTML = `
       ${dashBuildHeader(dataStr)}
-      <div style="display:flex;justify-content:center;gap:4px;margin-bottom:8px;" id="dash-dots">${dotsHTML}</div>
-      <div style="display:flex;justify-content:center;gap:0;margin-bottom:14px;border-bottom:1px solid rgba(255,255,255,0.06);" id="dash-tabs">${labelsHTML}</div>
-      <div id="dash-swipe" style="display:flex;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;gap:0;">
-        ${pagesHTML}
-      </div>
-      <style>
-        #dash-swipe::-webkit-scrollbar{display:none}
-        #dash-swipe .dash-page{scroll-snap-align:start}
-      </style>`;
+      <div style="display:flex;margin-bottom:14px;border-bottom:1px solid rgba(255,255,255,0.06);" id="dash-tabs-bar">${tabsHTML}</div>
+      <div id="dash-pages">${pagesHTML}</div>`;
 
-    // Listener pra atualizar dots/tabs no scroll
-    const swipeEl = document.getElementById('dash-swipe');
-    if (swipeEl) {
-      swipeEl.addEventListener('scroll', _dashOnSwipeScroll, { passive: true });
-    }
+    // Touch swipe pra trocar abas
+    _dashMobileSwipeInit();
   } else {
     // ── DESKTOP: layout vertical normal ──
     el.innerHTML = `
@@ -691,33 +677,45 @@ function renderDashboard() {
   _renderAgendaLegenda();
 }
 
-// ── SWIPE HELPERS ──────────────────────────────────────────
-function dashSwipeTo(idx) {
-  const swipeEl = document.getElementById('dash-swipe');
-  if (!swipeEl) return;
-  const page = swipeEl.children[idx];
-  if (page) page.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
+// ── MOBILE TAB/SWIPE HELPERS ──────────────────────────────
+let _dashCurrentTab = 0;
+const _DASH_TAB_COUNT = 3;
+
+function dashMobileTab(idx) {
+  _dashCurrentTab = idx;
+  for (let i = 0; i < _DASH_TAB_COUNT; i++) {
+    const page = document.getElementById('dash-page-' + i);
+    const tab = document.getElementById('dash-tab-' + i);
+    if (page) page.style.display = i === idx ? 'block' : 'none';
+    if (tab) {
+      tab.style.color = i === idx ? '#3b82f6' : 'var(--texto3)';
+      tab.style.borderBottomColor = i === idx ? '#3b82f6' : 'transparent';
+    }
+  }
+  // Re-renderizar legenda da agenda se for a aba de agenda
+  if (idx === 1) setTimeout(_renderAgendaLegenda, 50);
 }
 
-function _dashOnSwipeScroll() {
-  const swipeEl = document.getElementById('dash-swipe');
-  if (!swipeEl) return;
-  const scrollLeft = swipeEl.scrollLeft;
-  const pageW = swipeEl.children[0]?.offsetWidth || 1;
-  const idx = Math.round(scrollLeft / pageW);
+function _dashMobileSwipeInit() {
+  const pagesEl = document.getElementById('dash-pages');
+  if (!pagesEl) return;
+  let startX = 0, startY = 0, tracking = false;
 
-  // Atualizar dots
-  const dots = document.querySelectorAll('#dash-dots .dash-dot');
-  dots.forEach((d, i) => {
-    d.style.background = i === idx ? '#3b82f6' : 'rgba(255,255,255,0.15)';
-    d.style.width = i === idx ? '20px' : '8px';
-    d.style.borderRadius = i === idx ? '4px' : '50%';
-  });
+  pagesEl.addEventListener('touchstart', function(e) {
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    tracking = true;
+  }, { passive: true });
 
-  // Atualizar tabs
-  const tabs = document.querySelectorAll('#dash-tabs .dash-tab');
-  tabs.forEach((t, i) => {
-    t.style.color = i === idx ? '#3b82f6' : 'var(--texto3)';
-    t.style.borderBottomColor = i === idx ? '#3b82f6' : 'transparent';
-  });
+  pagesEl.addEventListener('touchend', function(e) {
+    if (!tracking) return;
+    tracking = false;
+    const dx = e.changedTouches[0].clientX - startX;
+    const dy = e.changedTouches[0].clientY - startY;
+    // Só troca se o swipe horizontal for maior que o vertical (evita conflito com scroll)
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+      if (dx < 0 && _dashCurrentTab < _DASH_TAB_COUNT - 1) dashMobileTab(_dashCurrentTab + 1);
+      if (dx > 0 && _dashCurrentTab > 0) dashMobileTab(_dashCurrentTab - 1);
+    }
+  }, { passive: true });
 }
