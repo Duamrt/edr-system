@@ -426,6 +426,77 @@ const AJUDA_CONTEUDO = {
     ]
   },
 
+  cronograma: {
+    titulo: 'Cronograma de Obra',
+    perfis: ['admin','operacional','mestre'],
+    secoes: [
+      { titulo: 'Visao geral', info: 'Acompanhe o andamento da obra com 17 etapas padrao e mais de 80 sub-itens. O mestre marca o que foi feito e o progresso calcula automaticamente.' },
+      { titulo: 'Ver cronograma', passos: [
+        'Selecione a obra no filtro do topo',
+        'As etapas aparecem em lista com barra de progresso',
+        'Clique na etapa para expandir e ver os sub-itens',
+        'Cada sub-item tem um checkbox — marque quando concluido'
+      ]},
+      { titulo: 'Adicionar tarefa', passos: [
+        'Clique em + TAREFA',
+        'Selecione a obra',
+        'Escolha entre etapa padrao (com sub-itens prontos) ou tarefa personalizada',
+        'Defina data inicio e data fim',
+        'Clique em SALVAR'
+      ]},
+      { titulo: 'Adicionar sub-item', passos: [
+        'Expanda a etapa clicando nela',
+        'Clique em + Sub-item na parte de baixo',
+        'Digite o nome e confirme'
+      ]},
+      { titulo: 'Abrir Gantt visual', passos: [
+        'Clique no botao ABRIR GANTT no topo',
+        'Abre uma pagina dedicada com timeline horizontal (Frappe Gantt)',
+        'Cada obra tem uma cor diferente',
+        'Arrastar as barras nao altera — use a lista principal para editar'
+      ]},
+      { perfil: 'mestre', titulo: 'Diario de obra', passos: [
+        'Clique no botao DIARIO no topo do cronograma',
+        'Abre uma pagina mobile-first sem login',
+        'Mostra as tarefas pendentes agrupadas por obra',
+        'Marque os sub-itens concluidos e clique SALVAR',
+        'Ideal para o mestre alimentar no final do dia'
+      ]},
+      { dica: 'O Telegram envia automaticamente um resumo diario as 6h com etapas atrasadas e pendentes.' }
+    ]
+  },
+
+  orcamento: {
+    titulo: 'Orcamento Parametrico',
+    perfis: ['admin'],
+    secoes: [
+      { titulo: 'Visao geral', info: 'Gere orcamentos para obras novas usando dados reais de obras concluidas como base. O sistema calcula custo por m2, aplica correcao INCC e detalha por etapa construtiva.' },
+      { titulo: 'Gerar orcamento', passos: [
+        'Selecione uma obra concluida como modelo (precisa ter area e lancamentos)',
+        'Informe a area da nova obra em m2',
+        'O INCC e buscado automaticamente do Banco Central (serie 192)',
+        'Voce pode ajustar o percentual livremente',
+        'O sistema calcula: custo estimado, venda estimada e lucro'
+      ]},
+      { titulo: 'Ver detalhamento', passos: [
+        'Abaixo dos cards de resumo aparece a tabela por etapa',
+        'Clique na etapa para expandir e ver cada insumo',
+        'Mostra: descricao, quantidade, preco unitario, total base e projetado'
+      ]},
+      { titulo: 'Exportar Excel', passos: [
+        'Preencha o nome do cliente (opcional)',
+        'Clique em EXPORTAR EXCEL',
+        'Gera um arquivo .xls com header EDR, dados completos e rodape com CREA'
+      ]},
+      { titulo: 'Exportar PDF', passos: [
+        'Clique em PDF ao lado do botao Excel',
+        'Gera um PDF formatado para impressao ou envio ao cliente'
+      ]},
+      { dica: 'A correcao INCC e calculada do mes do ultimo lancamento da obra modelo ate o mes atual. Voce pode ajustar o valor manualmente se preferir.' },
+      { alerta: 'O orcamento e uma estimativa baseada em obra real. Valores finais dependem do projeto executivo e condicoes do mercado.' }
+    ]
+  },
+
   permissoes: {
     titulo: 'Permissoes por Perfil',
     perfis: ['admin'],
@@ -533,7 +604,7 @@ function fecharAjudaFora(e) {
 
 // ── DETECTAR VIEW ATIVA ─────────────────────────────────
 function getViewAtiva() {
-  const views = ['dashboard','obras','estoque','notas','form','creditos','diarias','catalogo','relatorio','custos','banco','setup','leads','caixa','contas-pagar','garantias','usuarios','permissoes'];
+  const views = ['dashboard','obras','estoque','notas','form','creditos','diarias','catalogo','relatorio','custos','banco','setup','leads','caixa','contas-pagar','garantias','usuarios','permissoes','cronograma','orcamento'];
   for (const v of views) {
     const el = document.getElementById('view-' + v);
     if (el && !el.classList.contains('hidden')) return v;

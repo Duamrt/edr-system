@@ -707,6 +707,12 @@ p {
     <div class="nav-item" data-target="diarias">
       <span class="nav-icon">👷</span> Diárias
     </div>
+    <div class="nav-item" data-target="cronograma">
+      <span class="nav-icon">📅</span> Cronograma
+    </div>
+    <div class="nav-item" data-target="orcamento">
+      <span class="nav-icon">📊</span> Orçamento
+    </div>
   </div>
 
   <div class="nav-group">
@@ -1327,6 +1333,111 @@ p {
         <div class="card-text">Registre vale, bônus ou desconto. São considerados no fechamento da quinzena.</div>
       </div>
     </div>
+  </section>
+
+  <!-- CRONOGRAMA -->
+  <section class="section" id="cronograma">
+    <span class="section-tag">Módulo</span>
+    <h1 class="section-title">Cronograma de Obra</h1>
+    <p class="section-subtitle">Acompanhe o andamento da obra com etapas, sub-itens e checklist. Integrado com Gantt visual e diário de obra.</p>
+
+    <h3>Como funciona</h3>
+    <div class="step-list">
+      <div class="step">
+        <span class="step-num">1</span>
+        <div><strong>Selecione a obra</strong> — use o filtro no topo para ver as tarefas de uma obra específica ou todas de uma vez.</div>
+      </div>
+      <div class="step">
+        <span class="step-num">2</span>
+        <div><strong>Veja o progresso</strong> — cada etapa mostra uma barra de progresso baseada nos sub-itens concluídos.</div>
+      </div>
+      <div class="step">
+        <span class="step-num">3</span>
+        <div><strong>Marque sub-itens</strong> — clique na etapa para expandir e use os checkboxes para marcar o que foi feito.</div>
+      </div>
+    </div>
+
+    <h3>Adicionar tarefa</h3>
+    <div class="step-list">
+      <div class="step">
+        <span class="step-num">1</span>
+        <div>Clique em <strong>+ TAREFA</strong> no topo.</div>
+      </div>
+      <div class="step">
+        <span class="step-num">2</span>
+        <div>Selecione a obra e escolha entre <strong>etapa padrão</strong> (com sub-itens prontos — fundação, estrutura, alvenaria etc.) ou <strong>tarefa personalizada</strong>.</div>
+      </div>
+      <div class="step">
+        <span class="step-num">3</span>
+        <div>Defina data início e data fim, depois clique em <strong>SALVAR</strong>.</div>
+      </div>
+    </div>
+
+    <h3>Etapas padrão</h3>
+    <p>O sistema vem com 17 etapas e mais de 80 sub-itens prontos, cobrindo toda a construção:</p>
+    <div class="cards-grid" style="grid-template-columns:repeat(auto-fill,minmax(180px,1fr));">
+      <div class="card"><div class="card-title">🏗️ Serviços Preliminares</div><div class="card-text">Limpeza, gabarito, locação, tapume, placa</div></div>
+      <div class="card"><div class="card-title">🧱 Fundação</div><div class="card-text">Sapatas, baldrame, impermeabilização, esgoto</div></div>
+      <div class="card"><div class="card-title">🏛️ Estrutura</div><div class="card-text">Pilares, vigas, cintas, laje, escada</div></div>
+      <div class="card"><div class="card-title">🧱 Alvenaria</div><div class="card-text">Vedação, vergas, contravergas</div></div>
+      <div class="card"><div class="card-title">🏠 Cobertura</div><div class="card-text">Telhado, telhas, calhas, cumeeira</div></div>
+      <div class="card"><div class="card-title">⚡ Elétrica</div><div class="card-text">Eletrodutos, fiação, quadro, tomadas</div></div>
+      <div class="card"><div class="card-title">🚿 Hidráulica</div><div class="card-text">Água fria/quente, esgoto, pluvial</div></div>
+      <div class="card"><div class="card-title">🎨 Acabamento</div><div class="card-text">Reboco, forro, piso, pintura, louças</div></div>
+    </div>
+
+    <h3>Gantt visual</h3>
+    <p>Clique em <strong>ABRIR GANTT</strong> para ver a timeline horizontal com todas as etapas. Cada obra tem uma cor diferente. A visualização é em tela cheia, ideal para reuniões e planejamento.</p>
+
+    <h3>Diário de obra</h3>
+    <p>O botão <strong>DIÁRIO</strong> abre uma página mobile-first que o mestre de obras usa no final do dia para marcar o que foi concluído. Sem login necessário — acessa direto pelo link.</p>
+
+    <div class="tip">💡 O Telegram envia automaticamente um resumo diário às 6h com etapas atrasadas e pendentes de cada obra.</div>
+  </section>
+
+  <!-- ORCAMENTO -->
+  <section class="section" id="orcamento">
+    <span class="section-tag">Módulo</span>
+    <h1 class="section-title">Orçamento Paramétrico</h1>
+    <p class="section-subtitle">Gere orçamentos para obras novas usando dados reais de obras concluídas como base. Correção INCC automática via Banco Central.</p>
+
+    <h3>Como funciona</h3>
+    <div class="step-list">
+      <div class="step">
+        <span class="step-num">1</span>
+        <div><strong>Selecione a obra modelo</strong> — escolha uma obra concluída que tenha área cadastrada e lançamentos.</div>
+      </div>
+      <div class="step">
+        <span class="step-num">2</span>
+        <div><strong>Informe a área</strong> — digite a metragem da nova obra em m².</div>
+      </div>
+      <div class="step">
+        <span class="step-num">3</span>
+        <div><strong>INCC automático</strong> — o sistema busca o índice no Banco Central (série 192) e calcula a correção acumulada desde o último lançamento da obra modelo.</div>
+      </div>
+      <div class="step">
+        <span class="step-num">4</span>
+        <div><strong>Resultado</strong> — cards mostram custo estimado, venda estimada e lucro. A tabela detalha por etapa construtiva.</div>
+      </div>
+    </div>
+
+    <h3>Detalhamento por etapa</h3>
+    <p>Clique em qualquer etapa na tabela para expandir e ver cada insumo: descrição, quantidade, preço unitário, total base e valor projetado para a nova obra.</p>
+
+    <h3>Exportar</h3>
+    <div class="cards-grid">
+      <div class="card">
+        <div class="card-title">📊 Excel</div>
+        <div class="card-text">Gera .xls com header EDR, dados completos, detalhamento por insumo e rodapé com CREA.</div>
+      </div>
+      <div class="card">
+        <div class="card-title">📄 PDF</div>
+        <div class="card-text">PDF formatado para impressão ou envio ao cliente.</div>
+      </div>
+    </div>
+
+    <div class="tip">💡 Você pode ajustar o percentual de INCC manualmente. O valor automático é sugestão — o gestor tem liberdade total.</div>
+    <div class="warning">⚠ O orçamento é uma estimativa baseada em obra real. Valores finais dependem do projeto executivo e condições do mercado.</div>
   </section>
 
   <!-- FINANCEIRO -->
