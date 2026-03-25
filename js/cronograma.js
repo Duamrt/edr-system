@@ -86,9 +86,11 @@ async function renderCronograma() {
         <button onclick="cronSetView('Week')" id="cron-vm-Week" class="cron-vm-btn" style="padding:6px 12px;border-radius:8px;border:1px solid rgba(74,222,128,0.3);background:rgba(74,222,128,0.1);color:#4ade80;font-size:12px;cursor:pointer;">Semana</button>
         <button onclick="cronSetView('Month')" id="cron-vm-Month" class="cron-vm-btn" style="padding:6px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.03);color:var(--texto2);font-size:12px;cursor:pointer;">Mes</button>
       </div>
+      <button onclick="cronScrollHoje()" style="padding:6px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.03);color:var(--texto2);font-size:12px;cursor:pointer;">Hoje</button>
+      <button onclick="cronToggleTodos()" style="padding:6px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.03);color:var(--texto2);font-size:12px;cursor:pointer;" id="cron-btn-toggle">Expandir</button>
       <button onclick="cronAbrirModal()" class="btn-save" style="padding:8px 16px;font-size:12px;">+ TAREFA</button>
     </div>
-    <div id="cron-gantt-wrap" style="overflow-x:auto;background:rgba(255,255,255,0.02);border-radius:12px;border:1px solid rgba(255,255,255,0.06);min-height:200px;"></div>
+    <div id="cron-gantt-wrap" style="overflow-x:auto;background:rgba(255,255,255,0.02);border-radius:12px;border:1px solid rgba(255,255,255,0.06);min-height:120px;-webkit-overflow-scrolling:touch;"></div>
     <div id="cron-vazio" class="hidden" style="text-align:center;padding:60px 20px;color:var(--texto3);">
       <div style="font-size:32px;margin-bottom:12px;">📅</div>
       <div style="font-size:14px;margin-bottom:6px;">Nenhuma tarefa no cronograma</div>
@@ -349,6 +351,28 @@ function cronSetView(mode) {
 function cronFiltrarObra() {
   cronObraFiltro = document.getElementById('cron-filtro-obra')?.value || '';
   cronCarregarTarefas();
+}
+
+function cronScrollHoje() {
+  const wrap = document.getElementById('cron-gantt-wrap');
+  if (!wrap) return;
+  const highlight = wrap.querySelector('.today-highlight');
+  if (highlight) {
+    const x = Number(highlight.getAttribute('x')) || 0;
+    wrap.scrollTo({ left: Math.max(x - 100, 0), behavior: 'smooth' });
+  }
+}
+
+function cronToggleTodos() {
+  const btn = document.getElementById('cron-btn-toggle');
+  if (cronExpandido.size > 0) {
+    cronExpandido.clear();
+    if (btn) btn.textContent = 'Expandir';
+  } else {
+    cronTarefas.forEach(t => { if ((t.subitens || []).length > 0) cronExpandido.add(t.id); });
+    if (btn) btn.textContent = 'Recolher';
+  }
+  cronRenderLista();
 }
 
 // ── CRUD ─────────────────────────────────────────────────
