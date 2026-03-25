@@ -75,9 +75,9 @@ async function iniciarApp() {
   renderNotas();
   // renderObrasView é chamado pelo setView quando o usuário abre a aba
   setToday();
-  // Mestre vai direto pra diárias (não usa dashboard)
+  // Mestre vai direto pro cronograma
   if (usuarioAtual && usuarioAtual.perfil === 'mestre') {
-    setView('diarias');
+    setView('cronograma');
   } else {
     // Restaurar última página visitada
     try {

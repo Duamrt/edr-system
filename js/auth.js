@@ -361,15 +361,11 @@ function aplicarPerfil() {
   document.querySelectorAll('.operacional-info').forEach(el => el.classList.toggle('hidden', isAdmin));
 
   if (isMestre) {
-    // Mestre: se não tem nenhum módulo extra liberado, focar em diárias
-    const temAlgoExtra = _MODULOS_PERMISSAO.some(m => m.key !== 'diarias' && temPermissao(m.key));
+    // Mestre: se não tem nenhum módulo extra além de diárias e cronograma, esconder bottom-nav
+    const temAlgoExtra = _MODULOS_PERMISSAO.some(m => m.key !== 'diarias' && m.key !== 'cronograma' && temPermissao(m.key));
     if (!temAlgoExtra) {
       const bnav = document.getElementById('bottom-nav');
       if (bnav) bnav.style.display = 'none';
-      setTimeout(() => setView('diarias'), 100);
-      diarPanelRecolhido = false;
-      const pl = document.getElementById('diar-panelLeft');
-      if (pl) pl.classList.remove('recolhido');
     }
   }
 
