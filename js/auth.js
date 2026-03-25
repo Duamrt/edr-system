@@ -439,8 +439,9 @@ async function checkPlatformAdmin() {
       }
     });
 
-    // Abrir direto na view de empresas
-    setTimeout(() => setView('clientes-plataforma'), 200);
+    // Restaurar última página ou ir pra empresas
+    const lastView = localStorage.getItem('edr_last_view');
+    setTimeout(() => setView(lastView || 'clientes-plataforma'), 200);
   } catch(e) { console.warn('checkPlatformAdmin:', e); }
 }
 
