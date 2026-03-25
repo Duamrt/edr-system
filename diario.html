@@ -88,30 +88,9 @@ const hoje = new Date();
 document.getElementById('header-date').textContent = hoje.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
 
 async function init() {
-  // Carregar company_id do usuário logado (chave = edr_auth)
-  let companyId = null;
+  // Carregar obras (RLS já filtra por empresa)
   try {
-    const auth = JSON.parse(localStorage.getItem('edr_auth') || '{}');
-    if (auth.user?.company_id) companyId = auth.user.company_id;
-  } catch(e) {}
-
-  // Se não achou no auth, buscar via company_users
-  if (!companyId) {
-    try {
-      const auth = JSON.parse(localStorage.getItem('edr_auth') || '{}');
-      const userId = auth.user?.id;
-      if (userId) {
-        const { data: cu } = await db.from('company_users').select('company_id').eq('user_id', userId).limit(1);
-        if (cu && cu[0]) companyId = cu[0].company_id;
-      }
-    } catch(e) {}
-  }
-
-  // Carregar obras
-  try {
-    let q = db.from('obras').select('id,nome').eq('arquivada', false).order('nome');
-    if (companyId) q = q.eq('company_id', companyId);
-    const { data } = await q;
+    const { data } = await db.from('obras').select('id,nome').eq('arquivada', false).order('nome');
     obras = data || [];
     const sel = document.getElementById('filtro-obra');
     obras.forEach(o => {
@@ -128,11 +107,8 @@ async function init() {
 async function carregarDados() {
   const obraId = document.getElementById('filtro-obra').value;
   try {
-    // Filtrar só tarefas das obras carregadas (mesma empresa)
-    const obraIds = obras.map(o => o.id);
     let q = db.from('cronograma_tarefas').select('*').order('ordem').order('data_inicio');
     if (obraId) q = q.eq('obra_id', obraId);
-    else if (obraIds.length > 0) q = q.in('obra_id', obraIds);
     const { data } = await q;
     tarefas = (data || []).filter(t => {
       const subs = t.subitens || [];
@@ -192,8 +168,8 @@ function renderConteudo() {
     const corProg = prog >= 70 ? 'var(--verde)' : prog >= 40 ? 'var(--amarelo)' : 'var(--vermelho)';
 
     html += `<div class="obra-section">
-      <div class="obra-header">
-        <div class="obra-nome">${obraNome}</div>
+      <div class="obra-header" style="position:sticky;top:50px;z-index:80;background:var(--bg);padding:10px 0;border-bottom:1px solid var(--borda);">
+        <div class="obra-nome" style="font-size:16px;">🏗 ${obraNome}</div>
         <div class="obra-prog">
           <div class="obra-bar"><div class="obra-bar-fill" style="width:${prog}%;background:${corProg}"></div></div>
           <div class="obra-pct" style="color:${corProg}">${prog}%</div>
