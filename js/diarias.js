@@ -427,6 +427,8 @@ async function initDiarias() {
   await diarCarregarQuinzenas();
   diarRenderRegistros();
   diarRenderExtras();
+  // Mestre: popular form manual de cara (selects de funcionário e obra)
+  if (usuarioAtual?.perfil === 'mestre') diarPopularFormManual();
 }
 
 // ────────────────────────────────────────────
