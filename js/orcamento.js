@@ -38,7 +38,8 @@ function renderOrcamento() {
         <label style="font-size:10px;font-weight:700;color:var(--texto3);text-transform:uppercase;letter-spacing:1px;">Cliente (opcional)</label>
         <input id="orc-cliente" type="text" placeholder="Nome do cliente" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--borda);background:var(--bg2);color:var(--texto);font-size:13px;margin-top:4px;">
       </div>
-      <button class="btn-save" onclick="exportarOrcamento()" style="padding:10px 20px;font-size:12px;white-space:nowrap;">EXPORTAR</button>
+      <button class="btn-save" onclick="exportarOrcamento()" style="padding:10px 20px;font-size:12px;white-space:nowrap;">EXPORTAR EXCEL</button>
+      <button class="btn-outline" onclick="pdfOrcamento()" style="padding:10px 16px;font-size:12px;white-space:nowrap;">📄 PDF</button>
     </div>
 
     <div id="orc-resumo" style="display:none;margin-bottom:16px;">
