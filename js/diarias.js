@@ -722,7 +722,6 @@ function diarToggleVoz() {
 
   const textarea = document.getElementById('diar-msgInput');
   const textoAntes = textarea.value;
-  let finalTranscript = '';
 
   rec.onstart = function() {
     _diarVozAtivo = true;
@@ -734,13 +733,14 @@ function diarToggleVoz() {
   };
 
   rec.onresult = function(e) {
-    let interim = '';
-    for (let i = e.resultIndex; i < e.results.length; i++) {
-      const t = e.results[i][0].transcript;
-      if (e.results[i].isFinal) finalTranscript += t + '\n';
-      else interim = t;
+    // Reconstruir todo o transcript a partir dos results (evita duplicatas)
+    let final = '', interim = '';
+    for (let i = 0; i < e.results.length; i++) {
+      if (e.results[i].isFinal) final += e.results[i][0].transcript + '\n';
+      else interim = e.results[i][0].transcript;
     }
-    textarea.value = textoAntes + (textoAntes && !textoAntes.endsWith('\n') ? '\n' : '') + finalTranscript + interim;
+    const sep = textoAntes && !textoAntes.endsWith('\n') ? '\n' : '';
+    textarea.value = textoAntes + sep + final + interim;
   };
 
   rec.onerror = function(e) {
@@ -750,10 +750,8 @@ function diarToggleVoz() {
   };
 
   rec.onend = function() {
-    // Se ainda tá ativo, reiniciar (continuous nem sempre funciona em mobile)
-    if (_diarVozAtivo) {
-      try { rec.start(); } catch(e) { diarPararVoz(); }
-    }
+    // Parar quando o navegador encerra (não reiniciar — evita duplicatas no Android)
+    diarPararVoz();
   };
 
   try {
