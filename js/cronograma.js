@@ -8,6 +8,19 @@ let cronObraFiltro = '';
 let cronViewMode = 'Week';
 let cronExpandido = new Set();
 
+// Cores por obra (atribuídas dinamicamente)
+const CRON_CORES = [
+  { bar: '#2563eb', prog: '#60a5fa', label: '#93c5fd' },  // Azul
+  { bar: '#9333ea', prog: '#c084fc', label: '#d8b4fe' },  // Roxo
+  { bar: '#ea580c', prog: '#fb923c', label: '#fdba74' },  // Laranja
+  { bar: '#0d9488', prog: '#2dd4bf', label: '#5eead4' },  // Teal
+  { bar: '#dc2626', prog: '#f87171', label: '#fca5a5' },  // Vermelho
+  { bar: '#ca8a04', prog: '#facc15', label: '#fde047' },  // Amarelo
+  { bar: '#059669', prog: '#34d399', label: '#6ee7b7' },  // Verde
+  { bar: '#4f46e5', prog: '#818cf8', label: '#a5b4fc' },  // Indigo
+];
+let cronObraCores = {}; // { obraId: corIndex }
+
 // ── ETAPAS PADRÃO COM SUB-ITENS ──────────────────────────
 const CRON_ETAPAS_PADRAO = [
   { nome: 'Serviços Preliminares', dias: 15, subs: [
@@ -137,10 +150,16 @@ function cronRenderGantt() {
   wrap.style.display = '';
   if (vazio) vazio.classList.add('hidden');
 
+  // Atribuir cores por obra
+  const obrasUnicas = [...new Set(cronTarefas.map(t => t.obra_id))];
+  cronObraCores = {};
+  obrasUnicas.forEach((obraId, i) => { cronObraCores[obraId] = i % CRON_CORES.length; });
+
   const idSet = new Set(cronTarefas.map(t => t.id));
   const tasks = cronTarefas.map(t => {
     const obraNome = obras.find(o => o.id === t.obra_id)?.nome || '';
     const dep = t.dependencia && idSet.has(t.dependencia) ? t.dependencia : '';
+    const corIdx = cronObraCores[t.obra_id] || 0;
     return {
       id: t.id,
       name: obraNome ? `${obraNome} — ${t.nome}` : t.nome,
@@ -148,7 +167,7 @@ function cronRenderGantt() {
       end: t.data_fim,
       progress: cronCalcProgresso(t),
       dependencies: dep,
-      custom_class: 'cron-bar'
+      custom_class: 'cron-bar cron-obra-' + corIdx
     };
   });
 
@@ -209,7 +228,9 @@ function cronRenderLista() {
     const inicio = t.data_inicio ? new Date(t.data_inicio + 'T00:00:00').toLocaleDateString('pt-BR') : '';
     const fim = t.data_fim ? new Date(t.data_fim + 'T00:00:00').toLocaleDateString('pt-BR') : '';
     const aberto = cronExpandido.has(t.id);
-    const corProg = prog >= 100 ? '#4ade80' : prog >= 50 ? '#fbbf24' : prog > 0 ? '#f97316' : '#ef4444';
+    const corIdx = cronObraCores[t.obra_id] || 0;
+    const corObra = CRON_CORES[corIdx] || CRON_CORES[0];
+    const corProg = corObra.prog;
 
     let subsHtml = '';
     if (aberto && subs.length > 0) {
@@ -228,10 +249,11 @@ function cronRenderLista() {
 
     return `<div style="border-bottom:${aberto ? 'none' : '1px solid rgba(255,255,255,0.04)'};">
       <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;cursor:pointer;flex-wrap:wrap;" class="cron-lista-item" onclick="cronToggleExpand('${t.id}')">
+        <div style="width:4px;height:28px;border-radius:2px;background:${corObra.bar};flex-shrink:0;"></div>
         <div style="font-size:14px;transition:transform 0.2s;transform:rotate(${aberto ? '90' : '0'}deg);color:#8b8fa0;">${subs.length ? '▶' : '•'}</div>
         <div style="flex:1;min-width:150px;">
           <div style="font-size:13px;color:#e2e4e9;font-weight:500;">${t.nome}</div>
-          <div style="font-size:11px;color:#8b8fa0;">${obra?.nome || ''} · ${inicio} → ${fim}</div>
+          <div style="font-size:11px;color:${corObra.label};">${obra?.nome || ''} <span style="color:#8b8fa0;">· ${inicio} → ${fim}</span></div>
         </div>
         <div style="min-width:100px;display:flex;align-items:center;gap:6px;">
           <div style="flex:1;background:rgba(255,255,255,0.06);border-radius:4px;height:6px;overflow:hidden;">
@@ -257,6 +279,13 @@ function cronRenderLista() {
         </div>
         <span style="font-size:11px;color:#4ade80;font-weight:600;">${progGeral}% geral</span>
       </div>` : ''}
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
+      ${Object.entries(cronObraCores).map(([obraId, idx]) => {
+        const cor = CRON_CORES[idx];
+        const nome = obras.find(o => o.id === obraId)?.nome || '';
+        return `<div style="display:flex;align-items:center;gap:4px;font-size:11px;color:${cor.label};"><div style="width:10px;height:10px;border-radius:3px;background:${cor.bar};"></div>${nome}</div>`;
+      }).join('')}
     </div>
     <div style="background:rgba(255,255,255,0.02);border-radius:10px;border:1px solid rgba(255,255,255,0.06);overflow:hidden;">
       ${rows}
@@ -322,8 +351,16 @@ function cronAplicarTemaEscuro(wrap) {
   wrap.querySelectorAll('.row-line').forEach(el => { el.setAttribute('stroke', 'rgba(255,255,255,0.04)'); });
   wrap.querySelectorAll('.tick').forEach(el => { el.setAttribute('stroke', 'rgba(255,255,255,0.06)'); });
   wrap.querySelectorAll('.today-highlight').forEach(el => { el.setAttribute('fill', 'rgba(74,222,128,0.08)'); });
-  wrap.querySelectorAll('.bar').forEach(el => { el.setAttribute('fill', '#1a7a3a'); });
-  wrap.querySelectorAll('.bar-progress').forEach(el => { el.setAttribute('fill', '#4ade80'); });
+  // Cores por obra nas barras
+  wrap.querySelectorAll('.bar-wrapper').forEach(el => {
+    const cls = [...el.classList].find(c => c.startsWith('cron-obra-'));
+    const idx = cls ? parseInt(cls.replace('cron-obra-', '')) : 0;
+    const cor = CRON_CORES[idx] || CRON_CORES[0];
+    const bar = el.querySelector('.bar');
+    const prog = el.querySelector('.bar-progress');
+    if (bar) bar.setAttribute('fill', cor.bar);
+    if (prog) prog.setAttribute('fill', cor.prog);
+  });
   wrap.querySelectorAll('.bar-label').forEach(el => { el.setAttribute('fill', '#f0f0f0'); el.style.fill = '#f0f0f0'; });
   wrap.querySelectorAll('.upper-text').forEach(el => { el.setAttribute('fill', '#c0c4cc'); el.style.fill = '#c0c4cc'; });
   wrap.querySelectorAll('.lower-text').forEach(el => { el.setAttribute('fill', '#8b8fa0'); el.style.fill = '#8b8fa0'; });
