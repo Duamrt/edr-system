@@ -88,12 +88,24 @@ const hoje = new Date();
 document.getElementById('header-date').textContent = hoje.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
 
 async function init() {
-  // Carregar company_id do usuário logado
+  // Carregar company_id do usuário logado (chave = edr_auth)
   let companyId = null;
   try {
-    const usr = JSON.parse(localStorage.getItem('edr_user') || '{}');
-    if (usr.company_id) companyId = usr.company_id;
+    const auth = JSON.parse(localStorage.getItem('edr_auth') || '{}');
+    if (auth.user?.company_id) companyId = auth.user.company_id;
   } catch(e) {}
+
+  // Se não achou no auth, buscar via company_users
+  if (!companyId) {
+    try {
+      const auth = JSON.parse(localStorage.getItem('edr_auth') || '{}');
+      const userId = auth.user?.id;
+      if (userId) {
+        const { data: cu } = await db.from('company_users').select('company_id').eq('user_id', userId).limit(1);
+        if (cu && cu[0]) companyId = cu[0].company_id;
+      }
+    } catch(e) {}
+  }
 
   // Carregar obras
   try {
@@ -116,8 +128,11 @@ async function init() {
 async function carregarDados() {
   const obraId = document.getElementById('filtro-obra').value;
   try {
+    // Filtrar só tarefas das obras carregadas (mesma empresa)
+    const obraIds = obras.map(o => o.id);
     let q = db.from('cronograma_tarefas').select('*').order('ordem').order('data_inicio');
     if (obraId) q = q.eq('obra_id', obraId);
+    else if (obraIds.length > 0) q = q.in('obra_id', obraIds);
     const { data } = await q;
     tarefas = (data || []).filter(t => {
       const subs = t.subitens || [];
