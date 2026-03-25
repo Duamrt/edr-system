@@ -6,12 +6,74 @@ let cronTarefas = [];
 let cronGantt = null;
 let cronObraFiltro = '';
 let cronViewMode = 'Week';
+let cronExpandido = new Set();
+
+// ── ETAPAS PADRÃO COM SUB-ITENS ──────────────────────────
+const CRON_ETAPAS_PADRAO = [
+  { nome: 'Serviços Preliminares', dias: 15, subs: [
+    'Limpeza de Terreno', 'Gabarito', 'Locação da Obra', 'Tapume / Canteiro', 'Placa de Obra'
+  ]},
+  { nome: 'Fundação', dias: 30, subs: [
+    'Escavação de Sapatas', 'Concretagem Sapatas', 'Escavação de Baldrame', 'Embasamento',
+    'Armadura Baldrame', 'Forma Baldrame', 'Concreto Baldrame', 'Impermeabilização Baldrame',
+    'Tubulações de Esgoto'
+  ]},
+  { nome: 'Estrutura', dias: 45, subs: [
+    'Pilares', 'Vigas', 'Cintas', 'Laje', 'Escada'
+  ]},
+  { nome: 'Alvenaria', dias: 30, subs: [
+    'Alvenaria de Vedação', 'Vergas', 'Contravergas', 'Encunhamento'
+  ]},
+  { nome: 'Cobertura', dias: 15, subs: [
+    'Estrutura do Telhado', 'Telhas', 'Calhas e Rufos', 'Cumeeira'
+  ]},
+  { nome: 'Instalações Elétricas', dias: 20, subs: [
+    'Eletrodutos', 'Fiação', 'Quadro de Distribuição', 'Tomadas e Interruptores', 'Interfone / Automação'
+  ]},
+  { nome: 'Instalações Hidráulicas', dias: 20, subs: [
+    'Água Fria', 'Água Quente', 'Registros', 'Caixa d\'Água',
+    'Esgoto', 'Caixa de Gordura', 'Caixa de Passagem', 'Águas Pluviais'
+  ]},
+  { nome: 'Impermeabilização', dias: 10, subs: [
+    'Laje', 'Banheiros', 'Áreas Molhadas', 'Baldrames'
+  ]},
+  { nome: 'Revestimento Argamassa', dias: 25, subs: [
+    'Chapisco Interno', 'Reboco Interno', 'Chapisco Externo', 'Reboco Externo', 'Massa Corrida'
+  ]},
+  { nome: 'Forro', dias: 10, subs: [
+    'Forro de Gesso', 'Sancas / Tabicas', 'Forro PVC (áreas molhadas)'
+  ]},
+  { nome: 'Revestimento Cerâmico', dias: 20, subs: [
+    'Contrapiso', 'Piso Cerâmico / Porcelanato', 'Azulejo Banheiros', 'Azulejo Cozinha',
+    'Soleiras e Peitoris'
+  ]},
+  { nome: 'Esquadrias', dias: 10, subs: [
+    'Portas Internas', 'Porta de Entrada', 'Janelas', 'Batentes', 'Ferragens',
+    'Vidros', 'Box Banheiro'
+  ]},
+  { nome: 'Pintura', dias: 15, subs: [
+    'Selador', 'Massa PVA', 'Pintura Interna', 'Pintura Externa', 'Textura / Grafiato'
+  ]},
+  { nome: 'Louças e Metais', dias: 7, subs: [
+    'Vasos Sanitários', 'Pias / Lavatórios', 'Torneiras', 'Chuveiros', 'Acessórios Banheiro'
+  ]},
+  { nome: 'Acabamento Final', dias: 10, subs: [
+    'Rodapés', 'Arremates Gerais', 'Calafete', 'Espelhos Elétricos'
+  ]},
+  { nome: 'Área Externa', dias: 15, subs: [
+    'Muro', 'Portão', 'Calçada', 'Cisterna / Fossa', 'Paisagismo', 'Garagem'
+  ]},
+  { nome: 'Limpeza e Entrega', dias: 7, subs: [
+    'Limpeza Final Bruta', 'Limpeza Final Fina', 'Vistoria Interna', 'Entrega de Chaves'
+  ]}
+];
+
+// ── RENDER PRINCIPAL ─────────────────────────────────────
 
 async function renderCronograma() {
   const container = document.getElementById('cronograma-container');
   if (!container) return;
 
-  // Header com filtro de obra e controles
   const obrasOpts = obras.map(o => `<option value="${o.id}">${o.nome}</option>`).join('');
   container.innerHTML = `
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
@@ -48,6 +110,15 @@ async function cronCarregarTarefas() {
   cronRenderGantt();
 }
 
+// ── GANTT ────────────────────────────────────────────────
+
+function cronCalcProgresso(t) {
+  const subs = t.subitens || [];
+  if (subs.length === 0) return Number(t.progresso) || 0;
+  const feitos = subs.filter(s => s.feito).length;
+  return Math.round(feitos / subs.length * 100);
+}
+
 function cronRenderGantt() {
   const wrap = document.getElementById('cron-gantt-wrap');
   const vazio = document.getElementById('cron-vazio');
@@ -57,24 +128,23 @@ function cronRenderGantt() {
     wrap.style.display = 'none';
     if (vazio) vazio.classList.remove('hidden');
     cronGantt = null;
+    cronRenderLista();
     return;
   }
 
   wrap.style.display = '';
   if (vazio) vazio.classList.add('hidden');
 
-  // Mapear tarefas pro formato Frappe Gantt
   const idSet = new Set(cronTarefas.map(t => t.id));
   const tasks = cronTarefas.map(t => {
     const obraNome = obras.find(o => o.id === t.obra_id)?.nome || '';
-    // Só incluir dependência se o ID existe na lista
     const dep = t.dependencia && idSet.has(t.dependencia) ? t.dependencia : '';
     return {
       id: t.id,
       name: obraNome ? `${obraNome} — ${t.nome}` : t.nome,
       start: t.data_inicio,
       end: t.data_fim,
-      progress: Number(t.progresso) || 0,
+      progress: cronCalcProgresso(t),
       dependencies: dep,
       custom_class: 'cron-bar'
     };
@@ -87,87 +157,172 @@ function cronRenderGantt() {
       view_mode: cronViewMode,
       date_format: 'YYYY-MM-DD',
       language: 'ptBr',
-      on_click: task => cronAbrirModal(task.id),
+      on_click: task => cronToggleExpand(task.id),
       on_date_change: (task, start, end) => cronAtualizarDatas(task.id, start, end),
       on_progress_change: (task, progress) => cronAtualizarProgresso(task.id, progress),
       custom_popup_html: task => {
         const t = cronTarefas.find(x => x.id === task.id);
         const obraNome = t ? (obras.find(o => o.id === t.obra_id)?.nome || '') : '';
+        const subs = t?.subitens || [];
+        const feitos = subs.filter(s => s.feito).length;
         return `<div class="cron-popup">
           <div style="font-weight:700;margin-bottom:4px;">${task.name}</div>
-          ${obraNome ? `<div style="font-size:11px;color:#8b8fa0;margin-bottom:4px;">🏗 ${obraNome}</div>` : ''}
+          ${obraNome ? `<div style="font-size:11px;color:#8b8fa0;margin-bottom:4px;">${obraNome}</div>` : ''}
           <div style="font-size:12px;">${formatDateBR(task._start)} → ${formatDateBR(task._end)}</div>
-          <div style="font-size:12px;margin-top:2px;">Progresso: ${Math.round(task.progress)}%</div>
+          <div style="font-size:12px;margin-top:2px;">${subs.length ? `${feitos}/${subs.length} itens` : `${Math.round(task.progress)}%`}</div>
         </div>`;
       }
     });
-    // Forçar tema escuro nos elementos SVG (Frappe Gantt aplica inline styles)
     setTimeout(() => cronAplicarTemaEscuro(wrap), 50);
   } catch(e) {
     console.error('Gantt render error:', e);
     wrap.innerHTML = '<div style="padding:20px;color:#ef4444;text-align:center;">Erro ao renderizar: ' + e.message + '</div>';
   }
 
-  // Renderizar lista de tarefas editáveis
+  cronRenderLista();
+}
+
+// ── LISTA DE TAREFAS COM CHECKLIST ───────────────────────
+
+function cronToggleExpand(id) {
+  if (cronExpandido.has(id)) cronExpandido.delete(id);
+  else cronExpandido.add(id);
   cronRenderLista();
 }
 
 function cronRenderLista() {
   const lista = document.getElementById('cron-lista');
-  if (!lista || cronTarefas.length === 0) { if (lista) lista.innerHTML = ''; return; }
+  if (!lista) return;
+  if (cronTarefas.length === 0) { lista.innerHTML = ''; return; }
+
+  const totalGeral = cronTarefas.reduce((a, t) => a + (t.subitens || []).length, 0);
+  const feitosGeral = cronTarefas.reduce((a, t) => a + (t.subitens || []).filter(s => s.feito).length, 0);
+  const progGeral = totalGeral > 0 ? Math.round(feitosGeral / totalGeral * 100) : 0;
 
   const rows = cronTarefas.map(t => {
     const obra = obras.find(o => o.id === t.obra_id);
-    const prog = Math.round(Number(t.progresso) || 0);
+    const subs = t.subitens || [];
+    const feitos = subs.filter(s => s.feito).length;
+    const prog = subs.length > 0 ? Math.round(feitos / subs.length * 100) : Math.round(Number(t.progresso) || 0);
     const inicio = t.data_inicio ? new Date(t.data_inicio + 'T00:00:00').toLocaleDateString('pt-BR') : '';
     const fim = t.data_fim ? new Date(t.data_fim + 'T00:00:00').toLocaleDateString('pt-BR') : '';
-    return `<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.04);flex-wrap:wrap;" class="cron-lista-item">
-      <div style="flex:1;min-width:150px;">
-        <div style="font-size:13px;color:#e2e4e9;font-weight:500;">${t.nome}</div>
-        <div style="font-size:11px;color:#8b8fa0;">${obra?.nome || ''}</div>
-      </div>
-      <div style="font-size:11px;color:#8b8fa0;min-width:130px;">${inicio} → ${fim}</div>
-      <div style="min-width:80px;">
-        <div style="background:rgba(255,255,255,0.06);border-radius:4px;height:6px;overflow:hidden;">
-          <div style="width:${prog}%;height:100%;background:#4ade80;border-radius:4px;"></div>
+    const aberto = cronExpandido.has(t.id);
+    const corProg = prog >= 100 ? '#4ade80' : prog >= 50 ? '#fbbf24' : prog > 0 ? '#f97316' : '#ef4444';
+
+    let subsHtml = '';
+    if (aberto && subs.length > 0) {
+      subsHtml = `<div style="padding:8px 12px 12px 32px;border-bottom:1px solid rgba(255,255,255,0.04);background:rgba(255,255,255,0.01);">
+        ${subs.map((s, i) => `
+          <label style="display:flex;align-items:center;gap:8px;padding:5px 0;cursor:pointer;${s.feito ? 'opacity:0.6;' : ''}">
+            <input type="checkbox" ${s.feito ? 'checked' : ''} onchange="cronToggleSub('${t.id}',${i})" style="accent-color:#4ade80;width:16px;height:16px;cursor:pointer;">
+            <span style="font-size:13px;color:${s.feito ? '#6b9e78' : '#e2e4e9'};${s.feito ? 'text-decoration:line-through;' : ''}">${s.nome}</span>
+          </label>
+        `).join('')}
+        <div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.04);display:flex;gap:6px;">
+          <button onclick="cronAddSub('${t.id}')" style="padding:4px 10px;border-radius:6px;border:1px solid rgba(74,222,128,0.2);background:rgba(74,222,128,0.06);color:#4ade80;font-size:11px;cursor:pointer;">+ Sub-item</button>
         </div>
-        <div style="font-size:10px;color:#8b8fa0;text-align:center;margin-top:2px;">${prog}%</div>
+      </div>`;
+    }
+
+    return `<div style="border-bottom:${aberto ? 'none' : '1px solid rgba(255,255,255,0.04)'};">
+      <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;cursor:pointer;flex-wrap:wrap;" class="cron-lista-item" onclick="cronToggleExpand('${t.id}')">
+        <div style="font-size:14px;transition:transform 0.2s;transform:rotate(${aberto ? '90' : '0'}deg);color:#8b8fa0;">${subs.length ? '▶' : '•'}</div>
+        <div style="flex:1;min-width:150px;">
+          <div style="font-size:13px;color:#e2e4e9;font-weight:500;">${t.nome}</div>
+          <div style="font-size:11px;color:#8b8fa0;">${obra?.nome || ''} · ${inicio} → ${fim}</div>
+        </div>
+        <div style="min-width:100px;display:flex;align-items:center;gap:6px;">
+          <div style="flex:1;background:rgba(255,255,255,0.06);border-radius:4px;height:6px;overflow:hidden;">
+            <div style="width:${prog}%;height:100%;background:${corProg};border-radius:4px;transition:width 0.3s;"></div>
+          </div>
+          <span style="font-size:11px;color:${corProg};font-weight:600;min-width:32px;text-align:right;">${subs.length ? `${feitos}/${subs.length}` : `${prog}%`}</span>
+        </div>
+        <div style="display:flex;gap:4px;" onclick="event.stopPropagation()">
+          <button onclick="cronAbrirModal('${t.id}')" style="padding:4px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);color:#e2e4e9;font-size:11px;cursor:pointer;">Editar</button>
+          <button onclick="cronExcluir('${t.id}')" style="padding:4px 10px;border-radius:6px;border:1px solid rgba(239,68,68,0.2);background:rgba(239,68,68,0.06);color:#ef4444;font-size:11px;cursor:pointer;">✕</button>
+        </div>
       </div>
-      <div style="display:flex;gap:4px;">
-        <button onclick="cronAbrirModal('${t.id}')" style="padding:4px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);color:#e2e4e9;font-size:11px;cursor:pointer;">Editar</button>
-        <button onclick="cronExcluir('${t.id}')" style="padding:4px 10px;border-radius:6px;border:1px solid rgba(239,68,68,0.2);background:rgba(239,68,68,0.06);color:#ef4444;font-size:11px;cursor:pointer;">✕</button>
-      </div>
+      ${subsHtml}
     </div>`;
   }).join('');
 
   lista.innerHTML = `
-    <div style="font-size:10px;color:var(--texto3);letter-spacing:2px;font-weight:700;margin-bottom:8px;padding-top:8px;">TAREFAS (${cronTarefas.length})</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding-top:8px;">
+      <div style="font-size:10px;color:var(--texto3);letter-spacing:2px;font-weight:700;">ETAPAS (${cronTarefas.length})</div>
+      ${totalGeral > 0 ? `<div style="display:flex;align-items:center;gap:6px;">
+        <div style="width:80px;background:rgba(255,255,255,0.06);border-radius:4px;height:6px;overflow:hidden;">
+          <div style="width:${progGeral}%;height:100%;background:#4ade80;border-radius:4px;"></div>
+        </div>
+        <span style="font-size:11px;color:#4ade80;font-weight:600;">${progGeral}% geral</span>
+      </div>` : ''}
+    </div>
     <div style="background:rgba(255,255,255,0.02);border-radius:10px;border:1px solid rgba(255,255,255,0.06);overflow:hidden;">
       ${rows}
     </div>
   `;
 }
 
+// ── CHECKLIST ACTIONS ────────────────────────────────────
+
+async function cronToggleSub(tarefaId, subIdx) {
+  const t = cronTarefas.find(x => x.id === tarefaId);
+  if (!t || !t.subitens || !t.subitens[subIdx]) return;
+
+  t.subitens[subIdx].feito = !t.subitens[subIdx].feito;
+  const prog = cronCalcProgresso(t);
+  t.progresso = prog;
+
+  try {
+    await sbPatch('cronograma_tarefas', `?id=eq.${tarefaId}`, {
+      subitens: t.subitens,
+      progresso: prog
+    });
+  } catch(e) { showToast('Erro ao salvar'); }
+
+  // Atualizar Gantt sem recarregar tudo
+  if (cronGantt) {
+    try {
+      const wrap = document.getElementById('cron-gantt-wrap');
+      cronRenderGantt();
+    } catch(e) {}
+  } else {
+    cronRenderLista();
+  }
+}
+
+async function cronAddSub(tarefaId) {
+  const nome = prompt('Nome do sub-item:');
+  if (!nome || !nome.trim()) return;
+
+  const t = cronTarefas.find(x => x.id === tarefaId);
+  if (!t) return;
+
+  if (!t.subitens) t.subitens = [];
+  t.subitens.push({ nome: nome.trim(), feito: false });
+  t.progresso = cronCalcProgresso(t);
+
+  try {
+    await sbPatch('cronograma_tarefas', `?id=eq.${tarefaId}`, {
+      subitens: t.subitens,
+      progresso: t.progresso
+    });
+    cronRenderLista();
+  } catch(e) { showToast('Erro ao adicionar sub-item'); }
+}
+
+// ── TEMA ESCURO SVG ──────────────────────────────────────
+
 function cronAplicarTemaEscuro(wrap) {
   if (!wrap) return;
-  // Grid background
   wrap.querySelectorAll('.grid-background').forEach(el => { el.setAttribute('fill', '#111113'); });
-  // Grid header
   wrap.querySelectorAll('.grid-header').forEach(el => { el.setAttribute('fill', '#161618'); });
-  // Grid rows
   wrap.querySelectorAll('.grid-row').forEach((el, i) => { el.setAttribute('fill', i % 2 === 0 ? '#111113' : '#0e0e10'); });
-  // Row lines
   wrap.querySelectorAll('.row-line').forEach(el => { el.setAttribute('stroke', 'rgba(255,255,255,0.04)'); });
-  // Ticks
   wrap.querySelectorAll('.tick').forEach(el => { el.setAttribute('stroke', 'rgba(255,255,255,0.06)'); });
-  // Today highlight
   wrap.querySelectorAll('.today-highlight').forEach(el => { el.setAttribute('fill', 'rgba(74,222,128,0.08)'); });
-  // Bars
   wrap.querySelectorAll('.bar').forEach(el => { el.setAttribute('fill', '#1a7a3a'); });
   wrap.querySelectorAll('.bar-progress').forEach(el => { el.setAttribute('fill', '#4ade80'); });
-  // Labels
   wrap.querySelectorAll('.bar-label').forEach(el => { el.setAttribute('fill', '#f0f0f0'); el.style.fill = '#f0f0f0'; });
-  // Date texts
   wrap.querySelectorAll('.upper-text').forEach(el => { el.setAttribute('fill', '#c0c4cc'); el.style.fill = '#c0c4cc'; });
   wrap.querySelectorAll('.lower-text').forEach(el => { el.setAttribute('fill', '#8b8fa0'); el.style.fill = '#8b8fa0'; });
 }
@@ -220,7 +375,6 @@ function cronAbrirModal(editId) {
   const t = editId ? cronTarefas.find(x => x.id === editId) : null;
   const obrasOpts = obras.map(o => `<option value="${o.id}" ${t && t.obra_id === o.id ? 'selected' : ''}>${o.nome}</option>`).join('');
 
-  // Tarefas da mesma obra pra dependência
   const depOpts = cronTarefas
     .filter(x => x.id !== editId)
     .map(x => {
@@ -230,6 +384,22 @@ function cronAbrirModal(editId) {
 
   const hoje = new Date().toISOString().split('T')[0];
   const em30 = new Date(Date.now() + 30*86400000).toISOString().split('T')[0];
+
+  // Sub-itens existentes pra edição
+  const subsExist = t?.subitens || [];
+  const subsHtml = subsExist.length > 0 ? `
+    <div style="border-top:1px solid var(--borda);margin:10px 0 6px;padding-top:8px;">
+      <div style="font-size:10px;color:var(--texto3);letter-spacing:2px;font-weight:700;margin-bottom:6px;">SUB-ITENS (${subsExist.length})</div>
+      <div id="cron-modal-subs" style="max-height:200px;overflow-y:auto;">
+        ${subsExist.map((s, i) => `
+          <div style="display:flex;align-items:center;gap:6px;padding:4px 0;">
+            <input type="text" value="${s.nome}" id="cron-sub-${i}" style="flex:1;padding:6px 10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:6px;color:var(--branco);font-size:12px;outline:none;font-family:inherit;">
+            <button onclick="cronRemoverSubModal(${i})" style="padding:4px 8px;border-radius:4px;border:1px solid rgba(239,68,68,0.2);background:rgba(239,68,68,0.06);color:#ef4444;font-size:11px;cursor:pointer;">✕</button>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  ` : '';
 
   const html = `
     <div class="modal-title"><span>${t ? '✏ EDITAR TAREFA' : '📅 NOVA TAREFA'}</span> <button class="modal-close" onclick="fecharModal('cron-tarefa')">✕</button></div>
@@ -245,23 +415,20 @@ function cronAbrirModal(editId) {
       <div class="field"><label>INÍCIO *</label><input type="date" id="cron-inicio" value="${t ? t.data_inicio : hoje}"></div>
       <div class="field"><label>FIM *</label><input type="date" id="cron-fim" value="${t ? t.data_fim : em30}"></div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-      <div class="field"><label>PROGRESSO (%)</label><input type="number" id="cron-progresso" min="0" max="100" value="${t ? Math.round(t.progresso) : 0}"></div>
-      <div class="field"><label>DEPENDE DE</label>
-        <select id="cron-dep" style="width:100%;padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;color:var(--branco);font-size:14px;outline:none;font-family:inherit;">
-          <option value="">Nenhuma</option>
-          ${depOpts}
-        </select>
-      </div>
+    <div class="field"><label>DEPENDE DE</label>
+      <select id="cron-dep" style="width:100%;padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;color:var(--branco);font-size:14px;outline:none;font-family:inherit;">
+        <option value="">Nenhuma</option>
+        ${depOpts}
+      </select>
     </div>
-    <div style="display:flex;gap:8px;margin-top:4px;">
+    ${subsHtml}
+    <div style="display:flex;gap:8px;margin-top:8px;">
       <button class="btn-save" onclick="cronSalvar()" style="flex:1;">SALVAR</button>
       ${t ? `<button class="btn-outline" onclick="cronExcluir('${editId}')" style="color:#ef4444;border-color:rgba(239,68,68,0.3);">EXCLUIR</button>` : ''}
       <button class="btn-outline" onclick="fecharModal('cron-tarefa')">CANCELAR</button>
     </div>
   `;
 
-  // Reusar modal genérico ou criar dinâmico
   let overlay = document.getElementById('modal-cron-tarefa');
   if (!overlay) {
     overlay = document.createElement('div');
@@ -278,6 +445,24 @@ function cronAbrirModal(editId) {
   }
   overlay.querySelector('.modal').innerHTML = html;
   overlay.classList.remove('hidden');
+
+  // Guardar subs pra edição
+  window._cronSubsEdit = [...subsExist];
+}
+
+function cronRemoverSubModal(idx) {
+  if (!window._cronSubsEdit) return;
+  window._cronSubsEdit.splice(idx, 1);
+  // Re-renderizar subs no modal
+  const container = document.getElementById('cron-modal-subs');
+  if (container) {
+    container.innerHTML = window._cronSubsEdit.map((s, i) => `
+      <div style="display:flex;align-items:center;gap:6px;padding:4px 0;">
+        <input type="text" value="${s.nome}" id="cron-sub-${i}" style="flex:1;padding:6px 10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:6px;color:var(--branco);font-size:12px;outline:none;font-family:inherit;">
+        <button onclick="cronRemoverSubModal(${i})" style="padding:4px 8px;border-radius:4px;border:1px solid rgba(239,68,68,0.2);background:rgba(239,68,68,0.06);color:#ef4444;font-size:11px;cursor:pointer;">✕</button>
+      </div>
+    `).join('');
+  }
 }
 
 async function cronSalvar() {
@@ -286,19 +471,27 @@ async function cronSalvar() {
   const nome = document.getElementById('cron-nome').value.trim();
   const inicio = document.getElementById('cron-inicio').value;
   const fim = document.getElementById('cron-fim').value;
-  const progresso = Number(document.getElementById('cron-progresso').value) || 0;
   const dep = document.getElementById('cron-dep').value || null;
 
   if (!obra || !nome || !inicio || !fim) { showToast('Preencha obra, tarefa, início e fim'); return; }
   if (fim < inicio) { showToast('Data fim deve ser após início'); return; }
+
+  // Atualizar nomes dos sub-itens editados
+  const subs = (window._cronSubsEdit || []).map((s, i) => {
+    const input = document.getElementById(`cron-sub-${i}`);
+    return { nome: input ? input.value.trim() : s.nome, feito: s.feito };
+  }).filter(s => s.nome);
+
+  const prog = subs.length > 0 ? Math.round(subs.filter(s => s.feito).length / subs.length * 100) : 0;
 
   const dados = {
     obra_id: obra,
     nome: nome,
     data_inicio: inicio,
     data_fim: fim,
-    progresso: progresso,
-    dependencia: dep
+    progresso: prog,
+    dependencia: dep,
+    subitens: subs
   };
 
   try {
@@ -326,7 +519,7 @@ async function cronExcluir(id) {
   } catch(e) { showToast('Erro ao excluir'); }
 }
 
-// ── Template rápido: criar etapas padrão pra uma obra ────
+// ── GERADOR DE ETAPAS PADRÃO ─────────────────────────────
 
 function cronGerarEtapas() {
   const obraId = document.getElementById('cron-filtro-obra')?.value;
@@ -335,47 +528,34 @@ function cronGerarEtapas() {
   const obra = obras.find(o => o.id === obraId);
   if (!obra) return;
 
-  const etapasBase = [
-    { nome: 'Serviços Preliminares', dias: 15 },
-    { nome: 'Fundação', dias: 30 },
-    { nome: 'Estrutura', dias: 45 },
-    { nome: 'Alvenaria', dias: 30 },
-    { nome: 'Cobertura', dias: 15 },
-    { nome: 'Instalações Elétricas', dias: 20 },
-    { nome: 'Instalações Hidráulicas', dias: 20 },
-    { nome: 'Revestimento Argamassa', dias: 25 },
-    { nome: 'Revestimento Cerâmico', dias: 20 },
-    { nome: 'Esquadrias', dias: 10 },
-    { nome: 'Pintura', dias: 15 },
-    { nome: 'Acabamento Final', dias: 15 },
-    { nome: 'Limpeza e Entrega', dias: 7 }
-  ];
-
-  // Verificar se já tem etapas pra essa obra
   const existentes = cronTarefas.filter(t => t.obra_id === obraId);
   if (existentes.length > 0) {
     if (!confirm(`Já existem ${existentes.length} tarefas pra ${obra.nome}. Adicionar etapas padrão mesmo assim?`)) return;
   }
 
-  cronAbrirModalEtapas(obraId, etapasBase);
+  cronAbrirModalEtapas(obraId);
 }
 
-function cronAbrirModalEtapas(obraId, etapas) {
+function cronAbrirModalEtapas(obraId) {
   const obra = obras.find(o => o.id === obraId);
   const hoje = new Date().toISOString().split('T')[0];
 
   const html = `
-    <div class="modal-title"><span>⚡ GERAR CRONOGRAMA</span> <button class="modal-close" onclick="fecharModal('cron-etapas')">✕</button></div>
+    <div class="modal-title"><span>⚡ GERAR CRONOGRAMA COMPLETO</span> <button class="modal-close" onclick="fecharModal('cron-etapas')">✕</button></div>
     <div style="font-size:12px;color:var(--texto2);margin-bottom:12px;padding:8px;background:rgba(74,222,128,0.05);border:1px solid rgba(74,222,128,0.1);border-radius:8px;">
-      Gerar ${etapas.length} etapas padrão para <strong>${obra?.nome || ''}</strong>.<br>As datas são sequenciais a partir da data de início.
+      Gerar ${CRON_ETAPAS_PADRAO.length} etapas com sub-itens para <strong>${obra?.nome || ''}</strong>.<br>
+      Cada etapa vem com checklist de serviços. Progresso calcula automaticamente.
     </div>
     <div class="field"><label>DATA DE INÍCIO DA OBRA</label><input type="date" id="cron-etapas-inicio" value="${hoje}"></div>
-    <div style="max-height:300px;overflow-y:auto;margin:8px 0;">
-      ${etapas.map((e, i) => `
-        <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.04);">
-          <input type="checkbox" id="cron-et-${i}" checked style="accent-color:#4ade80;">
-          <label for="cron-et-${i}" style="flex:1;font-size:13px;color:var(--texto1);cursor:pointer;">${e.nome}</label>
-          <span style="font-size:11px;color:var(--texto3);">${e.dias}d</span>
+    <div style="max-height:350px;overflow-y:auto;margin:8px 0;">
+      ${CRON_ETAPAS_PADRAO.map((e, i) => `
+        <div style="border-bottom:1px solid rgba(255,255,255,0.04);padding:6px 0;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <input type="checkbox" id="cron-et-${i}" checked style="accent-color:#4ade80;">
+            <label for="cron-et-${i}" style="flex:1;font-size:13px;color:var(--texto1);cursor:pointer;font-weight:500;">${e.nome}</label>
+            <span style="font-size:11px;color:var(--texto3);">${e.dias}d · ${e.subs.length} itens</span>
+          </div>
+          <div style="padding-left:28px;font-size:11px;color:#6b7280;margin-top:2px;">${e.subs.join(' · ')}</div>
         </div>
       `).join('')}
     </div>
@@ -393,50 +573,50 @@ function cronAbrirModalEtapas(obraId, etapas) {
     overlay.onclick = e => { if (e.target === overlay) fecharModal('cron-etapas'); };
     const modal = document.createElement('div');
     modal.className = 'modal';
-    modal.style.maxWidth = '500px';
+    modal.style.maxWidth = '560px';
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
   }
   overlay.querySelector('.modal').innerHTML = html;
   overlay.classList.remove('hidden');
-
-  // Guardar etapas no window pra callback
-  window._cronEtapasBase = etapas;
 }
 
 async function cronSalvarEtapas(obraId) {
   const inicioStr = document.getElementById('cron-etapas-inicio')?.value;
   if (!inicioStr) { showToast('Informe a data de início'); return; }
 
-  const etapas = window._cronEtapasBase || [];
   let dataAtual = new Date(inicioStr + 'T00:00:00');
   let criadas = 0;
   let anteriorId = null;
 
-  for (let i = 0; i < etapas.length; i++) {
+  for (let i = 0; i < CRON_ETAPAS_PADRAO.length; i++) {
     const check = document.getElementById(`cron-et-${i}`);
     if (!check?.checked) continue;
 
+    const etapa = CRON_ETAPAS_PADRAO[i];
     const inicio = dataAtual.toISOString().split('T')[0];
-    dataAtual.setDate(dataAtual.getDate() + etapas[i].dias);
+    dataAtual.setDate(dataAtual.getDate() + etapa.dias);
     const fim = dataAtual.toISOString().split('T')[0];
+
+    const subitens = etapa.subs.map(s => ({ nome: s, feito: false }));
 
     try {
       const r = await sbPost('cronograma_tarefas', {
         obra_id: obraId,
-        nome: etapas[i].nome,
+        nome: etapa.nome,
         data_inicio: inicio,
         data_fim: fim,
         progresso: 0,
         dependencia: anteriorId,
-        ordem: i
+        ordem: i,
+        subitens: subitens
       });
       if (r && r[0]?.id) anteriorId = r[0].id;
       criadas++;
-    } catch(e) {}
+    } catch(e) { console.error('Erro etapa', etapa.nome, e); }
   }
 
-  showToast(`${criadas} etapas criadas`);
+  showToast(`${criadas} etapas criadas com sub-itens`);
   fecharModal('cron-etapas');
   await cronCarregarTarefas();
 }
