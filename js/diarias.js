@@ -436,28 +436,32 @@ async function initDiarias() {
 // ────────────────────────────────────────────
 async function diarCarregarQuinzenas() {
   try {
-    const todas = await sbGet('diarias_quinzenas', '?or=(excluida.is.null,excluida.eq.false)&order=data_inicio.desc&limit=20');
-    diarQuinzenas = Array.isArray(todas) ? todas : [];
-  } catch(e) { diarQuinzenas = []; }
+    const todas = await sbGet('diarias_quinzenas', '?order=data_inicio.desc&limit=30');
+    const arr = Array.isArray(todas) ? todas : [];
+    // Filtrar excluídas no JS (mais confiável que filtro PostgREST)
+    diarQuinzenas = arr.filter(q => !q.excluida);
+    console.log('[DIÁRIAS] Quinzenas carregadas:', diarQuinzenas.length, 'de', arr.length, 'total. IDs:', diarQuinzenas.map(q => q.id + ' → ' + q.label).join(' | '));
+  } catch(e) { console.error('[DIÁRIAS] Erro ao carregar quinzenas:', e); diarQuinzenas = []; }
 
-  // Deduplicar quinzenas com mesmo período OU label normalizado igual (manter a mais antiga)
+  // Deduplicar: mesmo data_inicio+data_fim → marcar duplicatas como excluídas
   if (diarQuinzenas.length > 1) {
     const seen = {};
     const duplicadas = [];
     for (const q of diarQuinzenas) {
-      const chaveData = q.data_inicio + '|' + q.data_fim;
-      const chaveLabel = (q.label || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-      const chave = chaveData + '||' + chaveLabel;
-      if (seen[chaveData] || seen[chave]) {
+      const chave = q.data_inicio + '|' + q.data_fim;
+      if (seen[chave]) {
         duplicadas.push(q.id);
+        console.log('[DIÁRIAS] Duplicata detectada:', q.id, q.label, '(mantendo', seen[chave].id, ')');
       } else {
-        seen[chaveData] = q;
         seen[chave] = q;
       }
     }
     if (duplicadas.length) {
       for (const id of duplicadas) {
-        try { await sbPatch('diarias_quinzenas', '?id=eq.' + id, { excluida: true, excluida_em: new Date().toISOString() }); } catch(e) {}
+        try {
+          await sbPatch('diarias_quinzenas', '?id=eq.' + id, { excluida: true, excluida_em: new Date().toISOString() });
+          console.log('[DIÁRIAS] Excluída duplicata:', id);
+        } catch(e) { console.error('[DIÁRIAS] Falha ao excluir duplicata:', id, e); }
       }
       diarQuinzenas = diarQuinzenas.filter(q => !duplicadas.includes(q.id));
     }
