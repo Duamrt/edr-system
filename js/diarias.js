@@ -436,19 +436,22 @@ async function initDiarias() {
 // ────────────────────────────────────────────
 async function diarCarregarQuinzenas() {
   try {
-    const todas = await sbGet('diarias_quinzenas', '?order=data_inicio.desc&limit=20');
-    diarQuinzenas = Array.isArray(todas) ? todas.filter(q => !q.excluida) : [];
+    const todas = await sbGet('diarias_quinzenas', '?or=(excluida.is.null,excluida.eq.false)&order=data_inicio.desc&limit=20');
+    diarQuinzenas = Array.isArray(todas) ? todas : [];
   } catch(e) { diarQuinzenas = []; }
 
-  // Deduplicar quinzenas com mesmo período (manter a mais antiga/com dados)
+  // Deduplicar quinzenas com mesmo período OU label normalizado igual (manter a mais antiga)
   if (diarQuinzenas.length > 1) {
     const seen = {};
     const duplicadas = [];
     for (const q of diarQuinzenas) {
-      const chave = q.data_inicio + '|' + q.data_fim;
-      if (seen[chave]) {
-        duplicadas.push(q.id); // marcar a duplicata mais nova pra excluir
+      const chaveData = q.data_inicio + '|' + q.data_fim;
+      const chaveLabel = (q.label || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+      const chave = chaveData + '||' + chaveLabel;
+      if (seen[chaveData] || seen[chave]) {
+        duplicadas.push(q.id);
       } else {
+        seen[chaveData] = q;
         seen[chave] = q;
       }
     }
@@ -474,33 +477,39 @@ async function diarCarregarQuinzenas() {
   await diarCarregarRegistros();
 }
 
+let _criacaoQuinzenaEmAndamento = false;
 async function diarCriarQuinzenaAuto() {
-  if (!_companyId) {
-    if (typeof loadCompanyId === 'function') await loadCompanyId();
-    if (!_companyId) { showToast('Erro: empresa nao carregada. Recarregue a pagina.'); return; }
-  }
-  const h = new Date();
-  const ano = h.getFullYear(), mes = h.getMonth() + 1;
-  const mesStr = h.toLocaleString('pt-BR', { month: 'long' }).toUpperCase();
-  const q = h.getDate() <= 15 ? 1 : 2;
-  const label  = `${q===1?'1\xaa':'2\xaa'} QUINZENA \xb7 ${mesStr} ${ano}`;
-  const inicio = q===1 ? `${ano}-${String(mes).padStart(2,'0')}-01` : `${ano}-${String(mes).padStart(2,'0')}-16`;
-  const fim    = q===1 ? `${ano}-${String(mes).padStart(2,'0')}-15` : new Date(ano,mes,0).toISOString().split('T')[0];
-  // Verificar se já existe antes de criar (evita duplicata)
+  if (_criacaoQuinzenaEmAndamento) return; // evita chamada dupla
+  _criacaoQuinzenaEmAndamento = true;
   try {
-    const existentes = await sbGet('diarias_quinzenas', `?data_inicio=eq.${inicio}&data_fim=eq.${fim}&excluida=is.false`);
-    if (existentes && existentes.length > 0) {
-      diarQuinzenas = existentes;
-      diarQuinzenaAtiva = existentes[0];
-      diarAtualizarSelectQuinzena();
-      await diarCarregarRegistros();
-      return;
+    if (!_companyId) {
+      if (typeof loadCompanyId === 'function') await loadCompanyId();
+      if (!_companyId) { showToast('Erro: empresa nao carregada. Recarregue a pagina.'); _criacaoQuinzenaEmAndamento = false; return; }
     }
-  } catch(e) { /* segue pra criar */ }
-  try {
-    const [nova] = await sbPost('diarias_quinzenas', { label, data_inicio: inicio, data_fim: fim });
-    diarQuinzenas = [nova]; diarQuinzenaAtiva = nova;
-  } catch(e) { showToast('Erro ao criar quinzena: ' + (e.message || '')); }
+    const h = new Date();
+    const ano = h.getFullYear(), mes = h.getMonth() + 1;
+    const mesStr = h.toLocaleString('pt-BR', { month: 'long' }).toUpperCase();
+    const q = h.getDate() <= 15 ? 1 : 2;
+    const label  = `${q===1?'1\xaa':'2\xaa'} QUINZENA \xb7 ${mesStr} ${ano}`;
+    const inicio = q===1 ? `${ano}-${String(mes).padStart(2,'0')}-01` : `${ano}-${String(mes).padStart(2,'0')}-16`;
+    const fim    = q===1 ? `${ano}-${String(mes).padStart(2,'0')}-15` : new Date(ano,mes,0).toISOString().split('T')[0];
+    // Verificar se já existe antes de criar (evita duplicata) — aceita null E false pra excluida
+    try {
+      const existentes = await sbGet('diarias_quinzenas', `?data_inicio=gte.${inicio}&data_fim=lte.${fim}&or=(excluida.is.null,excluida.eq.false)`);
+      if (existentes && existentes.length > 0) {
+        diarQuinzenas = existentes;
+        diarQuinzenaAtiva = existentes[0];
+        diarAtualizarSelectQuinzena();
+        await diarCarregarRegistros();
+        _criacaoQuinzenaEmAndamento = false;
+        return;
+      }
+    } catch(e) { /* segue pra criar */ }
+    try {
+      const [nova] = await sbPost('diarias_quinzenas', { label, data_inicio: inicio, data_fim: fim });
+      diarQuinzenas = [nova]; diarQuinzenaAtiva = nova;
+    } catch(e) { showToast('Erro ao criar quinzena: ' + (e.message || '')); }
+  } finally { _criacaoQuinzenaEmAndamento = false; }
   diarAtualizarSelectQuinzena();
   await diarCarregarRegistros();
 }
