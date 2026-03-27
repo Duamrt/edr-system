@@ -455,7 +455,6 @@ async function diarCarregarQuinzenas() {
 
 async function diarCriarQuinzenaAuto() {
   if (!_companyId) {
-    // Aguardar loadCompanyId se ainda não carregou
     if (typeof loadCompanyId === 'function') await loadCompanyId();
     if (!_companyId) { showToast('Erro: empresa nao carregada. Recarregue a pagina.'); return; }
   }
@@ -466,6 +465,17 @@ async function diarCriarQuinzenaAuto() {
   const label  = `${q===1?'1\xaa':'2\xaa'} QUINZENA \xb7 ${mesStr} ${ano}`;
   const inicio = q===1 ? `${ano}-${String(mes).padStart(2,'0')}-01` : `${ano}-${String(mes).padStart(2,'0')}-16`;
   const fim    = q===1 ? `${ano}-${String(mes).padStart(2,'0')}-15` : new Date(ano,mes,0).toISOString().split('T')[0];
+  // Verificar se já existe antes de criar (evita duplicata)
+  try {
+    const existentes = await sbGet('diarias_quinzenas', `?data_inicio=eq.${inicio}&data_fim=eq.${fim}&excluida=is.false`);
+    if (existentes && existentes.length > 0) {
+      diarQuinzenas = existentes;
+      diarQuinzenaAtiva = existentes[0];
+      diarAtualizarSelectQuinzena();
+      await diarCarregarRegistros();
+      return;
+    }
+  } catch(e) { /* segue pra criar */ }
   try {
     const [nova] = await sbPost('diarias_quinzenas', { label, data_inicio: inicio, data_fim: fim });
     diarQuinzenas = [nova]; diarQuinzenaAtiva = nova;
