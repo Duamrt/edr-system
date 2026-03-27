@@ -439,6 +439,27 @@ async function diarCarregarQuinzenas() {
     const todas = await sbGet('diarias_quinzenas', '?order=data_inicio.desc&limit=20');
     diarQuinzenas = Array.isArray(todas) ? todas.filter(q => !q.excluida) : [];
   } catch(e) { diarQuinzenas = []; }
+
+  // Deduplicar quinzenas com mesmo período (manter a mais antiga/com dados)
+  if (diarQuinzenas.length > 1) {
+    const seen = {};
+    const duplicadas = [];
+    for (const q of diarQuinzenas) {
+      const chave = q.data_inicio + '|' + q.data_fim;
+      if (seen[chave]) {
+        duplicadas.push(q.id); // marcar a duplicata mais nova pra excluir
+      } else {
+        seen[chave] = q;
+      }
+    }
+    if (duplicadas.length) {
+      for (const id of duplicadas) {
+        try { await sbPatch('diarias_quinzenas', '?id=eq.' + id, { excluida: true, excluida_em: new Date().toISOString() }); } catch(e) {}
+      }
+      diarQuinzenas = diarQuinzenas.filter(q => !duplicadas.includes(q.id));
+    }
+  }
+
   if (!diarQuinzenas.length) {
     if (usuarioAtual?.perfil === 'admin') await diarCriarQuinzenaAuto();
     else showToast('Nenhuma quinzena encontrada. Peça ao admin para criar.');
