@@ -1572,7 +1572,7 @@ function diarRenderFolha() {
     if (!porFunc[r.funcionario]) porFunc[r.funcionario] = { nome: r.funcionario, cargo: r.cargo||'', diaria: r.diaria_base, fracoes: 0, valor: 0, obras: {} };
     porFunc[r.funcionario].fracoes += Number(r.total_fracoes||0);
     porFunc[r.funcionario].valor += Number(r.valor||0);
-    periodos.forEach(p => { porFunc[r.funcionario].obras[p.obra] = (porFunc[r.funcionario].obras[p.obra]||0) + (p.fracao||0); });
+    periodos.forEach(p => { const obra = (p.obra||'').toUpperCase().trim(); porFunc[r.funcionario].obras[obra] = (porFunc[r.funcionario].obras[obra]||0) + (p.fracao||0); });
   });
   const ordem = { 'Mestre':1, 'Pedreiro':2, 'Betoneiro':3, 'Servente':4 };
   const funcs = Object.values(porFunc).sort((a,b) => (ordem[a.cargo]||9) - (ordem[b.cargo]||9));
@@ -1727,9 +1727,9 @@ function diarRenderExtras() {
 function diarCalcCustoObra() {
   const regs = diarGetRegistrosQuinzena();
   const porObra = {};
-  regs.forEach(r => { r.periodos.forEach(p => { porObra[p.obra] = (porObra[p.obra]||0) + r.diaria_base * p.fracao; }); });
+  regs.forEach(r => { r.periodos.forEach(p => { const obra = (p.obra||'').toUpperCase().trim(); porObra[obra] = (porObra[obra]||0) + r.diaria_base * p.fracao; }); });
   // Somar extras por obra
-  diarGetExtrasQuinzena().forEach(e => { porObra[e.obra] = (porObra[e.obra]||0) + e.valor; });
+  diarGetExtrasQuinzena().forEach(e => { const obra = (e.obra||'').toUpperCase().trim(); porObra[obra] = (porObra[obra]||0) + e.valor; });
   return porObra;
 }
 
@@ -1837,7 +1837,7 @@ function diarGerarPDF(regs) {
     if (!porFunc[r.funcionario]) porFunc[r.funcionario] = { nome: r.funcionario, cargo: r.cargo || '', diaria: r.diaria_base, fracoes: 0, valor: 0, obras: {} };
     porFunc[r.funcionario].fracoes += r.total_fracoes;
     porFunc[r.funcionario].valor += r.valor;
-    r.periodos.forEach(p => { porFunc[r.funcionario].obras[p.obra] = (porFunc[r.funcionario].obras[p.obra] || 0) + p.fracao; });
+    r.periodos.forEach(p => { const obra = (p.obra||'').toUpperCase().trim(); porFunc[r.funcionario].obras[obra] = (porFunc[r.funcionario].obras[obra] || 0) + p.fracao; });
   });
   const funcs = Object.values(porFunc).sort((a, b) => (ordem[a.cargo] || 9) - (ordem[b.cargo] || 9));
   const totalGeral = funcs.reduce((s, f) => s + f.valor, 0);
