@@ -443,17 +443,21 @@ async function diarCarregarQuinzenas() {
     console.log('[DIÁRIAS] Quinzenas carregadas:', diarQuinzenas.length, 'de', arr.length, 'total. IDs:', diarQuinzenas.map(q => q.id + ' → ' + q.label).join(' | '));
   } catch(e) { console.error('[DIÁRIAS] Erro ao carregar quinzenas:', e); diarQuinzenas = []; }
 
-  // Deduplicar: mesmo data_inicio+data_fim → marcar duplicatas como excluídas
+  // Deduplicar: mesmo data_inicio+data_fim OU mesmo label → marcar duplicatas como excluídas
   if (diarQuinzenas.length > 1) {
-    const seen = {};
+    const seenDatas = {};
+    const seenLabels = {};
     const duplicadas = [];
     for (const q of diarQuinzenas) {
-      const chave = q.data_inicio + '|' + q.data_fim;
-      if (seen[chave]) {
+      const chaveData = q.data_inicio + '|' + q.data_fim;
+      const chaveLabel = (q.label || '').trim().toUpperCase();
+      if (seenDatas[chaveData] || seenLabels[chaveLabel]) {
+        const mantido = seenDatas[chaveData] || seenLabels[chaveLabel];
         duplicadas.push(q.id);
-        console.log('[DIÁRIAS] Duplicata detectada:', q.id, q.label, '(mantendo', seen[chave].id, ')');
+        console.log('[DIÁRIAS] Duplicata detectada:', q.id, q.label, '(mantendo', mantido.id, ')');
       } else {
-        seen[chave] = q;
+        seenDatas[chaveData] = q;
+        seenLabels[chaveLabel] = q;
       }
     }
     if (duplicadas.length) {
@@ -497,10 +501,11 @@ async function diarCriarQuinzenaAuto() {
     const label  = `${q===1?'1\xaa':'2\xaa'} QUINZENA \xb7 ${mesStr} ${ano}`;
     const inicio = q===1 ? `${ano}-${String(mes).padStart(2,'0')}-01` : `${ano}-${String(mes).padStart(2,'0')}-16`;
     const fim    = q===1 ? `${ano}-${String(mes).padStart(2,'0')}-15` : new Date(ano,mes,0).toISOString().split('T')[0];
-    // Verificar se já existe antes de criar (evita duplicata) — aceita null E false pra excluida
+    // Verificar se já existe antes de criar (evita duplicata)
     try {
-      const existentes = await sbGet('diarias_quinzenas', `?data_inicio=gte.${inicio}&data_fim=lte.${fim}&or=(excluida.is.null,excluida.eq.false)`);
-      if (existentes && existentes.length > 0) {
+      const todas = await sbGet('diarias_quinzenas', '?order=data_inicio.desc&limit=20');
+      const existentes = (Array.isArray(todas) ? todas : []).filter(q => !q.excluida && q.data_inicio >= inicio && q.data_fim <= fim);
+      if (existentes.length > 0) {
         diarQuinzenas = existentes;
         diarQuinzenaAtiva = existentes[0];
         diarAtualizarSelectQuinzena();
