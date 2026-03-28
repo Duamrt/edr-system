@@ -136,6 +136,29 @@ function diarAbrirCalendarioFunc(nome) {
 
 
 // ────────────────────────────────────────────
+// NORMALIZAR NOME DE OBRA (resolve aliases → nome cadastrado)
+// ────────────────────────────────────────────
+function diarNormalizarObra(obraNome) {
+  if (!obraNome) return 'NÃO ESPECIFICADA';
+  const t = obraNome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+  // Tentar match exato com obras cadastradas
+  if (Array.isArray(obras)) {
+    for (const o of obras) {
+      const n = o.nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      if (t === n) return o.nome.toUpperCase();
+      // Match parcial: obra "Josenaldo Junior" contém "junior"
+      if (n.includes(t) || t.includes(n)) return o.nome.toUpperCase();
+      // Match por primeiro nome
+      const primeiro = n.split(' ')[0];
+      if (primeiro.length >= 3 && t === primeiro) return o.nome.toUpperCase();
+      // Match: input contém o primeiro nome da obra
+      if (primeiro.length >= 4 && t.includes(primeiro)) return o.nome.toUpperCase();
+    }
+  }
+  return obraNome.toUpperCase().trim();
+}
+
+// ────────────────────────────────────────────
 // DADOS DOS FUNCIONÁRIOS (dinâmico — Supabase)
 // ────────────────────────────────────────────
 let DIAR_FUNCIONARIOS = {};
@@ -1611,7 +1634,7 @@ function diarRenderFolha() {
     if (!porFunc[r.funcionario]) porFunc[r.funcionario] = { nome: r.funcionario, cargo: r.cargo||'', diaria: r.diaria_base, fracoes: 0, valor: 0, obras: {} };
     porFunc[r.funcionario].fracoes += Number(r.total_fracoes||0);
     porFunc[r.funcionario].valor += Number(r.valor||0);
-    periodos.forEach(p => { const obra = (p.obra||'').toUpperCase().trim(); porFunc[r.funcionario].obras[obra] = (porFunc[r.funcionario].obras[obra]||0) + (p.fracao||0); });
+    periodos.forEach(p => { const obra = diarNormalizarObra(p.obra); porFunc[r.funcionario].obras[obra] = (porFunc[r.funcionario].obras[obra]||0) + (p.fracao||0); });
   });
   const ordem = { 'Mestre':1, 'Pedreiro':2, 'Betoneiro':3, 'Servente':4 };
   const funcs = Object.values(porFunc).sort((a,b) => (ordem[a.cargo]||9) - (ordem[b.cargo]||9));
@@ -1766,9 +1789,9 @@ function diarRenderExtras() {
 function diarCalcCustoObra() {
   const regs = diarGetRegistrosQuinzena();
   const porObra = {};
-  regs.forEach(r => { r.periodos.forEach(p => { const obra = (p.obra||'').toUpperCase().trim(); porObra[obra] = (porObra[obra]||0) + r.diaria_base * p.fracao; }); });
+  regs.forEach(r => { r.periodos.forEach(p => { const obra = diarNormalizarObra(p.obra); porObra[obra] = (porObra[obra]||0) + r.diaria_base * p.fracao; }); });
   // Somar extras por obra
-  diarGetExtrasQuinzena().forEach(e => { const obra = (e.obra||'').toUpperCase().trim(); porObra[obra] = (porObra[obra]||0) + e.valor; });
+  diarGetExtrasQuinzena().forEach(e => { const obra = diarNormalizarObra(e.obra); porObra[obra] = (porObra[obra]||0) + e.valor; });
   return porObra;
 }
 
@@ -1876,7 +1899,7 @@ function diarGerarPDF(regs) {
     if (!porFunc[r.funcionario]) porFunc[r.funcionario] = { nome: r.funcionario, cargo: r.cargo || '', diaria: r.diaria_base, fracoes: 0, valor: 0, obras: {} };
     porFunc[r.funcionario].fracoes += r.total_fracoes;
     porFunc[r.funcionario].valor += r.valor;
-    r.periodos.forEach(p => { const obra = (p.obra||'').toUpperCase().trim(); porFunc[r.funcionario].obras[obra] = (porFunc[r.funcionario].obras[obra] || 0) + p.fracao; });
+    r.periodos.forEach(p => { const obra = diarNormalizarObra(p.obra); porFunc[r.funcionario].obras[obra] = (porFunc[r.funcionario].obras[obra] || 0) + p.fracao; });
   });
   const funcs = Object.values(porFunc).sort((a, b) => (ordem[a.cargo] || 9) - (ordem[b.cargo] || 9));
   const totalGeral = funcs.reduce((s, f) => s + f.valor, 0);
