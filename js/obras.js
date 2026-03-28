@@ -1,9 +1,9 @@
 let obraTabAtual = 'lanc';
 
 // ── ORDENAÇÃO LANÇAMENTOS ────────────────────────────────────────
-let obrasOrdem = 'az';
+let obrasOrdem = 'data';
 function obrasAtualizarOrdem() {
-  ['az','valor'].forEach(k => {
+  ['data','az','valor'].forEach(k => {
     const el = document.getElementById('obras-ord-' + k);
     if (el) el.classList.toggle('ativo', obrasOrdem === k);
   });
@@ -576,7 +576,8 @@ function filtrarLanc() {
   if (obraId) lista = lista.filter(l => l.obra_id === obraId);
   if (catFiltroAtual) lista = lista.filter(l => resolveEtapaKey(l.etapa || '36_outros') === catFiltroAtual);
   // Ordenação
-  if (obrasOrdem === 'az') lista.sort((a, b) => (a.descricao||'').localeCompare(b.descricao||'', 'pt-BR'));
+  if (obrasOrdem === 'data') lista.sort((a, b) => (b.data||'').localeCompare(a.data||''));
+  else if (obrasOrdem === 'az') lista.sort((a, b) => (a.descricao||'').localeCompare(b.descricao||'', 'pt-BR'));
   else if (obrasOrdem === 'valor') lista.sort((a, b) => Number(b.total||0) - Number(a.total||0));
   const el = document.getElementById('obras-lanc-lista'), empty = document.getElementById('obras-empty');
   if (!el || !empty) return;
