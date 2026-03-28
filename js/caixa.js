@@ -21,9 +21,9 @@ function calcSaldoHoje() {
     .reduce((s, p) => s + Number(p.valor || 0), 0);
   // Saídas: lançamentos
   const saidas = lancamentos.reduce((s, l) => s + Number(l.total || 0), 0);
-  // Contas a pagar já pagas
+  // Contas a pagar já pagas (só as sem obra — com obra já estão nos lançamentos)
   const contasPagas = (typeof contasPagar !== 'undefined' ? contasPagar : [])
-    .filter(c => c.status === 'pago')
+    .filter(c => c.status === 'pago' && !c.obra_id)
     .reduce((s, c) => s + Number(c.valor || 0), 0);
   return (entRepasses + entAdicionais) - saidas - contasPagas;
 }

@@ -141,19 +141,25 @@ function diarAbrirCalendarioFunc(nome) {
 function diarNormalizarObra(obraNome) {
   if (!obraNome) return 'NÃO ESPECIFICADA';
   const t = obraNome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
-  // Tentar match exato com obras cadastradas
-  if (Array.isArray(obras)) {
-    for (const o of obras) {
-      const n = o.nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-      if (t === n) return o.nome.toUpperCase();
-      // Match parcial: obra "Josenaldo Junior" contém "junior"
-      if (n.includes(t) || t.includes(n)) return o.nome.toUpperCase();
-      // Match por primeiro nome
-      const primeiro = n.split(' ')[0];
-      if (primeiro.length >= 3 && t === primeiro) return o.nome.toUpperCase();
-      // Match: input contém o primeiro nome da obra
-      if (primeiro.length >= 4 && t.includes(primeiro)) return o.nome.toUpperCase();
-    }
+  if (!Array.isArray(obras) || !obras.length) return obraNome.toUpperCase().trim();
+  // 1) Match exato
+  for (const o of obras) {
+    const n = o.nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    if (t === n) return o.nome.toUpperCase();
+  }
+  // 2) Input é parte do nome da obra (ex: "junior" → "Josenaldo Junior")
+  //    Prioriza o match mais curto (nome mais específico)
+  let melhorMatch = null, melhorLen = Infinity;
+  for (const o of obras) {
+    const n = o.nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    if (n.includes(t) && n.length < melhorLen) { melhorMatch = o; melhorLen = n.length; }
+  }
+  if (melhorMatch) return melhorMatch.nome.toUpperCase();
+  // 3) Match por primeiro nome exato (ex: "pedro" → "Pedro")
+  for (const o of obras) {
+    const n = o.nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const primeiro = n.split(' ')[0];
+    if (primeiro.length >= 3 && t === primeiro) return o.nome.toUpperCase();
   }
   return obraNome.toUpperCase().trim();
 }
@@ -179,11 +185,13 @@ const DIAR_FUNCIONARIOS_FALLBACK = {
   'val':      { nome: 'Val', cargo: 'Servente', diaria: 80 },
 };
 DIAR_FUNCIONARIOS = { ...DIAR_FUNCIONARIOS_FALLBACK };
+let _diarFuncionariosCarregados = false;
 
 async function diarCarregarFuncionarios() {
   try {
     const lista = await sbGet('diarias_funcionarios', '?order=nome.asc');
     if (!Array.isArray(lista) || !lista.length) return;
+    _diarFuncionariosCarregados = true;
     DIAR_FUNCIONARIOS_RAW = lista;
     // Reconstruir mapa de aliases
     DIAR_FUNCIONARIOS = {};
@@ -594,8 +602,7 @@ async function diarExcluirQuinzena() {
 // ── Lixeira de quinzenas ────────────────────────────
 async function diarAbrirLixeira() {
   try {
-    const hdrs = { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + _authToken };
-    const excluidas = await fetch(`${SUPABASE_URL}/rest/v1/diarias_quinzenas?excluida=eq.true&order=excluida_em.desc`, { headers: hdrs }).then(r => r.json());
+    const excluidas = await sbGet('diarias_quinzenas', '?excluida=eq.true&order=excluida_em.desc');
 
     if (!excluidas || !excluidas.length) {
       showToast('Lixeira vazia.');
@@ -1258,6 +1265,7 @@ function diarRenderPreview(regs) {
 async function diarConfirmarLancamento() {
   if (!diarInterpretado) return;
   if (!diarQuinzenaAtiva) { showToast('⚠ Nenhuma quinzena ativa. Crie uma quinzena primeiro.'); return; }
+  if (!_diarFuncionariosCarregados) { showToast('⚠ Sem conexão com o banco. Valores de diária podem estar desatualizados. Verifique sua internet e recarregue.', 5000); return; }
   const btn = document.getElementById('diar-btnConfirmar');
   if (btn) { btn.disabled = true; btn.textContent = 'SALVANDO...'; }
   try {

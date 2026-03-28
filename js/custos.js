@@ -64,8 +64,8 @@ function renderCustosCards() {
     const custoTotal = lancamentos.filter(l => l.obra_id === o.id).reduce((s,l) => s + Number(l.total||0), 0);
     const adds = typeof getAdicionaisObra === 'function' ? getAdicionaisObra(o.id) : { qtd:0, valorTotal:0 };
     const receitaObra = valorVenda + adds.valorTotal;
-    const lucro = receitaObra > 0 ? receitaObra - custoTotal : 0;
-    const pctRecebido = valorVenda > 0 ? Math.min((totalRecebido/valorVenda*100), 100) : 0;
+    const lucro = receitaObra - custoTotal;
+    const pctRecebido = receitaObra > 0 ? Math.min((totalRecebido/receitaObra*100), 100) : 0;
     const corLucro = lucro >= 0 ? 'var(--verde-hl)' : '#ef4444';
 
     return `<div class="card" style="padding:16px;cursor:pointer;transition:all .2s;border:1px solid var(--borda);"
@@ -189,7 +189,7 @@ function renderCustosResumo() {
       const receitaObra = valorVenda + adds.valorTotal;
       const lucro = receitaObra - custoTotal;
       const margem = receitaObra > 0 ? (lucro / receitaObra * 100) : 0;
-      const pctRecebido = valorVenda > 0 ? Math.min((totalRecebido / valorVenda * 100), 100) : 0;
+      const pctRecebido = receitaObra > 0 ? Math.min((totalRecebido / receitaObra * 100), 100) : 0;
 
       const corSaldo = saldoReceber >= 0 ? 'var(--verde-hl)' : '#ef4444';
       const corLucro = lucro >= 0 ? 'var(--verde-hl)' : '#ef4444';
@@ -580,7 +580,7 @@ function renderContratoCard(obraId) {
   const repassesObra = repassesCef.filter(r => r.obra_id === obraId);
   const totalRecebido = repassesObra.reduce((s, r) => s + Number(r.valor || 0), 0);
   const falta = contratoValor - totalRecebido;
-  const pctRecebido = Math.min((totalRecebido / contratoValor) * 100, 100);
+  const pctRecebido = contratoValor > 0 ? Math.min((totalRecebido / contratoValor) * 100, 100) : 0;
 
   const contratoValorEdr = Number(obra.contrato_valor_edr || 0);
 

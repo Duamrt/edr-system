@@ -387,14 +387,14 @@ function renderObraCef() {
   // Repasses recebidos
   const reps = (typeof repassesCef !== 'undefined' ? repassesCef : []).filter(r => r.obra_id === obraId);
   const totalRecebido = reps.reduce((s, r) => s + Number(r.valor || 0), 0);
-  const pctRecebido = financiado > 0 ? Math.min((totalRecebido / financiado * 100), 100) : 0;
+  // Adicionais
+  const adds = typeof getAdicionaisObra === 'function' ? getAdicionaisObra(obraId) : { qtd: 0, valorTotal: 0, totalRecebido: 0, saldo: 0 };
+  const receitaObra = valorVenda + adds.valorTotal;
+  const pctRecebido = receitaObra > 0 ? Math.min((totalRecebido / receitaObra * 100), 100) : 0;
 
   // Custos
   const custoTotal = (typeof lancamentos !== 'undefined' ? lancamentos : []).filter(l => l.obra_id === obraId).reduce((s, l) => s + Number(l.total || 0), 0);
-  const lucro = valorVenda - custoTotal;
-
-  // Adicionais
-  const adds = typeof getAdicionaisObra === 'function' ? getAdicionaisObra(obraId) : { qtd: 0, valorTotal: 0, totalRecebido: 0, saldo: 0 };
+  const lucro = receitaObra - custoTotal;
 
   const somaComponentes = financiado + subsidio + fgts + entrada + extras;
   const somaOk = valorVenda > 0 && Math.abs(somaComponentes - valorVenda) < 1;
