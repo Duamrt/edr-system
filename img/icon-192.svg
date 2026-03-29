@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" fill="none">
+  <rect width="192" height="192" rx="40" fill="#0a0f1a"/>
+  <rect x="8" y="8" width="176" height="176" rx="36" fill="#0f172a" stroke="#1a5c2a" stroke-width="3"/>
+  <text x="96" y="112" font-family="'Inter', 'Segoe UI', Arial, sans-serif" font-weight="900" font-size="64" fill="#22c55e" text-anchor="middle" letter-spacing="6">EDR</text>
+  <rect x="40" y="130" width="112" height="2" fill="#1a5c2a" opacity="0.5"/>
+  <text x="96" y="154" font-family="'Inter', 'Segoe UI', Arial, sans-serif" font-weight="600" font-size="16" fill="#94a3b8" text-anchor="middle" letter-spacing="3">SYSTEM</text>
+</svg>
