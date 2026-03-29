@@ -57,9 +57,10 @@ async function salvarUsuario() {
     if (id) {
       // Editar existente — atualizar tabela usuarios
       const payload = { nome, perfil };
-      await sbPatch('usuarios', `?id=eq.${id}`, payload);
-      const idx = USUARIOS.findIndex(x => x.id === id);
-      if (idx >= 0) Object.assign(USUARIOS[idx], payload);
+      const result = await sbPatch('usuarios', `?id=eq.${id}`, payload);
+      if (!result || !result.length) { showToast('❌ Não encontrou o usuário no banco.'); return; }
+      // Recarregar lista do banco pra garantir sync
+      await loadUsuarios();
       // Atualizar Auth se mudou senha ou perfil
       const u = USUARIOS.find(x => x.id === id);
       if (u) {
