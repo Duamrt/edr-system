@@ -7,7 +7,7 @@
 let _companyId = null;
 
 // Tabelas que NÃO recebem filtro de company_id
-const _TABELAS_SEM_TENANT = ['companies', 'company_users'];
+const _TABELAS_SEM_TENANT = ['companies', 'company_users', 'usuarios'];
 // Tabelas que incluem registros globais (company_id IS NULL) + da empresa
 const _TABELAS_COM_GLOBAL = ['materiais'];
 
