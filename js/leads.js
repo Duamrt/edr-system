@@ -236,6 +236,7 @@ function abrirModalLead(leadId) {
         ${lead.status !== 'convertido' && lead.status !== 'descartado' ? `<button onclick="converterLead('${esc(lead.id)}')" style="flex:1;padding:10px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);color:#f59e0b;border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;">✅ CONVERTER</button>` : ''}
         ${lead.status !== 'descartado' ? `<button onclick="atualizarLeadStatus('${esc(lead.id)}','descartado')" style="flex:1;padding:10px;background:rgba(107,114,128,0.08);border:1px solid rgba(107,114,128,0.2);color:#9ca3af;border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;">✕ DESCARTAR</button>` : `<button onclick="atualizarLeadStatus('${esc(lead.id)}','novo')" style="flex:1;padding:10px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);color:#22c55e;border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;">↩ REABRIR</button>`}
         ${lead.observacoes ? `<button onclick="verConversaLead('${esc(lead.id)}')" style="flex:1;padding:10px;background:rgba(255,255,255,0.04);border:1px solid var(--borda);color:var(--texto2);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;">💬 CONVERSA</button>` : ''}
+        <button onclick="excluirLead('${esc(lead.id)}')" style="padding:10px;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);color:#ef4444;border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;">🗑</button>
       </div>
     </div>
 
@@ -419,4 +420,18 @@ function verConversaLead(leadId) {
 function _fecharModalLead() {
   const m = document.getElementById('modal-lead-detalhe');
   if (m) m.remove();
+}
+
+async function excluirLead(leadId) {
+  if (!confirm('Excluir este lead e todo o historico de interacoes?')) return;
+  try {
+    await sbDelete('lead_historico', '?lead_id=eq.' + leadId);
+    await sbDelete('leads', '?id=eq.' + leadId);
+    _fecharModalLead();
+    await loadLeads();
+    renderLeads();
+    showToast('Lead excluido.');
+  } catch(e) {
+    alert('Erro ao excluir: ' + e.message);
+  }
 }
