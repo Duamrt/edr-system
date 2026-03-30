@@ -122,7 +122,10 @@ function _renderLeadCard(l) {
         </div>
         ${acaoHtml}
       </div>
-      <div style="font-size:10px;color:var(--texto3);white-space:nowrap;">${data}</div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+        <div style="font-size:10px;color:var(--texto3);white-space:nowrap;">${data}</div>
+        <button onclick="event.stopPropagation();excluirLead('${esc(l.id)}')" style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);color:#ef4444;font-size:10px;font-weight:700;padding:4px 8px;border-radius:6px;cursor:pointer;font-family:inherit;">🗑</button>
+      </div>
     </div>
   </div>`;
 }
