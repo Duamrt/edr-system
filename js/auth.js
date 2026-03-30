@@ -862,21 +862,7 @@ async function removerUsuarioEmpresa(companyUserId, nome) {
   }
 }
 
-// ── Excluir empresa ───────────────────────────────────
-async function excluirEmpresa(id, nome) {
-  if (!confirm('Excluir a empresa "' + nome + '"?\n\nTodos os dados vinculados serão removidos. Essa ação não pode ser desfeita.')) return;
-  if (!confirm('TEM CERTEZA? Digite OK pra confirmar.')) return;
-  try {
-    // 1. Remover vínculos de usuários
-    await sbDelete('company_users', '?company_id=eq.' + id);
-    // 2. Remover a empresa
-    await sbDelete('companies', '?id=eq.' + id);
-    alert('Empresa "' + nome + '" excluída.');
-    renderPlataformaClientes();
-  } catch(e) {
-    alert('Erro ao excluir empresa: ' + e.message);
-  }
-}
+// ── Excluir empresa (função principal na linha ~1437) ──
 
 // ── Toggle expandir/recolher empresa ──────────────────
 function toggleEmpresaDetalhe(headerEl) {
@@ -1438,16 +1424,19 @@ async function excluirEmpresa(companyId, nome) {
   if (!confirm('Tem certeza que quer excluir "' + nome + '"?\n\nIsso vai apagar TODOS os dados dessa empresa (obras, estoque, financeiro, usuarios). Acao irreversivel.')) return;
   if (!confirm('ULTIMA CONFIRMACAO: Excluir "' + nome + '" permanentemente?')) return;
 
-  const hdrs = { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + _authToken, 'Prefer': 'return=minimal' };
+  const hdrs = { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + _authToken, 'Content-Type': 'application/json' };
   try {
-    // Deletar vinculos de usuarios
-    await fetch(`${SUPABASE_URL}/rest/v1/company_users?company_id=eq.${companyId}`, { method: 'DELETE', headers: hdrs });
-    // Deletar termos aceites
-    await fetch(`${SUPABASE_URL}/rest/v1/termos_aceites?company_id=eq.${companyId}`, { method: 'DELETE', headers: hdrs });
-    // Deletar empresa (cascade deve cuidar do resto se configurado)
-    await fetch(`${SUPABASE_URL}/rest/v1/companies?id=eq.${companyId}`, { method: 'DELETE', headers: hdrs });
-
-    showToast('Empresa excluida.');
+    // Usar RPC pra deletar empresa e todos os dados vinculados
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/excluir_empresa_completa`, {
+      method: 'POST',
+      headers: hdrs,
+      body: JSON.stringify({ p_company_id: companyId })
+    });
+    if (!r.ok) {
+      const err = await r.json().catch(() => ({}));
+      throw new Error(err.message || 'Erro ' + r.status);
+    }
+    showToast('Empresa "' + nome + '" excluida.');
     renderPlataformaClientes();
   } catch(e) {
     alert('Erro ao excluir: ' + e.message);
