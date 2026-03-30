@@ -1424,41 +1424,16 @@ async function excluirEmpresa(companyId, nome) {
   if (!confirm('Tem certeza que quer excluir "' + nome + '"?\n\nIsso vai apagar TODOS os dados dessa empresa (obras, estoque, financeiro, usuarios). Acao irreversivel.')) return;
   if (!confirm('ULTIMA CONFIRMACAO: Excluir "' + nome + '" permanentemente?')) return;
 
-  const hdrs = { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + _authToken, 'Prefer': 'return=minimal' };
-  const getHd = { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + _authToken };
-  const del = async (tabela, filtro) => {
-    try { await fetch(`${SUPABASE_URL}/rest/v1/${tabela}?${filtro}`, { method: 'DELETE', headers: hdrs }); } catch(e) {}
-  };
+  const hdrs = { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + _authToken, 'Content-Type': 'application/json' };
   try {
-    // Diarias: buscar quinzena_ids antes
-    try {
-      const qs = await fetch(`${SUPABASE_URL}/rest/v1/diarias_quinzenas?company_id=eq.${companyId}&select=id`, { headers: getHd }).then(r => r.json());
-      if (Array.isArray(qs) && qs.length) {
-        const ids = qs.map(q => q.id).join(',');
-        await del('diarias', 'quinzena_id=in.(' + ids + ')');
-        await del('diarias_extras', 'quinzena_id=in.(' + ids + ')');
-      }
-    } catch(e) {}
-    // Adicionais: buscar IDs antes
-    try {
-      const adics = await fetch(`${SUPABASE_URL}/rest/v1/obra_adicionais?company_id=eq.${companyId}&select=id`, { headers: getHd }).then(r => r.json());
-      if (Array.isArray(adics) && adics.length) {
-        const ids = adics.map(a => a.id).join(',');
-        await del('adicional_pagamentos', 'adicional_id=in.(' + ids + ')');
-      }
-    } catch(e) {}
-    // Tabelas com company_id
-    const tabelas = [
-      'diarias_quinzenas', 'diarias_funcionarios', 'obra_adicionais',
-      'cronograma_tarefas', 'distribuicoes', 'entradas_diretas',
-      'lancamentos', 'notas_fiscais', 'ajustes_estoque', 'materiais',
-      'obras', 'agenda_notas', 'projecoes_caixa', 'contas_pagar',
-      'garantia_chamados', 'repasses_cef', 'leads', 'lead_historico',
-      'usuarios', 'termos_aceites', 'company_users'
-    ];
-    for (const t of tabelas) await del(t, 'company_id=eq.' + companyId);
-    // Empresa por ultimo
-    await fetch(`${SUPABASE_URL}/rest/v1/companies?id=eq.${companyId}`, { method: 'DELETE', headers: hdrs });
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/excluir_empresa_completa`, {
+      method: 'POST', headers: hdrs,
+      body: JSON.stringify({ p_company_id: companyId })
+    });
+    if (!r.ok) {
+      const err = await r.json().catch(() => ({}));
+      throw new Error(err.message || 'Erro ' + r.status);
+    }
     showToast('Empresa "' + nome + '" excluida.');
     renderPlataformaClientes();
   } catch(e) {
