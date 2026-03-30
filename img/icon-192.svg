@@ -1,7 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" fill="none">
-  <rect width="192" height="192" rx="40" fill="#0a0f1a"/>
-  <rect x="8" y="8" width="176" height="176" rx="36" fill="#0f172a" stroke="#1a5c2a" stroke-width="3"/>
-  <text x="96" y="112" font-family="'Inter', 'Segoe UI', Arial, sans-serif" font-weight="900" font-size="64" fill="#22c55e" text-anchor="middle" letter-spacing="6">EDR</text>
-  <rect x="40" y="130" width="112" height="2" fill="#1a5c2a" opacity="0.5"/>
-  <text x="96" y="154" font-family="'Inter', 'Segoe UI', Arial, sans-serif" font-weight="600" font-size="16" fill="#94a3b8" text-anchor="middle" letter-spacing="3">SYSTEM</text>
+  <rect width="192" height="192" rx="40" fill="#060A06"/>
+  <rect x="6" y="6" width="180" height="180" rx="37" fill="#0d1a0d" stroke="rgba(34,197,94,0.3)" stroke-width="2"/>
+  <!-- A1 Progress Bars -->
+  <rect x="52" y="108" width="8" height="16" rx="2" fill="rgba(255,255,255,0.06)"/>
+  <rect x="66" y="98" width="8" height="26" rx="2" fill="rgba(255,255,255,0.06)"/>
+  <rect x="80" y="85" width="8" height="39" rx="2" fill="#22c55e"/>
+  <rect x="94" y="72" width="8" height="52" rx="2" fill="#22c55e"/>
+  <rect x="108" y="56" width="8" height="68" rx="2" fill="#22c55e"/>
+  <!-- Text -->
+  <text x="96" y="155" font-family="'Rajdhani', Arial, sans-serif" font-weight="700" font-size="22" fill="#22c55e" text-anchor="middle" letter-spacing="3">EDR SYSTEM</text>
 </svg>

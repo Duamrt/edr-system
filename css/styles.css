@@ -113,6 +113,15 @@ body::before {
 }
 .login-logo { margin-bottom: 32px; text-align: center; position: relative; z-index: 1; }
 .login-logo-mark { width: 80px; height: 80px; border: 1.5px solid rgba(34,197,94,0.4); border-radius: 16px; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; background: rgba(34,197,94,0.06); box-shadow: 0 0 30px rgba(34,197,94,0.15); backdrop-filter: blur(10px); }
+/* EDR Bars — identidade visual A1 (progresso crescente) */
+.edr-bars { display:flex; align-items:flex-end; gap:3px; }
+.ebar { width:3px; border-radius:2px; background:rgba(255,255,255,0.06); }
+.ebar:nth-child(1) { height:25%; }
+.ebar:nth-child(2) { height:40%; }
+.ebar:nth-child(3) { height:60%; }
+.ebar:nth-child(4) { height:80%; }
+.ebar:nth-child(5) { height:100%; }
+.ebar.on { background:#22c55e; box-shadow:0 0 8px rgba(34,197,94,0.4); }
 .login-logo-er { font-family: 'Rajdhani', sans-serif; font-size: 34px; font-weight: 700; color: var(--verde3); letter-spacing: 1px; }
 .login-logo-name { color: var(--branco); font-family: 'Rajdhani', sans-serif; font-size: 22px; font-weight: 700; letter-spacing: 6px; text-transform: uppercase; }
 .login-logo-sub { color: var(--texto3); font-size: 10px; letter-spacing: 3px; margin-top: 6px; text-transform: uppercase; font-family: 'JetBrains Mono', monospace; }
