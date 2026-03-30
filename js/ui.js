@@ -502,13 +502,13 @@ function closeBnavMore() {
   document.getElementById('bnav-more-menu')?.classList.remove('open');
 }
 function syncBnav(v) {
-  ['dashboard','obras','estoque','notas'].forEach(id => {
+  ['dashboard','obras','diarias','estoque'].forEach(id => {
     const btn = document.getElementById('bnav-' + id);
     if (btn) btn.classList.toggle('active', id === v);
   });
-  const moreActive = ['form','creditos','catalogo','banco','setup','relatorio','caixa','contas-pagar','garantias'].includes(v);
+  const moreActive = ['notas','form','creditos','catalogo','banco','setup','relatorio','caixa','contas-pagar','garantias','cronograma','orcamento','custos','leads','adicionais','usuarios','permissoes'].includes(v);
   document.getElementById('bnav-more-btn')?.classList.toggle('active', moreActive);
-  ['form','creditos','catalogo','banco','setup','caixa','contas-pagar','garantias'].forEach(id => {
+  ['notas','form','creditos','catalogo','banco','setup','caixa','contas-pagar','garantias','cronograma','orcamento','custos','leads','adicionais','relatorio'].forEach(id => {
     const btn = document.getElementById('bnav-' + id);
     if (btn) btn.classList.toggle('active', id === v);
   });
