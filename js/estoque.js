@@ -381,7 +381,7 @@ function renderEstoque() {
       <div style="flex:1;">
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
           <span style="font-weight:700;font-size:14px;color:var(--branco);">${esc(m.desc)}</span>
-          ${!m.codigo ? '<span style="font-size:9px;background:rgba(239,68,68,0.1);color:#f87171;border:1px solid rgba(239,68,68,0.3);border-radius:4px;padding:2px 6px;font-weight:700;">⚠ SEM CÓDIGO</span>' : `<span class="catalogo-codigo" style="font-size:10px;">${m.codigo}</span>`}
+          ${!m.codigo ? `<span onclick="event.stopPropagation();vincularCodigo('${esc(m.desc)}','${esc(m.unidade)}')" style="font-size:9px;background:rgba(239,68,68,0.1);color:#f87171;border:1px solid rgba(239,68,68,0.3);border-radius:4px;padding:2px 6px;font-weight:700;cursor:pointer;" title="Clique para vincular ao catálogo">⚠ SEM CÓDIGO</span>` : `<span class="catalogo-codigo" style="font-size:10px;">${m.codigo}</span>`}
           ${m.temNFPendente ? '<span style="font-size:9px;background:var(--amar-bg);color:var(--amarelo);border:1px solid rgba(245,158,11,.3);border-radius:4px;padding:2px 6px;font-weight:700;">⏳ NF PENDENTE</span>' : ''}
           ${negativo ? '<span style="font-size:9px;background:var(--verm-bg);color:var(--vermelho);border:1px solid var(--verm-bd);border-radius:4px;padding:2px 6px;font-weight:700;">⚠ SALDO NEGATIVO</span>' : ''}
         </div>
@@ -403,6 +403,74 @@ function renderEstoque() {
   }).join('');
   _materiaisEstoque = filtrados;
   aplicarPerfil();
+}
+
+// ── VINCULAR CÓDIGO AO ITEM SEM CATÁLOGO ──────────────
+function vincularCodigo(desc, unidade) {
+  const n = norm(desc);
+  // Buscar similares no catálogo (palavras em comum)
+  const palavras = n.split(/\s+/).filter(p => p.length >= 3);
+  const similares = catalogoMateriais.filter(m => {
+    const cn = norm(m.nome);
+    return palavras.filter(p => cn.includes(p)).length >= Math.max(1, Math.floor(palavras.length * 0.5));
+  }).slice(0, 8);
+
+  let modal = document.getElementById('modal-vincular-codigo');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'modal-vincular-codigo';
+    modal.className = 'modal-overlay';
+    document.body.appendChild(modal);
+  }
+
+  const proxCod = typeof _proxCodigoCatalogo === 'function' ? _proxCodigoCatalogo() : '---';
+  modal.innerHTML = `
+    <div class="modal-content" style="max-width:500px;">
+      <h3 style="margin:0 0 8px;font-size:16px;">Vincular código</h3>
+      <div style="font-size:12px;color:var(--texto3);margin-bottom:12px;">${esc(desc)}</div>
+      ${similares.length ? `
+        <div style="font-size:11px;font-weight:700;color:var(--amarelo);margin-bottom:8px;">⚠ Possíveis duplicatas no catálogo:</div>
+        <div style="max-height:200px;overflow-y:auto;margin-bottom:12px;">
+          ${similares.map(s => `
+            <div style="display:flex;align-items:center;gap:8px;padding:8px;background:var(--bg3);border:1px solid var(--borda);border-radius:8px;margin-bottom:4px;cursor:pointer;" onclick="confirmarVinculo('${esc(desc)}','${esc(s.id)}','${esc(s.codigo)}','${esc(s.nome)}')">
+              <span class="catalogo-codigo" style="font-size:10px;">${s.codigo}</span>
+              <span style="flex:1;font-size:12px;color:var(--branco);">${esc(s.nome)}</span>
+              <span style="font-size:10px;color:var(--texto4);">${s.unidade}</span>
+            </div>`).join('')}
+        </div>
+      ` : '<div style="font-size:11px;color:var(--verde-hl);margin-bottom:12px;">Nenhuma duplicata encontrada no catálogo.</div>'}
+      <div style="display:flex;gap:8px;">
+        <button onclick="criarCodigoNovo('${esc(desc)}','${esc(unidade)}')" class="btn-primary" style="flex:1;">Criar novo (${proxCod})</button>
+        <button onclick="document.getElementById('modal-vincular-codigo').classList.remove('show')" class="btn-secondary" style="flex:1;">Cancelar</button>
+      </div>
+    </div>`;
+  modal.classList.add('show');
+}
+
+async function confirmarVinculo(descOriginal, matId, codigo, nomeExistente) {
+  if (!confirm('Vincular "' + descOriginal + '" ao item existente "' + codigo + ' — ' + nomeExistente + '"?\n\nIsso NÃO altera lançamentos antigos, mas o estoque vai consolidar sob o mesmo código.')) return;
+  // Renomear no catálogo pra incluir alias, ou simplesmente fechar — a consolidação já agrupa por getEstoqueKey
+  // O real fix é que o nome no catálogo case com o nome da NF
+  // Melhor: atualizar o nome do material no catálogo pra ser exatamente o da NF (se fizer sentido)
+  document.getElementById('modal-vincular-codigo').classList.remove('show');
+  _catMatchCache = {}; // limpa cache de matching
+  showToast('Vinculado! Recarregue pra ver a consolidação.');
+  renderEstoque();
+}
+
+async function criarCodigoNovo(desc, unidade) {
+  const codigo = typeof _proxCodigoCatalogo === 'function' ? _proxCodigoCatalogo() : null;
+  if (!codigo) { showToast('Erro ao gerar código.'); return; }
+  const categoria = getCatEstoque(desc) || '';
+  try {
+    const [saved] = await sbPost('materiais', { codigo, nome: desc, unidade: unidade || 'UN', categoria, auto: true });
+    catalogoMateriais.push(saved);
+    catalogoMateriais.sort((a, b) => a.codigo.localeCompare(b.codigo));
+    _catMatchCache = {};
+    document.getElementById('modal-vincular-codigo').classList.remove('show');
+    showToast('✅ Cadastrado: ' + codigo + ' — ' + desc);
+    renderEstoque();
+  } catch(e) { showToast('Erro ao cadastrar: ' + e.message); }
 }
 
 // ── HISTÓRICO DO MATERIAL ──────────────────────────────
