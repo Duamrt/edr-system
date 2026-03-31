@@ -220,10 +220,6 @@ function buildPainelFinanceiro() {
   _relLancSaidasMes = lancMes;
   _relLancMaoObraMes = lancMaoObra;
 
-  // Debug: logar itens de mão de obra no console pra conferir soma
-  console.table(lancMaoObra.map(l => ({ desc: l.descricao, total: Number(l.total||0), data: l.data, obra: obras.find(o=>o.id===l.obra_id)?.nome||'sem obra', etapa: l.etapa||'—' })));
-  console.log('TOTAL MÃO DE OBRA:', maoObraMes);
-
   // ENTRADAS do mês: pagamentos de adicionais recebidos no mês
   const pgtosTodasMes = adicionaisPgtos.filter(p => p.data && p.data.startsWith(relMesAtual));
   const pgtosMes = mostrarConcluidas ? pgtosTodasMes : pgtosTodasMes.filter(p => {
