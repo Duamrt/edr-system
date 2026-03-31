@@ -4,6 +4,13 @@
 let estoqueOrdem = 'az'; // 'az' | 'maior' | 'menor'
 let _materiaisEstoque = [];
 let filtroSoNegativos = false;
+let filtroSemCodigo = false;
+
+function filtrarSemCodigo() {
+  filtroSemCodigo = !filtroSemCodigo;
+  catEstoqueFiltro = null;
+  renderEstoque();
+}
 
 function estoqueAtualizarOrdem() {
   ['az','maior','menor'].forEach(k => {
@@ -71,25 +78,50 @@ function getSaldoEntradaDireta(desc) {
     .reduce((s,e) => s + Number(e.qtd), 0);
 }
 
-// Busca o material do catálogo pelo nome (match exato, código, ou nome base)
+// Cache de matching catálogo (limpa quando catálogo muda)
+let _catMatchCache = {}, _catMatchVer = 0;
+
+// Busca o material do catálogo pelo nome (match exato, código, ou fuzzy)
 function getMaterialCatalogo(descricao) {
   const n = norm(descricao);
+  if (!n) return null;
+  // Invalida cache se catálogo mudou
+  if (_catMatchVer !== catalogoMateriais.length) { _catMatchCache = {}; _catMatchVer = catalogoMateriais.length; }
+  if (_catMatchCache[n] !== undefined) return _catMatchCache[n];
+
   // 1. Match exato normalizado
   const exato = catalogoMateriais.find(m => norm(m.nome) === n);
-  if (exato) return exato;
+  if (exato) { _catMatchCache[n] = exato; return exato; }
+
   // 2. Match por código no início (ex: "000001 · Cimento CP-II 50kg")
   const codMatch = n.match(/^(\d{4,6})\s/);
   if (codMatch) {
     const porCodigo = catalogoMateriais.find(m => m.codigo === codMatch[1]);
-    if (porCodigo) return porCodigo;
+    if (porCodigo) { _catMatchCache[n] = porCodigo; return porCodigo; }
   }
-  // 3. Descrição curta (1-2 palavras) que é início exato do nome no catálogo
-  //    Ex: "CIMENTO" casa com "CIMENTO CPIIZ 50KG"
+
+  // 3. Descrição curta → início exato no catálogo
   const palavras = n.split(/\s+/);
   if (palavras.length <= 2 && n.length >= 5) {
     const candidatos = catalogoMateriais.filter(m => norm(m.nome).startsWith(n + ' ') || norm(m.nome) === n);
-    if (candidatos.length === 1) return candidatos[0];
+    if (candidatos.length === 1) { _catMatchCache[n] = candidatos[0]; return candidatos[0]; }
   }
+
+  // 4. Limpar ruído e tentar match por conteúdo
+  const limpo = n.replace(/^\d{4,6}\s*[·\-]?\s*/, '')
+    .replace(/\b(cp\s*-?\s*ii[iz]?|50\s*kg|25\s*kg|saco|un|pct|cx|pc|rolo|metro|barra)\b/g, '')
+    .replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+  if (limpo.length >= 4) {
+    const match = catalogoMateriais.find(m => {
+      const cn = norm(m.nome).replace(/^\d{4,6}\s*[·\-]?\s*/, '')
+        .replace(/\b(cp\s*-?\s*ii[iz]?|50\s*kg|25\s*kg|saco|un|pct|cx|pc|rolo|metro|barra)\b/g, '')
+        .replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+      return cn === limpo;
+    });
+    if (match) { _catMatchCache[n] = match; return match; }
+  }
+
+  _catMatchCache[n] = null;
   return null;
 }
 
@@ -321,6 +353,7 @@ function renderEstoque() {
   let filtrados = busca ? materiais.filter(m => norm(m.desc).includes(busca)) : materiais;
   if (catEstoqueFiltro) filtrados = filtrados.filter(m => (m.categoria || getCatEstoque(m.desc)) === catEstoqueFiltro);
   if (filtroSoNegativos) filtrados = filtrados.filter(m => m.saldoTotal < 0);
+  if (filtroSemCodigo) filtrados = filtrados.filter(m => !m.codigo);
   // Ordenação
   if (estoqueOrdem === 'az') filtrados.sort((a, b) => a.desc.localeCompare(b.desc, 'pt-BR'));
   else if (estoqueOrdem === 'maior') filtrados.sort((a, b) => b.saldoTotal - a.saldoTotal);
@@ -328,11 +361,13 @@ function renderEstoque() {
   // Totalizador de valor do estoque
   const valorTotalEstoque = materiais.reduce((s, m) => s + (m.saldoTotal > 0 ? m.saldoTotal * m.valorMedio : 0), 0);
   const qtdItens = materiais.filter(m => m.saldoTotal > 0).length;
+  const semCodigo = materiais.filter(m => !m.codigo).length;
   const totEl = document.getElementById('estoque-valor-total');
-  if (totEl) totEl.innerHTML = `<div style="display:flex;align-items:center;gap:14px;padding:12px 16px;background:var(--bg2);border:1px solid var(--borda);border-radius:12px;margin-bottom:12px;">
+  if (totEl) totEl.innerHTML = `<div style="display:flex;align-items:center;gap:14px;padding:12px 16px;background:var(--bg2);border:1px solid var(--borda);border-radius:12px;margin-bottom:12px;flex-wrap:wrap;">
     <div style="font-size:11px;color:var(--texto3);">📦 VALOR EM ESTOQUE</div>
     <div style="font-size:18px;font-weight:800;color:var(--branco);">${fmtR(valorTotalEstoque)}</div>
     <div style="font-size:11px;color:var(--texto4);">${qtdItens} itens com saldo</div>
+    ${semCodigo > 0 ? `<div style="font-size:10px;background:rgba(239,68,68,0.12);color:#f87171;border:1px solid rgba(239,68,68,0.3);border-radius:4px;padding:2px 8px;font-weight:700;cursor:pointer;" onclick="filtrarSemCodigo()" title="Filtrar itens sem código no catálogo">⚠ ${semCodigo} sem código</div>` : ''}
   </div>`;
   _valorEstoqueAtual = valorTotalEstoque;
   if (!filtrados.length) { lista.innerHTML = '<div class="empty">Nenhum material nesta categoria.</div>'; return; }
@@ -346,6 +381,7 @@ function renderEstoque() {
       <div style="flex:1;">
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
           <span style="font-weight:700;font-size:14px;color:var(--branco);">${esc(m.desc)}</span>
+          ${!m.codigo ? '<span style="font-size:9px;background:rgba(239,68,68,0.1);color:#f87171;border:1px solid rgba(239,68,68,0.3);border-radius:4px;padding:2px 6px;font-weight:700;">⚠ SEM CÓDIGO</span>' : `<span style="font-size:9px;color:var(--texto4);font-family:\'JetBrains Mono\',monospace;">${m.codigo}</span>`}
           ${m.temNFPendente ? '<span style="font-size:9px;background:var(--amar-bg);color:var(--amarelo);border:1px solid rgba(245,158,11,.3);border-radius:4px;padding:2px 6px;font-weight:700;">⏳ NF PENDENTE</span>' : ''}
           ${negativo ? '<span style="font-size:9px;background:var(--verm-bg);color:var(--vermelho);border:1px solid var(--verm-bd);border-radius:4px;padding:2px 6px;font-weight:700;">⚠ SALDO NEGATIVO</span>' : ''}
         </div>
