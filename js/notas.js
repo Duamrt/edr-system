@@ -411,11 +411,7 @@ async function autocadastrarMateriais(itens) {
     // Verificar se já existe no catálogo
     const existe = catalogoMateriais.find(m => norm(m.nome) === nomeNorm);
     if (existe) continue;
-    // Gerar próximo código
-    const proxNum = catalogoMateriais.length > 0
-      ? Math.max(...catalogoMateriais.map(m => parseInt(m.codigo)||0)) + 1
-      : 1;
-    const codigo = String(proxNum).padStart(6, '0');
+    const codigo = _proxCodigoCatalogo();
     const categoria = getCatEstoque(it.desc);
     const unidade = it.unidade || 'UN';
     try {

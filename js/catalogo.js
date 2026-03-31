@@ -3,6 +3,15 @@
 // ══════════════════════════════════════════
 let filtroAuto = false;
 let _editandoMaterialId = null; // null = novo, id = editando
+
+// Próximo código disponível — reaproveita gaps de itens excluídos
+function _proxCodigoCatalogo() {
+  const usados = new Set(catalogoMateriais.map(m => parseInt(m.codigo) || 0));
+  for (let i = 1; i <= usados.size + 1; i++) {
+    if (!usados.has(i)) return String(i).padStart(6, '0');
+  }
+  return String(usados.size + 1).padStart(6, '0');
+}
 function filtrarSoAuto() {
   filtroAuto = !filtroAuto;
   renderCatalogo();
@@ -29,15 +38,30 @@ function renderCatalogo() {
   const CATS_OPTS = typeof ETAPAS !== 'undefined'
     ? ETAPAS.map(e => [e.key, e.lb])
     : [['36_outros','📦 36 · Não classificado']];
+  // Pré-calcular saldo do estoque por código/nome pra mostrar no catálogo
+  const _estoquePorCat = {};
+  if (typeof consolidarEstoque === 'function') {
+    try {
+      const mats = consolidarEstoque();
+      mats.forEach(m => {
+        if (m.codigo) _estoquePorCat['COD:' + m.codigo] = m.saldoTotal;
+        _estoquePorCat['DESC:' + norm(m.desc)] = m.saldoTotal;
+      });
+    } catch(e) {}
+  }
+
   el.innerHTML = lista.map(m => {
     const isAuto = m.auto === true || m.auto === 'true';
     const catSelect = CATS_OPTS.map(([k,lb]) => `<option value="${k}" ${m.categoria===k?'selected':''}>${lb}</option>`).join('');
+    const saldo = _estoquePorCat['COD:' + m.codigo] ?? _estoquePorCat['DESC:' + norm(m.nome)] ?? null;
+    const saldoHtml = saldo !== null ? `<span style="font-size:10px;font-weight:700;color:${saldo > 0 ? 'var(--verde-hl)' : saldo < 0 ? 'var(--vermelho)' : 'var(--texto4)'};white-space:nowrap;" title="Saldo em estoque">${saldo > 0 ? '📦 ' + saldo : saldo < 0 ? '⚠ ' + saldo : '📦 0'}</span>` : '';
     return `
     <div class="catalogo-item" style="${isAuto ? 'border-color:rgba(245,158,11,0.35);' : ''}">
       <span class="catalogo-codigo">${m.codigo || "S/COD"}</span>
       ${isAuto ? `<span style="font-size:9px;font-weight:800;background:rgba(245,158,11,0.12);color:#fbbf24;border:1px solid rgba(245,158,11,0.3);border-radius:4px;padding:1px 5px;font-family:'JetBrains Mono',monospace;white-space:nowrap;">AUTO</span>` : ''}
       <span class="catalogo-nome">${esc(m.nome)}</span>
       <span class="catalogo-un">${m.unidade||'UN'}</span>
+      ${saldoHtml}
       ${usuarioAtual?.perfil==='admin' ? `
         <select onchange="editarCategoriaMaterial('${esc(m.id)}',this.value,this)" style="background:var(--bg3);border:1px solid ${isAuto?'rgba(245,158,11,0.3)':'var(--borda2)'};border-radius:6px;padding:3px 6px;color:${isAuto?'#fbbf24':'var(--branco)'};font-size:10px;font-family:inherit;cursor:pointer;" title="Editar categoria">
           <option value="">— cat —</option>${catSelect}
@@ -163,8 +187,7 @@ async function salvarCadastroRapido() {
   const btn = document.getElementById('cr-btn-salvar');
   btn.disabled = true; btn.textContent = 'SALVANDO...';
   try {
-    const proxNum = catalogoMateriais.length > 0 ? Math.max(...catalogoMateriais.map(m => parseInt(m.codigo)||0)) + 1 : 1;
-    const codigo = String(proxNum).padStart(6, '0');
+    const codigo = _proxCodigoCatalogo();
     const [saved] = await sbPost('materiais', { codigo, nome, unidade, categoria });
     catalogoMateriais.push(saved);
     catalogoMateriais.sort((a,b) => a.codigo.localeCompare(b.codigo));
@@ -325,11 +348,7 @@ async function salvarMaterial() {
   // Verificar duplicata exata
   const existe = catalogoMateriais.find(m => norm(m.nome) === norm(nome));
   if (existe) { showToast(`⚠ Material já existe: ${existe.codigo}`); return; }
-  // Gerar próximo código
-  const proxNum = catalogoMateriais.length > 0
-    ? Math.max(...catalogoMateriais.map(m => parseInt(m.codigo)||0)) + 1
-    : 1;
-  const codigo = String(proxNum).padStart(6, '0');
+  const codigo = _proxCodigoCatalogo();
   btn.disabled = true; btn.textContent = 'SALVANDO...';
   try {
     const [saved] = await sbPost('materiais', { codigo, nome, unidade, categoria });
@@ -353,11 +372,26 @@ async function confirmarAutoMaterial(id) {
 }
 
 async function excluirMaterial(id) {
-  if (!confirm('Excluir este material do catálogo? Esta ação não pode ser desfeita.')) return;
+  const mat = catalogoMateriais.find(m => m.id === id);
+  if (!mat) return;
+  // Verificar saldo em estoque
+  let saldo = 0;
+  if (typeof consolidarEstoque === 'function') {
+    try {
+      const mats = consolidarEstoque();
+      const est = mats.find(m => m.codigo === mat.codigo || norm(m.desc) === norm(mat.nome));
+      if (est) saldo = est.saldoTotal;
+    } catch(e) {}
+  }
+  if (saldo !== 0) {
+    if (!confirm(`⚠ "${mat.nome}" tem saldo de ${saldo} no estoque.\n\nExcluir mesmo assim? O código ${mat.codigo} ficará disponível para reuso.`)) return;
+  } else {
+    if (!confirm(`Excluir "${mat.nome}" (${mat.codigo}) do catálogo?\nO código ficará disponível para reuso.`)) return;
+  }
   await sbDelete('materiais', `?id=eq.${id}`);
   catalogoMateriais = catalogoMateriais.filter(m => m.id !== id);
   renderCatalogo();
-  showToast('✅ Material excluído do catálogo.');
+  showToast('✅ Material excluído. Código ' + mat.codigo + ' disponível para reuso.');
 }
 
 async function editarCategoriaMaterial(id, categoria, selEl) {
@@ -693,9 +727,7 @@ async function reconciliarCadastrar(idx) {
   const o = _orfaos[idx];
   if (!o) return;
 
-  // Gerar próximo código
-  const proxNum = catalogoMateriais.length > 0 ? Math.max(...catalogoMateriais.map(m => parseInt(m.codigo) || 0)) + 1 : 1;
-  const codigo = String(proxNum).padStart(6, '0');
+  const codigo = _proxCodigoCatalogo();
   const categoria = getCatEstoque(o.desc) || '';
 
   try {
