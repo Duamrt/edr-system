@@ -713,15 +713,16 @@ async function editarEtapaLanc(lancId) {
   const modal = document.createElement('div');
   modal.id = 'modal-editar-etapa';
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
-  modal.innerHTML = `<div style="background:var(--bg2);border:1px solid var(--borda2);border-radius:14px;padding:24px;max-width:420px;width:100%;">
-    <div style="font-size:13px;font-weight:700;color:var(--branco);margin-bottom:4px;">📂 Alterar Centro de Custo</div>
-    <div style="font-size:11px;color:var(--texto3);margin-bottom:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(lanc.descricao || '—')}</div>
-    <select id="sel-nova-etapa" style="width:100%;padding:10px;border-radius:8px;background:var(--bg1);color:var(--branco);border:1px solid var(--borda2);font-size:13px;margin-bottom:16px;">
+  modal.innerHTML = `<div style="background:var(--bg2);border:1px solid var(--borda2);border-radius:14px;padding:28px;max-width:440px;width:100%;">
+    <div style="font-size:16px;font-weight:700;color:var(--branco);margin-bottom:6px;">📂 Alterar Centro de Custo</div>
+    <div style="font-size:14px;color:var(--texto2);margin-bottom:20px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(lanc.descricao || '—')}</div>
+    <select id="sel-nova-etapa" style="width:100%;padding:14px 12px;border-radius:8px;background:#1a1a2e;color:#fff;border:1px solid var(--borda2);font-size:15px;font-weight:600;margin-bottom:20px;-webkit-appearance:menulist;">
       ${etapaSelectOpts(resolvedAtual, true)}
     </select>
-    <div style="display:flex;gap:8px;justify-content:flex-end;">
-      <button onclick="document.getElementById('modal-editar-etapa')?.remove()" style="padding:8px 16px;border-radius:8px;background:var(--bg1);color:var(--texto2);border:1px solid var(--borda2);cursor:pointer;font-size:12px;">Cancelar</button>
-      <button onclick="salvarEtapaLanc('${esc(lancId)}')" style="padding:8px 16px;border-radius:8px;background:var(--verde-hl);color:#000;border:none;cursor:pointer;font-weight:700;font-size:12px;">Salvar</button>
+    <style>#sel-nova-etapa option{background:#1a1a2e;color:#fff;font-size:14px;padding:8px;font-weight:500;}</style>
+    <div style="display:flex;gap:10px;justify-content:flex-end;">
+      <button onclick="document.getElementById('modal-editar-etapa')?.remove()" style="padding:10px 20px;border-radius:8px;background:var(--bg1);color:var(--texto2);border:1px solid var(--borda2);cursor:pointer;font-size:14px;">Cancelar</button>
+      <button onclick="salvarEtapaLanc('${esc(lancId)}')" style="padding:10px 20px;border-radius:8px;background:var(--verde-hl);color:#000;border:none;cursor:pointer;font-weight:700;font-size:14px;">Salvar</button>
     </div>
   </div>`;
   modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
