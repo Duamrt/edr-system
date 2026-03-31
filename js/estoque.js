@@ -52,6 +52,12 @@ const CATS_ESTOQUE = [
 let catEstoqueFiltro = null;
 let _valorEstoqueAtual = 0;
 
+function calcularValorEstoque() {
+  const mats = consolidarEstoque();
+  _valorEstoqueAtual = mats.reduce((s, m) => s + (m.saldoTotal > 0 ? m.saldoTotal * m.valorMedio : 0), 0);
+  return _valorEstoqueAtual;
+}
+
 function getCatEstoque(desc) {
   const d = (desc||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
   for (const cat of CATS_ESTOQUE) { if (cat.fn(d)) return cat.key; }

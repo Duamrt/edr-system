@@ -545,6 +545,7 @@ function _dashFinCalcObra(o, filtroMes) {
 
 function dashBuildResumoFinanceiro(porObra) {
   if (!porObra.length) return '';
+  if (typeof calcularValorEstoque === 'function') calcularValorEstoque();
 
   const filtroMes = _dashFinFiltro;
 
