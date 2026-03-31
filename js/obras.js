@@ -749,14 +749,20 @@ async function confirmarEditDesc() {
   const btn = document.getElementById('ed-desc-btn');
   btn.disabled = true; btn.textContent = 'SALVANDO...';
   try {
-    const novaDesc = codigo + ' · ' + nome;
-    await sbPatch('lancamentos', '?id=eq.' + lancId, { descricao: novaDesc });
+    const novaDesc = codigo + ' \u00b7 ' + nome;
+    const r = await fetch(SUPABASE_URL + '/rest/v1/lancamentos?id=eq.' + lancId, {
+      method: 'PATCH',
+      headers: { ...getHdrs(), 'Prefer': 'return=minimal' },
+      body: JSON.stringify({ descricao: novaDesc })
+    });
+    if (!r.ok) throw new Error(await r.text());
     lanc.descricao = novaDesc;
-    showToast('✅ ' + novaDesc);
+    showToast('\u2705 ' + novaDesc);
     modal.style.display = 'none';
     filtrarLanc();
   } catch(e) {
-    showToast('❌ Erro ao salvar.');
+    console.error('editDesc:', e);
+    showToast('\u274c Erro ao salvar: ' + e.message);
   }
   btn.disabled = false; btn.textContent = 'SALVAR';
 }
