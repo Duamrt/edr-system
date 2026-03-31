@@ -170,6 +170,14 @@ async function salvarEntradaDireta() {
   const obraId = document.getElementById('entrada-obra-id').value;
   const obraObj = obras.find(o => o.id === obraId);
   if (!desc) { showToast('⚠ Informe o material.'); return; }
+  // Bloquear lançamento fora do catálogo — só admin pode forçar
+  const descSemFornecedor = desc.split('·')[0].trim();
+  const materialNoCatalogo = catalogoMateriais.find(m => norm(m.nome) === norm(descSemFornecedor));
+  if (!materialNoCatalogo && usuarioAtual?.perfil !== 'admin') {
+    showToast('⚠ Material não encontrado no catálogo. Selecione um item da lista.');
+    document.getElementById('entrada-desc').focus();
+    return;
+  }
   if (qtd <= 0) { showToast('⚠ Informe a quantidade.'); return; }
   if (destinoObra && (!preco || preco <= 0)) { showToast('⚠ Valor unitário obrigatório para lançamento em obra.'); document.getElementById('entrada-preco').focus(); return; }
   if (destinoObra && !obraId) { showToast('⚠ Selecione a obra.'); return; }
