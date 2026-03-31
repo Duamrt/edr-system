@@ -215,6 +215,7 @@ const EDR_KEY='sb_publishable_Z9E8KLU8ZIMcWjD-bMG5gg_eM585qWq';
 const RPM_URL='https://roeeyypssutzfzzkypsq.supabase.co';
 const RPM_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvZWV5eXBzc3V0emZ6emt5cHNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4MTk0MTgsImV4cCI6MjA5MDM5NTQxOH0.9oCOmABUTXox3FaRViD2zcUaqv94VfOJFMQYz_fcJi4';
 const EDR_CO='3d040713-320f-4639-8a0e-35f62ef10ba7';
+const RPM_DEMO='0164e46c-fa2b-4bfb-99e3-ff17a19e015f';
 const MESES=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 const alertas=[];
 
@@ -251,11 +252,11 @@ async function loadCC(){
     edrGet('repasses_cef','?company_id=eq.'+EDR_CO+'&order=data_credito.desc'),
     edrGet('adicional_pagamentos','?order=data.desc'),
     edrGet('obra_adicionais','?company_id=eq.'+EDR_CO),
-    rpmGet('ordens_servico','?select=id,numero,status,valor_total,data_entrada,data_entrega,mecanico_id&order=data_entrada.desc&limit=300'),
-    rpmGet('clientes','?select=id,nome'),
-    rpmGet('veiculos','?select=id'),
-    rpmGet('profiles','?select=id,nome,role'),
-    rpmGet('oficinas','?select=id,nome,trial_ate')
+    rpmGet('ordens_servico','?select=id,numero,status,valor_total,data_entrada,data_entrega,mecanico_id,oficina_id&oficina_id=neq.'+RPM_DEMO+'&order=data_entrada.desc&limit=300'),
+    rpmGet('clientes','?select=id,nome&oficina_id=neq.'+RPM_DEMO),
+    rpmGet('veiculos','?select=id&oficina_id=neq.'+RPM_DEMO),
+    rpmGet('profiles','?select=id,nome,role&oficina_id=neq.'+RPM_DEMO),
+    rpmGet('oficinas','?select=id,nome,trial_ate&id=neq.'+RPM_DEMO)
   ]);
 
   const oa=obras.filter(o=>!o.arquivada);
