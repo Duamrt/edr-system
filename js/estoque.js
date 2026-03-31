@@ -381,7 +381,7 @@ function renderEstoque() {
       <div style="flex:1;">
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
           <span style="font-weight:700;font-size:14px;color:var(--branco);">${esc(m.desc)}</span>
-          ${!m.codigo ? '<span style="font-size:9px;background:rgba(239,68,68,0.1);color:#f87171;border:1px solid rgba(239,68,68,0.3);border-radius:4px;padding:2px 6px;font-weight:700;">⚠ SEM CÓDIGO</span>' : `<span style="font-size:9px;color:var(--texto4);font-family:\'JetBrains Mono\',monospace;">${m.codigo}</span>`}
+          ${!m.codigo ? '<span style="font-size:9px;background:rgba(239,68,68,0.1);color:#f87171;border:1px solid rgba(239,68,68,0.3);border-radius:4px;padding:2px 6px;font-weight:700;">⚠ SEM CÓDIGO</span>' : `<span class="catalogo-codigo" style="font-size:10px;">${m.codigo}</span>`}
           ${m.temNFPendente ? '<span style="font-size:9px;background:var(--amar-bg);color:var(--amarelo);border:1px solid rgba(245,158,11,.3);border-radius:4px;padding:2px 6px;font-weight:700;">⏳ NF PENDENTE</span>' : ''}
           ${negativo ? '<span style="font-size:9px;background:var(--verm-bg);color:var(--vermelho);border:1px solid var(--verm-bd);border-radius:4px;padding:2px 6px;font-weight:700;">⚠ SALDO NEGATIVO</span>' : ''}
         </div>
