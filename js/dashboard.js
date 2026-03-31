@@ -467,32 +467,108 @@ function dashBuildSaudeObras(porObra) {
 }
 
 // ── RESUMO FINANCEIRO GERAL ─────────────────────────────────
+let _dashFinFiltro = null; // null = geral, 'YYYY-MM' = mês específico
+
+function _dashFinMeses() {
+  // Coleta todos os meses com dados (lançamentos + repasses)
+  const meses = new Set();
+  lancamentos.forEach(l => { if (l.data) meses.add(l.data.slice(0, 7)); });
+  repassesCef.forEach(r => { if (r.data) meses.add(r.data.slice(0, 7)); });
+  return [...meses].sort().reverse();
+}
+
+function _dashFinFiltroBar() {
+  const meses = _dashFinMeses();
+  const atual = _dashFinFiltro;
+  const btnStyle = (ativo) => `padding:6px 14px;border-radius:8px;border:1px solid ${ativo ? '#3b82f6' : 'rgba(255,255,255,0.1)'};background:${ativo ? 'rgba(59,130,246,0.15)' : 'rgba(255,255,255,0.04)'};color:${ativo ? '#3b82f6' : 'var(--texto3)'};font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:0.5px;`;
+  const opts = meses.map(m => {
+    const [a, mm] = m.split('-');
+    const label = new Date(+a, +mm - 1).toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }).toUpperCase();
+    return `<option value="${m}" ${atual === m ? 'selected' : ''}>${label}</option>`;
+  }).join('');
+  return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+    <button onclick="_dashFinSetFiltro(null)" style="${btnStyle(!atual)}">GERAL</button>
+    <select onchange="_dashFinSetFiltro(this.value||null)" style="padding:6px 10px;border-radius:8px;border:1px solid ${atual ? '#3b82f6' : 'rgba(255,255,255,0.1)'};background:${atual ? 'rgba(59,130,246,0.15)' : 'var(--bg2)'};color:${atual ? '#3b82f6' : 'var(--texto3)'};font-size:11px;font-weight:700;font-family:inherit;cursor:pointer;">
+      <option value="">MENSAL</option>${opts}
+    </select>
+  </div>`;
+}
+
+function _dashFinSetFiltro(val) {
+  _dashFinFiltro = val || null;
+  // Re-renderiza só o conteúdo financeiro
+  const m = calcDashMetricas();
+  const porObra = calcDashPorObra(m.lancAtivos);
+  const html = dashBuildResumoFinanceiro(porObra);
+  // Mobile ou desktop
+  const elMob = document.getElementById('dash-page-1');
+  const elDesk = document.getElementById('dash-dpage-1');
+  if (elMob) elMob.innerHTML = html;
+  if (elDesk) elDesk.innerHTML = html;
+}
+
+function _dashFinCalcObra(o, filtroMes) {
+  let custo, receb, mao, adds;
+  if (filtroMes) {
+    const lancObra = lancamentos.filter(l => l.obra_id === o.id && (l.data || '').startsWith(filtroMes));
+    custo = lancObra.reduce((s, l) => s + Number(l.total || 0), 0);
+    mao = lancObra.filter(l => (typeof getCatFromLanc === 'function' ? getCatFromLanc(l) : '') === '28_mao').reduce((s, l) => s + Number(l.total || 0), 0);
+    const reps = repassesCef.filter(r => r.obra_id === o.id && (r.data || '').startsWith(filtroMes));
+    receb = reps.reduce((s, r) => s + Number(r.valor || 0), 0);
+    // Adicionais do mês — filtra pagamentos direto no array global
+    if (typeof obrasAdicionais !== 'undefined' && typeof adicionaisPgtos !== 'undefined') {
+      const listaAdd = obrasAdicionais.filter(a => a.obra_id === o.id);
+      const addIds = new Set(listaAdd.map(a => a.id));
+      const valorTotal = listaAdd.reduce((s, a) => s + Number(a.valor || 0), 0);
+      const pgtosMes = adicionaisPgtos.filter(p => addIds.has(p.adicional_id) && (p.data || '').startsWith(filtroMes));
+      const addRecebMes = pgtosMes.reduce((s, p) => s + Number(p.valor || 0), 0);
+      adds = { valorTotal, totalRecebido: addRecebMes, saldo: 0 };
+    } else {
+      adds = { valorTotal: 0, totalRecebido: 0, saldo: 0 };
+    }
+  } else {
+    const lancObra = lancamentos.filter(l => l.obra_id === o.id);
+    custo = lancObra.reduce((s, l) => s + Number(l.total || 0), 0);
+    mao = lancObra.filter(l => (typeof getCatFromLanc === 'function' ? getCatFromLanc(l) : '') === '28_mao').reduce((s, l) => s + Number(l.total || 0), 0);
+    const reps = repassesCef.filter(r => r.obra_id === o.id);
+    receb = reps.reduce((s, r) => s + Number(r.valor || 0), 0);
+    adds = typeof getAdicionaisObra === 'function' ? getAdicionaisObra(o.id) : { valorTotal: 0, totalRecebido: 0, saldo: 0 };
+  }
+  const vv = Number(o.valor_venda || 0);
+  const entradas = receb + (adds?.totalRecebido || 0);
+  const receita = vv + (adds?.valorTotal || 0);
+  const faltaReceber = filtroMes ? 0 : (receita - entradas); // falta receber só faz sentido no geral
+  const saldo = entradas - custo;
+  const pctReceb = receita > 0 ? (entradas / receita * 100) : 0;
+  return { ...o, nome: o.nome, id: o.id, vv, custo, receb, entradas, receita, faltaReceber, saldo, mao, pctReceb, adds };
+}
+
 function dashBuildResumoFinanceiro(porObra) {
   if (!porObra.length) return '';
 
-  // Totais gerais
-  let totalEntradas = 0, totalSaidas = 0, totalReceita = 0, totalMao = 0;
-  const obrasData = porObra.map(o => {
-    const entradas = o.receb + (o.adds?.totalRecebido || 0);
-    const receita = o.vv + (o.adds?.valorTotal || 0);
-    const faltaReceber = receita - entradas;
-    const saldo = entradas - o.custo;
-    // Mão de obra
-    const lancObra = lancamentos.filter(l => l.obra_id === o.id);
-    const mao = lancObra.filter(l => (typeof getCatFromLanc === 'function' ? getCatFromLanc(l) : '') === '28_mao').reduce((s,l) => s + Number(l.total||0), 0);
-    totalEntradas += entradas;
-    totalSaidas += o.custo;
-    totalReceita += receita;
-    totalMao += mao;
-    const pctReceb = receita > 0 ? (entradas / receita * 100) : 0;
-    return { ...o, entradas, receita, faltaReceber, saldo, mao, pctReceb };
-  });
+  const filtroMes = _dashFinFiltro;
 
-  const totalFaltaReceber = totalReceita - totalEntradas;
+  // Recalcula por obra com filtro
+  let totalEntradas = 0, totalSaidas = 0, totalReceita = 0, totalMao = 0;
+  const obrasData = obras.filter(o => porObra.some(p => p.id === o.id)).map(o => {
+    const d = _dashFinCalcObra(o, filtroMes);
+    totalEntradas += d.entradas;
+    totalSaidas += d.custo;
+    totalReceita += d.receita;
+    totalMao += d.mao;
+    return d;
+  }).filter(d => d.custo > 0 || d.entradas > 0 || (!filtroMes && d.vv > 0));
+
+  const totalFaltaReceber = filtroMes ? 0 : (totalReceita - totalEntradas);
   const saldoGeral = totalEntradas - totalSaidas;
   const lucroProjetado = totalReceita - totalSaidas;
   const margemProj = totalReceita > 0 ? (lucroProjetado / totalReceita * 100) : 0;
   const pctRecebGeral = totalReceita > 0 ? (totalEntradas / totalReceita * 100) : 0;
+
+  // Label do período
+  const periodoLabel = filtroMes
+    ? new Date(+filtroMes.slice(0,4), +filtroMes.slice(5,7)-1).toLocaleDateString('pt-BR', { month:'long', year:'numeric' }).toUpperCase()
+    : 'OBRAS ATIVAS';
 
   const cardG = (icone, label, valor, cor, sub) => `
     <div style="background:var(--bg2);border:1px solid var(--borda2);border-radius:12px;padding:16px;position:relative;overflow:hidden;">
@@ -503,55 +579,65 @@ function dashBuildResumoFinanceiro(porObra) {
     </div>`;
 
   // Cards gerais
-  const subEntradas = `PLs + Entrada + Terreno + Extras`;
+  const subEntradas = filtroMes ? `Repasses + Extras do mês` : `PLs + Entrada + Terreno + Extras`;
   const subSaidas = `Material: ${fmtR(totalSaidas - totalMao)} · Mão: ${fmtR(totalMao)}`;
   const subFalta = `Receita: ${fmtR(totalReceita)} · Recebido: ${fmtR(totalEntradas)}`;
 
   let html = `<div style="margin-bottom:20px;">
-    <div style="font-size:13px;font-weight:700;color:var(--verde-hl);letter-spacing:2px;margin-bottom:14px;font-family:'Rajdhani',sans-serif;">📊 RESUMO FINANCEIRO — OBRAS ATIVAS</div>
+    <div style="font-size:13px;font-weight:700;color:var(--verde-hl);letter-spacing:2px;margin-bottom:14px;font-family:'Rajdhani',sans-serif;">📊 RESUMO FINANCEIRO — ${periodoLabel}</div>
+    ${_dashFinFiltroBar()}
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:14px;">
-      ${cardG('💰', 'TOTAL ENTRADAS', totalEntradas, '#22c55e', subEntradas)}
-      ${cardG('📤', 'TOTAL SAÍDAS', totalSaidas, '#ef4444', subSaidas)}
-      ${cardG('🏦', 'FALTA RECEBER', totalFaltaReceber, '#3b82f6', subFalta)}
+      ${cardG('💰', filtroMes ? 'ENTRADAS NO MÊS' : 'TOTAL ENTRADAS', totalEntradas, '#22c55e', subEntradas)}
+      ${cardG('📤', filtroMes ? 'SAÍDAS NO MÊS' : 'TOTAL SAÍDAS', totalSaidas, '#ef4444', subSaidas)}
+      ${filtroMes ? cardG('📊', 'SALDO DO MÊS', saldoGeral, saldoGeral >= 0 ? '#22c55e' : '#ef4444', 'Entradas − Saídas no período') : cardG('🏦', 'FALTA RECEBER', totalFaltaReceber, '#3b82f6', subFalta)}
     </div>`;
 
-  // Barra progresso recebido
-  html += `<div style="background:var(--bg2);border:1px solid var(--borda2);border-radius:12px;padding:14px;margin-bottom:14px;">
-    <div style="font-size:10px;color:var(--texto3);font-weight:700;letter-spacing:1px;margin-bottom:8px;">RECEBIDO vs RECEITA TOTAL</div>
-    <div style="height:10px;background:rgba(255,255,255,0.06);border-radius:5px;overflow:hidden;">
-      <div style="height:100%;width:${Math.min(pctRecebGeral, 100)}%;background:linear-gradient(90deg,#22c55e,#16a085);border-radius:5px;transition:width .5s;"></div>
-    </div>
-    <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:10px;color:var(--texto4);">
-      <span>Recebido: <strong style="color:#22c55e;">${fmtR(totalEntradas)}</strong> (${pctRecebGeral.toFixed(0)}%)</span>
-      <span>Receita: <strong style="color:var(--branco);">${fmtR(totalReceita)}</strong></span>
-    </div>
-  </div>`;
+  // Barra progresso recebido (só no geral)
+  if (!filtroMes) {
+    html += `<div style="background:var(--bg2);border:1px solid var(--borda2);border-radius:12px;padding:14px;margin-bottom:14px;">
+      <div style="font-size:10px;color:var(--texto3);font-weight:700;letter-spacing:1px;margin-bottom:8px;">RECEBIDO vs RECEITA TOTAL</div>
+      <div style="height:10px;background:rgba(255,255,255,0.06);border-radius:5px;overflow:hidden;">
+        <div style="height:100%;width:${Math.min(pctRecebGeral, 100)}%;background:linear-gradient(90deg,#22c55e,#16a085);border-radius:5px;transition:width .5s;"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:10px;color:var(--texto4);">
+        <span>Recebido: <strong style="color:#22c55e;">${fmtR(totalEntradas)}</strong> (${pctRecebGeral.toFixed(0)}%)</span>
+        <span>Receita: <strong style="color:var(--branco);">${fmtR(totalReceita)}</strong></span>
+      </div>
+    </div>`;
+  }
 
   // Saldo + Lucro
-  html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
-    ${cardG('📊', 'SALDO (ENTRADAS − SAÍDAS)', saldoGeral, saldoGeral >= 0 ? '#22c55e' : '#ef4444', 'Caixa disponível das obras')}
-    ${cardG('📈', 'LUCRO PROJETADO', lucroProjetado, lucroProjetado >= 0 ? '#f59e0b' : '#ef4444', `Receita − Gasto · Margem: ${margemProj.toFixed(0)}%`)}
-  </div>`;
+  if (filtroMes) {
+    // No modo mensal: só saldo do mês (já mostrado nos 3 cards acima)
+  } else {
+    html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+      ${cardG('📊', 'SALDO (ENTRADAS − SAÍDAS)', saldoGeral, saldoGeral >= 0 ? '#22c55e' : '#ef4444', 'Caixa disponível das obras')}
+      ${cardG('📈', 'LUCRO PROJETADO', lucroProjetado, lucroProjetado >= 0 ? '#f59e0b' : '#ef4444', `Receita − Gasto · Margem: ${margemProj.toFixed(0)}%`)}
+    </div>`;
+  }
 
   // Por obra
   html += `<div style="font-size:11px;font-weight:700;color:var(--texto2);letter-spacing:1px;margin-bottom:10px;">🏗 POR OBRA</div>`;
+  if (!obrasData.length) {
+    html += `<div style="text-align:center;color:var(--texto4);font-size:12px;padding:20px;">Nenhum movimento neste mês</div>`;
+  }
   obrasData.sort((a,b) => b.custo - a.custo).forEach(o => {
     const corPct = o.pctReceb >= 70 ? '#22c55e' : o.pctReceb >= 40 ? '#f59e0b' : '#ef4444';
     const corSaldo = o.saldo >= 0 ? '#22c55e' : '#ef4444';
     html += `<div style="background:var(--bg2);border:1px solid var(--borda2);border-radius:12px;padding:14px;margin-bottom:8px;cursor:pointer;" onclick="setView('custos');setTimeout(()=>custosAbrirDetalhe('${esc(o.id)}'),100)">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
         <div style="font-size:13px;font-weight:700;color:var(--branco);max-width:55%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(o.nome)}</div>
-        <div style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;background:${corPct}18;color:${corPct};">${o.pctReceb.toFixed(0)}% recebido</div>
+        <div style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;background:${corPct}18;color:${corPct};">${filtroMes ? fmtR(o.saldo, true) : o.pctReceb.toFixed(0) + '% recebido'}</div>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px;">
+      <div style="display:grid;grid-template-columns:repeat(${filtroMes ? 3 : 4},1fr);gap:8px;margin-bottom:10px;">
         <div><div style="font-size:9px;color:var(--texto4);font-weight:700;letter-spacing:0.5px;margin-bottom:2px;">ENTRADAS</div><div style="font-size:13px;font-weight:800;color:#22c55e;font-family:'Rajdhani',sans-serif;">${fmtR(o.entradas, true)}</div></div>
         <div><div style="font-size:9px;color:var(--texto4);font-weight:700;letter-spacing:0.5px;margin-bottom:2px;">SAÍDAS</div><div style="font-size:13px;font-weight:800;color:#ef4444;font-family:'Rajdhani',sans-serif;">${fmtR(o.custo, true)}</div></div>
-        <div><div style="font-size:9px;color:var(--texto4);font-weight:700;letter-spacing:0.5px;margin-bottom:2px;">FALTA RECEBER</div><div style="font-size:13px;font-weight:800;color:#3b82f6;font-family:'Rajdhani',sans-serif;">${fmtR(o.faltaReceber, true)}</div></div>
+        ${filtroMes ? '' : `<div><div style="font-size:9px;color:var(--texto4);font-weight:700;letter-spacing:0.5px;margin-bottom:2px;">FALTA RECEBER</div><div style="font-size:13px;font-weight:800;color:#3b82f6;font-family:'Rajdhani',sans-serif;">${fmtR(o.faltaReceber, true)}</div></div>`}
         <div><div style="font-size:9px;color:var(--texto4);font-weight:700;letter-spacing:0.5px;margin-bottom:2px;">SALDO</div><div style="font-size:13px;font-weight:800;color:${corSaldo};font-family:'Rajdhani',sans-serif;">${fmtR(o.saldo, true)}</div></div>
       </div>
-      <div style="height:6px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;">
+      ${filtroMes ? '' : `<div style="height:6px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;">
         <div style="height:100%;width:${Math.min(o.pctReceb, 100)}%;background:linear-gradient(90deg,${corPct},${corPct}cc);border-radius:3px;transition:width .5s;"></div>
-      </div>
+      </div>`}
     </div>`;
   });
 
