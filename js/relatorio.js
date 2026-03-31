@@ -261,6 +261,14 @@ function buildPainelFinanceiro() {
     ${cardResumo('📊', 'SALDO', saldo, corSaldo, saldo >= 0 ? 'Positivo' : 'Negativo')}
     ${cardResumo('👷', 'MÃO DE OBRA', maoObraMes, '#f39c12', totalSaidas > 0 ? (maoObraMes/totalSaidas*100).toFixed(0)+'% do total' : '—', "toggleDetalheCard('mao')")}
   </div>`;
+  // Estoque como patrimônio
+  if (typeof _valorEstoqueAtual !== 'undefined' && _valorEstoqueAtual > 0) {
+    const saldoReal = saldo + _valorEstoqueAtual;
+    html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;">
+      ${cardResumo('📦', 'ESTOQUE EM MATERIAL', _valorEstoqueAtual, '#f59e0b', 'Dinheiro parado em material')}
+      ${cardResumo('💎', 'SALDO REAL', saldoReal, saldoReal >= 0 ? '#2ecc71' : '#ef4444', 'Caixa + Estoque')}
+    </div>`;
+  }
   // Container pra detalhe expandido dos cards
   html += `<div id="rel-detalhe-card" style="margin-bottom:16px;"></div>`;
 
