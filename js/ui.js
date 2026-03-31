@@ -428,10 +428,10 @@ function setTipoAjuste(tipo) {
   const cores = { inventario: ['96,165,250', '#60a5fa'], contagem: ['46,204,113', 'var(--verde-hl)'], correcao: ['245,158,11', '#fbbf24'] };
   const infos = {
     inventario: 'Material que ja existia antes do sistema. Entra no saldo sem gerar custo.',
-    contagem: 'Contagem fisica real. Informe a DIFERENCA (positiva ou negativa) em relacao ao saldo atual.',
+    contagem: 'Contagem fisica real. Informe a QUANTIDADE que voce contou — o sistema calcula a diferenca.',
     correcao: 'Correcao manual por erro de lancamento, perda ou extravio.'
   };
-  const labels = { inventario: 'QUANTIDADE A ADICIONAR *', contagem: 'DIFERENCA (+ ou -) *', correcao: 'QUANTIDADE A AJUSTAR (+ ou -) *' };
+  const labels = { inventario: 'QUANTIDADE A ADICIONAR *', contagem: 'QUANTIDADE CONTADA *', correcao: 'QUANTIDADE A AJUSTAR (+ ou -) *' };
   Object.entries(btns).forEach(([k, id]) => {
     const el = document.getElementById(id);
     if (k === tipo) {
@@ -486,14 +486,31 @@ function selecionarAjusteItem(desc, unidade) {
 
 async function salvarAjusteEstoque() {
   const desc = (document.getElementById('ajuste-desc').value || '').toUpperCase().trim();
-  const qtd = parseFloat(document.getElementById('ajuste-qtd').value) || 0;
+  let qtd = parseFloat(document.getElementById('ajuste-qtd').value) || 0;
   const unidade = (document.getElementById('ajuste-unidade').value || 'UN').toUpperCase();
   const motivo = (document.getElementById('ajuste-motivo').value || '').toUpperCase();
   if (!desc) { showToast('⚠ Informe o material.'); return; }
-  if (qtd === 0) { showToast('⚠ Informe a quantidade.'); return; }
-  if (ajusteTipoAtual === 'inventario' && qtd < 0) { showToast('⚠ Inventário inicial deve ser positivo.'); return; }
+  if (ajusteTipoAtual === 'inventario' && qtd <= 0) { showToast('⚠ Inventário inicial deve ser positivo.'); return; }
+  if (ajusteTipoAtual !== 'inventario' && qtd === 0) { showToast('⚠ Informe a quantidade.'); return; }
+
+  // Contagem física: usuário informa qtd real, sistema calcula diferença
+  let confirmMsg;
+  if (ajusteTipoAtual === 'contagem') {
+    if (qtd < 0) { showToast('⚠ Contagem física deve ser >= 0.'); return; }
+    const materiais = consolidarEstoque();
+    const m = materiais.find(m => norm(m.desc) === norm(desc));
+    const saldoAtual = m ? m.saldoTotal : 0;
+    const diff = qtd - saldoAtual;
+    if (diff === 0) { showToast('✅ Contagem igual ao saldo — nenhum ajuste necessário.'); return; }
+    confirmMsg = `Contagem física: ${qtd} ${unidade}\nSaldo sistema: ${saldoAtual} ${unidade}\nDiferença: ${diff > 0 ? '+' : ''}${diff} ${unidade}\n\nConfirma o ajuste?`;
+    qtd = diff; // salva apenas a diferença
+  } else {
+    const label = { inventario: 'Inventário inicial', correcao: 'Correção manual' }[ajusteTipoAtual];
+    confirmMsg = `Confirma ${label}: ${qtd > 0 ? '+' : ''}${qtd} ${unidade} de ${desc}?`;
+  }
+
+  if (!confirm(confirmMsg)) return;
   const label = { inventario: 'Inventário inicial', contagem: 'Contagem física', correcao: 'Correção manual' }[ajusteTipoAtual];
-  if (!confirm(`Confirma ${label}: ${qtd > 0 ? '+' : ''}${qtd} ${unidade} de ${desc}?`)) return;
   try {
     const [novo] = await sbPost('ajustes_estoque', {
       item_desc: desc, unidade, qtd,
