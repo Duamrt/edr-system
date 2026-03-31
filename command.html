@@ -254,7 +254,7 @@ async function loadCC(){
     rpmGet('ordens_servico','?select=id,numero,status,valor_total,data_entrada,data_entrega,mecanico_id&order=data_entrada.desc&limit=300'),
     rpmGet('clientes','?select=id,nome'),
     rpmGet('veiculos','?select=id'),
-    rpmGet('profiles','?select=id,nome,perfil,last_sign_in_at'),
+    rpmGet('profiles','?select=id,nome,role'),
     rpmGet('oficinas','?select=id,nome,trial_ate')
   ]);
 
@@ -278,7 +278,8 @@ async function loadCC(){
   const roAnd=rOS.filter(o=>o.status==='em_andamento'||o.status==='aguardando').length;
   const carbon=rOfi.find(o=>(o.nome||'').toLowerCase().includes('carbon'));
   const dTrial=carbon?.trial_ate?Math.ceil((new Date(carbon.trial_ate)-new Date())/(864e5)):null;
-  const ultAcesso=rProf.filter(p=>p.last_sign_in_at).sort((a,b)=>(b.last_sign_in_at||'').localeCompare(a.last_sign_in_at||''))[0];
+  // Ultimo acesso: pegar a OS mais recente como proxy de uso
+  const ultOS=rOS.length?rOS[0]:null;
 
   // Mes anterior
   const [ya,mm]=ma.split('-').map(Number);
@@ -333,7 +334,7 @@ async function loadCC(){
     </div>
     <div style="border-top:1px solid var(--borda);padding-top:12px;margin-top:8px;">
       <div style="display:flex;justify-content:space-between;margin-bottom:5px;"><span style="font-size:11px;color:var(--t4);">Carbon Auto Center</span><span style="font-size:11px;color:var(--t2);font-weight:600;">Ativo</span></div>
-      <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="font-size:11px;color:var(--t4);">Ultimo acesso</span><span style="font-size:11px;color:var(--t3);">${ultAcesso?.last_sign_in_at?new Date(ultAcesso.last_sign_in_at).toLocaleDateString('pt-BR'):'—'}</span></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="font-size:11px;color:var(--t4);">Ultima OS</span><span style="font-size:11px;color:var(--t3);">${ultOS?.data_entrada?new Date(ultOS.data_entrada+'T12:00:00').toLocaleDateString('pt-BR'):'—'}</span></div>
       ${dTrial!==null?`<div style="display:flex;justify-content:space-between;"><span style="font-size:11px;color:var(--t4);">Trial</span><span style="font-size:11px;color:var(--t2);font-weight:600;">${dTrial>0?dTrial+' dias':'Expirado'}</span></div>`:''}
     </div>`;
 
