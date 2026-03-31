@@ -344,6 +344,7 @@ function renderEstoque() {
         <div style="font-weight:800;font-size:20px;color:${corSaldo};">${m.saldoTotal}</div>
         <div style="font-size:10px;color:var(--texto3);">${m.unidade}</div>
       </div>
+      <button class="btn-dist-item admin-only" onclick="event.stopPropagation();ajusteRapidoEstoque('${esc(m.desc)}','${esc(m.unidade)}',${m.saldoTotal})" title="Ajustar quantidade" style="font-size:14px;">📋</button>
       <button class="btn-dist-item" onclick="event.stopPropagation();abrirSaidaDoItem(${i})">📤</button>
     </div>`;
   }).join('');
@@ -430,9 +431,36 @@ function abrirHistoricoMaterial(idx) {
       </div>
       <div style="font-size:11px;font-weight:700;color:var(--texto3);letter-spacing:1px;margin-bottom:8px;font-family:'Rajdhani',sans-serif;">MOVIMENTAÇÕES (${movs.length})</div>
       ${linhas}
-      <button onclick="document.getElementById('modal-hist-material').remove()" style="width:100%;margin-top:14px;padding:10px;background:var(--bg3);border:1px solid var(--borda2);border-radius:8px;color:var(--texto2);font-weight:700;cursor:pointer;font-family:inherit;">FECHAR</button>
+      <div style="display:flex;gap:8px;margin-top:14px;">
+        <button onclick="ajusteRapidoEstoque('${esc(m.desc)}','${esc(m.unidade)}',${m.saldoTotal})" style="flex:1;padding:10px;background:rgba(96,165,250,0.12);border:1px solid rgba(96,165,250,0.3);border-radius:8px;color:#60a5fa;font-weight:700;cursor:pointer;font-family:inherit;font-size:12px;">📋 AJUSTAR QTD</button>
+        <button onclick="document.getElementById('modal-hist-material').remove()" style="flex:1;padding:10px;background:var(--bg3);border:1px solid var(--borda2);border-radius:8px;color:var(--texto2);font-weight:700;cursor:pointer;font-family:inherit;font-size:12px;">FECHAR</button>
+      </div>
     </div>`;
   document.body.appendChild(modal);
+}
+
+// Ajuste rápido de estoque — direto do card/histórico
+async function ajusteRapidoEstoque(desc, unidade, saldoAtual) {
+  const input = prompt(`${desc}\nSaldo atual: ${saldoAtual} ${unidade}\n\nDigite a quantidade REAL (contagem física):`);
+  if (input === null) return;
+  const qtdReal = parseFloat(input);
+  if (isNaN(qtdReal) || qtdReal < 0) { showToast('⚠ Quantidade inválida.'); return; }
+  const diff = qtdReal - saldoAtual;
+  if (diff === 0) { showToast('✅ Quantidade já confere — nenhum ajuste.'); return; }
+  if (!confirm(`${desc}\nSaldo sistema: ${saldoAtual} ${unidade}\nContagem real: ${qtdReal} ${unidade}\nDiferença: ${diff > 0 ? '+' : ''}${diff} ${unidade}\n\nConfirma?`)) return;
+  try {
+    const [novo] = await sbPost('ajustes_estoque', {
+      item_desc: desc, unidade, qtd: diff,
+      tipo: 'contagem',
+      motivo: `Contagem física · Real: ${qtdReal} · Sistema: ${saldoAtual}`
+    });
+    ajustesEstoque.unshift(novo);
+    showToast(`📋 Ajustado: ${desc} → ${qtdReal} ${unidade} (${diff > 0 ? '+' : ''}${diff})`);
+    const hist = document.getElementById('modal-hist-material');
+    if (hist) hist.remove();
+    renderEstoque();
+    renderDashboard();
+  } catch (e) { console.error(e); showToast('❌ Erro ao salvar ajuste.'); }
 }
 
 // Saída direto de um item do estoque (botão 📤 no card do material)
