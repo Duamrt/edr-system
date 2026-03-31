@@ -473,7 +473,7 @@ function _dashFinMeses() {
   // Coleta todos os meses com dados (lançamentos + repasses)
   const meses = new Set();
   lancamentos.forEach(l => { if (l.data) meses.add(l.data.slice(0, 7)); });
-  repassesCef.forEach(r => { if (r.data) meses.add(r.data.slice(0, 7)); });
+  repassesCef.forEach(r => { if (r.data_credito) meses.add(r.data_credito.slice(0, 7)); });
   return [...meses].sort().reverse();
 }
 
@@ -513,7 +513,7 @@ function _dashFinCalcObra(o, filtroMes) {
     const lancObra = lancamentos.filter(l => l.obra_id === o.id && (l.data || '').startsWith(filtroMes));
     custo = lancObra.reduce((s, l) => s + Number(l.total || 0), 0);
     mao = lancObra.filter(l => (typeof getCatFromLanc === 'function' ? getCatFromLanc(l) : '') === '28_mao').reduce((s, l) => s + Number(l.total || 0), 0);
-    const reps = repassesCef.filter(r => r.obra_id === o.id && (r.data || '').startsWith(filtroMes));
+    const reps = repassesCef.filter(r => r.obra_id === o.id && (r.data_credito || '').startsWith(filtroMes));
     receb = reps.reduce((s, r) => s + Number(r.valor || 0), 0);
     // Adicionais do mês — filtra pagamentos direto no array global
     if (typeof obrasAdicionais !== 'undefined' && typeof adicionaisPgtos !== 'undefined') {
