@@ -631,6 +631,7 @@ function filtrarLanc() {
         <div class="lanc-desc">${l.descricao}</div>
         <div style="display:flex;align-items:center;gap:4px;">
           <span class="lanc-val admin-only">${fmtR(l.total)}</span>
+          ${!/^\d{4,6}\s*[·-]/.test(l.descricao||'') ? `<button class="admin-only" onclick="event.stopPropagation();editarDescLanc('${esc(l.id)}')" title="Vincular ao catálogo" style="background:none;border:none;cursor:pointer;font-size:14px;padding:2px 4px;">✏️</button>` : ''}
           <button class="lanc-edit-etapa admin-only" onclick="event.stopPropagation();editarEtapaLanc('${esc(l.id)}')" title="Alterar centro de custo" style="background:none;border:none;cursor:pointer;font-size:14px;padding:2px 4px;">📂</button>
           <button class="lanc-del admin-only" onclick="event.stopPropagation();excluirLanc('${esc(l.id)}')">🗑</button>
         </div>
@@ -639,6 +640,100 @@ function filtrarLanc() {
       <div class="lanc-meta">${obraMap[l.obra_id]||'—'} · ${(()=>{ const q=Number(l.qtd||1); const oNome=(obraMap[l.obra_id]||'').toUpperCase(); if(oNome.includes('ESCRIT')||q<=0||String(l.qtd).includes('e')||q!==Math.round(q*100)/100) return l.data||''; return q+' un · '+(l.data||''); })()}${l.criado_por ? `<span class="admin-only" style="margin-left:6px;font-size:9px;color:var(--texto4);"> · 👤 ${l.criado_por}</span>` : ''}</div>
     </div>`).join('');
   aplicarPerfil();
+}
+
+// ══════════════════════════════════════════
+// EDITAR DESCRIÇÃO — vincular lançamento ao catálogo
+// ══════════════════════════════════════════
+function editarDescLanc(lancId) {
+  const lanc = lancamentos.find(l => l.id === lancId);
+  if (!lanc) return;
+  let modal = document.getElementById('modal-edit-desc');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'modal-edit-desc';
+    modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.75);backdrop-filter:blur(6px);';
+    modal.innerHTML = `
+      <div style="background:var(--bg2);border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:24px;width:min(460px,94vw);box-shadow:0 20px 60px rgba(0,0,0,.6);">
+        <div style="font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;color:var(--verde-hl);margin-bottom:4px;">✏️ VINCULAR AO CATÁLOGO</div>
+        <div id="ed-desc-atual" style="font-size:11px;color:var(--texto3);margin-bottom:12px;padding:8px;background:rgba(255,255,255,0.03);border-radius:6px;"></div>
+        <div style="position:relative;">
+          <input id="ed-desc-input" type="text" placeholder="Digite o nome do material..." autocomplete="off"
+            style="width:100%;box-sizing:border-box;background:var(--bg3);border:1px solid var(--borda2);border-radius:8px;padding:10px 12px;color:var(--branco);font-size:13px;font-family:'Inter',sans-serif;"
+            oninput="this.value=this.value.toUpperCase();edDescAutocomplete(this.value)">
+          <div id="ed-desc-ac" class="autocomplete-list hidden" style="position:absolute;top:100%;left:0;right:0;z-index:10;max-height:200px;overflow-y:auto;"></div>
+        </div>
+        <div id="ed-desc-selected" style="display:none;margin-top:10px;padding:10px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:8px;">
+          <span id="ed-desc-sel-text" style="font-size:12px;color:var(--verde-hl);font-weight:700;"></span>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:16px;">
+          <button onclick="document.getElementById('modal-edit-desc').style.display='none'" style="flex:1;background:var(--bg3);border:1px solid var(--borda2);border-radius:8px;padding:10px;color:var(--texto2);font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;cursor:pointer;">CANCELAR</button>
+          <button id="ed-desc-btn" onclick="confirmarEditDesc()" style="flex:2;background:var(--verde-hl);border:none;border-radius:8px;padding:10px;color:#000;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:800;cursor:pointer;letter-spacing:1px;" disabled>SALVAR</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+  }
+  modal.dataset.lancId = lancId;
+  modal.dataset.selectedCodigo = '';
+  modal.dataset.selectedNome = '';
+  document.getElementById('ed-desc-atual').textContent = 'Atual: ' + lanc.descricao;
+  document.getElementById('ed-desc-input').value = '';
+  document.getElementById('ed-desc-selected').style.display = 'none';
+  document.getElementById('ed-desc-btn').disabled = true;
+  document.getElementById('ed-desc-ac').classList.add('hidden');
+  modal.style.display = 'flex';
+  setTimeout(() => document.getElementById('ed-desc-input').focus(), 100);
+}
+
+function edDescAutocomplete(val) {
+  const list = document.getElementById('ed-desc-ac');
+  if (!val || val.length < 2) { list.classList.add('hidden'); return; }
+  const v = norm(val);
+  const matches = catalogoMateriais
+    .filter(m => norm(m.nome).includes(v) || (m.codigo||'').includes(val.replace(/\D/g,'')))
+    .slice(0, 10);
+  if (!matches.length) { list.classList.add('hidden'); return; }
+  list.innerHTML = matches.map(m =>
+    `<div class="autocomplete-item" onmousedown="edDescSelect('${esc(m.codigo)}','${esc(m.nome)}')">
+      <span class="ac-codigo">${m.codigo}</span>
+      <span class="ac-label">${m.nome}</span>
+    </div>`
+  ).join('');
+  list.classList.remove('hidden');
+}
+
+function edDescSelect(codigo, nome) {
+  const modal = document.getElementById('modal-edit-desc');
+  modal.dataset.selectedCodigo = codigo;
+  modal.dataset.selectedNome = nome;
+  document.getElementById('ed-desc-input').value = nome;
+  document.getElementById('ed-desc-ac').classList.add('hidden');
+  document.getElementById('ed-desc-selected').style.display = 'block';
+  document.getElementById('ed-desc-sel-text').textContent = codigo + ' · ' + nome;
+  document.getElementById('ed-desc-btn').disabled = false;
+}
+
+async function confirmarEditDesc() {
+  const modal = document.getElementById('modal-edit-desc');
+  const lancId = modal.dataset.lancId;
+  const codigo = modal.dataset.selectedCodigo;
+  const nome = modal.dataset.selectedNome;
+  if (!lancId || !codigo) return;
+  const lanc = lancamentos.find(l => l.id === lancId);
+  if (!lanc) return;
+  const btn = document.getElementById('ed-desc-btn');
+  btn.disabled = true; btn.textContent = 'SALVANDO...';
+  try {
+    const novaDesc = codigo + ' · ' + nome;
+    await sbPatch('lancamentos', '?id=eq.' + lancId, { descricao: novaDesc });
+    lanc.descricao = novaDesc;
+    showToast('✅ ' + novaDesc);
+    modal.style.display = 'none';
+    filtrarLanc();
+  } catch(e) {
+    showToast('❌ Erro ao salvar.');
+  }
+  btn.disabled = false; btn.textContent = 'SALVAR';
 }
 
 function abrirNotaDoLancamento(lancId) {
