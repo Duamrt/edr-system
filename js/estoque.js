@@ -524,12 +524,12 @@ async function confirmarDistribuicaoItem() {
     const totalLotes = lotesUsados.length + (restante > 0 ? 1 : 0);
     // Um único lançamento no financeiro da obra
     const codPrefix = m.codigo ? `${m.codigo} · ` : '';
-    const descLanc = `${codPrefix}${m.desc}${obs ? ' · '+obs : ''}`;
+    const descLanc = `${codPrefix}${m.desc}`;
     const [lanc] = await sbPost('lancamentos', {
       obra_id: obraId, descricao: descLanc,
       qtd, preco: precoFinal, total: totalValor, data: hoje,
       etapa: etapaVal,
-      obs: `Estoque EDR · ${totalLotes} lote${totalLotes!==1?'s':''}`
+      obs: `Estoque EDR · ${totalLotes} lote${totalLotes!==1?'s':''}${obs ? ' · '+obs : ''}`
     });
     if (lanc) lancamentos.unshift(lanc);
     showToast(`✅ ${qtd} ${m.unidade} de ${esc(m.desc)} → ${obraNome}!`);

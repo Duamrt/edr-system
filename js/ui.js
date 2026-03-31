@@ -188,7 +188,10 @@ async function salvarEntradaDireta() {
       // DIRETO NA OBRA — não gera estoque, só lançamento de custo
       const valor = qtd * preco;
       const etapa = document.getElementById('entrada-etapa')?.value || '';
-      const [lanc] = await sbPost('lancamentos', { obra_id: obraId, descricao: desc + (fornecedor ? ` · ${fornecedor}` : ''), qtd, preco, total: valor, data, obs: obs || 'ENTRADA DIRETA SEM NF', etapa });
+      const codMat = catalogoMateriais.find(m => norm(m.nome) === norm(desc));
+      const descLanc = codMat ? `${codMat.codigo} · ${desc}` : desc;
+      const obsLanc = [fornecedor, obs || 'ENTRADA DIRETA SEM NF'].filter(Boolean).join(' · ');
+      const [lanc] = await sbPost('lancamentos', { obra_id: obraId, descricao: descLanc, qtd, preco, total: valor, data, obs: obsLanc, etapa });
       lancamentos.unshift(lanc);
       showToast(`✅ ${qtd} ${unidade} de ${desc} → ${obraObj.nome}!`);
     } else {
@@ -387,8 +390,10 @@ async function salvarSaidaMaterial() {
     distribuicoes.unshift(nova);
     // Também gera lançamento de custo na obra se tiver valor
     if (valor > 0) {
+      const codSaida = catalogoMateriais.find(m => norm(m.nome) === norm(desc));
+      const descSaida = codSaida ? `${codSaida.codigo} · ${desc}` : desc;
       const [lanc] = await sbPost('lancamentos', {
-        obra_id: obraId, descricao: desc,
+        obra_id: obraId, descricao: descSaida,
         qtd, preco: valorUnit, total: valor, data,
         obs: obs || 'SAÍDA MANUAL DE ESTOQUE', etapa: etapa || ''
       });
