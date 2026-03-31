@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mockup — Dashboard Financeiro EDR</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#0a0f0a; color:#e5e5e5; font-family:'Rajdhani',sans-serif; padding:20px; max-width:900px; margin:0 auto; }
+
+  .titulo { font-size:14px; font-weight:700; color:#22c55e; letter-spacing:2px; margin-bottom:16px; }
+
+  /* Cards resumo geral */
+  .cards-geral { display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; margin-bottom:20px; }
+  .card-g { background:#111; border:1px solid #1a2a1a; border-radius:12px; padding:18px; position:relative; overflow:hidden; }
+  .card-g .icone { position:absolute; top:12px; right:14px; font-size:26px; opacity:0.2; }
+  .card-g .label { font-size:10px; color:#888; font-weight:700; letter-spacing:1.5px; margin-bottom:8px; }
+  .card-g .valor { font-size:26px; font-weight:800; line-height:1; font-family:'Rajdhani',sans-serif; }
+  .card-g .sub { font-size:10px; color:#666; margin-top:8px; }
+  .verde { color:#22c55e; }
+  .vermelho { color:#ef4444; }
+  .azul { color:#3b82f6; }
+  .amarelo { color:#f59e0b; }
+
+  /* Barra progresso geral */
+  .barra-geral { background:#111; border:1px solid #1a2a1a; border-radius:12px; padding:16px; margin-bottom:20px; }
+  .barra-geral .titulo-barra { font-size:11px; color:#888; font-weight:700; letter-spacing:1px; margin-bottom:10px; }
+  .barra-track { height:10px; background:rgba(255,255,255,0.06); border-radius:5px; overflow:hidden; position:relative; }
+  .barra-fill { height:100%; border-radius:5px; transition:width .5s; }
+  .barra-legenda { display:flex; justify-content:space-between; margin-top:8px; font-size:10px; color:#666; }
+
+  /* Cards por obra */
+  .obra-card { background:#111; border:1px solid #1a2a1a; border-radius:12px; padding:16px; margin-bottom:10px; }
+  .obra-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+  .obra-nome { font-size:14px; font-weight:700; color:#fff; }
+  .obra-pct { font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px; }
+  .obra-grid { display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; margin-bottom:12px; }
+  .obra-metric .lb { font-size:9px; color:#666; font-weight:700; letter-spacing:1px; margin-bottom:3px; }
+  .obra-metric .vl { font-size:14px; font-weight:800; font-family:'Rajdhani',sans-serif; }
+  .obra-barra { height:6px; background:rgba(255,255,255,0.06); border-radius:3px; overflow:hidden; }
+  .obra-barra-fill { height:100%; border-radius:3px; }
+
+  .nota { background:rgba(59,130,246,0.08); border:1px solid rgba(59,130,246,0.15); border-radius:10px; padding:12px 16px; margin-top:20px; font-size:11px; color:#60a5fa; line-height:1.6; }
+
+  @media (max-width:600px) {
+    .cards-geral { grid-template-columns:1fr; }
+    .obra-grid { grid-template-columns:repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<div class="titulo">📊 RESUMO FINANCEIRO — OBRAS ATIVAS</div>
+
+<!-- ══════ CARDS RESUMO GERAL ══════ -->
+<div class="cards-geral">
+  <div class="card-g">
+    <div class="icone">💰</div>
+    <div class="label">TOTAL ENTRADAS</div>
+    <div class="valor verde">R$ 847.500</div>
+    <div class="sub">PLs: R$ 612.000 · Entrada: R$ 145.500 · Terreno: R$ 90.000</div>
+  </div>
+  <div class="card-g">
+    <div class="icone">📤</div>
+    <div class="label">TOTAL SAÍDAS</div>
+    <div class="valor vermelho">R$ 623.180</div>
+    <div class="sub">Material: R$ 421.300 · Mão de obra: R$ 201.880</div>
+  </div>
+  <div class="card-g">
+    <div class="icone">🏦</div>
+    <div class="label">FALTA RECEBER</div>
+    <div class="valor azul">R$ 432.500</div>
+    <div class="sub">Receita total: R$ 1.280.000 · Recebido: R$ 847.500</div>
+  </div>
+</div>
+
+<!-- ══════ BARRA DE PROGRESSO GERAL ══════ -->
+<div class="barra-geral">
+  <div class="titulo-barra">RECEBIDO vs RECEITA TOTAL</div>
+  <div class="barra-track">
+    <div class="barra-fill" style="width:66%;background:linear-gradient(90deg,#22c55e,#16a085);"></div>
+  </div>
+  <div class="barra-legenda">
+    <span>Recebido: <strong class="verde">R$ 847.500</strong> (66%)</span>
+    <span>Receita: <strong style="color:#fff;">R$ 1.280.000</strong></span>
+  </div>
+</div>
+
+<!-- ══════ SALDO OPERACIONAL ══════ -->
+<div class="cards-geral" style="grid-template-columns:1fr 1fr;">
+  <div class="card-g">
+    <div class="icone">📊</div>
+    <div class="label">SALDO (ENTRADAS - SAÍDAS)</div>
+    <div class="valor verde">R$ 224.320</div>
+    <div class="sub">Caixa disponível das obras</div>
+  </div>
+  <div class="card-g">
+    <div class="icone">📈</div>
+    <div class="label">LUCRO PROJETADO</div>
+    <div class="valor amarelo">R$ 656.820</div>
+    <div class="sub">Receita total − Total gasto · Margem: 51%</div>
+  </div>
+</div>
+
+<!-- ══════ POR OBRA ══════ -->
+<div class="titulo" style="margin-top:8px;">🏗 POR OBRA</div>
+
+<!-- Obra 1 -->
+<div class="obra-card">
+  <div class="obra-header">
+    <div class="obra-nome">JOSENALDO JUNIOR</div>
+    <div class="obra-pct" style="background:rgba(34,197,94,0.1);color:#22c55e;">72% recebido</div>
+  </div>
+  <div class="obra-grid">
+    <div class="obra-metric">
+      <div class="lb">ENTRADAS</div>
+      <div class="vl verde">R$ 312.000</div>
+    </div>
+    <div class="obra-metric">
+      <div class="lb">SAÍDAS</div>
+      <div class="vl vermelho">R$ 198.450</div>
+    </div>
+    <div class="obra-metric">
+      <div class="lb">FALTA RECEBER</div>
+      <div class="vl azul">R$ 118.000</div>
+    </div>
+    <div class="obra-metric">
+      <div class="lb">SALDO</div>
+      <div class="vl verde">R$ 113.550</div>
+    </div>
+  </div>
+  <div class="obra-barra">
+    <div class="obra-barra-fill" style="width:72%;background:linear-gradient(90deg,#22c55e,#16a085);"></div>
+  </div>
+</div>
+
+<!-- Obra 2 -->
+<div class="obra-card">
+  <div class="obra-header">
+    <div class="obra-nome">DAYANA</div>
+    <div class="obra-pct" style="background:rgba(245,158,11,0.1);color:#f59e0b;">55% recebido</div>
+  </div>
+  <div class="obra-grid">
+    <div class="obra-metric">
+      <div class="lb">ENTRADAS</div>
+      <div class="vl verde">R$ 198.500</div>
+    </div>
+    <div class="obra-metric">
+      <div class="lb">SAÍDAS</div>
+      <div class="vl vermelho">R$ 165.230</div>
+    </div>
+    <div class="obra-metric">
+      <div class="lb">FALTA RECEBER</div>
+      <div class="vl azul">R$ 161.500</div>
+    </div>
+    <div class="obra-metric">
+      <div class="lb">SALDO</div>
+      <div class="vl verde">R$ 33.270</div>
+    </div>
+  </div>
+  <div class="obra-barra">
+    <div class="obra-barra-fill" style="width:55%;background:linear-gradient(90deg,#f59e0b,#d97706);"></div>
+  </div>
+</div>
+
+<!-- Obra 3 — saldo negativo -->
+<div class="obra-card">
+  <div class="obra-header">
+    <div class="obra-nome">DUAM</div>
+    <div class="obra-pct" style="background:rgba(239,68,68,0.1);color:#ef4444;">0% recebido</div>
+  </div>
+  <div class="obra-grid">
+    <div class="obra-metric">
+      <div class="lb">ENTRADAS</div>
+      <div class="vl" style="color:#666;">R$ 0</div>
+    </div>
+    <div class="obra-metric">
+      <div class="lb">SAÍDAS</div>
+      <div class="vl vermelho">R$ 87.500</div>
+    </div>
+    <div class="obra-metric">
+      <div class="lb">FALTA RECEBER</div>
+      <div class="vl azul">R$ 153.000</div>
+    </div>
+    <div class="obra-metric">
+      <div class="lb">SALDO</div>
+      <div class="vl vermelho">-R$ 87.500</div>
+    </div>
+  </div>
+  <div class="obra-barra">
+    <div class="obra-barra-fill" style="width:0%;"></div>
+  </div>
+</div>
+
+<!-- Obra 4 -->
+<div class="obra-card">
+  <div class="obra-header">
+    <div class="obra-nome">PEDRO</div>
+    <div class="obra-pct" style="background:rgba(34,197,94,0.1);color:#22c55e;">85% recebido</div>
+  </div>
+  <div class="obra-grid">
+    <div class="obra-metric">
+      <div class="lb">ENTRADAS</div>
+      <div class="vl verde">R$ 255.000</div>
+    </div>
+    <div class="obra-metric">
+      <div class="lb">SAÍDAS</div>
+      <div class="vl vermelho">R$ 132.000</div>
+    </div>
+    <div class="obra-metric">
+      <div class="lb">FALTA RECEBER</div>
+      <div class="vl azul">R$ 45.000</div>
+    </div>
+    <div class="obra-metric">
+      <div class="lb">SALDO</div>
+      <div class="vl verde">R$ 123.000</div>
+    </div>
+  </div>
+  <div class="obra-barra">
+    <div class="obra-barra-fill" style="width:85%;background:linear-gradient(90deg,#22c55e,#16a085);"></div>
+  </div>
+</div>
+
+<div class="nota">
+  <strong>Como funciona:</strong><br>
+  • <strong>Entradas</strong> = tudo que a CEF já creditou (PLs + Entrada + Terreno) + extras recebidos<br>
+  • <strong>Saídas</strong> = todos os lançamentos (material + mão de obra) acumulado<br>
+  • <strong>Falta Receber</strong> = Receita total da obra (contrato + adicionais) − o que já recebeu<br>
+  • <strong>Saldo</strong> = Entradas − Saídas (caixa real da obra)<br>
+  • <strong>Lucro Projetado</strong> = Receita total − Total gasto (projeção se receber tudo)
+</div>
+
+</body>
+</html>

@@ -466,6 +466,99 @@ function dashBuildSaudeObras(porObra) {
   </div>`;
 }
 
+// ── RESUMO FINANCEIRO GERAL ─────────────────────────────────
+function dashBuildResumoFinanceiro(porObra) {
+  if (!porObra.length) return '';
+
+  // Totais gerais
+  let totalEntradas = 0, totalSaidas = 0, totalReceita = 0, totalMao = 0;
+  const obrasData = porObra.map(o => {
+    const entradas = o.receb + (o.adds?.totalRecebido || 0);
+    const receita = o.vv + (o.adds?.valorTotal || 0);
+    const faltaReceber = receita - entradas;
+    const saldo = entradas - o.custo;
+    // Mão de obra
+    const lancObra = lancamentos.filter(l => l.obra_id === o.id);
+    const mao = lancObra.filter(l => (typeof getCatFromLanc === 'function' ? getCatFromLanc(l) : '') === '28_mao').reduce((s,l) => s + Number(l.total||0), 0);
+    totalEntradas += entradas;
+    totalSaidas += o.custo;
+    totalReceita += receita;
+    totalMao += mao;
+    const pctReceb = receita > 0 ? (entradas / receita * 100) : 0;
+    return { ...o, entradas, receita, faltaReceber, saldo, mao, pctReceb };
+  });
+
+  const totalFaltaReceber = totalReceita - totalEntradas;
+  const saldoGeral = totalEntradas - totalSaidas;
+  const lucroProjetado = totalReceita - totalSaidas;
+  const margemProj = totalReceita > 0 ? (lucroProjetado / totalReceita * 100) : 0;
+  const pctRecebGeral = totalReceita > 0 ? (totalEntradas / totalReceita * 100) : 0;
+
+  const cardG = (icone, label, valor, cor, sub) => `
+    <div style="background:var(--bg2);border:1px solid var(--borda2);border-radius:12px;padding:16px;position:relative;overflow:hidden;">
+      <div style="position:absolute;top:10px;right:12px;font-size:24px;opacity:0.2;">${icone}</div>
+      <div style="font-size:10px;color:var(--texto3);font-weight:700;letter-spacing:1.5px;margin-bottom:6px;">${label}</div>
+      <div style="font-size:22px;font-weight:800;color:${cor};font-family:'Rajdhani',sans-serif;line-height:1;">${fmtR(valor)}</div>
+      <div style="font-size:10px;color:var(--texto4);margin-top:6px;">${sub}</div>
+    </div>`;
+
+  // Cards gerais
+  const subEntradas = `PLs + Entrada + Terreno + Extras`;
+  const subSaidas = `Material: ${fmtR(totalSaidas - totalMao)} · Mão: ${fmtR(totalMao)}`;
+  const subFalta = `Receita: ${fmtR(totalReceita)} · Recebido: ${fmtR(totalEntradas)}`;
+
+  let html = `<div style="margin-bottom:20px;">
+    <div style="font-size:13px;font-weight:700;color:var(--verde-hl);letter-spacing:2px;margin-bottom:14px;font-family:'Rajdhani',sans-serif;">📊 RESUMO FINANCEIRO — OBRAS ATIVAS</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:14px;">
+      ${cardG('💰', 'TOTAL ENTRADAS', totalEntradas, '#22c55e', subEntradas)}
+      ${cardG('📤', 'TOTAL SAÍDAS', totalSaidas, '#ef4444', subSaidas)}
+      ${cardG('🏦', 'FALTA RECEBER', totalFaltaReceber, '#3b82f6', subFalta)}
+    </div>`;
+
+  // Barra progresso recebido
+  html += `<div style="background:var(--bg2);border:1px solid var(--borda2);border-radius:12px;padding:14px;margin-bottom:14px;">
+    <div style="font-size:10px;color:var(--texto3);font-weight:700;letter-spacing:1px;margin-bottom:8px;">RECEBIDO vs RECEITA TOTAL</div>
+    <div style="height:10px;background:rgba(255,255,255,0.06);border-radius:5px;overflow:hidden;">
+      <div style="height:100%;width:${Math.min(pctRecebGeral, 100)}%;background:linear-gradient(90deg,#22c55e,#16a085);border-radius:5px;transition:width .5s;"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:10px;color:var(--texto4);">
+      <span>Recebido: <strong style="color:#22c55e;">${fmtR(totalEntradas)}</strong> (${pctRecebGeral.toFixed(0)}%)</span>
+      <span>Receita: <strong style="color:var(--branco);">${fmtR(totalReceita)}</strong></span>
+    </div>
+  </div>`;
+
+  // Saldo + Lucro
+  html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+    ${cardG('📊', 'SALDO (ENTRADAS − SAÍDAS)', saldoGeral, saldoGeral >= 0 ? '#22c55e' : '#ef4444', 'Caixa disponível das obras')}
+    ${cardG('📈', 'LUCRO PROJETADO', lucroProjetado, lucroProjetado >= 0 ? '#f59e0b' : '#ef4444', `Receita − Gasto · Margem: ${margemProj.toFixed(0)}%`)}
+  </div>`;
+
+  // Por obra
+  html += `<div style="font-size:11px;font-weight:700;color:var(--texto2);letter-spacing:1px;margin-bottom:10px;">🏗 POR OBRA</div>`;
+  obrasData.sort((a,b) => b.custo - a.custo).forEach(o => {
+    const corPct = o.pctReceb >= 70 ? '#22c55e' : o.pctReceb >= 40 ? '#f59e0b' : '#ef4444';
+    const corSaldo = o.saldo >= 0 ? '#22c55e' : '#ef4444';
+    html += `<div style="background:var(--bg2);border:1px solid var(--borda2);border-radius:12px;padding:14px;margin-bottom:8px;cursor:pointer;" onclick="setView('custos');setTimeout(()=>custosAbrirDetalhe('${esc(o.id)}'),100)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <div style="font-size:13px;font-weight:700;color:var(--branco);max-width:55%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(o.nome)}</div>
+        <div style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;background:${corPct}18;color:${corPct};">${o.pctReceb.toFixed(0)}% recebido</div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px;">
+        <div><div style="font-size:9px;color:var(--texto4);font-weight:700;letter-spacing:0.5px;margin-bottom:2px;">ENTRADAS</div><div style="font-size:13px;font-weight:800;color:#22c55e;font-family:'Rajdhani',sans-serif;">${fmtR(o.entradas, true)}</div></div>
+        <div><div style="font-size:9px;color:var(--texto4);font-weight:700;letter-spacing:0.5px;margin-bottom:2px;">SAÍDAS</div><div style="font-size:13px;font-weight:800;color:#ef4444;font-family:'Rajdhani',sans-serif;">${fmtR(o.custo, true)}</div></div>
+        <div><div style="font-size:9px;color:var(--texto4);font-weight:700;letter-spacing:0.5px;margin-bottom:2px;">FALTA RECEBER</div><div style="font-size:13px;font-weight:800;color:#3b82f6;font-family:'Rajdhani',sans-serif;">${fmtR(o.faltaReceber, true)}</div></div>
+        <div><div style="font-size:9px;color:var(--texto4);font-weight:700;letter-spacing:0.5px;margin-bottom:2px;">SALDO</div><div style="font-size:13px;font-weight:800;color:${corSaldo};font-family:'Rajdhani',sans-serif;">${fmtR(o.saldo, true)}</div></div>
+      </div>
+      <div style="height:6px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;">
+        <div style="height:100%;width:${Math.min(o.pctReceb, 100)}%;background:linear-gradient(90deg,${corPct},${corPct}cc);border-radius:3px;transition:width .5s;"></div>
+      </div>
+    </div>`;
+  });
+
+  html += `</div>`;
+  return html;
+}
+
 function dashBuildSaudeObrasCompacta(porObra) {
   if (!porObra.length) return '';
   return `<div class="card" style="padding:16px;margin-bottom:14px;">
@@ -644,6 +737,7 @@ function renderDashboard() {
     // ── MOBILE: Abas com swipe (conteúdo rola vertical normalmente) ──
     const pages = [
       { label: 'Resumo', html: kpisHTML + dashBuildAlertas(alertas) + contasVencHTML + dashBuildAgenda() },
+      { label: 'Financeiro', html: dashBuildResumoFinanceiro(porObra) },
       { label: 'Obras', html: dashBuildSaudeObrasCompacta(porObra) },
     ];
 
@@ -666,6 +760,7 @@ function renderDashboard() {
     // ── DESKTOP: Abas horizontais ──
     const deskPages = [
       { label: 'Resumo', html: kpisHTML + dashBuildAlertas(alertas) + contasVencHTML },
+      { label: 'Financeiro', html: dashBuildResumoFinanceiro(porObra) },
       { label: 'Agenda', html: dashBuildAgenda() },
       { label: 'Obras', html: dashBuildSaudeObrasCompacta(porObra) },
     ];
@@ -690,7 +785,7 @@ function renderDashboard() {
 
 // ── DESKTOP TAB HELPERS ───────────────────────────────────
 function dashDesktopTab(idx) {
-  const count = 3;
+  const count = 4;
   for (let i = 0; i < count; i++) {
     const page = document.getElementById('dash-dpage-' + i);
     const tab = document.getElementById('dash-dtab-' + i);
@@ -700,12 +795,12 @@ function dashDesktopTab(idx) {
       tab.style.borderBottomColor = i === idx ? '#3b82f6' : 'transparent';
     }
   }
-  if (idx === 1) setTimeout(_renderAgendaLegenda, 50);
+  if (idx === 2) setTimeout(_renderAgendaLegenda, 50);
 }
 
 // ── MOBILE TAB/SWIPE HELPERS ──────────────────────────────
 let _dashCurrentTab = 0;
-const _DASH_TAB_COUNT = 2;
+const _DASH_TAB_COUNT = 3;
 
 function dashMobileTab(idx) {
   _dashCurrentTab = idx;
