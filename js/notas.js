@@ -502,7 +502,7 @@ async function salvarNota() {
             });
             if (dist) distribuicoes.push({ ...dist, obra_nome: obraEsc.nome });
             // Lançamento financeiro automático no escritório
-            const descLanc = it.codigo ? `${it.codigo} - ${it.desc}` : it.desc;
+            const descLanc = it.codigo ? `${it.codigo} · ${it.desc}` : it.desc;
             const [lanc] = await sbPost('lancamentos', {
               obra_id: obraEsc.id, descricao: descLanc,
               qtd: it.qtd, preco: it.preco, total: it.total,

@@ -3,7 +3,7 @@ let obraTabAtual = 'lanc';
 // ── ORDENAÇÃO LANÇAMENTOS ────────────────────────────────────────
 let obrasOrdem = 'data';
 function obrasAtualizarOrdem() {
-  ['data','az','valor'].forEach(k => {
+  ['data','az','valor','codigo'].forEach(k => {
     const el = document.getElementById('obras-ord-' + k);
     if (el) el.classList.toggle('ativo', obrasOrdem === k);
   });
@@ -579,6 +579,12 @@ function filtrarLanc() {
   if (obrasOrdem === 'data') lista.sort((a, b) => (b.data||'').localeCompare(a.data||''));
   else if (obrasOrdem === 'az') lista.sort((a, b) => (a.descricao||'').localeCompare(b.descricao||'', 'pt-BR'));
   else if (obrasOrdem === 'valor') lista.sort((a, b) => Number(b.total||0) - Number(a.total||0));
+  else if (obrasOrdem === 'codigo') lista.sort((a, b) => {
+    const codA = /^\d{4,6}\s*[·-]/.test(a.descricao||'') ? 1 : 0;
+    const codB = /^\d{4,6}\s*[·-]/.test(b.descricao||'') ? 1 : 0;
+    if (codA !== codB) return codA - codB; // sem codigo primeiro
+    return (a.descricao||'').localeCompare(b.descricao||'', 'pt-BR');
+  });
   const el = document.getElementById('obras-lanc-lista'), empty = document.getElementById('obras-empty');
   if (!el || !empty) return;
   if (!lista.length) { el.innerHTML = ''; empty.classList.remove('hidden');
