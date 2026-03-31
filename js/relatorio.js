@@ -82,7 +82,7 @@ function getCatFromLanc(l) {
   const dnn = desc.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
   const catEstoque = getCatEstoque(desc);
   if (catEstoque && catEstoque !== "outros") return resolveEtapaKey(catEstoque);
-  if (/mao[\s\-]de[\s\-]obra|armador|eletricista|pintor|pedreiro|servente|mestre de obras|encanador|azulejista/.test(dnn)) return "28_mao";
+  if (/mao[\s\-]de[\s\-]obra|armador(?!\s+de\s)|eletricista|pintor(?!\s+de\s)|(?<!\w\s+de\s+)pedreiro|servente|mestre de obras|encanador|azulejista/.test(dnn) && !/bucha|luva|joelho|adaptador|registro|conexao|te\b|curva|niple|flange|fita|cola|parafuso|prego|tela|disco/i.test(dnn)) return "28_mao";
   if (/aquisicao de terreno|compra de terreno/.test(dnn)) return "35_terreno";
   if (/contrato|documento|anotacao|alvara|licenca|vistoria|escritura/.test(dnn)) return "08_doc";
   return "36_outros";
@@ -365,14 +365,14 @@ function toggleDetalheCard(tipo) {
     tituloDetalhe = '📤 DETALHAMENTO — SAÍDAS';
     corDetalhe = '#ef4444';
     itens = _relLancSaidasMes.map(l => ({
-      data: l.data, desc: l.descricao || '—', obra: obras.find(o=>o.id===l.obra_id)?.nome || 'Sem obra',
+      id: l.id, data: l.data, desc: l.descricao || '—', obra: obras.find(o=>o.id===l.obra_id)?.nome || 'Sem obra',
       valor: Number(l.total||0), tipo: getCatLabel(getCatFromLanc(l))
     }));
   } else if (tipo === 'mao') {
     tituloDetalhe = '👷 DETALHAMENTO — MÃO DE OBRA';
     corDetalhe = '#f39c12';
     itens = _relLancMaoObraMes.map(l => ({
-      data: l.data, desc: l.descricao || '—', obra: obras.find(o=>o.id===l.obra_id)?.nome || 'Sem obra',
+      id: l.id, data: l.data, desc: l.descricao || '—', obra: obras.find(o=>o.id===l.obra_id)?.nome || 'Sem obra',
       valor: Number(l.total||0), tipo: '👷 Mão de obra'
     }));
   }
@@ -383,15 +383,20 @@ function toggleDetalheCard(tipo) {
   itens.sort((a,b) => (a.data||'').localeCompare(b.data||''));
   const totalItens = itens.reduce((s,i) => s + i.valor, 0);
 
+  const isLanc = tipo === 'saidas' || tipo === 'mao';
   let linhasHtml = itens.map(i => {
     const dataFmt = i.data ? i.data.split('-').reverse().join('/') : '—';
+    const btnEditar = isLanc && i.id ? `<span onclick="event.stopPropagation();editarEtapaLanc('${esc(i.id)}')" style="cursor:pointer;font-size:13px;margin-left:6px;opacity:0.5;transition:opacity .2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.5" title="Alterar centro de custo">📂</span>` : '';
     return `<div style="display:grid;grid-template-columns:70px 1fr auto;gap:8px;padding:8px 0;border-bottom:1px solid var(--borda2);align-items:center;">
       <div style="font-size:11px;color:var(--texto4);">${dataFmt}</div>
       <div>
         <div style="font-size:12px;color:var(--branco);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(i.desc)}</div>
         <div style="font-size:10px;color:var(--texto4);">${esc(i.obra)} · ${i.tipo}</div>
       </div>
-      <div style="font-size:13px;font-weight:700;color:${corDetalhe};white-space:nowrap;">${fmtR(i.valor)}</div>
+      <div style="display:flex;align-items:center;white-space:nowrap;">
+        <span style="font-size:13px;font-weight:700;color:${corDetalhe};">${fmtR(i.valor)}</span>
+        ${btnEditar}
+      </div>
     </div>`;
   }).join('');
 

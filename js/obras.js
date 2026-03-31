@@ -626,6 +626,7 @@ function filtrarLanc() {
         <div class="lanc-desc">${l.descricao}</div>
         <div style="display:flex;align-items:center;gap:4px;">
           <span class="lanc-val admin-only">${fmtR(l.total)}</span>
+          <button class="lanc-edit-etapa admin-only" onclick="event.stopPropagation();editarEtapaLanc('${esc(l.id)}')" title="Alterar centro de custo" style="background:none;border:none;cursor:pointer;font-size:14px;padding:2px 4px;">📂</button>
           <button class="lanc-del admin-only" onclick="event.stopPropagation();excluirLanc('${esc(l.id)}')">🗑</button>
         </div>
       </div>
@@ -699,6 +700,50 @@ function etapaLabel(key) {
 function etapaSelectOpts(selected='', incluiVazio=true) {
   const vazio = incluiVazio ? '<option value="">— Etapa (opcional) —</option>' : '';
   return vazio + ETAPAS.map(e => `<option value="${e.key}" ${selected===e.key?'selected':''}>${e.lb}</option>`).join('');
+}
+
+// Editar centro de custo (etapa) de um lançamento
+async function editarEtapaLanc(lancId) {
+  const lanc = lancamentos.find(l => l.id === lancId);
+  if (!lanc) return showToast('Lançamento não encontrado');
+  const etapaAtual = lanc.etapa || '';
+  const resolvedAtual = typeof resolveEtapaKey === 'function' ? resolveEtapaKey(etapaAtual) : etapaAtual;
+
+  // Montar modal inline
+  const modal = document.createElement('div');
+  modal.id = 'modal-editar-etapa';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+  modal.innerHTML = `<div style="background:var(--bg2);border:1px solid var(--borda2);border-radius:14px;padding:24px;max-width:420px;width:100%;">
+    <div style="font-size:13px;font-weight:700;color:var(--branco);margin-bottom:4px;">📂 Alterar Centro de Custo</div>
+    <div style="font-size:11px;color:var(--texto3);margin-bottom:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(lanc.descricao || '—')}</div>
+    <select id="sel-nova-etapa" style="width:100%;padding:10px;border-radius:8px;background:var(--bg1);color:var(--branco);border:1px solid var(--borda2);font-size:13px;margin-bottom:16px;">
+      ${etapaSelectOpts(resolvedAtual, true)}
+    </select>
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button onclick="document.getElementById('modal-editar-etapa')?.remove()" style="padding:8px 16px;border-radius:8px;background:var(--bg1);color:var(--texto2);border:1px solid var(--borda2);cursor:pointer;font-size:12px;">Cancelar</button>
+      <button onclick="salvarEtapaLanc('${esc(lancId)}')" style="padding:8px 16px;border-radius:8px;background:var(--verde-hl);color:#000;border:none;cursor:pointer;font-weight:700;font-size:12px;">Salvar</button>
+    </div>
+  </div>`;
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  document.body.appendChild(modal);
+}
+
+async function salvarEtapaLanc(lancId) {
+  const sel = document.getElementById('sel-nova-etapa');
+  if (!sel) return;
+  const novaEtapa = sel.value || '36_outros';
+  try {
+    await sbPatch('lancamentos', lancId, { etapa: novaEtapa });
+    const lanc = lancamentos.find(l => l.id === lancId);
+    if (lanc) lanc.etapa = novaEtapa;
+    document.getElementById('modal-editar-etapa')?.remove();
+    showToast(`✅ Centro de custo: ${etapaLabel(novaEtapa)}`);
+    // Atualizar tela atual
+    if (typeof filtrarLanc === 'function') filtrarLanc();
+    if (typeof renderRelatorio === 'function') renderRelatorio();
+  } catch(e) {
+    showToast('Erro ao salvar: ' + (e.message || e));
+  }
 }
 
 // Redireciona para F3 Entrada Direta com a obra pré-selecionada
