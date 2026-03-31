@@ -375,11 +375,32 @@ function toggleDetalheCard(tipo) {
 
   if (!itens.length) { el.innerHTML = `<div class="rel-card" style="padding:20px;text-align:center;color:var(--texto3);font-size:12px;">Nenhum lançamento encontrado.</div>`; return; }
 
-  // Ordenar por data
-  itens.sort((a,b) => (a.data||'').localeCompare(b.data||''));
-  const totalItens = itens.reduce((s,i) => s + i.valor, 0);
+  // Guardar itens e estado do filtro pra re-renderizar
+  window._relDetalheItens = itens;
+  window._relDetalheOrdem = window._relDetalheOrdem || 'data';
+  window._relDetalheTipo = tipo;
+  window._relDetalheCor = corDetalhe;
+  window._relDetalheTitulo = tituloDetalhe;
+  _renderDetalhe(el);
+}
 
+function _renderDetalhe(el) {
+  const itens = [...(window._relDetalheItens || [])];
+  const ordem = window._relDetalheOrdem || 'data';
+  const corDetalhe = window._relDetalheCor;
+  const tituloDetalhe = window._relDetalheTitulo;
+  const tipo = window._relDetalheTipo;
+
+  // Ordenar
+  if (ordem === 'data') itens.sort((a,b) => (a.data||'').localeCompare(b.data||''));
+  else if (ordem === 'az') itens.sort((a,b) => (a.desc||'').localeCompare(b.desc||''));
+  else if (ordem === 'valor') itens.sort((a,b) => b.valor - a.valor);
+
+  const totalItens = itens.reduce((s,i) => s + i.valor, 0);
   const isLanc = tipo === 'saidas' || tipo === 'mao';
+
+  const btnStyle = (o) => `cursor:pointer;font-size:10px;padding:4px 10px;border-radius:6px;border:1px solid ${ordem===o?corDetalhe:'var(--borda2)'};background:${ordem===o?corDetalhe+'18':'transparent'};color:${ordem===o?corDetalhe:'var(--texto3)'};font-weight:${ordem===o?'700':'400'};`;
+
   let linhasHtml = itens.map(i => {
     const dataFmt = i.data ? i.data.split('-').reverse().join('/') : '—';
     const btnEditar = isLanc && i.id ? `<span onclick="event.stopPropagation();editarEtapaLanc('${esc(i.id)}')" style="cursor:pointer;font-size:13px;margin-left:6px;opacity:0.5;transition:opacity .2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.5" title="Alterar centro de custo">📂</span>` : '';
@@ -397,9 +418,14 @@ function toggleDetalheCard(tipo) {
   }).join('');
 
   el.innerHTML = `<div class="rel-card" style="margin-bottom:16px;border-left:3px solid ${corDetalhe};">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
       <div class="rel-card-title" style="margin:0;">${tituloDetalhe}</div>
       <div style="font-size:10px;color:var(--texto4);">${itens.length} itens · <span style="color:${corDetalhe};font-weight:700;">${fmtR(totalItens)}</span></div>
+    </div>
+    <div style="display:flex;gap:6px;margin-bottom:12px;">
+      <span style="${btnStyle('data')}" onclick="window._relDetalheOrdem='data';_renderDetalhe(this.closest('.rel-card').parentElement)">📅 Data</span>
+      <span style="${btnStyle('az')}" onclick="window._relDetalheOrdem='az';_renderDetalhe(this.closest('.rel-card').parentElement)">🔤 A-Z</span>
+      <span style="${btnStyle('valor')}" onclick="window._relDetalheOrdem='valor';_renderDetalhe(this.closest('.rel-card').parentElement)">💰 Maior valor</span>
     </div>
     <div style="max-height:400px;overflow-y:auto;">
       ${linhasHtml}
