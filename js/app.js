@@ -68,6 +68,8 @@ async function iniciarApp() {
     loadGarantiaChamados().catch(e => console.error('loadGarantiaChamados:', e)),
     loadAgendaNotas().catch(e => console.error('loadAgendaNotas:', e))
   ]);
+  // Auto-corrigir lançamentos sem código (roda em background, não bloqueia)
+  autoCorrigirLancamentosSemCodigo();
   const mc = document.getElementById("main-content-inner"); if(mc) mc.style.visibility="visible";
   document.getElementById('sql-box').textContent = SQL_SETUP;
   renderDashboard();
@@ -112,3 +114,79 @@ async function loadLancamentos() { try { lancamentos = await sbGet('lancamentos'
 async function loadDistribuicoes() { try { const r = await sbGet('distribuicoes', '?order=criado_em.desc'); distribuicoes = Array.isArray(r) ? r : []; } catch(e) { distribuicoes = []; } }
 async function loadEntradasDiretas() { try { const r = await sbGet('entradas_diretas', '?order=criado_em.desc'); entradasDiretas = Array.isArray(r) ? r : []; } catch(e) { entradasDiretas = []; } }
 async function loadAjustesEstoque() { try { const r = await sbGet('ajustes_estoque', '?order=criado_em.desc'); ajustesEstoque = Array.isArray(r) ? r : []; } catch(e) { ajustesEstoque = []; } }
+
+// ══════════════════════════════════════════
+// AUTO-CORREÇÃO: lançamentos sem código
+// Roda em background a cada login — corrige silenciosamente
+// ══════════════════════════════════════════
+async function autoCorrigirLancamentosSemCodigo() {
+  try {
+    if (!catalogoMateriais.length || !lancamentos.length) return;
+    // Mapa nome normalizado → codigo
+    const mapa = {};
+    catalogoMateriais.forEach(m => { mapa[norm(m.nome)] = m.codigo; });
+    // Achar lançamentos sem código
+    const semCodigo = lancamentos.filter(l => {
+      const d = (l.descricao || '').trim();
+      return d && !/^\d{4,6}\s*[·-]/.test(d);
+    });
+    if (!semCodigo.length) return;
+    let corrigidos = 0;
+    for (const l of semCodigo) {
+      const desc = (l.descricao || '').trim();
+      const descNorm = norm(desc);
+      // Match exato
+      let codigo = mapa[descNorm];
+      // Sem fornecedor (tudo depois de · )
+      if (!codigo) {
+        const semForn = descNorm.split('·')[0].trim();
+        codigo = mapa[semForn];
+      }
+      // Match por inclusão — nome do catálogo contido na descrição
+      if (!codigo) {
+        const descLimpa = norm(desc.split('·')[0].trim());
+        for (const m of catalogoMateriais) {
+          const nNome = norm(m.nome);
+          if (nNome.length >= 6 && descLimpa.includes(nNome)) { codigo = m.codigo; break; }
+        }
+      }
+      // Match invertido — descrição contida no nome do catálogo
+      if (!codigo) {
+        const descLimpa = norm(desc.split('·')[0].trim());
+        if (descLimpa.length >= 6) {
+          for (const m of catalogoMateriais) {
+            if (norm(m.nome).includes(descLimpa)) { codigo = m.codigo; break; }
+          }
+        }
+      }
+      if (!codigo) continue;
+      // Separar fornecedor se tiver colado
+      const partes = desc.split(' · ');
+      let nomeItem = desc;
+      let fornecedor = null;
+      if (partes.length >= 2 && !/^\d{4,6}$/.test(partes[0].trim())) {
+        nomeItem = partes.slice(0, -1).join(' · ').trim();
+        fornecedor = partes[partes.length - 1].trim();
+      }
+      const novaDesc = `${codigo} · ${nomeItem}`;
+      const patch = { descricao: novaDesc };
+      // Mover fornecedor pro obs se tiver
+      if (fornecedor) {
+        const obsAtual = (l.obs || '').trim();
+        if (!obsAtual.toUpperCase().includes(fornecedor.toUpperCase())) {
+          patch.obs = obsAtual ? `${obsAtual} · ${fornecedor}` : fornecedor;
+        }
+      }
+      try {
+        await sbPatch('lancamentos', `?id=eq.${l.id}`, patch);
+        l.descricao = novaDesc;
+        if (patch.obs) l.obs = patch.obs;
+        corrigidos++;
+      } catch(e) { /* silencioso */ }
+    }
+    if (corrigidos > 0) {
+      console.log(`[EDR] Auto-corrigidos ${corrigidos} lançamentos sem código.`);
+      filtrarLanc();
+    }
+  } catch(e) { console.error('[EDR] Erro auto-correção:', e); }
+}
