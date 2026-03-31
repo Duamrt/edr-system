@@ -733,7 +733,7 @@ async function salvarEtapaLanc(lancId) {
   if (!sel) return;
   const novaEtapa = sel.value || '36_outros';
   try {
-    await sbPatch('lancamentos', lancId, { etapa: novaEtapa });
+    await sbPatch('lancamentos', `?id=eq.${lancId}`, { etapa: novaEtapa });
     const lanc = lancamentos.find(l => l.id === lancId);
     if (lanc) lanc.etapa = novaEtapa;
     document.getElementById('modal-editar-etapa')?.remove();
