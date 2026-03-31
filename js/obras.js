@@ -627,7 +627,7 @@ function filtrarLanc() {
     detEl.classList.add('hidden');
   }
   el.innerHTML = lista.map(l => `
-    <div class="lanc-item" style="cursor:pointer;" onclick="abrirNotaDoLancamento('${esc(l.descricao)}','${esc(l.obra_id)}')">
+    <div class="lanc-item" style="cursor:pointer;" onclick="abrirNotaDoLancamento('${esc(l.id)}')">
       <div class="lanc-top">
         <div class="lanc-desc">${l.descricao}</div>
         <div style="display:flex;align-items:center;gap:4px;">
@@ -642,13 +642,30 @@ function filtrarLanc() {
   aplicarPerfil();
 }
 
-function abrirNotaDoLancamento(descricao, obraId) {
-  const desc = descricao.toUpperCase();
-  const obraObj = obras.find(o => o.id === obraId) || obrasArquivadas.find(o => o.id === obraId);
+function abrirNotaDoLancamento(lancId) {
+  const lanc = lancamentos.find(l => l.id === lancId);
+  if (!lanc) return;
+  const obs = (lanc.obs || '').toUpperCase();
+  // Entrada direta ou saída manual não tem nota — não abrir nada
+  if (obs.includes('ENTRADA DIRETA') || obs.includes('SAÍDA MANUAL') || obs.includes('SAIDA MANUAL')) {
+    showToast('Lançamento direto (sem nota fiscal).');
+    return;
+  }
+  // Extrair nome do item sem código prefixado
+  const descRaw = (lanc.descricao || '').toUpperCase();
+  const desc = descRaw.replace(/^\d{4,6}\s*[·-]\s*/, '').trim();
+  const obraObj = obras.find(o => o.id === lanc.obra_id) || obrasArquivadas.find(o => o.id === lanc.obra_id);
   const obraNome = obraObj?.nome || '';
-  // Buscar nota que contém esse item (na obra ou no almoxarifado)
+  // Se obs tem "NF NUMERO · FORNECEDOR", usar pra achar nota exata
+  const nfMatch = obs.match(/NF\s+(\S+)/);
+  if (nfMatch) {
+    const nfNum = nfMatch[1];
+    const nota = notas.find(n => n.numero_nf && n.numero_nf.toUpperCase() === nfNum);
+    if (nota) { abrirNota(nota.id); return; }
+  }
+  // Buscar nota que contém esse item na mesma obra ou almoxarifado
   for (const n of notas) {
-    if (n.obra !== obraNome && n.obra !== 'EDR' && n.obra_id !== obraId) continue;
+    if (n.obra !== obraNome && n.obra !== 'EDR' && n.obra_id !== lanc.obra_id) continue;
     const itens = parseItens(n);
     if (itens.find(i => i.desc.toUpperCase() === desc)) {
       abrirNota(n.id);
