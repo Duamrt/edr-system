@@ -220,17 +220,12 @@ function buildPainelFinanceiro() {
   _relLancSaidasMes = lancMes;
   _relLancMaoObraMes = lancMaoObra;
 
-  // ENTRADAS do mês: pagamentos de adicionais recebidos no mês
-  const pgtosTodasMes = adicionaisPgtos.filter(p => p.data && p.data.startsWith(relMesAtual));
-  const pgtosMes = mostrarConcluidas ? pgtosTodasMes : pgtosTodasMes.filter(p => {
-    const adic = (typeof adicionais !== 'undefined' ? adicionais : []).find(a => a.id === p.adicional_id);
-    return !adic || !adic.obra_id || idsAtivas.has(adic.obra_id);
-  });
+  // ENTRADAS do mês: pagamentos de adicionais recebidos — SEMPRE conta, dinheiro real
+  const pgtosMes = adicionaisPgtos.filter(p => p.data && p.data.startsWith(relMesAtual));
   const totalPgtosAdic = pgtosMes.reduce((s,p) => s + Number(p.valor||0), 0);
 
-  // Entradas: repasses CEF no mês (PLs, entrada, terreno)
-  const repassesTodasMes = getRepassesMes(relMesAtual);
-  const repassesMes = mostrarConcluidas ? repassesTodasMes : repassesTodasMes.filter(r => !r.obra_id || idsAtivas.has(r.obra_id));
+  // Entradas: repasses CEF no mês (PLs, entrada, terreno) — SEMPRE conta, dinheiro real
+  const repassesMes = getRepassesMes(relMesAtual);
   const totalRepasses = repassesMes.reduce((s,r) => s + Number(r.valor||0), 0);
   // Detalhe dos tipos de repasse
   const plsMes = repassesMes.filter(r => (r.tipo||'pls') === 'pls').reduce((s,r) => s + Number(r.valor||0), 0);
