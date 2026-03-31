@@ -350,7 +350,7 @@ function renderEstoque() {
   if (!materiais.length) { lista.innerHTML = ''; empty.classList.remove('hidden'); return; }
   empty.classList.add('hidden');
   const busca = norm(document.getElementById('estoque-busca') ? document.getElementById('estoque-busca').value : '');
-  let filtrados = busca ? materiais.filter(m => norm(m.desc).includes(busca)) : materiais;
+  let filtrados = busca ? materiais.filter(m => norm(m.desc).includes(busca) || (m.codigo && m.codigo.includes(busca))) : materiais;
   if (catEstoqueFiltro) filtrados = filtrados.filter(m => (m.categoria || getCatEstoque(m.desc)) === catEstoqueFiltro);
   if (filtroSoNegativos) filtrados = filtrados.filter(m => m.saldoTotal < 0);
   if (filtroSemCodigo) filtrados = filtrados.filter(m => !m.codigo);
