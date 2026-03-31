@@ -166,6 +166,7 @@ async function fazerLogout() {
   if(typeof mostandoArquivadas!=='undefined') mostandoArquivadas=false;
   if(typeof currentCredito!=='undefined') currentCredito=null;
   if(typeof currentCodigo!=='undefined') currentCodigo=null;
+  if(typeof obrasFiltroSemCodigo!=='undefined') obrasFiltroSemCodigo=false;
   entradasDiretas = []; catalogoMateriais = []; repassesCef = []; ajustesEstoque = [];
   itensForm = []; distItemAtual = null; currentCredito = null; currentCodigo = null;
   leadsData = []; diarQuinzenas = []; diarQuinzenaAtiva = null; contasPagar = []; projecoesCaixa = []; garantiaChamados = [];
