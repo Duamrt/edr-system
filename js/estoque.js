@@ -755,80 +755,72 @@ async function exportarEstoqueExcel() {
   // Linha vazia
   ws.addRow([]);
 
-  // Agrupar por categoria
-  const catMap = {};
-  materiais.forEach(m => {
-    const catKey = m.categoria || getCatEstoque(m.desc);
-    const catObj = CATS_ESTOQUE.find(c => c.key === catKey);
-    const catNome = catObj ? catObj.lb : '📦 Outros';
-    if (!catMap[catNome]) catMap[catNome] = [];
-    catMap[catNome].push(m);
-  });
-
   const bordaFina = { style: 'thin', color: { argb: 'CCCCCC' } };
   const bordas = { top: bordaFina, left: bordaFina, bottom: bordaFina, right: bordaFina };
 
-  let itemNum = 0;
-  Object.keys(catMap).sort().forEach(cat => {
-    // Header da categoria
-    const catRow = ws.addRow([cat, '', '', '', '', '', '']);
-    ws.mergeCells(catRow.number, 1, catRow.number, 7);
-    catRow.getCell(1).font = { name: 'Arial', size: 11, bold: true, color: { argb: BRANCO } };
-    catRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '2D6A3F' } };
-    catRow.getCell(1).alignment = { horizontal: 'left', vertical: 'middle', indent: 1 };
-    catRow.height = 26;
+  // Cabeçalho único (sem separação por categoria — compatível com autofiltro)
+  const colRow = ws.addRow(['#', 'CÓDIGO', 'MATERIAL', 'UN', 'CATEGORIA', 'SALDO SISTEMA', 'CONTAGEM REAL', 'DIFERENÇA']);
+  colRow.eachCell(c => {
+    c.font = { name: 'Arial', size: 9, bold: true, color: { argb: BRANCO } };
+    c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '2D6A3F' } };
+    c.alignment = { horizontal: 'center', vertical: 'middle' };
+    c.border = bordas;
+  });
+  colRow.height = 24;
 
-    // Cabeçalho colunas
-    const colRow = ws.addRow(['#', 'CÓDIGO', 'MATERIAL', 'UN', 'SALDO SISTEMA', 'CONTAGEM REAL', 'DIFERENÇA']);
-    colRow.eachCell(c => {
-      c.font = { name: 'Arial', size: 9, bold: true, color: { argb: '333333' } };
-      c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'E8E8E8' } };
-      c.alignment = { horizontal: 'center', vertical: 'middle' };
-      c.border = bordas;
-    });
-    colRow.height = 22;
+  // Ajustar largura pra coluna E (categoria)
+  ws.columns = [
+    { width: 7 },   // A - #
+    { width: 16 },  // B - Código
+    { width: 50 },  // C - Material
+    { width: 12 },  // D - Unidade
+    { width: 28 },  // E - Categoria
+    { width: 18 },  // F - Saldo Sistema
+    { width: 18 },  // G - Contagem Real
+    { width: 18 },  // H - Diferença
+  ];
 
-    // Itens
-    catMap[cat].sort((a,b) => a.desc.localeCompare(b.desc)).forEach(m => {
-      itemNum++;
-      const codigo = m.codigo || '—';
-      const row = ws.addRow([itemNum, codigo, m.desc, m.unidade, m.saldoTotal, '', '']);
-      row.height = 20;
+  // Autofiltro no cabeçalho
+  ws.autoFilter = { from: { row: colRow.number, column: 1 }, to: { row: colRow.number, column: 8 } };
 
-      // Estilo de cada célula
-      row.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
-      row.getCell(1).font = { name: 'Arial', size: 9, color: { argb: '999999' } };
-      row.getCell(2).font = { name: 'Arial', size: 9, color: { argb: '666666' } };
-      row.getCell(2).alignment = { horizontal: 'center', vertical: 'middle' };
-      row.getCell(3).font = { name: 'Arial', size: 10 };
-      row.getCell(3).alignment = { vertical: 'middle', indent: 1 };
-      row.getCell(4).font = { name: 'Arial', size: 9 };
-      row.getCell(4).alignment = { horizontal: 'center', vertical: 'middle' };
-      row.getCell(5).font = { name: 'Arial', size: 10, bold: true };
-      row.getCell(5).alignment = { horizontal: 'center', vertical: 'middle' };
-      row.getCell(6).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFDE7' } };
-      row.getCell(6).alignment = { horizontal: 'center', vertical: 'middle' };
-      row.getCell(6).font = { name: 'Arial', size: 10 };
-      row.getCell(7).alignment = { horizontal: 'center', vertical: 'middle' };
-      row.getCell(7).font = { name: 'Arial', size: 10 };
+  // Itens — lista corrida ordenada A-Z
+  const sorted = [...materiais].sort((a,b) => a.desc.localeCompare(b.desc, 'pt-BR'));
+  sorted.forEach((m, i) => {
+    const catKey = m.categoria || getCatEstoque(m.desc);
+    const catObj = CATS_ESTOQUE.find(c => c.key === catKey);
+    const catNome = catObj ? catObj.lb.replace(/^[^\s]+\s/, '') : 'Outros';
+    const codigo = m.codigo || '—';
+    const row = ws.addRow([i + 1, codigo, m.desc, m.unidade, catNome, m.saldoTotal, '', '']);
+    row.height = 20;
 
-      // Fórmula diferença = contagem - saldo
-      const r = row.number;
-      row.getCell(7).value = { formula: `IF(F${r}="","",F${r}-E${r})` };
+    row.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
+    row.getCell(1).font = { name: 'Arial', size: 9, color: { argb: '999999' } };
+    row.getCell(2).font = { name: 'Arial', size: 9, color: { argb: '666666' } };
+    row.getCell(2).alignment = { horizontal: 'center', vertical: 'middle' };
+    row.getCell(3).font = { name: 'Arial', size: 10 };
+    row.getCell(3).alignment = { vertical: 'middle', indent: 1 };
+    row.getCell(4).font = { name: 'Arial', size: 9 };
+    row.getCell(4).alignment = { horizontal: 'center', vertical: 'middle' };
+    row.getCell(5).font = { name: 'Arial', size: 9, color: { argb: '555555' } };
+    row.getCell(5).alignment = { vertical: 'middle' };
+    row.getCell(6).font = { name: 'Arial', size: 10, bold: true };
+    row.getCell(6).alignment = { horizontal: 'center', vertical: 'middle' };
+    row.getCell(7).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFDE7' } };
+    row.getCell(7).alignment = { horizontal: 'center', vertical: 'middle' };
+    row.getCell(7).font = { name: 'Arial', size: 10 };
+    row.getCell(8).alignment = { horizontal: 'center', vertical: 'middle' };
+    row.getCell(8).font = { name: 'Arial', size: 10 };
 
-      // Bordas em todas
-      row.eachCell(c => { c.border = bordas; });
+    const r = row.number;
+    row.getCell(8).value = { formula: `IF(G${r}="","",G${r}-F${r})` };
 
-      // Zebra
-      if (itemNum % 2 === 0) {
-        [1,2,3,4,5,7].forEach(i => {
-          row.getCell(i).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F9F9F9' } };
-        });
-      }
-    });
+    row.eachCell(c => { c.border = bordas; });
 
-    // Linha vazia entre categorias
-    ws.addRow([]);
+    if (i % 2 === 1) {
+      [1,2,3,4,5,6,8].forEach(ci => {
+        row.getCell(ci).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F9F9F9' } };
+      });
+    }
   });
 
   // Rodapé
