@@ -213,7 +213,16 @@ function buildPainelFinanceiro() {
   const totalSaidas = lancMes.reduce((s,l) => s + Number(l.total||0), 0);
 
   // Mão de obra do mês
-  const maoObraMes = lancMes.filter(l => getCatFromLanc(l) === '28_mao').reduce((s,l) => s + Number(l.total||0), 0);
+  const lancMaoObra = lancMes.filter(l => getCatFromLanc(l) === '28_mao');
+  const maoObraMes = lancMaoObra.reduce((s,l) => s + Number(l.total||0), 0);
+
+  // Guardar dados pra detalhamento nos cards clicáveis
+  _relLancSaidasMes = lancMes;
+  _relLancMaoObraMes = lancMaoObra;
+
+  // Debug: logar itens de mão de obra no console pra conferir soma
+  console.table(lancMaoObra.map(l => ({ desc: l.descricao, total: Number(l.total||0), data: l.data, obra: obras.find(o=>o.id===l.obra_id)?.nome||'sem obra', etapa: l.etapa||'—' })));
+  console.log('TOTAL MÃO DE OBRA:', maoObraMes);
 
   // ENTRADAS do mês: pagamentos de adicionais recebidos no mês
   const pgtosTodasMes = adicionaisPgtos.filter(p => p.data && p.data.startsWith(relMesAtual));
@@ -254,13 +263,15 @@ function buildPainelFinanceiro() {
     </span>
   </div>`;
 
-  // ── CARDS RESUMO ──
+  // ── CARDS RESUMO (clicáveis) ──
   html += `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:20px;">
-    ${cardResumo('💰', 'ENTRADAS', totalEntradas, '#2ecc71', subEntradas)}
-    ${cardResumo('📤', 'SAÍDAS', totalSaidas, '#ef4444', `${lancMes.length} lançamentos`)}
+    ${cardResumo('💰', 'ENTRADAS', totalEntradas, '#2ecc71', subEntradas, "toggleDetalheCard('entradas')")}
+    ${cardResumo('📤', 'SAÍDAS', totalSaidas, '#ef4444', `${lancMes.length} lançamentos`, "toggleDetalheCard('saidas')")}
     ${cardResumo('📊', 'SALDO', saldo, corSaldo, saldo >= 0 ? 'Positivo' : 'Negativo')}
-    ${cardResumo('👷', 'MÃO DE OBRA', maoObraMes, '#f39c12', totalSaidas > 0 ? (maoObraMes/totalSaidas*100).toFixed(0)+'% do total' : '—')}
+    ${cardResumo('👷', 'MÃO DE OBRA', maoObraMes, '#f39c12', totalSaidas > 0 ? (maoObraMes/totalSaidas*100).toFixed(0)+'% do total' : '—', "toggleDetalheCard('mao')")}
   </div>`;
+  // Container pra detalhe expandido dos cards
+  html += `<div id="rel-detalhe-card" style="margin-bottom:16px;"></div>`;
 
   // ── DETALHE DAS ENTRADAS COM FILTROS ──
   if (repassesMes.length || pgtosMes.length) {
@@ -326,12 +337,84 @@ function buildPainelFinanceiro() {
   return html;
 }
 
-function cardResumo(icone, titulo, valor, cor, sub) {
-  return `<div style="background:var(--bg2);border:1px solid var(--borda2);border-radius:12px;padding:16px;position:relative;overflow:hidden;">
+// Dados dos cards pra detalhamento
+let _relLancSaidasMes = [];
+let _relLancMaoObraMes = [];
+let _relDetalheCardAberto = '';
+
+function toggleDetalheCard(tipo) {
+  const el = document.getElementById('rel-detalhe-card');
+  if (!el) return;
+  // Se clicar no mesmo, fecha
+  if (_relDetalheCardAberto === tipo) { el.innerHTML = ''; _relDetalheCardAberto = ''; return; }
+  _relDetalheCardAberto = tipo;
+
+  let itens = [];
+  let tituloDetalhe = '';
+  let corDetalhe = '';
+
+  if (tipo === 'entradas') {
+    tituloDetalhe = '💰 DETALHAMENTO — ENTRADAS';
+    corDetalhe = '#2ecc71';
+    // Usar _relEntradasMes já montado
+    const dados = typeof _relEntradasMes !== 'undefined' ? _relEntradasMes : [];
+    itens = dados.map(e => ({
+      data: e.data, desc: e.desc, obra: e.obraNome, valor: e.valor, tipo: e.tipoLabel
+    }));
+  } else if (tipo === 'saidas') {
+    tituloDetalhe = '📤 DETALHAMENTO — SAÍDAS';
+    corDetalhe = '#ef4444';
+    itens = _relLancSaidasMes.map(l => ({
+      data: l.data, desc: l.descricao || '—', obra: obras.find(o=>o.id===l.obra_id)?.nome || 'Sem obra',
+      valor: Number(l.total||0), tipo: getCatLabel(getCatFromLanc(l))
+    }));
+  } else if (tipo === 'mao') {
+    tituloDetalhe = '👷 DETALHAMENTO — MÃO DE OBRA';
+    corDetalhe = '#f39c12';
+    itens = _relLancMaoObraMes.map(l => ({
+      data: l.data, desc: l.descricao || '—', obra: obras.find(o=>o.id===l.obra_id)?.nome || 'Sem obra',
+      valor: Number(l.total||0), tipo: '👷 Mão de obra'
+    }));
+  }
+
+  if (!itens.length) { el.innerHTML = `<div class="rel-card" style="padding:20px;text-align:center;color:var(--texto3);font-size:12px;">Nenhum lançamento encontrado.</div>`; return; }
+
+  // Ordenar por data
+  itens.sort((a,b) => (a.data||'').localeCompare(b.data||''));
+  const totalItens = itens.reduce((s,i) => s + i.valor, 0);
+
+  let linhasHtml = itens.map(i => {
+    const dataFmt = i.data ? i.data.split('-').reverse().join('/') : '—';
+    return `<div style="display:grid;grid-template-columns:70px 1fr auto;gap:8px;padding:8px 0;border-bottom:1px solid var(--borda2);align-items:center;">
+      <div style="font-size:11px;color:var(--texto4);">${dataFmt}</div>
+      <div>
+        <div style="font-size:12px;color:var(--branco);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(i.desc)}</div>
+        <div style="font-size:10px;color:var(--texto4);">${esc(i.obra)} · ${i.tipo}</div>
+      </div>
+      <div style="font-size:13px;font-weight:700;color:${corDetalhe};white-space:nowrap;">${fmtR(i.valor)}</div>
+    </div>`;
+  }).join('');
+
+  el.innerHTML = `<div class="rel-card" style="margin-bottom:16px;border-left:3px solid ${corDetalhe};">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <div class="rel-card-title" style="margin:0;">${tituloDetalhe}</div>
+      <div style="font-size:10px;color:var(--texto4);">${itens.length} itens · <span style="color:${corDetalhe};font-weight:700;">${fmtR(totalItens)}</span></div>
+    </div>
+    <div style="max-height:400px;overflow-y:auto;">
+      ${linhasHtml}
+    </div>
+  </div>`;
+}
+
+function cardResumo(icone, titulo, valor, cor, sub, onclick) {
+  const clicavel = onclick ? `cursor:pointer;` : '';
+  const hint = onclick ? `<div style="font-size:9px;color:var(--texto4);margin-top:4px;opacity:0.6;">clique para ver detalhes</div>` : '';
+  return `<div ${onclick ? `onclick="${onclick}"` : ''} style="${clicavel}background:var(--bg2);border:1px solid var(--borda2);border-radius:12px;padding:16px;position:relative;overflow:hidden;transition:transform .15s,border-color .15s;" ${onclick ? `onmouseover="this.style.borderColor='${cor}';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--borda2)';this.style.transform='none'"` : ''}>
     <div style="position:absolute;top:12px;right:14px;font-size:22px;opacity:0.3;">${icone}</div>
     <div style="font-size:10px;color:var(--texto3);font-weight:700;letter-spacing:1.5px;margin-bottom:8px;">${titulo}</div>
     <div style="font-size:22px;font-weight:800;color:${cor};font-family:'Rajdhani',sans-serif;line-height:1;">${fmtR(valor)}</div>
     <div style="font-size:10px;color:var(--texto4);margin-top:6px;">${sub}</div>
+    ${hint}
   </div>`;
 }
 
