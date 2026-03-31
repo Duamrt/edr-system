@@ -50,6 +50,7 @@ const CATS_ESTOQUE = [
   { key:'imposto',    lb:'🧾 Impostos / Encargos', fn: d => /inss|darf|iss |fgts|irrf|imposto|encargo|contribuicao|tributo|csll|cofins|pis |simples nacional|das |gps |gfip|caged|esocial/i.test(d) },
 ];
 let catEstoqueFiltro = null;
+let _valorEstoqueAtual = 0;
 
 function getCatEstoque(desc) {
   const d = (desc||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
@@ -318,6 +319,16 @@ function renderEstoque() {
   if (estoqueOrdem === 'az') filtrados.sort((a, b) => a.desc.localeCompare(b.desc, 'pt-BR'));
   else if (estoqueOrdem === 'maior') filtrados.sort((a, b) => b.saldoTotal - a.saldoTotal);
   else if (estoqueOrdem === 'menor') filtrados.sort((a, b) => a.saldoTotal - b.saldoTotal);
+  // Totalizador de valor do estoque
+  const valorTotalEstoque = materiais.reduce((s, m) => s + (m.saldoTotal > 0 ? m.saldoTotal * m.valorMedio : 0), 0);
+  const qtdItens = materiais.filter(m => m.saldoTotal > 0).length;
+  const totEl = document.getElementById('estoque-valor-total');
+  if (totEl) totEl.innerHTML = `<div style="display:flex;align-items:center;gap:14px;padding:12px 16px;background:var(--bg2);border:1px solid var(--borda);border-radius:12px;margin-bottom:12px;">
+    <div style="font-size:11px;color:var(--texto3);">📦 VALOR EM ESTOQUE</div>
+    <div style="font-size:18px;font-weight:800;color:var(--branco);">${fmtR(valorTotalEstoque)}</div>
+    <div style="font-size:11px;color:var(--texto4);">${qtdItens} itens com saldo</div>
+  </div>`;
+  _valorEstoqueAtual = valorTotalEstoque;
   if (!filtrados.length) { lista.innerHTML = '<div class="empty">Nenhum material nesta categoria.</div>'; return; }
   lista.innerHTML = filtrados.map((m, i) => {
     const negativo = m.saldoTotal < 0;

@@ -616,6 +616,23 @@ function dashBuildResumoFinanceiro(porObra) {
     </div>`;
   }
 
+  // Estoque como patrimônio
+  if (typeof _valorEstoqueAtual !== 'undefined' && _valorEstoqueAtual > 0) {
+    const saldoReal = saldoGeral + _valorEstoqueAtual;
+    html += `<div style="background:var(--bg2);border:1px solid var(--borda2);border-radius:12px;padding:14px;margin-bottom:14px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+      <div style="flex:1;min-width:150px;">
+        <div style="font-size:10px;color:var(--texto3);font-weight:700;letter-spacing:1px;margin-bottom:4px;">📦 MATERIAL EM ESTOQUE</div>
+        <div style="font-size:20px;font-weight:800;color:#f59e0b;font-family:'Rajdhani',sans-serif;">${fmtR(_valorEstoqueAtual)}</div>
+        <div style="font-size:10px;color:var(--texto4);margin-top:2px;">Dinheiro parado em material</div>
+      </div>
+      <div style="flex:1;min-width:150px;">
+        <div style="font-size:10px;color:var(--texto3);font-weight:700;letter-spacing:1px;margin-bottom:4px;">💎 SALDO REAL (CAIXA + ESTOQUE)</div>
+        <div style="font-size:20px;font-weight:800;color:${saldoReal >= 0 ? '#22c55e' : '#ef4444'};font-family:'Rajdhani',sans-serif;">${fmtR(saldoReal)}</div>
+        <div style="font-size:10px;color:var(--texto4);margin-top:2px;">Saldo financeiro + patrimônio em material</div>
+      </div>
+    </div>`;
+  }
+
   // Por obra
   html += `<div style="font-size:11px;font-weight:700;color:var(--texto2);letter-spacing:1px;margin-bottom:10px;">🏗 POR OBRA</div>`;
   if (!obrasData.length) {
