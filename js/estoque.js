@@ -523,7 +523,8 @@ async function confirmarDistribuicaoItem() {
     }
     const totalLotes = lotesUsados.length + (restante > 0 ? 1 : 0);
     // Um único lançamento no financeiro da obra
-    const descLanc = `${m.desc}${obs ? ' · '+obs : ''}`;
+    const codPrefix = m.codigo ? `${m.codigo} - ` : '';
+    const descLanc = `${codPrefix}${m.desc}${obs ? ' · '+obs : ''}`;
     const [lanc] = await sbPost('lancamentos', {
       obra_id: obraId, descricao: descLanc,
       qtd, preco: precoFinal, total: totalValor, data: hoje,

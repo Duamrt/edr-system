@@ -140,6 +140,7 @@ function crUsarExistente(nome, codigo) {
     document.getElementById('i-desc').value = nome;
     const res = classificarItem(nome);
     currentCredito = res?.credito ?? null;
+    currentCodigo = codigo || null;
     const badge = document.getElementById('i-credito-badge');
     if (badge) { badge.className = `credito-badge ${res?.credito?'sim':'nao'}`; badge.textContent = res?.credito ? `GERA CREDITO - ${res.cat}` : `SEM CREDITO - ${res.cat||''}`; }
     if (m?.unidade) document.getElementById('i-unidade').value = m.unidade;
@@ -175,6 +176,7 @@ async function salvarCadastroRapido() {
       document.getElementById('i-desc').value = nome;
       const res = classificarItem(nome);
       currentCredito = res?.credito ?? null;
+      currentCodigo = codigo || null;
       const badge = document.getElementById('i-credito-badge');
       if (badge) { badge.className = `credito-badge ${res?.credito?'sim':'nao'}`; badge.textContent = res?.credito ? `GERA CREDITO - ${res.cat}` : `SEM CREDITO - ${res.cat||''}`; }
       document.getElementById('i-unidade').value = unidade;

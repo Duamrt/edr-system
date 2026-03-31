@@ -228,7 +228,7 @@ function getItensAnteriores(val) {
 function onDescInput() {
   const val = document.getElementById('i-desc').value;
   const badge = document.getElementById('i-credito-badge'), mw = document.getElementById('i-manual-wrap');
-  const res = classificarItem(val); currentCredito = res ? res.credito : null; acSelectedIdx = -1;
+  const res = classificarItem(val); currentCredito = res ? res.credito : null; currentCodigo = null; acSelectedIdx = -1;
   if (!val || val.length < 2) { badge.className = 'credito-badge duvida'; badge.textContent = 'Digite a descrição para classificação automática'; mw.classList.add('hidden'); }
   else if (res) { mw.classList.add('hidden'); badge.className = `credito-badge ${res.credito?'sim':'nao'}`; badge.textContent = res.credito ? `✓ GERA CRÉDITO IBS/CBS — ${res.cat}` : `✗ NÃO GERA CRÉDITO — ${res.cat}`; }
   else { badge.className = 'credito-badge duvida'; badge.textContent = '❓ NÃO RECONHECIDO — classifique abaixo'; mw.classList.remove('hidden'); }
@@ -275,7 +275,7 @@ function selectAC(idx) {
   if (m.cadastroRapido) { cadastroRapidoMaterial(m.label, 'nf'); return; }
   document.getElementById('i-desc').value = m.label;
   document.getElementById('ac-list').classList.add('hidden');
-  acSelectedIdx = -1; currentCredito = m.credito;
+  acSelectedIdx = -1; currentCredito = m.credito; currentCodigo = m.codigo || null;
   const badge = document.getElementById('i-credito-badge');
   if (m.credito === null) {
     badge.className = 'credito-badge duvida';
@@ -381,13 +381,13 @@ function adicionarItem() {
   if (!preco || preco <= 0) { showToast('⚠ Valor unitário obrigatório — não é permitido lançar item com valor zero.'); document.getElementById('i-preco').focus(); return; }
   if (currentCredito === null) { showToast('⚠ Classifique o item antes de adicionar.'); document.getElementById('i-desc').focus(); return; }
   const res = classificarItem(desc);
-  itensForm.push({ desc, qtd, unidade, preco, total, imposto, credito: currentCredito, cat: res?.cat||'Manual' });
+  itensForm.push({ desc, qtd, unidade, preco, total, imposto, credito: currentCredito, cat: res?.cat||'Manual', codigo: currentCodigo || '' });
   renderItensForm();
   ['i-desc','i-qtd','i-unidade','i-preco','i-desconto','i-total','i-imposto'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('i-credito-badge').className = 'credito-badge duvida';
   document.getElementById('i-credito-badge').textContent = 'Digite a descrição para classificação automática';
   document.getElementById('i-manual-wrap').classList.add('hidden');
-  currentCredito = null; acSelectedIdx = -1; document.getElementById('i-desc').focus();
+  currentCredito = null; currentCodigo = null; acSelectedIdx = -1; document.getElementById('i-desc').focus();
   salvarRascunhoNF();
 }
 function removerItem(idx) { itensForm.splice(idx, 1); renderItensForm(); salvarRascunhoNF(); }
@@ -396,7 +396,7 @@ function renderItensForm() {
   if (!itensForm.length) { lista.innerHTML = ''; totalRow.classList.add('hidden'); return; }
   totalRow.classList.remove('hidden');
   document.getElementById('item-total-val').textContent = fmtR(itensForm.reduce((s,i) => s+i.total, 0));
-  lista.innerHTML = itensForm.map((item, idx) => `<div class="item-row"><div class="item-row-info"><div class="item-row-desc">${esc(item.desc)}</div><div class="item-row-meta">${Number(item.qtd)%1===0?item.qtd:Number(item.qtd).toFixed(3)} ${esc(item.unidade)} · ${fmtR(item.preco)}/UN · <span style="color:${item.credito?'#15803d':'#dc2626'};font-weight:700;">${item.credito?'✓ CRÉDITO':'✗ SEM CRÉDITO'}</span></div></div><div class="item-row-val">${fmtR(item.total)}</div><button class="item-row-del" onclick="removerItem(${idx})">🗑</button></div>`).join('');
+  lista.innerHTML = itensForm.map((item, idx) => `<div class="item-row"><div class="item-row-info"><div class="item-row-desc">${item.codigo ? `<span style="color:var(--verde3);font-size:10px;font-family:'JetBrains Mono',monospace;margin-right:6px;">${esc(item.codigo)}</span>` : ''}${esc(item.desc)}</div><div class="item-row-meta">${Number(item.qtd)%1===0?item.qtd:Number(item.qtd).toFixed(3)} ${esc(item.unidade)} · ${fmtR(item.preco)}/UN · <span style="color:${item.credito?'#15803d':'#dc2626'};font-weight:700;">${item.credito?'✓ CRÉDITO':'✗ SEM CRÉDITO'}</span></div></div><div class="item-row-val">${fmtR(item.total)}</div><button class="item-row-del" onclick="removerItem(${idx})">🗑</button></div>`).join('');
 }
 
 // SALVAR NOTA
@@ -502,8 +502,9 @@ async function salvarNota() {
             });
             if (dist) distribuicoes.push({ ...dist, obra_nome: obraEsc.nome });
             // Lançamento financeiro automático no escritório
+            const descLanc = it.codigo ? `${it.codigo} - ${it.desc}` : it.desc;
             const [lanc] = await sbPost('lancamentos', {
-              obra_id: obraEsc.id, descricao: it.desc,
+              obra_id: obraEsc.id, descricao: descLanc,
               qtd: it.qtd, preco: it.preco, total: it.total,
               data: hoje, obs: `NF ${numero} · ${fornecedor} · Baixa automática`
             });
@@ -534,7 +535,7 @@ function onDestinoChange() {
 
 function resetForm() {
   limparRascunhoNF();
-  itensForm = []; currentCredito = null; renderItensForm();
+  itensForm = []; currentCredito = null; currentCodigo = null; renderItensForm();
   ['f-numero','f-fornecedor','f-cnpj','f-obs','f-frete'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('f-obra').value = COMPANY_DEFAULTS.estoqueGeral;
   document.getElementById('frete-total-row').classList.add('hidden');

@@ -331,7 +331,7 @@ create policy "garantia_chamados_auth" on garantia_chamados for all using (auth.
 // ══════════════════════════════════════════
 let usuarioAtual = null;
 let obras = [], notas = [], lancamentos = [], distribuicoes = [], entradasDiretas = [], catalogoMateriais = [], repassesCef = [], ajustesEstoque = [];
-let itensForm = [], distItemAtual = null, currentCredito = null;
+let itensForm = [], distItemAtual = null, currentCredito = null, currentCodigo = null;
 let acSelectedIdx = -1, acFornIdx = -1, cachedFornecedores = [], cachedItens = [];
 let obraFiltroAtual = null, catFiltroAtual = null, obrasArquivadas = [];
 let diarQuinzenas = [];        // lista de quinzenas do Supabase
