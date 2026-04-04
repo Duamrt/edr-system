@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<script>/* V2 em manutenção — redireciona pro V1 estável */location.replace('/v1/');</script>
+<script>/* V2 em manutenção — redireciona pro V1 estável (só produção) */if(location.hostname==='sistema.edreng.com.br')location.replace('/v1/');</script>
 <title>EDR System V2 — Shell</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg"/>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet"/>
@@ -1718,35 +1718,35 @@ function updateShellUser(nome, perfil) {
 
 <!-- ═══════ MODULOS V2 (ordem de dependência) ═══════ -->
 <!-- 0. Infraestrutura: sbGet/sbPost/sbPatch/sbDelete, confirmar(), showModal, usuarioAtual -->
-<script src="js/edr-v2-infra.js?v=04041759"></script>
+<script src="js/edr-v2-infra.js?v=04041801"></script>
 <!-- 1. Utilitários globais (valorPorExtenso, fmtN) -->
-<script src="js/edr-v2-utils-extras.js?v=04041759"></script>
+<script src="js/edr-v2-utils-extras.js?v=04041801"></script>
 <!-- 2. Obras PRIMEIRO (ETAPAS, resolveEtapaKey, etapaCor, etapaLabel — vários módulos dependem) -->
-<script src="js/edr-v2-obras.js?v=04041759"></script>
+<script src="js/edr-v2-obras.js?v=04041801"></script>
 <!-- 3. PDF engine (PdfModule — chamado por vários módulos) -->
-<script src="js/edr-v2-pdf.js?v=04041759"></script>
+<script src="js/edr-v2-pdf.js?v=04041801"></script>
 <!-- 4. Módulos core de negócio -->
-<script src="js/edr-v2-notas.js?v=04041759"></script>
-<script src="js/edr-v2-importar.js?v=04041759"></script>
-<script src="js/edr-v2-estoque.js?v=04041759"></script>
-<script src="js/edr-v2-custos.js?v=04041759"></script>
+<script src="js/edr-v2-notas.js?v=04041801"></script>
+<script src="js/edr-v2-importar.js?v=04041801"></script>
+<script src="js/edr-v2-estoque.js?v=04041801"></script>
+<script src="js/edr-v2-custos.js?v=04041801"></script>
 <!-- 5. Equipe e operacional -->
-<script src="js/edr-v2-diarias.js?v=04041759"></script>
-<script src="js/edr-v2-diario.js?v=04041759"></script>
+<script src="js/edr-v2-diarias.js?v=04041801"></script>
+<script src="js/edr-v2-diario.js?v=04041801"></script>
 <!-- 6. Relatórios e dashboard (dependem de obras.js pra etapaCor) -->
-<script src="js/edr-v2-relatorio.js?v=04041759"></script>
-<script src="js/edr-v2-dashboard.js?v=04041759"></script>
+<script src="js/edr-v2-relatorio.js?v=04041801"></script>
+<script src="js/edr-v2-dashboard.js?v=04041801"></script>
 <!-- 7. Módulos complementares -->
-<script src="js/edr-v2-leads.js?v=04041759"></script>
-<script src="js/edr-v2-garantias.js?v=04041759"></script>
-<script src="js/edr-v2-adicionais.js?v=04041759"></script>
-<script src="js/edr-v2-cronograma.js?v=04041759"></script>
-<script src="js/edr-v2-orcamento.js?v=04041759"></script>
+<script src="js/edr-v2-leads.js?v=04041801"></script>
+<script src="js/edr-v2-garantias.js?v=04041801"></script>
+<script src="js/edr-v2-adicionais.js?v=04041801"></script>
+<script src="js/edr-v2-cronograma.js?v=04041801"></script>
+<script src="js/edr-v2-orcamento.js?v=04041801"></script>
 <!-- 8. Documentação e medições -->
-<script src="js/edr-v2-termo-manual.js?v=04041759"></script>
-<script src="js/edr-v2-pci.js?v=04041759"></script>
+<script src="js/edr-v2-termo-manual.js?v=04041801"></script>
+<script src="js/edr-v2-pci.js?v=04041801"></script>
 <!-- 9. Auth (login, sessão, refresh — ÚLTIMO) -->
-<script src="js/edr-v2-auth.js?v=04041759"></script>
+<script src="js/edr-v2-auth.js?v=04041801"></script>
 
 <!-- ═══════════════════════════════════════════════════════════════ -->
 <!-- MODAIS (Fase 0 — containers para módulos que precisam)        -->
