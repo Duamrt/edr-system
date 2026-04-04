@@ -1387,6 +1387,7 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
             <th>Material</th>
             <th style="width:70px;">Unid.</th>
             <th>Centro de Custo</th>
+            <th style="width:90px;">Preço Méd.</th>
             <th style="width:80px;">Saldo</th>
             <th style="width:80px;">Status</th>
             <th style="width:120px;">Ações</th>
@@ -2401,7 +2402,7 @@ function abrirNota(id) {
     ${itensHTML}
     ${isAdmin && (frete > 0 || itens.length > 0) ? '<div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px;">'+(itens.length > 1 ? '<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--text-secondary);margin-bottom:6px;"><span>Subtotal itens</span><span>'+fmtR(subtotal)+'</span></div>' : '')+(frete > 0 ? '<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--primary);margin-bottom:6px;"><span>Frete</span><span>'+fmtR(frete)+'</span></div>' : '')+'<div style="display:flex;justify-content:space-between;font-weight:800;font-size:15px;color:var(--text-primary);"><span>TOTAL</span><span style="color:var(--primary);">'+fmtR(total)+'</span></div></div>' : ''}`;
 
-  document.getElementById('modal-nota').classList.remove('hidden');
+  openModal('modal-nota');
 }
 
 // abrirModalContratoCEF — alias para a versão V2 no módulo custos

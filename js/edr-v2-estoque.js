@@ -1027,16 +1027,16 @@ function renderCatalogo() {
   if (!el) return;
 
   if (!visiveis.length) {
-    el.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:48px;color:var(--text-tertiary);">Nenhum material encontrado.</td></tr>`;
+    el.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:48px;color:var(--text-tertiary);">Nenhum material encontrado.</td></tr>`;
     return;
   }
 
   const isAdmin = usuarioAtual?.perfil === 'admin';
 
-  // Buscar saldo de cada material no consolidado
-  const saldoMap = {};
+  // Buscar saldo e valor medio de cada material no consolidado
+  const saldoMap = {}, precoMap = {};
   for (const c of EstoqueModule._consolidado) {
-    if (c.codigo) saldoMap[c.codigo] = c.saldo;
+    if (c.codigo) { saldoMap[c.codigo] = c.saldo; precoMap[c.codigo] = c.valorMedio || 0; }
   }
 
   // Etapas para select inline
@@ -1074,11 +1074,14 @@ function renderCatalogo() {
       </select>`;
     }
 
+    const preco = precoMap[m.codigo] || 0;
+
     return `<tr${rowStyle}>
       <td class="code" ${isAuto ? 'style="color:var(--warning);"' : ''}>${esc(m.codigo || '---')}</td>
       <td>${esc(m.nome)} ${isAuto ? '<span class="cat-badge-auto">AUTO</span>' : ''}</td>
       <td>${esc(m.unidade || '')}</td>
       <td>${catCol}</td>
+      <td style="font-family:'Space Grotesk',monospace;font-size:12px;color:${preco > 0 ? 'var(--text-primary)' : 'var(--text-tertiary)'};">${preco > 0 ? fmtR(preco) : '—'}</td>
       <td><strong style="color:${saldoColor};">${fmt(saldo)}</strong></td>
       <td>${statusCol}</td>
       <td class="cat-actions">${acoesCol}</td>
