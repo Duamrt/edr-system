@@ -51,8 +51,9 @@ async function fazerLogin() {
     // Agendar refresh
     _agendarRefresh(data.expires_in, data.refresh_token);
 
-    // Carregar company_id
+    // Carregar company_id e dados
     await _carregarCompanyId();
+    await iniciarApp();
 
     // Entrar no app
     _entrarNoApp();
@@ -175,6 +176,7 @@ async function _carregarCompanyId() {
 window.addEventListener('DOMContentLoaded', async () => {
   if (verificarSessao()) {
     await _carregarCompanyId();
+    await iniciarApp();
     _entrarNoApp();
   }
 });

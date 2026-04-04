@@ -131,8 +131,13 @@ function showModal(id) {
 function aplicarPerfil() { /* V2: perfil controlado via PERFIL_VIEWS no shell */ }
 function getHdrs(preferOverride) { return _sbHeaders(preferOverride); }
 
-// ── GLOBALS V1 (usadas por notas, estoque, diárias) ──
-let notas = [];
+// ── GLOBALS V1 (usadas por todos os módulos) ──
+let obras = [], obrasArquivadas = [], notas = [], lancamentos = [], distribuicoes = [];
+let entradasDiretas = [], catalogoMateriais = [], repassesCef = [], ajustesEstoque = [];
+let itensForm = [], distItemAtual = null, currentCredito = null, currentCodigo = null;
+let acSelectedIdx = -1, acFornIdx = -1, cachedFornecedores = [], cachedItens = [];
+let obraFiltroAtual = null, catFiltroAtual = null;
+let USUARIOS = [];
 let _companyId = null;
 async function loadCompanyId() {
   try {
@@ -146,6 +151,35 @@ const COMPANY_DEFAULTS = {
   estoqueLabel: 'EDR ENGENHARIA',
   escritorioLabel: 'EDR ESCRITÓRIO'
 };
+
+// ── CARGA DE DADOS GLOBAL (chamada após login) ──
+async function loadObras() {
+  try {
+    const todas = await sbGet('obras', '?select=*&order=nome');
+    obrasArquivadas = Array.isArray(todas) ? todas.filter(o => o.arquivada) : [];
+    obras = Array.isArray(todas) ? todas.filter(o => !o.arquivada) : [];
+  } catch(e) { obras = []; obrasArquivadas = []; }
+}
+async function loadNotas() { try { notas = await sbGet('notas_fiscais', '?order=criado_em.desc'); if (!Array.isArray(notas)) notas = []; } catch(e) { notas = []; } }
+async function loadLancamentos() { try { lancamentos = await sbGet('lancamentos', '?select=id,obra_id,descricao,qtd,preco,total,data,obs,etapa,criado_por&order=data.desc'); if (!Array.isArray(lancamentos)) lancamentos = []; } catch(e) { lancamentos = []; } }
+async function loadDistribuicoes() { try { const r = await sbGet('distribuicoes', '?order=criado_em.desc'); distribuicoes = Array.isArray(r) ? r : []; } catch(e) { distribuicoes = []; } }
+async function loadEntradasDiretas() { try { const r = await sbGet('entradas_diretas', '?order=criado_em.desc'); entradasDiretas = Array.isArray(r) ? r : []; } catch(e) { entradasDiretas = []; } }
+async function loadMateriais() { try { const r = await sbGet('materiais', '?order=codigo&limit=1000'); catalogoMateriais = Array.isArray(r) ? r : []; } catch(e) { catalogoMateriais = []; } }
+async function loadRepassesCef() { try { repassesCef = await sbGet('repasses_cef', '?order=data_credito.desc'); if (!Array.isArray(repassesCef)) repassesCef = []; } catch(e) { repassesCef = []; } }
+async function loadAjustesEstoque() { try { const r = await sbGet('ajustes_estoque', '?order=criado_em.desc'); ajustesEstoque = Array.isArray(r) ? r : []; } catch(e) { ajustesEstoque = []; } }
+
+async function iniciarApp() {
+  await loadObras();
+  await Promise.all([
+    loadNotas().catch(e => console.warn('loadNotas:', e)),
+    loadLancamentos().catch(e => console.warn('loadLancamentos:', e)),
+    loadDistribuicoes().catch(e => console.warn('loadDistribuicoes:', e)),
+    loadEntradasDiretas().catch(e => console.warn('loadEntradasDiretas:', e)),
+    loadMateriais().catch(e => console.warn('loadMateriais:', e)),
+    loadRepassesCef().catch(e => console.warn('loadRepassesCef:', e)),
+    loadAjustesEstoque().catch(e => console.warn('loadAjustesEstoque:', e))
+  ]);
+}
 
 // ── USUARIO ATUAL (preenchido pelo auth.js após login) ──
 const usuarioAtual = {
