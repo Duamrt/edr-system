@@ -1406,15 +1406,7 @@ function catalogoToggleAuto() {
 // HELPERS (modais — reusa do shell)
 // ══════════════════════════════════════════════════════════════════
 
-function openModal(id) {
-  const el = document.getElementById(id);
-  if (el) el.classList.add('active');
-}
-
-function closeModal(id) {
-  const el = document.getElementById(id);
-  if (el) el.classList.remove('active');
-}
+// openModal / closeModal — definidos no index.html (com fallback modal- prefix)
 
 
 // ══════════════════════════════════════════════════════════════════
@@ -1438,14 +1430,7 @@ function calcularValorEstoque() {
 // FUNCOES PORTADAS DA V1 — Entrada Direta, Saida, Ajuste Modal
 // ══════════════════════════════════════════════════════════════════
 
-function fecharModal(name) {
-  const el = document.getElementById('modal-' + name);
-  if (el) el.classList.remove('active');
-}
-
-function closeModalOutside(e, name) {
-  if (e.target === document.getElementById('modal-' + name)) fecharModal(name);
-}
+// fecharModal / closeModalOutside — definidos no index.html inline
 
 // ── ENTRADA DIRETA ──────────────────────────────────────────
 function abrirEntradaDireta() {

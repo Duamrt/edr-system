@@ -759,8 +759,7 @@ function custosFiltrarPeriodo(valor) {
 // ══════════════════════════════════════════════════════════════════
 // HELPERS MODAIS (reusa do shell)
 // ════════════════════════════════════════════════════════════���═════
-function openModal(id) { const el = document.getElementById(id); if (el) el.classList.add('active'); }
-function closeModal(id) { const el = document.getElementById(id); if (el) el.classList.remove('active'); }
+// openModal / closeModal — definidos no index.html (com fallback modal- prefix)
 
 
 // ══════════════════════════════════════════════════════════════════

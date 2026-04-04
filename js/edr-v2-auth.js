@@ -175,6 +175,9 @@ async function _carregarCompanyId() {
 // ── AUTO-LOGIN ───────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', async () => {
   if (verificarSessao()) {
+    // Esconde login imediatamente (evita flash de tela de login)
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app-shell').style.display = '';
     await _carregarCompanyId();
     await iniciarApp();
     _entrarNoApp();
