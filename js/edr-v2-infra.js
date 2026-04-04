@@ -134,11 +134,91 @@ function getHdrs(preferOverride) { return _sbHeaders(preferOverride); }
 // ── GLOBALS V1 (usadas por todos os módulos) ──
 let obras = [], obrasArquivadas = [], notas = [], lancamentos = [], distribuicoes = [];
 let entradasDiretas = [], catalogoMateriais = [], repassesCef = [], ajustesEstoque = [];
+let obrasAdicionais = [], adicionaisPgtos = [];
 let itensForm = [], distItemAtual = null, currentCredito = null, currentCodigo = null;
 let acSelectedIdx = -1, acFornIdx = -1, cachedFornecedores = [], cachedItens = [];
 let obraFiltroAtual = null, catFiltroAtual = null;
 let USUARIOS = [];
 let _companyId = null;
+let _isSuperAdmin = false;
+let MODO_DEMO = false;
+
+// ── TELEGRAM ──
+const TG_BOT = '8644194982:AAH6-26NFAbYYtq4TM45hOapqqMguid9qpI';
+const TG_CHAT_EDR = '-5239426430';
+function notificarTelegram(chatId, texto) {
+  fetch('https://api.telegram.org/bot' + TG_BOT + '/sendMessage', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chat_id: chatId, text: texto, parse_mode: 'HTML' })
+  }).catch(() => {});
+}
+
+// ── PLANOS E LIMITES ──
+const PLANOS = {
+  trial:          { nome: 'Trial',          obras: 1, usuarios: 2,  dias: 14 },
+  obra:           { nome: 'Obra',           obras: 1, usuarios: 2  },
+  construtora:    { nome: 'Construtora',    obras: 3, usuarios: 5  },
+  incorporadora:  { nome: 'Incorporadora',  obras: 999, usuarios: 999 }
+};
+let _companyPlan = null;
+
+async function loadCompanyPlan() {
+  if (MODO_DEMO || !_companyId) return;
+  try {
+    const r = await sbGet('companies', '?id=eq.' + _companyId + '&select=plan,trial_ends_at');
+    if (r && r[0]) _companyPlan = r[0];
+  } catch(e) { console.error('loadCompanyPlan:', e); }
+}
+function getLimites() {
+  const plan = _companyPlan?.plan || 'trial';
+  return PLANOS[plan] || PLANOS.trial;
+}
+function isPlatformAdmin() { return _isSuperAdmin; }
+
+async function checarLimiteObras() {
+  if (isPlatformAdmin()) return true;
+  const lim = getLimites();
+  const obrasAtivas = obras.filter(o => !o.arquivada);
+  if (obrasAtivas.length >= lim.obras) {
+    const plano = _companyPlan?.plan || 'trial';
+    const nomes = { trial: 'Trial', obra: 'Obra', construtora: 'Construtora' };
+    alert('Limite de obras atingido no plano ' + (nomes[plano] || plano) + ' (' + lim.obras + ' obra' + (lim.obras > 1 ? 's' : '') + ').\n\nFaça upgrade para criar mais obras.');
+    return false;
+  }
+  return true;
+}
+async function checarLimiteUsuarios() {
+  if (isPlatformAdmin()) return true;
+  const lim = getLimites();
+  try {
+    const users = await sbGet('company_users', '?company_id=eq.' + _companyId + '&select=id');
+    if (users && users.length >= lim.usuarios) {
+      const plano = _companyPlan?.plan || 'trial';
+      alert('Limite de usuarios atingido no plano ' + (PLANOS[plano]?.nome || plano) + ' (' + lim.usuarios + ').\n\nFaca upgrade para adicionar mais membros.');
+      return false;
+    }
+  } catch(e) { console.error('checarLimiteUsuarios:', e); }
+  return true;
+}
+
+// ── ADICIONAIS (helpers compartilhados) ──
+function getAdicionaisObra(obraId) {
+  const lista = obrasAdicionais.filter(a => a.obra_id === obraId);
+  const valorTotal = lista.reduce((s, a) => s + Number(a.valor || 0), 0);
+  const pgtos = adicionaisPgtos.filter(p => lista.some(a => a.id === p.adicional_id));
+  const totalRecebido = pgtos.reduce((s, p) => s + Number(p.valor || 0), 0);
+  const saldo = valorTotal - totalRecebido;
+  return { qtd: lista.length, valorTotal, totalRecebido, saldo };
+}
+function getAdicionaisGeral(obraIds) {
+  const set = obraIds instanceof Set ? obraIds : new Set(obraIds);
+  const lista = obrasAdicionais.filter(a => set.has(a.obra_id));
+  const valorTotal = lista.reduce((s, a) => s + Number(a.valor || 0), 0);
+  const pgtos = adicionaisPgtos.filter(p => lista.some(a => a.id === p.adicional_id));
+  const totalRecebido = pgtos.reduce((s, p) => s + Number(p.valor || 0), 0);
+  return { valorTotal, totalRecebido, saldo: valorTotal - totalRecebido };
+}
 async function loadCompanyId() {
   try {
     const rows = await fetch(`${SUPABASE_URL}/rest/v1/company_users?user_id=eq.${usuarioAtual.id}&select=company_id&limit=1`, { headers: _sbHeaders() }).then(r => r.json());
@@ -167,6 +247,10 @@ async function loadEntradasDiretas() { try { const r = await sbGet('entradas_dir
 async function loadMateriais() { try { const r = await sbGet('materiais', '?order=codigo&limit=1000'); catalogoMateriais = Array.isArray(r) ? r : []; } catch(e) { catalogoMateriais = []; } }
 async function loadRepassesCef() { try { repassesCef = await sbGet('repasses_cef', '?order=data_credito.desc'); if (!Array.isArray(repassesCef)) repassesCef = []; } catch(e) { repassesCef = []; } }
 async function loadAjustesEstoque() { try { const r = await sbGet('ajustes_estoque', '?order=criado_em.desc'); ajustesEstoque = Array.isArray(r) ? r : []; } catch(e) { ajustesEstoque = []; } }
+async function loadAdicionais() {
+  try { const r = await sbGet('obra_adicionais', '?order=criado_em.desc'); obrasAdicionais = Array.isArray(r) ? r : []; } catch(e) { obrasAdicionais = []; }
+  try { const r = await sbGet('adicional_pagamentos', '?order=data.desc'); adicionaisPgtos = Array.isArray(r) ? r : []; } catch(e) { adicionaisPgtos = []; }
+}
 
 async function iniciarApp() {
   await loadObras();
@@ -177,7 +261,9 @@ async function iniciarApp() {
     loadEntradasDiretas().catch(e => console.warn('loadEntradasDiretas:', e)),
     loadMateriais().catch(e => console.warn('loadMateriais:', e)),
     loadRepassesCef().catch(e => console.warn('loadRepassesCef:', e)),
-    loadAjustesEstoque().catch(e => console.warn('loadAjustesEstoque:', e))
+    loadAjustesEstoque().catch(e => console.warn('loadAjustesEstoque:', e)),
+    loadAdicionais().catch(e => console.warn('loadAdicionais:', e)),
+    loadCompanyPlan().catch(e => console.warn('loadCompanyPlan:', e))
   ]);
   if (typeof populateSelects === 'function') populateSelects();
   if (typeof setToday === 'function') setToday();

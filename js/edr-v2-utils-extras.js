@@ -58,6 +58,136 @@ function populateSelects() {
 // Variavel de controle de arquivadas
 let mostandoArquivadas = false;
 
+// Proximo codigo livre no catalogo de materiais
+function _proxCodigoCatalogo() {
+  const usados = new Set(catalogoMateriais.map(m => parseInt(m.codigo) || 0));
+  for (let i = 1; i <= usados.size + 1; i++) {
+    if (!usados.has(i)) return String(i).padStart(6, '0');
+  }
+  return String(usados.size + 1).padStart(6, '0');
+}
+
+// Cadastro rapido de material (modal compartilhado — NF, estoque, importar)
+let _crOrigem = null;
+function cadastroRapidoMaterial(nomeDigitado, origem) {
+  _crOrigem = origem;
+  document.querySelectorAll('.autocomplete-list').forEach(l => l.classList.add('hidden'));
+  let modal = document.getElementById('modal-cadastro-rapido');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'modal-cadastro-rapido';
+    modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.75);backdrop-filter:blur(6px);';
+    modal.innerHTML = `
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;width:min(420px,94vw);box-shadow:0 20px 60px rgba(0,0,0,.3);">
+        <div style="font-size:14px;font-weight:700;color:var(--primary);margin-bottom:4px;">+ CADASTRAR NOVO MATERIAL</div>
+        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:16px;">Item não encontrado no catálogo.</div>
+        <div id="cr-similares" style="display:none;margin-bottom:12px;border:1px solid rgba(251,191,36,0.3);border-radius:8px;padding:10px 12px;background:rgba(251,191,36,0.06);">
+          <div style="font-size:11px;font-weight:700;color:#d97706;margin-bottom:6px;">Itens parecidos já cadastrados:</div>
+          <div id="cr-similares-lista"></div>
+        </div>
+        <div style="margin-bottom:12px;">
+          <label style="font-size:11px;color:var(--text-secondary);">NOME DO MATERIAL *</label>
+          <input id="cr-nome" type="text" autocomplete="off" class="form-input" style="width:100%;box-sizing:border-box;margin-top:4px;" oninput="this.value=this.value.toUpperCase();crMostrarSimilares(this.value)">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+          <div>
+            <label style="font-size:11px;color:var(--text-secondary);">UNIDADE</label>
+            <select id="cr-unidade" class="form-select" style="width:100%;margin-top:4px;">
+              <option value="UN">UN</option><option value="m²">m²</option><option value="m³">m³</option><option value="m">m</option><option value="kg">kg</option><option value="saco">saco</option><option value="rolo">rolo</option><option value="barra">barra</option><option value="gl">gl</option><option value="cx">cx</option><option value="par">par</option><option value="ml">ml</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--text-secondary);">CATEGORIA</label>
+            <select id="cr-categoria" class="form-select" style="width:100%;margin-top:4px;">
+              <option value="">— selecione —</option>
+              ${typeof ETAPAS !== 'undefined' ? ETAPAS.map(e => '<option value="'+e.key+'">'+e.lb+'</option>').join('') : ''}
+            </select>
+          </div>
+        </div>
+        <div id="cr-aviso" style="display:none;font-size:11px;color:#d97706;margin-bottom:10px;padding:8px;background:rgba(251,191,36,0.08);border-radius:6px;"></div>
+        <div style="display:flex;gap:10px;">
+          <button onclick="fecharCadastroRapido()" class="btn" style="flex:1;">CANCELAR</button>
+          <button id="cr-btn-salvar" onclick="salvarCadastroRapido()" class="btn btn-primary" style="flex:2;">CADASTRAR E USAR</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+  }
+  document.getElementById('cr-nome').value = nomeDigitado;
+  document.getElementById('cr-unidade').value = 'UN';
+  document.getElementById('cr-categoria').value = '';
+  document.getElementById('cr-aviso').style.display = 'none';
+  document.getElementById('cr-similares').style.display = 'none';
+  modal.style.display = 'flex';
+  setTimeout(() => { const n = document.getElementById('cr-nome'); n.focus(); n.select(); crMostrarSimilares(nomeDigitado); }, 150);
+}
+
+function fecharCadastroRapido() {
+  const m = document.getElementById('modal-cadastro-rapido'); if (m) m.style.display = 'none';
+}
+
+function crMostrarSimilares(val) {
+  const painel = document.getElementById('cr-similares');
+  const lista = document.getElementById('cr-similares-lista');
+  if (!painel || !lista) return;
+  if (!val || val.length < 3) { painel.style.display = 'none'; return; }
+  const tokens = norm(val).split(/\s+/).filter(t => t.length >= 3);
+  const similares = catalogoMateriais.filter(m => { const nm = norm(m.nome||''); return tokens.some(t => nm.includes(t)); }).slice(0, 4);
+  if (!similares.length) { painel.style.display = 'none'; return; }
+  lista.innerHTML = similares.map(m =>
+    `<div onclick="crUsarExistente('${esc(m.nome)}','${esc(m.codigo)}')"
+       style="display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:6px;cursor:pointer;border:1px solid var(--border);margin-bottom:3px;">
+      <span style="font-family:monospace;font-size:10px;color:var(--primary);padding:2px 6px;border-radius:4px;">${m.codigo}</span>
+      <span style="font-size:12px;color:var(--text-primary);flex:1;">${esc(m.nome)}</span>
+      <span style="font-size:10px;color:var(--primary);font-weight:700;">USAR</span>
+    </div>`
+  ).join('');
+  painel.style.display = 'block';
+}
+
+function crUsarExistente(nome, codigo) {
+  fecharCadastroRapido();
+  if (typeof showToast === 'function') showToast('Usando ' + codigo + ' — ' + nome);
+  const m = catalogoMateriais.find(x => x.codigo === codigo);
+  if (_crOrigem === 'nf') {
+    document.getElementById('i-desc').value = nome;
+    if (typeof classificarItemSync === 'function') {
+      const res = classificarItemSync(nome, codigo);
+      currentCredito = res?.credito ?? null;
+      currentCodigo = codigo || null;
+    }
+    if (m?.unidade) document.getElementById('i-unidade').value = m.unidade;
+    setTimeout(() => document.getElementById('i-qtd')?.focus(), 100);
+  } else if (_crOrigem === 'estoque') {
+    document.getElementById('entrada-desc').value = nome;
+    if (m?.unidade) document.getElementById('entrada-unidade').value = m.unidade;
+    setTimeout(() => document.getElementById('entrada-qtd')?.focus(), 100);
+  }
+}
+
+async function salvarCadastroRapido() {
+  const nome = (document.getElementById('cr-nome').value||'').trim().toUpperCase();
+  const unidade = document.getElementById('cr-unidade').value;
+  const categoria = document.getElementById('cr-categoria').value;
+  const aviso = document.getElementById('cr-aviso');
+  if (!nome || nome.length < 2) { aviso.textContent = 'Informe o nome do material.'; aviso.style.display='block'; return; }
+  const existe = catalogoMateriais.find(m => (m.nome||'').toUpperCase() === nome);
+  if (existe) { aviso.textContent = 'Já existe: ' + existe.codigo + ' — ' + existe.nome; aviso.style.display='block'; return; }
+  const btn = document.getElementById('cr-btn-salvar');
+  btn.disabled = true; btn.textContent = 'SALVANDO...';
+  try {
+    const codigo = _proxCodigoCatalogo();
+    const saved = await sbPost('materiais', { codigo, nome, unidade, categoria });
+    if (saved) {
+      catalogoMateriais.push(saved);
+      catalogoMateriais.sort((a,b) => (a.codigo||'').localeCompare(b.codigo||''));
+    }
+    fecharCadastroRapido();
+    if (typeof showToast === 'function') showToast(codigo + ' — ' + nome + ' cadastrado!');
+    crUsarExistente(nome, codigo);
+  } catch(e) { aviso.textContent = 'Erro ao salvar. Tente novamente.'; aviso.style.display='block'; }
+  btn.disabled = false; btn.textContent = 'CADASTRAR E USAR';
+}
+
 // Converte valor monetario pra texto por extenso
 // Ex: 1500.50 → "um mil e quinhentos reais e cinquenta centavos"
 function valorPorExtenso(valor) {
