@@ -18,44 +18,97 @@ function _sbHeaders(preferOverride) {
   };
 }
 
-// ── SUPABASE REST HELPERS ────────────────
-async function sbGet(path) {
+// ── MULTI-TENANT ────────────────────────
+const _TABELAS_SEM_TENANT = ['companies', 'company_users', 'usuarios'];
+const _TABELAS_COM_GLOBAL = ['materiais'];
+
+function _addCompanyFilter(tabela, query) {
+  if (_TABELAS_SEM_TENANT.includes(tabela)) return query;
+  if (!_companyId) {
+    const sep = query.includes('?') ? '&' : '?';
+    return query + sep + 'company_id=eq.00000000-0000-0000-0000-000000000000';
+  }
+  const sep = query.includes('?') ? '&' : '?';
+  if (_TABELAS_COM_GLOBAL.includes(tabela)) {
+    return query + sep + 'or=(company_id.eq.' + _companyId + ',company_id.is.null)';
+  }
+  return query + sep + 'company_id=eq.' + _companyId;
+}
+
+function _addCompanyToBody(tabela, body) {
+  if (_TABELAS_SEM_TENANT.includes(tabela) || !_companyId) return body;
+  if (Array.isArray(body)) return body.map(b => ({ company_id: _companyId, ...b }));
+  return { company_id: _companyId, ...body };
+}
+
+const _TABELAS_RASTREIO = ['lancamentos','notas_fiscais','distribuicoes','entradas_diretas','repasses_cef','obra_adicionais','adicional_pagamentos','diarias'];
+function _addCriadoPor(t, b) {
+  if (_TABELAS_RASTREIO.includes(t) && usuarioAtual?.nome) b.criado_por = usuarioAtual.nome;
+  return b;
+}
+
+// ── SUPABASE REST HELPERS (multi-tenant) ──
+async function sbGet(t, q='') {
+  // Compatibilidade: se query veio dentro do t (ex: 'materiais?order=x'), separar
+  if (q === '' && t.includes('?')) { const i = t.indexOf('?'); q = t.substring(i); t = t.substring(0, i); }
   try {
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { headers: _sbHeaders() });
-    if (!r.ok) { console.warn('sbGet erro:', r.status, path); return []; }
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/${t}${_addCompanyFilter(t, q)}`, { headers: _sbHeaders() });
+    if (!r.ok) { console.warn('sbGet erro:', r.status, t); return []; }
     return await r.json();
-  } catch (e) { console.warn('sbGet falha:', path, e); return []; }
+  } catch (e) { console.warn('sbGet falha:', t, e); return []; }
 }
 
-async function sbPost(path, body) {
+async function sbPost(t, b) {
+  _addCriadoPor(t, b);
+  b = _addCompanyToBody(t, b);
   try {
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-      method: 'POST', headers: _sbHeaders(), body: JSON.stringify(body)
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/${t}`, {
+      method: 'POST', headers: _sbHeaders(), body: JSON.stringify(b)
     });
-    if (!r.ok) { console.warn('sbPost erro:', r.status, path); return null; }
+    if (!r.ok) { console.warn('sbPost erro:', r.status, t); return null; }
     const data = await r.json();
     return Array.isArray(data) ? data[0] : data;
-  } catch (e) { console.warn('sbPost falha:', path, e); return null; }
+  } catch (e) { console.warn('sbPost falha:', t, e); return null; }
 }
 
-async function sbPatch(path, body) {
+async function sbPostMinimal(t, b) {
+  if (Array.isArray(b)) b.forEach(item => _addCriadoPor(t, item)); else _addCriadoPor(t, b);
+  b = _addCompanyToBody(t, b);
   try {
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-      method: 'PATCH', headers: _sbHeaders(), body: JSON.stringify(body)
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/${t}`, {
+      method: 'POST', headers: _sbHeaders('return=minimal'), body: JSON.stringify(b)
     });
-    if (!r.ok) { console.warn('sbPatch erro:', r.status, path); return null; }
+    if (!r.ok) { console.warn('sbPostMinimal erro:', r.status, t); return false; }
+    return true;
+  } catch (e) { console.warn('sbPostMinimal falha:', t, e); return false; }
+}
+
+async function sbPatch(t, q, b) {
+  // Compatibilidade: se chamado com 2 args (path+query, body), ajustar
+  if (b === undefined && typeof q === 'object') { b = q; q = ''; }
+  // Compatibilidade: se query veio dentro do t, separar
+  if ((!q || q === '') && t.includes('?')) { const i = t.indexOf('?'); q = t.substring(i); t = t.substring(0, i); }
+  // Compatibilidade: se q é UUID solto (sem ? ou =), virar ?id=eq.UUID
+  if (q && !q.includes('=') && !q.startsWith('?')) q = '?id=eq.' + q;
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/${t}${_addCompanyFilter(t, q||'')}`, {
+      method: 'PATCH', headers: _sbHeaders(), body: JSON.stringify(b)
+    });
+    if (!r.ok) { console.warn('sbPatch erro:', r.status, t); return null; }
     const data = await r.json();
     return Array.isArray(data) ? data[0] : data;
-  } catch (e) { console.warn('sbPatch falha:', path, e); return null; }
+  } catch (e) { console.warn('sbPatch falha:', t, e); return null; }
 }
 
-async function sbDelete(path) {
+async function sbDelete(t, q='') {
+  // Compatibilidade: se q é UUID solto, virar ?id=eq.UUID
+  if (q && !q.includes('=') && !q.startsWith('?')) q = '?id=eq.' + q;
   try {
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/${t}${_addCompanyFilter(t, q)}`, {
       method: 'DELETE', headers: _sbHeaders()
     });
     return r.ok;
-  } catch (e) { console.warn('sbDelete falha:', path, e); return false; }
+  } catch (e) { console.warn('sbDelete falha:', t, e); return false; }
 }
 
 // ── CONFIRMAR (substitui confirm() nativo) ──
@@ -98,7 +151,12 @@ function getHdrs(preferOverride) { return _sbHeaders(preferOverride); }
 // ── GLOBALS V1 (usadas por notas, estoque, diárias) ──
 let notas = [];
 let _companyId = null;
-async function loadCompanyId() { /* staging: sem multi-tenant ainda */ }
+async function loadCompanyId() {
+  try {
+    const rows = await fetch(`${SUPABASE_URL}/rest/v1/company_users?user_id=eq.${usuarioAtual.id}&select=company_id&limit=1`, { headers: _sbHeaders() }).then(r => r.json());
+    if (rows && rows.length > 0) _companyId = rows[0].company_id;
+  } catch(e) { console.warn('loadCompanyId erro:', e); }
+}
 const COMPANY_DEFAULTS = {
   estoqueGeral: 'EDR',
   escritorio: 'EDR_ESCRITORIO',
