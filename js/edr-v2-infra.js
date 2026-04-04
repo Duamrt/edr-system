@@ -18,22 +18,8 @@ function _sbHeaders(preferOverride) {
   };
 }
 
-// ── MULTI-TENANT ────────────────────────
+// ── MULTI-TENANT (só para INSERTs — RLS cuida das leituras) ──
 const _TABELAS_SEM_TENANT = ['companies', 'company_users', 'usuarios'];
-const _TABELAS_COM_GLOBAL = ['materiais'];
-
-function _addCompanyFilter(tabela, query) {
-  if (_TABELAS_SEM_TENANT.includes(tabela)) return query;
-  if (!_companyId) {
-    const sep = query.includes('?') ? '&' : '?';
-    return query + sep + 'company_id=eq.00000000-0000-0000-0000-000000000000';
-  }
-  const sep = query.includes('?') ? '&' : '?';
-  if (_TABELAS_COM_GLOBAL.includes(tabela)) {
-    return query + sep + 'or=(company_id.eq.' + _companyId + ',company_id.is.null)';
-  }
-  return query + sep + 'company_id=eq.' + _companyId;
-}
 
 function _addCompanyToBody(tabela, body) {
   if (_TABELAS_SEM_TENANT.includes(tabela) || !_companyId) return body;
@@ -47,12 +33,12 @@ function _addCriadoPor(t, b) {
   return b;
 }
 
-// ── SUPABASE REST HELPERS (multi-tenant) ──
+// ── SUPABASE REST HELPERS (RLS filtra por empresa) ──
 async function sbGet(t, q='') {
-  // Compatibilidade: se query veio dentro do t (ex: 'materiais?order=x'), separar
+  // Compatibilidade: query pode vir junto no t (ex: 'tabela?order=x')
   if (q === '' && t.includes('?')) { const i = t.indexOf('?'); q = t.substring(i); t = t.substring(0, i); }
   try {
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/${t}${_addCompanyFilter(t, q)}`, { headers: _sbHeaders() });
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/${t}${q}`, { headers: _sbHeaders() });
     if (!r.ok) { console.warn('sbGet erro:', r.status, t); return []; }
     return await r.json();
   } catch (e) { console.warn('sbGet falha:', t, e); return []; }
@@ -84,14 +70,12 @@ async function sbPostMinimal(t, b) {
 }
 
 async function sbPatch(t, q, b) {
-  // Compatibilidade: se chamado com 2 args (path+query, body), ajustar
+  // Compatibilidade: 2 args (path, body) ou 3 args (tabela, query, body)
   if (b === undefined && typeof q === 'object') { b = q; q = ''; }
-  // Compatibilidade: se query veio dentro do t, separar
   if ((!q || q === '') && t.includes('?')) { const i = t.indexOf('?'); q = t.substring(i); t = t.substring(0, i); }
-  // Compatibilidade: se q é UUID solto (sem ? ou =), virar ?id=eq.UUID
   if (q && !q.includes('=') && !q.startsWith('?')) q = '?id=eq.' + q;
   try {
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/${t}${_addCompanyFilter(t, q||'')}`, {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/${t}${q||''}`, {
       method: 'PATCH', headers: _sbHeaders(), body: JSON.stringify(b)
     });
     if (!r.ok) { console.warn('sbPatch erro:', r.status, t); return null; }
@@ -101,10 +85,9 @@ async function sbPatch(t, q, b) {
 }
 
 async function sbDelete(t, q='') {
-  // Compatibilidade: se q é UUID solto, virar ?id=eq.UUID
   if (q && !q.includes('=') && !q.startsWith('?')) q = '?id=eq.' + q;
   try {
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/${t}${_addCompanyFilter(t, q)}`, {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/${t}${q}`, {
       method: 'DELETE', headers: _sbHeaders()
     });
     return r.ok;
