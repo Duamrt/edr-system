@@ -44,8 +44,21 @@ const EstoqueModule = {
 
 // ── REGISTRO NO VIEW REGISTRY ───────────────────────────────────
 if (typeof viewRegistry !== 'undefined') {
-  viewRegistry.register('estoque', renderEstoqueView);
-  viewRegistry.register('catalogo', () => { EstoqueModule.tab = 'catalogo'; renderEstoqueView(); });
+  viewRegistry.register('estoque', () => {
+    if (typeof catalogoMateriais !== 'undefined' && !EstoqueModule.catalogoMateriais.length) {
+      EstoqueModule.catalogoMateriais = catalogoMateriais;
+    }
+    EstoqueModule.tab = 'estoque';
+    renderEstoqueView();
+  });
+  viewRegistry.register('catalogo', () => {
+    if (typeof catalogoMateriais !== 'undefined' && !EstoqueModule.catalogoMateriais.length) {
+      EstoqueModule.catalogoMateriais = catalogoMateriais;
+    }
+    EstoqueModule.tab = 'catalogo';
+    renderEstoqueView();
+  });
+  viewRegistry.register('banco', renderBanco);
 }
 
 
@@ -164,10 +177,10 @@ function consolidarEstoque(obraId) {
   }
 
   // 2) ENTRADAS DIRETAS (se existir array global)
-  if (typeof entradas_diretas !== 'undefined' && Array.isArray(entradas_diretas)) {
+  if (typeof entradasDiretas !== 'undefined' && Array.isArray(entradasDiretas)) {
     const edFiltradas = obraId
-      ? entradas_diretas.filter(e => e.obra_id === obraId)
-      : entradas_diretas;
+      ? entradasDiretas.filter(e => e.obra_id === obraId)
+      : entradasDiretas;
 
     for (const e of edFiltradas) {
       const chave = getChave(e.item_desc, e.codigo_catalogo);
@@ -181,10 +194,10 @@ function consolidarEstoque(obraId) {
   }
 
   // 3) AJUSTES DE ESTOQUE
-  if (typeof ajustes_estoque !== 'undefined' && Array.isArray(ajustes_estoque)) {
+  if (typeof ajustesEstoque !== 'undefined' && Array.isArray(ajustesEstoque)) {
     const ajFiltrados = obraId
-      ? ajustes_estoque.filter(a => a.obra_id === obraId)
-      : ajustes_estoque;
+      ? ajustesEstoque.filter(a => a.obra_id === obraId)
+      : ajustesEstoque;
 
     for (const a of ajFiltrados) {
       const chave = getChave(a.item_desc, a.codigo_catalogo);
@@ -515,9 +528,9 @@ function abrirHistoricoMaterial(chave) {
   }
 
   // Entradas diretas
-  if (typeof entradas_diretas !== 'undefined') {
+  if (typeof entradasDiretas !== 'undefined') {
     const nDesc = norm(item.desc);
-    for (const e of entradas_diretas) {
+    for (const e of entradasDiretas) {
       const match = (item.codigo && e.codigo_catalogo === item.codigo) || norm(e.item_desc) === nDesc;
       if (match) {
         movs.push({
@@ -532,9 +545,9 @@ function abrirHistoricoMaterial(chave) {
   }
 
   // Ajustes
-  if (typeof ajustes_estoque !== 'undefined') {
+  if (typeof ajustesEstoque !== 'undefined') {
     const nDesc = norm(item.desc);
-    for (const a of ajustes_estoque) {
+    for (const a of ajustesEstoque) {
       const match = (item.codigo && a.codigo_catalogo === item.codigo) || norm(a.item_desc) === nDesc;
       if (match) {
         movs.push({
@@ -828,6 +841,7 @@ function _atualizarValorDistribuicao(chave) {
 // ══════════════════════════════════════════════════════════════════
 
 async function abrirAjusteEstoque(chave) {
+  if (!chave) { _abrirModalAjusteGeral(); return; }
   const item = EstoqueModule._consolidado.find(i => i.chave === chave);
   if (!item) return;
 
@@ -857,9 +871,9 @@ async function abrirAjusteEstoque(chave) {
   showToast(`Estoque ajustado: ${diferenca > 0 ? '+' : ''}${fmt(diferenca)} ${item.unidade}`, 'success');
 
   // Recarregar ajustes
-  if (typeof ajustes_estoque !== 'undefined') {
+  if (typeof ajustesEstoque !== 'undefined') {
     const novos = await sbGet('ajustes_estoque');
-    if (novos) window.ajustes_estoque = novos;
+    if (novos) window.ajustesEstoque = novos;
   }
 
   renderEstoque();
@@ -1103,11 +1117,23 @@ async function confirmarAutoMaterial(id) {
 }
 
 async function editarMaterial(id) {
-  const mat = EstoqueModule.catalogoMateriais.find(m => m.id === id);
+  const cats = EstoqueModule.catalogoMateriais.length ? EstoqueModule.catalogoMateriais : (typeof catalogoMateriais !== 'undefined' ? catalogoMateriais : []);
+  const mat = cats.find(m => m.id === id);
   if (!mat) return;
-  EstoqueModule._editandoId = id;
-  // Abrir modal de edicao
-  showToast(`Editando: ${mat.codigo} · ${mat.nome}`, 'info');
+  _editandoMaterialId = id;
+  const selCat = document.getElementById('mat-categoria');
+  if (selCat && typeof ETAPAS !== 'undefined') {
+    selCat.innerHTML = '<option value="">— Selecione —</option>' + ETAPAS.map(e => `<option value="${e.nome || e}">${e.nome || e}</option>`).join('');
+  }
+  document.getElementById('mat-nome').value = mat.nome || '';
+  document.getElementById('mat-unidade').value = mat.unidade || 'UN';
+  if (selCat) selCat.value = mat.categoria || '';
+  const aviso = document.getElementById('modal-material-aviso');
+  if (aviso) aviso.style.display = 'none';
+  document.getElementById('btn-salvar-mat').textContent = '💾 SALVAR ALTERAÇÕES';
+  document.getElementById('btn-salvar-mat').disabled = false;
+  openModal('modal-material');
+  setTimeout(() => document.getElementById('mat-nome').focus(), 100);
 }
 
 async function duplicarMaterial(id) {
@@ -1174,8 +1200,8 @@ async function escanearOrfaos() {
   }
 
   // De entradas diretas
-  if (typeof entradas_diretas !== 'undefined') {
-    for (const e of entradas_diretas) {
+  if (typeof entradasDiretas !== 'undefined') {
+    for (const e of entradasDiretas) {
       if (!e.codigo_catalogo) descs.add(norm(e.item_desc));
     }
   }
@@ -1406,3 +1432,562 @@ function calcularValorEstoque() {
 // ══════════════════════════════════════════════════════════════════
 
 // Init movido pra dentro do viewRegistry — carrega catálogo só quando a view for aberta
+
+
+// ══════════════════════════════════════════════════════════════════
+// FUNCOES PORTADAS DA V1 — Entrada Direta, Saida, Ajuste Modal
+// ══════════════════════════════════════════════════════════════════
+
+function fecharModal(name) {
+  const el = document.getElementById('modal-' + name);
+  if (el) el.classList.remove('active');
+}
+
+function closeModalOutside(e, name) {
+  if (e.target === document.getElementById('modal-' + name)) fecharModal(name);
+}
+
+// ── ENTRADA DIRETA ──────────────────────────────────────────
+function abrirEntradaDireta() {
+  const hoje = hojeISO();
+  document.getElementById('entrada-desc').value = '';
+  document.getElementById('entrada-qtd').value = '';
+  document.getElementById('entrada-unidade').value = '';
+  document.getElementById('entrada-preco').value = '';
+  document.getElementById('entrada-fornecedor').value = '';
+  document.getElementById('entrada-data').value = hoje;
+  document.getElementById('entrada-obs').value = '';
+  const alerta = document.getElementById('entrada-preco-alerta');
+  if (alerta) alerta.style.display = 'none';
+  const sel = document.getElementById('entrada-obra-id');
+  sel.innerHTML = obras.map(o => `<option value="${o.id}">${esc(o.nome)}</option>`).join('');
+  const selEt = document.getElementById('entrada-etapa');
+  if (selEt) selEt.innerHTML = etapaSelectOpts('', true);
+  setDestinoEntrada('estoque');
+  openModal('modal-entrada');
+  setTimeout(() => document.getElementById('entrada-desc').focus(), 100);
+}
+
+function onEntradaPrecoInput() {
+  const preco = parseFloat(document.getElementById('entrada-preco').value) || 0;
+  const alerta = document.getElementById('entrada-preco-alerta');
+  if (!alerta) return;
+  alerta.style.display = preco <= 0 ? 'flex' : 'none';
+}
+
+function buscarPrecoFC() {
+  const desc = document.getElementById('entrada-desc').value.trim();
+  const query = encodeURIComponent(desc || 'material construção');
+  window.open(`https://www.ferreiracosta.com/busca?q=${query}`, '_blank');
+}
+
+function setDestinoEntrada(tipo) {
+  const btnEst = document.getElementById('btn-destino-estoque');
+  const btnObra = document.getElementById('btn-destino-obra');
+  const infoEst = document.getElementById('entrada-estoque-info');
+  const wrapObra = document.getElementById('entrada-obra-wrap');
+  if (!btnEst || !btnObra) return;
+  if (tipo === 'estoque') {
+    btnEst.style.background = 'rgba(139,92,246,0.15)'; btnEst.style.color = '#a78bfa'; btnEst.style.borderColor = 'rgba(139,92,246,0.4)';
+    btnObra.style.background = 'transparent'; btnObra.style.color = 'var(--texto3)'; btnObra.style.borderColor = 'rgba(255,255,255,0.1)';
+    if (infoEst) infoEst.style.display = ''; if (wrapObra) wrapObra.style.display = 'none';
+    btnEst.dataset.ativo = '1';
+  } else {
+    btnObra.style.background = 'rgba(34,197,94,0.1)'; btnObra.style.color = 'var(--verde-hl)'; btnObra.style.borderColor = 'rgba(34,197,94,0.3)';
+    btnEst.style.background = 'transparent'; btnEst.style.color = 'var(--texto3)'; btnEst.style.borderColor = 'rgba(139,92,246,0.2)';
+    if (infoEst) infoEst.style.display = 'none'; if (wrapObra) wrapObra.style.display = '';
+    btnEst.dataset.ativo = '';
+  }
+}
+
+function onEntradaDescInput() {
+  const val = document.getElementById('entrada-desc').value;
+  const list = document.getElementById('ac-entrada-list');
+  if (!val || val.length < 2) { list.classList.add('hidden'); return; }
+  const v = norm(val), seen = new Set(), matches = [];
+  const cats = EstoqueModule.catalogoMateriais.length ? EstoqueModule.catalogoMateriais : (typeof catalogoMateriais !== 'undefined' ? catalogoMateriais : []);
+  const numVal = val.replace(/\D/g,'');
+  cats
+    .filter(m => norm(m.nome).includes(v) || (numVal && (m.codigo||'').includes(numVal)))
+    .sort((a,b) => {
+      const na = norm(a.nome), nb = norm(b.nome);
+      const aStart = na.startsWith(v) ? 0 : na.includes(' '+v) ? 1 : 2;
+      const bStart = nb.startsWith(v) ? 0 : nb.includes(' '+v) ? 1 : 2;
+      return aStart - bStart;
+    })
+    .forEach(m => {
+      if (!seen.has(m.nome)) { seen.add(m.nome); matches.push({ desc: m.nome, unidade: m.unidade||'UN', codigo: m.codigo||'' }); }
+    });
+  const txtEst = val.trim().toUpperCase();
+  matches.push({ desc: txtEst, unidade: 'UN', codigo: '', cadastroRapido: true });
+  const top = matches.slice(0,15);
+  list.innerHTML = top.map((m,i) => m.cadastroRapido
+    ? `<div class="autocomplete-item" data-ed-idx="${i}" style="border-top:1px solid rgba(255,255,255,0.1);margin-top:2px;">
+        <span style="color:var(--verde-hl);font-weight:700;font-size:12px;">+ CADASTRAR "${m.desc}" NO CATÁLOGO</span>
+       </div>`
+    : `<div class="autocomplete-item" data-ed-idx="${i}">${m.codigo?`<span class="ac-codigo">${m.codigo}</span>`:''}<span class="ac-label">${m.desc}</span><span style="font-size:10px;color:var(--texto3);">${m.unidade}</span></div>`
+  ).join('');
+  list.querySelectorAll('.autocomplete-item').forEach((el, i) => {
+    const selectItem = ev => {
+      ev.preventDefault();
+      if (top[i].cadastroRapido) { abrirModalNovoMaterial(top[i].desc); return; }
+      document.getElementById('entrada-desc').value = top[i].desc;
+      document.getElementById('entrada-unidade').value = top[i].unidade;
+      list.classList.add('hidden');
+    };
+    el.addEventListener('mousedown', selectItem);
+    el.addEventListener('touchstart', selectItem, { passive: false });
+  });
+  list.classList.remove('hidden');
+}
+
+async function salvarEntradaDireta() {
+  const desc = (document.getElementById('entrada-desc').value||'').toUpperCase().trim();
+  const qtd = parseFloat(document.getElementById('entrada-qtd').value)||0;
+  const unidade = (document.getElementById('entrada-unidade').value||'UN').toUpperCase();
+  const preco = parseFloat(document.getElementById('entrada-preco').value)||0;
+  const fornecedor = (document.getElementById('entrada-fornecedor').value||'').toUpperCase();
+  const data = document.getElementById('entrada-data').value;
+  const obs = (document.getElementById('entrada-obs').value||'').toUpperCase();
+  const destinoObra = document.getElementById('btn-destino-estoque').dataset.ativo !== '1';
+  const obraId = document.getElementById('entrada-obra-id').value;
+  const obraObj = obras.find(o => o.id === obraId);
+  if (!desc) { showToast('⚠ Informe o material.'); return; }
+  const cats = EstoqueModule.catalogoMateriais.length ? EstoqueModule.catalogoMateriais : (typeof catalogoMateriais !== 'undefined' ? catalogoMateriais : []);
+  const descSemFornecedor = desc.split('·')[0].trim();
+  const materialNoCatalogo = cats.find(m => norm(m.nome) === norm(descSemFornecedor));
+  if (!materialNoCatalogo && usuarioAtual?.perfil !== 'admin') {
+    showToast('⚠ Material não encontrado no catálogo. Selecione um item da lista.');
+    document.getElementById('entrada-desc').focus();
+    return;
+  }
+  if (qtd <= 0) { showToast('⚠ Informe a quantidade.'); return; }
+  if (destinoObra && (!preco || preco <= 0)) { showToast('⚠ Valor unitário obrigatório para lançamento em obra.'); document.getElementById('entrada-preco').focus(); return; }
+  if (destinoObra && !obraId) { showToast('⚠ Selecione a obra.'); return; }
+  const etapaVal = document.getElementById('entrada-etapa')?.value || '';
+  if (destinoObra && !etapaVal) { showToast('⚠ Selecione o centro de custo (etapa).'); document.getElementById('entrada-etapa')?.focus(); return; }
+  try {
+    if (destinoObra && obraObj) {
+      const valor = qtd * preco;
+      const etapa = document.getElementById('entrada-etapa')?.value || '';
+      const codMat = cats.find(m => norm(m.nome) === norm(desc));
+      const descLanc = codMat ? `${codMat.codigo} · ${desc}` : desc;
+      const obsLanc = [fornecedor, obs || 'ENTRADA DIRETA SEM NF'].filter(Boolean).join(' · ');
+      const [lanc] = await sbPost('lancamentos', { obra_id: obraId, descricao: descLanc, qtd, preco, total: valor, data, obs: obsLanc, etapa });
+      lancamentos.unshift(lanc);
+      showToast(`✅ ${qtd} ${unidade} de ${desc} → ${obraObj.nome}!`);
+    } else {
+      const [nova] = await sbPost('entradas_diretas', { item_desc: desc, unidade, qtd, preco, fornecedor, data, obs, obra: 'EDR' });
+      entradasDiretas.unshift(nova);
+      showToast(`✅ ${qtd} ${unidade} de ${desc} no estoque!`);
+    }
+    fecharModal('entrada');
+    renderEstoque();
+    if (typeof renderDashboard === 'function') renderDashboard();
+  } catch(e) { console.error(e); showToast('❌ Não foi possível registrar. Execute o SQL no Setup.'); }
+}
+
+
+// ── SAÍDA / BAIXA DE ESTOQUE ──────────────────────────────
+function abrirSaidaMaterial(descPreenchida, unidadePreenchida) {
+  const obraSelect = document.getElementById('saida-obra');
+  obraSelect.innerHTML = '<option value="">— Selecione a obra —</option>' +
+    obras.map(o => `<option value="${o.id}">${esc(o.nome)}</option>`).join('');
+  document.getElementById('saida-etapa').innerHTML = etapaSelectOpts('', false);
+  document.getElementById('saida-data').value = hojeISO();
+  document.getElementById('saida-desc').value = descPreenchida || '';
+  document.getElementById('saida-qtd').value = '';
+  document.getElementById('saida-obs').value = '';
+  if (unidadePreenchida) document.getElementById('saida-unidade').value = unidadePreenchida;
+  document.getElementById('ac-saida-list').classList.add('hidden');
+  const precoContainer = document.getElementById('saida-preco-container');
+  if (precoContainer) precoContainer.innerHTML = '';
+  openModal('modal-saida');
+  if (descPreenchida) {
+    setTimeout(() => document.getElementById('saida-qtd').focus(), 100);
+  } else {
+    setTimeout(() => document.getElementById('saida-desc').focus(), 100);
+  }
+}
+
+function onSaidaDescInput() {
+  const val = document.getElementById('saida-desc').value.toUpperCase().trim();
+  const list = document.getElementById('ac-saida-list');
+  if (val.length < 2) { list.classList.add('hidden'); return; }
+  const cats = EstoqueModule.catalogoMateriais.length ? EstoqueModule.catalogoMateriais : (typeof catalogoMateriais !== 'undefined' ? catalogoMateriais : []);
+  if (!EstoqueModule._consolidado.length) consolidarEstoque();
+  const saldoMap = {};
+  EstoqueModule._consolidado.forEach(m => { saldoMap[norm(m.desc)] = m.saldo; });
+  const matches = cats
+    .filter(m => m.codigo && m.nome.toUpperCase().includes(val))
+    .slice(0, 8)
+    .map(m => ({ ...m, saldo: saldoMap[norm(m.nome)] || 0 }));
+  if (!matches.length) { list.classList.add('hidden'); return; }
+  list.innerHTML = matches.map(m =>
+    `<div class="autocomplete-item" onclick="selecionarSaidaItem('${esc(m.nome)}','${esc(m.unidade||'UN')}')">
+      <span class="ac-cod">${m.codigo}</span>
+      <span class="ac-label">${m.nome}</span>
+      <span style="color:var(--texto3);font-size:10px;margin-left:auto">${m.saldo > 0 ? m.saldo.toFixed(2)+' '+m.unidade : '<span style="color:#f87171">sem saldo</span>'}</span>
+    </div>`
+  ).join('');
+  list.classList.remove('hidden');
+}
+
+function selecionarSaidaItem(desc, unidade) {
+  document.getElementById('saida-desc').value = desc;
+  document.getElementById('saida-unidade').value = unidade;
+  document.getElementById('ac-saida-list').classList.add('hidden');
+  document.getElementById('saida-qtd').focus();
+}
+
+function _mostrarCampoPrecoSaida(desc) {
+  const container = document.getElementById('saida-preco-container');
+  if (!container) return;
+  if (container.querySelector('#saida-preco-manual')) { container.querySelector('#saida-preco-manual').focus(); return; }
+  const busca = encodeURIComponent(desc);
+  container.innerHTML = `
+    <div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:10px;padding:12px;margin-top:8px;">
+      <div style="font-size:10px;font-weight:700;color:var(--amarelo);letter-spacing:1px;margin-bottom:6px;">⚠ ITEM SEM PREÇO REGISTRADO</div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input type="number" id="saida-preco-manual" placeholder="Custo unitário (R$)" step="0.01" min="0.01"
+          style="flex:1;background:var(--bg3);border:1px solid rgba(245,158,11,0.3);border-radius:8px;padding:10px 12px;color:var(--branco);font-size:13px;">
+        <a href="https://lista.mercadolivre.com.br/${busca}" target="_blank" rel="noopener"
+          style="background:rgba(255,214,0,0.12);border:1px solid rgba(255,214,0,0.3);color:#fde047;border-radius:8px;padding:10px 12px;font-size:10px;font-weight:700;text-decoration:none;white-space:nowrap;">CONSULTAR ML</a>
+      </div>
+    </div>`;
+  setTimeout(() => document.getElementById('saida-preco-manual')?.focus(), 100);
+}
+
+async function salvarSaidaMaterial() {
+  const desc = (document.getElementById('saida-desc').value||'').toUpperCase().trim();
+  const qtd = parseFloat(document.getElementById('saida-qtd').value)||0;
+  const unidade = document.getElementById('saida-unidade').value||'UN';
+  const data = document.getElementById('saida-data').value;
+  const obraId = document.getElementById('saida-obra').value;
+  const etapa = document.getElementById('saida-etapa').value;
+  const obs = (document.getElementById('saida-obs').value||'').toUpperCase();
+  const obraObj = obras.find(o => o.id === obraId);
+
+  if (!desc) { showToast('⚠ Informe o material.'); return; }
+  if (qtd <= 0) { showToast('⚠ Informe a quantidade.'); return; }
+  if (!obraId) { showToast('⚠ Selecione a obra destino.'); return; }
+  if (!etapa) { showToast('⚠ Selecione o centro de custo.'); document.getElementById('saida-etapa').focus(); return; }
+
+  if (!EstoqueModule._consolidado.length) consolidarEstoque();
+  const estoqueItem = EstoqueModule._consolidado.find(m => norm(m.desc) === norm(desc));
+  const saldo = estoqueItem?.saldo || 0;
+  if (saldo < qtd) {
+    showToast(`⚠ Saldo atual: ${saldo} ${unidade} — saída de ${qtd} vai gerar negativo.`);
+  }
+
+  let valorUnit = estoqueItem?.valorMedio || 0;
+  if (valorUnit <= 0) {
+    const precoInput = document.getElementById('saida-preco-manual');
+    if (precoInput) valorUnit = parseFloat(precoInput.value) || 0;
+    if (valorUnit <= 0) {
+      showToast('⚠ Informe o custo unitário.');
+      _mostrarCampoPrecoSaida(desc);
+      return;
+    }
+  }
+
+  try {
+    const valor = qtd * valorUnit;
+    const [nova] = await sbPost('distribuicoes', {
+      item_desc: desc, obra_destino: obraId, obra_nome: obraObj?.nome || '',
+      qtd, valor, data, etapa, unidade
+    });
+    distribuicoes.unshift(nova);
+    if (valor > 0) {
+      const cats = EstoqueModule.catalogoMateriais.length ? EstoqueModule.catalogoMateriais : (typeof catalogoMateriais !== 'undefined' ? catalogoMateriais : []);
+      const codSaida = cats.find(m => norm(m.nome) === norm(desc));
+      const descSaida = codSaida ? `${codSaida.codigo} · ${desc}` : desc;
+      const [lanc] = await sbPost('lancamentos', {
+        obra_id: obraId, descricao: descSaida,
+        qtd, preco: valorUnit, total: valor, data,
+        obs: obs || 'SAÍDA MANUAL DE ESTOQUE', etapa
+      });
+      lancamentos.unshift(lanc);
+    }
+    showToast(`✅ Baixa de ${qtd} ${unidade} de ${desc} registrada!`);
+    fecharModal('saida');
+    renderEstoque();
+    if (typeof renderDashboard === 'function') renderDashboard();
+  } catch(e) { console.error(e); showToast('❌ Não foi possível registrar a saída.'); }
+}
+
+
+// ── AJUSTE DE ESTOQUE (MODAL GERAL) ────────────────────────
+let ajusteTipoAtual = 'inventario';
+
+function _abrirModalAjusteGeral() {
+  ajusteTipoAtual = 'inventario';
+  document.getElementById('ajuste-desc').value = '';
+  document.getElementById('ajuste-qtd').value = '';
+  document.getElementById('ajuste-unidade').value = '';
+  document.getElementById('ajuste-motivo').value = '';
+  document.getElementById('ajuste-saldo-atual').style.display = 'none';
+  document.getElementById('ac-ajuste-list').classList.add('hidden');
+  setTipoAjuste('inventario');
+  openModal('modal-ajuste');
+  setTimeout(() => document.getElementById('ajuste-desc').focus(), 100);
+}
+
+function setTipoAjuste(tipo) {
+  ajusteTipoAtual = tipo;
+  const btns = { inventario: 'btn-ajuste-inventario', contagem: 'btn-ajuste-contagem', correcao: 'btn-ajuste-correcao' };
+  const cores = { inventario: ['96,165,250', '#60a5fa'], contagem: ['46,204,113', 'var(--verde-hl)'], correcao: ['245,158,11', '#fbbf24'] };
+  const infos = {
+    inventario: 'Material que ja existia antes do sistema. Entra no saldo sem gerar custo.',
+    contagem: 'Contagem fisica real. Informe a QUANTIDADE que voce contou — o sistema calcula a diferenca.',
+    correcao: 'Correcao manual por erro de lancamento, perda ou extravio.'
+  };
+  const labels = { inventario: 'QUANTIDADE A ADICIONAR *', contagem: 'QUANTIDADE CONTADA *', correcao: 'QUANTIDADE A AJUSTAR (+ ou -) *' };
+  Object.entries(btns).forEach(([k, id]) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (k === tipo) {
+      el.style.background = `rgba(${cores[k][0]},0.15)`;
+      el.style.color = cores[k][1];
+      el.style.borderColor = `rgba(${cores[k][0]},0.4)`;
+    } else {
+      el.style.background = 'transparent';
+      el.style.color = 'var(--texto3)';
+      el.style.borderColor = `rgba(${cores[k][0]},0.2)`;
+    }
+  });
+  const infoEl = document.getElementById('ajuste-tipo-info');
+  if (infoEl) infoEl.textContent = infos[tipo];
+  const labelEl = document.getElementById('ajuste-qtd-label');
+  if (labelEl) labelEl.textContent = labels[tipo];
+}
+
+function onAjusteDescInput() {
+  const val = document.getElementById('ajuste-desc').value;
+  const list = document.getElementById('ac-ajuste-list');
+  if (!val || val.length < 2) { list.classList.add('hidden'); return; }
+  const v = norm(val);
+  const cats = EstoqueModule.catalogoMateriais.length ? EstoqueModule.catalogoMateriais : (typeof catalogoMateriais !== 'undefined' ? catalogoMateriais : []);
+  const matches = cats
+    .filter(m => norm(m.nome).includes(v))
+    .sort((a, b) => { const na = norm(a.nome), nb = norm(b.nome); return (na.startsWith(v) ? 0 : 1) - (nb.startsWith(v) ? 0 : 1); })
+    .slice(0, 10);
+  if (!matches.length) { list.classList.add('hidden'); return; }
+  list.innerHTML = matches.map(m =>
+    `<div class="autocomplete-item" onclick="selecionarAjusteItem('${esc(m.nome)}','${esc(m.unidade || 'UN')}')">
+      ${m.codigo ? `<span class="ac-codigo">${m.codigo}</span>` : ''}<span class="ac-label">${m.nome}</span><span style="font-size:10px;color:var(--texto3);">${m.unidade || 'UN'}</span>
+    </div>`
+  ).join('');
+  list.classList.remove('hidden');
+}
+
+function selecionarAjusteItem(desc, unidade) {
+  document.getElementById('ajuste-desc').value = desc;
+  document.getElementById('ajuste-unidade').value = unidade;
+  document.getElementById('ac-ajuste-list').classList.add('hidden');
+  if (!EstoqueModule._consolidado.length) consolidarEstoque();
+  const m = EstoqueModule._consolidado.find(i => norm(i.desc) === norm(desc));
+  const saldoEl = document.getElementById('ajuste-saldo-atual');
+  if (m) {
+    saldoEl.innerHTML = `Saldo atual no sistema: <strong style="color:var(--verde-hl);">${fmt(m.saldo)} ${m.unidade}</strong>`;
+    saldoEl.style.display = 'block';
+  } else {
+    saldoEl.innerHTML = `Material sem saldo no sistema (será criado).`;
+    saldoEl.style.display = 'block';
+  }
+  document.getElementById('ajuste-qtd').focus();
+}
+
+async function salvarAjusteModal() {
+  const desc = (document.getElementById('ajuste-desc').value || '').toUpperCase().trim();
+  let qtd = parseFloat(document.getElementById('ajuste-qtd').value) || 0;
+  const unidade = (document.getElementById('ajuste-unidade').value || 'UN').toUpperCase();
+  const motivo = (document.getElementById('ajuste-motivo').value || '').toUpperCase();
+  if (!desc) { showToast('⚠ Informe o material.'); return; }
+  if (ajusteTipoAtual === 'inventario' && qtd <= 0) { showToast('⚠ Inventário inicial deve ser positivo.'); return; }
+  if (ajusteTipoAtual !== 'inventario' && qtd === 0) { showToast('⚠ Informe a quantidade.'); return; }
+
+  if (ajusteTipoAtual === 'contagem') {
+    if (qtd < 0) { showToast('⚠ Contagem física deve ser >= 0.'); return; }
+    if (!EstoqueModule._consolidado.length) consolidarEstoque();
+    const m = EstoqueModule._consolidado.find(i => norm(i.desc) === norm(desc));
+    const saldoAtual = m ? m.saldo : 0;
+    const diff = qtd - saldoAtual;
+    if (diff === 0) { showToast('✅ Contagem igual ao saldo — nenhum ajuste necessário.'); return; }
+    const ok = await confirmar(`Contagem física: ${qtd} ${unidade}\nSaldo sistema: ${saldoAtual} ${unidade}\nDiferença: ${diff > 0 ? '+' : ''}${diff} ${unidade}\n\nConfirma o ajuste?`);
+    if (!ok) return;
+    qtd = diff;
+  } else {
+    const label = { inventario: 'Inventário inicial', correcao: 'Correção manual' }[ajusteTipoAtual];
+    const ok = await confirmar(`Confirma ${label}: ${qtd > 0 ? '+' : ''}${qtd} ${unidade} de ${desc}?`);
+    if (!ok) return;
+  }
+
+  const label = { inventario: 'Inventário inicial', contagem: 'Contagem física', correcao: 'Correção manual' }[ajusteTipoAtual];
+  try {
+    const [novo] = await sbPost('ajustes_estoque', {
+      item_desc: desc, unidade, qtd,
+      tipo: ajusteTipoAtual,
+      motivo: `${label}${motivo ? ' · ' + motivo : ''}`
+    });
+    ajustesEstoque.unshift(novo);
+    showToast(`📋 Ajuste registrado: ${qtd > 0 ? '+' : ''}${qtd} ${unidade} de ${desc}`);
+    fecharModal('ajuste');
+    renderEstoque();
+    if (typeof renderDashboard === 'function') renderDashboard();
+  } catch (e) { console.error(e); showToast('❌ Não foi possível registrar o ajuste. Execute o SQL no Setup.'); }
+}
+
+
+// ── NOVO MATERIAL (CATÁLOGO) ────────────────────────────────
+let _editandoMaterialId = null;
+
+function abrirModalNovoMaterial(nomeInicial) {
+  _editandoMaterialId = null;
+  document.getElementById('mat-nome').value = nomeInicial || '';
+  document.getElementById('mat-unidade').value = 'UN';
+  const selCat = document.getElementById('mat-categoria');
+  if (selCat && typeof ETAPAS !== 'undefined') {
+    selCat.innerHTML = '<option value="">— Selecione —</option>' + ETAPAS.map(e => `<option value="${e.nome || e}">${e.nome || e}</option>`).join('');
+  }
+  if (selCat) selCat.value = '';
+  const aviso = document.getElementById('modal-material-aviso');
+  if (aviso) aviso.style.display = 'none';
+  document.getElementById('btn-salvar-mat').textContent = '💾 SALVAR MATERIAL';
+  document.getElementById('btn-salvar-mat').disabled = false;
+  openModal('modal-material');
+  setTimeout(() => document.getElementById('mat-nome').focus(), 100);
+}
+
+function onMatNomeInput() {
+  const input = document.getElementById('mat-nome');
+  input.value = input.value.toUpperCase();
+  const nome = input.value.trim();
+  const aviso = document.getElementById('modal-material-aviso');
+  const cats = EstoqueModule.catalogoMateriais.length ? EstoqueModule.catalogoMateriais : (typeof catalogoMateriais !== 'undefined' ? catalogoMateriais : []);
+  if (nome.length >= 3) {
+    const similar = cats.find(m => norm(m.nome) === norm(nome) && m.id !== _editandoMaterialId);
+    if (similar) {
+      aviso.innerHTML = `⚠ Material já existe: <b>${esc(similar.codigo)}</b> — ${esc(similar.nome)}`;
+      aviso.style.display = 'block';
+      document.getElementById('btn-salvar-mat').disabled = true;
+    } else {
+      aviso.style.display = 'none';
+      document.getElementById('btn-salvar-mat').disabled = false;
+    }
+  } else {
+    aviso.style.display = 'none';
+    document.getElementById('btn-salvar-mat').disabled = false;
+  }
+}
+
+async function salvarMaterial() {
+  const nome = document.getElementById('mat-nome').value.trim().toUpperCase();
+  const unidade = document.getElementById('mat-unidade').value;
+  const categoria = document.getElementById('mat-categoria').value;
+  if (!nome) { showToast('⚠ Informe o nome do material.'); return; }
+  const btn = document.getElementById('btn-salvar-mat');
+  const cats = EstoqueModule.catalogoMateriais.length ? EstoqueModule.catalogoMateriais : (typeof catalogoMateriais !== 'undefined' ? catalogoMateriais : []);
+
+  if (_editandoMaterialId) {
+    const atual = cats.find(m => m.id === _editandoMaterialId);
+    if (!atual) return;
+    const duplicata = cats.find(m => m.id !== _editandoMaterialId && norm(m.nome) === norm(nome));
+    if (duplicata) { showToast(`⚠ Material já existe: ${duplicata.codigo}`); return; }
+    btn.disabled = true; btn.textContent = 'SALVANDO...';
+    try {
+      await sbPatch('materiais', _editandoMaterialId, { nome, unidade, categoria, auto: false });
+      atual.nome = nome; atual.unidade = unidade; atual.categoria = categoria; atual.auto = false;
+      _editandoMaterialId = null;
+      fecharModal('material');
+      renderCatalogo();
+      showToast(`✅ Material ${atual.codigo} atualizado!`);
+    } catch(e) { showToast('❌ Não foi possível atualizar o material.'); }
+    btn.disabled = false; btn.textContent = '💾 SALVAR ALTERAÇÕES';
+    return;
+  }
+
+  const existe = cats.find(m => norm(m.nome) === norm(nome));
+  if (existe) { showToast(`⚠ Material já existe: ${existe.codigo}`); return; }
+  const codigos = cats.map(m => parseInt(m.codigo)).filter(c => !isNaN(c));
+  const codigo = codigos.length ? String(Math.max(...codigos) + 1).padStart(6, '0') : '000001';
+  btn.disabled = true; btn.textContent = 'SALVANDO...';
+  try {
+    const [saved] = await sbPost('materiais', { codigo, nome, unidade, categoria });
+    cats.push(saved);
+    cats.sort((a,b) => (a.codigo||'').localeCompare(b.codigo||''));
+    if (EstoqueModule.catalogoMateriais !== cats) EstoqueModule.catalogoMateriais = cats;
+    fecharModal('material');
+    renderCatalogo();
+    showToast(`✅ Material ${codigo} — ${nome} cadastrado!`);
+  } catch(e) { showToast('❌ Não foi possível salvar o material.'); }
+  btn.disabled = false; btn.textContent = '💾 SALVAR MATERIAL';
+}
+
+
+// ── BANCO / CONFIGURAÇÃO ────────────────────────────────────
+function renderBanco() {
+  const obrasEl = document.getElementById('banco-obras-lista');
+  if (obrasEl) {
+    if (!obras.length) { obrasEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--texto3);">Nenhuma obra cadastrada.</div>'; }
+    else {
+      obrasEl.innerHTML = obras.map(o => {
+        const ls = lancamentos.filter(l => l.obra_id === o.id);
+        const total = ls.reduce((s,l) => s + Number(l.total||0), 0);
+        const status = o.status === 'concluida' ? '<span style="font-size:9px;padding:2px 8px;border-radius:10px;background:rgba(34,197,94,0.08);color:var(--verde-hl);font-weight:700;margin-left:8px;">CONCLUÍDA</span>' : '';
+        return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--borda2);">
+          <div>
+            <div style="font-weight:700;font-size:13px;">${esc(o.nome)}${status}</div>
+            <div style="font-size:11px;color:var(--texto3);margin-top:2px;">${ls.length} lançamento${ls.length!==1?'s':''}</div>
+          </div>
+          <div style="font-weight:700;color:var(--verde-hl);font-size:13px;">${fmtR(total)}</div>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  const fornEl = document.getElementById('banco-forn-lista');
+  if (fornEl) {
+    const fornMap = {};
+    notas.forEach(n => {
+      if (!n.fornecedor) return;
+      if (!fornMap[n.fornecedor]) fornMap[n.fornecedor] = { total: 0, qtd: 0, cnpj: n.cnpj || '' };
+      fornMap[n.fornecedor].total += Number(n.valor_bruto||0);
+      fornMap[n.fornecedor].qtd++;
+    });
+    const forns = Object.entries(fornMap).sort((a,b) => b[1].total - a[1].total);
+    const countEl = document.getElementById('banco-forn-count');
+    if (countEl) countEl.textContent = `(${forns.length})`;
+    if (!forns.length) { fornEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--texto3);">Nenhum fornecedor ainda.</div>'; }
+    else {
+      fornEl.innerHTML = forns.map(([nome, d]) =>
+        `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--borda2);">
+          <div>
+            <div style="font-weight:700;font-size:13px;">${esc(nome)}</div>
+            <div style="font-size:11px;color:var(--texto3);margin-top:2px;">${esc(d.cnpj || 'CNPJ não informado')} · ${d.qtd} nota${d.qtd!==1?'s':''}</div>
+          </div>
+          <div style="font-weight:700;color:var(--verde-hl);font-size:13px;">${fmtR(d.total)}</div>
+        </div>`
+      ).join('');
+    }
+  }
+
+  const usersEl = document.getElementById('banco-users-lista');
+  if (usersEl) {
+    const lista = typeof USUARIOS !== 'undefined' ? USUARIOS.filter(u => u.ativo !== false) : [];
+    if (!lista.length) { usersEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--texto3);">Nenhum usuário cadastrado.</div>'; }
+    else {
+      const iconePerfil = p => p === 'admin' ? '👑' : p === 'mestre' ? '🔨' : '👷';
+      const labelPerfil = p => p === 'admin' ? 'Admin' : p === 'mestre' ? 'Mestre' : 'Operacional';
+      usersEl.innerHTML = lista.map(u =>
+        `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--borda2);">
+          <div style="width:36px;height:36px;border-radius:50%;background:var(--verde-bg);display:flex;align-items:center;justify-content:center;font-size:16px;">${iconePerfil(u.perfil)}</div>
+          <div>
+            <div style="font-weight:700;font-size:13px;">${esc(u.nome)}</div>
+            <div style="font-size:11px;color:var(--texto3);">@${esc(u.usuario)} · ${labelPerfil(u.perfil)}</div>
+          </div>
+        </div>`
+      ).join('');
+    }
+  }
+}
