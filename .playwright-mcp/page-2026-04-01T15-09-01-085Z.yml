@@ -1,0 +1,87 @@
+- generic [active] [ref=e11]:
+  - generic [ref=e12]:
+    - navigation [ref=e13]:
+      - generic [ref=e14] [cursor=pointer]: DM
+      - generic "Hoje" [ref=e15] [cursor=pointer]: ★
+      - generic "EDR System" [ref=e16] [cursor=pointer]: ⚒
+      - generic "RPM Pro" [ref=e17] [cursor=pointer]: ⚙
+      - generic "Sair" [ref=e18] [cursor=pointer]: ➜
+    - generic [ref=e19]:
+      - generic [ref=e20]:
+        - generic [ref=e21]:
+          - generic [ref=e22]: Command Center
+          - generic [ref=e23]: DM.STACK
+        - generic [ref=e24]:
+          - generic [ref=e25]: LIVE
+          - generic [ref=e26]:
+            - generic [ref=e27]: Quarta, 1 de Abril
+            - generic [ref=e28]: 12:08
+      - generic [ref=e29]:
+        - generic [ref=e30] [cursor=pointer]: Hoje
+        - generic [ref=e31] [cursor=pointer]: EDR System
+        - generic [ref=e32] [cursor=pointer]: RPM Pro
+      - generic [ref=e165]:
+        - generic [ref=e166]:
+          - generic [ref=e167]:
+            - generic [ref=e168]: Saldo Abr
+            - generic [ref=e169]: R$ -1.1k
+            - generic [ref=e170]: Entradas R$ 0,00
+          - generic [ref=e171]:
+            - generic [ref=e172]: Saidas Abr
+            - generic [ref=e173]: R$ 1.1k
+          - generic [ref=e174]:
+            - generic [ref=e175]: Mao de Obra
+            - generic [ref=e176]: 0%
+            - generic [ref=e177]: R$ 0,00
+          - generic [ref=e178]:
+            - generic [ref=e179]: Obras
+            - generic [ref=e180]: "5"
+            - generic [ref=e181]: em andamento · 2 interno
+        - generic [ref=e182]:
+          - generic [ref=e183]:
+            - generic [ref=e184]: Obras — Orcamento Consumido
+            - generic [ref=e186]:
+              - generic [ref=e187]:
+                - generic [ref=e188]:
+                  - generic [ref=e189]: DAYANA
+                  - generic [ref=e190]: "Mes: R$ 0,00 · Total: R$ 81.0k"
+                - generic [ref=e193]: 40%
+                - generic [ref=e194]: R$ 201.0k
+              - generic [ref=e195]:
+                - generic [ref=e196]:
+                  - generic [ref=e197]: DUAM
+                  - generic [ref=e198]: "Mes: R$ 0,00 · Total: R$ 49.7k"
+                - generic [ref=e201]: 12%
+                - generic [ref=e202]: R$ 399.9k
+              - generic [ref=e203]:
+                - generic [ref=e204]:
+                  - generic [ref=e205]: JOSENALDO JUNIOR
+                  - generic [ref=e206]: "Mes: R$ 1.0k · Total: R$ 97.9k"
+                - generic [ref=e209]: 47%
+                - generic [ref=e210]: R$ 207.4k
+              - generic [ref=e211]:
+                - generic [ref=e212]:
+                  - generic [ref=e213]: LEONARDO
+                  - generic [ref=e214]: "Mes: R$ 0,00 · Total: R$ 51.4k"
+                - generic [ref=e217]: 26%
+                - generic [ref=e218]: R$ 200.0k
+              - generic [ref=e219]:
+                - generic [ref=e220]:
+                  - generic [ref=e221]: PEDRO
+                  - generic [ref=e222]: "Mes: R$ 0,00 · Total: R$ 60.1k"
+                - generic [ref=e225]: 32%
+                - generic [ref=e226]: R$ 188.2k
+              - generic [ref=e227]:
+                - generic [ref=e228]: CUSTO INTERNO
+                - generic [ref=e230]:
+                  - generic [ref=e231]: EDR - ESCRITORIO
+                  - generic [ref=e232]: "Mes: R$ 52,46 · Total: R$ 87.8k"
+                - generic [ref=e234]:
+                  - generic [ref=e235]: MIRELI
+                  - generic [ref=e236]: "Mes: R$ 0,00 · Total: R$ 1.5k"
+          - generic [ref=e237]:
+            - generic [ref=e238]: Alertas
+            - generic [ref=e243]:
+              - strong [ref=e244]: Saldo negativo
+              - text: "em Abr: -R$ 1.082,26 — conferir repasses pendentes"
+  - button "?" [ref=e10] [cursor=pointer]

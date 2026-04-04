@@ -1,0 +1,100 @@
+- generic [active] [ref=e11]:
+  - generic [ref=e12]:
+    - navigation [ref=e13]:
+      - generic [ref=e14] [cursor=pointer]: DM
+      - generic "Hoje" [ref=e15] [cursor=pointer]: ★
+      - generic "EDR System" [ref=e16] [cursor=pointer]: ⚒
+      - generic "RPM Pro" [ref=e17] [cursor=pointer]: ⚙
+      - generic "Sair" [ref=e18] [cursor=pointer]: ➜
+    - generic [ref=e19]:
+      - generic [ref=e20]:
+        - generic [ref=e21]:
+          - generic [ref=e22]: Command Center
+          - generic [ref=e23]: DM.STACK
+        - generic [ref=e24]:
+          - generic [ref=e25]: LIVE
+          - generic [ref=e26]:
+            - generic [ref=e27]: Quarta, 1 de Abril
+            - generic [ref=e28]: 12:06
+      - generic [ref=e29]:
+        - generic [ref=e30] [cursor=pointer]: Hoje
+        - generic [ref=e31] [cursor=pointer]: EDR System
+        - generic [ref=e32] [cursor=pointer]: RPM Pro
+      - generic [ref=e249]:
+        - generic [ref=e250]:
+          - generic [ref=e251]:
+            - generic [ref=e252]: Carbon Car Service
+            - generic [ref=e253]: 10 OS
+            - generic [ref=e254]: "Trial: 85 dias"
+          - generic [ref=e255]:
+            - generic [ref=e256]: Frequencia
+            - generic [ref=e257]: 3/7
+            - generic [ref=e258]: Dias com OS na semana
+          - generic [ref=e259]:
+            - generic [ref=e260]: Faturado Abr
+            - generic [ref=e261]: R$ 0,00
+            - generic [ref=e262]: 0 entregas
+          - generic [ref=e263]:
+            - generic [ref=e264]: Ticket Medio
+            - generic [ref=e265]: R$ 0,00
+        - generic [ref=e266]: Kanban — OS por Status
+        - generic [ref=e267]:
+          - generic [ref=e268]:
+            - generic [ref=e269]: "2"
+            - generic [ref=e270]: Diagnostico
+          - generic [ref=e273]:
+            - generic [ref=e274]: "1"
+            - generic [ref=e275]: Ag. Peca
+          - generic [ref=e278]:
+            - generic [ref=e279]: "1"
+            - generic [ref=e280]: Execucao
+          - generic [ref=e283]:
+            - generic [ref=e284]: "1"
+            - generic [ref=e285]: Pronto
+          - generic [ref=e288]:
+            - generic [ref=e289]: "4"
+            - generic [ref=e290]: Entregue
+        - generic [ref=e293]:
+          - generic [ref=e294]:
+            - generic [ref=e295]: Fluxos Travados
+            - generic [ref=e297]:
+              - generic [ref=e300]:
+                - strong [ref=e301]: 3 OS
+                - text: abertas sem mecanico atribuido
+              - generic [ref=e304]:
+                - strong [ref=e305]: 1 OS
+                - text: entregues sem pagamento — R$ 195,20 no limbo
+              - generic [ref=e308]:
+                - strong [ref=e309]: 5 pecas
+                - text: com custo zerado — margem impossivel de calcular
+          - generic [ref=e310]:
+            - generic [ref=e311]: Onde Ta Perdendo Dinheiro
+            - generic [ref=e313]:
+              - generic [ref=e316]:
+                - strong [ref=e317]: R$ 195,20
+                - text: entregue sem cobrar (1 OS)
+              - generic [ref=e320]:
+                - strong [ref=e321]: 1 OS canceladas
+                - text: — R$ 20,00 perdido
+              - generic [ref=e324]:
+                - strong [ref=e325]: 5 pecas
+                - text: vendidas sem custo cadastrado — margem cega
+        - generic [ref=e326]:
+          - generic [ref=e327]: Modulos — Adocao
+          - generic [ref=e329]:
+            - generic [ref=e330]:
+              - strong [ref=e333]: Ordens de Servico
+              - generic [ref=e334]: 10x
+            - generic [ref=e335]:
+              - strong [ref=e338]: Clientes
+              - generic [ref=e339]: 33x
+            - generic [ref=e340]:
+              - strong [ref=e343]: Veiculos
+              - generic [ref=e344]: 60x
+            - generic [ref=e345]:
+              - strong [ref=e348]: Pecas/Estoque
+              - generic [ref=e349]: 1000x
+            - generic [ref=e350]:
+              - strong [ref=e353]: Financeiro (Caixa)
+              - generic [ref=e354]: Nunca usado
+  - button "?" [ref=e10] [cursor=pointer]

@@ -1,0 +1,9 @@
+- generic [active]:
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]: DM.Stack
+      - generic [ref=e5]: COMMAND CENTER
+    - textbox "Email" [ref=e6]: duam@edreng.com.br
+    - textbox "Senha" [ref=e7]: duanxdzin
+    - button "Entrar" [ref=e8] [cursor=pointer]
+  - button "?" [ref=e10] [cursor=pointer]

@@ -1,0 +1,97 @@
+- generic [active] [ref=e11]:
+  - generic [ref=e12]:
+    - navigation [ref=e13]:
+      - generic [ref=e14] [cursor=pointer]: DM
+      - generic "Hoje" [ref=e15] [cursor=pointer]: ★
+      - generic "EDR System" [ref=e16] [cursor=pointer]: ⚒
+      - generic "RPM Pro" [ref=e17] [cursor=pointer]: ⚙
+      - generic "Sair" [ref=e18] [cursor=pointer]: ➜
+    - generic [ref=e19]:
+      - generic [ref=e20]:
+        - generic [ref=e21]:
+          - generic [ref=e22]: Command Center
+          - generic [ref=e23]: DM.STACK
+        - generic [ref=e24]:
+          - generic [ref=e25]: LIVE
+          - generic [ref=e26]:
+            - generic [ref=e27]: Quarta, 1 de Abril
+            - generic [ref=e28]: 11:43
+      - generic [ref=e29]:
+        - generic [ref=e30] [cursor=pointer]: Hoje
+        - generic [ref=e31] [cursor=pointer]: EDR System
+        - generic [ref=e32] [cursor=pointer]: RPM Pro
+      - generic [ref=e249]:
+        - generic [ref=e250]:
+          - generic [ref=e251]:
+            - generic [ref=e252]: Carbon Car Service
+            - generic [ref=e253]: 9 OS
+            - generic [ref=e254]: "Trial: 85 dias"
+          - generic [ref=e255]:
+            - generic [ref=e256]: Frequencia
+            - generic [ref=e257]: 3/7
+            - generic [ref=e258]: Dias com OS na semana
+          - generic [ref=e259]:
+            - generic [ref=e260]: Faturado Abr
+            - generic [ref=e261]: R$ 0,00
+            - generic [ref=e262]: 0 entregas
+          - generic [ref=e263]:
+            - generic [ref=e264]: Ticket Medio
+            - generic [ref=e265]: R$ 0,00
+        - generic [ref=e266]: Kanban — OS por Status
+        - generic [ref=e267]:
+          - generic [ref=e268]:
+            - generic [ref=e269]: "2"
+            - generic [ref=e270]: Diagnostico
+          - generic [ref=e273]:
+            - generic [ref=e274]: "1"
+            - generic [ref=e275]: Execucao
+          - generic [ref=e278]:
+            - generic [ref=e279]: "1"
+            - generic [ref=e280]: Pronto
+          - generic [ref=e283]:
+            - generic [ref=e284]: "4"
+            - generic [ref=e285]: Entregue
+        - generic [ref=e288]:
+          - generic [ref=e289]:
+            - generic [ref=e290]: Fluxos Travados
+            - generic [ref=e292]:
+              - generic [ref=e295]:
+                - strong [ref=e296]: 3 OS
+                - text: abertas sem mecanico atribuido
+              - generic [ref=e299]:
+                - strong [ref=e300]: 1 OS
+                - text: entregues sem pagamento — R$ 195,20 no limbo
+              - generic [ref=e303]:
+                - strong [ref=e304]: 5 pecas
+                - text: com custo zerado — margem impossivel de calcular
+          - generic [ref=e305]:
+            - generic [ref=e306]: Onde Ta Perdendo Dinheiro
+            - generic [ref=e308]:
+              - generic [ref=e311]:
+                - strong [ref=e312]: R$ 195,20
+                - text: entregue sem cobrar (1 OS)
+              - generic [ref=e315]:
+                - strong [ref=e316]: 1 OS canceladas
+                - text: — R$ 20,00 perdido
+              - generic [ref=e319]:
+                - strong [ref=e320]: 5 pecas
+                - text: vendidas sem custo cadastrado — margem cega
+        - generic [ref=e321]:
+          - generic [ref=e322]: Modulos — Adocao
+          - generic [ref=e324]:
+            - generic [ref=e325]:
+              - strong [ref=e328]: Ordens de Servico
+              - generic [ref=e329]: 9x
+            - generic [ref=e330]:
+              - strong [ref=e333]: Clientes
+              - generic [ref=e334]: 33x
+            - generic [ref=e335]:
+              - strong [ref=e338]: Veiculos
+              - generic [ref=e339]: 60x
+            - generic [ref=e340]:
+              - strong [ref=e343]: Pecas/Estoque
+              - generic [ref=e344]: 1000x
+            - generic [ref=e345]:
+              - strong [ref=e348]: Financeiro (Caixa)
+              - generic [ref=e349]: Nunca usado
+  - button "?" [ref=e10] [cursor=pointer]

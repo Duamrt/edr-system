@@ -1,0 +1,140 @@
+- generic [active] [ref=e11]:
+  - generic [ref=e12]:
+    - navigation [ref=e13]:
+      - generic [ref=e14] [cursor=pointer]: DM
+      - generic "Hoje" [ref=e15] [cursor=pointer]: ★
+      - generic "EDR System" [ref=e16] [cursor=pointer]: ⚒
+      - generic "RPM Pro" [ref=e17] [cursor=pointer]: ⚙
+      - generic "Sair" [ref=e18] [cursor=pointer]: ➜
+    - generic [ref=e19]:
+      - generic [ref=e20]:
+        - generic [ref=e21]:
+          - generic [ref=e22]: Command Center
+          - generic [ref=e23]: DM.STACK
+        - generic [ref=e24]:
+          - generic [ref=e25]: LIVE
+          - generic [ref=e26]:
+            - generic [ref=e27]: Quarta, 1 de Abril
+            - generic [ref=e28]: 12:25
+      - generic [ref=e29]:
+        - generic [ref=e30] [cursor=pointer]: Hoje
+        - generic [ref=e31] [cursor=pointer]: EDR System
+        - generic [ref=e32] [cursor=pointer]: RPM Pro
+      - generic [ref=e33]:
+        - generic [ref=e34]:
+          - generic [ref=e35]:
+            - generic [ref=e36]: Saldo EDR Abr
+            - generic [ref=e37]: R$ -1.1k
+            - generic [ref=e38]: Entradas R$ 0,00 · Saidas R$ 1.1k
+          - generic [ref=e39]:
+            - generic [ref=e40]: Mao de Obra
+            - generic [ref=e41]: 0%
+            - generic [ref=e42]: R$ 0,00 de R$ 1.1k
+          - generic [ref=e43]:
+            - generic [ref=e44]: RPM — OS Hoje
+            - generic [ref=e45]: "4"
+            - generic [ref=e46]: 5 abertas · 3/7 dias ativos
+          - generic [ref=e47]:
+            - generic [ref=e48]: RPM — Faturado Abr
+            - generic [ref=e49]: R$ 0,00
+            - generic [ref=e50]: 0 entregas · ticket R$ 0,00
+        - generic [ref=e51]:
+          - generic [ref=e52]:
+            - generic [ref=e53]: Acoes do Dia
+            - generic [ref=e54]:
+              - generic [ref=e55]: 2 pendentes de 2
+              - generic [ref=e58] [cursor=pointer]:
+                - generic [ref=e59]: Saldo negativo em Abr
+                - generic [ref=e60]: "Entradas: R$ 127.6k / Saidas: R$ 217.6k"
+                - generic [ref=e61]: financeiro
+              - generic [ref=e64] [cursor=pointer]:
+                - generic [ref=e65]: 4 OS abertas na Carbon — R$ 2.694,75 parado
+                - generic [ref=e66]: Carro parado = vaga ocupada = dinheiro travado
+                - generic [ref=e67]: rpm
+          - generic [ref=e68]:
+            - generic [ref=e69]: Diagnostico IA
+            - generic [ref=e70]:
+              - generic [ref=e71]:
+                - generic [ref=e72]:
+                  - generic [ref=e73]:
+                    - text: RPM Pro
+                    - generic [ref=e74]: IA
+                  - generic [ref=e75]: Ontem 14:48
+                - generic [ref=e76]: Carbon Auto Center operando todo dia útil da semana, mas com faturamento baixo (R$ 343/mês, ticket médio R$ 171,50) e 4 OS abertas travadas. Potencial de R$ 2.694,75 parado esperando execução.
+                - generic [ref=e77]:
+                  - generic [ref=e78]: Problemas
+                  - generic [ref=e79]:
+                    - generic [ref=e80]: ●
+                    - generic [ref=e81]: "Faturamento crítico: apenas R$ 343 no mês com 6 OS — média de R$ 57/OS é insustentável"
+                  - generic [ref=e82]:
+                    - generic [ref=e83]: ●
+                    - generic [ref=e84]: 4 OS abertas com R$ 2.694,75 parado — 1 aguardando peça (R$ 1.087,97), 1 pronto sem entregar (R$ 486,78), 2 em execução travadas
+                  - generic [ref=e85]:
+                    - generic [ref=e86]: ●
+                    - generic [ref=e87]: 80% da base sem OS (24 de 30 clientes inativos) — não tá realmente usando o sistema
+                  - generic [ref=e88]:
+                    - generic [ref=e89]: ●
+                    - generic [ref=e90]: Dados de mecânicos corrompidos (apenas '—' como nome) — impossível rastrear quem tá fazendo o trabalho
+                  - generic [ref=e91]:
+                    - generic [ref=e92]: ●
+                    - generic [ref=e93]: 2 OS sem pagamento pendente — fluxo financeiro quebrado
+                - generic [ref=e94]:
+                  - generic [ref=e95]: Recomendacoes
+                  - generic [ref=e96]:
+                    - generic [ref=e97]: "1"
+                    - generic [ref=e98]: "URGENTE: Corrigir base de mecânicos — hoje tem 2 registros inválidos ('—'). Sem isso não tá rastreando quem produz."
+                  - generic [ref=e99]:
+                    - generic [ref=e100]: "2"
+                    - generic [ref=e101]: Ligar pra 20 clientes inativos com WhatsApp (DUAM RODRIGUES, F5 MULTIMARCAS, GM AUTOSS, etc) — oferecer inspeção gratuita, descobrir se é falta de demanda ou concorrência tomou.
+                  - generic [ref=e102]:
+                    - generic [ref=e103]: "3"
+                    - generic [ref=e104]: "Fechar 2 OS travadas: OS #4 ligar pro fornecedor (peça atrasada?), OS #3 cobrar cliente pra pegar — libera mecânico."
+                  - generic [ref=e105]:
+                    - generic [ref=e106]: "4"
+                    - generic [ref=e107]: Revisar trial até jun/26 — com R$ 343/mês não justifica licença. Precisa de 10-15 OS/mês (R$ 1.500+) pra ser rentável.
+                  - generic [ref=e108]:
+                    - generic [ref=e109]: "5"
+                    - generic [ref=e110]: "Mapear real: dos 30 clientes, quantos têm veículos ativos? 24 sem OS pode ser portfolio morto que tá só ocupando espaço."
+              - generic [ref=e111]:
+                - generic [ref=e112]:
+                  - generic [ref=e113]:
+                    - text: EDR System
+                    - generic [ref=e114]: IA
+                  - generic [ref=e115]: Ontem 14:49
+                - generic [ref=e116]: "EDR fechou março no vermelho do mês (-R$ 89.9k) mas o acumulado segue verde (R$ 335k). Problema real: DUAM não recebeu nada (R$ 399.9k parado) e cash flow ta descompensado — saída 70% maior que entrada neste mês."
+                - generic [ref=e117]:
+                  - generic [ref=e118]: Problemas
+                  - generic [ref=e119]:
+                    - generic [ref=e120]: ●
+                    - generic [ref=e121]: "DUAM: R$ 399.9k em receita projetada e R$ 0 recebido — obra parada no fluxo de caixa ou cliente não pagou ainda"
+                  - generic [ref=e122]:
+                    - generic [ref=e123]: ●
+                    - generic [ref=e124]: "Mês negativo: -R$ 89.9k de saldo (saída R$ 217.5k vs entrada R$ 127.6k) — despesa rodando mas grana nao entra"
+                  - generic [ref=e125]:
+                    - generic [ref=e126]: ●
+                    - generic [ref=e127]: Mão de obra só 6% do custo total (R$ 12.1k) mas R$ 126.8k em repasses — precisa mapear o que ta sendo repassado
+                  - generic [ref=e128]:
+                    - generic [ref=e129]: ●
+                    - generic [ref=e130]: LEONARDO e DAYANA com falta_receber alta (R$ 99.8k e R$ 76.3k) — clientes devem pagar
+                  - generic [ref=e131]:
+                    - generic [ref=e132]: ●
+                    - generic [ref=e133]: 1 dia sem lançamento — possível atraso em fechamento ou obra parada
+                - generic [ref=e134]:
+                  - generic [ref=e135]: Recomendacoes
+                  - generic [ref=e136]:
+                    - generic [ref=e137]: "1"
+                    - generic [ref=e138]: "URGENTE: Cobrar DUAM pelos R$ 399.9k (100% da receita sem entrada) — isso resolve metade do problema de fluxo"
+                  - generic [ref=e139]:
+                    - generic [ref=e140]: "2"
+                    - generic [ref=e141]: Cobrar LEONARDO (R$ 99.8k) e DAYANA (R$ 76.3k) — sao 55% do falta_receber total
+                  - generic [ref=e142]:
+                    - generic [ref=e143]: "3"
+                    - generic [ref=e144]: "Revisar MIRELI: falta_receber negativo sugere erro — ou é adiantamento (ok) ou ta com receita errada"
+                  - generic [ref=e145]:
+                    - generic [ref=e146]: "4"
+                    - generic [ref=e147]: "Manter monitoramento da saida: R$ 217.5k/mês é sustentavel? Comparar com média dos 3 meses anteriores"
+                  - generic [ref=e148]:
+                    - generic [ref=e149]: "5"
+                    - generic [ref=e150]: Confirmar o que ta sendo repassado em repasses_mes (R$ 126.8k) — nao bate com entrada de clientes, pode ser gestao de caixa
+              - button "⚙ Atualizar Diagnostico" [ref=e152] [cursor=pointer]
+  - button "?" [ref=e10] [cursor=pointer]
