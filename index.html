@@ -1595,11 +1595,11 @@ function toggleTheme() {
 // ── MODAL SYSTEM ──────────────────────────
 function openModal(id) {
   const el = document.getElementById(`modal-${id}`) || document.getElementById(id);
-  if (el) el.classList.add('active');
+  if (el) { el.classList.remove('hidden'); el.classList.add('active'); }
 }
 function closeModal(id) {
   const el = document.getElementById(`modal-${id}`) || document.getElementById(id);
-  if (el) el.classList.remove('active');
+  if (el) { el.classList.remove('active','hidden'); }
 }
 
 // ESC fecha modal ou sidebar
@@ -1984,12 +1984,11 @@ function updateShellUser(nome, perfil) {
 <!-- FUNÇÕES GLOBAIS (Fase 0 — compat V1→V2)                      -->
 <!-- ═══════════════════════════════════════════════════════════════ -->
 <script>
-// fecharModal — compat V1 (usa hidden) + V2 (usa active)
+// fecharModal — V2 (usa active, remove hidden caso exista)
 function fecharModal(w) {
   const el = document.getElementById('modal-' + w) || document.getElementById(w);
   if (el) {
-    el.classList.add('hidden');
-    el.classList.remove('active');
+    el.classList.remove('active','hidden');
   }
   if (w === 'dist') { if (typeof distItemAtual !== 'undefined') distItemAtual = null; }
 }
