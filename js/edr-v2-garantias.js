@@ -42,7 +42,7 @@ async function _garantiasLoad() {
 // ── Render principal ─────────────────────────────────────────
 
 function renderGarantias() {
-  const container = document.getElementById('view-content');
+  const container = document.getElementById('garantia-lista') || document.getElementById('view-garantias');
   if (!container) return;
 
   // Skeleton

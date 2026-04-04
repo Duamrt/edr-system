@@ -53,7 +53,7 @@ async function _leadsLoadHistorico() {
 // ── Render principal ─────────────────────────────────────────
 
 function renderLeads() {
-  const container = document.getElementById('view-content');
+  const container = document.getElementById('leads-lista') || document.getElementById('view-leads');
   if (!container) return;
 
   // Skeleton

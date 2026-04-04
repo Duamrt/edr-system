@@ -107,16 +107,22 @@ if (typeof viewRegistry !== 'undefined') {
 function renderObrasView() {
   initCATS();
   _obrasShowOverview();
+  populateSelects();
   renderObrasCards();
   aplicarPerfil();
 }
 
 // ── OVERVIEW vs DETALHE ─────────────────────────────────────────
 function _obrasShowOverview() {
-  const overview = document.getElementById('obras-overview');
-  const detalhe = document.getElementById('obras-detalhe');
+  const overview = document.getElementById('obras-cards-overview');
+  const sticky = document.getElementById('obras-sticky');
   if (overview) overview.style.display = '';
-  if (detalhe) detalhe.classList.remove('active');
+  if (sticky) sticky.style.display = 'none';
+  // Esconder todos os paineis de tab
+  ['lanc', 'mat', 'add', 'cef'].forEach(t => {
+    const p = document.getElementById('obras-tab-content-' + t);
+    if (p) p.style.display = 'none';
+  });
   ObrasModule.obraAberta = null;
 }
 
@@ -222,70 +228,48 @@ function obrasAbrirDetalhe(obraId) {
   ObrasModule.tab = 'lanc';
   ObrasModule.lancPage = 0;
 
-  const overview = document.getElementById('obras-overview');
-  const detalhe = document.getElementById('obras-detalhe');
+  const overview = document.getElementById('obras-cards-overview');
+  const sticky = document.getElementById('obras-sticky');
   if (overview) overview.style.display = 'none';
-  if (detalhe) detalhe.classList.add('active');
+  if (sticky) sticky.style.display = '';
 
   const obra = [...obras, ...obrasArquivadas].find(o => o.id === obraId);
   if (!obra) return;
 
-  const isAdmin = usuarioAtual?.perfil === 'admin';
-  const ls = lancamentos.filter(l => l.obra_id === obraId);
-  const total = ls.reduce((s, l) => s + Number(l.total || 0), 0);
+  // Selecionar obra no filtro do sticky
+  const filtroObra = document.getElementById('obras-filtro-obra');
+  if (filtroObra) filtroObra.value = obraId;
 
-  // Header do detalhe
-  const headerEl = document.getElementById('obras-detalhe-header');
-  if (headerEl) {
-    headerEl.innerHTML = `
-      <button class="obras-back-btn" onclick="obrasVoltarCards()">
-        <span class="material-symbols-outlined">arrow_back</span>
-      </button>
-      <div>
-        <div class="obras-detalhe-title">${esc(obra.nome)}</div>
-        <div class="obras-detalhe-subtitle">
-          <span class="material-symbols-outlined" style="font-size:14px;">location_on</span>
-          ${esc(obra.cidade || 'Sem cidade')} &middot; ${ls.length} lancamentos
-          ${isAdmin ? ' &middot; ' + fmtR(total) : ''}
-        </div>
-      </div>`;
-  }
+  // Popular select de centro de custo
+  populateSelects();
 
-  // Ativar tabs
-  _obrasRenderTabs();
   // Renderizar aba padrao (lancamentos)
   obrasSwitchTab('lanc');
 }
 
 // ── TABS ────────────────────────────────────────────────────────
 function _obrasRenderTabs() {
-  const tabsEl = document.getElementById('obras-tabs');
-  if (!tabsEl) return;
-  const tabs = [
-    { key: 'lanc', lb: 'Lancamentos' },
-    { key: 'mat', lb: 'Materiais' },
-    { key: 'add', lb: 'Adicionais' },
-    { key: 'cef', lb: 'CEF' },
-  ];
-  tabsEl.innerHTML = tabs.map(t =>
-    `<button class="obras-tab ${t.key === ObrasModule.tab ? 'active' : ''}" onclick="obrasSwitchTab('${t.key}')">${t.lb}</button>`
-  ).join('');
+  // Usar botoes de tab existentes no HTML (obras-tab-lanc, obras-tab-mat, etc.)
+  const tabMap = { lanc: 'obras-tab-lanc', mat: 'obras-tab-mat', add: 'obras-tab-add', cef: 'obras-tab-cef' };
+  Object.entries(tabMap).forEach(([key, id]) => {
+    const btn = document.getElementById(id);
+    if (btn) {
+      btn.style.borderBottomColor = key === ObrasModule.tab ? 'var(--verde-hl)' : 'transparent';
+      btn.style.color = key === ObrasModule.tab ? 'var(--verde-hl)' : 'var(--texto3)';
+    }
+  });
 }
 
 function obrasSwitchTab(tab) {
   ObrasModule.tab = tab;
 
   // Atualizar visual das tabs
-  document.querySelectorAll('.obras-tab').forEach(el => {
-    el.classList.toggle('active', el.textContent.toLowerCase().startsWith(tab === 'lanc' ? 'lanc' : tab === 'mat' ? 'mat' : tab === 'add' ? 'adic' : 'cef'));
-  });
-  // Alternativa mais segura: re-renderizar tabs
   _obrasRenderTabs();
 
-  // Esconder todos os paineis
+  // Mostrar/esconder paineis de conteudo
   ['lanc', 'mat', 'add', 'cef'].forEach(t => {
-    const panel = document.getElementById('obras-tab-' + t);
-    if (panel) panel.classList.toggle('active', t === tab);
+    const panel = document.getElementById('obras-tab-content-' + t);
+    if (panel) panel.style.display = t === tab ? '' : 'none';
   });
 
   // Lazy loading: so buscar dados quando clicar na aba
@@ -418,7 +402,7 @@ function obrasCarregarMais() {
 // ── CEF (aba) ───────────────────────────────────────────────────
 function renderObraCef() {
   const obraId = ObrasModule.obraAberta;
-  const el = document.getElementById('obras-tab-cef-content');
+  const el = document.getElementById('obras-cef-content');
   if (!el) return;
 
   if (!obraId) {
@@ -562,7 +546,7 @@ function renderObraCef() {
 // ── MATERIAIS (aba) ─────────────────────────────────────────────
 function renderObrasMateriais() {
   const obraId = ObrasModule.obraAberta;
-  const el = document.getElementById('obras-tab-mat-content');
+  const el = document.getElementById('obras-mat-lista');
   if (!el) return;
 
   const dists = distribuicoes.filter(d => !obraId || d.obra_id === obraId);

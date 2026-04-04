@@ -76,6 +76,14 @@ function _relFmtR(v, abrev) {
 function initRelatorio() {
   const hoje = new Date();
   RelatorioModule.mesAtual = hoje.getFullYear() + '-' + String(hoje.getMonth() + 1).padStart(2, '0');
+  // Popular select de meses
+  const selMes = document.getElementById('rel-mes');
+  if (selMes) {
+    selMes.innerHTML = _relBuildSelectMeses();
+    // Se mes atual nao tem dados, pegar o mais recente
+    if (selMes.options.length && !selMes.value) selMes.selectedIndex = 0;
+    RelatorioModule.mesAtual = selMes.value || RelatorioModule.mesAtual;
+  }
   renderRelatorio();
 }
 

@@ -62,20 +62,10 @@ function renderEstoqueView() {
 }
 
 function _showTabEstoque() {
-  const tabEst = document.getElementById('tab-estoque');
-  const tabCat = document.getElementById('tab-catalogo');
-  if (tabEst) tabEst.style.display = '';
-  if (tabCat) tabCat.style.display = 'none';
-  _updateTabButtons('estoque');
   renderEstoque();
 }
 
 function _showTabCatalogo() {
-  const tabEst = document.getElementById('tab-estoque');
-  const tabCat = document.getElementById('tab-catalogo');
-  if (tabEst) tabEst.style.display = 'none';
-  if (tabCat) tabCat.style.display = '';
-  _updateTabButtons('catalogo');
   renderCatalogo();
 }
 
@@ -374,7 +364,7 @@ function renderEstoque() {
   const restantes = itens.length - end;
 
   // Render cards
-  const el = document.getElementById('est-mat-grid');
+  const el = document.getElementById('estoque-lista');
   if (!el) return;
 
   if (!visiveis.length) {
@@ -1019,7 +1009,7 @@ function renderCatalogo() {
   const tabBadge = document.querySelector('.tab-btn:nth-child(2) .tab-badge');
   if (tabBadge) tabBadge.textContent = EstoqueModule.catalogoMateriais.length;
 
-  const el = document.getElementById('cat-table-body');
+  const el = document.getElementById('catalogo-lista');
   if (!el) return;
 
   if (!visiveis.length) {

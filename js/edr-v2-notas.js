@@ -30,29 +30,23 @@ function renderNotasView() {
 }
 
 function _notasShowLista() {
-  const lista = document.getElementById('nf-lista-view');
-  const form = document.getElementById('nf-form-view');
-  if (lista) lista.style.display = '';
-  if (form) form.classList.remove('active');
+  if (typeof setView === 'function') setView('notas');
 }
 
 function _notasShowForm() {
-  const lista = document.getElementById('nf-lista-view');
-  const form = document.getElementById('nf-form-view');
-  if (lista) lista.style.display = 'none';
-  if (form) form.classList.add('active');
+  if (typeof setView === 'function') setView('form');
 }
 
 // ══════════════════════════════════════════════════════════════════
 // LISTA DE NOTAS
 // ══════════════════════════════════════════════════════════════════
 function renderNotas() {
-  const fo = document.getElementById('nf-filtro-obra')?.value || '';
-  const ff = document.getElementById('nf-filtro-fornecedor')?.value || '';
-  const fc = document.getElementById('nf-filtro-credito')?.value || '';
+  const fo = document.getElementById('filtro-obra')?.value || '';
+  const ff = document.getElementById('filtro-fornecedor')?.value || '';
+  const fc = document.getElementById('filtro-credito')?.value || '';
 
   // Popular select de fornecedores (uma vez por render)
-  const selForn = document.getElementById('nf-filtro-fornecedor');
+  const selForn = document.getElementById('filtro-fornecedor');
   if (selForn) {
     const fornAtuais = new Set();
     selForn.querySelectorAll('option').forEach(o => { if (o.value) fornAtuais.add(o.value); });
@@ -71,7 +65,7 @@ function renderNotas() {
   if (fc === 'estoque') lista = lista.filter(n => n.obra === COMPANY_DEFAULTS.estoqueGeral);
   if (fc === 'escritorio') lista = lista.filter(n => n.obra === COMPANY_DEFAULTS.escritorio);
 
-  const el = document.getElementById('nf-lista');
+  const el = document.getElementById('notas-lista');
   if (!el) return;
 
   if (!lista.length) {
