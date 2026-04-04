@@ -82,6 +82,11 @@ input { font-family: inherit; }
   --fundo: var(--bg);
   --fundo2: var(--card);
   --skeleton: var(--border-light);
+  /* Aliases V1 faltantes */
+  --branco: var(--text-primary);
+  --borda2: var(--border);
+  --verde: var(--primary);
+  --verde3: var(--primary-hover);
 }
 
 /* ── DARK MODE ─────────────────────────── */
@@ -590,6 +595,341 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
 .gap-grid { display: grid; gap: 24px; }
 .cols-5-2 { grid-template-columns: 3fr 2fr; }
 @media (max-width: 1024px) { .cols-5-2 { grid-template-columns: 1fr; } }
+
+/* ══════════════════════════════════════════
+   COMPAT V1 — classes usadas nos módulos
+   ══════════════════════════════════════════ */
+.modulo-badge {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 13px; font-weight: 700;
+  color: var(--text-secondary);
+  letter-spacing: 1px;
+  margin-bottom: 12px;
+}
+.btn-save, .btn-verde {
+  background: var(--primary); color: #fff;
+  border: none; border-radius: var(--radius-sm);
+  padding: 10px 18px; font-size: 13px; font-weight: 600;
+  cursor: pointer; font-family: inherit;
+  transition: background .15s;
+}
+.btn-save:hover, .btn-verde:hover { background: var(--primary-hover); }
+.btn-verde-outline {
+  background: transparent; color: var(--primary);
+  border: 1px solid var(--primary); border-radius: var(--radius-sm);
+  padding: 6px 14px; font-size: 12px; font-weight: 600;
+  cursor: pointer; font-family: inherit;
+  transition: all .15s;
+}
+.btn-verde-outline:hover { background: var(--primary-surface); }
+.btn-outline {
+  background: transparent; color: var(--text-secondary);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 10px 18px; font-size: 13px; font-weight: 600;
+  cursor: pointer; font-family: inherit;
+}
+.btn-outline:hover { background: var(--border-light); }
+.filter-row {
+  display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px;
+}
+.filter-row select, .filter-row input {
+  padding: 8px 12px;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary); font-size: 13px; font-family: inherit;
+}
+
+/* ── TABELA ESTILO V2 ────────────────────── */
+.tabela-v2 {
+  width: 100%; border-collapse: collapse; font-size: 13px;
+}
+.tabela-v2 th {
+  text-align: left; padding: 10px 12px;
+  font-size: 11px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .5px; color: var(--text-tertiary);
+  border-bottom: 2px solid var(--border);
+  background: var(--bg);
+  position: sticky; top: 0;
+}
+.tabela-v2 td {
+  padding: 10px 12px; border-bottom: 1px solid var(--border-light);
+  color: var(--text-primary); vertical-align: middle;
+}
+.tabela-v2 tr:hover { background: var(--primary-surface); }
+.tabela-v2 .code { font-family: 'Space Grotesk', monospace; font-size: 12px; color: var(--text-tertiary); }
+
+/* ── CATALOGO BADGES ─────────────────────── */
+.cat-badge-auto {
+  display: inline-block; background: rgba(217,119,6,.12); color: var(--warning);
+  font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px;
+  letter-spacing: .5px; vertical-align: middle; margin-left: 4px;
+}
+.cat-actions { white-space: nowrap; }
+.cat-action-btn {
+  background: none; border: none; cursor: pointer;
+  padding: 4px; border-radius: 4px; color: var(--text-tertiary);
+  transition: all .15s; display: inline-flex; align-items: center;
+}
+.cat-action-btn:hover { background: var(--border-light); color: var(--text-primary); }
+
+/* ── BOTOES FILTRO (cat-btn) ─────────────── */
+.cat-btn {
+  background: transparent; border: 1px solid var(--border);
+  border-radius: 6px; padding: 5px 10px;
+  font-size: 11px; font-weight: 600; color: var(--text-secondary);
+  cursor: pointer; font-family: inherit; transition: all .15s;
+}
+.cat-btn:hover, .cat-btn.ativo {
+  background: var(--primary-surface); border-color: var(--primary);
+  color: var(--primary);
+}
+
+/* ── ESTOQUE CARDS ───────────────────────── */
+.mat-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius-md); padding: 16px;
+  margin-bottom: 8px; transition: box-shadow .15s;
+}
+.mat-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+.mat-card-top {
+  display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
+}
+.mat-card-name {
+  font-size: 14px; font-weight: 600; color: var(--text-primary);
+  flex: 1; line-height: 1.4;
+}
+.mat-card-code {
+  font-family: 'Space Grotesk', monospace; font-size: 11px;
+  color: var(--text-tertiary); margin-right: 6px;
+  background: var(--border-light); padding: 1px 6px; border-radius: 4px;
+}
+.mat-card-saldo { text-align: right; flex-shrink: 0; }
+.mat-card-saldo-num {
+  font-family: 'Space Grotesk', monospace; font-size: 20px; font-weight: 700;
+}
+.mat-card-saldo-num.positivo { color: var(--primary); }
+.mat-card-saldo-num.negativo { color: var(--error); }
+.mat-card-saldo-num.zero { color: var(--text-tertiary); }
+.mat-card-saldo-un { font-size: 11px; color: var(--text-tertiary); text-align: right; }
+.mat-card-tags { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 8px; }
+.mat-tag {
+  font-size: 10px; font-weight: 600; padding: 2px 8px;
+  border-radius: 4px; letter-spacing: .3px;
+}
+.mat-tag-cat { background: var(--primary-surface); color: var(--primary); }
+.mat-tag-sem-codigo { background: rgba(217,119,6,.1); color: var(--warning); }
+.mat-tag-nf-pend { background: rgba(37,99,235,.1); color: var(--info); }
+.mat-card-valor {
+  font-size: 12px; color: var(--text-secondary); margin-top: 8px;
+}
+.mat-card-meta {
+  font-size: 11px; color: var(--text-tertiary); margin-top: 4px;
+}
+.mat-card-meta span { color: var(--border); margin: 0 2px; }
+.mat-card-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+.mat-action-btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 11px; font-weight: 600; color: var(--text-secondary);
+  background: transparent; border: 1px solid var(--border);
+  border-radius: 6px; padding: 4px 10px; cursor: pointer;
+  font-family: inherit; transition: all .15s;
+}
+.mat-action-btn:hover { background: var(--border-light); color: var(--text-primary); }
+.mat-action-btn.distribuir { border-color: var(--primary); color: var(--primary); }
+.mat-action-btn .material-symbols-outlined { font-size: 14px; }
+
+/* ── CATEGORIA SIDEBAR ───────────────────── */
+.cat-item {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 6px 10px; border-radius: 6px; cursor: pointer;
+  font-size: 12px; color: var(--text-secondary); transition: all .15s;
+}
+.cat-item:hover { background: var(--border-light); }
+.cat-item.active { background: var(--primary-surface); color: var(--primary); font-weight: 600; }
+.cat-count {
+  font-size: 10px; background: var(--border-light); color: var(--text-tertiary);
+  padding: 1px 6px; border-radius: 10px; font-weight: 600;
+}
+
+/* ── LOADING / EMPTY ─────────────────────── */
+.loading {
+  text-align: center; padding: 40px; color: var(--text-tertiary); font-size: 14px;
+}
+.empty {
+  text-align: center; padding: 40px; color: var(--text-tertiary); font-size: 14px;
+}
+
+/* ── MODAIS COMPAT (formulários portados V1) ─── */
+.modal-overlay .modal-box label {
+  display: block; font-size: 12px; font-weight: 600;
+  color: var(--text-secondary); margin-bottom: 4px; margin-top: 12px;
+}
+.modal-overlay .modal-box input[type="text"],
+.modal-overlay .modal-box input[type="number"],
+.modal-overlay .modal-box input[type="date"],
+.modal-overlay .modal-box select,
+.modal-overlay .modal-box textarea {
+  width: 100%; padding: 10px 12px;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); color: var(--text-primary);
+  font-size: 13px; font-family: inherit; outline: none;
+  transition: border-color .15s;
+}
+.modal-overlay .modal-box input:focus,
+.modal-overlay .modal-box select:focus,
+.modal-overlay .modal-box textarea:focus {
+  border-color: var(--primary);
+}
+.modal-overlay .modal-title {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 16px 20px; border-bottom: 1px solid var(--border);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 16px; font-weight: 700;
+}
+.modal-overlay .modal-box .modal-title .modal-close {
+  background: none; border: none; font-size: 20px;
+  color: var(--text-tertiary); cursor: pointer;
+  width: 32px; height: 32px; display: flex;
+  align-items: center; justify-content: center;
+  border-radius: 50%;
+}
+.modal-overlay .modal-box .modal-title .modal-close:hover {
+  background: var(--border-light);
+}
+
+/* ── FORM FIELDS (formulários nos modais) ── */
+.field { margin-bottom: 12px; position: relative; }
+.field label {
+  display: block; font-size: 11px; font-weight: 700;
+  color: var(--text-tertiary); letter-spacing: .5px;
+  margin-bottom: 4px;
+}
+.field input, .field select, .field textarea {
+  width: 100%; padding: 10px 12px;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); color: var(--text-primary);
+  font-size: 14px; font-family: inherit; outline: none;
+}
+.field input:focus, .field select:focus { border-color: var(--primary); }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+/* ── AUTOCOMPLETE ────────────────────────── */
+.autocomplete-wrap { position: relative; }
+.autocomplete-list {
+  position: absolute; top: 100%; left: 0; right: 0;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); max-height: 200px;
+  overflow-y: auto; z-index: 110; box-shadow: 0 4px 12px rgba(0,0,0,.1);
+}
+.autocomplete-list div {
+  padding: 8px 12px; cursor: pointer; font-size: 13px;
+  color: var(--text-primary); border-bottom: 1px solid var(--border-light);
+}
+.autocomplete-list div:hover { background: var(--primary-surface); }
+.autocomplete-list.hidden { display: none; }
+
+/* ── MODAL BOX PADDING (para modais sem modal-body) ── */
+.modal-overlay > .modal-box { padding: 0 0 16px 0; }
+.modal-overlay > .modal-box > .modal-title ~ .field,
+.modal-overlay > .modal-box > .modal-title ~ .field-row,
+.modal-overlay > .modal-box > .modal-title ~ div,
+.modal-overlay > .modal-box > .modal-title ~ button {
+  margin-left: 20px; margin-right: 20px;
+}
+.modal-overlay > .modal-box > .modal-title ~ button.btn-save,
+.modal-overlay > .modal-box > .modal-title ~ button.btn-outline {
+  margin-top: 8px;
+}
+
+/* ── FORM SECTIONS (Nova NF, etc) ────────── */
+.form-section {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius-md); padding: 20px;
+  margin-bottom: 16px;
+}
+.form-title {
+  display: flex; align-items: center; gap: 10px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 14px; font-weight: 700; color: var(--text-primary);
+  margin-bottom: 16px; letter-spacing: .5px;
+}
+.form-step {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--primary); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700; flex-shrink: 0;
+}
+
+/* ── NOTAS CARDS ─────────────────────────── */
+.nota-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius-md); padding: 14px 16px;
+  margin-bottom: 8px; cursor: pointer; transition: all .15s;
+}
+.nota-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,.06); border-color: var(--primary); }
+
+/* ── ITENS NF TABLE ──────────────────────── */
+.itens-nf-table {
+  width: 100%; border-collapse: collapse; font-size: 12px;
+  margin-top: 8px;
+}
+.itens-nf-table th {
+  text-align: left; padding: 6px 8px; font-size: 10px;
+  text-transform: uppercase; letter-spacing: .5px;
+  color: var(--text-tertiary); border-bottom: 1px solid var(--border);
+}
+.itens-nf-table td {
+  padding: 6px 8px; border-bottom: 1px solid var(--border-light);
+  color: var(--text-primary);
+}
+
+/* ── INPUT ITEM NF ───────────────────────── */
+.item-row {
+  display: grid; grid-template-columns: 1fr 80px 60px 80px auto;
+  gap: 6px; align-items: end; margin-bottom: 8px;
+}
+.item-row input {
+  padding: 8px 10px; border: 1px solid var(--border);
+  border-radius: 6px; font-size: 13px; background: var(--bg);
+  color: var(--text-primary); font-family: inherit;
+}
+.item-row input:focus { border-color: var(--primary); outline: none; }
+
+/* ── NOTAS FISCAIS CARDS ─────────────────── */
+.nf-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius-md); padding: 14px 16px;
+  margin-bottom: 8px; cursor: pointer; transition: all .15s;
+}
+.nf-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,.06); border-color: var(--primary); }
+.nf-card-top {
+  display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;
+}
+.nf-card-fornecedor { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+.nf-card-nf {
+  font-family: 'Space Grotesk', monospace; font-size: 12px;
+  color: var(--text-tertiary); margin-left: 8px;
+}
+.nf-card-valor {
+  font-family: 'Space Grotesk', monospace; font-size: 16px;
+  font-weight: 700; color: var(--primary); white-space: nowrap;
+}
+.nf-card-meta {
+  font-size: 11px; color: var(--text-tertiary); margin-top: 4px;
+}
+.nf-card-meta span { margin: 0 2px; }
+.nf-card-tags { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 8px; }
+.nf-tag {
+  font-size: 10px; font-weight: 600; padding: 2px 8px;
+  border-radius: 4px; letter-spacing: .3px;
+}
+.nf-tag-obra { background: var(--primary-surface); color: var(--primary); }
+.nf-tag-nat { background: rgba(107,114,128,.1); color: var(--text-secondary); }
+.nf-tag-credito { background: rgba(5,150,105,.1); color: var(--success); }
+.nf-tag-misto { background: rgba(217,119,6,.1); color: var(--warning); }
+.nf-tag-sem { background: rgba(220,38,38,.08); color: var(--error); }
+.nf-tag-estoque { background: rgba(139,92,246,.1); color: #8B5CF6; }
+.nf-card-cnpj { font-size: 10px; color: var(--text-tertiary); margin-top: 4px; font-family: monospace; }
 </style>
 </head>
 <body>
@@ -1039,7 +1379,23 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
         </div>
       </div>
     </div>
-    <div id="catalogo-lista"></div>
+    <div style="overflow-x:auto;">
+      <table class="tabela-v2">
+        <thead>
+          <tr>
+            <th style="width:90px;">Código</th>
+            <th>Material</th>
+            <th style="width:70px;">Unid.</th>
+            <th>Centro de Custo</th>
+            <th style="width:80px;">Saldo</th>
+            <th style="width:80px;">Status</th>
+            <th style="width:120px;">Ações</th>
+          </tr>
+        </thead>
+        <tbody id="catalogo-lista"></tbody>
+      </table>
+    </div>
+    <div id="cat-load-more" style="text-align:center;padding:16px;display:none;"></div>
     </div>
     <div class="view" id="view-notas">
 <div id="notas-sticky" style="position:sticky;top:0;z-index:90;background:var(--bg);padding:10px 0 8px 0;border-bottom:1px solid var(--borda);margin-bottom:8px;">
