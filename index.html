@@ -799,9 +799,14 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
 
     <!-- Cada view fica aqui — so dashboard visivel por padrao -->
     <div class="view active" id="view-dashboard">
-      <!-- Skeleton placeholder — substitui quando dados carregam -->
-      <div class="kpi-grid">
-        <div class="skeleton-card"></div>
+<div id="dash-loading" class="loading">Carregando...</div>
+    <div id="dash-content" class="hidden">
+      <!-- Dashboard admin renderizado via JS -->
+      <div id="dash-admin-content" class="admin-only"></div>
+      <!-- Operacional Dashboard -->
+      <div id="oper-welcome" class="hidden"></div>
+    </div>
+    </div>
         <div class="skeleton-card"></div>
         <div class="skeleton-card"></div>
         <div class="skeleton-card"></div>
@@ -812,25 +817,529 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
       </div>
     </div>
 
-    <div class="view" id="view-relatorio"></div>
-    <div class="view" id="view-caixa"></div>
-    <div class="view" id="view-obras"></div>
-    <div class="view" id="view-custos"></div>
-    <div class="view" id="view-garantias"></div>
-    <div class="view" id="view-estoque"></div>
-    <div class="view" id="view-catalogo"></div>
-    <div class="view" id="view-notas"></div>
-    <div class="view" id="view-form"></div>
-    <div class="view" id="view-contas-pagar"></div>
-    <div class="view" id="view-creditos"></div>
-    <div class="view" id="view-diarias"></div>
-    <div class="view" id="view-leads"></div>
-    <div class="view" id="view-banco"></div>
-    <div class="view" id="view-permissoes"></div>
-    <div class="view" id="view-setup"></div>
-    <div class="view" id="view-cronograma"></div>
-    <div class="view" id="view-orcamento"></div>
-    <div class="view" id="view-usuarios"></div>
+    <div class="view" id="view-relatorio">
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-top:4px;flex-wrap:wrap;gap:10px;">
+      <div style="display:flex;align-items:center;gap:14px;">
+        <button onclick="setView('dashboard')" style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.1);color:var(--verde-hl);border-radius:8px;padding:5px 14px;font-size:11px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;cursor:pointer;margin-right:8px;">← VOLTAR</button>
+        <div style="width:44px;height:44px;border:1px solid rgba(34,197,94,0.25);border-radius:12px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.04);">
+          <span style="font-size:20px;">📈</span>
+        </div>
+        <div>
+          <div style="font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:700;color:var(--branco);letter-spacing:2px;">PAINEL FINANCEIRO</div>
+          <div style="font-size:11px;color:var(--texto3);">Entradas · Saídas · Mão de Obra · Detalhamento por Obra</div>
+        </div>
+      </div>
+      <button onclick="exportarRelatorioPDF()" style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);color:var(--verde3);padding:8px 16px;border-radius:8px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:1px;">
+        ⬇ EXPORTAR PDF
+      </button>
+    </div>
+
+    <!-- Filtros -->
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;">
+      <select id="rel-mes" onchange="onChangeMesRel()" style="background:var(--bg3);border:1px solid var(--borda2);border-radius:8px;padding:8px 12px;color:var(--branco);font-family:inherit;font-size:12px;min-width:140px;"></select>
+      <select id="rel-secao" onchange="renderRelatorio()" style="background:var(--bg3);border:1px solid var(--borda2);border-radius:8px;padding:8px 12px;color:var(--branco);font-family:inherit;font-size:12px;">
+        <option value="financeiro">💰 Painel Financeiro</option>
+        <option value="comparativo">⚖ Comparativo entre Obras</option>
+      </select>
+    </div>
+
+    <!-- Conteúdo dinâmico -->
+    <div id="rel-content"></div>
+    </div>
+    <div class="view" id="view-caixa">
+<div style="position:sticky;top:0;z-index:90;background:var(--bg);padding:10px 0 8px 0;border-bottom:1px solid var(--borda);margin-bottom:8px;">
+      <div class="modulo-badge">💰 FLUXO DE CAIXA</div>
+    </div>
+    <div id="caixa-content"></div>
+    </div>
+    <div class="view" id="view-obras">
+<!-- VISÃO GERAL DE OBRAS (cards) -->
+    <div id="obras-cards-overview">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding-top:4px;">
+        <div class="modulo-badge" style="margin-bottom:0;">🏗 EDR OBRAS</div>
+        <div style="display:flex;gap:8px;">
+          <button onclick="abrirModalObra()" style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);color:var(--verde-hl);border-radius:8px;padding:4px 12px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;cursor:pointer;" class="admin-only">➕ NOVA OBRA</button>
+          <button onclick="toggleObrasArquivadas()" id="btn-ver-arquivadas2" style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);color:#fbbf24;border-radius:8px;padding:4px 12px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;cursor:pointer;" class="admin-only">📋 VER CONCLUÍDAS</button>
+        </div>
+      </div>
+      <div id="obras-cards-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;"></div>
+    </div>
+    <div id="obras-sticky" style="position:sticky;top:0;z-index:90;background:var(--bg);padding:10px 0 8px 0;border-bottom:1px solid var(--borda);margin-bottom:8px;display:none;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <div style="display:flex;align-items:center;">
+          <button onclick="obrasVoltarCards()" style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.1);color:var(--verde-hl);border-radius:8px;padding:5px 14px;font-size:11px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;cursor:pointer;margin-right:8px;">← VOLTAR</button>
+          <div class="modulo-badge" style="margin-bottom:0;">🏗 EDR OBRAS</div>
+        </div>
+        <button onclick="toggleObrasArquivadas()" id="btn-ver-arquivadas" style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);color:#fbbf24;border-radius:8px;padding:4px 12px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;cursor:pointer;transition:all .2s;" class="admin-only">📋 VER CONCLUÍDAS</button>
+      </div>
+      <div class="filter-row">
+        <input type="text" id="obras-busca" placeholder="🔍 Buscar lançamento..." oninput="filtrarLanc()">
+        <select id="obras-filtro-obra" onchange="onChangeObraFiltro()"><option value="">Todas as obras</option></select>
+        <button id="btn-arquivar-obra" onclick="onClickArquivarObra()" class="admin-only" style="display:none;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);color:#fbbf24;border-radius:8px;padding:9px 14px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;cursor:pointer;white-space:nowrap;transition:all .2s;" title="Arquivar obra selecionada">📦 ARQUIVAR</button>
+        <select id="obras-filtro-cat" onchange="filtrarLancCat()" style="min-width:160px;">
+          <option value="">Todos centros de custo</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:6px;">
+        <button class="cat-btn ativo" id="obras-ord-data" onclick="obrasOrdem='data';filtrarLanc();obrasAtualizarOrdem()" style="font-size:10px;padding:5px 10px;">📅 DATA</button>
+        <button class="cat-btn" id="obras-ord-az" onclick="obrasOrdem='az';filtrarLanc();obrasAtualizarOrdem()" style="font-size:10px;padding:5px 10px;">A-Z</button>
+        <button class="cat-btn" id="obras-ord-valor" onclick="obrasOrdem='valor';filtrarLanc();obrasAtualizarOrdem()" style="font-size:10px;padding:5px 10px;">VALOR + ALTO</button>
+        <button class="cat-btn" id="obras-ord-codigo" onclick="obrasFiltroSemCodigo=!obrasFiltroSemCodigo;filtrarLanc();obrasAtualizarOrdem()" style="font-size:10px;padding:5px 10px;">🏷 SEM CODIGO</button>
+      </div>
+      <!-- Abas — dentro do sticky para ficarem sempre visíveis -->
+      <div style="display:flex;gap:6px;border-bottom:1px solid var(--borda);margin-top:8px;">
+        <button id="obras-tab-lanc" onclick="obrasSwitchTab('lanc')" style="padding:7px 16px;font-size:12px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;background:transparent;border:none;border-bottom:2px solid var(--verde-hl);color:var(--verde-hl);cursor:pointer;margin-bottom:-1px;">📋 LANÇAMENTOS</button>
+        <button id="obras-tab-mat" onclick="obrasSwitchTab('mat')" style="padding:7px 16px;font-size:12px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;background:transparent;border:none;border-bottom:2px solid transparent;color:var(--texto3);cursor:pointer;margin-bottom:-1px;">📦 MATERIAIS</button>
+        <button id="obras-tab-add" onclick="obrasSwitchTab('add')" style="padding:7px 16px;font-size:12px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;background:transparent;border:none;border-bottom:2px solid transparent;color:var(--texto3);cursor:pointer;margin-bottom:-1px;">📝 ADICIONAIS</button>
+        <button id="obras-tab-cef" onclick="obrasSwitchTab('cef')" style="padding:7px 16px;font-size:12px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;background:transparent;border:none;border-bottom:2px solid transparent;color:var(--texto3);cursor:pointer;margin-bottom:-1px;">📋 CEF</button>
+      </div>
+    </div>
+    <div id="obras-detalhe" class="hidden"></div>
+
+    <!-- Aba Lançamentos -->
+    <div id="obras-tab-content-lanc">
+      <div style="margin-bottom:10px;">
+        <button class="btn-save" style="padding:10px 18px;width:auto;font-size:12px;" onclick="irParaEntradaDireta()">📦 Estoque</button>
+      </div>
+      <div id="obras-total-filtro" class="hidden" style="display:flex;justify-content:space-between;align-items:center;background:var(--bg2);border:1px solid var(--verde-bd);border-radius:10px;padding:10px 14px;margin-bottom:10px;"></div>
+      <div id="obras-lanc-lista"></div>
+      <div id="obras-empty" class="empty hidden">Nenhum lançamento encontrado.</div>
+      <div id="obras-loading" class="loading">Carregando...</div>
+    </div>
+
+    <!-- Aba Materiais Usados -->
+    <div id="obras-tab-content-mat" style="display:none;">
+      <div id="obras-mat-lista"></div>
+    </div>
+
+    <!-- Aba Adicionais -->
+    <div id="obras-tab-content-add" style="display:none;">
+      <div style="margin-bottom:10px;">
+        <button class="btn-save" style="padding:10px 18px;width:auto;font-size:12px;" onclick="abrirModalAdicional()">➕ Novo Adicional</button>
+      </div>
+      <div id="adicionais-lista"></div>
+      <div id="adicionais-empty" class="empty hidden">Nenhum serviço adicional registrado nesta obra.</div>
+    </div>
+
+    <!-- Aba CEF -->
+    <div id="obras-tab-content-cef" style="display:none;">
+      <div id="obras-cef-content"></div>
+    </div>
+    </div>
+    <div class="view" id="view-custos">
+<!-- VISÃO CARDS (padrão) -->
+    <div id="custos-cards-overview">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding-top:4px;flex-wrap:wrap;gap:8px;">
+        <div class="modulo-badge" style="margin-bottom:0;">💰 CUSTOS CEF</div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn-save" style="padding:6px 14px;font-size:11px;" onclick="abrirModalRepasse()">+ NOVO REPASSE</button>
+          <button class="btn-outline" style="padding:6px 14px;font-size:11px;" onclick="gerarRelatorioCustos()">🖨 RELATÓRIO</button>
+        </div>
+      </div>
+      <!-- Filtros -->
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+        <input type="text" id="custos-filtro-busca" placeholder="🔍 Buscar obra..." oninput="filtrarCustosCards()" style="flex:1;min-width:160px;padding:8px 12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:8px;color:var(--branco);font-size:12px;font-family:inherit;outline:none;">
+        <select id="custos-filtro-periodo" onchange="filtrarCustosCards()" style="padding:8px 12px;background:var(--bg3);border:1px solid rgba(34,197,94,0.1);border-radius:8px;color:var(--branco);font-size:12px;font-family:inherit;outline:none;cursor:pointer;">
+          <option value="">Todos os períodos</option>
+          <option value="30">Últimos 30 dias</option>
+          <option value="90">Últimos 90 dias</option>
+          <option value="180">Últimos 6 meses</option>
+          <option value="365">Último ano</option>
+        </select>
+      </div>
+      <div id="custos-cards-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;"></div>
+    </div>
+
+    <!-- DETALHE POR OBRA (oculto por padrão) -->
+    <div id="custos-detalhe-view" style="display:none;">
+      <div style="position:sticky;top:53px;z-index:90;background:var(--bg);padding:10px 0 4px 0;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <div style="display:flex;align-items:center;">
+            <button onclick="custosVoltarCards()" style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.1);color:var(--verde-hl);border-radius:8px;padding:5px 14px;font-size:11px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;cursor:pointer;margin-right:8px;">← VOLTAR</button>
+            <div class="modulo-badge" style="margin-bottom:0;">💰 CUSTOS CEF</div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn-save" style="padding:6px 14px;font-size:11px;" onclick="abrirModalContratoCEF(custoObraAtual)">📋 CONTRATO</button>
+            <button class="btn-save" style="padding:6px 14px;font-size:11px;" onclick="abrirModalRepasse(custoObraAtual)">+ NOVO REPASSE</button>
+            <button class="btn-outline" style="padding:6px 14px;font-size:11px;" onclick="gerarRelatorioCustos(custoObraAtual)">🖨 RELATÓRIO</button>
+          </div>
+        </div>
+      </div>
+      <input type="hidden" id="custos-filtro-obra" value="">
+      <div id="custos-contrato-card"></div>
+      <div id="custos-resumo"></div>
+      <div id="custos-detalhes"></div>
+      <div id="custos-historico-mensal" style="margin-top:16px;"></div>
+    </div>
+    </div>
+    <div class="view" id="view-garantias">
+<div style="position:sticky;top:0;z-index:90;background:var(--bg);padding:10px 0 8px 0;border-bottom:1px solid var(--borda);margin-bottom:8px;">
+      <div class="modulo-badge">🛡 GARANTIA</div>
+      <div id="garantia-stats" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;"></div>
+    </div>
+    <div id="garantia-lista"></div>
+    </div>
+    <div class="view" id="view-estoque">
+<div id="estoque-sticky" style="position:sticky;top:0;z-index:90;background:var(--bg);padding:10px 0 8px 0;border-bottom:1px solid var(--borda);margin-bottom:8px;">
+      <div class="modulo-badge">📦 ESTOQUE EDR</div>
+      <div style="display:flex;gap:8px;margin-bottom:8px;">
+        <button class="btn-save" style="flex:1;padding:10px;font-size:13px;" onclick="abrirEntradaDireta()">📥 ENTRADA</button>
+        <button class="btn-save" style="flex:1;padding:10px;font-size:13px;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);color:#f87171;" onclick="abrirSaidaMaterial()">📤 SAÍDA</button>
+        <button class="btn-save admin-only" style="flex:1;padding:10px;font-size:13px;background:rgba(96,165,250,0.12);border:1px solid rgba(96,165,250,0.3);color:#60a5fa;" onclick="abrirAjusteEstoque()">📋 AJUSTE</button>
+        <button class="btn-save" style="padding:10px 8px;font-size:11px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);color:#22c55e;flex:0;white-space:nowrap;" onclick="exportarEstoqueExcel()">📊</button>
+      </div>
+      <div class="filter-row" style="margin-bottom:4px;position:relative;">
+        <input type="text" id="estoque-busca" placeholder="🔍 Buscar material..." oninput="renderEstoque();toggleLimparBusca()" style="text-transform:none;padding-right:90px;">
+        <button id="btn-limpar-busca" onclick="document.getElementById('estoque-busca').value='';renderEstoque();toggleLimparBusca();document.getElementById('estoque-busca').focus();" style="display:none;position:absolute;right:8px;top:50%;transform:translateY(-50%);background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.25);color:#f87171;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:1px;min-height:32px;">✕ LIMPAR</button>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+        <select id="estoque-filtro-obra" onchange="renderEstoque()" style="font-size:10px;padding:5px 8px;background:var(--bg3);border:1px solid var(--borda2);border-radius:6px;color:var(--branco);font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;">
+          <option value="">ALMOXARIFADO</option>
+        </select>
+        <span style="color:var(--borda2);">|</span>
+        <button class="cat-btn ativo" id="estoque-ord-az" onclick="estoqueOrdem='az';renderEstoque();estoqueAtualizarOrdem()" style="font-size:10px;padding:5px 10px;">A-Z</button>
+        <button class="cat-btn" id="estoque-ord-maior" onclick="estoqueOrdem='maior';renderEstoque();estoqueAtualizarOrdem()" style="font-size:10px;padding:5px 10px;">MAIOR ESTOQUE</button>
+        <button class="cat-btn" id="estoque-ord-menor" onclick="estoqueOrdem='menor';renderEstoque();estoqueAtualizarOrdem()" style="font-size:10px;padding:5px 10px;">MENOR / NEGATIVO</button>
+        <span style="color:var(--borda2);">|</span>
+        <button class="cat-btn" id="estoque-filtro-neg" onclick="toggleFiltroNegativo()" style="font-size:10px;padding:5px 10px;color:var(--vermelho);">⚠ SÓ NEGATIVOS</button>
+      </div>
+    </div>
+
+    <div id="estoque-valor-total" class="admin-only"></div>
+    <div id="estoque-loading" class="loading">Carregando...</div>
+    <div id="estoque-lista"></div>
+    <div id="estoque-empty" class="empty hidden">Nenhum material em estoque.</div>
+    </div>
+    <div class="view" id="view-catalogo">
+<div id="catalogo-sticky" style="position:sticky;top:0;z-index:90;background:var(--bg);padding:10px 0 8px 0;border-bottom:1px solid var(--borda);margin-bottom:8px;">
+      <div class="modulo-badge">🏷 CENTRO DE CUSTO</div>
+      <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+        <input type="text" id="catalogo-busca" placeholder="🔍 Buscar por código ou nome..." oninput="renderCatalogo()" style="flex:2;min-width:200px;background:var(--bg2);border:1px solid var(--borda2);border-radius:10px;padding:10px 14px;color:var(--branco);font-size:13px;font-family:inherit;">
+        <select id="catalogo-cat-filtro" onchange="renderCatalogo()" style="flex:1;min-width:140px;background:var(--bg2);border:1px solid var(--borda2);border-radius:10px;padding:10px 14px;color:var(--branco);font-size:13px;font-family:inherit;">
+          <option value="">📂 Todos centros de custo</option>
+        </select>
+        <button class="btn-save" style="padding:10px 18px;white-space:nowrap;" onclick="abrirModalNovoMaterial()">➕ Novo Material</button>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div id="catalogo-stats" style="font-size:11px;color:var(--texto3);"></div>
+        <div style="display:flex;gap:6px;" id="catalogo-admin-btns">
+          <button class="btn-verde-outline admin-only" style="font-size:11px;padding:6px 12px;" onclick="recalcularCategorias()">🔄 Recalcular</button>
+          <button class="btn-verde-outline admin-only" style="font-size:11px;padding:6px 12px;border-color:rgba(251,191,36,0.4);color:#fbbf24;" onclick="abrirReconciliacao()">🔗 Reconciliar Órfãos</button>
+        </div>
+      </div>
+    </div>
+    <div id="catalogo-lista"></div>
+    </div>
+    <div class="view" id="view-notas">
+<div id="notas-sticky" style="position:sticky;top:0;z-index:90;background:var(--bg);padding:10px 0 8px 0;border-bottom:1px solid var(--borda);margin-bottom:8px;">
+      <div class="modulo-badge">🧾 HISTÓRICO DE NFs</div>
+      <div class="filter-row">
+        <select id="filtro-obra" onchange="renderNotas()"><option value="">TODAS AS OBRAS</option></select>
+        <select id="filtro-fornecedor" onchange="renderNotas()"><option value="">TODOS OS FORNECEDORES</option></select>
+        <select id="filtro-credito" onchange="renderNotas()">
+          <option value="">TODOS</option><option value="sim">GERA CRÉDITO</option>
+          <option value="nao">SEM CRÉDITO</option><option value="estoque">EM ESTOQUE</option>
+          <option value="escritorio">🏢 ESCRITÓRIO</option>
+        </select>
+      </div>
+    </div>
+    <div id="notas-lista"></div>
+    <div id="notas-empty" class="empty hidden">Nenhuma nota encontrada.</div>
+    </div>
+    <div class="view" id="view-form">
+<div class="modulo-badge">➕ NOVO LANÇAMENTO</div>
+    <div class="form-section">
+      <div class="form-title"><span class="form-step">1</span> CABEÇALHO DA NOTA</div>
+      <div class="field-row">
+        <div class="field"><label>NATUREZA *</label>
+          <select id="f-natureza" data-next="f-numero">
+            <option value="VENDA">VENDA</option><option value="BONIFICACAO">BONIFICAÇÃO</option>
+            <option value="DEVOLUCAO">DEVOLUÇÃO</option><option value="TRANSFERENCIA">TRANSFERÊNCIA</option>
+          </select>
+        </div>
+        <div class="field"><label>Nº DA NOTA *</label><input type="text" id="f-numero" data-next="f-emissao" placeholder="EX: 001234"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>DATA DE EMISSÃO *</label><input type="date" id="f-emissao" data-next="f-recebimento" style="text-transform:none;"></div>
+        <div class="field"><label>DATA DE RECEBIMENTO</label><input type="date" id="f-recebimento" data-next="f-fornecedor" style="text-transform:none;"></div>
+      </div>
+      <div class="field autocomplete-wrap">
+        <label>FORNECEDOR *</label>
+        <input type="text" id="f-fornecedor" data-next="f-cnpj" placeholder="NOME DO FORNECEDOR" oninput="onFornecedorInput()" autocomplete="off">
+        <div class="autocomplete-list hidden" id="ac-forn-list"></div>
+      </div>
+      <div class="field"><label>CNPJ</label><input type="text" id="f-cnpj" data-next="f-obra" placeholder="00.000.000/0001-00" oninput="maskCNPJ(this)" style="text-transform:none;"></div>
+      <div class="field"><label>DESTINO</label><select id="f-obra" data-next="f-frete" onchange="onDestinoChange()"><option value="EDR">📦 ESTOQUE GERAL</option><option value="EDR_ESCRITORIO">🏢 ESCRITÓRIO (CONSUMO DIRETO)</option></select></div>
+      <div id="aviso-escritorio" class="hidden" style="background:var(--azul-bg);border:1px solid rgba(59,130,246,.3);border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:12px;color:#60a5fa;font-weight:600;">
+        🏢 CONSUMO DIRETO — Esta NF não vai para o estoque. Será registrada como despesa geral da EDR.
+      </div>
+      <div class="field frete-field">
+        <label>🚚 FRETE DESTACADO (R$) <span style="font-weight:400;color:var(--verde);font-size:11px;">✓ GERA CRÉDITO — deixe em branco se não houver</span></label>
+        <input type="number" id="f-frete" data-next="f-obs" placeholder="0,00" style="text-transform:none;" oninput="atualizarTotalComFrete()">
+      </div>
+      <div class="field"><label>OBSERVAÇÃO</label><textarea id="f-obs" data-next="i-desc" placeholder="OBSERVAÇÕES GERAIS DA NOTA..."></textarea></div>
+    </div>
+    <div class="form-section">
+      <div class="form-title"><span class="form-step">2</span> ITENS DA NOTA</div>
+      <div style="display:flex;gap:8px;margin-bottom:14px;">
+        <button onclick="abrirImportXML()" style="flex:1;padding:12px 16px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:8px;color:var(--verde-hl);font-size:13px;font-weight:700;font-family:'Inter',sans-serif;cursor:pointer;letter-spacing:0.5px;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:8px;">
+          📄 IMPORTAR XML<span style="font-size:10px;opacity:0.7;font-weight:400;">Arquivo da NF-e</span>
+        </button>
+        <button onclick="abrirImportRapida()" style="flex:1;padding:12px 16px;background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.3);border-radius:8px;color:#a78bfa;font-size:13px;font-weight:700;font-family:'Inter',sans-serif;cursor:pointer;letter-spacing:0.5px;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:8px;">
+          📋 COLAR TEXTO<span style="font-size:10px;opacity:0.7;font-weight:400;">Cola os itens da nota</span>
+        </button>
+      </div>
+      <input type="file" id="input-xml-nfe" accept=".xml" style="display:none;" onchange="processarXMLNFe(this)">
+      <div class="itens-lista" id="itens-lista"></div>
+      <div id="item-total-row" class="item-total-row hidden"><span>SUBTOTAL ITENS</span><span id="item-total-val">R$ 0,00</span></div>
+      <div id="frete-total-row" class="frete-total-row hidden"><span>🚚 FRETE</span><span id="frete-total-val">R$ 0,00</span></div>
+      <div class="item-form">
+        <div class="item-form-title">➕ ADICIONAR ITEM MANUAL</div>
+        <div class="field autocomplete-wrap">
+          <label>DESCRIÇÃO DO ITEM *</label>
+          <input type="text" id="i-desc" data-next="i-qtd" placeholder="EX: CIMENTO, AREIA, MAO DE OBRA..." oninput="onDescInput()" autocomplete="off">
+          <div class="autocomplete-list hidden" id="ac-list"></div>
+        </div>
+        <div id="i-credito-badge" class="credito-badge duvida">Digite a descrição para classificação automática</div>
+        <div id="i-manual-wrap" class="manual-wrap hidden">
+          <div class="manual-title">⚠ Item não reconhecido — classifique:</div>
+          <div class="manual-btns">
+            <button class="btn-manual-sim" onclick="classificarManual(true)">✓ GERA CRÉDITO</button>
+            <button class="btn-manual-nao" onclick="classificarManual(false)">✗ SEM CRÉDITO</button>
+          </div>
+          <button class="btn-ask-ai" onclick="abrirAssistente()">🤖 CONSULTAR ASSISTENTE TRIBUTÁRIO</button>
+        </div>
+        <div class="field-row-3">
+          <div class="field"><label>QTD *</label><input type="number" id="i-qtd" data-next="i-unidade" placeholder="1" oninput="calcItemTotal()" style="text-transform:none;"></div>
+          <div class="field"><label>UNIDADE</label><input type="text" id="i-unidade" data-next="i-preco" placeholder="SC, M², UN..."></div>
+          <div class="field"><label>VLR UNIT (R$) *</label><input type="number" id="i-preco" data-next="i-desconto" placeholder="0,00" oninput="calcItemTotal()" style="text-transform:none;"></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>DESCONTO (R$)</label><input type="number" id="i-desconto" data-next="i-imposto" placeholder="0,00" style="text-transform:none;" oninput="calcItemTotal()"></div>
+          <div class="field"><label>IMPOSTO (R$)</label><input type="number" id="i-imposto" placeholder="0,00" style="text-transform:none;" data-action="addItem"></div>
+        </div>
+        <div class="field"><label>TOTAL DO ITEM</label><input type="number" id="i-total" readonly style="background:rgba(255,255,255,0.03);color:var(--texto2);font-weight:700;text-transform:none;"></div>
+        <button class="btn-add-item" onclick="adicionarItem()">+ ADICIONAR ITEM &nbsp;<span style="font-size:11px;opacity:.7;">ou ENTER no último campo</span></button>
+      </div>
+    </div>
+    <button class="btn-save" id="btn-salvar" onclick="salvarNota()">💾 SALVAR NOTA FISCAL &nbsp;<span style="font-size:11px;opacity:.8;">Ctrl+S</span></button>
+    <button class="btn-outline" onclick="resetForm()">CANCELAR</button>
+    <div style="height:20px"></div>
+    </div>
+    <div class="view" id="view-contas-pagar">
+<div style="position:sticky;top:0;z-index:90;background:var(--bg);padding:10px 0 8px 0;border-bottom:1px solid var(--borda);margin-bottom:8px;">
+      <div class="modulo-badge">📋 CONTAS A PAGAR</div>
+      <div id="contas-stats" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;"></div>
+    </div>
+    <div id="contas-lista"></div>
+    </div>
+    <div class="view" id="view-creditos">
+<div class="modulo-badge">📖 GUIA FISCAL</div>
+    <div class="card">
+      <div class="section-title">O que gera crédito IBS/CBS?</div>
+      <p style="font-size:12px;color:var(--texto3);margin-bottom:12px;">Referência baseada na LC 214/2025. Válido a partir de 2027.</p>
+      <table class="credito-table">
+        <thead><tr><th>CATEGORIA / ITEM</th><th>CRÉDITO</th></tr></thead>
+        <tbody id="creditos-tbody"></tbody>
+      </table>
+    </div>
+    <div class="alert-box"><div class="alert-title">⚠️ ATENÇÃO</div><div class="alert-text">Consulte seu contador para casos específicos.</div></div>
+    </div>
+    <div class="view" id="view-diarias">
+<!-- Header sticky -->
+    <div class="diarias-header">
+      <div class="diarias-header-title">👷 DIÁRIAS</div>
+      <button onclick="pdfDiarias()" class="admin-only" title="Gerar PDF da quinzena" style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.25);color:#4ade80;border-radius:8px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:.05em">📄 PDF</button>
+      <button onclick="diarAbrirModalEquipe()" class="admin-only" title="Gerenciar equipe" style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.25);color:#60a5fa;border-radius:8px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:.05em">👷 EQUIPE</button>
+      <div class="diarias-quinzena-badge" id="diar-quinzena-badge">QUINZENA</div>
+    </div>
+    <div class="diarias-main">
+      <!-- PAINEL ESQUERDO: ENTRADA -->
+      <div class="diarias-panel-left" id="diar-panelLeft">
+        <!-- Botão toggle -->
+        <button id="diar-togglePanel" onclick="diarTogglePanel()" title="Recolher painel" style="align-self:flex-end;background:rgba(255,255,255,0.04);border:1px solid rgba(34,197,94,0.12);color:var(--verde-hl);border-radius:7px;padding:4px 9px;font-size:13px;cursor:pointer;line-height:1;flex-shrink:0;">◀</button>
+        <div id="diar-panelContent">
+        <div class="diarias-panel-title">// LANÇAR DIÁRIAS</div>
+        <div>
+          <div class="diarias-panel-title" style="margin-bottom:6px">DATA</div>
+          <input type="date" class="diarias-date-input" id="diar-dataInput" style="width:100%">
+        </div>
+        <div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <div class="diarias-panel-title" style="margin:0">MENSAGEM DO MESTRE</div>
+            <button onclick="diarToggleVoz()" id="diar-btnMic" title="Gravar por voz" style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);color:#ef4444;border-radius:50%;width:36px;height:36px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0;">🎤</button>
+          </div>
+          <div id="diar-vozStatus" style="display:none;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:10px 14px;margin-bottom:8px;text-align:center;">
+            <div style="display:flex;align-items:center;justify-content:center;gap:8px;">
+              <span id="diar-vozDot" style="width:10px;height:10px;border-radius:50%;background:#ef4444;animation:vozPulse 1s infinite;"></span>
+              <span style="font-size:12px;font-weight:700;color:#ef4444;font-family:'Rajdhani',sans-serif;letter-spacing:1px;">GRAVANDO...</span>
+            </div>
+            <div style="font-size:10px;color:var(--texto3);margin-top:4px;">Fale o nome dos funcionários e obras</div>
+          </div>
+          <style>@keyframes vozPulse{0%,100%{opacity:1}50%{opacity:.3}}</style>
+          <textarea class="diarias-textarea" id="diar-msgInput" placeholder="Cola aqui a mensagem do WhatsApp ou use o 🎤 pra falar...
+
+Ex: Anderson e Josimar até meio-dia casa di Leonardo. I atarde casa di Pedro
+Seu nego i val casa di Junior 3 cimento"></textarea>
+        </div>
+        <button class="btn-diarias-interpretar" onclick="diarInterpretar()">
+          <span>⚡</span> INTERPRETAR MENSAGEM
+        </button>
+        <!-- Link para formulário manual -->
+        <div style="text-align:center;margin:12px 0 14px;">
+          <button onclick="diarToggleFormManual()" id="diar-btnFormManual" style="background:#1a2a4a;border:1px solid #2a4a7a;color:#60a5fa;font-size:13px;cursor:pointer;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1.5px;padding:12px 20px;border-radius:10px;width:100%;text-transform:uppercase;transition:all .2s;">+ ADICIONAR MANUALMENTE</button>
+        </div>
+        <!-- Formulário manual (escondido por padrão) -->
+        <div id="diar-formManual" style="display:none;background:var(--bg3);border:1px solid var(--borda);border-radius:8px;padding:14px;margin-bottom:8px;">
+          <div style="font-size:10px;font-weight:700;color:var(--texto3);letter-spacing:1.5px;margin-bottom:10px;font-family:'JetBrains Mono',monospace;">LANCAMENTO MANUAL</div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <select id="diar-manual-func" style="padding:9px 12px;background:var(--bg2);border:1px solid var(--borda2);border-radius:8px;color:var(--branco);font-size:13px;font-family:inherit;">
+              <option value="">Selecione o funcionario...</option>
+            </select>
+            <select id="diar-manual-obra" style="padding:9px 12px;background:var(--bg2);border:1px solid var(--borda2);border-radius:8px;color:var(--branco);font-size:13px;font-family:inherit;">
+              <option value="">Selecione a obra...</option>
+            </select>
+            <select id="diar-manual-turno" style="padding:9px 12px;background:var(--bg2);border:1px solid var(--borda2);border-radius:8px;color:var(--branco);font-size:13px;font-family:inherit;">
+              <option value="dia">Dia inteiro</option>
+              <option value="manha">Meio dia manha</option>
+              <option value="tarde">Meio dia tarde</option>
+            </select>
+            <button onclick="adicionarDiariaManual()" style="padding:10px;background:var(--verde);color:var(--verde-hl);border:1px solid var(--verde3);border-radius:8px;font-weight:700;font-size:12px;cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:1px;">+ ADICIONAR</button>
+          </div>
+        </div>
+        <div>
+          <div class="diarias-panel-title" style="margin-bottom:6px">PRÉVIA INTERPRETADA</div>
+          <div class="diarias-preview-box" id="diar-previewBox">
+            <div class="diarias-empty">
+              <div class="diarias-empty-icon">💬</div>
+              <div class="diarias-empty-text">Cole uma mensagem e clique em interpretar</div>
+            </div>
+          </div>
+        </div>
+        <button class="btn-diarias-confirmar" id="diar-btnConfirmar" onclick="diarConfirmarLancamento()" disabled>
+          ✓ CONFIRMAR E SALVAR
+        </button>
+        </div><!-- /diar-panelContent -->
+      </div>
+      <!-- PAINEL DIREITO: REGISTROS / FOLHA -->
+      <div class="diarias-panel-right">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <div class="diarias-panel-title" style="margin:0">// QUINZENA</div>
+            <select id="diar-quinzena-select" onchange="diarTrocarQuinzena(this.value)" style="background:var(--bg3);border:1px solid rgba(34,197,94,0.2);border-radius:8px;padding:5px 10px;color:var(--verde-hl);font-size:11px;font-family:'Rajdhani',sans-serif;font-weight:700;cursor:pointer;">
+              <option value="">Carregando...</option>
+            </select>
+            <button onclick="diarEditarLabelQuinzena()" title="Editar descrição" style="background:rgba(255,255,255,0.04);border:1px solid rgba(34,197,94,0.15);color:var(--verde-hl);border-radius:7px;padding:4px 9px;font-size:12px;cursor:pointer;">✏️</button>
+            <button onclick="diarAbrirModalNovaQuinzena()" title="Nova quinzena" style="background:rgba(255,255,255,0.04);border:1px solid rgba(34,197,94,0.15);color:var(--verde-hl);border-radius:7px;padding:4px 9px;font-size:12px;cursor:pointer;" id="btn-diar-nova-quinzena">＋</button>
+            <button onclick="diarExcluirQuinzena()" title="Excluir quinzena" style="background:rgba(239,68,68,0.07);border:1px solid rgba(239,68,68,0.2);color:#f87171;border-radius:7px;padding:4px 9px;font-size:12px;cursor:pointer;" id="btn-diar-del-quinzena" class="admin-only">🗑</button>
+            <button onclick="diarAbrirLixeira()" title="Lixeira" style="background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.2);color:#f59e0b;border-radius:7px;padding:4px 9px;font-size:12px;cursor:pointer;" class="admin-only">♻</button>
+          </div>
+          <div class="diarias-tabs">
+            <button class="diarias-tab active" onclick="diarSwitchTab('registros', this)">Registros</button>
+            <button class="diarias-tab" onclick="diarSwitchTab('folha', this)">Folha de Pagamento</button>
+          </div>
+        </div>
+        <div id="diar-tabRegistros">
+          <div id="diar-registrosContainer">
+            <div class="diarias-empty">
+              <div class="diarias-empty-icon">📋</div>
+              <div class="diarias-empty-text">Nenhum registro nesta quinzena</div>
+            </div>
+          </div>
+        </div>
+        <div id="diar-tabFolha" style="display:none">
+          <div class="diarias-folha-header">
+            <div class="diarias-folha-title">Folha de Pagamento</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <button id="btn-diar-extra" class="btn-diarias-exportar" style="background:rgba(245,158,11,0.12);border-color:rgba(245,158,11,0.3);color:#fbbf24;" onclick="diarAbrirModalExtra()">➕ Extra</button>
+              <button class="btn-diarias-exportar" onclick="diarExportarFolha()">⬇ Exportar PDF</button>
+              <button class="btn-diarias-exportar" style="background:var(--verde2)" onclick="diarAbrirModalEDR()">💰 Lançar Custo por Obra</button>
+            </div>
+          </div>
+          <div id="diar-folhaContainer">
+            <div class="diarias-empty">
+              <div class="diarias-empty-icon">💰</div>
+              <div class="diarias-empty-text">Nenhum dado ainda</div>
+            </div>
+          </div>
+          <div id="diar-extras-lista" style="margin-top:12px;"></div>
+        </div><!-- /diar-tabFolha -->
+      </div>
+    </div>
+    </div>
+    <div class="view" id="view-leads">
+<div style="position:sticky;top:0;z-index:90;background:var(--bg);padding:10px 0 8px 0;border-bottom:1px solid var(--borda);margin-bottom:8px;">
+      <div class="modulo-badge">🎯 LEADS</div>
+      <div id="leads-stats" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;"></div>
+    </div>
+    <div id="leads-lista"></div>
+    </div>
+    <div class="view" id="view-banco">
+<div style="position:sticky;top:53px;z-index:90;background:var(--bg);padding:10px 0 8px 0;">
+      <div class="modulo-badge">🗄 DADOS</div>
+    </div>
+
+    <!-- OBRAS CADASTRADAS -->
+    <div class="card" style="margin-bottom:12px;padding:16px;">
+      <div class="section-title" style="margin-bottom:14px;font-size:13px;">🏗 OBRAS CADASTRADAS</div>
+      <div id="banco-obras-lista" style="max-height:400px;overflow-y:auto;"></div>
+    </div>
+
+    <!-- FORNECEDORES -->
+    <div class="card" style="margin-bottom:12px;padding:16px;">
+      <div class="section-title" style="margin-bottom:14px;font-size:13px;">🏭 FORNECEDORES <span id="banco-forn-count" style="font-size:11px;color:var(--texto3);font-weight:400;"></span></div>
+      <div id="banco-forn-lista" style="max-height:400px;overflow-y:auto;"></div>
+    </div>
+
+    <!-- USUÁRIOS -->
+    <div class="card" style="padding:16px;">
+      <div class="section-title" style="margin-bottom:14px;font-size:13px;">👥 USUÁRIOS DO SISTEMA</div>
+      <div id="banco-users-lista"></div>
+    </div>
+    </div>
+    <div class="view" id="view-permissoes">
+<div class="modulo-badge">🔐 PERMISSOES POR PERFIL</div>
+    <div id="permissoes-container"></div>
+    </div>
+    <div class="view" id="view-setup">
+<div class="modulo-badge">⚙ CONFIGURAÇÕES</div>
+    <div class="card">
+      <div class="section-title">🗄 Banco de Dados — Supabase</div>
+      <p style="font-size:13px;color:var(--texto2);margin-bottom:12px;line-height:1.6;">Execute no <strong>Supabase → SQL Editor</strong>.</p>
+      <button class="btn-copy" onclick="copiarSQL()">📋 COPIAR SQL</button>
+      <div class="sql-box" id="sql-box"></div>
+    </div>
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <div class="section-title" style="margin-bottom:0;">👤 Usuários do Sistema</div>
+        <button onclick="abrirModalNovoUsuario()" style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);color:var(--verde-hl);border-radius:8px;padding:7px 14px;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;letter-spacing:1px;cursor:pointer;transition:all .2s;">➕ NOVO USUÁRIO</button>
+      </div>
+      <div id="usuarios-lista"></div>
+    </div>
+    <div class="alert-box alert-verde">
+      <div class="alert-title">✅ SEGURO</div>
+      <div class="alert-text">O SQL cria/atualiza apenas as tabelas do EDR System. As tabelas obras e lancamentos do EDR Obras não são afetadas.</div>
+    </div>
+    </div>
+    <div class="view" id="view-cronograma">
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding-top:4px;flex-wrap:wrap;gap:8px;">
+      <div class="modulo-badge">📅 CRONOGRAMA DE OBRA</div>
+      <div style="display:flex;gap:6px;">
+        <button onclick="window.open('diario.html','_blank')" class="btn-outline" style="font-size:11px;padding:6px 12px;">📋 DIÁRIO</button>
+        <button onclick="window.open('gantt.html','_blank')" class="btn-outline" style="font-size:11px;padding:6px 12px;">📊 GANTT</button>
+        <button onclick="cronGerarEtapas()" class="btn-outline admin-only" style="font-size:11px;padding:6px 12px;">⚡ ETAPAS</button>
+        <button onclick="cronGerarPDF()" class="btn-outline admin-only" style="font-size:11px;padding:6px 12px;">📄 PDF</button>
+      </div>
+    </div>
+    <div id="cronograma-container"></div>
+    </div>
+    <div class="view" id="view-orcamento">
+<div class="modulo-badge">📐 ORCAMENTO PARAMETRICO</div>
+    <div id="orcamento-container"></div>
+    </div>
+    <div class="view" id="view-usuarios">
+<div id="usuarios-container"></div>
+    </div>
     <div class="view" id="view-importar"></div>
     <div class="view" id="view-adicionais"></div>
     <div class="view" id="view-diario"></div>
@@ -1189,35 +1698,35 @@ function updateShellUser(nome, perfil) {
 
 <!-- ═══════ MODULOS V2 (ordem de dependência) ═══════ -->
 <!-- 0. Infraestrutura: sbGet/sbPost/sbPatch/sbDelete, confirmar(), showModal, usuarioAtual -->
-<script src="js/edr-v2-infra.js?v=04041646"></script>
+<script src="js/edr-v2-infra.js?v=04041651"></script>
 <!-- 1. Utilitários globais (valorPorExtenso, fmtN) -->
-<script src="js/edr-v2-utils-extras.js?v=04041646"></script>
+<script src="js/edr-v2-utils-extras.js?v=04041651"></script>
 <!-- 2. Obras PRIMEIRO (ETAPAS, resolveEtapaKey, etapaCor, etapaLabel — vários módulos dependem) -->
-<script src="js/edr-v2-obras.js?v=04041646"></script>
+<script src="js/edr-v2-obras.js?v=04041651"></script>
 <!-- 3. PDF engine (PdfModule — chamado por vários módulos) -->
-<script src="js/edr-v2-pdf.js?v=04041646"></script>
+<script src="js/edr-v2-pdf.js?v=04041651"></script>
 <!-- 4. Módulos core de negócio -->
-<script src="js/edr-v2-notas.js?v=04041646"></script>
-<script src="js/edr-v2-importar.js?v=04041646"></script>
-<script src="js/edr-v2-estoque.js?v=04041646"></script>
-<script src="js/edr-v2-custos.js?v=04041646"></script>
+<script src="js/edr-v2-notas.js?v=04041651"></script>
+<script src="js/edr-v2-importar.js?v=04041651"></script>
+<script src="js/edr-v2-estoque.js?v=04041651"></script>
+<script src="js/edr-v2-custos.js?v=04041651"></script>
 <!-- 5. Equipe e operacional -->
-<script src="js/edr-v2-diarias.js?v=04041646"></script>
-<script src="js/edr-v2-diario.js?v=04041646"></script>
+<script src="js/edr-v2-diarias.js?v=04041651"></script>
+<script src="js/edr-v2-diario.js?v=04041651"></script>
 <!-- 6. Relatórios e dashboard (dependem de obras.js pra etapaCor) -->
-<script src="js/edr-v2-relatorio.js?v=04041646"></script>
-<script src="js/edr-v2-dashboard.js?v=04041646"></script>
+<script src="js/edr-v2-relatorio.js?v=04041651"></script>
+<script src="js/edr-v2-dashboard.js?v=04041651"></script>
 <!-- 7. Módulos complementares -->
-<script src="js/edr-v2-leads.js?v=04041646"></script>
-<script src="js/edr-v2-garantias.js?v=04041646"></script>
-<script src="js/edr-v2-adicionais.js?v=04041646"></script>
-<script src="js/edr-v2-cronograma.js?v=04041646"></script>
-<script src="js/edr-v2-orcamento.js?v=04041646"></script>
+<script src="js/edr-v2-leads.js?v=04041651"></script>
+<script src="js/edr-v2-garantias.js?v=04041651"></script>
+<script src="js/edr-v2-adicionais.js?v=04041651"></script>
+<script src="js/edr-v2-cronograma.js?v=04041651"></script>
+<script src="js/edr-v2-orcamento.js?v=04041651"></script>
 <!-- 8. Documentação e medições -->
-<script src="js/edr-v2-termo-manual.js?v=04041646"></script>
-<script src="js/edr-v2-pci.js?v=04041646"></script>
+<script src="js/edr-v2-termo-manual.js?v=04041651"></script>
+<script src="js/edr-v2-pci.js?v=04041651"></script>
 <!-- 9. Auth (login, sessão, refresh — ÚLTIMO) -->
-<script src="js/edr-v2-auth.js?v=04041646"></script>
+<script src="js/edr-v2-auth.js?v=04041651"></script>
 
 </body>
 </html>
