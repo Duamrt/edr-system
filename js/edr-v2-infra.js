@@ -179,6 +179,8 @@ async function iniciarApp() {
     loadRepassesCef().catch(e => console.warn('loadRepassesCef:', e)),
     loadAjustesEstoque().catch(e => console.warn('loadAjustesEstoque:', e))
   ]);
+  if (typeof populateSelects === 'function') populateSelects();
+  if (typeof setToday === 'function') setToday();
 }
 
 // ── USUARIO ATUAL (preenchido pelo auth.js após login) ──

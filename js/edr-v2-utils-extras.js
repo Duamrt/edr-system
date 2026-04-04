@@ -10,15 +10,53 @@ function hojeISO() { const d = new Date(); return `${d.getFullYear()}-${String(d
 function esc(s) { if (!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 
 // Normaliza texto (remove acentos, lowercase) — usado em buscas/filtros
-function norm(s) { return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+function norm(s) { if (!s) return ''; return String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
 
 // Parse itens JSON de nota fiscal
 function parseItens(n) { try { return JSON.parse(n.itens||'[]'); } catch(e) { console.error('parseItens JSON inválido:', e); return []; } }
+
+// Formata valor como moeda BRL: 1234.5 → "R$ 1.234,50"
+function fmt(v) { return Number(v||0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
+
+// Formata moeda com opção abreviada: 15000 → "R$ 15.0k"
+function fmtR(v, abrev = false) {
+  const n = Number(v) || 0;
+  if (abrev && Math.abs(n) >= 1000) return 'R$ ' + (n/1000).toFixed(1) + 'k';
+  return n.toLocaleString('pt-BR', { style:'currency', currency:'BRL' });
+}
+
+// Formata data ISO → DD/MM/YYYY
+function fmtData(iso) { if (!iso) return '—'; return iso.split('T')[0].split('-').reverse().join('/'); }
 
 // Formata numero como moeda BR: 1234.5 → "1.234,50"
 function fmtN(n) {
   return Number(n).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
+
+// Mascara CNPJ
+function maskCNPJ(el) { let v = el.value.replace(/\D/g,'').slice(0,14); if(v.length>12)v=v.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2}).*/,'$1.$2.$3/$4-$5'); else if(v.length>8)v=v.replace(/^(\d{2})(\d{3})(\d{3})(\d*)/,'$1.$2.$3/$4'); else if(v.length>5)v=v.replace(/^(\d{2})(\d{3})(\d*)/,'$1.$2.$3'); else if(v.length>2)v=v.replace(/^(\d{2})(\d*)/,'$1.$2'); el.value = v; }
+
+// Setar data de hoje nos campos do form NF
+function setToday() { const d = hojeISO(); const el1 = document.getElementById('f-emissao'); const el2 = document.getElementById('f-recebimento'); if (el1) el1.value = d; if (el2) el2.value = d; }
+
+// Popular selects de obras
+function populateSelects() {
+  const opts = obras.map(o => `<option value="${o.id}">${esc(o.nome)}</option>`).join('');
+  const optsNome = obras.map(o => `<option value="${esc(o.nome)}">${esc(o.nome)}</option>`).join('');
+  const fObra = document.getElementById('f-obra');
+  if (fObra) fObra.innerHTML = `<option value="${COMPANY_DEFAULTS.estoqueGeral}">📦 ${COMPANY_DEFAULTS.estoqueLabel} (ESTOQUE)</option><option value="${COMPANY_DEFAULTS.escritorio}">🏢 ${COMPANY_DEFAULTS.escritorioLabel} (CONSUMO DIRETO)</option>${optsNome}`;
+  const filtroObra = document.getElementById('filtro-obra');
+  if (filtroObra) filtroObra.innerHTML = `<option value="">TODAS AS OBRAS</option><option value="${COMPANY_DEFAULTS.estoqueGeral}">${COMPANY_DEFAULTS.estoqueLabel}</option>${optsNome}`;
+  const distObra = document.getElementById('dist-obra');
+  if (distObra) distObra.innerHTML = opts;
+  const obrasFiltro = document.getElementById('obras-filtro-obra');
+  if (obrasFiltro) obrasFiltro.innerHTML = `<option value="">Todas as obras</option>${opts}`;
+  const estoqueFiltro = document.getElementById('estoque-filtro-obra');
+  if (estoqueFiltro) estoqueFiltro.innerHTML = `<option value="">ALMOXARIFADO</option>${optsNome}`;
+}
+
+// Variavel de controle de arquivadas
+let mostandoArquivadas = false;
 
 // Converte valor monetario pra texto por extenso
 // Ex: 1500.50 → "um mil e quinhentos reais e cinquenta centavos"
