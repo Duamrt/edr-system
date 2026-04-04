@@ -63,6 +63,25 @@ input { font-family: inherit; }
   /* Sizes */
   --sidebar-width: 240px;
   --header-height: 64px;
+  /* Mapeamento CSS Legado (V1) para V2 */
+  --borda: var(--border);
+  --texto: var(--text-primary);
+  --texto-pri: var(--text-primary);
+  --texto-sec: var(--text-secondary);
+  --texto2: var(--text-secondary);
+  --texto3: var(--text-tertiary);
+  --texto4: var(--text-tertiary);
+  --bg2: var(--card);
+  --bg3: var(--bg);
+  --surface: var(--card);
+  --surface-alt: var(--bg);
+  --input-bg: var(--bg);
+  --danger: var(--error);
+  --vermelho: var(--error);
+  --verde-hl: var(--primary);
+  --fundo: var(--bg);
+  --fundo2: var(--card);
+  --skeleton: var(--border-light);
 }
 
 /* ── DARK MODE ─────────────────────────── */
@@ -1584,11 +1603,11 @@ function toggleTheme() {
 
 // ── MODAL SYSTEM ──────────────────────────
 function openModal(id) {
-  const el = document.getElementById(`modal-${id}`);
+  const el = document.getElementById(`modal-${id}`) || document.getElementById(id);
   if (el) el.classList.add('active');
 }
 function closeModal(id) {
-  const el = document.getElementById(`modal-${id}`);
+  const el = document.getElementById(`modal-${id}`) || document.getElementById(id);
   if (el) el.classList.remove('active');
 }
 
@@ -1699,35 +1718,231 @@ function updateShellUser(nome, perfil) {
 
 <!-- ═══════ MODULOS V2 (ordem de dependência) ═══════ -->
 <!-- 0. Infraestrutura: sbGet/sbPost/sbPatch/sbDelete, confirmar(), showModal, usuarioAtual -->
-<script src="js/edr-v2-infra.js?v=04041719"></script>
+<script src="js/edr-v2-infra.js?v=04041759"></script>
 <!-- 1. Utilitários globais (valorPorExtenso, fmtN) -->
-<script src="js/edr-v2-utils-extras.js?v=04041719"></script>
+<script src="js/edr-v2-utils-extras.js?v=04041759"></script>
 <!-- 2. Obras PRIMEIRO (ETAPAS, resolveEtapaKey, etapaCor, etapaLabel — vários módulos dependem) -->
-<script src="js/edr-v2-obras.js?v=04041719"></script>
+<script src="js/edr-v2-obras.js?v=04041759"></script>
 <!-- 3. PDF engine (PdfModule — chamado por vários módulos) -->
-<script src="js/edr-v2-pdf.js?v=04041719"></script>
+<script src="js/edr-v2-pdf.js?v=04041759"></script>
 <!-- 4. Módulos core de negócio -->
-<script src="js/edr-v2-notas.js?v=04041719"></script>
-<script src="js/edr-v2-importar.js?v=04041719"></script>
-<script src="js/edr-v2-estoque.js?v=04041719"></script>
-<script src="js/edr-v2-custos.js?v=04041719"></script>
+<script src="js/edr-v2-notas.js?v=04041759"></script>
+<script src="js/edr-v2-importar.js?v=04041759"></script>
+<script src="js/edr-v2-estoque.js?v=04041759"></script>
+<script src="js/edr-v2-custos.js?v=04041759"></script>
 <!-- 5. Equipe e operacional -->
-<script src="js/edr-v2-diarias.js?v=04041719"></script>
-<script src="js/edr-v2-diario.js?v=04041719"></script>
+<script src="js/edr-v2-diarias.js?v=04041759"></script>
+<script src="js/edr-v2-diario.js?v=04041759"></script>
 <!-- 6. Relatórios e dashboard (dependem de obras.js pra etapaCor) -->
-<script src="js/edr-v2-relatorio.js?v=04041719"></script>
-<script src="js/edr-v2-dashboard.js?v=04041719"></script>
+<script src="js/edr-v2-relatorio.js?v=04041759"></script>
+<script src="js/edr-v2-dashboard.js?v=04041759"></script>
 <!-- 7. Módulos complementares -->
-<script src="js/edr-v2-leads.js?v=04041719"></script>
-<script src="js/edr-v2-garantias.js?v=04041719"></script>
-<script src="js/edr-v2-adicionais.js?v=04041719"></script>
-<script src="js/edr-v2-cronograma.js?v=04041719"></script>
-<script src="js/edr-v2-orcamento.js?v=04041719"></script>
+<script src="js/edr-v2-leads.js?v=04041759"></script>
+<script src="js/edr-v2-garantias.js?v=04041759"></script>
+<script src="js/edr-v2-adicionais.js?v=04041759"></script>
+<script src="js/edr-v2-cronograma.js?v=04041759"></script>
+<script src="js/edr-v2-orcamento.js?v=04041759"></script>
 <!-- 8. Documentação e medições -->
-<script src="js/edr-v2-termo-manual.js?v=04041719"></script>
-<script src="js/edr-v2-pci.js?v=04041719"></script>
+<script src="js/edr-v2-termo-manual.js?v=04041759"></script>
+<script src="js/edr-v2-pci.js?v=04041759"></script>
 <!-- 9. Auth (login, sessão, refresh — ÚLTIMO) -->
-<script src="js/edr-v2-auth.js?v=04041719"></script>
+<script src="js/edr-v2-auth.js?v=04041759"></script>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- MODAIS (Fase 0 — containers para módulos que precisam)        -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+
+<!-- MODAL OBRA (nova/editar) -->
+<div id="modal-obra" class="modal-overlay hidden" role="dialog" aria-modal="true" onclick="if(event.target===this)fecharModal('obra')">
+  <div class="modal-box" style="max-width:500px;width:95vw;">
+    <div class="modal-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <span id="modal-obra-titulo" style="font-size:16px;font-weight:800;color:var(--text-primary);">Nova Obra</span>
+      <button class="modal-close" onclick="fecharModal('obra')"><span class="material-symbols-outlined">close</span></button>
+    </div>
+    <div class="modal-body" style="padding:0;">
+      <input type="hidden" id="obra-edit-id">
+      <div style="margin-bottom:12px;"><label style="font-size:11px;font-weight:700;color:var(--text-tertiary);letter-spacing:1px;display:block;margin-bottom:4px;">NOME DA OBRA *</label><input type="text" id="nova-obra-nome" placeholder="EX: RESIDENCIAL SILVA" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;background:var(--bg);color:var(--text-primary);"></div>
+      <div style="margin-bottom:12px;"><label style="font-size:11px;font-weight:700;color:var(--text-tertiary);letter-spacing:1px;display:block;margin-bottom:4px;">CIDADE</label><input type="text" id="nova-obra-cidade" placeholder="EX: RECIFE" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;background:var(--bg);color:var(--text-primary);"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+        <div><label style="font-size:11px;font-weight:700;color:var(--text-tertiary);letter-spacing:1px;display:block;margin-bottom:4px;">VALOR DE VENDA (R$)</label><input type="number" id="nova-obra-valor-venda" min="0" step="0.01" placeholder="Via Contrato CEF" readonly style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;background:var(--bg);color:var(--text-secondary);opacity:0.6;cursor:not-allowed;"></div>
+        <div><label style="font-size:11px;font-weight:700;color:var(--text-tertiary);letter-spacing:1px;display:block;margin-bottom:4px;">ÁREA (m²)</label><input type="number" id="nova-obra-area" min="0" step="0.01" placeholder="0,00" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;background:var(--bg);color:var(--text-primary);"></div>
+      </div>
+      <div style="border-top:1px solid var(--border);margin:12px 0 8px;padding-top:10px;"><div style="font-size:10px;color:var(--text-tertiary);letter-spacing:2px;font-weight:700;">DADOS DO CONTRATANTE</div></div>
+      <div style="margin-bottom:12px;"><label style="font-size:11px;font-weight:700;color:var(--text-tertiary);letter-spacing:1px;display:block;margin-bottom:4px;">NOME DO CONTRATANTE</label><input type="text" id="nova-obra-contratante" placeholder="EX: JOÃO DA SILVA" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;background:var(--bg);color:var(--text-primary);text-transform:uppercase;"></div>
+      <div style="margin-bottom:12px;"><label style="font-size:11px;font-weight:700;color:var(--text-tertiary);letter-spacing:1px;display:block;margin-bottom:4px;">CPF DO CONTRATANTE</label><input type="text" id="nova-obra-cpf" placeholder="000.000.000-00" maxlength="14" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;background:var(--bg);color:var(--text-primary);"></div>
+      <div style="border-top:1px solid var(--border);margin:12px 0 8px;padding-top:10px;"><div style="font-size:10px;color:var(--text-tertiary);letter-spacing:2px;font-weight:700;">ENTREGA DIGITAL</div></div>
+      <div style="margin-bottom:16px;"><label style="font-size:11px;font-weight:700;color:var(--text-tertiary);letter-spacing:1px;display:block;margin-bottom:4px;">SLUG DE ENTREGA</label><input type="text" id="nova-obra-slug" placeholder="ex: gilmara" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;background:var(--bg);color:var(--text-primary);text-transform:lowercase;"><div style="font-size:9px;color:var(--text-tertiary);margin-top:3px;">URL: site/entrega/<strong>slug</strong></div></div>
+      <div style="display:flex;gap:10px;">
+        <button class="btn-primary" style="flex:1;padding:12px;justify-content:center;" onclick="salvarNovaObra()">SALVAR</button>
+        <button class="btn-secondary" style="padding:12px 20px;" onclick="fecharModal('obra')">CANCELAR</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CONCLUIR OBRA -->
+<div id="modal-concluir-obra" class="modal-overlay hidden" role="dialog" aria-modal="true" onclick="if(event.target===this)fecharModal('concluir-obra')">
+  <div class="modal-box" style="max-width:480px;width:95vw;">
+    <div class="modal-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <span style="font-size:16px;font-weight:800;color:var(--text-primary);">Concluir Obra</span>
+      <button class="modal-close" onclick="fecharModal('concluir-obra')"><span class="material-symbols-outlined">close</span></button>
+    </div>
+    <div class="modal-body" style="padding:0;">
+      <input type="hidden" id="concluir-obra-id">
+      <div style="font-size:11px;color:var(--text-secondary);margin-bottom:12px;padding:8px;background:var(--primary-surface);border:1px solid var(--primary-light);border-radius:var(--radius-sm);">Preencha os dados do imóvel para gerar o <strong>Termo de Entrega</strong> e arquivar a obra.</div>
+      <div style="border-bottom:1px solid var(--border);margin-bottom:10px;padding-bottom:6px;"><div style="font-size:10px;color:var(--text-tertiary);letter-spacing:2px;font-weight:700;">PROPRIETÁRIO</div></div>
+      <div style="margin-bottom:12px;"><label style="font-size:11px;font-weight:700;color:var(--text-tertiary);letter-spacing:1px;display:block;margin-bottom:4px;">NOME DO PROPRIETÁRIO *</label><input type="text" id="concluir-proprietario" placeholder="NOME COMPLETO" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;background:var(--bg);color:var(--text-primary);text-transform:uppercase;"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+        <div><label style="font-size:11px;font-weight:700;color:var(--text-tertiary);letter-spacing:1px;display:block;margin-bottom:4px;">CPF *</label><input type="text" id="concluir-cpf" placeholder="000.000.000-00" maxlength="14" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;background:var(--bg);color:var(--text-primary);"></div>
+        <div><label style="font-size:11px;font-weight:700;color:var(--text-tertiary);letter-spacing:1px;display:block;margin-bottom:4px;">DATA DE ENTREGA *</label><input type="date" id="concluir-data-entrega" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;background:var(--bg);color:var(--text-primary);"></div>
+      </div>
+      <div style="border-bottom:1px solid var(--border);margin:10px 0;padding-bottom:6px;"><div style="font-size:10px;color:var(--text-tertiary);letter-spacing:2px;font-weight:700;">ENDEREÇO DO IMÓVEL</div></div>
+      <div style="margin-bottom:12px;"><label style="font-size:11px;font-weight:700;color:var(--text-tertiary);letter-spacing:1px;display:block;margin-bottom:4px;">RUA / LOGRADOURO *</label><input type="text" id="concluir-rua" placeholder="EX: RUA DAS FLORES" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;background:var(--bg);color:var(--text-primary);text-transform:uppercase;"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+        <div><label style="font-size:11px;font-weight:700;color:var(--text-tertiary);letter-spacing:1px;display:block;margin-bottom:4px;">Nº / LOTE *</label><input type="text" id="concluir-numero" placeholder="EX: 123" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;background:var(--bg);color:var(--text-primary);"></div>
+        <div><label style="font-size:11px;font-weight:700;color:var(--text-tertiary);letter-spacing:1px;display:block;margin-bottom:4px;">BAIRRO *</label><input type="text" id="concluir-bairro" placeholder="EX: CENTRO" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;background:var(--bg);color:var(--text-primary);text-transform:uppercase;"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:2fr 1fr;gap:10px;margin-bottom:12px;">
+        <div><label style="font-size:11px;font-weight:700;color:var(--text-tertiary);letter-spacing:1px;display:block;margin-bottom:4px;">CIDADE / UF *</label><input type="text" id="concluir-cidade" placeholder="EX: JUPI-PE" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;background:var(--bg);color:var(--text-primary);text-transform:uppercase;"></div>
+        <div><label style="font-size:11px;font-weight:700;color:var(--text-tertiary);letter-spacing:1px;display:block;margin-bottom:4px;">CEP</label><input type="text" id="concluir-cep" placeholder="00000-000" maxlength="9" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;background:var(--bg);color:var(--text-primary);"></div>
+      </div>
+      <div style="border-top:1px solid var(--border);margin:10px 0;padding-top:6px;"><div style="font-size:10px;color:var(--text-tertiary);letter-spacing:2px;font-weight:700;">ENTREGA DIGITAL</div></div>
+      <div style="margin-bottom:16px;"><label style="font-size:11px;font-weight:700;color:var(--text-tertiary);letter-spacing:1px;display:block;margin-bottom:4px;">SLUG DE ENTREGA</label><input type="text" id="concluir-slug" placeholder="ex: gilmara" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;background:var(--bg);color:var(--text-primary);text-transform:lowercase;"><div style="font-size:9px;color:var(--text-tertiary);margin-top:3px;">URL: site/entrega/<strong>slug</strong></div></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <button class="btn-primary" style="padding:12px;justify-content:center;" onclick="confirmarConclusaoObra()">CONCLUIR E GERAR TERMO</button>
+        <button class="btn-secondary" style="padding:12px;" onclick="fecharModal('concluir-obra')">CANCELAR</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL NOTA FISCAL (detalhe) -->
+<div id="modal-nota" class="modal-overlay hidden" onclick="if(event.target===this)fecharModal('nota')">
+  <div class="modal-box" style="max-width:540px;width:95vw;max-height:90vh;overflow-y:auto;">
+    <div class="modal-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <span style="font-size:16px;font-weight:800;color:var(--text-primary);">Nota Fiscal</span>
+      <button class="modal-close" onclick="fecharModal('nota')"><span class="material-symbols-outlined">close</span></button>
+    </div>
+    <div id="modal-nota-body" class="modal-body" style="padding:0;"></div>
+  </div>
+</div>
+
+<!-- CONTAINERS ESTOQUE (innerHTML setado pelo módulo) -->
+<div id="hist-modal" class="modal-overlay"><div class="modal-box" style="max-width:560px;width:95vw;max-height:90vh;overflow-y:auto;"><div class="modal"></div></div></div>
+<div id="dist-modal" class="modal-overlay"><div class="modal-box" style="max-width:480px;width:95vw;max-height:90vh;overflow-y:auto;"><div class="modal"></div></div></div>
+<div id="vincular-modal" class="modal-overlay"><div class="modal-box" style="max-width:480px;width:95vw;max-height:90vh;overflow-y:auto;"><div class="modal"></div></div></div>
+
+<!-- CONTAINERS CUSTOS (innerHTML setado pelo módulo) -->
+<div id="custos-modal-repasse" class="modal-overlay"><div class="modal-box" style="max-width:480px;width:95vw;max-height:90vh;overflow-y:auto;"><div class="modal"></div></div></div>
+<div id="custos-modal-contrato" class="modal-overlay"><div class="modal-box" style="max-width:560px;width:95vw;max-height:90vh;overflow-y:auto;"><div class="modal"></div></div></div>
+
+<!-- MODAL LANÇAR DIÁRIAS NO EDR -->
+<div id="diar-modalEDR" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:9999;align-items:center;justify-content:center;padding:16px">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);width:100%;max-width:500px;max-height:90vh;overflow-y:auto;padding:22px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+      <div style="font-weight:800;font-size:15px;letter-spacing:.05em;color:var(--text-primary)">LANÇAR NO EDR SYSTEM</div>
+      <button onclick="diarFecharModalEDR()" style="background:none;border:none;color:var(--text-tertiary);font-size:18px;cursor:pointer;padding:4px 8px"><span class="material-symbols-outlined">close</span></button>
+    </div>
+    <div id="diar-modalEDRBody"></div>
+    <div style="display:flex;gap:8px;margin-top:18px">
+      <button id="diar-btnConfirmarEDR" onclick="diarConfirmarLancamentosEDR()" class="btn-primary" style="flex:1;padding:12px;font-size:13px;justify-content:center;">Confirmar e Lançar Tudo</button>
+      <button onclick="diarFecharModalEDR()" class="btn-secondary" style="padding:12px 18px;">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EXTRA / BONIFICAÇÃO -->
+<div id="diar-modalExtra" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:9999;align-items:center;justify-content:center;padding:16px">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);width:100%;max-width:420px;padding:22px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+      <div style="font-weight:800;font-size:15px;letter-spacing:.05em;color:var(--text-primary)">EXTRA / BONIFICAÇÃO</div>
+      <button onclick="diarFecharModalExtra()" style="background:none;border:none;color:var(--text-tertiary);font-size:18px;cursor:pointer;padding:4px 8px"><span class="material-symbols-outlined">close</span></button>
+    </div>
+    <div style="margin-bottom:12px"><label style="font-size:11px;font-weight:700;color:var(--text-tertiary);letter-spacing:1px;display:block;margin-bottom:4px;">FUNCIONÁRIO</label><select id="diar-extra-func" style="width:100%;padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;"><option value="">Selecionar...</option></select></div>
+    <div style="margin-bottom:12px"><label style="font-size:11px;font-weight:700;color:var(--text-tertiary);letter-spacing:1px;display:block;margin-bottom:4px;">DESCRIÇÃO</label><input type="text" id="diar-extra-desc" placeholder="Ex: Bonificação produtividade..." style="width:100%;padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;"></div>
+    <div style="margin-bottom:12px"><label style="font-size:11px;font-weight:700;color:var(--text-tertiary);letter-spacing:1px;display:block;margin-bottom:4px;">VALOR (R$)</label><input type="number" id="diar-extra-valor" placeholder="0,00" min="0" step="0.01" style="width:100%;padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;"></div>
+    <div style="margin-bottom:18px"><label style="font-size:11px;font-weight:700;color:var(--text-tertiary);letter-spacing:1px;display:block;margin-bottom:4px;">ALOCAR CUSTO NA OBRA</label><select id="diar-extra-obra" style="width:100%;padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;"><option value="">Selecionar obra...</option></select></div>
+    <div style="display:flex;gap:8px">
+      <button onclick="diarSalvarExtra()" class="btn-primary" style="flex:1;padding:12px;justify-content:center;">Salvar</button>
+      <button onclick="diarFecharModalExtra()" class="btn-secondary" style="padding:12px 18px;">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- FUNÇÕES GLOBAIS (Fase 0 — compat V1→V2)                      -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<script>
+// fecharModal — compat V1 (usa hidden) + V2 (usa active)
+function fecharModal(w) {
+  const el = document.getElementById('modal-' + w) || document.getElementById(w);
+  if (el) {
+    el.classList.add('hidden');
+    el.classList.remove('active');
+  }
+  if (w === 'dist') { if (typeof distItemAtual !== 'undefined') distItemAtual = null; }
+}
+
+// closeModalOutside — clique fora fecha
+function closeModalOutside(event, w) {
+  if (event.target === event.currentTarget) fecharModal(w);
+}
+
+// abrirNota — detalhe da nota fiscal (portado da V1)
+function abrirNota(id) {
+  const n = notas.find(x => x.id === id); if (!n) return;
+  const itens = parseItens(n);
+  const subtotal = itens.reduce((s,i) => s + Number(i.total||0), 0);
+  const frete = Number(n.frete||0);
+  const total = Number(n.valor_bruto||0);
+  const isAdmin = usuarioAtual?.perfil === 'admin';
+
+  const itensHTML = itens.length ? itens.map(it => `
+    <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);">
+      <div style="flex:1;">
+        <div style="font-weight:600;font-size:13px;color:var(--text-primary);">${esc(it.desc)}</div>
+        <div style="font-size:11px;color:var(--text-secondary);margin-top:3px;">${(()=>{const q=Number(it.qtd);return q%1===0?q:q.toFixed(3);})()} ${it.unidade||'UN'} × ${fmtR(it.preco||0)}/UN${it.desconto>0?' · Desc: '+fmtR(it.desconto):''}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;">
+        ${isAdmin ? '<div style="font-weight:700;color:var(--primary);">'+fmtR(it.total||0)+'</div>' : ''}
+        <div style="font-size:10px;margin-top:2px;"><span style="color:${it.credito?'var(--primary)':'var(--error)'};font-weight:700;">${it.credito?'✓ CRÉDITO':'✗ SEM CRÉDITO'}</span></div>
+      </div>
+    </div>`).join('') : '<div style="color:var(--text-tertiary);font-size:13px;padding:12px 0;">Nenhum item registrado.</div>';
+
+  document.getElementById('modal-nota-body').innerHTML = `
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;margin-bottom:14px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+        <div>
+          <div style="font-weight:800;font-size:16px;color:var(--text-primary);">${esc(n.fornecedor)}</div>
+          <div style="font-size:12px;color:var(--text-tertiary);margin-top:2px;">${esc(n.cnpj||'SEM CNPJ')}</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:11px;color:var(--text-tertiary);">NF</div>
+          <div style="font-weight:800;font-size:18px;color:var(--primary);">${n.numero_nf||'—'}</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;font-size:12px;">
+        <div><div style="color:var(--text-tertiary);font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">Emissão</div><div style="color:var(--text-primary);font-weight:600;">${n.data||'—'}</div></div>
+        <div><div style="color:var(--text-tertiary);font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">Recebimento</div><div style="color:var(--text-primary);font-weight:600;">${n.data_recebimento||'—'}</div></div>
+        <div><div style="color:var(--text-tertiary);font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">Natureza</div><div style="color:var(--text-primary);font-weight:600;">${n.natureza||'—'}</div></div>
+        <div><div style="color:var(--text-tertiary);font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">Destino</div><div style="color:var(--text-primary);font-weight:600;">${n.obra==='EDR'?'Estoque':n.obra==='EDR_ESCRITORIO'?'Escritório':esc(n.obra)}</div></div>
+        <div><div style="color:var(--text-tertiary);font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">Crédito</div><div style="font-weight:700;color:${n.credito_status==='sim'?'var(--primary)':n.credito_status==='misto'?'var(--warning)':'var(--error)'};">${n.credito_status==='sim'?'Sim':n.credito_status==='misto'?'Parcial':'Não'}</div></div>
+        ${isAdmin ? '<div><div style="color:var(--text-tertiary);font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">Total</div><div style="font-weight:800;color:var(--primary);">'+fmtR(total)+'</div></div>' : ''}
+      </div>
+      ${n.obs ? '<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:12px;color:var(--text-secondary);">'+esc(n.obs)+'</div>' : ''}
+    </div>
+    <div style="font-size:10px;font-weight:700;color:var(--text-tertiary);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">${itens.length} ITEN${itens.length!==1?'S':''}</div>
+    ${itensHTML}
+    ${isAdmin && (frete > 0 || itens.length > 0) ? '<div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px;">'+(itens.length > 1 ? '<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--text-secondary);margin-bottom:6px;"><span>Subtotal itens</span><span>'+fmtR(subtotal)+'</span></div>' : '')+(frete > 0 ? '<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--primary);margin-bottom:6px;"><span>Frete</span><span>'+fmtR(frete)+'</span></div>' : '')+'<div style="display:flex;justify-content:space-between;font-weight:800;font-size:15px;color:var(--text-primary);"><span>TOTAL</span><span style="color:var(--primary);">'+fmtR(total)+'</span></div></div>' : ''}`;
+
+  document.getElementById('modal-nota').classList.remove('hidden');
+}
+
+// abrirModalContratoCEF — alias para a versão V2 no módulo custos
+function abrirModalContratoCEF(obraId) {
+  if (typeof custosAbrirModalContrato === 'function') custosAbrirModalContrato(obraId);
+}
+</script>
 
 </body>
 </html>
