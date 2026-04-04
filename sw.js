@@ -1,6 +1,6 @@
 // EDR System — Service Worker (network-first para HTML/JS/CSS, cache-first para imagens)
 // DEPLOY_VERSION é atualizado automaticamente pelo deploy.sh
-const CACHE_NAME = 'edr-system-v20260404181520';
+const CACHE_NAME = 'edr-system-v20260404182719';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -45,7 +45,8 @@ self.addEventListener('fetch', e => {
   }
 
   // HTMLs, JS e CSS — network-first (sempre pega atualizado, cache como fallback)
-  if (url.endsWith('.html') || url.endsWith('.js') || url.endsWith('.css') || e.request.mode === 'navigate') {
+  const urlPath = url.split('?')[0];
+  if (urlPath.endsWith('.html') || urlPath.endsWith('.js') || urlPath.endsWith('.css') || e.request.mode === 'navigate') {
     e.respondWith(
       fetch(e.request).then(resp => {
         if (resp.ok && e.request.method === 'GET') {

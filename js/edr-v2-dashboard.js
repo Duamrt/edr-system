@@ -692,14 +692,24 @@ function _dashFinCalcObra(o, filtroMes) {
 // ── RENDER PRINCIPAL ─────────────────────────────────────────
 
 function renderDashboard() {
+  console.log('[DASH] renderDashboard chamado');
   const loadingEl = document.getElementById('dash-loading');
-  const contentEl = document.getElementById('dash-content');
   if (loadingEl) loadingEl.classList.add('hidden');
+
+  // Garantir que dash-content e dash-admin-content existam
+  const vd = document.getElementById('view-dashboard');
+  let contentEl = document.getElementById('dash-content');
+  if (!contentEl && vd) {
+    console.log('[DASH] Criando dash-content e dash-admin-content');
+    vd.innerHTML = '<div id="dash-content"><div id="dash-admin-content" class="admin-only"></div><div id="oper-welcome" class="hidden"></div></div>';
+    contentEl = document.getElementById('dash-content');
+  }
   if (contentEl) contentEl.classList.remove('hidden');
 
   if (typeof usuarioAtual !== 'undefined' && usuarioAtual?.perfil !== 'admin') { _dashRenderOperador(); return; }
 
   const el = document.getElementById('dash-admin-content');
+  console.log('[DASH] dash-admin-content:', !!el, 'obras:', obras.length, 'lanc:', lancamentos.length);
   if (!el) return;
 
   // Skeleton instantaneo

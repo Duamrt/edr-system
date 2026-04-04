@@ -253,7 +253,9 @@ async function loadAdicionais() {
 }
 
 async function iniciarApp() {
+  console.log('[INFRA] iniciarApp chamado');
   await loadObras();
+  console.log('[INFRA] obras carregadas:', obras.length, 'arquivadas:', obrasArquivadas.length);
   await Promise.all([
     loadNotas().catch(e => console.warn('loadNotas:', e)),
     loadLancamentos().catch(e => console.warn('loadLancamentos:', e)),
@@ -265,8 +267,10 @@ async function iniciarApp() {
     loadAdicionais().catch(e => console.warn('loadAdicionais:', e)),
     loadCompanyPlan().catch(e => console.warn('loadCompanyPlan:', e))
   ]);
+  console.log('[INFRA] Promise.all concluido. notas:', notas.length, 'lancamentos:', lancamentos.length, 'materiais:', catalogoMateriais.length);
   if (typeof populateSelects === 'function') populateSelects();
   if (typeof setToday === 'function') setToday();
+  console.log('[INFRA] iniciarApp CONCLUIDO');
 }
 
 // ── USUARIO ATUAL (preenchido pelo auth.js após login) ──
