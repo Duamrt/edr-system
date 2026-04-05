@@ -1126,6 +1126,17 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
 .custos-card-bottom { display:flex;justify-content:space-between;font-size:12px;color:var(--text-secondary); }
 .custos-card-footer { display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border);padding-top:8px;font-size:12px;color:var(--text-tertiary); }
 
+/* ── CUSTOS RESUMO FINANCEIRO ── */
+.custos-resumo-title { font-size:13px;font-weight:700;color:var(--primary);letter-spacing:1px;margin-bottom:12px;display:flex;align-items:center;gap:6px;font-family:'Plus Jakarta Sans',sans-serif; }
+.custos-resumo-grid { display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:12px; }
+.custos-resumo-item { text-align:center;padding:10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius); }
+.custos-resumo-label { font-size:9px;font-weight:700;color:var(--text-tertiary);letter-spacing:1px;margin-bottom:4px;font-family:'Space Grotesk',monospace; }
+.custos-resumo-value { font-size:16px;font-weight:700;color:var(--text-primary);font-family:'Space Grotesk',monospace; }
+.custos-resumo-value.green { color:var(--success); }
+.custos-resumo-value.yellow { color:var(--warning); }
+.custos-resumo-value.purple { color:#8b5cf6; }
+.custos-resumo-sub { font-size:10px;color:var(--text-tertiary);margin-top:3px; }
+
 /* ── CUSTOS DETALHE ── */
 .custos-contrato-empty { display:flex;align-items:center;gap:8px;padding:16px;color:var(--text-tertiary);font-size:13px;border:1px dashed var(--border);border-radius:var(--radius);background:var(--surface); }
 .custos-link-btn { background:none;border:none;color:var(--primary);cursor:pointer;font-weight:600;text-decoration:underline; }

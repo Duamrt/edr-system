@@ -201,7 +201,8 @@ function _custosRenderResumoFinanceiro(obraId) {
   if (!isAdmin) { el.innerHTML = ''; return; }
 
   const valorVenda = Number(obra.valor_venda || 0);
-  const repassesObra = CustosModule.repassesCef.filter(r => r.obra_id === obraId);
+  const repsPool = (typeof repassesCef !== 'undefined' && repassesCef.length) ? repassesCef : CustosModule.repassesCef;
+  const repassesObra = repsPool.filter(r => r.obra_id === obraId);
   const totalPls = repassesObra.filter(r => (r.tipo || 'pls') === 'pls').reduce((s, r) => s + Number(r.valor || 0), 0);
   const totalEntrada = repassesObra.filter(r => (r.tipo || 'pls') === 'entrada').reduce((s, r) => s + Number(r.valor || 0), 0);
   const totalTerreno = repassesObra.filter(r => (r.tipo || 'pls') === 'terreno').reduce((s, r) => s + Number(r.valor || 0), 0);
@@ -217,7 +218,8 @@ function _custosRenderResumoFinanceiro(obraId) {
   const margem = receitaObra > 0 ? (lucro / receitaObra * 100) : 0;
   const pctRecebido = receitaObra > 0 ? Math.min((totalRecebido / receitaObra * 100), 100) : 0;
 
-  el.innerHTML = `<div class="custos-resumo-grid">
+  el.innerHTML = `<div class="custos-resumo-title"><span class="material-symbols-outlined" style="font-size:18px;">bar_chart</span> RESUMO FINANCEIRO — ${esc(obra.nome)}</div>
+  <div class="custos-resumo-grid">
     <div class="custos-resumo-item"><div class="custos-resumo-label">VALOR DO IMOVEL</div><div class="custos-resumo-value">${valorVenda > 0 ? fmtR(valorVenda) : 'Nao informado'}</div></div>
     <div class="custos-resumo-item"><div class="custos-resumo-label">TOTAL RECEBIDO</div><div class="custos-resumo-value green">${fmtR(totalRecebido)}</div>
       <div class="custos-resumo-sub">PLS: ${fmtR(totalPls)} | Entrada: ${fmtR(totalEntrada)} | Terreno: ${fmtR(totalTerreno)}</div></div>
