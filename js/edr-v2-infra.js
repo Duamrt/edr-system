@@ -268,6 +268,12 @@ async function iniciarApp() {
     loadCompanyPlan().catch(e => console.warn('loadCompanyPlan:', e))
   ]);
   console.log('[INFRA] Promise.all concluido. notas:', notas.length, 'lancamentos:', lancamentos.length, 'materiais:', catalogoMateriais.length);
+  // Sincronizar AdicionaisModule com globais carregadas no boot
+  if (typeof AdicionaisModule !== 'undefined') {
+    AdicionaisModule.adicionais = obrasAdicionais;
+    AdicionaisModule.pagamentos = adicionaisPgtos;
+    AdicionaisModule._loaded = true;
+  }
   if (typeof populateSelects === 'function') populateSelects();
   if (typeof setToday === 'function') setToday();
   console.log('[INFRA] iniciarApp CONCLUIDO');
