@@ -1929,16 +1929,17 @@ function renderBanco() {
   if (obrasEl) {
     if (!obras.length) { obrasEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--texto3);">Nenhuma obra cadastrada.</div>'; }
     else {
-      obrasEl.innerHTML = obras.map(o => {
+      obrasEl.innerHTML = obras.map((o, i) => {
         const ls = lancamentos.filter(l => l.obra_id === o.id);
         const total = ls.reduce((s,l) => s + Number(l.total||0), 0);
         const status = o.status === 'concluida' ? '<span style="font-size:9px;padding:2px 8px;border-radius:10px;background:rgba(34,197,94,0.08);color:var(--verde-hl);font-weight:700;margin-left:8px;">CONCLUÍDA</span>' : '';
-        return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--borda2);">
-          <div>
-            <div style="font-weight:700;font-size:13px;">${esc(o.nome)}${status}</div>
+        const borda = i < obras.length - 1 ? 'border-bottom:1px solid var(--borda2);' : '';
+        return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;${borda}">
+          <div style="flex:1;min-width:0;margin-right:12px;">
+            <div style="font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(o.nome)}${status}</div>
             <div style="font-size:11px;color:var(--texto3);margin-top:2px;">${ls.length} lançamento${ls.length!==1?'s':''}</div>
           </div>
-          <div style="font-weight:700;color:var(--verde-hl);font-size:13px;">${fmtR(total)}</div>
+          <div style="font-weight:700;color:var(--verde-hl);font-size:13px;white-space:nowrap;">${fmtR(total)}</div>
         </div>`;
       }).join('');
     }
@@ -1958,15 +1959,16 @@ function renderBanco() {
     if (countEl) countEl.textContent = `(${forns.length})`;
     if (!forns.length) { fornEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--texto3);">Nenhum fornecedor ainda.</div>'; }
     else {
-      fornEl.innerHTML = forns.map(([nome, d]) =>
-        `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--borda2);">
-          <div>
-            <div style="font-weight:700;font-size:13px;">${esc(nome)}</div>
+      fornEl.innerHTML = forns.map(([nome, d], i) => {
+        const borda = i < forns.length - 1 ? 'border-bottom:1px solid var(--borda2);' : '';
+        return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;${borda}">
+          <div style="flex:1;min-width:0;margin-right:12px;">
+            <div style="font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(nome)}</div>
             <div style="font-size:11px;color:var(--texto3);margin-top:2px;">${esc(d.cnpj || 'CNPJ não informado')} · ${d.qtd} nota${d.qtd!==1?'s':''}</div>
           </div>
-          <div style="font-weight:700;color:var(--verde-hl);font-size:13px;">${fmtR(d.total)}</div>
-        </div>`
-      ).join('');
+          <div style="font-weight:700;color:var(--verde-hl);font-size:13px;white-space:nowrap;">${fmtR(d.total)}</div>
+        </div>`;
+      }).join('');
     }
   }
 
@@ -1977,15 +1979,16 @@ function renderBanco() {
     else {
       const iconePerfil = p => p === 'admin' ? '<span class="material-symbols-outlined icon-sm">admin_panel_settings</span>' : p === 'mestre' ? '<span class="material-symbols-outlined icon-sm">engineering</span>' : '<span class="material-symbols-outlined icon-sm">person</span>';
       const labelPerfil = p => p === 'admin' ? 'Admin' : p === 'mestre' ? 'Mestre' : 'Operacional';
-      usersEl.innerHTML = lista.map(u =>
-        `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--borda2);">
-          <div style="width:36px;height:36px;border-radius:50%;background:var(--verde-bg);display:flex;align-items:center;justify-content:center;font-size:16px;">${iconePerfil(u.perfil)}</div>
+      usersEl.innerHTML = lista.map((u, i) => {
+        const borda = i < lista.length - 1 ? 'border-bottom:1px solid var(--borda2);' : '';
+        return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;${borda}">
+          <div style="width:36px;height:36px;border-radius:50%;background:var(--verde-bg);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">${iconePerfil(u.perfil)}</div>
           <div>
             <div style="font-weight:700;font-size:13px;">${esc(u.nome)}</div>
             <div style="font-size:11px;color:var(--texto3);">@${esc(u.usuario)} · ${labelPerfil(u.perfil)}</div>
           </div>
-        </div>`
-      ).join('');
+        </div>`;
+      }).join('');
     }
   }
 }
