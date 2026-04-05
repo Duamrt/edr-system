@@ -1210,6 +1210,22 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
 .btn-secondary { display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:8px 14px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;transition:all .15s; }
 .btn-secondary:hover { border-color:var(--primary);color:var(--primary); }
 
+/* ── ABA MATERIAIS (dentro de Obras) ── */
+.mat-group { background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:10px;overflow:hidden; }
+.mat-group-header { display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--bg-secondary,rgba(0,0,0,0.02));border-bottom:1px solid var(--border); }
+.mat-group-name { font-weight:700;color:var(--text-primary);font-size:13px; }
+.mat-group-stats { display:flex;gap:12px;align-items:center;font-size:12px; }
+.mat-group-qty { font-weight:800;color:#8B5CF6; }
+.mat-group-val { color:var(--primary);font-family:'Space Grotesk',monospace;font-size:12px;font-weight:700; }
+.mat-row { display:flex;justify-content:space-between;align-items:center;padding:7px 12px;border-top:1px solid var(--border);gap:8px;flex-wrap:wrap; }
+.mat-row-left { display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:11px;color:var(--text-secondary); }
+.mat-badge { font-size:9px;border-radius:4px;padding:1px 5px;font-weight:600; }
+.mat-badge-dist { color:#3b82f6;background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2); }
+.mat-badge-manual { color:#f59e0b;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2); }
+.stat-mini { text-align:center;padding:8px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm); }
+.stat-mini-label { font-size:9px;color:var(--text-tertiary);letter-spacing:.5px;text-transform:uppercase;font-weight:700;margin-bottom:2px; }
+.stat-mini-value { font-family:'Plus Jakarta Sans',sans-serif;font-size:15px;font-weight:800; }
+
 /* ── ABA CEF (dentro de Obras) ── */
 .cef-grid { display:flex;flex-direction:column;gap:12px; }
 .cef-hero { text-align:center;padding:16px;background:var(--primary-light,rgba(45,106,79,0.08));border:1px solid rgba(45,106,79,0.2);border-radius:var(--radius-sm); }
@@ -2367,35 +2383,35 @@ function updateShellUser(nome, perfil) {
 
 <!-- ═══════ MODULOS V2 (ordem de dependência) ═══════ -->
 <!-- 0. Infraestrutura: sbGet/sbPost/sbPatch/sbDelete, confirmar(), showModal, usuarioAtual -->
-<script src="js/edr-v2-infra.js?v=04050420"></script>
+<script src="js/edr-v2-infra.js?v=04050423"></script>
 <!-- 1. Utilitários globais (valorPorExtenso, fmtN) -->
-<script src="js/edr-v2-utils-extras.js?v=04050420"></script>
+<script src="js/edr-v2-utils-extras.js?v=04050423"></script>
 <!-- 2. Obras PRIMEIRO (ETAPAS, resolveEtapaKey, etapaCor, etapaLabel — vários módulos dependem) -->
-<script src="js/edr-v2-obras.js?v=04050420"></script>
+<script src="js/edr-v2-obras.js?v=04050423"></script>
 <!-- 3. PDF engine (PdfModule — chamado por vários módulos) -->
-<script src="js/edr-v2-pdf.js?v=04050420"></script>
+<script src="js/edr-v2-pdf.js?v=04050423"></script>
 <!-- 4. Módulos core de negócio -->
-<script src="js/edr-v2-notas.js?v=04050420"></script>
-<script src="js/edr-v2-importar.js?v=04050420"></script>
-<script src="js/edr-v2-estoque.js?v=04050420"></script>
-<script src="js/edr-v2-custos.js?v=04050420"></script>
+<script src="js/edr-v2-notas.js?v=04050423"></script>
+<script src="js/edr-v2-importar.js?v=04050423"></script>
+<script src="js/edr-v2-estoque.js?v=04050423"></script>
+<script src="js/edr-v2-custos.js?v=04050423"></script>
 <!-- 5. Equipe e operacional -->
-<script src="js/edr-v2-diarias.js?v=04050420"></script>
-<script src="js/edr-v2-diario.js?v=04050420"></script>
+<script src="js/edr-v2-diarias.js?v=04050423"></script>
+<script src="js/edr-v2-diario.js?v=04050423"></script>
 <!-- 6. Relatórios e dashboard (dependem de obras.js pra etapaCor) -->
-<script src="js/edr-v2-relatorio.js?v=04050420"></script>
-<script src="js/edr-v2-dashboard.js?v=04050420"></script>
+<script src="js/edr-v2-relatorio.js?v=04050423"></script>
+<script src="js/edr-v2-dashboard.js?v=04050423"></script>
 <!-- 7. Módulos complementares -->
-<script src="js/edr-v2-leads.js?v=04050420"></script>
-<script src="js/edr-v2-garantias.js?v=04050420"></script>
-<script src="js/edr-v2-adicionais.js?v=04050420"></script>
-<script src="js/edr-v2-cronograma.js?v=04050420"></script>
-<script src="js/edr-v2-orcamento.js?v=04050420"></script>
+<script src="js/edr-v2-leads.js?v=04050423"></script>
+<script src="js/edr-v2-garantias.js?v=04050423"></script>
+<script src="js/edr-v2-adicionais.js?v=04050423"></script>
+<script src="js/edr-v2-cronograma.js?v=04050423"></script>
+<script src="js/edr-v2-orcamento.js?v=04050423"></script>
 <!-- 8. Documentação e medições -->
-<script src="js/edr-v2-termo-manual.js?v=04050420"></script>
-<script src="js/edr-v2-pci.js?v=04050420"></script>
+<script src="js/edr-v2-termo-manual.js?v=04050423"></script>
+<script src="js/edr-v2-pci.js?v=04050423"></script>
 <!-- 9. Auth (login, sessão, refresh — ÚLTIMO) -->
-<script src="js/edr-v2-auth.js?v=04050420"></script>
+<script src="js/edr-v2-auth.js?v=04050423"></script>
 
 <!-- ═══════════════════════════════════════════════════════════════ -->
 <!-- MODAIS (Fase 0 — containers para módulos que precisam)        -->
