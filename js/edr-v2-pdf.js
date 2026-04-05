@@ -498,6 +498,136 @@ const PdfModule = {
 
     const nomeArquivo = 'cronograma-' + obraNome.toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + new Date().toISOString().split('T')[0] + '.pdf';
     this._gerarPdf({ content }, nomeArquivo);
+  },
+
+  // ══════════════════════════════════════════════════════════
+  // 5. BOLETIM DE MEDIÇÃO — PCI / CEF
+  // ══════════════════════════════════════════════════════════
+
+  gerarPCI(dados) {
+    if (!dados || !dados.length) { showToast('Sem dados de medicao'); return; }
+
+    const tblLayout = {
+      hLineWidth: (i, n) => i === 0 || i === 1 || i === n.table.body.length ? 0.5 : 0,
+      hLineColor: () => '#d1d5db',
+      vLineWidth: () => 0,
+      paddingLeft: () => 6, paddingRight: () => 6,
+      paddingTop: () => 3, paddingBottom: () => 3
+    };
+
+    const totalExec  = dados.reduce((s, o) => s + (o.execTotal || 0), 0) / dados.length;
+    const totalMens  = dados.reduce((s, o) => s + (o.valorMensal || 0), 0);
+    const totalContr = dados.reduce((s, o) => s + (Number(o.valor) || 0), 0);
+
+    const content = [];
+    content.push({ text: 'BOLETIM DE MEDICAO — PCI / CEF', style: 'titulo' });
+    content.push({ text: 'EDR ENGENHARIA', style: 'subtitulo' });
+    content.push({ text: 'Emitido em ' + new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }), style: 'data' });
+    content.push({ text: ' ', margin: [0, 6] });
+
+    // Resumo geral
+    content.push({
+      columns: [
+        { text: [{ text: 'OBRAS\n', style: 'small' }, { text: String(dados.length), style: 'bold', fontSize: 16 }], width: '*', alignment: 'center' },
+        { text: [{ text: 'EXEC. MEDIA\n', style: 'small' }, { text: totalExec.toFixed(1) + '%', style: 'verde', fontSize: 16 }], width: '*', alignment: 'center' },
+        { text: [{ text: 'VALOR MENSAL\n', style: 'small' }, { text: this._fmtR(totalMens), style: 'moneyBold', fontSize: 14 }], width: '*', alignment: 'center' },
+        { text: [{ text: 'TOTAL CONTRATOS\n', style: 'small' }, { text: this._fmtR(totalContr), style: 'bold', fontSize: 14 }], width: '*', alignment: 'center' }
+      ]
+    });
+
+    content.push(this._linha());
+
+    // Detalhe por obra
+    dados.forEach((obra, idx) => {
+      if (idx > 0) content.push({ text: ' ', margin: [0, 6] });
+
+      const entregaFmt = obra.entrega ? new Date(obra.entrega + 'T00:00:00').toLocaleDateString('pt-BR') : '—';
+      content.push({
+        columns: [
+          { text: obra.nome || 'Obra', style: 'h2', margin: [0, 0, 0, 0], width: '*' },
+          { text: 'Entrega: ' + entregaFmt, style: 'small', width: 'auto', margin: [0, 2, 0, 0] }
+        ],
+        margin: [0, 8, 0, 2]
+      });
+
+      // Barra execução + resumo financeiro
+      const exec = obra.execTotal || 0;
+      content.push({
+        columns: [
+          this._barra(exec, 280),
+          { text: exec.toFixed(1) + '% executado', style: 'small', width: 'auto', margin: [6, 0, 0, 0] }
+        ],
+        margin: [0, 0, 0, 4]
+      });
+
+      content.push({
+        columns: [
+          { text: [{ text: 'Contrato: ', style: 'small' }, { text: obra.valor ? this._fmtR(obra.valor) : '—', style: 'bold' }], width: '*' },
+          { text: [{ text: 'Medido anterior: ', style: 'small' }, { text: obra.medidoAnterior ? this._fmtR(obra.medidoAnterior) : '—', style: 'normal' }], width: '*' },
+          { text: [{ text: 'Medicao mensal: ', style: 'small' }, { text: obra.valorMensal ? this._fmtR(obra.valorMensal) : '—', style: 'verde' }], width: '*' }
+        ],
+        margin: [0, 0, 0, 6]
+      });
+
+      // Tabela de etapas
+      if (obra.etapas && obra.etapas.length) {
+        const etBody = [[
+          { text: 'ETAPA CEF', style: 'small', bold: true },
+          { text: 'PESO', style: 'small', bold: true, alignment: 'right' },
+          { text: 'EXEC %', style: 'small', bold: true, alignment: 'right' },
+          { text: 'VALOR', style: 'small', bold: true, alignment: 'right' }
+        ]];
+
+        obra.etapas.forEach(e => {
+          const cor = e.exec >= 80 ? '#2D6A4F' : e.exec >= 40 ? '#B7791F' : '#374151';
+          etBody.push([
+            { text: e.nome, style: 'small' },
+            { text: e.peso.toFixed(2) + '%', style: 'small', alignment: 'right' },
+            { text: e.exec + '%', fontSize: 9, bold: true, color: cor, alignment: 'right' },
+            { text: e.valor > 0 ? this._fmtR(e.valor * e.exec / 100) : '—', style: 'small', alignment: 'right' }
+          ]);
+        });
+
+        content.push({
+          table: { headerRows: 1, widths: ['*', 45, 45, 'auto'], body: etBody },
+          layout: tblLayout
+        });
+      }
+
+      // Histórico de medições
+      if (obra.historico && obra.historico.length) {
+        content.push({ text: 'HISTORICO DE MEDICOES', style: 'h3' });
+        const histBody = [[
+          { text: 'DATA', style: 'small', bold: true },
+          { text: 'MEDICAO', style: 'small', bold: true, alignment: 'right' },
+          { text: 'EXEC %', style: 'small', bold: true, alignment: 'right' }
+        ]];
+        obra.historico.forEach(h => {
+          const dataFmt = h.data ? new Date(h.data + 'T00:00:00').toLocaleDateString('pt-BR') : '—';
+          histBody.push([
+            { text: dataFmt, style: 'small' },
+            { text: h.valor != null ? this._fmtR(h.valor) : '—', style: 'small', alignment: 'right' },
+            { text: h.exec != null ? h.exec + '%' : '—', style: 'small', alignment: 'right' }
+          ]);
+        });
+        content.push({
+          table: { headerRows: 1, widths: ['*', 'auto', 60], body: histBody },
+          layout: {
+            hLineWidth: (i) => i === 0 || i === 1 ? 0.3 : 0,
+            hLineColor: () => '#e5e7eb',
+            vLineWidth: () => 0,
+            paddingLeft: () => 4, paddingRight: () => 4,
+            paddingTop: () => 2, paddingBottom: () => 2
+          },
+          margin: [10, 0, 0, 0]
+        });
+      }
+    });
+
+    content.push(...this._rodape());
+
+    const hoje = new Date().toISOString().split('T')[0];
+    this._gerarPdf({ content }, `pci-medicao-${hoje}.pdf`);
   }
 };
 
@@ -505,3 +635,4 @@ const PdfModule = {
 function pdfRelatorio()  { PdfModule.gerarRelatorio(); }
 function pdfDiarias()    { PdfModule.gerarDiarias(); }
 function cronGerarPDF()  { PdfModule.gerarCronograma(); }
+function pciGerarPDF()   { if (typeof PciModule !== 'undefined') PciModule._gerarPdf(); }
