@@ -687,16 +687,16 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
 /* ── ESTOQUE CARDS ───────────────────────── */
 .mat-card {
   background: var(--card); border: 1px solid var(--border);
-  border-radius: var(--radius-md); padding: 16px;
-  margin-bottom: 8px; transition: box-shadow .15s;
+  border-radius: var(--radius-md); padding: 10px 12px;
+  margin-bottom: 4px; transition: box-shadow .15s;
 }
 .mat-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,.06); }
 .mat-card-top {
   display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
 }
 .mat-card-name {
-  font-size: 14px; font-weight: 600; color: var(--text-primary);
-  flex: 1; line-height: 1.4;
+  font-size: 13px; font-weight: 600; color: var(--text-primary);
+  flex: 1; line-height: 1.3;
 }
 .mat-card-code {
   font-family: 'Space Grotesk', monospace; font-size: 11px;
@@ -705,13 +705,13 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
 }
 .mat-card-saldo { text-align: right; flex-shrink: 0; }
 .mat-card-saldo-num {
-  font-family: 'Space Grotesk', monospace; font-size: 20px; font-weight: 700;
+  font-family: 'Space Grotesk', monospace; font-size: 16px; font-weight: 700;
 }
 .mat-card-saldo-num.positivo { color: var(--primary); }
 .mat-card-saldo-num.negativo { color: var(--error); }
 .mat-card-saldo-num.zero { color: var(--text-tertiary); }
 .mat-card-saldo-un { font-size: 11px; color: var(--text-tertiary); text-align: right; }
-.mat-card-tags { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 8px; }
+.mat-card-tags { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; }
 .mat-tag {
   font-size: 10px; font-weight: 600; padding: 2px 8px;
   border-radius: 4px; letter-spacing: .3px;
@@ -726,7 +726,7 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
   font-size: 11px; color: var(--text-tertiary); margin-top: 4px;
 }
 .mat-card-meta span { color: var(--border); margin: 0 2px; }
-.mat-card-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+.mat-card-actions { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
 .mat-action-btn {
   display: inline-flex; align-items: center; gap: 4px;
   font-size: 11px; font-weight: 600; color: var(--text-secondary);
@@ -1071,35 +1071,49 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
 .tab-btn.tab-active,.tab-active { border-bottom-color:var(--primary);color:var(--primary); }
 
 /* ── OBRAS CARDS ── */
-.obra-card { background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;cursor:pointer;transition:border-color .15s,box-shadow .15s;display:flex;flex-direction:column;gap:10px; }
-.obra-card:hover { border-color:var(--primary);box-shadow:0 4px 16px rgba(0,0,0,.12); }
-.obra-card-header { display:flex;justify-content:space-between;align-items:flex-start;gap:12px; }
-.obra-card-name { font-size:15px;font-weight:700;color:var(--text-primary);font-family:'Plus Jakarta Sans',sans-serif; }
-.obra-card-city { font-size:12px;color:var(--text-tertiary);display:flex;align-items:center;gap:4px;margin-top:2px; }
-.obra-card-value { font-size:16px;font-weight:700;color:var(--primary);text-align:right;font-family:'Space Grotesk',monospace; }
-.obra-card-count { font-size:11px;color:var(--text-secondary);text-align:right; }
-.etapa-chips { display:flex;gap:6px;flex-wrap:wrap; }
-.etapa-chip { font-size:10px;font-weight:600;padding:3px 8px;border-radius:var(--radius-sm);background:rgba(45,106,79,.08);color:var(--primary);border:1px solid rgba(45,106,79,.15);letter-spacing:.3px;font-family:'Space Grotesk',monospace; }
-.obra-card-footer { display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border);padding-top:10px;margin-top:auto; }
-.obra-card-date { font-size:11px;color:var(--text-tertiary);display:flex;align-items:center;gap:4px; }
-.obra-card-actions { display:flex;gap:6px;align-items:center; }
-.obra-action-btn { font-size:11px;font-weight:600;padding:4px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;transition:all .15s; }
+.obra-card { background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;cursor:pointer;transition:border-color .15s,box-shadow .15s;display:flex;flex-direction:column;gap:6px; }
+.obra-card:hover { border-color:var(--primary);box-shadow:0 2px 8px rgba(0,0,0,.08); }
+.obra-card-header { display:flex;justify-content:space-between;align-items:flex-start;gap:8px; }
+.obra-card-name { font-size:14px;font-weight:700;color:var(--text-primary);font-family:'Plus Jakarta Sans',sans-serif; }
+.obra-card-city { font-size:11px;color:var(--text-tertiary);display:flex;align-items:center;gap:3px;margin-top:1px; }
+.obra-card-value { font-size:14px;font-weight:700;color:var(--primary);text-align:right;font-family:'Space Grotesk',monospace; }
+.obra-card-count { font-size:10px;color:var(--text-secondary);text-align:right; }
+.etapa-chips { display:flex;gap:4px;flex-wrap:wrap; }
+.etapa-chip { font-size:9px;font-weight:600;padding:2px 6px;border-radius:4px;background:rgba(45,106,79,.08);color:var(--primary);border:1px solid rgba(45,106,79,.12);letter-spacing:.3px;font-family:'Space Grotesk',monospace; }
+.obra-card-footer { display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border);padding-top:6px;margin-top:auto; }
+.obra-card-date { font-size:10px;color:var(--text-tertiary);display:flex;align-items:center;gap:3px; }
+.obra-card-actions { display:flex;gap:4px;align-items:center; }
+.obra-action-btn { font-size:10px;font-weight:600;padding:3px 8px;border-radius:4px;border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;transition:all .15s; }
 .obra-action-btn:hover { border-color:var(--primary);color:var(--primary); }
 .obra-action-edit { color:var(--primary); }
 .obra-action-complete { color:var(--warning); }
-.obra-card-link { font-size:12px;font-weight:600;color:var(--primary);display:flex;align-items:center;gap:2px; }
+.obra-card-link { font-size:11px;font-weight:600;color:var(--primary);display:flex;align-items:center;gap:2px; }
+
+/* ── LANÇAMENTOS (obras detalhe) ── */
+.lanc-item { display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;transition:background .1s; }
+.lanc-item:hover { background:rgba(45,106,79,.03); }
+.lanc-item-left { flex:1;min-width:0; }
+.lanc-item-desc { font-size:13px;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.lanc-item-meta { display:flex;align-items:center;gap:6px;margin-top:2px;font-size:11px;color:var(--text-tertiary);flex-wrap:wrap; }
+.lanc-item-right { display:flex;align-items:center;gap:8px;flex-shrink:0; }
+.lanc-item-value { font-size:13px;font-weight:700;color:var(--primary);font-family:'Space Grotesk',monospace; }
+.lanc-item-actions { display:flex;gap:2px; }
+.lanc-action-btn { background:none;border:none;color:var(--text-tertiary);cursor:pointer;padding:2px;border-radius:4px;transition:color .15s; }
+.lanc-action-btn:hover { color:var(--primary); }
+.lanc-summary-count { font-size:12px;color:var(--text-secondary); }
+.lanc-summary-value { font-size:13px;font-weight:700;color:var(--primary);font-family:'Space Grotesk',monospace; }
 
 /* ── CUSTOS CARDS ── */
-.custos-card { background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;cursor:pointer;transition:border-color .15s,box-shadow .15s;display:flex;flex-direction:column;gap:10px; }
-.custos-card:hover { border-color:var(--primary);box-shadow:0 4px 16px rgba(0,0,0,.12); }
+.custos-card { background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;cursor:pointer;transition:border-color .15s,box-shadow .15s;display:flex;flex-direction:column;gap:6px; }
+.custos-card:hover { border-color:var(--primary);box-shadow:0 2px 8px rgba(0,0,0,.08); }
 .custos-card-top { display:flex;justify-content:space-between;align-items:flex-start; }
-.custos-card-nome { font-size:15px;font-weight:700;color:var(--text-primary);font-family:'Plus Jakarta Sans',sans-serif; }
-.custos-card-cidade { font-size:12px;color:var(--text-tertiary); }
-.custos-card-valor { font-size:16px;font-weight:700;color:var(--primary);font-family:'Space Grotesk',monospace; }
-.custos-card-grid { display:grid;grid-template-columns:1fr 1fr;gap:8px; }
-.custos-card-metric { padding:8px 10px;border-radius:var(--radius-sm);background:rgba(45,106,79,.04);border:1px solid rgba(45,106,79,.08); }
-.custos-card-metric-label { font-size:9px;font-weight:700;color:var(--text-tertiary);letter-spacing:1px;font-family:'Space Grotesk',monospace; }
-.custos-card-metric-value { font-size:13px;font-weight:700;margin-top:2px;font-family:'Space Grotesk',monospace; }
+.custos-card-nome { font-size:14px;font-weight:700;color:var(--text-primary);font-family:'Plus Jakarta Sans',sans-serif; }
+.custos-card-cidade { font-size:11px;color:var(--text-tertiary); }
+.custos-card-valor { font-size:14px;font-weight:700;color:var(--primary);font-family:'Space Grotesk',monospace; }
+.custos-card-grid { display:grid;grid-template-columns:1fr 1fr;gap:4px; }
+.custos-card-metric { padding:5px 8px;border-radius:4px;background:rgba(45,106,79,.04);border:1px solid rgba(45,106,79,.08); }
+.custos-card-metric-label { font-size:9px;font-weight:700;color:var(--text-tertiary);letter-spacing:.8px;font-family:'Space Grotesk',monospace; }
+.custos-card-metric-value { font-size:12px;font-weight:700;margin-top:1px;font-family:'Space Grotesk',monospace; }
 .custos-card-metric-value.green { color:var(--success); }
 .custos-card-metric-value.blue { color:#3b82f6; }
 .custos-card-metric-value.purple { color:#8b5cf6; }
@@ -1115,10 +1129,10 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
 /* ── CUSTOS DETALHE ── */
 .custos-contrato-empty { display:flex;align-items:center;gap:8px;padding:16px;color:var(--text-tertiary);font-size:13px;border:1px dashed var(--border);border-radius:var(--radius);background:var(--surface); }
 .custos-link-btn { background:none;border:none;color:var(--primary);cursor:pointer;font-weight:600;text-decoration:underline; }
-.custos-contrato-card { background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px; }
-.custos-contrato-header { display:flex;justify-content:space-between;align-items:center;margin-bottom:4px; }
+.custos-contrato-card { background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px; }
+.custos-contrato-header { display:flex;justify-content:space-between;align-items:center;margin-bottom:2px; }
 .custos-contrato-title { display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--text-primary);letter-spacing:.5px;font-family:'Space Grotesk',monospace; }
-.custos-contrato-valor { font-size:20px;font-weight:800;color:var(--primary);font-family:'Space Grotesk',monospace; }
+.custos-contrato-valor { font-size:18px;font-weight:800;color:var(--primary);font-family:'Space Grotesk',monospace; }
 .custos-contrato-stats { display:flex;justify-content:space-between;font-size:12px;color:var(--text-secondary);margin-bottom:10px; }
 .custos-contrato-tags { display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px; }
 .custos-contrato-tag { font-size:11px;font-weight:600;padding:4px 10px;border-radius:var(--radius-sm);border:1px solid var(--border); }
@@ -1149,21 +1163,21 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
 
 /* ── CUSTOS HISTORICO ── */
 .custos-historico-title { display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;letter-spacing:.5px;color:var(--text-primary);margin-bottom:12px;font-family:'Space Grotesk',monospace; }
-.custos-historico-mes { background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;margin-bottom:8px; }
-.custos-historico-mes-header { display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--text-primary);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,.04); }
+.custos-historico-mes { background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:8px 12px;margin-bottom:6px; }
+.custos-historico-mes-header { display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--text-primary);margin-bottom:4px;padding-bottom:4px;border-bottom:1px solid rgba(255,255,255,.04); }
 .custos-historico-item { display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:12px;color:var(--text-secondary); }
 .green { color:var(--success); }
 .blue { color:#3b82f6; }
 .purple { color:#8b5cf6; }
 
 /* ── DIÁRIAS REGISTROS ── */
-.diar-registro-dia { background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;overflow:hidden; }
-.diar-registro-header { display:flex;justify-content:space-between;align-items:center;padding:10px 14px;cursor:pointer;user-select:none;transition:background .15s; }
+.diar-registro-dia { background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:6px;overflow:hidden; }
+.diar-registro-header { display:flex;justify-content:space-between;align-items:center;padding:8px 12px;cursor:pointer;user-select:none;transition:background .15s; }
 .diar-registro-header:hover { background:rgba(45,106,79,.04); }
 .diar-registro-data { font-size:13px;font-weight:700;color:var(--text-primary);letter-spacing:.3px; }
 .diar-registro-count { font-size:11px;color:var(--text-tertiary);font-family:'Space Grotesk',monospace; }
-.diar-dia-body { padding:0 14px 10px; }
-.diar-registro-row { display:grid;grid-template-columns:1fr 2fr auto;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px; }
+.diar-dia-body { padding:0 12px 8px; }
+.diar-registro-row { display:grid;grid-template-columns:1fr 2fr auto;gap:6px;align-items:center;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:12px; }
 .diar-registro-row:last-child { border-bottom:none; }
 .diar-rr-nome { font-weight:600;color:var(--text-primary); }
 .diar-rr-obras { font-size:12px;color:var(--text-secondary);display:flex;align-items:center;gap:4px;flex-wrap:wrap; }
@@ -2321,35 +2335,35 @@ function updateShellUser(nome, perfil) {
 
 <!-- ═══════ MODULOS V2 (ordem de dependência) ═══════ -->
 <!-- 0. Infraestrutura: sbGet/sbPost/sbPatch/sbDelete, confirmar(), showModal, usuarioAtual -->
-<script src="js/edr-v2-infra.js?v=04050319"></script>
+<script src="js/edr-v2-infra.js?v=04050340"></script>
 <!-- 1. Utilitários globais (valorPorExtenso, fmtN) -->
-<script src="js/edr-v2-utils-extras.js?v=04050319"></script>
+<script src="js/edr-v2-utils-extras.js?v=04050340"></script>
 <!-- 2. Obras PRIMEIRO (ETAPAS, resolveEtapaKey, etapaCor, etapaLabel — vários módulos dependem) -->
-<script src="js/edr-v2-obras.js?v=04050319"></script>
+<script src="js/edr-v2-obras.js?v=04050340"></script>
 <!-- 3. PDF engine (PdfModule — chamado por vários módulos) -->
-<script src="js/edr-v2-pdf.js?v=04050319"></script>
+<script src="js/edr-v2-pdf.js?v=04050340"></script>
 <!-- 4. Módulos core de negócio -->
-<script src="js/edr-v2-notas.js?v=04050319"></script>
-<script src="js/edr-v2-importar.js?v=04050319"></script>
-<script src="js/edr-v2-estoque.js?v=04050319"></script>
-<script src="js/edr-v2-custos.js?v=04050319"></script>
+<script src="js/edr-v2-notas.js?v=04050340"></script>
+<script src="js/edr-v2-importar.js?v=04050340"></script>
+<script src="js/edr-v2-estoque.js?v=04050340"></script>
+<script src="js/edr-v2-custos.js?v=04050340"></script>
 <!-- 5. Equipe e operacional -->
-<script src="js/edr-v2-diarias.js?v=04050319"></script>
-<script src="js/edr-v2-diario.js?v=04050319"></script>
+<script src="js/edr-v2-diarias.js?v=04050340"></script>
+<script src="js/edr-v2-diario.js?v=04050340"></script>
 <!-- 6. Relatórios e dashboard (dependem de obras.js pra etapaCor) -->
-<script src="js/edr-v2-relatorio.js?v=04050319"></script>
-<script src="js/edr-v2-dashboard.js?v=04050319"></script>
+<script src="js/edr-v2-relatorio.js?v=04050340"></script>
+<script src="js/edr-v2-dashboard.js?v=04050340"></script>
 <!-- 7. Módulos complementares -->
-<script src="js/edr-v2-leads.js?v=04050319"></script>
-<script src="js/edr-v2-garantias.js?v=04050319"></script>
-<script src="js/edr-v2-adicionais.js?v=04050319"></script>
-<script src="js/edr-v2-cronograma.js?v=04050319"></script>
-<script src="js/edr-v2-orcamento.js?v=04050319"></script>
+<script src="js/edr-v2-leads.js?v=04050340"></script>
+<script src="js/edr-v2-garantias.js?v=04050340"></script>
+<script src="js/edr-v2-adicionais.js?v=04050340"></script>
+<script src="js/edr-v2-cronograma.js?v=04050340"></script>
+<script src="js/edr-v2-orcamento.js?v=04050340"></script>
 <!-- 8. Documentação e medições -->
-<script src="js/edr-v2-termo-manual.js?v=04050319"></script>
-<script src="js/edr-v2-pci.js?v=04050319"></script>
+<script src="js/edr-v2-termo-manual.js?v=04050340"></script>
+<script src="js/edr-v2-pci.js?v=04050340"></script>
 <!-- 9. Auth (login, sessão, refresh — ÚLTIMO) -->
-<script src="js/edr-v2-auth.js?v=04050319"></script>
+<script src="js/edr-v2-auth.js?v=04050340"></script>
 
 <!-- ═══════════════════════════════════════════════════════════════ -->
 <!-- MODAIS (Fase 0 — containers para módulos que precisam)        -->
