@@ -277,7 +277,7 @@ function obrasSwitchTab(tab) {
   if (tab === 'mat') renderObrasMateriais();
   if (tab === 'add') {
     const addContainer = document.getElementById('adicionais-lista');
-    if (addContainer && typeof AdicionaisModule !== 'undefined') AdicionaisModule.render(ObrasModule.obraAtual, addContainer);
+    if (addContainer && typeof AdicionaisModule !== 'undefined') AdicionaisModule.render(ObrasModule.obraAberta, addContainer);
   }
   if (tab === 'cef') renderObraCef();
 }
