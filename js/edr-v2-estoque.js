@@ -1409,7 +1409,12 @@ function catalogoToggleAuto() {
 
 let _valorEstoqueAtual = 0;
 function calcularValorEstoque() {
-  if (!EstoqueModule._consolidado.length) consolidarEstoque();
+  // Sincronizar catalogo da global se disponivel
+  if (typeof catalogoMateriais !== 'undefined' && !EstoqueModule.catalogoMateriais.length) {
+    EstoqueModule.catalogoMateriais = catalogoMateriais;
+  }
+  // Sempre reconsolidar sem filtro de obra pra ter o total geral
+  consolidarEstoque();
   _valorEstoqueAtual = EstoqueModule._valorTotal;
   return _valorEstoqueAtual;
 }
