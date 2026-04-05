@@ -239,7 +239,7 @@ const OrcamentoModule = {
     let totalModelo = 0;
 
     lancModelo.forEach(function(l) {
-      const etapa = l.etapa || '36_outros';
+      const etapa = (typeof resolveEtapaKey === 'function') ? resolveEtapaKey(l.etapa || '36_outros') : (l.etapa || '36_outros');
       if (!porEtapa[etapa]) porEtapa[etapa] = { total: 0, itens: [] };
       const val = Number(l.total || 0);
       porEtapa[etapa].total += val;
