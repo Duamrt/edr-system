@@ -669,6 +669,64 @@ async function autocadastrarMateriais(itens) {
   return novos;
 }
 
+// ── VERIFICAÇÃO DE FORNECEDOR DUPLICADO ─────────────────────────
+// Retorna o fornecedor existente (nome + cnpj) se nome normalizado ou CNPJ já estiver cadastrado
+// com grafia diferente. Retorna null se nenhum conflito.
+function _detectarFornDuplicado(novoNome, novoCnpj) {
+  const normNovo = norm(novoNome);
+  const cnpjNovo = (novoCnpj || '').replace(/\D/g, '');
+  const mapa = {};
+  notas.forEach(n => {
+    if (!n.fornecedor) return;
+    const chave = norm(n.fornecedor);
+    if (!mapa[chave]) mapa[chave] = { nome: n.fornecedor, cnpj: (n.cnpj || '').replace(/\D/g, '') };
+  });
+  // 1) Mesmo CNPJ com nome diferente (normalizado)
+  if (cnpjNovo.length >= 11) {
+    const porCnpj = Object.values(mapa).find(f => f.cnpj === cnpjNovo && norm(f.nome) !== normNovo);
+    if (porCnpj) return porCnpj;
+  }
+  // 2) Mesmo nome normalizado com grafia diferente
+  const porNome = mapa[normNovo];
+  if (porNome && porNome.nome !== novoNome) return porNome;
+  return null;
+}
+
+// Exibe modal de conflito e retorna: 'usar' | 'cancelar'
+async function _alertarFornDuplicado(existente, novoNome, novoCnpj) {
+  const cnpjExib = existente.cnpj ? ` · CNPJ: ${existente.cnpj}` : '';
+  return new Promise(resolve => {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay active';
+    overlay.innerHTML = `
+      <div class="modal-box" style="max-width:460px;">
+        <div class="modal-header">
+          <span class="modal-title" style="color:var(--amarelo,#f59e0b);">⚠ Fornecedor já cadastrado</span>
+          <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+        <div class="modal-body" style="line-height:1.7;font-size:13px;">
+          <p>O fornecedor digitado:</p>
+          <p style="font-weight:700;color:var(--text-primary);margin:4px 0 12px 0;">"${esc(novoNome)}"</p>
+          <p>já existe no sistema como:</p>
+          <p style="font-weight:700;color:var(--verde-hl);margin:4px 0 12px 0;">"${esc(existente.nome)}"${esc(cnpjExib)}</p>
+          <p style="color:var(--texto3);">Usar o cadastro existente garante agrupamento correto nos relatórios.</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn" style="color:var(--text-secondary);" id="_fdup-cancelar">Cancelar</button>
+          <button class="btn btn-primary" id="_fdup-usar">Usar fornecedor existente</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    overlay.querySelector('#_fdup-usar').onclick = () => { overlay.remove(); resolve('usar'); };
+    overlay.querySelector('#_fdup-cancelar').onclick = () => { overlay.remove(); resolve('cancelar'); };
+    overlay.querySelector('.modal-close').onclick = () => { overlay.remove(); resolve('cancelar'); };
+    overlay.addEventListener('keydown', e => { if (e.key === 'Escape') { overlay.remove(); resolve('cancelar'); } });
+  });
+}
+
 // salvarNota aceita JSON (desacoplado do HTML pra futuro XML import)
 async function salvarNota(notaData) {
   let numero, fornecedor, emissao, recebimento, cnpjVal, destino, natureza, frete, obs, itens;
@@ -702,6 +760,19 @@ async function salvarNota(notaData) {
   // Validacoes
   if (!fornecedor || !emissao || !numero) { showToast('Preencha fornecedor, numero da nota e data.'); return false; }
   if (!itens.length) { showToast('Adicione pelo menos um item.'); return false; }
+
+  // Trava de fornecedor duplicado
+  const _fornDup = _detectarFornDuplicado(fornecedor, cnpjVal);
+  if (_fornDup) {
+    const acao = await _alertarFornDuplicado(_fornDup, fornecedor, cnpjVal);
+    if (acao !== 'usar') return false; // cancelado — usuário deve corrigir o campo
+    fornecedor = _fornDup.nome;
+    if (_fornDup.cnpj && !cnpjVal) cnpjVal = _fornDup.cnpj;
+    const fEl = document.getElementById('f-fornecedor');
+    const cEl = document.getElementById('f-cnpj');
+    if (fEl) fEl.value = fornecedor;
+    if (cEl && _fornDup.cnpj) cEl.value = _fornDup.cnpj;
+  }
 
   if (!cnpjVal) {
     const prosseguir = await confirmar('CNPJ nao informado. Sem CNPJ o lancamento fica incompleto para fins fiscais. Salvar mesmo assim?');

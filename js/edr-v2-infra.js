@@ -94,31 +94,35 @@ async function sbDelete(t, q='') {
   } catch (e) { console.warn('sbDelete falha:', t, e); return false; }
 }
 
-// ── CONFIRMAR (substitui confirm() nativo) ──
+// ── CONFIRMAR (substitui confirm() nativo) — retorna Promise ──
 function confirmar(msg, onSim, onNao) {
-  const overlay = document.createElement('div');
-  overlay.className = 'modal-overlay active';
-  overlay.innerHTML = `
-    <div class="modal-box" style="max-width:420px;">
-      <div class="modal-header">
-        <span class="modal-title">Confirmar</span>
-        <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">
-          <span class="material-symbols-outlined">close</span>
-        </button>
+  return new Promise(resolve => {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay active';
+    overlay.innerHTML = `
+      <div class="modal-box" style="max-width:420px;">
+        <div class="modal-header">
+          <span class="modal-title">Confirmar</span>
+          <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p style="font-size:14px; color:var(--text-primary); line-height:1.6;">${msg}</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn" style="color:var(--text-secondary);" id="_conf-nao">Cancelar</button>
+          <button class="btn btn-primary" id="_conf-sim">Confirmar</button>
+        </div>
       </div>
-      <div class="modal-body">
-        <p style="font-size:14px; color:var(--text-primary); line-height:1.6;">${msg}</p>
-      </div>
-      <div class="modal-footer">
-        <button class="btn" style="color:var(--text-secondary);" id="_conf-nao">Cancelar</button>
-        <button class="btn btn-primary" id="_conf-sim">Confirmar</button>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(overlay);
-  overlay.querySelector('#_conf-sim').onclick = () => { overlay.remove(); if (onSim) onSim(); };
-  overlay.querySelector('#_conf-nao').onclick = () => { overlay.remove(); if (onNao) onNao(); };
-  overlay.addEventListener('keydown', e => { if (e.key === 'Escape') overlay.remove(); });
+    `;
+    document.body.appendChild(overlay);
+    const fechar = (val) => { overlay.remove(); resolve(val); if (val && onSim) onSim(); if (!val && onNao) onNao(); };
+    overlay.querySelector('#_conf-sim').onclick = () => fechar(true);
+    overlay.querySelector('#_conf-nao').onclick = () => fechar(false);
+    overlay.querySelector('.modal-close').onclick = () => fechar(false);
+    overlay.addEventListener('keydown', e => { if (e.key === 'Escape') fechar(false); });
+  });
 }
 
 // ── SHOW MODAL (genérico) ────────────────

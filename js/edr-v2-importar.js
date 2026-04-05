@@ -835,6 +835,23 @@ const ImportModule = {
 
     this._renderPreview();
     showToast(`XML importado: ${nfe.itens.length} itens - ${nfe.fornecedor} - NF ${nfe.numero}`);
+
+    // Alerta de fornecedor duplicado após preencher o form via XML
+    const cnpjXml = (nfe.cnpj || '').replace(/\D/g, '');
+    const fornDup = typeof _detectarFornDuplicado === 'function'
+      ? _detectarFornDuplicado(nfe.fornecedor.trim().toUpperCase(), cnpjXml)
+      : null;
+    if (fornDup) {
+      _alertarFornDuplicado(fornDup, nfe.fornecedor.trim().toUpperCase(), cnpjXml).then(acao => {
+        if (acao === 'usar') {
+          const fEl = document.getElementById('f-fornecedor');
+          const cEl = document.getElementById('f-cnpj');
+          if (fEl) fEl.value = fornDup.nome;
+          if (cEl && fornDup.cnpj) cEl.value = fornDup.cnpj;
+          showToast('Fornecedor substituído pelo cadastro existente.');
+        }
+      });
+    }
   }
 };
 
