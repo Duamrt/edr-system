@@ -1182,20 +1182,89 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
 .blue { color:#3b82f6; }
 .purple { color:#8b5cf6; }
 
-/* ── DIÁRIAS REGISTROS ── */
-.diar-registro-dia { background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:6px;overflow:hidden; }
-.diar-registro-header { display:flex;justify-content:space-between;align-items:center;padding:8px 12px;cursor:pointer;user-select:none;transition:background .15s; }
+/* ── DIÁRIAS LAYOUT ── */
+.diarias-header { position:sticky;top:0;z-index:90;background:var(--bg);padding:10px 16px 8px;border-bottom:1px solid var(--border);margin-bottom:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap; }
+.diarias-header-title { display:flex;align-items:center;gap:8px;font-size:15px;font-weight:800;color:var(--text-primary);letter-spacing:.5px;flex:1;min-width:0; }
+.diarias-quinzena-badge { font-size:10px;font-weight:700;padding:3px 10px;border-radius:var(--radius-sm);background:rgba(34,197,94,.07);border:1px solid rgba(34,197,94,.18);color:var(--primary);font-family:'Space Grotesk',monospace;letter-spacing:.5px;white-space:nowrap; }
+.diarias-main { display:grid;grid-template-columns:300px 1fr;gap:0;min-height:calc(100vh - 100px); }
+.diarias-panel-left { border-right:1px solid var(--border);padding:16px 14px;display:flex;flex-direction:column;gap:14px;overflow-y:auto; }
+.diarias-panel-right { padding:14px 16px;overflow-y:auto; }
+.diarias-panel-title { font-size:10px;font-weight:700;letter-spacing:1.5px;color:var(--text-tertiary);font-family:'Space Grotesk',monospace;text-transform:uppercase;margin-bottom:0; }
+.diarias-date-input { padding:8px 12px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:13px;font-family:inherit;width:100%;box-sizing:border-box; }
+.diarias-date-input:focus { border-color:var(--primary);outline:none; }
+
+/* Textarea mensagem (altura generosa) */
+.diarias-textarea { width:100%;min-height:140px;resize:vertical;padding:11px 13px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:12.5px;font-family:inherit;line-height:1.6;box-sizing:border-box;transition:border-color .15s; }
+.diarias-textarea:focus { border-color:var(--primary);outline:none; }
+
+/* Microfone: botão ghost discreto */
+.btn-diar-mic { background:none;border:1px solid rgba(255,255,255,.08);color:var(--text-tertiary);border-radius:7px;width:30px;height:30px;padding:0;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s; }
+.btn-diar-mic:hover { border-color:rgba(34,197,94,.3);color:var(--primary); }
+.btn-diar-mic.recording { border-color:rgba(239,68,68,.4);color:#ef4444;background:rgba(239,68,68,.08); }
+
+/* Botão interpretar */
+.btn-diarias-interpretar { width:100%;padding:11px;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);color:var(--primary);font-size:11px;font-weight:700;letter-spacing:1.5px;font-family:'Space Grotesk',monospace;border-radius:var(--radius-sm);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:all .15s; }
+.btn-diarias-interpretar:hover { background:rgba(34,197,94,.15);border-color:rgba(34,197,94,.4); }
+
+/* Botão + Adicionar manualmente (discreto) */
+.btn-diar-manual-toggle { background:transparent;border:1px dashed rgba(96,165,250,.2);color:rgba(96,165,250,.6);font-size:11px;font-weight:700;letter-spacing:1px;padding:7px 14px;border-radius:var(--radius-sm);width:100%;cursor:pointer;font-family:'Space Grotesk',monospace;transition:all .15s; }
+.btn-diar-manual-toggle:hover { border-color:rgba(96,165,250,.4);color:#60a5fa; }
+
+/* Preview box */
+.diarias-preview-box { min-height:90px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden; }
+
+/* Botão confirmar — desabilitado sutil, ativo com destaque verde */
+.btn-diarias-confirmar { width:100%;padding:13px;background:rgba(255,255,255,.03);border:2px solid rgba(255,255,255,.07);color:var(--text-tertiary);font-size:11px;font-weight:700;letter-spacing:1.5px;font-family:'Space Grotesk',monospace;border-radius:var(--radius-sm);cursor:not-allowed;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .2s;opacity:.45; }
+.btn-diarias-confirmar:not([disabled]) { background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.45);color:var(--primary);cursor:pointer;opacity:1;box-shadow:0 0 14px rgba(34,197,94,.1); }
+.btn-diarias-confirmar:not([disabled]):hover { background:rgba(34,197,94,.18);border-color:var(--primary);transform:translateY(-1px);box-shadow:0 3px 18px rgba(34,197,94,.18); }
+
+/* Empty states */
+.diarias-empty { text-align:center;padding:32px 20px;color:var(--text-tertiary);opacity:.65; }
+.diarias-empty-icon { margin-bottom:8px; }
+.diarias-empty-text { font-size:12px; }
+
+/* Tabs */
+.diarias-tabs { display:flex;gap:2px;background:rgba(255,255,255,.02);border-radius:var(--radius-sm);padding:3px;border:1px solid var(--border); }
+.diarias-tab { padding:5px 13px;font-size:10px;font-weight:700;letter-spacing:.5px;background:transparent;border:none;border-radius:4px;color:var(--text-tertiary);cursor:pointer;font-family:'Space Grotesk',monospace;transition:all .15s;text-transform:uppercase; }
+.diarias-tab.active { background:rgba(45,106,79,.14);color:var(--primary); }
+
+/* Folha header */
+.diarias-folha-header { display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;padding-bottom:12px;border-bottom:1px solid var(--border);margin-bottom:14px; }
+.diarias-folha-title { font-size:12px;font-weight:700;color:var(--text-secondary);letter-spacing:1px;font-family:'Space Grotesk',monospace;text-transform:uppercase; }
+.btn-diarias-exportar { padding:5px 11px;font-size:10px;font-weight:700;letter-spacing:.5px;background:rgba(255,255,255,.03);border:1px solid var(--border);color:var(--text-secondary);border-radius:var(--radius-sm);cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .15s;font-family:inherit; }
+.btn-diarias-exportar:hover { border-color:var(--primary);color:var(--primary); }
+
+/* ── DIÁRIAS CARDS (lista de registros) ── */
+.diar-registro-dia { background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;overflow:hidden;transition:border-color .15s,box-shadow .15s; }
+.diar-registro-dia:hover { border-color:rgba(45,106,79,.22);box-shadow:0 1px 6px rgba(0,0,0,.06); }
+.diar-registro-header { display:flex;justify-content:space-between;align-items:center;padding:10px 14px;cursor:pointer;user-select:none;transition:background .15s; }
 .diar-registro-header:hover { background:rgba(45,106,79,.04); }
-.diar-registro-data { font-size:13px;font-weight:700;color:var(--text-primary);letter-spacing:.3px; }
-.diar-registro-count { font-size:11px;color:var(--text-tertiary);font-family:'Space Grotesk',monospace; }
-.diar-dia-body { padding:0 12px 8px; }
-.diar-registro-row { display:grid;grid-template-columns:1fr 2fr auto;gap:6px;align-items:center;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:12px; }
+.diar-registro-data { font-size:12px;font-weight:700;color:var(--text-primary);letter-spacing:.3px;display:flex;align-items:center;gap:6px; }
+.diar-registro-count { font-size:10px;color:var(--primary);font-family:'Space Grotesk',monospace;background:rgba(45,106,79,.07);padding:2px 8px;border-radius:var(--radius-sm);border:1px solid rgba(45,106,79,.12);letter-spacing:.3px; }
+.diar-dia-body { padding:4px 14px 12px; }
+.diar-registro-row { display:grid;grid-template-columns:1fr 2fr auto;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.03);font-size:12px; }
 .diar-registro-row:last-child { border-bottom:none; }
 .diar-rr-nome { font-weight:600;color:var(--text-primary); }
-.diar-rr-obras { font-size:12px;color:var(--text-secondary);display:flex;align-items:center;gap:4px;flex-wrap:wrap; }
-.diar-rr-val { font-weight:700;color:var(--primary);font-family:'Space Grotesk',monospace;text-align:right;display:flex;align-items:center;gap:6px;justify-content:flex-end; }
-.diar-faltas-banner { display:flex;align-items:center;gap:6px;padding:8px 12px;margin-top:6px;border-radius:var(--radius-sm);background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.15); }
-.diar-chevron { color:var(--text-tertiary); }
+.diar-rr-obras { font-size:11px;color:var(--text-secondary);display:flex;align-items:center;gap:3px;flex-wrap:wrap; }
+.diar-rr-val { font-weight:700;color:var(--primary);font-family:'Space Grotesk',monospace;text-align:right;display:flex;align-items:center;gap:5px;justify-content:flex-end; }
+.diar-faltas-banner { display:flex;align-items:center;gap:6px;padding:7px 14px;margin-top:4px;border-radius:var(--radius-sm);background:rgba(239,68,68,.05);border:1px solid rgba(239,68,68,.12);font-size:11px; }
+.diar-chevron { color:var(--text-tertiary);font-size:16px!important; }
+
+/* Folha de pagamento table */
+.diar-folha-table { width:100%;border-collapse:collapse;font-size:12px; }
+.diar-folha-table th { font-size:9px;font-weight:700;letter-spacing:1px;color:var(--text-tertiary);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);font-family:'Space Grotesk',monospace;text-transform:uppercase;background:rgba(45,106,79,.02); }
+.diar-folha-table td { padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.03); }
+.diar-folha-table tbody tr:hover { background:rgba(45,106,79,.02); }
+.diar-folha-total-row td { border-top:2px solid var(--border)!important;border-bottom:none!important;font-weight:700;padding:10px; }
+.diar-td-nome { font-weight:600;color:var(--text-primary); }
+.diar-td-val { font-family:'Space Grotesk',monospace;font-weight:700;color:var(--primary);text-align:right; }
+.diar-obras-breakdown { display:flex;flex-wrap:wrap;gap:3px; }
+.diar-obra-tag { font-size:9px;font-weight:600;padding:2px 6px;border-radius:3px;background:rgba(45,106,79,.07);color:var(--primary);border:1px solid rgba(45,106,79,.12);font-family:'Space Grotesk',monospace; }
+
+@media(max-width:768px) {
+  .diarias-main { grid-template-columns:1fr; }
+  .diarias-panel-left { border-right:none;border-bottom:1px solid var(--border); }
+}
 
 /* ── BADGES E BOTÕES AUXILIARES ── */
 .edr-empty { text-align:center;padding:48px;color:var(--text-tertiary); }
@@ -1852,7 +1921,7 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
         <div>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
             <div class="diarias-panel-title" style="margin:0">MENSAGEM DO MESTRE</div>
-            <button onclick="diarToggleVoz()" id="diar-btnMic" title="Gravar por voz" class="btn-tipo btn-tipo-active-danger" style="border-radius:50%;width:36px;height:36px;padding:0;min-height:auto;flex-shrink:0;"><span class="material-symbols-outlined icon-md">mic</span></button>
+            <button onclick="diarToggleVoz()" id="diar-btnMic" title="Gravar por voz" class="btn-diar-mic"><span class="material-symbols-outlined" style="font-size:15px">mic</span></button>
           </div>
           <div id="diar-vozStatus" style="display:none;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:10px 14px;margin-bottom:8px;text-align:center;">
             <div style="display:flex;align-items:center;justify-content:center;gap:8px;">
@@ -1872,7 +1941,7 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
         </button>
         <!-- Link para formulário manual -->
         <div style="text-align:center;margin:12px 0 14px;">
-          <button onclick="diarToggleFormManual()" id="diar-btnFormManual" style="background:#1a2a4a;border:1px solid #2a4a7a;color:#60a5fa;font-size:13px;cursor:pointer;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1.5px;padding:12px 20px;border-radius:10px;width:100%;text-transform:uppercase;transition:all .2s;">+ ADICIONAR MANUALMENTE</button>
+          <button onclick="diarToggleFormManual()" id="diar-btnFormManual" class="btn-diar-manual-toggle">+ Adicionar manualmente</button>
         </div>
         <!-- Formulário manual (escondido por padrão) -->
         <div id="diar-formManual" style="display:none;background:var(--bg3);border:1px solid var(--borda);border-radius:8px;padding:14px;margin-bottom:8px;">
