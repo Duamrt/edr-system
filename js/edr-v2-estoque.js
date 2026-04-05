@@ -381,9 +381,9 @@ function renderEstoque() {
   if (!el) return;
 
   if (!visiveis.length) {
-    el.innerHTML = `<div style="text-align:center;padding:48px;color:var(--text-tertiary);">
-      <span class="material-symbols-outlined" style="font-size:48px;opacity:.3;">inventory_2</span>
-      <p style="margin-top:12px;">Nenhum material encontrado.</p>
+    el.innerHTML = `<div class="empty-state">
+      <span class="material-symbols-outlined icon-3xl">inventory_2</span>
+      <p>Nenhum material encontrado.</p>
     </div>`;
     return;
   }
@@ -412,7 +412,7 @@ function renderEstoque() {
     // Acoes
     let acoes = '';
     if (it.semCodigo) {
-      acoes += `<button class="mat-action-btn" style="border-color:var(--warning);color:var(--warning);" onclick="abrirVincularCodigo('${esc(it.chave)}')">
+      acoes += `<button class="mat-action-btn" style="border-color:var(--warning);color:var(--warning);" onclick="abrirVincularCodigo('${esc(it.chave)}')" title="Vincular codigo">
         <span class="material-symbols-outlined">link</span>Vincular</button>`;
     }
     if (it.saldo > 0) {
@@ -429,7 +429,7 @@ function renderEstoque() {
     return `<div class="mat-card" style="${borderLeft}${opacidade}">
       <div class="mat-card-top">
         <div class="mat-card-name">
-          ${it.codigo ? `<span class="mat-card-code">${esc(it.codigo)}</span>` : `<span style="font-family:'Space Grotesk',sans-serif;font-size:11px;color:var(--warning);font-weight:700;">---</span>`}
+          ${it.codigo ? `<span class="mat-card-code">${esc(it.codigo)}</span>` : `<span class="mat-card-code" style="color:var(--warning);">---</span>`}
           ${esc(it.desc)}
         </div>
         <div class="mat-card-saldo">
@@ -450,7 +450,7 @@ function renderEstoque() {
     if (restantes > 0) {
       loadMore.style.display = '';
       loadMore.innerHTML = `<button class="btn-secondary" onclick="EstoqueModule.page++;renderEstoque();">
-        <span class="material-symbols-outlined" style="font-size:18px;">expand_more</span>
+        <span class="material-symbols-outlined icon-md">expand_more</span>
         Carregar mais (${restantes} restantes)</button>`;
     } else {
       loadMore.style.display = 'none';
@@ -595,22 +595,19 @@ function abrirHistoricoMaterial(chave) {
   if (!content) return;
 
   content.innerHTML = `
-    <div class="modal-title">
-      <span class="material-symbols-outlined" style="color:var(--primary);">history</span>
-      Historico — ${esc(item.desc)}
-      <button class="modal-close" onclick="closeModal('hist-modal')">
-        <span class="material-symbols-outlined">close</span>
-      </button>
+    <div class="modal-title-v2">
+      <h3><span class="material-symbols-outlined">history</span> Historico — ${esc(item.desc)}</h3>
+      <button class="modal-close" onclick="closeModal('hist-modal')"><span class="material-symbols-outlined">close</span></button>
     </div>
     <div class="hist-badges">
-      <span class="hist-badge" style="background:rgba(5,150,105,.08);color:var(--success);border:1px solid rgba(5,150,105,.15);">+${fmt(totalNF)} NF</span>
-      <span class="hist-badge" style="background:rgba(37,99,235,.08);color:var(--info);border:1px solid rgba(37,99,235,.15);">+${fmt(totalDireta)} Direta</span>
-      <span class="hist-badge" style="background:rgba(139,92,246,.08);color:#8b5cf6;border:1px solid rgba(139,92,246,.15);">${totalAjuste >= 0 ? '+' : ''}${fmt(totalAjuste)} Ajuste</span>
-      <span class="hist-badge" style="background:rgba(220,38,38,.08);color:var(--error);border:1px solid rgba(220,38,38,.15);">-${fmt(totalSaida)} Saida</span>
+      <span class="hist-badge hist-badge-nf">+${fmt(totalNF)} NF</span>
+      <span class="hist-badge hist-badge-direta">+${fmt(totalDireta)} Direta</span>
+      <span class="hist-badge hist-badge-ajuste">${totalAjuste >= 0 ? '+' : ''}${fmt(totalAjuste)} Ajuste</span>
+      <span class="hist-badge hist-badge-saida">-${fmt(totalSaida)} Saida</span>
     </div>
-    <div style="text-align:center;padding:16px 0;margin-top:12px;background:var(--primary-surface);border-radius:var(--radius-sm);">
-      <div style="font-family:'Space Grotesk',sans-serif;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-secondary);font-weight:700;">Saldo Final</div>
-      <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:32px;font-weight:800;color:${item.saldo < 0 ? 'var(--error)' : item.saldo > 0 ? 'var(--primary)' : 'var(--text-tertiary)'};">${fmt(item.saldo)} ${esc(item.unidade)}</div>
+    <div class="saldo-final">
+      <div class="saldo-final-label">Saldo Final</div>
+      <div class="saldo-final-value" style="color:${item.saldo < 0 ? 'var(--error)' : item.saldo > 0 ? 'var(--primary)' : 'var(--text-tertiary)'};">${fmt(item.saldo)} ${esc(item.unidade)}</div>
     </div>
     <div class="hist-timeline" style="margin-top:16px;">
       ${movs.map(m => {
@@ -631,11 +628,11 @@ function abrirHistoricoMaterial(chave) {
         </div>`;
       }).join('')}
     </div>
-    <div style="display:flex;gap:8px;margin-top:20px;">
+    <div class="btn-row btn-row-mt">
       ${item.saldo > 0 ? `<button class="btn-primary" style="flex:1;justify-content:center;" onclick="closeModal('hist-modal');abrirDistribuicao('${esc(item.chave)}');">
-        <span class="material-symbols-outlined" style="font-size:18px;">local_shipping</span>Distribuir</button>` : ''}
+        <span class="material-symbols-outlined icon-md">local_shipping</span> Distribuir</button>` : ''}
       <button class="btn-secondary" style="flex:1;justify-content:center;" onclick="closeModal('hist-modal');abrirAjusteEstoque('${esc(item.chave)}');">
-        <span class="material-symbols-outlined" style="font-size:18px;">tune</span>Ajustar Qtd</button>
+        <span class="material-symbols-outlined icon-md">tune</span> Ajustar Qtd</button>
     </div>`;
 
   openModal('hist-modal');
@@ -767,30 +764,27 @@ function abrirDistribuicao(chave) {
     : '';
 
   content.innerHTML = `
-    <div class="modal-title">
-      <span class="material-symbols-outlined" style="color:var(--primary);">local_shipping</span>
-      Distribuir Material
-      <button class="modal-close" onclick="closeModal('dist-modal')">
-        <span class="material-symbols-outlined">close</span>
-      </button>
+    <div class="modal-title-v2">
+      <h3><span class="material-symbols-outlined">local_shipping</span> Distribuir Material</h3>
+      <button class="modal-close" onclick="closeModal('dist-modal')"><span class="material-symbols-outlined">close</span></button>
     </div>
-    <div style="padding:12px 16px;background:var(--border-light);border-radius:var(--radius-sm);margin-bottom:20px;">
-      <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:700;">${esc(item.desc)}</div>
-      <div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">
+    <div class="info-box">
+      <div class="info-box-title">${esc(item.desc)}</div>
+      <div class="info-box-sub">
         ${item.codigo ? `Codigo: ${esc(item.codigo)} · ` : ''}Saldo disponivel: <strong style="color:var(--primary);">${fmt(item.saldo)} ${esc(item.unidade)}</strong>
       </div>
     </div>
     <div class="dist-form-grid">
       <div class="dist-form-field">
         <label class="dist-form-label">Obra Destino</label>
-        <select class="dist-form-input" id="dist-obra" style="padding:0 8px;">
+        <select class="dist-form-input" id="dist-obra">
           <option value="">Selecione a obra...</option>
           ${obrasOpts}
         </select>
       </div>
       <div class="dist-form-field">
         <label class="dist-form-label">Etapa / Centro de Custo</label>
-        <select class="dist-form-input" id="dist-etapa" style="padding:0 8px;">
+        <select class="dist-form-input" id="dist-etapa">
           <option value="">Selecione a etapa...</option>
           ${etapasOpts}
         </select>
@@ -807,7 +801,7 @@ function abrirDistribuicao(chave) {
     ${lotesOrdenados.length ? `
     <div class="dist-fifo-info">
       <div style="font-weight:700;margin-bottom:8px;color:var(--text-primary);">
-        <span class="material-symbols-outlined" style="font-size:16px;vertical-align:text-bottom;color:var(--primary);">info</span>
+        <span class="material-symbols-outlined icon-sm icon-inline" style="color:var(--primary);">info</span>
         Consumo FIFO (nota mais antiga primeiro)
       </div>
       ${lotesOrdenados.map((l, i) => `
@@ -816,10 +810,10 @@ function abrirDistribuicao(chave) {
           <span><strong>${fmt(l.qtd_disponivel)} ${esc(item.unidade)}</strong> disp. · ${fmtR(l.valor_un)}/${esc(item.unidade)}</span>
         </div>`).join('')}
     </div>` : ''}
-    <div style="display:flex;gap:12px;margin-top:24px;">
+    <div class="btn-row btn-row-mt" style="margin-top:24px;">
       <button class="btn-primary" style="flex:1;padding:14px;font-size:15px;justify-content:center;"
         onclick="confirmarDistribuicaoItem('${esc(item.chave)}', document.getElementById('dist-obra').value, document.getElementById('dist-etapa').value, document.getElementById('dist-qtd').value)">
-        <span class="material-symbols-outlined" style="font-size:20px;">check_circle</span>
+        <span class="material-symbols-outlined icon-lg">check_circle</span>
         Confirmar Distribuicao
       </button>
     </div>`;
@@ -907,35 +901,32 @@ function abrirVincularCodigo(chave) {
   const proximoCodigo = codigos.length ? String(Math.max(...codigos) + 1).padStart(6, '0') : '000001';
 
   content.innerHTML = `
-    <div class="modal-title">
-      <span class="material-symbols-outlined" style="color:var(--warning);">link</span>
-      Vincular Codigo — ${esc(item.desc)}
-      <button class="modal-close" onclick="closeModal('vincular-modal')">
-        <span class="material-symbols-outlined">close</span>
-      </button>
+    <div class="modal-title-v2">
+      <h3><span class="material-symbols-outlined" style="color:var(--warning);">link</span> Vincular Codigo — ${esc(item.desc)}</h3>
+      <button class="modal-close" onclick="closeModal('vincular-modal')"><span class="material-symbols-outlined">close</span></button>
     </div>
     ${similares.length ? `
     <div style="margin-bottom:20px;">
       <div class="dist-form-label" style="margin-bottom:8px;">Similares encontrados no catalogo</div>
       <div style="display:flex;flex-direction:column;gap:4px;">
         ${similares.map(s => `
-        <label style="display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;transition:border-color .15s;">
-          <input type="radio" name="vincular-item" value="${esc(s.id)}" style="accent-color:var(--primary);"/>
+        <label class="vincular-option">
+          <input type="radio" name="vincular-item" value="${esc(s.id)}"/>
           <div>
-            <div style="font-size:13px;font-weight:600;">${esc(s.codigo)} — ${esc(s.nome)}</div>
-            <div style="font-size:11px;color:var(--text-tertiary);">${esc(s.categoria || '')} · ${esc(s.unidade || '')} · Saldo: ${fmt(s.saldo || 0)}</div>
+            <div class="vincular-option-name">${esc(s.codigo)} — ${esc(s.nome)}</div>
+            <div class="vincular-option-sub">${esc(s.categoria || '')} · ${esc(s.unidade || '')} · Saldo: ${fmt(s.saldo || 0)}</div>
           </div>
         </label>`).join('')}
       </div>
     </div>
-    <div style="text-align:center;color:var(--text-tertiary);font-size:12px;margin-bottom:16px;">— ou —</div>` : ''}
+    <div class="vincular-divider">— ou —</div>` : ''}
     <button class="btn-secondary" style="width:100%;justify-content:center;" onclick="_criarMaterialEVincular('${esc(item.chave)}', '${proximoCodigo}')">
-      <span class="material-symbols-outlined" style="font-size:18px;">add_circle</span>
+      <span class="material-symbols-outlined icon-md">add_circle</span>
       Criar Novo Material no Catalogo (proximo codigo: ${proximoCodigo})
     </button>
-    <div style="display:flex;gap:12px;margin-top:20px;">
+    <div class="btn-row btn-row-mt">
       <button class="btn-primary" style="flex:1;padding:12px;justify-content:center;" onclick="_vincularSelecionado('${esc(item.chave)}')">
-        <span class="material-symbols-outlined" style="font-size:18px;">link</span>
+        <span class="material-symbols-outlined icon-md">link</span>
         Vincular ao Selecionado
       </button>
     </div>`;
@@ -1059,11 +1050,11 @@ function renderCatalogo() {
     let acoesCol = '';
     if (isAdmin) {
       if (isAuto) {
-        acoesCol += `<button class="cat-action-btn" style="color:var(--success);" onclick="confirmarAutoMaterial('${esc(m.id)}')"><span class="material-symbols-outlined" style="font-size:16px;">check_circle</span></button>`;
+        acoesCol += `<button class="cat-action-btn" style="color:var(--success);" onclick="confirmarAutoMaterial('${esc(m.id)}')"><span class="material-symbols-outlined icon-sm">check_circle</span></button>`;
       }
-      acoesCol += `<button class="cat-action-btn" onclick="editarMaterial('${esc(m.id)}')"><span class="material-symbols-outlined" style="font-size:16px;">edit</span></button>`;
-      acoesCol += `<button class="cat-action-btn" onclick="duplicarMaterial('${esc(m.id)}')"><span class="material-symbols-outlined" style="font-size:16px;">content_copy</span></button>`;
-      acoesCol += `<button class="cat-action-btn" onclick="excluirMaterial('${esc(m.id)}')"><span class="material-symbols-outlined" style="font-size:16px;">delete</span></button>`;
+      acoesCol += `<button class="cat-action-btn" onclick="editarMaterial('${esc(m.id)}')"><span class="material-symbols-outlined icon-sm">edit</span></button>`;
+      acoesCol += `<button class="cat-action-btn" onclick="duplicarMaterial('${esc(m.id)}')"><span class="material-symbols-outlined icon-sm">content_copy</span></button>`;
+      acoesCol += `<button class="cat-action-btn" onclick="excluirMaterial('${esc(m.id)}')"><span class="material-symbols-outlined icon-sm">delete</span></button>`;
     }
 
     // Categoria: se AUTO, mostrar select inline
@@ -1094,7 +1085,7 @@ function renderCatalogo() {
     if (restantes > 0) {
       loadMore.style.display = '';
       loadMore.innerHTML = `<button class="btn-secondary" onclick="EstoqueModule.catPage++;renderCatalogo();">
-        <span class="material-symbols-outlined" style="font-size:18px;">expand_more</span>
+        <span class="material-symbols-outlined icon-md">expand_more</span>
         Carregar mais (${restantes} restantes)</button>`;
     } else {
       loadMore.style.display = 'none';

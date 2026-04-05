@@ -69,9 +69,9 @@ function renderNotas() {
   if (!el) return;
 
   if (!lista.length) {
-    el.innerHTML = `<div style="text-align:center;padding:48px;color:var(--text-tertiary);">
-      <span class="material-symbols-outlined" style="font-size:48px;opacity:.3;">receipt_long</span>
-      <p style="margin-top:12px;">Nenhuma nota fiscal encontrada.</p>
+    el.innerHTML = `<div class="empty-state">
+      <span class="material-symbols-outlined icon-3xl">receipt_long</span>
+      <p>Nenhuma nota fiscal encontrada.</p>
     </div>`;
     return;
   }
@@ -376,9 +376,9 @@ function onFornecedorInput() {
     NotasModule.cachedFornecedores = Object.values(map).slice(0, 6);
     if (!NotasModule.cachedFornecedores.length) { list.classList.add('hidden'); return; }
     list.innerHTML = NotasModule.cachedFornecedores.map((m, i) =>
-      `<div class="autocomplete-item" data-forn-idx="${i}" style="padding:8px 12px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);">
-        <span style="font-size:13px;font-weight:600;color:var(--text-primary);">${esc(m.nome)}</span>
-        <span style="font-size:11px;color:var(--text-tertiary);">${esc(m.cnpj || 'SEM CNPJ')}</span>
+      `<div class="autocomplete-item ac-item" data-forn-idx="${i}">
+        <span class="ac-item-name">${esc(m.nome)}</span>
+        <span class="ac-item-sub">${esc(m.cnpj || 'SEM CNPJ')}</span>
       </div>`
     ).join('');
     list.querySelectorAll('.autocomplete-item').forEach(el => {
@@ -431,11 +431,11 @@ async function onDescInput() {
     badge.className = `nf-credito-badge ${res.credito ? 'nf-credito-sim' : 'nf-credito-nao'}`;
     const fonteLabel = res.fonte === 'catalogo' ? 'Catalogo' : res.fonte === 'historico' ? 'Historico' : 'Auto';
     badge.innerHTML = res.credito
-      ? `<span class="material-symbols-outlined" style="font-size:16px;vertical-align:text-bottom;">verified</span> GERA CREDITO IBS/CBS — ${esc(res.cat)} <span style="font-size:10px;opacity:.6;">(${fonteLabel})</span>`
-      : `<span class="material-symbols-outlined" style="font-size:16px;vertical-align:text-bottom;">block</span> NAO GERA CREDITO — ${esc(res.cat)} <span style="font-size:10px;opacity:.6;">(${fonteLabel})</span>`;
+      ? `<span class="material-symbols-outlined" class="icon-sm icon-inline">verified</span> GERA CREDITO IBS/CBS — ${esc(res.cat)} <span style="font-size:10px;opacity:.6;">(${fonteLabel})</span>`
+      : `<span class="material-symbols-outlined" class="icon-sm icon-inline">block</span> NAO GERA CREDITO — ${esc(res.cat)} <span style="font-size:10px;opacity:.6;">(${fonteLabel})</span>`;
   } else {
     badge.className = 'nf-credito-badge nf-credito-duvida';
-    badge.innerHTML = '<span class="material-symbols-outlined" style="font-size:16px;vertical-align:text-bottom;">help</span> NAO RECONHECIDO — classifique abaixo';
+    badge.innerHTML = '<span class="material-symbols-outlined" class="icon-sm icon-inline">help</span> NAO RECONHECIDO — classifique abaixo';
     mw.classList.remove('hidden');
   }
 
@@ -447,8 +447,8 @@ function classificarManual(credito) {
   const badge = document.getElementById('i-credito-badge');
   badge.className = `nf-credito-badge ${credito ? 'nf-credito-sim' : 'nf-credito-nao'}`;
   badge.innerHTML = credito
-    ? '<span class="material-symbols-outlined" style="font-size:16px;vertical-align:text-bottom;">verified</span> CLASSIFICADO MANUALMENTE — GERA CREDITO'
-    : '<span class="material-symbols-outlined" style="font-size:16px;vertical-align:text-bottom;">block</span> CLASSIFICADO MANUALMENTE — SEM CREDITO';
+    ? '<span class="material-symbols-outlined" class="icon-sm icon-inline">verified</span> CLASSIFICADO MANUALMENTE — GERA CREDITO'
+    : '<span class="material-symbols-outlined" class="icon-sm icon-inline">block</span> CLASSIFICADO MANUALMENTE — SEM CREDITO';
   document.getElementById('i-manual-wrap').classList.add('hidden');
 }
 
@@ -474,12 +474,12 @@ function showAutocomplete(val) {
   NotasModule.cachedItens = matches;
 
   list.innerHTML = matches.map((m, i) => m.cadastroRapido
-    ? `<div class="autocomplete-item" data-ac-idx="${i}" style="padding:8px 12px;cursor:pointer;border-top:1px solid var(--border);">
-        <span style="color:var(--primary);font-weight:700;font-size:12px;">+ CADASTRAR "${esc(m.label)}" NO CATALOGO</span>
+    ? `<div class="autocomplete-item ac-item-cadastro" data-ac-idx="${i}">
+        <span>+ CADASTRAR "${esc(m.label)}" NO CATALOGO</span>
       </div>`
-    : `<div class="autocomplete-item" data-ac-idx="${i}" style="padding:8px 12px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);">
-        <span style="font-size:13px;color:var(--text-primary);">${m.fromCatalogo ? `<span style="font-family:'Space Grotesk',sans-serif;font-size:11px;color:var(--primary);margin-right:6px;">${esc(m.codigo)}</span>` : ''}${esc(m.label)}</span>
-        <span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;${m.credito === true ? 'color:var(--success);background:rgba(5,150,105,.08);' : m.credito === false ? 'color:var(--error);background:rgba(220,38,38,.08);' : 'color:var(--text-tertiary);'}">${m.credito === true ? 'CREDITO' : m.credito === false ? 'SEM CREDITO' : '...'}</span>
+    : `<div class="autocomplete-item ac-item" data-ac-idx="${i}">
+        <span class="ac-item-name">${m.fromCatalogo ? `<span class="ac-item-code">${esc(m.codigo)}</span>` : ''}${esc(m.label)}</span>
+        <span class="ac-badge ${m.credito === true ? 'ac-badge-sim' : m.credito === false ? 'ac-badge-nao' : 'ac-badge-duvida'}">${m.credito === true ? 'CREDITO' : m.credito === false ? 'SEM CREDITO' : '...'}</span>
       </div>`
   ).join('');
 
@@ -505,13 +505,13 @@ function selectAC(idx) {
   const badge = document.getElementById('i-credito-badge');
   if (m.credito === null) {
     badge.className = 'nf-credito-badge nf-credito-duvida';
-    badge.innerHTML = '<span class="material-symbols-outlined" style="font-size:16px;vertical-align:text-bottom;">help</span> NAO RECONHECIDO — classifique abaixo';
+    badge.innerHTML = '<span class="material-symbols-outlined" class="icon-sm icon-inline">help</span> NAO RECONHECIDO — classifique abaixo';
     document.getElementById('i-manual-wrap').classList.remove('hidden');
   } else {
     badge.className = `nf-credito-badge ${m.credito ? 'nf-credito-sim' : 'nf-credito-nao'}`;
     badge.innerHTML = m.credito
-      ? `<span class="material-symbols-outlined" style="font-size:16px;vertical-align:text-bottom;">verified</span> GERA CREDITO IBS/CBS — ${esc(m.cat)}`
-      : `<span class="material-symbols-outlined" style="font-size:16px;vertical-align:text-bottom;">block</span> NAO GERA CREDITO — ${esc(m.cat)}`;
+      ? `<span class="material-symbols-outlined" class="icon-sm icon-inline">verified</span> GERA CREDITO IBS/CBS — ${esc(m.cat)}`
+      : `<span class="material-symbols-outlined" class="icon-sm icon-inline">block</span> NAO GERA CREDITO — ${esc(m.cat)}`;
     document.getElementById('i-manual-wrap').classList.add('hidden');
   }
 
@@ -623,7 +623,7 @@ function renderItensForm() {
     <div class="nf-item-row">
       <div style="flex:1;min-width:0;">
         <div class="nf-item-desc">
-          ${item.codigo ? `<span style="font-family:'Space Grotesk',sans-serif;font-size:11px;color:var(--primary);margin-right:6px;">${esc(item.codigo)}</span>` : ''}
+          ${item.codigo ? `<span class="ac-item-code">${esc(item.codigo)}</span>` : ''}
           ${esc(item.desc)}
         </div>
         <div class="nf-item-meta">
@@ -634,8 +634,8 @@ function renderItensForm() {
       </div>
       <div style="display:flex;align-items:center;gap:8px;">
         <span class="nf-item-valor">${fmtR(item.total)}</span>
-        <button style="color:var(--text-tertiary);padding:4px;" onclick="removerItem(${idx})">
-          <span class="material-symbols-outlined" style="font-size:16px;">delete</span>
+        <button class="nf-item-remove" onclick="removerItem(${idx})">
+          <span class="material-symbols-outlined icon-sm">delete</span>
         </button>
       </div>
     </div>

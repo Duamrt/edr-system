@@ -930,6 +930,141 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
 .nf-tag-sem { background: rgba(220,38,38,.08); color: var(--error); }
 .nf-tag-estoque { background: rgba(139,92,246,.1); color: #8B5CF6; }
 .nf-card-cnpj { font-size: 10px; color: var(--text-tertiary); margin-top: 4px; font-family: monospace; }
+
+/* ═══ COMPONENTES V2 — Padronização visual ═══ */
+
+/* Sticky header dos módulos */
+.sticky-header { position:sticky;top:0;z-index:90;background:var(--bg);padding:10px 0 8px 0;border-bottom:1px solid var(--border);margin-bottom:8px; }
+
+/* Badge do módulo com ícone Material Symbols */
+.modulo-badge { display:flex;align-items:center;gap:8px; }
+.modulo-badge .material-symbols-outlined { font-size:20px;color:var(--primary); }
+
+/* Icon sizing utility */
+.icon-xs { font-size:14px!important; }
+.icon-sm { font-size:16px!important; }
+.icon-md { font-size:18px!important; }
+.icon-lg { font-size:20px!important; }
+.icon-xl { font-size:24px!important; }
+.icon-2xl { font-size:32px!important; }
+.icon-3xl { font-size:48px!important; }
+.icon-inline { vertical-align:text-bottom; }
+
+/* Alert boxes */
+.alert-box-v2 { border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:14px;font-size:11px;font-weight:600;display:flex;align-items:flex-start;gap:8px; }
+.alert-box-v2 .material-symbols-outlined { font-size:16px;flex-shrink:0;margin-top:1px; }
+.alert-info { background:rgba(96,165,250,.08);border:1px solid rgba(96,165,250,.2);color:#60a5fa; }
+.alert-warning { background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.35);color:#fbbf24; }
+.alert-danger { background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:#f87171; }
+.alert-success { background:rgba(5,150,105,.08);border:1px solid rgba(5,150,105,.2);color:var(--success); }
+
+/* Botões de importação (XML, Colar texto) */
+.btn-import { flex:1;padding:12px 16px;border-radius:var(--radius-sm);font-size:13px;font-weight:700;font-family:'Inter',sans-serif;cursor:pointer;letter-spacing:.5px;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px; }
+.btn-import .material-symbols-outlined { font-size:20px; }
+.btn-import-sub { font-size:10px;opacity:.7;font-weight:400; }
+.btn-import-xml { background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);color:var(--success); }
+.btn-import-xml:hover { background:rgba(34,197,94,.15); }
+.btn-import-paste { background:rgba(139,92,246,.1);border:1px solid rgba(139,92,246,.3);color:#a78bfa; }
+.btn-import-paste:hover { background:rgba(139,92,246,.18); }
+
+/* Botões de seleção tipo (destino, ajuste, etc.) */
+.btn-tipo { flex:1;padding:14px 8px;border-radius:var(--radius-sm);font-size:12px;font-weight:700;letter-spacing:1px;cursor:pointer;min-height:48px;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .15s; }
+.btn-tipo .material-symbols-outlined { font-size:18px; }
+.btn-tipo-active-primary { border:1px solid rgba(139,92,246,.4);background:rgba(139,92,246,.15);color:#a78bfa; }
+.btn-tipo-inactive { border:1px solid var(--border);background:transparent;color:var(--text-tertiary); }
+.btn-tipo-active-success { border:1px solid rgba(34,197,94,.4);background:rgba(34,197,94,.15);color:var(--success); }
+.btn-tipo-active-info { border:1px solid rgba(96,165,250,.4);background:rgba(96,165,250,.15);color:#60a5fa; }
+.btn-tipo-active-warning { border:1px solid rgba(245,158,11,.4);background:rgba(245,158,11,.15);color:var(--warning); }
+.btn-tipo-active-danger { border:1px solid rgba(239,68,68,.4);background:rgba(239,68,68,.15);color:var(--error); }
+
+/* Seção destino material */
+.destino-section { border:1px solid rgba(34,197,94,.1);border-radius:var(--radius-sm);padding:12px;margin:10px 0;background:rgba(255,255,255,.02); }
+.destino-section-title { font-size:11px;font-weight:700;color:var(--primary);letter-spacing:1.5px;margin-bottom:10px; }
+
+/* Autocomplete items padronizado */
+.ac-item { padding:8px 12px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);transition:background .1s; }
+.ac-item:hover { background:var(--primary-surface); }
+.ac-item-name { font-size:13px;color:var(--text-primary); }
+.ac-item-code { font-family:'Space Grotesk',sans-serif;font-size:11px;color:var(--primary);margin-right:6px; }
+.ac-item-sub { font-size:11px;color:var(--text-tertiary); }
+.ac-item-cadastro { padding:8px 12px;cursor:pointer;border-top:1px solid var(--border); }
+.ac-item-cadastro:hover { background:var(--primary-surface); }
+.ac-item-cadastro span { color:var(--primary);font-weight:700;font-size:12px; }
+
+/* Badge crédito no autocomplete */
+.ac-badge { font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px; }
+.ac-badge-sim { color:var(--success);background:rgba(5,150,105,.08); }
+.ac-badge-nao { color:var(--error);background:rgba(220,38,38,.08); }
+.ac-badge-duvida { color:var(--text-tertiary); }
+
+/* NF item form row */
+.nf-item-row { display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--border-light); }
+.nf-item-row:last-child { border-bottom:none; }
+.nf-item-desc { font-size:13px;font-weight:600;color:var(--text-primary); }
+.nf-item-meta { display:flex;gap:8px;font-size:11px;color:var(--text-tertiary);margin-top:2px;flex-wrap:wrap; }
+.nf-item-credito { font-weight:700; }
+.nf-item-credito-sim { color:var(--success); }
+.nf-item-credito-nao { color:var(--error); }
+.nf-item-valor { font-family:'Space Grotesk',monospace;font-size:13px;font-weight:700;color:var(--text-primary);white-space:nowrap; }
+.nf-item-remove { color:var(--text-tertiary);padding:4px;background:none;border:none;cursor:pointer;border-radius:4px; }
+.nf-item-remove:hover { color:var(--error);background:rgba(220,38,38,.08); }
+
+/* Modal title padronizado */
+.modal-title-v2 { display:flex;justify-content:space-between;align-items:center;margin-bottom:16px; }
+.modal-title-v2 h3 { font-size:16px;font-weight:800;color:var(--text-primary);display:flex;align-items:center;gap:8px;margin:0; }
+.modal-title-v2 h3 .material-symbols-outlined { font-size:20px;color:var(--primary); }
+
+/* Item form section */
+.item-form-title { font-size:12px;font-weight:700;letter-spacing:1px;color:var(--text-secondary);margin-bottom:12px;display:flex;align-items:center;gap:6px; }
+.item-form-title .material-symbols-outlined { font-size:16px;color:var(--primary); }
+
+/* Manual classification */
+.manual-title { font-size:12px;font-weight:700;color:var(--warning);margin-bottom:8px;display:flex;align-items:center;gap:6px; }
+.manual-title .material-symbols-outlined { font-size:16px; }
+.btn-manual-sim { background:rgba(5,150,105,.08);border:1px solid rgba(5,150,105,.2);color:var(--success);border-radius:var(--radius-sm);padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer; }
+.btn-manual-nao { background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.2);color:var(--error);border-radius:var(--radius-sm);padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer; }
+
+/* Btn save com ícone */
+.btn-save { display:flex;align-items:center;justify-content:center;gap:8px; }
+.btn-save .material-symbols-outlined { font-size:18px; }
+.btn-save-danger { background:rgba(239,68,68,.2)!important;border:1px solid rgba(239,68,68,.4)!important;color:#f87171!important; }
+.btn-save-info { background:rgba(96,165,250,.2)!important;border:1px solid rgba(96,165,250,.4)!important;color:#60a5fa!important; }
+
+/* Button row */
+.btn-row { display:flex;gap:8px;margin-top:12px; }
+.btn-row-mt { margin-top:20px; }
+
+/* Empty state V2 */
+.empty-state { text-align:center;padding:48px;color:var(--text-tertiary); }
+.empty-state .material-symbols-outlined { font-size:48px;opacity:.3; }
+.empty-state p { margin-top:12px; }
+
+/* Histórico estoque badges */
+.hist-badge { font-size:11px;font-weight:700;padding:3px 8px;border-radius:var(--radius-sm); }
+.hist-badge-nf { background:rgba(5,150,105,.08);color:var(--success);border:1px solid rgba(5,150,105,.15); }
+.hist-badge-direta { background:rgba(37,99,235,.08);color:var(--info);border:1px solid rgba(37,99,235,.15); }
+.hist-badge-ajuste { background:rgba(139,92,246,.08);color:#8b5cf6;border:1px solid rgba(139,92,246,.15); }
+.hist-badge-saida { background:rgba(220,38,38,.08);color:var(--error);border:1px solid rgba(220,38,38,.15); }
+
+/* Saldo final card */
+.saldo-final { text-align:center;padding:16px 0;margin-top:12px;background:var(--primary-surface);border-radius:var(--radius-sm); }
+.saldo-final-label { font-family:'Space Grotesk',sans-serif;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-secondary);font-weight:700; }
+.saldo-final-value { font-family:'Plus Jakarta Sans',sans-serif;font-size:32px;font-weight:800; }
+
+/* Info box inline */
+.info-box { background:var(--border-light);border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:20px; }
+.info-box-title { font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:700; }
+.info-box-sub { font-size:12px;color:var(--text-secondary);margin-top:2px; }
+
+/* Vincular similares */
+.vincular-option { display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;transition:border-color .15s; }
+.vincular-option:hover { border-color:var(--primary); }
+.vincular-option input[type="radio"] { accent-color:var(--primary); }
+.vincular-option-name { font-size:13px;font-weight:600; }
+.vincular-option-sub { font-size:11px;color:var(--text-tertiary); }
+.vincular-divider { text-align:center;color:var(--text-tertiary);font-size:12px;margin:16px 0; }
+
+/* ═══ FIM COMPONENTES V2 ═══ */
 </style>
 </head>
 <body>
@@ -1198,8 +1333,8 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
     <div id="rel-content"></div>
     </div>
     <div class="view" id="view-caixa">
-<div style="position:sticky;top:0;z-index:90;background:var(--bg);padding:10px 0 8px 0;border-bottom:1px solid var(--borda);margin-bottom:8px;">
-      <div class="modulo-badge">💰 FLUXO DE CAIXA</div>
+<div class="sticky-header">
+      <div class="modulo-badge"><span class="material-symbols-outlined">account_balance_wallet</span> FLUXO DE CAIXA</div>
     </div>
     <div id="caixa-content"></div>
     </div>
@@ -1207,10 +1342,10 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
 <!-- VISÃO GERAL DE OBRAS (cards) -->
     <div id="obras-cards-overview">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding-top:4px;">
-        <div class="modulo-badge" style="margin-bottom:0;">🏗 EDR OBRAS</div>
+        <div class="modulo-badge" style="margin-bottom:0;"><span class="material-symbols-outlined">construction</span> EDR OBRAS</div>
         <div style="display:flex;gap:8px;">
-          <button onclick="abrirModalObra()" style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);color:var(--verde-hl);border-radius:8px;padding:4px 12px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;cursor:pointer;" class="admin-only">➕ NOVA OBRA</button>
-          <button onclick="toggleObrasArquivadas()" id="btn-ver-arquivadas2" style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);color:#fbbf24;border-radius:8px;padding:4px 12px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;cursor:pointer;" class="admin-only">📋 VER CONCLUÍDAS</button>
+          <button onclick="abrirModalObra()" class="admin-only btn-tipo btn-tipo-active-success" style="padding:4px 12px;min-height:auto;font-size:10px;"><span class="material-symbols-outlined icon-sm">add_circle</span> NOVA OBRA</button>
+          <button onclick="toggleObrasArquivadas()" id="btn-ver-arquivadas2" class="admin-only btn-tipo btn-tipo-active-warning" style="padding:4px 12px;min-height:auto;font-size:10px;"><span class="material-symbols-outlined icon-sm">inventory</span> VER CONCLUÍDAS</button>
         </div>
       </div>
       <div id="obras-cards-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;"></div>
@@ -1218,8 +1353,8 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
     <div id="obras-sticky" style="position:sticky;top:0;z-index:90;background:var(--bg);padding:10px 0 8px 0;border-bottom:1px solid var(--borda);margin-bottom:8px;display:none;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
         <div style="display:flex;align-items:center;">
-          <button onclick="obrasVoltarCards()" style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.1);color:var(--verde-hl);border-radius:8px;padding:5px 14px;font-size:11px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;cursor:pointer;margin-right:8px;">← VOLTAR</button>
-          <div class="modulo-badge" style="margin-bottom:0;">🏗 EDR OBRAS</div>
+          <button onclick="obrasVoltarCards()" class="btn-tipo btn-tipo-active-success" style="padding:5px 14px;min-height:auto;font-size:11px;margin-right:8px;"><span class="material-symbols-outlined icon-sm">arrow_back</span> VOLTAR</button>
+          <div class="modulo-badge" style="margin-bottom:0;"><span class="material-symbols-outlined">construction</span> EDR OBRAS</div>
         </div>
         <button onclick="toggleObrasArquivadas()" id="btn-ver-arquivadas" style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);color:#fbbf24;border-radius:8px;padding:4px 12px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;cursor:pointer;transition:all .2s;" class="admin-only">📋 VER CONCLUÍDAS</button>
       </div>
@@ -1281,7 +1416,7 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
 <!-- VISÃO CARDS (padrão) -->
     <div id="custos-cards-overview">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding-top:4px;flex-wrap:wrap;gap:8px;">
-        <div class="modulo-badge" style="margin-bottom:0;">💰 CUSTOS CEF</div>
+        <div class="modulo-badge" style="margin-bottom:0;"><span class="material-symbols-outlined">attach_money</span> CUSTOS CEF</div>
         <div style="display:flex;gap:8px;">
           <button class="btn-save" style="padding:6px 14px;font-size:11px;" onclick="abrirModalRepasse()">+ NOVO REPASSE</button>
           <button class="btn-outline" style="padding:6px 14px;font-size:11px;" onclick="gerarRelatorioCustos()">🖨 RELATÓRIO</button>
@@ -1307,7 +1442,7 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
           <div style="display:flex;align-items:center;">
             <button onclick="custosVoltarCards()" style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.1);color:var(--verde-hl);border-radius:8px;padding:5px 14px;font-size:11px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;cursor:pointer;margin-right:8px;">← VOLTAR</button>
-            <div class="modulo-badge" style="margin-bottom:0;">💰 CUSTOS CEF</div>
+            <div class="modulo-badge" style="margin-bottom:0;"><span class="material-symbols-outlined">attach_money</span> CUSTOS CEF</div>
           </div>
           <div style="display:flex;gap:8px;">
             <button class="btn-save" style="padding:6px 14px;font-size:11px;" onclick="abrirModalContratoCEF(custoObraAtual)">📋 CONTRATO</button>
@@ -1325,14 +1460,14 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
     </div>
     <div class="view" id="view-garantias">
 <div style="position:sticky;top:0;z-index:90;background:var(--bg);padding:10px 0 8px 0;border-bottom:1px solid var(--borda);margin-bottom:8px;">
-      <div class="modulo-badge">🛡 GARANTIA</div>
+      <div class="modulo-badge"><span class="material-symbols-outlined">verified_user</span> GARANTIA</div>
       <div id="garantia-stats" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;"></div>
     </div>
     <div id="garantia-lista"></div>
     </div>
     <div class="view" id="view-estoque">
 <div id="estoque-sticky" style="position:sticky;top:0;z-index:90;background:var(--bg);padding:10px 0 8px 0;border-bottom:1px solid var(--borda);margin-bottom:8px;">
-      <div class="modulo-badge">📦 ESTOQUE EDR</div>
+      <div class="modulo-badge"><span class="material-symbols-outlined">inventory_2</span> ESTOQUE EDR</div>
       <div style="display:flex;gap:8px;margin-bottom:8px;">
         <button class="btn-save" style="flex:1;padding:10px;font-size:13px;" onclick="abrirEntradaDireta()">📥 ENTRADA</button>
         <button class="btn-save" style="flex:1;padding:10px;font-size:13px;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);color:#f87171;" onclick="abrirSaidaMaterial()">📤 SAÍDA</button>
@@ -1363,7 +1498,7 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
     </div>
     <div class="view" id="view-catalogo">
 <div id="catalogo-sticky" style="position:sticky;top:0;z-index:90;background:var(--bg);padding:10px 0 8px 0;border-bottom:1px solid var(--borda);margin-bottom:8px;">
-      <div class="modulo-badge">🏷 CENTRO DE CUSTO</div>
+      <div class="modulo-badge"><span class="material-symbols-outlined">label</span> CENTRO DE CUSTO</div>
       <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
         <input type="text" id="catalogo-busca" placeholder="🔍 Buscar por código ou nome..." oninput="renderCatalogo()" style="flex:2;min-width:200px;background:var(--bg2);border:1px solid var(--borda2);border-radius:10px;padding:10px 14px;color:var(--branco);font-size:13px;font-family:inherit;">
         <select id="catalogo-cat-filtro" onchange="renderCatalogo()" style="flex:1;min-width:140px;background:var(--bg2);border:1px solid var(--borda2);border-radius:10px;padding:10px 14px;color:var(--branco);font-size:13px;font-family:inherit;">
@@ -1399,15 +1534,15 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
     <div id="cat-load-more" style="text-align:center;padding:16px;display:none;"></div>
     </div>
     <div class="view" id="view-notas">
-<div id="notas-sticky" style="position:sticky;top:0;z-index:90;background:var(--bg);padding:10px 0 8px 0;border-bottom:1px solid var(--borda);margin-bottom:8px;">
-      <div class="modulo-badge">🧾 HISTÓRICO DE NFs</div>
+<div id="notas-sticky" class="sticky-header">
+      <div class="modulo-badge"><span class="material-symbols-outlined">receipt_long</span> HISTÓRICO DE NFs</div>
       <div class="filter-row">
         <select id="filtro-obra" onchange="renderNotas()"><option value="">TODAS AS OBRAS</option></select>
         <select id="filtro-fornecedor" onchange="renderNotas()"><option value="">TODOS OS FORNECEDORES</option></select>
         <select id="filtro-credito" onchange="renderNotas()">
           <option value="">TODOS</option><option value="sim">GERA CRÉDITO</option>
           <option value="nao">SEM CRÉDITO</option><option value="estoque">EM ESTOQUE</option>
-          <option value="escritorio">🏢 ESCRITÓRIO</option>
+          <option value="escritorio">ESCRITÓRIO</option>
         </select>
       </div>
     </div>
@@ -1415,7 +1550,7 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
     <div id="notas-empty" class="empty hidden">Nenhuma nota encontrada.</div>
     </div>
     <div class="view" id="view-form">
-<div class="modulo-badge">➕ NOVO LANÇAMENTO</div>
+<div class="modulo-badge"><span class="material-symbols-outlined">add_circle</span> NOVO LANÇAMENTO</div>
     <div class="form-section">
       <div class="form-title"><span class="form-step">1</span> CABEÇALHO DA NOTA</div>
       <div class="field-row">
@@ -1428,41 +1563,41 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
         <div class="field"><label>Nº DA NOTA *</label><input type="text" id="f-numero" data-next="f-emissao" placeholder="EX: 001234"></div>
       </div>
       <div class="field-row">
-        <div class="field"><label>DATA DE EMISSÃO *</label><input type="date" id="f-emissao" data-next="f-recebimento" style="text-transform:none;"></div>
-        <div class="field"><label>DATA DE RECEBIMENTO</label><input type="date" id="f-recebimento" data-next="f-fornecedor" style="text-transform:none;"></div>
+        <div class="field"><label>DATA DE EMISSÃO *</label><input type="date" id="f-emissao" data-next="f-recebimento"></div>
+        <div class="field"><label>DATA DE RECEBIMENTO</label><input type="date" id="f-recebimento" data-next="f-fornecedor"></div>
       </div>
       <div class="field autocomplete-wrap">
         <label>FORNECEDOR *</label>
         <input type="text" id="f-fornecedor" data-next="f-cnpj" placeholder="NOME DO FORNECEDOR" oninput="onFornecedorInput()" autocomplete="off">
         <div class="autocomplete-list hidden" id="ac-forn-list"></div>
       </div>
-      <div class="field"><label>CNPJ</label><input type="text" id="f-cnpj" data-next="f-obra" placeholder="00.000.000/0001-00" oninput="maskCNPJ(this)" style="text-transform:none;"></div>
-      <div class="field"><label>DESTINO</label><select id="f-obra" data-next="f-frete" onchange="onDestinoChange()"><option value="EDR">📦 ESTOQUE GERAL</option><option value="EDR_ESCRITORIO">🏢 ESCRITÓRIO (CONSUMO DIRETO)</option></select></div>
-      <div id="aviso-escritorio" class="hidden" style="background:var(--azul-bg);border:1px solid rgba(59,130,246,.3);border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:12px;color:#60a5fa;font-weight:600;">
-        🏢 CONSUMO DIRETO — Esta NF não vai para o estoque. Será registrada como despesa geral da EDR.
+      <div class="field"><label>CNPJ</label><input type="text" id="f-cnpj" data-next="f-obra" placeholder="00.000.000/0001-00" oninput="maskCNPJ(this)"></div>
+      <div class="field"><label>DESTINO</label><select id="f-obra" data-next="f-frete" onchange="onDestinoChange()"><option value="EDR">ESTOQUE GERAL</option><option value="EDR_ESCRITORIO">ESCRITÓRIO (CONSUMO DIRETO)</option></select></div>
+      <div id="aviso-escritorio" class="alert-box-v2 alert-info hidden">
+        <span class="material-symbols-outlined">business</span> CONSUMO DIRETO — Esta NF não vai para o estoque. Será registrada como despesa geral da EDR.
       </div>
       <div class="field frete-field">
-        <label>🚚 FRETE DESTACADO (R$) <span style="font-weight:400;color:var(--verde);font-size:11px;">✓ GERA CRÉDITO — deixe em branco se não houver</span></label>
-        <input type="number" id="f-frete" data-next="f-obs" placeholder="0,00" style="text-transform:none;" oninput="atualizarTotalComFrete()">
+        <label><span class="material-symbols-outlined icon-sm icon-inline">local_shipping</span> FRETE DESTACADO (R$) <span style="font-weight:400;color:var(--success);font-size:11px;">Gera crédito — deixe em branco se não houver</span></label>
+        <input type="number" id="f-frete" data-next="f-obs" placeholder="0,00" oninput="atualizarTotalComFrete()">
       </div>
       <div class="field"><label>OBSERVAÇÃO</label><textarea id="f-obs" data-next="i-desc" placeholder="OBSERVAÇÕES GERAIS DA NOTA..."></textarea></div>
     </div>
     <div class="form-section">
       <div class="form-title"><span class="form-step">2</span> ITENS DA NOTA</div>
-      <div style="display:flex;gap:8px;margin-bottom:14px;">
-        <button onclick="abrirImportXML()" style="flex:1;padding:12px 16px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:8px;color:var(--verde-hl);font-size:13px;font-weight:700;font-family:'Inter',sans-serif;cursor:pointer;letter-spacing:0.5px;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:8px;">
-          📄 IMPORTAR XML<span style="font-size:10px;opacity:0.7;font-weight:400;">Arquivo da NF-e</span>
+      <div class="btn-row" style="margin-bottom:14px;">
+        <button class="btn-import btn-import-xml" onclick="abrirImportXML()">
+          <span class="material-symbols-outlined">description</span> IMPORTAR XML <span class="btn-import-sub">Arquivo da NF-e</span>
         </button>
-        <button onclick="abrirImportRapida()" style="flex:1;padding:12px 16px;background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.3);border-radius:8px;color:#a78bfa;font-size:13px;font-weight:700;font-family:'Inter',sans-serif;cursor:pointer;letter-spacing:0.5px;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:8px;">
-          📋 COLAR TEXTO<span style="font-size:10px;opacity:0.7;font-weight:400;">Cola os itens da nota</span>
+        <button class="btn-import btn-import-paste" onclick="abrirImportRapida()">
+          <span class="material-symbols-outlined">content_paste</span> COLAR TEXTO <span class="btn-import-sub">Cola os itens da nota</span>
         </button>
       </div>
       <input type="file" id="input-xml-nfe" accept=".xml" style="display:none;" onchange="processarXMLNFe(this)">
       <div class="itens-lista" id="itens-lista"></div>
       <div id="item-total-row" class="item-total-row hidden"><span>SUBTOTAL ITENS</span><span id="item-total-val">R$ 0,00</span></div>
-      <div id="frete-total-row" class="frete-total-row hidden"><span>🚚 FRETE</span><span id="frete-total-val">R$ 0,00</span></div>
+      <div id="frete-total-row" class="frete-total-row hidden"><span><span class="material-symbols-outlined icon-sm icon-inline">local_shipping</span> FRETE</span><span id="frete-total-val">R$ 0,00</span></div>
       <div class="item-form">
-        <div class="item-form-title">➕ ADICIONAR ITEM MANUAL</div>
+        <div class="item-form-title"><span class="material-symbols-outlined">add_circle</span> ADICIONAR ITEM MANUAL</div>
         <div class="field autocomplete-wrap">
           <label>DESCRIÇÃO DO ITEM *</label>
           <input type="text" id="i-desc" data-next="i-qtd" placeholder="EX: CIMENTO, AREIA, MAO DE OBRA..." oninput="onDescInput()" autocomplete="off">
@@ -1470,54 +1605,54 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
         </div>
         <div id="i-credito-badge" class="credito-badge duvida">Digite a descrição para classificação automática</div>
         <div id="i-manual-wrap" class="manual-wrap hidden">
-          <div class="manual-title">⚠ Item não reconhecido — classifique:</div>
+          <div class="manual-title"><span class="material-symbols-outlined">warning</span> Item não reconhecido — classifique:</div>
           <div class="manual-btns">
-            <button class="btn-manual-sim" onclick="classificarManual(true)">✓ GERA CRÉDITO</button>
-            <button class="btn-manual-nao" onclick="classificarManual(false)">✗ SEM CRÉDITO</button>
+            <button class="btn-manual-sim" onclick="classificarManual(true)"><span class="material-symbols-outlined icon-sm icon-inline">check_circle</span> GERA CRÉDITO</button>
+            <button class="btn-manual-nao" onclick="classificarManual(false)"><span class="material-symbols-outlined icon-sm icon-inline">cancel</span> SEM CRÉDITO</button>
           </div>
-          <button class="btn-ask-ai" onclick="abrirAssistente()">🤖 CONSULTAR ASSISTENTE TRIBUTÁRIO</button>
+          <button class="btn-ask-ai" onclick="abrirAssistente()"><span class="material-symbols-outlined icon-sm icon-inline">smart_toy</span> CONSULTAR ASSISTENTE TRIBUTÁRIO</button>
         </div>
         <div class="field-row-3">
-          <div class="field"><label>QTD *</label><input type="number" id="i-qtd" data-next="i-unidade" placeholder="1" oninput="calcItemTotal()" style="text-transform:none;"></div>
+          <div class="field"><label>QTD *</label><input type="number" id="i-qtd" data-next="i-unidade" placeholder="1" oninput="calcItemTotal()"></div>
           <div class="field"><label>UNIDADE</label><input type="text" id="i-unidade" data-next="i-preco" placeholder="SC, M², UN..."></div>
-          <div class="field"><label>VLR UNIT (R$) *</label><input type="number" id="i-preco" data-next="i-desconto" placeholder="0,00" oninput="calcItemTotal()" style="text-transform:none;"></div>
+          <div class="field"><label>VLR UNIT (R$) *</label><input type="number" id="i-preco" data-next="i-desconto" placeholder="0,00" oninput="calcItemTotal()"></div>
         </div>
         <div class="field-row">
-          <div class="field"><label>DESCONTO (R$)</label><input type="number" id="i-desconto" data-next="i-imposto" placeholder="0,00" style="text-transform:none;" oninput="calcItemTotal()"></div>
-          <div class="field"><label>IMPOSTO (R$)</label><input type="number" id="i-imposto" placeholder="0,00" style="text-transform:none;" data-action="addItem"></div>
+          <div class="field"><label>DESCONTO (R$)</label><input type="number" id="i-desconto" data-next="i-imposto" placeholder="0,00" oninput="calcItemTotal()"></div>
+          <div class="field"><label>IMPOSTO (R$)</label><input type="number" id="i-imposto" placeholder="0,00" data-action="addItem"></div>
         </div>
-        <div class="field"><label>TOTAL DO ITEM</label><input type="number" id="i-total" readonly style="background:rgba(255,255,255,0.03);color:var(--texto2);font-weight:700;text-transform:none;"></div>
-        <button class="btn-add-item" onclick="adicionarItem()">+ ADICIONAR ITEM &nbsp;<span style="font-size:11px;opacity:.7;">ou ENTER no último campo</span></button>
+        <div class="field"><label>TOTAL DO ITEM</label><input type="number" id="i-total" readonly style="background:rgba(255,255,255,.03);font-weight:700;"></div>
+        <button class="btn-add-item" onclick="adicionarItem()"><span class="material-symbols-outlined icon-md">add</span> ADICIONAR ITEM <span style="font-size:11px;opacity:.7;">ou ENTER</span></button>
       </div>
     </div>
-    <button class="btn-save" id="btn-salvar" onclick="salvarNota()">💾 SALVAR NOTA FISCAL &nbsp;<span style="font-size:11px;opacity:.8;">Ctrl+S</span></button>
+    <button class="btn-save" id="btn-salvar" onclick="salvarNota()"><span class="material-symbols-outlined">save</span> SALVAR NOTA FISCAL <span style="font-size:11px;opacity:.8;">Ctrl+S</span></button>
     <button class="btn-outline" onclick="resetForm()">CANCELAR</button>
     <div style="height:20px"></div>
     </div>
     <div class="view" id="view-contas-pagar">
-<div style="position:sticky;top:0;z-index:90;background:var(--bg);padding:10px 0 8px 0;border-bottom:1px solid var(--borda);margin-bottom:8px;">
-      <div class="modulo-badge">📋 CONTAS A PAGAR</div>
+<div class="sticky-header">
+      <div class="modulo-badge"><span class="material-symbols-outlined">payments</span> CONTAS A PAGAR</div>
       <div id="contas-stats" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;"></div>
     </div>
     <div id="contas-lista"></div>
     </div>
     <div class="view" id="view-creditos">
-<div class="modulo-badge">📖 GUIA FISCAL</div>
+<div class="modulo-badge"><span class="material-symbols-outlined">menu_book</span> GUIA FISCAL</div>
     <div class="card">
       <div class="section-title">O que gera crédito IBS/CBS?</div>
-      <p style="font-size:12px;color:var(--texto3);margin-bottom:12px;">Referência baseada na LC 214/2025. Válido a partir de 2027.</p>
+      <p style="font-size:12px;color:var(--text-tertiary);margin-bottom:12px;">Referência baseada na LC 214/2025. Válido a partir de 2027.</p>
       <table class="credito-table">
         <thead><tr><th>CATEGORIA / ITEM</th><th>CRÉDITO</th></tr></thead>
         <tbody id="creditos-tbody"></tbody>
       </table>
     </div>
-    <div class="alert-box"><div class="alert-title">⚠️ ATENÇÃO</div><div class="alert-text">Consulte seu contador para casos específicos.</div></div>
+    <div class="alert-box-v2 alert-warning"><span class="material-symbols-outlined">warning</span><div><strong>ATENÇÃO</strong> — Consulte seu contador para casos específicos.</div></div>
     </div>
     <div class="view" id="view-diarias">
 <!-- Header sticky -->
     <div class="diarias-header">
-      <div class="diarias-header-title">👷 DIÁRIAS</div>
-      <button onclick="pdfDiarias()" class="admin-only" title="Gerar PDF da quinzena" style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.25);color:#4ade80;border-radius:8px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:.05em">📄 PDF</button>
+      <div class="diarias-header-title"><span class="material-symbols-outlined icon-lg">engineering</span> DIÁRIAS</div>
+      <button onclick="pdfDiarias()" class="admin-only btn-tipo btn-tipo-active-success" style="padding:5px 12px;min-height:auto;font-size:11px;" title="Gerar PDF da quinzena"><span class="material-symbols-outlined icon-sm">picture_as_pdf</span> PDF</button>
       <button onclick="diarAbrirModalEquipe()" class="admin-only" title="Gerenciar equipe" style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.25);color:#60a5fa;border-radius:8px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:.05em">👷 EQUIPE</button>
       <div class="diarias-quinzena-badge" id="diar-quinzena-badge">QUINZENA</div>
     </div>
@@ -1637,14 +1772,14 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
     </div>
     <div class="view" id="view-leads">
 <div style="position:sticky;top:0;z-index:90;background:var(--bg);padding:10px 0 8px 0;border-bottom:1px solid var(--borda);margin-bottom:8px;">
-      <div class="modulo-badge">🎯 LEADS</div>
+      <div class="modulo-badge"><span class="material-symbols-outlined">group_add</span> LEADS</div>
       <div id="leads-stats" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;"></div>
     </div>
     <div id="leads-lista"></div>
     </div>
     <div class="view" id="view-banco">
 <div style="position:sticky;top:53px;z-index:90;background:var(--bg);padding:10px 0 8px 0;">
-      <div class="modulo-badge">🗄 DADOS</div>
+      <div class="modulo-badge"><span class="material-symbols-outlined">database</span> DADOS</div>
     </div>
 
     <!-- OBRAS CADASTRADAS -->
@@ -1666,11 +1801,11 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
     </div>
     </div>
     <div class="view" id="view-permissoes">
-<div class="modulo-badge">🔐 PERMISSOES POR PERFIL</div>
+<div class="modulo-badge"><span class="material-symbols-outlined">admin_panel_settings</span> PERMISSOES POR PERFIL</div>
     <div id="permissoes-container"></div>
     </div>
     <div class="view" id="view-setup">
-<div class="modulo-badge">⚙ CONFIGURAÇÕES</div>
+<div class="modulo-badge"><span class="material-symbols-outlined">settings</span> CONFIGURAÇÕES</div>
     <div class="card">
       <div class="section-title">🗄 Banco de Dados — Supabase</div>
       <p style="font-size:13px;color:var(--texto2);margin-bottom:12px;line-height:1.6;">Execute no <strong>Supabase → SQL Editor</strong>.</p>
@@ -1691,7 +1826,7 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
     </div>
     <div class="view" id="view-cronograma">
 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding-top:4px;flex-wrap:wrap;gap:8px;">
-      <div class="modulo-badge">📅 CRONOGRAMA DE OBRA</div>
+      <div class="modulo-badge"><span class="material-symbols-outlined">date_range</span> CRONOGRAMA DE OBRA</div>
       <div style="display:flex;gap:6px;">
         <button onclick="window.open('diario.html','_blank')" class="btn-outline" style="font-size:11px;padding:6px 12px;">📋 DIÁRIO</button>
         <button onclick="window.open('gantt.html','_blank')" class="btn-outline" style="font-size:11px;padding:6px 12px;">📊 GANTT</button>
@@ -1702,7 +1837,7 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
     <div id="cronograma-container"></div>
     </div>
     <div class="view" id="view-orcamento">
-<div class="modulo-badge">📐 ORCAMENTO PARAMETRICO</div>
+<div class="modulo-badge"><span class="material-symbols-outlined">calculate</span> ORCAMENTO PARAMETRICO</div>
     <div id="orcamento-container"></div>
     </div>
     <div class="view" id="view-usuarios">
@@ -2183,42 +2318,43 @@ function updateShellUser(nome, perfil) {
 <!-- MODAL ENTRADA DIRETA -->
 <div id="modal-entrada" class="modal-overlay" onclick="closeModalOutside(event,'entrada')">
   <div class="modal-box" style="max-width:500px;width:95vw;max-height:90vh;overflow-y:auto;">
-    <div class="modal-title">📥 ENTRADA DIRETA (SEM NOTA) <button class="modal-close" onclick="fecharModal('entrada')">✕</button></div>
+    <div class="modal-title-v2"><h3><span class="material-symbols-outlined">move_to_inbox</span> ENTRADA DIRETA (SEM NOTA)</h3><button class="modal-close" onclick="fecharModal('entrada')"><span class="material-symbols-outlined">close</span></button></div>
     <div class="field autocomplete-wrap">
       <label>MATERIAL *</label>
       <input type="text" id="entrada-desc" placeholder="EX: CIMENTO, AREIA..." oninput="onEntradaDescInput()" autocomplete="off">
       <div class="autocomplete-list hidden" id="ac-entrada-list"></div>
     </div>
     <div class="field-row">
-      <div class="field"><label>QUANTIDADE *</label><input type="number" id="entrada-qtd" placeholder="0" min="0.01" step="0.01" style="text-transform:none;font-size:16px;"></div>
+      <div class="field"><label>QUANTIDADE *</label><input type="number" id="entrada-qtd" placeholder="0" min="0.01" step="0.01"></div>
       <div class="field"><label>UNIDADE</label><input type="text" id="entrada-unidade" placeholder="SC, M², UN..."></div>
     </div>
     <div class="field-row">
       <div class="field">
         <label>VALOR UNIT. (R$)</label>
-        <input type="number" id="entrada-preco" placeholder="0,00" min="0" step="0.01" style="text-transform:none;font-size:16px;" oninput="onEntradaPrecoInput()">
-        <div id="entrada-preco-alerta" style="display:none;margin-top:6px;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.35);border-radius:8px;padding:8px 10px;font-size:11px;color:#fbbf24;font-weight:600;align-items:center;justify-content:space-between;gap:8px;">
-          <span>⚠ Valor zerado — consulte o preço:</span>
-          <button onclick="buscarPrecoFC()" style="background:rgba(245,158,11,0.2);border:1px solid rgba(245,158,11,0.4);color:#fbbf24;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">🔍 Ferreira Costa</button>
+        <input type="number" id="entrada-preco" placeholder="0,00" min="0" step="0.01" oninput="onEntradaPrecoInput()">
+        <div id="entrada-preco-alerta" class="alert-box-v2 alert-warning" style="display:none;margin-top:6px;">
+          <span class="material-symbols-outlined">warning</span>
+          <span>Valor zerado — consulte o preço:</span>
+          <button class="btn-tipo btn-tipo-active-warning" style="padding:4px 10px;min-height:auto;font-size:11px;" onclick="buscarPrecoFC()"><span class="material-symbols-outlined icon-sm">search</span> Ferreira Costa</button>
         </div>
       </div>
       <div class="field"><label>FORNECEDOR</label><input type="text" id="entrada-fornecedor" placeholder="EX: DEPÓSITO LOCAL"></div>
     </div>
-    <div class="field"><label>DATA</label><input type="date" id="entrada-data" style="text-transform:none;"></div>
-    <div style="border:1px solid rgba(34,197,94,0.1);border-radius:10px;padding:12px;margin:10px 0;background:rgba(255,255,255,0.02);">
-      <div style="font-size:11px;font-weight:700;color:var(--verde-hl);letter-spacing:1.5px;margin-bottom:10px;">DESTINO DO MATERIAL</div>
-      <div style="display:flex;gap:8px;margin-bottom:10px;">
-        <button id="btn-destino-estoque" onclick="setDestinoEntrada('estoque')" style="flex:1;padding:14px 8px;border-radius:10px;font-size:12px;font-weight:700;letter-spacing:1px;cursor:pointer;border:1px solid rgba(139,92,246,0.4);background:rgba(139,92,246,0.15);color:#a78bfa;min-height:48px;">📦 ESTOQUE</button>
-        <button id="btn-destino-obra" onclick="setDestinoEntrada('obra')" style="flex:1;padding:14px 8px;border-radius:10px;font-size:12px;font-weight:700;letter-spacing:1px;cursor:pointer;border:1px solid rgba(34,197,94,0.15);background:transparent;color:var(--texto3);min-height:48px;">🏗 DIRETO NA OBRA</button>
+    <div class="field"><label>DATA</label><input type="date" id="entrada-data"></div>
+    <div class="destino-section">
+      <div class="destino-section-title">DESTINO DO MATERIAL</div>
+      <div class="btn-row" style="margin-bottom:10px;">
+        <button id="btn-destino-estoque" class="btn-tipo btn-tipo-active-primary" onclick="setDestinoEntrada('estoque')"><span class="material-symbols-outlined">inventory_2</span> ESTOQUE</button>
+        <button id="btn-destino-obra" class="btn-tipo btn-tipo-inactive" onclick="setDestinoEntrada('obra')"><span class="material-symbols-outlined">construction</span> DIRETO NA OBRA</button>
       </div>
-      <div id="entrada-estoque-info" style="font-size:11px;color:var(--texto3);">Material entra no estoque. Distribua para a obra depois.</div>
+      <div id="entrada-estoque-info" style="font-size:11px;color:var(--text-tertiary);">Material entra no estoque. Distribua para a obra depois.</div>
       <div id="entrada-obra-wrap" style="display:none;">
-        <div class="field" style="margin:0;margin-bottom:10px;"><label>OBRA DE DESTINO *</label><select id="entrada-obra-id" style="min-height:44px;font-size:14px;"></select></div>
-        <div class="field" style="margin:0;"><label>ETAPA / CENTRO DE CUSTO *</label><select id="entrada-etapa" style="min-height:44px;font-size:14px;width:100%;"></select></div>
+        <div class="field" style="margin:0;margin-bottom:10px;"><label>OBRA DE DESTINO *</label><select id="entrada-obra-id"></select></div>
+        <div class="field" style="margin:0;"><label>ETAPA / CENTRO DE CUSTO *</label><select id="entrada-etapa"></select></div>
       </div>
     </div>
     <div class="field"><label>OBSERVAÇÃO</label><input type="text" id="entrada-obs" placeholder="EX: COMPRADO E APLICADO NO DIA..."></div>
-    <button class="btn-save" onclick="salvarEntradaDireta()">💾 REGISTRAR</button>
+    <button class="btn-save" onclick="salvarEntradaDireta()"><span class="material-symbols-outlined">save</span> REGISTRAR</button>
     <button class="btn-outline" onclick="fecharModal('entrada')">CANCELAR</button>
   </div>
 </div>
@@ -2226,9 +2362,9 @@ function updateShellUser(nome, perfil) {
 <!-- MODAL SAÍDA / BAIXA DE ESTOQUE -->
 <div id="modal-saida" class="modal-overlay" onclick="closeModalOutside(event,'saida')">
   <div class="modal-box" style="max-width:500px;width:95vw;max-height:90vh;overflow-y:auto;">
-    <div class="modal-title">📤 SAÍDA / BAIXA DE ESTOQUE <button class="modal-close" onclick="fecharModal('saida')">✕</button></div>
-    <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:11px;color:#f87171;font-weight:600;">
-      ⚠ Baixa definitiva do estoque. Use apenas para material consumido/retirado sem lançamento anterior.
+    <div class="modal-title-v2"><h3><span class="material-symbols-outlined">output</span> SAÍDA / BAIXA DE ESTOQUE</h3><button class="modal-close" onclick="fecharModal('saida')"><span class="material-symbols-outlined">close</span></button></div>
+    <div class="alert-box-v2 alert-danger">
+      <span class="material-symbols-outlined">warning</span> Baixa definitiva do estoque. Use apenas para material consumido/retirado sem lançamento anterior.
     </div>
     <div class="field autocomplete-wrap">
       <label>MATERIAL *</label>
@@ -2236,15 +2372,15 @@ function updateShellUser(nome, perfil) {
       <div class="autocomplete-list hidden" id="ac-saida-list"></div>
     </div>
     <div class="field-row">
-      <div class="field"><label>QUANTIDADE *</label><input type="number" id="saida-qtd" placeholder="0" min="0.01" step="0.01" style="text-transform:none;font-size:16px;"></div>
+      <div class="field"><label>QUANTIDADE *</label><input type="number" id="saida-qtd" placeholder="0" min="0.01" step="0.01"></div>
       <div class="field"><label>UNIDADE</label><select id="saida-unidade"><option>UN</option><option>SC</option><option>KG</option><option>M</option><option>M²</option><option>M³</option><option>L</option><option>PC</option><option>CX</option><option>BR</option><option>GL</option><option>VB</option></select></div>
     </div>
-    <div class="field"><label>DATA *</label><input type="date" id="saida-data" style="text-transform:none;"></div>
+    <div class="field"><label>DATA *</label><input type="date" id="saida-data"></div>
     <div class="field"><label>OBRA / DESTINO *</label><select id="saida-obra"></select></div>
-    <div class="field"><label>ETAPA / CENTRO DE CUSTO *</label><select id="saida-etapa" style="min-height:44px;font-size:14px;width:100%;"></select></div>
+    <div class="field"><label>ETAPA / CENTRO DE CUSTO *</label><select id="saida-etapa"></select></div>
     <div class="field"><label>MOTIVO / OBSERVAÇÃO</label><input type="text" id="saida-obs" placeholder="EX: APLICADO NA LAJE, SOBRA DE ESTOQUE..."></div>
     <div id="saida-preco-container"></div>
-    <button class="btn-save" style="background:rgba(239,68,68,0.2);border:1px solid rgba(239,68,68,0.4);color:#f87171;" onclick="salvarSaidaMaterial()">📤 CONFIRMAR SAÍDA</button>
+    <button class="btn-save btn-save-danger" onclick="salvarSaidaMaterial()"><span class="material-symbols-outlined">output</span> CONFIRMAR SAÍDA</button>
     <button class="btn-outline" onclick="fecharModal('saida')">CANCELAR</button>
   </div>
 </div>
@@ -2252,16 +2388,16 @@ function updateShellUser(nome, perfil) {
 <!-- MODAL AJUSTE DE ESTOQUE -->
 <div id="modal-ajuste" class="modal-overlay" onclick="closeModalOutside(event,'ajuste')">
   <div class="modal-box" style="max-width:500px;width:95vw;max-height:90vh;overflow-y:auto;">
-    <div class="modal-title">📋 AJUSTE DE ESTOQUE <button class="modal-close" onclick="fecharModal('ajuste')">✕</button></div>
-    <div style="background:rgba(96,165,250,0.08);border:1px solid rgba(96,165,250,0.2);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:11px;color:#60a5fa;font-weight:600;">
-      Registre contagem fisica, inventario inicial ou correcao de saldo. Ajustes nao geram custo em obra.
+    <div class="modal-title-v2"><h3><span class="material-symbols-outlined">tune</span> AJUSTE DE ESTOQUE</h3><button class="modal-close" onclick="fecharModal('ajuste')"><span class="material-symbols-outlined">close</span></button></div>
+    <div class="alert-box-v2 alert-info">
+      <span class="material-symbols-outlined">info</span> Registre contagem fisica, inventario inicial ou correcao de saldo. Ajustes nao geram custo em obra.
     </div>
-    <div style="display:flex;gap:8px;margin-bottom:14px;">
-      <button id="btn-ajuste-inventario" onclick="setTipoAjuste('inventario')" style="flex:1;padding:12px 8px;border-radius:10px;font-size:11px;font-weight:700;letter-spacing:1px;cursor:pointer;border:1px solid rgba(96,165,250,0.4);background:rgba(96,165,250,0.15);color:#60a5fa;min-height:44px;">📦 INVENTARIO</button>
-      <button id="btn-ajuste-contagem" onclick="setTipoAjuste('contagem')" style="flex:1;padding:12px 8px;border-radius:10px;font-size:11px;font-weight:700;letter-spacing:1px;cursor:pointer;border:1px solid rgba(34,197,94,0.15);background:transparent;color:var(--texto3);min-height:44px;">🔢 CONTAGEM</button>
-      <button id="btn-ajuste-correcao" onclick="setTipoAjuste('correcao')" style="flex:1;padding:12px 8px;border-radius:10px;font-size:11px;font-weight:700;letter-spacing:1px;cursor:pointer;border:1px solid rgba(245,158,11,0.2);background:transparent;color:var(--texto3);min-height:44px;">🔧 CORRECAO</button>
+    <div class="btn-row" style="margin-bottom:14px;">
+      <button id="btn-ajuste-inventario" class="btn-tipo btn-tipo-active-info" onclick="setTipoAjuste('inventario')"><span class="material-symbols-outlined">inventory_2</span> INVENTARIO</button>
+      <button id="btn-ajuste-contagem" class="btn-tipo btn-tipo-inactive" onclick="setTipoAjuste('contagem')"><span class="material-symbols-outlined">pin</span> CONTAGEM</button>
+      <button id="btn-ajuste-correcao" class="btn-tipo btn-tipo-inactive" onclick="setTipoAjuste('correcao')"><span class="material-symbols-outlined">build</span> CORRECAO</button>
     </div>
-    <div id="ajuste-tipo-info" style="font-size:11px;color:var(--texto3);margin-bottom:14px;">Material que ja existia antes do sistema. Entra no saldo sem gerar custo.</div>
+    <div id="ajuste-tipo-info" style="font-size:11px;color:var(--text-tertiary);margin-bottom:14px;">Material que ja existia antes do sistema. Entra no saldo sem gerar custo.</div>
     <div class="field autocomplete-wrap">
       <label>MATERIAL *</label>
       <input type="text" id="ajuste-desc" placeholder="BUSCAR MATERIAL..." oninput="onAjusteDescInput()" autocomplete="off">
@@ -2269,11 +2405,11 @@ function updateShellUser(nome, perfil) {
     </div>
     <div id="ajuste-saldo-atual" style="display:none;background:var(--bg3);border:1px solid var(--borda2);border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:var(--texto2);"></div>
     <div class="field-row">
-      <div class="field"><label id="ajuste-qtd-label">QUANTIDADE A ADICIONAR *</label><input type="number" id="ajuste-qtd" placeholder="0" step="0.01" style="text-transform:none;font-size:16px;"></div>
-      <div class="field"><label>UNIDADE</label><input type="text" id="ajuste-unidade" placeholder="UN" style="text-transform:uppercase;"></div>
+      <div class="field"><label id="ajuste-qtd-label">QUANTIDADE A ADICIONAR *</label><input type="number" id="ajuste-qtd" placeholder="0" step="0.01"></div>
+      <div class="field"><label>UNIDADE</label><input type="text" id="ajuste-unidade" placeholder="UN"></div>
     </div>
-    <div class="field"><label>MOTIVO / OBSERVACAO</label><input type="text" id="ajuste-motivo" placeholder="EX: CONTAGEM REALIZADA EM 12/03..." style="text-transform:uppercase;"></div>
-    <button class="btn-save" style="background:rgba(96,165,250,0.2);border:1px solid rgba(96,165,250,0.4);color:#60a5fa;" onclick="salvarAjusteModal()">📋 CONFIRMAR AJUSTE</button>
+    <div class="field"><label>MOTIVO / OBSERVACAO</label><input type="text" id="ajuste-motivo" placeholder="EX: CONTAGEM REALIZADA EM 12/03..."></div>
+    <button class="btn-save btn-save-info" onclick="salvarAjusteModal()"><span class="material-symbols-outlined">tune</span> CONFIRMAR AJUSTE</button>
     <button class="btn-outline" onclick="fecharModal('ajuste')">CANCELAR</button>
   </div>
 </div>
@@ -2281,12 +2417,12 @@ function updateShellUser(nome, perfil) {
 <!-- MODAL NOVO/EDITAR MATERIAL -->
 <div id="modal-material" class="modal-overlay" onclick="closeModalOutside(event,'material')">
   <div class="modal-box" style="max-width:420px;width:95vw;">
-    <div class="modal-title">🏷 MATERIAL <button class="modal-close" onclick="fecharModal('material')">✕</button></div>
-    <div id="modal-material-aviso" style="display:none;background:#fef3c7;border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:12px;color:#92400e;"></div>
+    <div class="modal-title-v2"><h3><span class="material-symbols-outlined">label</span> MATERIAL</h3><button class="modal-close" onclick="fecharModal('material')"><span class="material-symbols-outlined">close</span></button></div>
+    <div id="modal-material-aviso" class="alert-box-v2 alert-warning" style="display:none;"></div>
     <div class="field autocomplete-wrap"><label>NOME DO MATERIAL *</label>
-      <input type="text" id="mat-nome" placeholder="EX: CIMENTO CPII 50KG" oninput="onMatNomeInput()" autocomplete="off" style="text-transform:uppercase;">
+      <input type="text" id="mat-nome" placeholder="EX: CIMENTO CPII 50KG" oninput="onMatNomeInput()" autocomplete="off">
     </div>
-    <div style="display:flex;gap:8px;">
+    <div class="field-row">
       <div class="field" style="flex:1"><label>UNIDADE</label>
         <select id="mat-unidade">
           <option>UN</option><option>KG</option><option>M</option><option>M2</option><option>M3</option><option>L</option><option>SC</option><option>RL</option><option>CX</option><option>PC</option><option>BAR</option><option>TON</option>
@@ -2296,7 +2432,7 @@ function updateShellUser(nome, perfil) {
         <select id="mat-categoria"><option value="">— Selecione —</option></select>
       </div>
     </div>
-    <button class="btn-save" style="width:100%;margin-top:8px;" id="btn-salvar-mat" onclick="salvarMaterial()">💾 SALVAR MATERIAL</button>
+    <button class="btn-save" style="width:100%;margin-top:8px;" id="btn-salvar-mat" onclick="salvarMaterial()"><span class="material-symbols-outlined">save</span> SALVAR MATERIAL</button>
   </div>
 </div>
 
