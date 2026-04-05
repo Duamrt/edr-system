@@ -149,10 +149,10 @@ function consolidarEstoque(obraId) {
     return mapa[chave];
   }
 
-  // 1) ENTRADAS VIA NF
+  // 1) ENTRADAS VIA NF — só estoque geral (EDR), igual V1
   const notasFiltradas = obraId
     ? notas.filter(n => n.obra === obraId)
-    : notas;
+    : notas.filter(n => n.obra === 'EDR');
 
   for (const n of notasFiltradas) {
     const itens = parseItens(n);
