@@ -2347,35 +2347,35 @@ function updateShellUser(nome, perfil) {
 
 <!-- ═══════ MODULOS V2 (ordem de dependência) ═══════ -->
 <!-- 0. Infraestrutura: sbGet/sbPost/sbPatch/sbDelete, confirmar(), showModal, usuarioAtual -->
-<script src="js/edr-v2-infra.js?v=04050410"></script>
+<script src="js/edr-v2-infra.js?v=04050411"></script>
 <!-- 1. Utilitários globais (valorPorExtenso, fmtN) -->
-<script src="js/edr-v2-utils-extras.js?v=04050410"></script>
+<script src="js/edr-v2-utils-extras.js?v=04050411"></script>
 <!-- 2. Obras PRIMEIRO (ETAPAS, resolveEtapaKey, etapaCor, etapaLabel — vários módulos dependem) -->
-<script src="js/edr-v2-obras.js?v=04050410"></script>
+<script src="js/edr-v2-obras.js?v=04050411"></script>
 <!-- 3. PDF engine (PdfModule — chamado por vários módulos) -->
-<script src="js/edr-v2-pdf.js?v=04050410"></script>
+<script src="js/edr-v2-pdf.js?v=04050411"></script>
 <!-- 4. Módulos core de negócio -->
-<script src="js/edr-v2-notas.js?v=04050410"></script>
-<script src="js/edr-v2-importar.js?v=04050410"></script>
-<script src="js/edr-v2-estoque.js?v=04050410"></script>
-<script src="js/edr-v2-custos.js?v=04050410"></script>
+<script src="js/edr-v2-notas.js?v=04050411"></script>
+<script src="js/edr-v2-importar.js?v=04050411"></script>
+<script src="js/edr-v2-estoque.js?v=04050411"></script>
+<script src="js/edr-v2-custos.js?v=04050411"></script>
 <!-- 5. Equipe e operacional -->
-<script src="js/edr-v2-diarias.js?v=04050410"></script>
-<script src="js/edr-v2-diario.js?v=04050410"></script>
+<script src="js/edr-v2-diarias.js?v=04050411"></script>
+<script src="js/edr-v2-diario.js?v=04050411"></script>
 <!-- 6. Relatórios e dashboard (dependem de obras.js pra etapaCor) -->
-<script src="js/edr-v2-relatorio.js?v=04050410"></script>
-<script src="js/edr-v2-dashboard.js?v=04050410"></script>
+<script src="js/edr-v2-relatorio.js?v=04050411"></script>
+<script src="js/edr-v2-dashboard.js?v=04050411"></script>
 <!-- 7. Módulos complementares -->
-<script src="js/edr-v2-leads.js?v=04050410"></script>
-<script src="js/edr-v2-garantias.js?v=04050410"></script>
-<script src="js/edr-v2-adicionais.js?v=04050410"></script>
-<script src="js/edr-v2-cronograma.js?v=04050410"></script>
-<script src="js/edr-v2-orcamento.js?v=04050410"></script>
+<script src="js/edr-v2-leads.js?v=04050411"></script>
+<script src="js/edr-v2-garantias.js?v=04050411"></script>
+<script src="js/edr-v2-adicionais.js?v=04050411"></script>
+<script src="js/edr-v2-cronograma.js?v=04050411"></script>
+<script src="js/edr-v2-orcamento.js?v=04050411"></script>
 <!-- 8. Documentação e medições -->
-<script src="js/edr-v2-termo-manual.js?v=04050410"></script>
-<script src="js/edr-v2-pci.js?v=04050410"></script>
+<script src="js/edr-v2-termo-manual.js?v=04050411"></script>
+<script src="js/edr-v2-pci.js?v=04050411"></script>
 <!-- 9. Auth (login, sessão, refresh — ÚLTIMO) -->
-<script src="js/edr-v2-auth.js?v=04050410"></script>
+<script src="js/edr-v2-auth.js?v=04050411"></script>
 
 <!-- ═══════════════════════════════════════════════════════════════ -->
 <!-- MODAIS (Fase 0 — containers para módulos que precisam)        -->
@@ -2583,8 +2583,8 @@ function updateShellUser(nome, perfil) {
 </div>
 
 <!-- CONTAINERS CUSTOS (innerHTML setado pelo módulo) -->
-<div id="custos-modal-repasse" class="modal-overlay"><div class="modal-box" style="max-width:480px;width:95vw;max-height:90vh;overflow-y:auto;"><div class="modal"></div></div></div>
-<div id="custos-modal-contrato" class="modal-overlay"><div class="modal-box" style="max-width:560px;width:95vw;max-height:90vh;overflow-y:auto;"><div class="modal"></div></div></div>
+<div id="custos-modal-repasse" class="modal-overlay"><div class="modal-box" style="max-width:480px;width:92vw;max-height:88vh;overflow-y:auto;padding:0;"><div class="modal" style="padding:0 20px 20px;"></div></div></div>
+<div id="custos-modal-contrato" class="modal-overlay"><div class="modal-box" style="max-width:560px;width:92vw;max-height:88vh;overflow-y:auto;padding:0;"><div class="modal" style="padding:0 20px 20px;"></div></div></div>
 
 <!-- MODAL LANÇAR DIÁRIAS NO EDR -->
 <div id="diar-modalEDR" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:9999;align-items:center;justify-content:center;padding:16px">
