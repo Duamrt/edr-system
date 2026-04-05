@@ -578,8 +578,8 @@ function _dashBuildResumoFinanceiro(porObra) {
       <div style="font-size:10px;color:var(--text-tertiary);margin-top:6px;font-family:Inter,sans-serif;">${sub}</div>
     </div>`;
 
-  const subEntradas = filtroMes ? 'Repasses + Extras do mes' : 'PLs + Entrada + Terreno + Extras';
-  const subSaidas = 'Material: ' + _dashFmtR(totalSaidas - totalMao) + ' · Mao: ' + _dashFmtR(totalMao);
+  const subEntradas = filtroMes ? 'Repasses do mes' : 'PLs + Entrada + Terreno';
+  const subSaidas = 'Material: ' + _dashFmtR(totalSaidas - totalMao) + ' · Mao de obra: ' + _dashFmtR(totalMao);
 
   let html = `<div style="margin-bottom:20px;">
     <div style="font-size:13px;font-weight:700;color:#2D6A4F;letter-spacing:2px;margin-bottom:14px;font-family:'Plus Jakarta Sans',sans-serif;display:flex;align-items:center;gap:8px;"><span class="material-symbols-outlined" style="font-size:20px;">bar_chart</span> RESUMO FINANCEIRO — ${periodoLabel}</div>
@@ -590,9 +590,9 @@ function _dashBuildResumoFinanceiro(porObra) {
       </select>
     </div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:14px;">
-      ${cardG('trending_up', filtroMes ? 'ENTRADAS NO MES' : 'TOTAL ENTRADAS', totalEntradas, 'var(--success)', subEntradas)}
-      ${cardG('trending_down', filtroMes ? 'SAIDAS NO MES' : 'TOTAL SAIDAS', totalSaidas, 'var(--danger)', subSaidas)}
-      ${filtroMes ? cardG('account_balance', 'SALDO DO MES', saldoGeral, saldoGeral >= 0 ? 'var(--success)' : 'var(--danger)', 'Entradas - Saidas no periodo') : cardG('account_balance_wallet', 'FALTA RECEBER', totalReceita - totalEntradas, '#3b82f6', 'Receita: ' + _dashFmtR(totalReceita))}
+      ${cardG('trending_up', filtroMes ? 'RECEBIDO NO MES' : 'RECEBIDO', totalEntradas, 'var(--success)', subEntradas)}
+      ${cardG('trending_down', filtroMes ? 'APLICADO NO MES' : 'APLICADO NAS OBRAS', totalSaidas, 'var(--danger)', subSaidas)}
+      ${filtroMes ? cardG('account_balance', 'DISPONIVEL NO MES', saldoGeral, saldoGeral >= 0 ? 'var(--success)' : 'var(--danger)', 'Recebido - Aplicado no periodo') : cardG('account_balance_wallet', 'FALTA RECEBER', totalReceita - totalEntradas, '#3b82f6', 'Receita: ' + _dashFmtR(totalReceita))}
     </div>`;
 
   // Barra progresso (modo geral)
@@ -609,7 +609,7 @@ function _dashBuildResumoFinanceiro(porObra) {
     </div>`;
 
     html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
-      ${cardG('account_balance', 'SALDO (ENTRADAS - SAIDAS)', saldoGeral, saldoGeral >= 0 ? 'var(--success)' : 'var(--danger)', 'Caixa disponivel das obras')}
+      ${cardG('account_balance', 'DISPONIVEL', saldoGeral, saldoGeral >= 0 ? 'var(--success)' : 'var(--danger)', 'Recebido que ainda nao foi aplicado')}
       ${cardG('trending_up', 'LUCRO PROJETADO', lucroProjetado, lucroProjetado >= 0 ? 'var(--warning)' : 'var(--danger)', 'Receita - Gasto · Margem: ' + margemProj.toFixed(0) + '%')}
     </div>`;
   }
@@ -620,11 +620,11 @@ function _dashBuildResumoFinanceiro(porObra) {
     const saldoReal = saldoGeral + valEstoque;
     html += `<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:14px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
       <div style="flex:1;min-width:150px;">
-        <div style="font-size:10px;color:var(--text-tertiary);font-weight:700;letter-spacing:1px;margin-bottom:4px;font-family:'Space Grotesk',monospace;display:flex;align-items:center;gap:4px;"><span class="material-symbols-outlined" style="font-size:14px;">inventory_2</span> MATERIAL EM ESTOQUE</div>
+        <div style="font-size:10px;color:var(--text-tertiary);font-weight:700;letter-spacing:1px;margin-bottom:4px;font-family:'Space Grotesk',monospace;display:flex;align-items:center;gap:4px;"><span class="material-symbols-outlined" style="font-size:14px;">inventory_2</span> ESTOQUE (PATRIMONIO)</div>
         <div style="font-size:20px;font-weight:800;color:var(--warning);font-family:'Space Grotesk',monospace;">${_dashFmtR(valEstoque)}</div>
       </div>
       <div style="flex:1;min-width:150px;">
-        <div style="font-size:10px;color:var(--text-tertiary);font-weight:700;letter-spacing:1px;margin-bottom:4px;font-family:'Space Grotesk',monospace;display:flex;align-items:center;gap:4px;"><span class="material-symbols-outlined" style="font-size:14px;">diamond</span> SALDO REAL</div>
+        <div style="font-size:10px;color:var(--text-tertiary);font-weight:700;letter-spacing:1px;margin-bottom:4px;font-family:'Space Grotesk',monospace;display:flex;align-items:center;gap:4px;"><span class="material-symbols-outlined" style="font-size:14px;">diamond</span> CAIXA TOTAL</div>
         <div style="font-size:20px;font-weight:800;color:${saldoReal >= 0 ? 'var(--success)' : 'var(--danger)'};font-family:'Space Grotesk',monospace;">${_dashFmtR(saldoReal)}</div>
       </div>
     </div>`;

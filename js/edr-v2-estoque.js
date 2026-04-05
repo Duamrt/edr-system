@@ -1407,9 +1407,11 @@ function catalogoToggleAuto() {
 // CALCULO DO VALOR TOTAL DO ESTOQUE (dashboard)
 // ══════════════════════════════════════════════════════════════════
 
+let _valorEstoqueAtual = 0;
 function calcularValorEstoque() {
   if (!EstoqueModule._consolidado.length) consolidarEstoque();
-  return EstoqueModule._valorTotal;
+  _valorEstoqueAtual = EstoqueModule._valorTotal;
+  return _valorEstoqueAtual;
 }
 
 
