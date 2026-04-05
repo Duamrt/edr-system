@@ -1070,6 +1070,120 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
 .tab-btn:hover { color:var(--text-secondary); }
 .tab-btn.tab-active,.tab-active { border-bottom-color:var(--primary);color:var(--primary); }
 
+/* ── OBRAS CARDS ── */
+.obra-card { background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;cursor:pointer;transition:border-color .15s,box-shadow .15s;display:flex;flex-direction:column;gap:10px; }
+.obra-card:hover { border-color:var(--primary);box-shadow:0 4px 16px rgba(0,0,0,.12); }
+.obra-card-header { display:flex;justify-content:space-between;align-items:flex-start;gap:12px; }
+.obra-card-name { font-size:15px;font-weight:700;color:var(--text-primary);font-family:'Plus Jakarta Sans',sans-serif; }
+.obra-card-city { font-size:12px;color:var(--text-tertiary);display:flex;align-items:center;gap:4px;margin-top:2px; }
+.obra-card-value { font-size:16px;font-weight:700;color:var(--primary);text-align:right;font-family:'Space Grotesk',monospace; }
+.obra-card-count { font-size:11px;color:var(--text-secondary);text-align:right; }
+.etapa-chips { display:flex;gap:6px;flex-wrap:wrap; }
+.etapa-chip { font-size:10px;font-weight:600;padding:3px 8px;border-radius:var(--radius-sm);background:rgba(45,106,79,.08);color:var(--primary);border:1px solid rgba(45,106,79,.15);letter-spacing:.3px;font-family:'Space Grotesk',monospace; }
+.obra-card-footer { display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border);padding-top:10px;margin-top:auto; }
+.obra-card-date { font-size:11px;color:var(--text-tertiary);display:flex;align-items:center;gap:4px; }
+.obra-card-actions { display:flex;gap:6px;align-items:center; }
+.obra-action-btn { font-size:11px;font-weight:600;padding:4px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;transition:all .15s; }
+.obra-action-btn:hover { border-color:var(--primary);color:var(--primary); }
+.obra-action-edit { color:var(--primary); }
+.obra-action-complete { color:var(--warning); }
+.obra-card-link { font-size:12px;font-weight:600;color:var(--primary);display:flex;align-items:center;gap:2px; }
+
+/* ── CUSTOS CARDS ── */
+.custos-card { background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;cursor:pointer;transition:border-color .15s,box-shadow .15s;display:flex;flex-direction:column;gap:10px; }
+.custos-card:hover { border-color:var(--primary);box-shadow:0 4px 16px rgba(0,0,0,.12); }
+.custos-card-top { display:flex;justify-content:space-between;align-items:flex-start; }
+.custos-card-nome { font-size:15px;font-weight:700;color:var(--text-primary);font-family:'Plus Jakarta Sans',sans-serif; }
+.custos-card-cidade { font-size:12px;color:var(--text-tertiary); }
+.custos-card-valor { font-size:16px;font-weight:700;color:var(--primary);font-family:'Space Grotesk',monospace; }
+.custos-card-grid { display:grid;grid-template-columns:1fr 1fr;gap:8px; }
+.custos-card-metric { padding:8px 10px;border-radius:var(--radius-sm);background:rgba(45,106,79,.04);border:1px solid rgba(45,106,79,.08); }
+.custos-card-metric-label { font-size:9px;font-weight:700;color:var(--text-tertiary);letter-spacing:1px;font-family:'Space Grotesk',monospace; }
+.custos-card-metric-value { font-size:13px;font-weight:700;margin-top:2px;font-family:'Space Grotesk',monospace; }
+.custos-card-metric-value.green { color:var(--success); }
+.custos-card-metric-value.blue { color:#3b82f6; }
+.custos-card-metric-value.purple { color:#8b5cf6; }
+.custos-card-metric-value.yellow { color:var(--warning); }
+.custos-card-contrato { padding-top:6px; }
+.custos-card-contrato-row { display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--text-secondary);margin-bottom:4px; }
+.custos-card-contrato-label { font-weight:700;letter-spacing:.5px; }
+.custos-card-progress { height:4px;border-radius:2px;background:rgba(45,106,79,.1);overflow:hidden; }
+.custos-card-progress-fill { height:100%;border-radius:2px;background:var(--primary);transition:width .3s; }
+.custos-card-bottom { display:flex;justify-content:space-between;font-size:12px;color:var(--text-secondary); }
+.custos-card-footer { display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border);padding-top:8px;font-size:12px;color:var(--text-tertiary); }
+
+/* ── CUSTOS DETALHE ── */
+.custos-contrato-empty { display:flex;align-items:center;gap:8px;padding:16px;color:var(--text-tertiary);font-size:13px;border:1px dashed var(--border);border-radius:var(--radius);background:var(--surface); }
+.custos-link-btn { background:none;border:none;color:var(--primary);cursor:pointer;font-weight:600;text-decoration:underline; }
+.custos-contrato-card { background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px; }
+.custos-contrato-header { display:flex;justify-content:space-between;align-items:center;margin-bottom:4px; }
+.custos-contrato-title { display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--text-primary);letter-spacing:.5px;font-family:'Space Grotesk',monospace; }
+.custos-contrato-valor { font-size:20px;font-weight:800;color:var(--primary);font-family:'Space Grotesk',monospace; }
+.custos-contrato-stats { display:flex;justify-content:space-between;font-size:12px;color:var(--text-secondary);margin-bottom:10px; }
+.custos-contrato-tags { display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px; }
+.custos-contrato-tag { font-size:11px;font-weight:600;padding:4px 10px;border-radius:var(--radius-sm);border:1px solid var(--border); }
+.custos-contrato-tag.green { background:rgba(5,150,105,.08);color:var(--success);border-color:rgba(5,150,105,.2); }
+.custos-contrato-tag.yellow { background:rgba(217,119,6,.08);color:var(--warning);border-color:rgba(217,119,6,.2); }
+.custos-contrato-tag.purple { background:rgba(139,92,246,.08);color:#8b5cf6;border-color:rgba(139,92,246,.2); }
+.custos-contrato-info { font-size:12px;color:var(--text-tertiary);margin-top:4px; }
+.custos-progress-bar { margin:12px 0; }
+.custos-progress-header { display:flex;justify-content:space-between;font-size:12px;color:var(--text-secondary);margin-bottom:4px; }
+.custos-progress-track { height:6px;border-radius:3px;background:rgba(45,106,79,.1);overflow:hidden; }
+.custos-progress-fill { height:100%;border-radius:3px;background:var(--primary);transition:width .3s; }
+
+/* ── CUSTOS TABELA ── */
+.custos-table-wrap { overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface); }
+.custos-table { width:100%;border-collapse:collapse;font-size:13px; }
+.custos-table th { font-size:10px;font-weight:700;letter-spacing:1px;color:var(--text-tertiary);padding:10px 12px;text-align:left;border-bottom:1px solid var(--border);font-family:'Space Grotesk',monospace;background:rgba(45,106,79,.03); }
+.custos-table td { padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.03); }
+.custos-table tfoot td { border-top:2px solid var(--border);border-bottom:none;padding:12px; }
+.custos-tipo-badge { font-size:10px;font-weight:700;padding:3px 8px;border-radius:var(--radius-sm);letter-spacing:.5px; }
+.custos-tipo-badge.green { background:rgba(5,150,105,.1);color:var(--success); }
+.custos-tipo-badge.blue { background:rgba(59,130,246,.1);color:#3b82f6; }
+.custos-tipo-badge.purple { background:rgba(139,92,246,.1);color:#8b5cf6; }
+.custos-action-btn { background:none;border:1px solid var(--border);border-radius:var(--radius-sm);padding:4px 6px;cursor:pointer;transition:all .15s; }
+.custos-action-btn.blue { color:#3b82f6; }
+.custos-action-btn.blue:hover { background:rgba(59,130,246,.08);border-color:#3b82f6; }
+.custos-action-btn.red { color:var(--error); }
+.custos-action-btn.red:hover { background:rgba(239,68,68,.08);border-color:var(--error); }
+
+/* ── CUSTOS HISTORICO ── */
+.custos-historico-title { display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;letter-spacing:.5px;color:var(--text-primary);margin-bottom:12px;font-family:'Space Grotesk',monospace; }
+.custos-historico-mes { background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;margin-bottom:8px; }
+.custos-historico-mes-header { display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--text-primary);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,.04); }
+.custos-historico-item { display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:12px;color:var(--text-secondary); }
+.green { color:var(--success); }
+.blue { color:#3b82f6; }
+.purple { color:#8b5cf6; }
+
+/* ── DIÁRIAS REGISTROS ── */
+.diar-registro-dia { background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;overflow:hidden; }
+.diar-registro-header { display:flex;justify-content:space-between;align-items:center;padding:10px 14px;cursor:pointer;user-select:none;transition:background .15s; }
+.diar-registro-header:hover { background:rgba(45,106,79,.04); }
+.diar-registro-data { font-size:13px;font-weight:700;color:var(--text-primary);letter-spacing:.3px; }
+.diar-registro-count { font-size:11px;color:var(--text-tertiary);font-family:'Space Grotesk',monospace; }
+.diar-dia-body { padding:0 14px 10px; }
+.diar-registro-row { display:grid;grid-template-columns:1fr 2fr auto;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px; }
+.diar-registro-row:last-child { border-bottom:none; }
+.diar-rr-nome { font-weight:600;color:var(--text-primary); }
+.diar-rr-obras { font-size:12px;color:var(--text-secondary);display:flex;align-items:center;gap:4px;flex-wrap:wrap; }
+.diar-rr-val { font-weight:700;color:var(--primary);font-family:'Space Grotesk',monospace;text-align:right;display:flex;align-items:center;gap:6px;justify-content:flex-end; }
+.diar-faltas-banner { display:flex;align-items:center;gap:6px;padding:8px 12px;margin-top:6px;border-radius:var(--radius-sm);background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.15); }
+.diar-chevron { color:var(--text-tertiary); }
+
+/* ── BADGES E BOTÕES AUXILIARES ── */
+.edr-empty { text-align:center;padding:48px;color:var(--text-tertiary); }
+.edr-empty p { margin-top:12px; }
+.edr-badge { font-size:10px;font-weight:700;padding:2px 8px;border-radius:var(--radius-sm); }
+.edr-badge-error { background:rgba(239,68,68,.1);color:var(--error); }
+.edr-btn-icon { background:none;border:none;color:var(--text-tertiary);cursor:pointer;padding:4px;border-radius:var(--radius-sm);transition:color .15s,background .15s; }
+.edr-btn-icon:hover { color:var(--primary);background:rgba(45,106,79,.08); }
+.edr-btn-sm { font-size:11px;font-weight:600;padding:4px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;cursor:pointer;transition:all .15s; }
+.edr-btn-success-outline { color:var(--success);border-color:rgba(5,150,105,.3); }
+.edr-btn-success-outline:hover { background:rgba(5,150,105,.08); }
+.btn-secondary { display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:8px 14px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;transition:all .15s; }
+.btn-secondary:hover { border-color:var(--primary);color:var(--primary); }
+
 /* ═══ FIM COMPONENTES V2 ═══ */
 </style>
 </head>
