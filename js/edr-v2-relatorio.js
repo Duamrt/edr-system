@@ -23,7 +23,8 @@ const MESES_FULL = ['Janeiro','Fevereiro','Marco','Abril','Maio','Junho','Julho'
 // ── HELPERS ────────────────────────────────────────────────────
 
 function _relGetRepassesCef() {
-  return typeof CustosModule !== 'undefined' ? CustosModule.repassesCef : (typeof repassesCef !== 'undefined' ? repassesCef : []);
+  if (typeof repassesCef !== 'undefined' && repassesCef.length) return repassesCef;
+  return typeof CustosModule !== 'undefined' && CustosModule.repassesCef.length ? CustosModule.repassesCef : [];
 }
 
 function _relGetAdicionaisPgtos() {

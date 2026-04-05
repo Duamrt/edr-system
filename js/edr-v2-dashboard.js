@@ -22,7 +22,8 @@ const _AGENDA_CORES = ['#2D6A4F','#3498db','#a855f7','#f59e0b','#ef4444','#06b6d
 // ── HELPERS ────────────────────────────────────────────────────
 
 function _dashGetRepassesCef() {
-  return typeof CustosModule !== 'undefined' ? CustosModule.repassesCef : (typeof repassesCef !== 'undefined' ? repassesCef : []);
+  if (typeof repassesCef !== 'undefined' && repassesCef.length) return repassesCef;
+  return typeof CustosModule !== 'undefined' && CustosModule.repassesCef.length ? CustosModule.repassesCef : [];
 }
 
 function _dashFmtR(v, abrev) {
