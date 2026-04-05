@@ -558,6 +558,8 @@ function custosAbrirModalContrato(obraId) {
   const obra = todasObras.find(o => o.id === obraId);
   if (!obra) return;
 
+  const _vv = Number(obra.contrato_valor||0)+Number(obra.contrato_subsidio||0)+Number(obra.contrato_fgts||0)+Number(obra.contrato_entrada||0)+Number(obra.contrato_extras||0);
+
   content.innerHTML = `
     <div class="modal-title">
       <span class="material-symbols-outlined" style="color:var(--primary);">description</span>
@@ -565,34 +567,76 @@ function custosAbrirModalContrato(obraId) {
       <button class="modal-close" onclick="closeModal('custos-modal-contrato')"><span class="material-symbols-outlined">close</span></button>
     </div>
     <input type="hidden" id="contrato-obra-id" value="${esc(obraId)}"/>
-    <div class="dist-form-grid">
-      <div class="dist-form-field"><label class="dist-form-label">Valor Financiado</label>
-        <input class="dist-form-input" id="contrato-valor" type="number" value="${obra.contrato_valor || ''}" oninput="_custosCalcValorVenda()"/></div>
-      <div class="dist-form-field"><label class="dist-form-label">Subsidio</label>
-        <input class="dist-form-input" id="contrato-subsidio" type="number" value="${obra.contrato_subsidio || ''}" oninput="_custosCalcValorVenda()"/></div>
-      <div class="dist-form-field"><label class="dist-form-label">FGTS</label>
-        <input class="dist-form-input" id="contrato-fgts" type="number" value="${obra.contrato_fgts || ''}" oninput="_custosCalcValorVenda()"/></div>
-      <div class="dist-form-field"><label class="dist-form-label">Entrada</label>
-        <input class="dist-form-input" id="contrato-entrada" type="number" value="${obra.contrato_entrada || ''}" oninput="_custosCalcValorVenda()"/></div>
-      <div class="dist-form-field"><label class="dist-form-label">Extras</label>
-        <input class="dist-form-input" id="contrato-extras" type="number" value="${obra.contrato_extras || ''}" oninput="_custosCalcValorVenda()"/></div>
-      <div class="dist-form-field"><label class="dist-form-label">Valor Venda (calculado)</label>
-        <div id="contrato-venda-valor" style="font-family:'Plus Jakarta Sans',sans-serif;font-size:18px;font-weight:800;color:var(--primary);padding:8px 0;">${fmtR((Number(obra.contrato_valor || 0) + Number(obra.contrato_subsidio || 0) + Number(obra.contrato_fgts || 0) + Number(obra.contrato_entrada || 0) + Number(obra.contrato_extras || 0)))}</div>
-        <div id="contrato-venda-alerta" style="display:none;font-size:11px;color:var(--warning);"></div></div>
-      <div class="dist-form-field"><label class="dist-form-label">Taxa</label>
-        <input class="dist-form-input" id="contrato-taxa" type="text" value="${esc(obra.contrato_taxa || '')}"/></div>
-      <div class="dist-form-field"><label class="dist-form-label">Prazo</label>
-        <input class="dist-form-input" id="contrato-prazo" type="text" value="${esc(obra.contrato_prazo || '')}"/></div>
-      <div class="dist-form-field"><label class="dist-form-label">Data Contrato</label>
-        <input class="dist-form-input" id="contrato-data" type="date" value="${obra.contrato_data || ''}"/></div>
-      <div class="dist-form-field" style="display:flex;align-items:center;gap:8px;padding-top:20px;">
-        <input type="checkbox" id="contrato-entrada-paga" ${obra.entrada_paga ? 'checked' : ''} style="accent-color:var(--primary);"/>
-        <label for="contrato-entrada-paga" style="font-size:13px;">Entrada paga</label>
+
+    <!-- Valor de Venda destacado -->
+    <div style="background:var(--primary-light,rgba(45,106,79,0.08));border:1px solid var(--primary-border,rgba(45,106,79,0.2));border-radius:10px;padding:12px;margin-bottom:16px;text-align:center;">
+      <div style="font-size:9px;color:var(--text-secondary);letter-spacing:1px;font-weight:700;text-transform:uppercase;">Valor de Venda do Imóvel</div>
+      <div id="contrato-venda-valor" style="font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:800;color:var(--primary);margin-top:4px;">${fmtR(_vv)}</div>
+      <div id="contrato-venda-alerta" style="display:none;font-size:10px;color:var(--error,#ef4444);margin-top:4px;font-weight:700;"></div>
+    </div>
+
+    <!-- Seção: Valores Recebidos do Banco -->
+    <div style="font-size:10px;color:var(--text-secondary);letter-spacing:1.5px;font-weight:700;margin-bottom:8px;">
+      <span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;">account_balance</span> VALORES RECEBIDOS DO BANCO</div>
+    <div style="display:flex;gap:8px;margin-bottom:4px;">
+      <div style="flex:1;">
+        <label style="font-size:11px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:4px;">FINANCIADO (R$) *</label>
+        <input class="dist-form-input" id="contrato-valor" type="number" step="0.01" placeholder="Valor financiado" value="${obra.contrato_valor || ''}" oninput="_custosCalcValorVenda()"/>
+      </div>
+      <div style="flex:1;">
+        <label style="font-size:11px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:4px;">SUBSÍDIO (R$)</label>
+        <input class="dist-form-input" id="contrato-subsidio" type="number" step="0.01" placeholder="Desconto governo" value="${obra.contrato_subsidio || ''}" oninput="_custosCalcValorVenda()"/>
       </div>
     </div>
-    <div style="display:flex;gap:12px;margin-top:24px;">
-      <button class="btn-primary" style="flex:1;padding:14px;font-size:15px;justify-content:center;" onclick="custosSalvarContrato()">
-        <span class="material-symbols-outlined" style="font-size:20px;">save</span>Salvar Contrato</button>
+    <div style="display:flex;gap:8px;margin-bottom:16px;">
+      <div style="flex:1;">
+        <label style="font-size:11px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:4px;">FGTS (R$)</label>
+        <input class="dist-form-input" id="contrato-fgts" type="number" step="0.01" placeholder="Saque FGTS" value="${obra.contrato_fgts || ''}" oninput="_custosCalcValorVenda()"/>
+      </div>
+      <div style="flex:1;"></div>
+    </div>
+
+    <!-- Seção: Valores Pagos pelo Cliente -->
+    <div style="font-size:10px;color:var(--text-secondary);letter-spacing:1.5px;font-weight:700;margin-bottom:8px;">
+      <span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;">payments</span> VALORES PAGOS PELO CLIENTE</div>
+    <div style="display:flex;gap:8px;margin-bottom:8px;">
+      <div style="flex:1;">
+        <label style="font-size:11px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:4px;">ENTRADA (R$)</label>
+        <input class="dist-form-input" id="contrato-entrada" type="number" step="0.01" placeholder="Entrada do cliente" value="${obra.contrato_entrada || ''}" oninput="_custosCalcValorVenda()"/>
+      </div>
+      <div style="flex:1;">
+        <label style="font-size:11px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:4px;">SERVIÇOS EXTRAS (R$)</label>
+        <input class="dist-form-input" id="contrato-extras" type="number" step="0.01" placeholder="Adicionais fora CEF" value="${obra.contrato_extras || ''}" oninput="_custosCalcValorVenda()"/>
+      </div>
+    </div>
+    <div style="margin-bottom:16px;">
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--text-secondary);">
+        <input type="checkbox" id="contrato-entrada-paga" ${obra.entrada_paga ? 'checked' : ''} style="accent-color:var(--primary);width:16px;height:16px;"/> Entrada já paga pelo cliente
+      </label>
+    </div>
+
+    <!-- Seção: Dados do Contrato -->
+    <div style="font-size:10px;color:var(--text-secondary);letter-spacing:1.5px;font-weight:700;margin-bottom:8px;">
+      <span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;">description</span> DADOS DO CONTRATO</div>
+    <div style="display:flex;gap:8px;margin-bottom:8px;">
+      <div style="flex:1;">
+        <label style="font-size:11px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:4px;">TAXA (% a.a.)</label>
+        <input class="dist-form-input" id="contrato-taxa" type="text" placeholder="Ex: 7,95%" value="${esc(obra.contrato_taxa || '')}"/>
+      </div>
+      <div style="flex:1;">
+        <label style="font-size:11px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:4px;">PRAZO</label>
+        <input class="dist-form-input" id="contrato-prazo" type="text" placeholder="Ex: 360 meses" value="${esc(obra.contrato_prazo || '')}"/>
+      </div>
+    </div>
+    <div style="margin-bottom:16px;">
+      <label style="font-size:11px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:4px;">DATA DO CONTRATO</label>
+      <input class="dist-form-input" id="contrato-data" type="date" value="${obra.contrato_data || ''}"/>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-top:8px;">
+      <button class="btn-primary" style="flex:1;padding:12px;font-size:14px;justify-content:center;" onclick="custosSalvarContrato()">
+        <span class="material-symbols-outlined" style="font-size:18px;">save</span> Salvar Contrato</button>
+      <button class="btn-secondary" style="padding:12px 20px;font-size:14px;" onclick="closeModal('custos-modal-contrato')">Cancelar</button>
     </div>`;
 
   openModal('custos-modal-contrato');
