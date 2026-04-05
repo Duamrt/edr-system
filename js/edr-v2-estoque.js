@@ -111,7 +111,7 @@ function consolidarEstoque(obraId) {
   function normChave(d) {
     d = norm(d);
     d = d.replace(/^\d{4,6}\s*[·\-]?\s*/, '');
-    d = d.replace(/\b(CP\s*-?\s*II[IZ]?|CP\s*-?\s*IV|CP\s*-?\s*V|50\s*KG|25\s*KG|20\s*KG|18\s*L|SACO|SC|UN|ML|M2|M3|M³|PCT|CX|PC|ROLO|GALAO|GL|BARRA|METRO|KG)\b/g, '');
+    d = d.replace(/\b(cp\s*-?\s*ii[iz]?|cp\s*-?\s*iv|cp\s*-?\s*v|50\s*kg|25\s*kg|20\s*kg|18\s*l|saco|sc|un|ml|m2|m3|m³|pct|cx|pc|rolo|galao|gl|barra|metro|kg)\b/g, '');
     return d.replace(/\s+/g, ' ').trim();
   }
   function getChave(desc, codigoCat) {
