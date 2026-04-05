@@ -558,7 +558,7 @@ function custosAbrirModalContrato(obraId) {
   const obra = todasObras.find(o => o.id === obraId);
   if (!obra) return;
 
-  const _vv = Number(obra.contrato_valor||0)+Number(obra.contrato_subsidio||0)+Number(obra.contrato_fgts||0)+Number(obra.contrato_entrada||0)+Number(obra.contrato_extras||0);
+  const _vv = Number(obra.contrato_valor||0)+Number(obra.contrato_subsidio||0)+Number(obra.contrato_fgts||0)+Number(obra.contrato_entrada||0);
 
   content.innerHTML = `
     <div class="modal-title">
@@ -593,7 +593,11 @@ function custosAbrirModalContrato(obraId) {
         <label style="font-size:11px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:4px;">FGTS (R$)</label>
         <input class="dist-form-input" id="contrato-fgts" type="number" step="0.01" placeholder="Saque FGTS" value="${obra.contrato_fgts || ''}" oninput="_custosCalcValorVenda()"/>
       </div>
-      <div style="flex:1;"></div>
+      <div style="flex:1;">
+        <label style="font-size:11px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:4px;">TERRENO (R$)</label>
+        <input class="dist-form-input" id="contrato-terreno" type="number" step="0.01" placeholder="Valor do terreno (informativo)" value="${obra.contrato_terreno || ''}" style="border-style:dashed;"/>
+        <span style="font-size:9px;color:var(--text-secondary);font-style:italic;">Incluso no financiado, apenas informativo</span>
+      </div>
     </div>
 
     <!-- Seção: Valores Pagos pelo Cliente -->
@@ -604,10 +608,7 @@ function custosAbrirModalContrato(obraId) {
         <label style="font-size:11px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:4px;">ENTRADA (R$)</label>
         <input class="dist-form-input" id="contrato-entrada" type="number" step="0.01" placeholder="Entrada do cliente" value="${obra.contrato_entrada || ''}" oninput="_custosCalcValorVenda()"/>
       </div>
-      <div style="flex:1;">
-        <label style="font-size:11px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:4px;">SERVIÇOS EXTRAS (R$)</label>
-        <input class="dist-form-input" id="contrato-extras" type="number" step="0.01" placeholder="Adicionais fora CEF" value="${obra.contrato_extras || ''}" oninput="_custosCalcValorVenda()"/>
-      </div>
+      <div style="flex:1;"></div>
     </div>
     <div style="margin-bottom:16px;">
       <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--text-secondary);">
@@ -647,8 +648,7 @@ function _custosCalcValorVenda() {
   const sub = parseFloat(document.getElementById('contrato-subsidio')?.value) || 0;
   const fgts = parseFloat(document.getElementById('contrato-fgts')?.value) || 0;
   const ent = parseFloat(document.getElementById('contrato-entrada')?.value) || 0;
-  const ext = parseFloat(document.getElementById('contrato-extras')?.value) || 0;
-  const total = fin + sub + fgts + ent + ext;
+  const total = fin + sub + fgts + ent;
   const el = document.getElementById('contrato-venda-valor');
   if (el) el.textContent = fmtR(total);
 
@@ -671,7 +671,7 @@ async function custosSalvarContrato() {
   const sub = parseFloat(document.getElementById('contrato-subsidio')?.value) || 0;
   const fgts = parseFloat(document.getElementById('contrato-fgts')?.value) || 0;
   const ent = parseFloat(document.getElementById('contrato-entrada')?.value) || 0;
-  const ext = parseFloat(document.getElementById('contrato-extras')?.value) || 0;
+  const terreno = parseFloat(document.getElementById('contrato-terreno')?.value) || 0;
   const entPaga = document.getElementById('contrato-entrada-paga')?.checked || false;
   const taxa = (document.getElementById('contrato-taxa')?.value || '').trim();
   const prazo = (document.getElementById('contrato-prazo')?.value || '').trim();
@@ -679,12 +679,12 @@ async function custosSalvarContrato() {
 
   if (fin <= 0) return showToast('Informe o valor financiado', 'error');
 
-  const valorVenda = fin + sub + fgts + ent + ext;
+  const valorVenda = fin + sub + fgts + ent;
 
   const body = {
     contrato_valor: fin, contrato_subsidio: sub, contrato_fgts: fgts,
-    contrato_entrada: ent, contrato_extras: ext,
-    contrato_valor_edr: valorVenda, valor_venda: valorVenda,
+    contrato_entrada: ent, contrato_terreno: terreno,
+    valor_venda: valorVenda,
     entrada_paga: entPaga, contrato_taxa: taxa, contrato_prazo: prazo, contrato_data: data,
   };
 
