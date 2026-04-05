@@ -1065,11 +1065,10 @@ async function diarConfirmarLancamento() {
   if (btn) { btn.disabled = true; btn.textContent = 'SALVANDO...'; }
 
   try {
-    // Remover registros do mesmo dia nessa quinzena
+    // Remover registros do mesmo dia em paralelo
     const existentes = DiariasModule.registros.filter(r => r.data === DiariasModule.interpretado.data);
-    for (const r of existentes) {
-      await sbDelete('diarias', `?id=eq.${r.id}`);
-    }
+    if (existentes.length) await Promise.all(existentes.map(r => sbDelete('diarias', `?id=eq.${r.id}`)));
+
     const novos = DiariasModule.interpretado.registros.map(r => ({
       quinzena_id: DiariasModule.quinzenaAtiva.id,
       data: DiariasModule.interpretado.data,
@@ -1085,9 +1084,42 @@ async function diarConfirmarLancamento() {
       '<div class="edr-empty"><span class="material-symbols-outlined" style="font-size:32px;opacity:.3;">chat</span><p>Cole uma mensagem e clique em interpretar</p></div>';
     await _diarCarregarRegistros();
     _diarRenderRegistros();
+    _diarRenderFolha();
     showToast('Diarias salvas!');
+    // Lançamento automático no P&L (silencioso, não bloqueia)
+    _diarAutoLancarPL(novos).catch(() => {});
   } catch (e) { showToast('Erro: ' + (e.message || JSON.stringify(e))); }
   if (btn) { btn.disabled = false; btn.textContent = 'CONFIRMAR E SALVAR'; }
+}
+
+// Lançamento automático na tabela lancamentos após confirmar diárias
+async function _diarAutoLancarPL(novos) {
+  const obrasMap = await _diarBuscarObras();
+  if (!obrasMap) return;
+  const porObra = {};
+  novos.forEach(r => {
+    const periodos = Array.isArray(r.periodos) ? r.periodos : [];
+    periodos.forEach(p => {
+      const chave = _diarNormStr(p.obra || '');
+      if (!porObra[chave]) porObra[chave] = { valor: 0, nome: p.obra };
+      porObra[chave].valor += r.diaria_base * (p.fracao || 0);
+    });
+  });
+  const data = novos[0]?.data || hojeISO();
+  const obs = 'Diaria · ' + data + ' · ' + (DiariasModule.quinzenaAtiva?.label || 'Quinzena');
+  const promessas = Object.entries(porObra).map(([chave, { valor, nome }]) => {
+    const obraId = obrasMap[chave];
+    if (!obraId || valor <= 0) return Promise.resolve();
+    return sbPostMinimal('lancamentos', {
+      obra_id: obraId, descricao: 'MAO DE OBRA', qtd: 1,
+      preco: valor, total: valor, data, obs, etapa: '28_mao'
+    });
+  });
+  await Promise.all(promessas);
+}
+
+function _diarNormStr(s) {
+  return (s || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
 }
 
 
@@ -1585,7 +1617,9 @@ function _diarRenderFolha() {
     const periodos = typeof r.periodos === 'string' ? JSON.parse(r.periodos || '[]') : (r.periodos || []);
     if (!porFunc[r.funcionario]) porFunc[r.funcionario] = { nome: r.funcionario, cargo: r.cargo || '', diaria: r.diaria_base, fracoes: 0, valor: 0, obras: {} };
     porFunc[r.funcionario].fracoes += Number(r.total_fracoes || 0);
-    porFunc[r.funcionario].valor += Number(r.valor || 0);
+    // Recalcula pelo mesmo método de _diarCalcCustoObra (diaria_base × fracao por período)
+    const valorCalc = periodos.reduce((s, p) => s + r.diaria_base * (p.fracao || 0), 0);
+    porFunc[r.funcionario].valor += valorCalc;
     periodos.forEach(p => { const obra = _diarNormalizarObra(p.obra); porFunc[r.funcionario].obras[obra] = (porFunc[r.funcionario].obras[obra] || 0) + (p.fracao || 0); });
   });
   const ordem = { 'Mestre': 1, 'Pedreiro': 2, 'Betoneiro': 3, 'Servente': 4 };
@@ -1983,7 +2017,7 @@ async function _diarBuscarObras() {
   try {
     const lista = await sbGet('obras', '?select=id,nome&arquivada=eq.false&order=nome.asc');
     DiariasModule._obrasCache = {};
-    lista.forEach(o => { DiariasModule._obrasCache[o.nome.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase()] = o.id; });
+    lista.forEach(o => { DiariasModule._obrasCache[_diarNormStr(o.nome)] = o.id; });
     return DiariasModule._obrasCache;
   } catch (e) { return null; }
 }
@@ -2005,7 +2039,7 @@ async function diarAbrirModalEDR() {
     return;
   }
   const linhas = Object.entries(custoPorObra).map(([obra, valor]) => {
-    const id = obrasMap[obra.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase()] || null;
+    const id = obrasMap[_diarNormStr(obra)] || null;
     const statusIcon = id ? 'check_circle' : 'warning';
     const statusColor = id ? 'var(--success)' : 'var(--warning)';
     return `<tr data-obra="${obra}" data-valor="${valor.toFixed(2)}" data-id="${id || ''}">
