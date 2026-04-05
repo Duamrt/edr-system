@@ -500,3 +500,8 @@ const PdfModule = {
     this._gerarPdf({ content }, nomeArquivo);
   }
 };
+
+// ── Wrappers globais (chamados pelos botões no HTML) ──────────
+function pdfRelatorio()  { PdfModule.gerarRelatorio(); }
+function pdfDiarias()    { PdfModule.gerarDiarias(); }
+function cronGerarPDF()  { PdfModule.gerarCronograma(); }
