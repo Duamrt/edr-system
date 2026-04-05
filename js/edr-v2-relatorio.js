@@ -56,7 +56,7 @@ function getCatFromLanc(l) {
     const catEst = getCatEstoque(desc);
     if (catEst && catEst !== 'outros') return resolveEtapaKey(catEst);
   }
-  if (/mao[\s\-]de[\s\-]obra|armador(?!\s+de\s)|eletricista|pintor(?!\s+de\s)|(?<!\w\s+de\s+)pedreiro|servente|mestre de obras|encanador|azulejista/.test(dnn) && !/bucha|luva|joelho|adaptador|registro|conexao|te\b|curva|niple|flange|fita|cola|parafuso|prego|tela|disco/i.test(dnn)) return '28_mao';
+  if (/mao[\s\-]de[\s\-]obra|folha[\s\-]quinzenal|folha[\s\-]de[\s\-]pag|diaria[\s\-]de[\s\-]obra|diaria[\s\-]quinzenal|pagamento[\s\-]quinzenal|quinzena[\s\-]de[\s\-]obra|armador(?!\s+de\s)|eletricista|pintor(?!\s+de\s)|(?<!\w\s+de\s+)pedreiro|servente|mestre[\s\-]de[\s\-]obras|encanador|azulejista|carpinteiro|gesseiro/.test(dnn) && !/bucha|luva|joelho|adaptador|registro|conexao|te\b|curva|niple|flange|fita|cola|parafuso|prego|tela|disco/i.test(dnn)) return '28_mao';
   if (/aquisicao de terreno|compra de terreno/.test(dnn)) return '35_terreno';
   if (/contrato|documento|anotacao|alvara|licenca|vistoria|escritura/.test(dnn)) return '08_doc';
   return '36_outros';

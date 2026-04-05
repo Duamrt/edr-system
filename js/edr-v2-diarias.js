@@ -1983,7 +1983,7 @@ async function _diarBuscarObras() {
   try {
     const lista = await sbGet('obras', '?select=id,nome&arquivada=eq.false&order=nome.asc');
     DiariasModule._obrasCache = {};
-    lista.forEach(o => { DiariasModule._obrasCache[o.nome.toUpperCase()] = o.id; });
+    lista.forEach(o => { DiariasModule._obrasCache[o.nome.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase()] = o.id; });
     return DiariasModule._obrasCache;
   } catch (e) { return null; }
 }
@@ -2005,7 +2005,7 @@ async function diarAbrirModalEDR() {
     return;
   }
   const linhas = Object.entries(custoPorObra).map(([obra, valor]) => {
-    const id = obrasMap[obra.toUpperCase()] || null;
+    const id = obrasMap[obra.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase()] || null;
     const statusIcon = id ? 'check_circle' : 'warning';
     const statusColor = id ? 'var(--success)' : 'var(--warning)';
     return `<tr data-obra="${obra}" data-valor="${valor.toFixed(2)}" data-id="${id || ''}">
