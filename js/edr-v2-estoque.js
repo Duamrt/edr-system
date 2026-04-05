@@ -107,10 +107,20 @@ function switchTab(tab) {
 function consolidarEstoque(obraId) {
   const mapa = {}; // chave → { desc, codigo, un, cat, entradas, saidas, ajustes, lotes, temNF }
 
-  // Helper: chave conservadora (sem adivinhacao)
+  // Helper: chave inteligente (igual V1 — agrupa variacoes do mesmo material)
+  function normChave(d) {
+    d = norm(d);
+    d = d.replace(/^\d{4,6}\s*[·\-]?\s*/, '');
+    d = d.replace(/\b(CP\s*-?\s*II[IZ]?|CP\s*-?\s*IV|CP\s*-?\s*V|50\s*KG|25\s*KG|20\s*KG|18\s*L|SACO|SC|UN|ML|M2|M3|M³|PCT|CX|PC|ROLO|GALAO|GL|BARRA|METRO|KG)\b/g, '');
+    return d.replace(/\s+/g, ' ').trim();
+  }
   function getChave(desc, codigoCat) {
     if (codigoCat) return 'COD:' + codigoCat;
-    return 'NOME:' + norm(desc);
+    // Tentar achar no catalogo pelo nome
+    const nDesc = norm(desc);
+    const catItem = EstoqueModule.catalogoMateriais.find(m => norm(m.nome) === nDesc);
+    if (catItem && catItem.codigo) return 'COD:' + catItem.codigo;
+    return 'NOME:' + normChave(desc);
   }
 
   // Helper: garantir entrada no mapa
