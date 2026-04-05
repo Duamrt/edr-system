@@ -1210,6 +1210,26 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
 .btn-secondary { display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:8px 14px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;transition:all .15s; }
 .btn-secondary:hover { border-color:var(--primary);color:var(--primary); }
 
+/* ── ABA CEF (dentro de Obras) ── */
+.cef-grid { display:flex;flex-direction:column;gap:12px; }
+.cef-hero { text-align:center;padding:16px;background:var(--primary-light,rgba(45,106,79,0.08));border:1px solid rgba(45,106,79,0.2);border-radius:var(--radius-sm); }
+.cef-hero-label { font-size:10px;color:var(--text-secondary);letter-spacing:1px;font-weight:700;text-transform:uppercase; }
+.cef-hero-value { font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:800;color:var(--primary);margin-top:4px; }
+.cef-cards { display:grid;grid-template-columns:repeat(3,1fr);gap:10px; }
+.cef-card { background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;text-align:center; }
+.cef-card-label { font-size:10px;color:var(--text-secondary);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px; }
+.cef-card-value { font-family:'Plus Jakarta Sans',sans-serif;font-size:16px;font-weight:800; }
+.cef-progress-box { background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 16px; }
+.cef-progress-header { display:flex;justify-content:space-between;align-items:center;margin-bottom:6px; }
+.cef-progress-label { font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px; }
+.cef-progress-pct { font-size:14px;font-weight:800;color:var(--primary); }
+.cef-progress-bar { height:8px;background:var(--border-light,rgba(0,0,0,0.06));border-radius:4px;overflow:hidden; }
+.cef-progress-fill { height:100%;background:linear-gradient(90deg,var(--primary),#27ae60);border-radius:4px;transition:width .4s; }
+.cef-progress-footer { display:flex;justify-content:space-between;font-size:11px;color:var(--text-tertiary);margin-top:6px; }
+.cef-financeiro { display:grid;grid-template-columns:1fr 1fr;gap:10px; }
+.cef-fin-card { background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;text-align:center; }
+@media(max-width:480px) { .cef-cards { grid-template-columns:1fr 1fr; } }
+
 /* ═══ FIM COMPONENTES V2 ═══ */
 </style>
 </head>
@@ -1547,7 +1567,7 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
     <!-- Aba Adicionais -->
     <div id="obras-tab-content-add" style="display:none;">
       <div style="margin-bottom:10px;">
-        <button class="btn-save" style="padding:10px 18px;width:auto;font-size:12px;" onclick="abrirModalAdicional()">➕ Novo Adicional</button>
+        <button class="btn-save" style="padding:10px 18px;width:auto;font-size:12px;" onclick="AdicionaisModule.abrirModal(ObrasModule.obraAtual)">➕ Novo Adicional</button>
       </div>
       <div id="adicionais-lista"></div>
       <div id="adicionais-empty" class="empty hidden">Nenhum serviço adicional registrado nesta obra.</div>
@@ -2347,35 +2367,35 @@ function updateShellUser(nome, perfil) {
 
 <!-- ═══════ MODULOS V2 (ordem de dependência) ═══════ -->
 <!-- 0. Infraestrutura: sbGet/sbPost/sbPatch/sbDelete, confirmar(), showModal, usuarioAtual -->
-<script src="js/edr-v2-infra.js?v=04050411"></script>
+<script src="js/edr-v2-infra.js?v=04050415"></script>
 <!-- 1. Utilitários globais (valorPorExtenso, fmtN) -->
-<script src="js/edr-v2-utils-extras.js?v=04050411"></script>
+<script src="js/edr-v2-utils-extras.js?v=04050415"></script>
 <!-- 2. Obras PRIMEIRO (ETAPAS, resolveEtapaKey, etapaCor, etapaLabel — vários módulos dependem) -->
-<script src="js/edr-v2-obras.js?v=04050411"></script>
+<script src="js/edr-v2-obras.js?v=04050415"></script>
 <!-- 3. PDF engine (PdfModule — chamado por vários módulos) -->
-<script src="js/edr-v2-pdf.js?v=04050411"></script>
+<script src="js/edr-v2-pdf.js?v=04050415"></script>
 <!-- 4. Módulos core de negócio -->
-<script src="js/edr-v2-notas.js?v=04050411"></script>
-<script src="js/edr-v2-importar.js?v=04050411"></script>
-<script src="js/edr-v2-estoque.js?v=04050411"></script>
-<script src="js/edr-v2-custos.js?v=04050411"></script>
+<script src="js/edr-v2-notas.js?v=04050415"></script>
+<script src="js/edr-v2-importar.js?v=04050415"></script>
+<script src="js/edr-v2-estoque.js?v=04050415"></script>
+<script src="js/edr-v2-custos.js?v=04050415"></script>
 <!-- 5. Equipe e operacional -->
-<script src="js/edr-v2-diarias.js?v=04050411"></script>
-<script src="js/edr-v2-diario.js?v=04050411"></script>
+<script src="js/edr-v2-diarias.js?v=04050415"></script>
+<script src="js/edr-v2-diario.js?v=04050415"></script>
 <!-- 6. Relatórios e dashboard (dependem de obras.js pra etapaCor) -->
-<script src="js/edr-v2-relatorio.js?v=04050411"></script>
-<script src="js/edr-v2-dashboard.js?v=04050411"></script>
+<script src="js/edr-v2-relatorio.js?v=04050415"></script>
+<script src="js/edr-v2-dashboard.js?v=04050415"></script>
 <!-- 7. Módulos complementares -->
-<script src="js/edr-v2-leads.js?v=04050411"></script>
-<script src="js/edr-v2-garantias.js?v=04050411"></script>
-<script src="js/edr-v2-adicionais.js?v=04050411"></script>
-<script src="js/edr-v2-cronograma.js?v=04050411"></script>
-<script src="js/edr-v2-orcamento.js?v=04050411"></script>
+<script src="js/edr-v2-leads.js?v=04050415"></script>
+<script src="js/edr-v2-garantias.js?v=04050415"></script>
+<script src="js/edr-v2-adicionais.js?v=04050415"></script>
+<script src="js/edr-v2-cronograma.js?v=04050415"></script>
+<script src="js/edr-v2-orcamento.js?v=04050415"></script>
 <!-- 8. Documentação e medições -->
-<script src="js/edr-v2-termo-manual.js?v=04050411"></script>
-<script src="js/edr-v2-pci.js?v=04050411"></script>
+<script src="js/edr-v2-termo-manual.js?v=04050415"></script>
+<script src="js/edr-v2-pci.js?v=04050415"></script>
 <!-- 9. Auth (login, sessão, refresh — ÚLTIMO) -->
-<script src="js/edr-v2-auth.js?v=04050411"></script>
+<script src="js/edr-v2-auth.js?v=04050415"></script>
 
 <!-- ═══════════════════════════════════════════════════════════════ -->
 <!-- MODAIS (Fase 0 — containers para módulos que precisam)        -->

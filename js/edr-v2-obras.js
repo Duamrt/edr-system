@@ -275,7 +275,10 @@ function obrasSwitchTab(tab) {
   // Lazy loading: so buscar dados quando clicar na aba
   if (tab === 'lanc') { ObrasModule.lancPage = 0; filtrarLanc(); }
   if (tab === 'mat') renderObrasMateriais();
-  if (tab === 'add' && typeof renderAdicionais === 'function') renderAdicionais();
+  if (tab === 'add') {
+    const addContainer = document.getElementById('adicionais-lista');
+    if (addContainer && typeof AdicionaisModule !== 'undefined') AdicionaisModule.render(ObrasModule.obraAtual, addContainer);
+  }
   if (tab === 'cef') renderObraCef();
 }
 
@@ -417,12 +420,12 @@ function renderObraCef() {
   const subsidio = Number(obra.contrato_subsidio || 0);
   const fgts = Number(obra.contrato_fgts || 0);
   const entrada = Number(obra.contrato_entrada || 0);
-  const extras = Number(obra.contrato_extras || 0);
+  const terreno = Number(obra.contrato_terreno || 0);
   const valorVenda = Number(obra.valor_venda || 0);
   const entradaPaga = obra.entrada_paga;
 
-  // Validacao CEF: soma dos componentes = valor de venda
-  const somaComponentes = financiado + subsidio + fgts + entrada + extras;
+  // Validacao CEF: soma dos componentes = valor de venda (sem extras)
+  const somaComponentes = financiado + subsidio + fgts + entrada;
   const somaOk = valorVenda > 0 && Math.abs(somaComponentes - valorVenda) < 1;
   const somaAlerta = valorVenda > 0 && !somaOk;
 
@@ -431,7 +434,7 @@ function renderObraCef() {
   const totalRecebido = reps.reduce((s, r) => s + Number(r.valor || 0), 0);
 
   // Adicionais
-  const adds = typeof getAdicionaisObra === 'function' ? getAdicionaisObra(obraId) : { qtd: 0, valorTotal: 0, totalRecebido: 0, saldo: 0 };
+  const adds = typeof AdicionaisModule !== 'undefined' ? AdicionaisModule.getAdicionaisObra(obraId) : { lista: [], valorTotal: 0, totalRecebido: 0, saldo: 0 };
   const receitaObra = valorVenda + adds.valorTotal;
   const pctRecebido = receitaObra > 0 ? Math.min((totalRecebido / receitaObra * 100), 100) : 0;
 
@@ -480,10 +483,10 @@ function renderObraCef() {
           <div class="cef-card-label">Entrada ${entradaPaga ? '<span style="color:var(--success);font-size:9px;">PAGA</span>' : '<span style="color:var(--warning);font-size:9px;">PENDENTE</span>'}</div>
           <div class="cef-card-value" style="color:var(--warning);">${fmt(entrada)}</div>
         </div>
-        <div class="cef-card">
-          <div class="cef-card-label">Extras</div>
-          <div class="cef-card-value" style="color:#EC4899;">${fmt(extras)}</div>
-        </div>
+        ${terreno > 0 ? `<div class="cef-card">
+          <div class="cef-card-label">Terreno <span style="font-size:9px;color:var(--text-tertiary);">incluso no financiado</span></div>
+          <div class="cef-card-value" style="color:#78716c;">${fmt(terreno)}</div>
+        </div>` : ''}
       </div>
 
       <!-- Barra de repasses -->
@@ -515,10 +518,10 @@ function renderObraCef() {
       </div>` : ''}
 
       <!-- Adicionais -->
-      ${adds.qtd > 0 ? `
+      ${adds.lista.length > 0 ? `
       <div style="padding:12px 16px;background:rgba(139,92,246,.05);border:1px solid rgba(139,92,246,.15);border-radius:var(--radius-sm);">
         <div style="display:flex;justify-content:space-between;align-items:center;">
-          <span style="font-size:12px;color:#8B5CF6;font-weight:700;">${adds.qtd} adicional(is)</span>
+          <span style="font-size:12px;color:#8B5CF6;font-weight:700;">${adds.lista.length} adicional(is)</span>
           <span style="font-size:14px;font-weight:700;color:#8B5CF6;">${fmt(adds.valorTotal)}</span>
         </div>
         <div style="font-size:11px;color:var(--text-tertiary);margin-top:4px;">
@@ -536,7 +539,7 @@ function renderObraCef() {
       </div>` : ''}
 
       ${isAdmin ? `
-      <button class="btn-primary" style="justify-self:start;" onclick="abrirModalContratoCEF('${esc(obraId)}')">
+      <button class="btn-primary" style="justify-self:start;" onclick="custosAbrirModalContrato('${esc(obraId)}')">
         <span class="material-symbols-outlined" style="font-size:18px;">edit</span>
         Editar Contrato CEF
       </button>` : ''}
