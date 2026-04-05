@@ -157,10 +157,12 @@ function consolidarEstoque(obraId) {
   for (const n of notasFiltradas) {
     const itens = parseItens(n);
     for (const it of itens) {
-      const chave = getChave(it.descricao, it.codigo_catalogo);
-      const item = garantir(chave, it.descricao, it.codigo_catalogo, it.unidade);
-      const qtd = parseFloat(it.quantidade) || 0;
-      const valorUn = parseFloat(it.preco_unitario) || 0;
+      const desc = it.descricao || it.desc || '';
+      const codCat = it.codigo_catalogo || it.cod || null;
+      const chave = getChave(desc, codCat);
+      const item = garantir(chave, desc, codCat, it.unidade);
+      const qtd = parseFloat(it.quantidade || it.qtd) || 0;
+      const valorUn = parseFloat(it.preco_unitario || it.preco) || 0;
       item.entradas += qtd;
       item.valorTotal += qtd * valorUn;
       item.temNF = true;
@@ -1189,7 +1191,7 @@ async function escanearOrfaos() {
   // De notas
   for (const n of notas) {
     for (const it of parseItens(n)) {
-      if (!it.codigo_catalogo) descs.add(norm(it.descricao));
+      if (!(it.codigo_catalogo || it.cod)) descs.add(norm(it.descricao || it.desc || ''));
     }
   }
 
