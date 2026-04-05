@@ -1563,14 +1563,14 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding-top:4px;flex-wrap:wrap;gap:8px;">
         <div class="modulo-badge" style="margin-bottom:0;"><span class="material-symbols-outlined">attach_money</span> CUSTOS CEF</div>
         <div style="display:flex;gap:8px;">
-          <button class="btn-save" style="padding:6px 14px;font-size:11px;" onclick="abrirModalRepasse()">+ NOVO REPASSE</button>
-          <button class="btn-outline" style="padding:6px 14px;font-size:11px;" onclick="gerarRelatorioCustos()"><span class="material-symbols-outlined icon-sm icon-inline">print</span> RELATÓRIO</button>
+          <button class="btn-save" style="padding:6px 14px;font-size:11px;" onclick="custosAbrirModalRepasse()">+ NOVO REPASSE</button>
+          <button class="btn-outline" style="padding:6px 14px;font-size:11px;" onclick="custosGerarRelatorio()"><span class="material-symbols-outlined icon-sm icon-inline">print</span> RELATÓRIO</button>
         </div>
       </div>
       <!-- Filtros -->
       <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
-        <input type="text" id="custos-filtro-busca" placeholder="Buscar obra..." oninput="filtrarCustosCards()" style="flex:1;min-width:160px;">
-        <select id="custos-filtro-periodo" onchange="filtrarCustosCards()" style="padding:8px 12px;background:var(--bg3);border:1px solid rgba(34,197,94,0.1);border-radius:8px;color:var(--branco);font-size:12px;font-family:inherit;outline:none;cursor:pointer;">
+        <input type="text" id="custos-filtro-busca" placeholder="Buscar obra..." oninput="custosBuscar(this.value)" style="flex:1;min-width:160px;">
+        <select id="custos-filtro-periodo" onchange="custosFiltrarPeriodo(this.value)" style="padding:8px 12px;background:var(--bg3);border:1px solid rgba(34,197,94,0.1);border-radius:8px;color:var(--branco);font-size:12px;font-family:inherit;outline:none;cursor:pointer;">
           <option value="">Todos os períodos</option>
           <option value="30">Últimos 30 dias</option>
           <option value="90">Últimos 90 dias</option>
@@ -1590,9 +1590,9 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
             <div class="modulo-badge" style="margin-bottom:0;"><span class="material-symbols-outlined">attach_money</span> CUSTOS CEF</div>
           </div>
           <div style="display:flex;gap:8px;">
-            <button class="btn-save" style="padding:6px 14px;font-size:11px;" onclick="abrirModalContratoCEF(custoObraAtual)"><span class="material-symbols-outlined icon-sm">description</span> CONTRATO</button>
-            <button class="btn-save" style="padding:6px 14px;font-size:11px;" onclick="abrirModalRepasse(custoObraAtual)"><span class="material-symbols-outlined icon-sm">add</span> NOVO REPASSE</button>
-            <button class="btn-outline" style="padding:6px 14px;font-size:11px;" onclick="gerarRelatorioCustos(custoObraAtual)"><span class="material-symbols-outlined icon-sm icon-inline">print</span> RELATÓRIO</button>
+            <button class="btn-save" style="padding:6px 14px;font-size:11px;" onclick="custosAbrirModalContrato(CustosModule.obraAtual)"><span class="material-symbols-outlined icon-sm">description</span> CONTRATO</button>
+            <button class="btn-save" style="padding:6px 14px;font-size:11px;" onclick="custosAbrirModalRepasse(CustosModule.obraAtual)"><span class="material-symbols-outlined icon-sm">add</span> NOVO REPASSE</button>
+            <button class="btn-outline" style="padding:6px 14px;font-size:11px;" onclick="custosGerarRelatorio(CustosModule.obraAtual)"><span class="material-symbols-outlined icon-sm icon-inline">print</span> RELATÓRIO</button>
           </div>
         </div>
       </div>
@@ -2687,7 +2687,7 @@ function abrirNota(id) {
 }
 
 // abrirModalContratoCEF — alias para a versão V2 no módulo custos
-function abrirModalContratoCEF(obraId) {
+function custosAbrirModalContrato(obraId) {
   if (typeof custosAbrirModalContrato === 'function') custosAbrirModalContrato(obraId);
 }
 </script>
