@@ -1064,6 +1064,12 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
 .vincular-option-sub { font-size:11px;color:var(--text-tertiary); }
 .vincular-divider { text-align:center;color:var(--text-tertiary);font-size:12px;margin:16px 0; }
 
+/* Tab buttons */
+.tab-row { display:flex;gap:6px;border-bottom:1px solid var(--border);overflow-x:auto; }
+.tab-btn { padding:7px 16px;font-size:12px;font-family:'Inter',sans-serif;font-weight:700;letter-spacing:1px;background:transparent;border:none;border-bottom:2px solid transparent;color:var(--text-tertiary);cursor:pointer;margin-bottom:-1px;display:flex;align-items:center;gap:4px;white-space:nowrap;transition:color .15s,border-color .15s; }
+.tab-btn:hover { color:var(--text-secondary); }
+.tab-btn.tab-active,.tab-active { border-bottom-color:var(--primary);color:var(--primary); }
+
 /* ═══ FIM COMPONENTES V2 ═══ */
 </style>
 </head>
@@ -1306,17 +1312,17 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
     <div class="view" id="view-relatorio">
 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-top:4px;flex-wrap:wrap;gap:10px;">
       <div style="display:flex;align-items:center;gap:14px;">
-        <button onclick="setView('dashboard')" style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.1);color:var(--verde-hl);border-radius:8px;padding:5px 14px;font-size:11px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;cursor:pointer;margin-right:8px;">← VOLTAR</button>
-        <div style="width:44px;height:44px;border:1px solid rgba(34,197,94,0.25);border-radius:12px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.04);">
-          <span style="font-size:20px;">📈</span>
+        <button onclick="setView('dashboard')" class="btn-tipo btn-tipo-active-success" style="padding:5px 14px;min-height:auto;font-size:11px;margin-right:8px;"><span class="material-symbols-outlined icon-sm">arrow_back</span> VOLTAR</button>
+        <div style="width:44px;height:44px;border:1px solid rgba(45,106,79,.25);border-radius:12px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.04);">
+          <span class="material-symbols-outlined icon-lg" style="color:var(--primary);">trending_up</span>
         </div>
         <div>
-          <div style="font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:700;color:var(--branco);letter-spacing:2px;">PAINEL FINANCEIRO</div>
-          <div style="font-size:11px;color:var(--texto3);">Entradas · Saídas · Mão de Obra · Detalhamento por Obra</div>
+          <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:18px;font-weight:700;color:var(--text-primary);letter-spacing:2px;">PAINEL FINANCEIRO</div>
+          <div style="font-size:11px;color:var(--text-tertiary);">Entradas · Saídas · Mão de Obra · Detalhamento por Obra</div>
         </div>
       </div>
-      <button onclick="exportarRelatorioPDF()" style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);color:var(--verde3);padding:8px 16px;border-radius:8px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:1px;">
-        ⬇ EXPORTAR PDF
+      <button onclick="exportarRelatorioPDF()" class="btn-tipo btn-tipo-active-success" style="padding:8px 16px;min-height:auto;font-size:12px;">
+        <span class="material-symbols-outlined icon-sm">download</span> EXPORTAR PDF
       </button>
     </div>
 
@@ -1324,7 +1330,7 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;">
       <select id="rel-mes" onchange="onChangeMesRel()" style="background:var(--bg3);border:1px solid var(--borda2);border-radius:8px;padding:8px 12px;color:var(--branco);font-family:inherit;font-size:12px;min-width:140px;"></select>
       <select id="rel-secao" onchange="renderRelatorio()" style="background:var(--bg3);border:1px solid var(--borda2);border-radius:8px;padding:8px 12px;color:var(--branco);font-family:inherit;font-size:12px;">
-        <option value="financeiro">💰 Painel Financeiro</option>
+        <option value="financeiro">Painel Financeiro</option>
         <option value="comparativo">⚖ Comparativo entre Obras</option>
       </select>
     </div>
@@ -1356,28 +1362,28 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
           <button onclick="obrasVoltarCards()" class="btn-tipo btn-tipo-active-success" style="padding:5px 14px;min-height:auto;font-size:11px;margin-right:8px;"><span class="material-symbols-outlined icon-sm">arrow_back</span> VOLTAR</button>
           <div class="modulo-badge" style="margin-bottom:0;"><span class="material-symbols-outlined">construction</span> EDR OBRAS</div>
         </div>
-        <button onclick="toggleObrasArquivadas()" id="btn-ver-arquivadas" style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);color:#fbbf24;border-radius:8px;padding:4px 12px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;cursor:pointer;transition:all .2s;" class="admin-only">📋 VER CONCLUÍDAS</button>
+        <button onclick="toggleObrasArquivadas()" id="btn-ver-arquivadas" class="admin-only btn-tipo btn-tipo-active-warning" style="padding:4px 12px;min-height:auto;font-size:10px;"><span class="material-symbols-outlined icon-sm">inventory</span> VER CONCLUÍDAS</button>
       </div>
       <div class="filter-row">
-        <input type="text" id="obras-busca" placeholder="🔍 Buscar lançamento..." oninput="filtrarLanc()">
+        <input type="text" id="obras-busca" placeholder="Buscar lançamento..." oninput="filtrarLanc()">
         <select id="obras-filtro-obra" onchange="onChangeObraFiltro()"><option value="">Todas as obras</option></select>
-        <button id="btn-arquivar-obra" onclick="onClickArquivarObra()" class="admin-only" style="display:none;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);color:#fbbf24;border-radius:8px;padding:9px 14px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;cursor:pointer;white-space:nowrap;transition:all .2s;" title="Arquivar obra selecionada">📦 ARQUIVAR</button>
+        <button id="btn-arquivar-obra" onclick="onClickArquivarObra()" class="admin-only btn-tipo btn-tipo-active-warning" style="display:none;padding:9px 14px;min-height:auto;font-size:10px;white-space:nowrap;" title="Arquivar obra selecionada"><span class="material-symbols-outlined icon-sm">archive</span> ARQUIVAR</button>
         <select id="obras-filtro-cat" onchange="filtrarLancCat()" style="min-width:160px;">
           <option value="">Todos centros de custo</option>
         </select>
       </div>
       <div style="display:flex;gap:6px;margin-top:6px;">
-        <button class="cat-btn ativo" id="obras-ord-data" onclick="obrasOrdem='data';filtrarLanc();obrasAtualizarOrdem()" style="font-size:10px;padding:5px 10px;">📅 DATA</button>
-        <button class="cat-btn" id="obras-ord-az" onclick="obrasOrdem='az';filtrarLanc();obrasAtualizarOrdem()" style="font-size:10px;padding:5px 10px;">A-Z</button>
-        <button class="cat-btn" id="obras-ord-valor" onclick="obrasOrdem='valor';filtrarLanc();obrasAtualizarOrdem()" style="font-size:10px;padding:5px 10px;">VALOR + ALTO</button>
-        <button class="cat-btn" id="obras-ord-codigo" onclick="obrasFiltroSemCodigo=!obrasFiltroSemCodigo;filtrarLanc();obrasAtualizarOrdem()" style="font-size:10px;padding:5px 10px;">🏷 SEM CODIGO</button>
+        <button class="cat-btn ativo" id="obras-ord-data" onclick="obrasOrdem='data';filtrarLanc();obrasAtualizarOrdem()">DATA</button>
+        <button class="cat-btn" id="obras-ord-az" onclick="obrasOrdem='az';filtrarLanc();obrasAtualizarOrdem()">A-Z</button>
+        <button class="cat-btn" id="obras-ord-valor" onclick="obrasOrdem='valor';filtrarLanc();obrasAtualizarOrdem()">VALOR + ALTO</button>
+        <button class="cat-btn" id="obras-ord-codigo" onclick="obrasFiltroSemCodigo=!obrasFiltroSemCodigo;filtrarLanc();obrasAtualizarOrdem()">SEM CODIGO</button>
       </div>
       <!-- Abas — dentro do sticky para ficarem sempre visíveis -->
-      <div style="display:flex;gap:6px;border-bottom:1px solid var(--borda);margin-top:8px;">
-        <button id="obras-tab-lanc" onclick="obrasSwitchTab('lanc')" style="padding:7px 16px;font-size:12px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;background:transparent;border:none;border-bottom:2px solid var(--verde-hl);color:var(--verde-hl);cursor:pointer;margin-bottom:-1px;">📋 LANÇAMENTOS</button>
-        <button id="obras-tab-mat" onclick="obrasSwitchTab('mat')" style="padding:7px 16px;font-size:12px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;background:transparent;border:none;border-bottom:2px solid transparent;color:var(--texto3);cursor:pointer;margin-bottom:-1px;">📦 MATERIAIS</button>
-        <button id="obras-tab-add" onclick="obrasSwitchTab('add')" style="padding:7px 16px;font-size:12px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;background:transparent;border:none;border-bottom:2px solid transparent;color:var(--texto3);cursor:pointer;margin-bottom:-1px;">📝 ADICIONAIS</button>
-        <button id="obras-tab-cef" onclick="obrasSwitchTab('cef')" style="padding:7px 16px;font-size:12px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;background:transparent;border:none;border-bottom:2px solid transparent;color:var(--texto3);cursor:pointer;margin-bottom:-1px;">📋 CEF</button>
+      <div class="tab-row" style="display:flex;gap:6px;border-bottom:1px solid var(--border);margin-top:8px;">
+        <button id="obras-tab-lanc" class="tab-btn tab-active" onclick="obrasSwitchTab('lanc')"><span class="material-symbols-outlined icon-sm">list_alt</span> LANÇAMENTOS</button>
+        <button id="obras-tab-mat" class="tab-btn" onclick="obrasSwitchTab('mat')"><span class="material-symbols-outlined icon-sm">inventory_2</span> MATERIAIS</button>
+        <button id="obras-tab-add" class="tab-btn" onclick="obrasSwitchTab('add')"><span class="material-symbols-outlined icon-sm">note_add</span> ADICIONAIS</button>
+        <button id="obras-tab-cef" class="tab-btn" onclick="obrasSwitchTab('cef')"><span class="material-symbols-outlined icon-sm">attach_money</span> CEF</button>
       </div>
     </div>
     <div id="obras-detalhe" class="hidden"></div>
@@ -1385,7 +1391,7 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
     <!-- Aba Lançamentos -->
     <div id="obras-tab-content-lanc">
       <div style="margin-bottom:10px;">
-        <button class="btn-save" style="padding:10px 18px;width:auto;font-size:12px;" onclick="irParaEntradaDireta()">📦 Estoque</button>
+        <button class="btn-save" style="padding:10px 18px;width:auto;font-size:12px;" onclick="irParaEntradaDireta()"><span class="material-symbols-outlined icon-sm">inventory_2</span> Estoque</button>
       </div>
       <div id="obras-total-filtro" class="hidden" style="display:flex;justify-content:space-between;align-items:center;background:var(--bg2);border:1px solid var(--verde-bd);border-radius:10px;padding:10px 14px;margin-bottom:10px;"></div>
       <div id="obras-lanc-lista"></div>
@@ -1419,12 +1425,12 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
         <div class="modulo-badge" style="margin-bottom:0;"><span class="material-symbols-outlined">attach_money</span> CUSTOS CEF</div>
         <div style="display:flex;gap:8px;">
           <button class="btn-save" style="padding:6px 14px;font-size:11px;" onclick="abrirModalRepasse()">+ NOVO REPASSE</button>
-          <button class="btn-outline" style="padding:6px 14px;font-size:11px;" onclick="gerarRelatorioCustos()">🖨 RELATÓRIO</button>
+          <button class="btn-outline" style="padding:6px 14px;font-size:11px;" onclick="gerarRelatorioCustos()"><span class="material-symbols-outlined icon-sm icon-inline">print</span> RELATÓRIO</button>
         </div>
       </div>
       <!-- Filtros -->
       <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
-        <input type="text" id="custos-filtro-busca" placeholder="🔍 Buscar obra..." oninput="filtrarCustosCards()" style="flex:1;min-width:160px;padding:8px 12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:8px;color:var(--branco);font-size:12px;font-family:inherit;outline:none;">
+        <input type="text" id="custos-filtro-busca" placeholder="Buscar obra..." oninput="filtrarCustosCards()" style="flex:1;min-width:160px;">
         <select id="custos-filtro-periodo" onchange="filtrarCustosCards()" style="padding:8px 12px;background:var(--bg3);border:1px solid rgba(34,197,94,0.1);border-radius:8px;color:var(--branco);font-size:12px;font-family:inherit;outline:none;cursor:pointer;">
           <option value="">Todos os períodos</option>
           <option value="30">Últimos 30 dias</option>
@@ -1441,13 +1447,13 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
       <div style="position:sticky;top:53px;z-index:90;background:var(--bg);padding:10px 0 4px 0;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
           <div style="display:flex;align-items:center;">
-            <button onclick="custosVoltarCards()" style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.1);color:var(--verde-hl);border-radius:8px;padding:5px 14px;font-size:11px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;cursor:pointer;margin-right:8px;">← VOLTAR</button>
+            <button onclick="custosVoltarCards()" class="btn-tipo btn-tipo-active-success" style="padding:5px 14px;min-height:auto;font-size:11px;margin-right:8px;"><span class="material-symbols-outlined icon-sm">arrow_back</span> VOLTAR</button>
             <div class="modulo-badge" style="margin-bottom:0;"><span class="material-symbols-outlined">attach_money</span> CUSTOS CEF</div>
           </div>
           <div style="display:flex;gap:8px;">
-            <button class="btn-save" style="padding:6px 14px;font-size:11px;" onclick="abrirModalContratoCEF(custoObraAtual)">📋 CONTRATO</button>
-            <button class="btn-save" style="padding:6px 14px;font-size:11px;" onclick="abrirModalRepasse(custoObraAtual)">+ NOVO REPASSE</button>
-            <button class="btn-outline" style="padding:6px 14px;font-size:11px;" onclick="gerarRelatorioCustos(custoObraAtual)">🖨 RELATÓRIO</button>
+            <button class="btn-save" style="padding:6px 14px;font-size:11px;" onclick="abrirModalContratoCEF(custoObraAtual)"><span class="material-symbols-outlined icon-sm">description</span> CONTRATO</button>
+            <button class="btn-save" style="padding:6px 14px;font-size:11px;" onclick="abrirModalRepasse(custoObraAtual)"><span class="material-symbols-outlined icon-sm">add</span> NOVO REPASSE</button>
+            <button class="btn-outline" style="padding:6px 14px;font-size:11px;" onclick="gerarRelatorioCustos(custoObraAtual)"><span class="material-symbols-outlined icon-sm icon-inline">print</span> RELATÓRIO</button>
           </div>
         </div>
       </div>
@@ -1466,28 +1472,28 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
     <div id="garantia-lista"></div>
     </div>
     <div class="view" id="view-estoque">
-<div id="estoque-sticky" style="position:sticky;top:0;z-index:90;background:var(--bg);padding:10px 0 8px 0;border-bottom:1px solid var(--borda);margin-bottom:8px;">
+<div id="estoque-sticky" class="sticky-header">
       <div class="modulo-badge"><span class="material-symbols-outlined">inventory_2</span> ESTOQUE EDR</div>
-      <div style="display:flex;gap:8px;margin-bottom:8px;">
-        <button class="btn-save" style="flex:1;padding:10px;font-size:13px;" onclick="abrirEntradaDireta()">📥 ENTRADA</button>
-        <button class="btn-save" style="flex:1;padding:10px;font-size:13px;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);color:#f87171;" onclick="abrirSaidaMaterial()">📤 SAÍDA</button>
-        <button class="btn-save admin-only" style="flex:1;padding:10px;font-size:13px;background:rgba(96,165,250,0.12);border:1px solid rgba(96,165,250,0.3);color:#60a5fa;" onclick="abrirAjusteEstoque()">📋 AJUSTE</button>
-        <button class="btn-save" style="padding:10px 8px;font-size:11px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);color:#22c55e;flex:0;white-space:nowrap;" onclick="exportarEstoqueExcel()">📊</button>
+      <div class="btn-row" style="margin-bottom:8px;">
+        <button class="btn-tipo btn-tipo-active-success" style="font-size:13px;" onclick="abrirEntradaDireta()"><span class="material-symbols-outlined icon-md">move_to_inbox</span> ENTRADA</button>
+        <button class="btn-tipo btn-tipo-active-danger" style="font-size:13px;" onclick="abrirSaidaMaterial()"><span class="material-symbols-outlined icon-md">output</span> SAÍDA</button>
+        <button class="btn-tipo btn-tipo-active-info admin-only" style="font-size:13px;" onclick="abrirAjusteEstoque()"><span class="material-symbols-outlined icon-md">tune</span> AJUSTE</button>
+        <button class="btn-tipo btn-tipo-active-success" style="padding:10px 8px;font-size:11px;flex:0;white-space:nowrap;" onclick="exportarEstoqueExcel()"><span class="material-symbols-outlined icon-md">download</span></button>
       </div>
       <div class="filter-row" style="margin-bottom:4px;position:relative;">
-        <input type="text" id="estoque-busca" placeholder="🔍 Buscar material..." oninput="renderEstoque();toggleLimparBusca()" style="text-transform:none;padding-right:90px;">
-        <button id="btn-limpar-busca" onclick="document.getElementById('estoque-busca').value='';renderEstoque();toggleLimparBusca();document.getElementById('estoque-busca').focus();" style="display:none;position:absolute;right:8px;top:50%;transform:translateY(-50%);background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.25);color:#f87171;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:1px;min-height:32px;">✕ LIMPAR</button>
+        <input type="text" id="estoque-busca" placeholder="Buscar material..." oninput="renderEstoque();toggleLimparBusca()" style="padding-right:90px;">
+        <button id="btn-limpar-busca" class="btn-tipo btn-tipo-active-danger" onclick="document.getElementById('estoque-busca').value='';renderEstoque();toggleLimparBusca();document.getElementById('estoque-busca').focus();" style="display:none;position:absolute;right:8px;top:50%;transform:translateY(-50%);padding:4px 10px;min-height:32px;font-size:11px;"><span class="material-symbols-outlined icon-sm">close</span> LIMPAR</button>
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
-        <select id="estoque-filtro-obra" onchange="renderEstoque()" style="font-size:10px;padding:5px 8px;background:var(--bg3);border:1px solid var(--borda2);border-radius:6px;color:var(--branco);font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;">
+        <select id="estoque-filtro-obra" onchange="renderEstoque()" class="cat-btn">
           <option value="">ALMOXARIFADO</option>
         </select>
-        <span style="color:var(--borda2);">|</span>
-        <button class="cat-btn ativo" id="estoque-ord-az" onclick="estoqueOrdem='az';renderEstoque();estoqueAtualizarOrdem()" style="font-size:10px;padding:5px 10px;">A-Z</button>
-        <button class="cat-btn" id="estoque-ord-maior" onclick="estoqueOrdem='maior';renderEstoque();estoqueAtualizarOrdem()" style="font-size:10px;padding:5px 10px;">MAIOR ESTOQUE</button>
-        <button class="cat-btn" id="estoque-ord-menor" onclick="estoqueOrdem='menor';renderEstoque();estoqueAtualizarOrdem()" style="font-size:10px;padding:5px 10px;">MENOR / NEGATIVO</button>
-        <span style="color:var(--borda2);">|</span>
-        <button class="cat-btn" id="estoque-filtro-neg" onclick="toggleFiltroNegativo()" style="font-size:10px;padding:5px 10px;color:var(--vermelho);">⚠ SÓ NEGATIVOS</button>
+        <span style="color:var(--border);">|</span>
+        <button class="cat-btn ativo" id="estoque-ord-az" onclick="estoqueOrdem='az';renderEstoque();estoqueAtualizarOrdem()">A-Z</button>
+        <button class="cat-btn" id="estoque-ord-maior" onclick="estoqueOrdem='maior';renderEstoque();estoqueAtualizarOrdem()">MAIOR ESTOQUE</button>
+        <button class="cat-btn" id="estoque-ord-menor" onclick="estoqueOrdem='menor';renderEstoque();estoqueAtualizarOrdem()">MENOR / NEGATIVO</button>
+        <span style="color:var(--border);">|</span>
+        <button class="cat-btn" id="estoque-filtro-neg" onclick="toggleFiltroNegativo()" style="color:var(--error);"><span class="material-symbols-outlined icon-xs icon-inline">warning</span> SÓ NEGATIVOS</button>
       </div>
     </div>
 
@@ -1497,20 +1503,20 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
     <div id="estoque-empty" class="empty hidden">Nenhum material em estoque.</div>
     </div>
     <div class="view" id="view-catalogo">
-<div id="catalogo-sticky" style="position:sticky;top:0;z-index:90;background:var(--bg);padding:10px 0 8px 0;border-bottom:1px solid var(--borda);margin-bottom:8px;">
+<div id="catalogo-sticky" class="sticky-header">
       <div class="modulo-badge"><span class="material-symbols-outlined">label</span> CENTRO DE CUSTO</div>
-      <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
-        <input type="text" id="catalogo-busca" placeholder="🔍 Buscar por código ou nome..." oninput="renderCatalogo()" style="flex:2;min-width:200px;background:var(--bg2);border:1px solid var(--borda2);border-radius:10px;padding:10px 14px;color:var(--branco);font-size:13px;font-family:inherit;">
-        <select id="catalogo-cat-filtro" onchange="renderCatalogo()" style="flex:1;min-width:140px;background:var(--bg2);border:1px solid var(--borda2);border-radius:10px;padding:10px 14px;color:var(--branco);font-size:13px;font-family:inherit;">
-          <option value="">📂 Todos centros de custo</option>
+      <div class="filter-row" style="margin-bottom:8px;">
+        <input type="text" id="catalogo-busca" placeholder="Buscar por código ou nome..." oninput="renderCatalogo()" style="flex:2;min-width:200px;">
+        <select id="catalogo-cat-filtro" onchange="renderCatalogo()" style="flex:1;min-width:140px;">
+          <option value="">Todos centros de custo</option>
         </select>
-        <button class="btn-save" style="padding:10px 18px;white-space:nowrap;" onclick="abrirModalNovoMaterial()">➕ Novo Material</button>
+        <button class="btn-save" style="padding:10px 18px;white-space:nowrap;" onclick="abrirModalNovoMaterial()"><span class="material-symbols-outlined icon-sm">add_circle</span> Novo Material</button>
       </div>
       <div style="display:flex;align-items:center;justify-content:space-between;">
-        <div id="catalogo-stats" style="font-size:11px;color:var(--texto3);"></div>
+        <div id="catalogo-stats" style="font-size:11px;color:var(--text-tertiary);"></div>
         <div style="display:flex;gap:6px;" id="catalogo-admin-btns">
-          <button class="btn-verde-outline admin-only" style="font-size:11px;padding:6px 12px;" onclick="recalcularCategorias()">🔄 Recalcular</button>
-          <button class="btn-verde-outline admin-only" style="font-size:11px;padding:6px 12px;border-color:rgba(251,191,36,0.4);color:#fbbf24;" onclick="abrirReconciliacao()">🔗 Reconciliar Órfãos</button>
+          <button class="btn-verde-outline admin-only" style="font-size:11px;padding:6px 12px;" onclick="recalcularCategorias()"><span class="material-symbols-outlined icon-sm icon-inline">refresh</span> Recalcular</button>
+          <button class="btn-verde-outline admin-only" style="font-size:11px;padding:6px 12px;border-color:rgba(251,191,36,0.4);color:#fbbf24;" onclick="abrirReconciliacao()"><span class="material-symbols-outlined icon-sm icon-inline">link</span> Reconciliar Órfãos</button>
         </div>
       </div>
     </div>
@@ -1653,7 +1659,7 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
     <div class="diarias-header">
       <div class="diarias-header-title"><span class="material-symbols-outlined icon-lg">engineering</span> DIÁRIAS</div>
       <button onclick="pdfDiarias()" class="admin-only btn-tipo btn-tipo-active-success" style="padding:5px 12px;min-height:auto;font-size:11px;" title="Gerar PDF da quinzena"><span class="material-symbols-outlined icon-sm">picture_as_pdf</span> PDF</button>
-      <button onclick="diarAbrirModalEquipe()" class="admin-only" title="Gerenciar equipe" style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.25);color:#60a5fa;border-radius:8px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:.05em">👷 EQUIPE</button>
+      <button onclick="diarAbrirModalEquipe()" class="admin-only btn-tipo btn-tipo-active-info" style="padding:5px 12px;min-height:auto;font-size:11px;" title="Gerenciar equipe"><span class="material-symbols-outlined icon-sm">group</span> EQUIPE</button>
       <div class="diarias-quinzena-badge" id="diar-quinzena-badge">QUINZENA</div>
     </div>
     <div class="diarias-main">
@@ -1670,7 +1676,7 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
         <div>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
             <div class="diarias-panel-title" style="margin:0">MENSAGEM DO MESTRE</div>
-            <button onclick="diarToggleVoz()" id="diar-btnMic" title="Gravar por voz" style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);color:#ef4444;border-radius:50%;width:36px;height:36px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0;">🎤</button>
+            <button onclick="diarToggleVoz()" id="diar-btnMic" title="Gravar por voz" class="btn-tipo btn-tipo-active-danger" style="border-radius:50%;width:36px;height:36px;padding:0;min-height:auto;flex-shrink:0;"><span class="material-symbols-outlined icon-md">mic</span></button>
           </div>
           <div id="diar-vozStatus" style="display:none;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:10px 14px;margin-bottom:8px;text-align:center;">
             <div style="display:flex;align-items:center;justify-content:center;gap:8px;">
@@ -1680,7 +1686,7 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
             <div style="font-size:10px;color:var(--texto3);margin-top:4px;">Fale o nome dos funcionários e obras</div>
           </div>
           <style>@keyframes vozPulse{0%,100%{opacity:1}50%{opacity:.3}}</style>
-          <textarea class="diarias-textarea" id="diar-msgInput" placeholder="Cola aqui a mensagem do WhatsApp ou use o 🎤 pra falar...
+          <textarea class="diarias-textarea" id="diar-msgInput" placeholder="Cola aqui a mensagem do WhatsApp ou use o microfone pra falar...
 
 Ex: Anderson e Josimar até meio-dia casa di Leonardo. I atarde casa di Pedro
 Seu nego i val casa di Junior 3 cimento"></textarea>
@@ -1714,13 +1720,13 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
           <div class="diarias-panel-title" style="margin-bottom:6px">PRÉVIA INTERPRETADA</div>
           <div class="diarias-preview-box" id="diar-previewBox">
             <div class="diarias-empty">
-              <div class="diarias-empty-icon">💬</div>
+              <div class="diarias-empty-icon"><span class="material-symbols-outlined icon-2xl">chat</span></div>
               <div class="diarias-empty-text">Cole uma mensagem e clique em interpretar</div>
             </div>
           </div>
         </div>
         <button class="btn-diarias-confirmar" id="diar-btnConfirmar" onclick="diarConfirmarLancamento()" disabled>
-          ✓ CONFIRMAR E SALVAR
+          <span class="material-symbols-outlined icon-md">check_circle</span> CONFIRMAR E SALVAR
         </button>
         </div><!-- /diar-panelContent -->
       </div>
@@ -1734,7 +1740,7 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
             </select>
             <button onclick="diarEditarLabelQuinzena()" title="Editar descrição" style="background:rgba(255,255,255,0.04);border:1px solid rgba(34,197,94,0.15);color:var(--verde-hl);border-radius:7px;padding:4px 9px;font-size:12px;cursor:pointer;">✏️</button>
             <button onclick="diarAbrirModalNovaQuinzena()" title="Nova quinzena" style="background:rgba(255,255,255,0.04);border:1px solid rgba(34,197,94,0.15);color:var(--verde-hl);border-radius:7px;padding:4px 9px;font-size:12px;cursor:pointer;" id="btn-diar-nova-quinzena">＋</button>
-            <button onclick="diarExcluirQuinzena()" title="Excluir quinzena" style="background:rgba(239,68,68,0.07);border:1px solid rgba(239,68,68,0.2);color:#f87171;border-radius:7px;padding:4px 9px;font-size:12px;cursor:pointer;" id="btn-diar-del-quinzena" class="admin-only">🗑</button>
+            <button onclick="diarExcluirQuinzena()" title="Excluir quinzena" class="admin-only btn-tipo btn-tipo-active-danger" style="padding:4px 9px;min-height:auto;font-size:12px;" id="btn-diar-del-quinzena"><span class="material-symbols-outlined icon-sm">delete</span></button>
             <button onclick="diarAbrirLixeira()" title="Lixeira" style="background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.2);color:#f59e0b;border-radius:7px;padding:4px 9px;font-size:12px;cursor:pointer;" class="admin-only">♻</button>
           </div>
           <div class="diarias-tabs">
@@ -1745,7 +1751,7 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
         <div id="diar-tabRegistros">
           <div id="diar-registrosContainer">
             <div class="diarias-empty">
-              <div class="diarias-empty-icon">📋</div>
+              <div class="diarias-empty-icon"><span class="material-symbols-outlined icon-2xl">assignment</span></div>
               <div class="diarias-empty-text">Nenhum registro nesta quinzena</div>
             </div>
           </div>
@@ -1755,13 +1761,13 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
             <div class="diarias-folha-title">Folha de Pagamento</div>
             <div style="display:flex;gap:6px;flex-wrap:wrap">
               <button id="btn-diar-extra" class="btn-diarias-exportar" style="background:rgba(245,158,11,0.12);border-color:rgba(245,158,11,0.3);color:#fbbf24;" onclick="diarAbrirModalExtra()">➕ Extra</button>
-              <button class="btn-diarias-exportar" onclick="diarExportarFolha()">⬇ Exportar PDF</button>
-              <button class="btn-diarias-exportar" style="background:var(--verde2)" onclick="diarAbrirModalEDR()">💰 Lançar Custo por Obra</button>
+              <button class="btn-diarias-exportar" onclick="diarExportarFolha()"><span class="material-symbols-outlined icon-sm icon-inline">download</span> Exportar PDF</button>
+              <button class="btn-diarias-exportar" style="background:var(--verde2)" onclick="diarAbrirModalEDR()"><span class="material-symbols-outlined icon-sm icon-inline">attach_money</span> Lançar Custo por Obra</button>
             </div>
           </div>
           <div id="diar-folhaContainer">
             <div class="diarias-empty">
-              <div class="diarias-empty-icon">💰</div>
+              <div class="diarias-empty-icon"><span class="material-symbols-outlined icon-2xl">payments</span></div>
               <div class="diarias-empty-text">Nenhum dado ainda</div>
             </div>
           </div>
@@ -1784,19 +1790,19 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
 
     <!-- OBRAS CADASTRADAS -->
     <div class="card" style="margin-bottom:12px;padding:16px;">
-      <div class="section-title" style="margin-bottom:14px;font-size:13px;">🏗 OBRAS CADASTRADAS</div>
+      <div class="section-title" style="margin-bottom:14px;font-size:13px;"><span class="material-symbols-outlined icon-sm icon-inline">construction</span> OBRAS CADASTRADAS</div>
       <div id="banco-obras-lista" style="max-height:400px;overflow-y:auto;"></div>
     </div>
 
     <!-- FORNECEDORES -->
     <div class="card" style="margin-bottom:12px;padding:16px;">
-      <div class="section-title" style="margin-bottom:14px;font-size:13px;">🏭 FORNECEDORES <span id="banco-forn-count" style="font-size:11px;color:var(--texto3);font-weight:400;"></span></div>
+      <div class="section-title" style="margin-bottom:14px;font-size:13px;"><span class="material-symbols-outlined icon-sm icon-inline">factory</span> FORNECEDORES <span id="banco-forn-count" style="font-size:11px;color:var(--text-tertiary);font-weight:400;"></span></div>
       <div id="banco-forn-lista" style="max-height:400px;overflow-y:auto;"></div>
     </div>
 
     <!-- USUÁRIOS -->
     <div class="card" style="padding:16px;">
-      <div class="section-title" style="margin-bottom:14px;font-size:13px;">👥 USUÁRIOS DO SISTEMA</div>
+      <div class="section-title" style="margin-bottom:14px;font-size:13px;"><span class="material-symbols-outlined icon-sm icon-inline">group</span> USUÁRIOS DO SISTEMA</div>
       <div id="banco-users-lista"></div>
     </div>
     </div>
@@ -1807,14 +1813,14 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
     <div class="view" id="view-setup">
 <div class="modulo-badge"><span class="material-symbols-outlined">settings</span> CONFIGURAÇÕES</div>
     <div class="card">
-      <div class="section-title">🗄 Banco de Dados — Supabase</div>
+      <div class="section-title"><span class="material-symbols-outlined icon-sm icon-inline">database</span> Banco de Dados — Supabase</div>
       <p style="font-size:13px;color:var(--texto2);margin-bottom:12px;line-height:1.6;">Execute no <strong>Supabase → SQL Editor</strong>.</p>
-      <button class="btn-copy" onclick="copiarSQL()">📋 COPIAR SQL</button>
+      <button class="btn-copy" onclick="copiarSQL()"><span class="material-symbols-outlined icon-sm icon-inline">content_copy</span> COPIAR SQL</button>
       <div class="sql-box" id="sql-box"></div>
     </div>
     <div class="card">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-        <div class="section-title" style="margin-bottom:0;">👤 Usuários do Sistema</div>
+        <div class="section-title" style="margin-bottom:0;"><span class="material-symbols-outlined icon-sm icon-inline">person</span> Usuários do Sistema</div>
         <button onclick="abrirModalNovoUsuario()" style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);color:var(--verde-hl);border-radius:8px;padding:7px 14px;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;letter-spacing:1px;cursor:pointer;transition:all .2s;">➕ NOVO USUÁRIO</button>
       </div>
       <div id="usuarios-lista"></div>
@@ -1828,10 +1834,10 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding-top:4px;flex-wrap:wrap;gap:8px;">
       <div class="modulo-badge"><span class="material-symbols-outlined">date_range</span> CRONOGRAMA DE OBRA</div>
       <div style="display:flex;gap:6px;">
-        <button onclick="window.open('diario.html','_blank')" class="btn-outline" style="font-size:11px;padding:6px 12px;">📋 DIÁRIO</button>
-        <button onclick="window.open('gantt.html','_blank')" class="btn-outline" style="font-size:11px;padding:6px 12px;">📊 GANTT</button>
+        <button onclick="window.open('diario.html','_blank')" class="btn-outline" style="font-size:11px;padding:6px 12px;"><span class="material-symbols-outlined icon-sm icon-inline">edit_note</span> DIÁRIO</button>
+        <button onclick="window.open('gantt.html','_blank')" class="btn-outline" style="font-size:11px;padding:6px 12px;"><span class="material-symbols-outlined icon-sm icon-inline">bar_chart</span> GANTT</button>
         <button onclick="cronGerarEtapas()" class="btn-outline admin-only" style="font-size:11px;padding:6px 12px;">⚡ ETAPAS</button>
-        <button onclick="cronGerarPDF()" class="btn-outline admin-only" style="font-size:11px;padding:6px 12px;">📄 PDF</button>
+        <button onclick="cronGerarPDF()" class="btn-outline admin-only" style="font-size:11px;padding:6px 12px;"><span class="material-symbols-outlined icon-sm icon-inline">picture_as_pdf</span> PDF</button>
       </div>
     </div>
     <div id="cronograma-container"></div>
@@ -2508,7 +2514,7 @@ function abrirNota(id) {
       </div>
       <div style="text-align:right;flex-shrink:0;">
         ${isAdmin ? '<div style="font-weight:700;color:var(--primary);">'+fmtR(it.total||0)+'</div>' : ''}
-        <div style="font-size:10px;margin-top:2px;"><span style="color:${it.credito?'var(--primary)':'var(--error)'};font-weight:700;">${it.credito?'✓ CRÉDITO':'✗ SEM CRÉDITO'}</span></div>
+        <div style="font-size:10px;margin-top:2px;"><span style="color:${it.credito?'var(--primary)':'var(--error)'};font-weight:700;">${it.credito?'CRÉDITO':'SEM CRÉDITO'}</span></div>
       </div>
     </div>`).join('') : '<div style="color:var(--text-tertiary);font-size:13px;padding:12px 0;">Nenhum item registrado.</div>';
 

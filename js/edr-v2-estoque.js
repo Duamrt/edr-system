@@ -1124,7 +1124,7 @@ async function editarMaterial(id) {
   if (selCat) selCat.value = mat.categoria || '';
   const aviso = document.getElementById('modal-material-aviso');
   if (aviso) aviso.style.display = 'none';
-  document.getElementById('btn-salvar-mat').textContent = '💾 SALVAR ALTERAÇÕES';
+  document.getElementById('btn-salvar-mat').textContent = 'SALVAR ALTERAÇÕES';
   document.getElementById('btn-salvar-mat').disabled = false;
   openModal('modal-material');
   setTimeout(() => document.getElementById('mat-nome').focus(), 100);
@@ -1531,20 +1531,20 @@ async function salvarEntradaDireta() {
   const destinoObra = document.getElementById('btn-destino-estoque').dataset.ativo !== '1';
   const obraId = document.getElementById('entrada-obra-id').value;
   const obraObj = obras.find(o => o.id === obraId);
-  if (!desc) { showToast('⚠ Informe o material.'); return; }
+  if (!desc) { showToast('Informe o material.'); return; }
   const cats = EstoqueModule.catalogoMateriais.length ? EstoqueModule.catalogoMateriais : (typeof catalogoMateriais !== 'undefined' ? catalogoMateriais : []);
   const descSemFornecedor = desc.split('·')[0].trim();
   const materialNoCatalogo = cats.find(m => norm(m.nome) === norm(descSemFornecedor));
   if (!materialNoCatalogo && usuarioAtual?.perfil !== 'admin') {
-    showToast('⚠ Material não encontrado no catálogo. Selecione um item da lista.');
+    showToast('Material não encontrado no catálogo. Selecione um item da lista.');
     document.getElementById('entrada-desc').focus();
     return;
   }
-  if (qtd <= 0) { showToast('⚠ Informe a quantidade.'); return; }
-  if (destinoObra && (!preco || preco <= 0)) { showToast('⚠ Valor unitário obrigatório para lançamento em obra.'); document.getElementById('entrada-preco').focus(); return; }
-  if (destinoObra && !obraId) { showToast('⚠ Selecione a obra.'); return; }
+  if (qtd <= 0) { showToast('Informe a quantidade.'); return; }
+  if (destinoObra && (!preco || preco <= 0)) { showToast('Valor unitário obrigatório para lançamento em obra.'); document.getElementById('entrada-preco').focus(); return; }
+  if (destinoObra && !obraId) { showToast('Selecione a obra.'); return; }
   const etapaVal = document.getElementById('entrada-etapa')?.value || '';
-  if (destinoObra && !etapaVal) { showToast('⚠ Selecione o centro de custo (etapa).'); document.getElementById('entrada-etapa')?.focus(); return; }
+  if (destinoObra && !etapaVal) { showToast('Selecione o centro de custo (etapa).'); document.getElementById('entrada-etapa')?.focus(); return; }
   try {
     if (destinoObra && obraObj) {
       const valor = qtd * preco;
@@ -1626,7 +1626,7 @@ function _mostrarCampoPrecoSaida(desc) {
   const busca = encodeURIComponent(desc);
   container.innerHTML = `
     <div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:10px;padding:12px;margin-top:8px;">
-      <div style="font-size:10px;font-weight:700;color:var(--amarelo);letter-spacing:1px;margin-bottom:6px;">⚠ ITEM SEM PREÇO REGISTRADO</div>
+      <div style="font-size:10px;font-weight:700;color:var(--warning);letter-spacing:1px;margin-bottom:6px;">ITEM SEM PREÇO REGISTRADO</div>
       <div style="display:flex;gap:8px;align-items:center;">
         <input type="number" id="saida-preco-manual" placeholder="Custo unitário (R$)" step="0.01" min="0.01"
           style="flex:1;background:var(--bg3);border:1px solid rgba(245,158,11,0.3);border-radius:8px;padding:10px 12px;color:var(--branco);font-size:13px;">
@@ -1647,16 +1647,16 @@ async function salvarSaidaMaterial() {
   const obs = (document.getElementById('saida-obs').value||'').toUpperCase();
   const obraObj = obras.find(o => o.id === obraId);
 
-  if (!desc) { showToast('⚠ Informe o material.'); return; }
-  if (qtd <= 0) { showToast('⚠ Informe a quantidade.'); return; }
-  if (!obraId) { showToast('⚠ Selecione a obra destino.'); return; }
-  if (!etapa) { showToast('⚠ Selecione o centro de custo.'); document.getElementById('saida-etapa').focus(); return; }
+  if (!desc) { showToast('Informe o material.'); return; }
+  if (qtd <= 0) { showToast('Informe a quantidade.'); return; }
+  if (!obraId) { showToast('Selecione a obra destino.'); return; }
+  if (!etapa) { showToast('Selecione o centro de custo.'); document.getElementById('saida-etapa').focus(); return; }
 
   if (!EstoqueModule._consolidado.length) consolidarEstoque();
   const estoqueItem = EstoqueModule._consolidado.find(m => norm(m.desc) === norm(desc));
   const saldo = estoqueItem?.saldo || 0;
   if (saldo < qtd) {
-    showToast(`⚠ Saldo atual: ${saldo} ${unidade} — saída de ${qtd} vai gerar negativo.`);
+    showToast(`Saldo atual: ${saldo} ${unidade} — saída de ${qtd} vai gerar negativo.`);
   }
 
   let valorUnit = estoqueItem?.valorMedio || 0;
@@ -1664,7 +1664,7 @@ async function salvarSaidaMaterial() {
     const precoInput = document.getElementById('saida-preco-manual');
     if (precoInput) valorUnit = parseFloat(precoInput.value) || 0;
     if (valorUnit <= 0) {
-      showToast('⚠ Informe o custo unitário.');
+      showToast('Informe o custo unitário.');
       _mostrarCampoPrecoSaida(desc);
       return;
     }
@@ -1782,12 +1782,12 @@ async function salvarAjusteModal() {
   let qtd = parseFloat(document.getElementById('ajuste-qtd').value) || 0;
   const unidade = (document.getElementById('ajuste-unidade').value || 'UN').toUpperCase();
   const motivo = (document.getElementById('ajuste-motivo').value || '').toUpperCase();
-  if (!desc) { showToast('⚠ Informe o material.'); return; }
-  if (ajusteTipoAtual === 'inventario' && qtd <= 0) { showToast('⚠ Inventário inicial deve ser positivo.'); return; }
-  if (ajusteTipoAtual !== 'inventario' && qtd === 0) { showToast('⚠ Informe a quantidade.'); return; }
+  if (!desc) { showToast('Informe o material.'); return; }
+  if (ajusteTipoAtual === 'inventario' && qtd <= 0) { showToast('Inventário inicial deve ser positivo.'); return; }
+  if (ajusteTipoAtual !== 'inventario' && qtd === 0) { showToast('Informe a quantidade.'); return; }
 
   if (ajusteTipoAtual === 'contagem') {
-    if (qtd < 0) { showToast('⚠ Contagem física deve ser >= 0.'); return; }
+    if (qtd < 0) { showToast('Contagem física deve ser >= 0.'); return; }
     if (!EstoqueModule._consolidado.length) consolidarEstoque();
     const m = EstoqueModule._consolidado.find(i => norm(i.desc) === norm(desc));
     const saldoAtual = m ? m.saldo : 0;
@@ -1810,7 +1810,7 @@ async function salvarAjusteModal() {
       motivo: `${label}${motivo ? ' · ' + motivo : ''}`
     });
     ajustesEstoque.unshift(novo);
-    showToast(`📋 Ajuste registrado: ${qtd > 0 ? '+' : ''}${qtd} ${unidade} de ${desc}`);
+    showToast(`Ajuste registrado: ${qtd > 0 ? '+' : ''}${qtd} ${unidade} de ${desc}`);
     fecharModal('ajuste');
     renderEstoque();
     if (typeof renderDashboard === 'function') renderDashboard();
@@ -1832,7 +1832,7 @@ function abrirModalNovoMaterial(nomeInicial) {
   if (selCat) selCat.value = '';
   const aviso = document.getElementById('modal-material-aviso');
   if (aviso) aviso.style.display = 'none';
-  document.getElementById('btn-salvar-mat').textContent = '💾 SALVAR MATERIAL';
+  document.getElementById('btn-salvar-mat').textContent = 'SALVAR MATERIAL';
   document.getElementById('btn-salvar-mat').disabled = false;
   openModal('modal-material');
   setTimeout(() => document.getElementById('mat-nome').focus(), 100);
@@ -1847,7 +1847,7 @@ function onMatNomeInput() {
   if (nome.length >= 3) {
     const similar = cats.find(m => norm(m.nome) === norm(nome) && m.id !== _editandoMaterialId);
     if (similar) {
-      aviso.innerHTML = `⚠ Material já existe: <b>${esc(similar.codigo)}</b> — ${esc(similar.nome)}`;
+      aviso.innerHTML = `Material já existe: <b>${esc(similar.codigo)}</b> — ${esc(similar.nome)}`;
       aviso.style.display = 'block';
       document.getElementById('btn-salvar-mat').disabled = true;
     } else {
@@ -1864,7 +1864,7 @@ async function salvarMaterial() {
   const nome = document.getElementById('mat-nome').value.trim().toUpperCase();
   const unidade = document.getElementById('mat-unidade').value;
   const categoria = document.getElementById('mat-categoria').value;
-  if (!nome) { showToast('⚠ Informe o nome do material.'); return; }
+  if (!nome) { showToast('Informe o nome do material.'); return; }
   const btn = document.getElementById('btn-salvar-mat');
   const cats = EstoqueModule.catalogoMateriais.length ? EstoqueModule.catalogoMateriais : (typeof catalogoMateriais !== 'undefined' ? catalogoMateriais : []);
 
@@ -1872,7 +1872,7 @@ async function salvarMaterial() {
     const atual = cats.find(m => m.id === _editandoMaterialId);
     if (!atual) return;
     const duplicata = cats.find(m => m.id !== _editandoMaterialId && norm(m.nome) === norm(nome));
-    if (duplicata) { showToast(`⚠ Material já existe: ${duplicata.codigo}`); return; }
+    if (duplicata) { showToast(`Material já existe: ${duplicata.codigo}`); return; }
     btn.disabled = true; btn.textContent = 'SALVANDO...';
     try {
       await sbPatch('materiais', _editandoMaterialId, { nome, unidade, categoria, auto: false });
@@ -1882,12 +1882,12 @@ async function salvarMaterial() {
       renderCatalogo();
       showToast(`✅ Material ${atual.codigo} atualizado!`);
     } catch(e) { showToast('❌ Não foi possível atualizar o material.'); }
-    btn.disabled = false; btn.textContent = '💾 SALVAR ALTERAÇÕES';
+    btn.disabled = false; btn.textContent = 'SALVAR ALTERAÇÕES';
     return;
   }
 
   const existe = cats.find(m => norm(m.nome) === norm(nome));
-  if (existe) { showToast(`⚠ Material já existe: ${existe.codigo}`); return; }
+  if (existe) { showToast(`Material já existe: ${existe.codigo}`); return; }
   const codigos = cats.map(m => parseInt(m.codigo)).filter(c => !isNaN(c));
   const codigo = codigos.length ? String(Math.max(...codigos) + 1).padStart(6, '0') : '000001';
   btn.disabled = true; btn.textContent = 'SALVANDO...';
@@ -1900,7 +1900,7 @@ async function salvarMaterial() {
     renderCatalogo();
     showToast(`✅ Material ${codigo} — ${nome} cadastrado!`);
   } catch(e) { showToast('❌ Não foi possível salvar o material.'); }
-  btn.disabled = false; btn.textContent = '💾 SALVAR MATERIAL';
+  btn.disabled = false; btn.textContent = 'SALVAR MATERIAL';
 }
 
 
@@ -1956,7 +1956,7 @@ function renderBanco() {
     const lista = typeof USUARIOS !== 'undefined' ? USUARIOS.filter(u => u.ativo !== false) : [];
     if (!lista.length) { usersEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--texto3);">Nenhum usuário cadastrado.</div>'; }
     else {
-      const iconePerfil = p => p === 'admin' ? '👑' : p === 'mestre' ? '🔨' : '👷';
+      const iconePerfil = p => p === 'admin' ? '<span class="material-symbols-outlined icon-sm">admin_panel_settings</span>' : p === 'mestre' ? '<span class="material-symbols-outlined icon-sm">engineering</span>' : '<span class="material-symbols-outlined icon-sm">person</span>';
       const labelPerfil = p => p === 'admin' ? 'Admin' : p === 'mestre' ? 'Mestre' : 'Operacional';
       usersEl.innerHTML = lista.map(u =>
         `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--borda2);">
