@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Preview — Polimento UI V2</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<style>
+/* ── DESIGN SYSTEM (mesmo do EDR V2) ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; -webkit-font-smoothing: antialiased; }
+body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text-primary); min-height: 100vh; }
+:root {
+  --primary: #2D6A4F; --primary-hover: #1B4332; --primary-light: #D1FAE5; --primary-surface: #ECFDF5;
+  --bg: #FAFAFA; --card: #FFFFFF; --border: #E5E7EB; --border-light: #F3F4F6;
+  --text-primary: #111827; --text-secondary: #6B7280; --text-tertiary: #9CA3AF;
+  --success: #059669; --warning: #D97706; --error: #DC2626;
+  --radius-sm: 8px; --radius-md: 12px; --radius-lg: 16px;
+}
+.material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; display: inline-block; vertical-align: middle; user-select: none; }
+button { cursor: pointer; border: none; background: none; font-family: inherit; }
+
+/* ── LAYOUT ── */
+.page { max-width: 960px; margin: 0 auto; padding: 32px 24px 80px; }
+.page-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 28px; font-weight: 800; color: var(--primary); margin-bottom: 6px; }
+.page-sub { font-size: 13px; color: var(--text-tertiary); margin-bottom: 40px; }
+
+/* ── SEÇÕES ── */
+.section { margin-bottom: 56px; }
+.section-label {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--primary); color: #fff;
+  font-family: 'Space Grotesk', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: .08em;
+  padding: 4px 10px; border-radius: 20px; margin-bottom: 16px;
+}
+.section-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 18px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px; }
+.section-desc { font-size: 13px; color: var(--text-secondary); margin-bottom: 24px; line-height: 1.6; }
+
+.demo-box {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius-md); padding: 28px;
+  margin-bottom: 12px;
+}
+.demo-row { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; }
+.demo-col { display: flex; flex-direction: column; gap: 12px; }
+
+.label-before { font-size: 10px; font-weight: 700; color: var(--text-tertiary); letter-spacing: .06em; text-transform: uppercase; margin-bottom: 6px; }
+
+/* ─────────────────────────────────────
+   1. LOADING STATE
+───────────────────────────────────── */
+.btn-primary {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--primary); color: #fff;
+  font-size: 13px; font-weight: 600; padding: 10px 20px;
+  border-radius: var(--radius-sm);
+  transition: background .2s;
+}
+.btn-primary:hover { background: var(--primary-hover); }
+
+/* NOVO: loading-state */
+.loading-state {
+  opacity: 0.7;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+.loading-state .btn-primary,
+.btn-primary.loading-state {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.spinner {
+  width: 14px; height: 14px;
+  border: 2px solid rgba(255,255,255,.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+  display: inline-block;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ─────────────────────────────────────
+   2. EMPTY STATES
+───────────────────────────────────── */
+.table-wrap { overflow-x: auto; } /* também serve o item 3 */
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead th {
+  text-align: left; padding: 10px 14px;
+  background: var(--bg); border-bottom: 1px solid var(--border);
+  font-size: 11px; font-weight: 700; color: var(--text-tertiary); letter-spacing: .06em; text-transform: uppercase;
+}
+tbody td { padding: 12px 14px; border-bottom: 1px solid var(--border-light); color: var(--text-primary); }
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover { background: var(--bg); }
+
+/* NOVO: empty-state */
+.empty-state {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 48px 24px; gap: 12px; color: var(--text-tertiary);
+}
+.empty-state .material-symbols-outlined { font-size: 40px; opacity: .4; }
+.empty-state p { font-size: 13px; font-weight: 500; }
+
+/* ─────────────────────────────────────
+   3. MOBILE SCROLL (demonstração)
+───────────────────────────────────── */
+.table-container {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.table-container table { min-width: 600px; }
+
+/* ─────────────────────────────────────
+   4. HOVER EFFECTS
+───────────────────────────────────── */
+.kpi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.kpi-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius-md); padding: 24px;
+  /* NOVO: transição suave */
+  transition: box-shadow .3s ease, transform .3s ease, border-color .3s ease;
+}
+.kpi-card:hover {
+  box-shadow: 0 8px 24px rgba(0,0,0,.08);
+  transform: translateY(-2px);
+  border-color: rgba(45,106,79,.25);
+}
+.kpi-icon {
+  width: 40px; height: 40px; border-radius: 10px;
+  background: var(--primary-surface); color: var(--primary);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 14px;
+}
+.kpi-value { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 22px; font-weight: 800; color: var(--text-primary); }
+.kpi-label { font-size: 12px; color: var(--text-tertiary); margin-top: 4px; }
+
+.action-btns { display: flex; flex-wrap: wrap; gap: 12px; }
+.btn-action {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 9px 18px; border-radius: var(--radius-sm);
+  font-size: 13px; font-weight: 600;
+  border: 1px solid var(--border); color: var(--text-primary); background: var(--card);
+  /* NOVO */
+  transition: box-shadow .3s ease, border-color .3s ease, background .2s ease;
+}
+.btn-action:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,.1);
+  border-color: var(--primary);
+  background: var(--primary-surface);
+  color: var(--primary);
+}
+.btn-action.danger:hover { border-color: var(--error); background: rgba(220,38,38,.06); color: var(--error); }
+
+/* ─────────────────────────────────────
+   5. MODAL FOCUS
+───────────────────────────────────── */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 100;
+  background: rgba(0,0,0,.45); display: none;
+  align-items: center; justify-content: center;
+}
+.modal-overlay.active { display: flex; }
+.modal-box {
+  background: var(--card); border-radius: var(--radius-lg);
+  padding: 28px; width: 100%; max-width: 440px;
+  box-shadow: 0 24px 64px rgba(0,0,0,.18);
+}
+.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.modal-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 16px; font-weight: 700; }
+.modal-close { color: var(--text-tertiary); padding: 4px; border-radius: 6px; }
+.modal-close:hover { background: var(--border-light); }
+.field { margin-bottom: 16px; }
+.field label { display: block; font-size: 11px; font-weight: 700; color: var(--text-tertiary); letter-spacing: .06em; text-transform: uppercase; margin-bottom: 6px; }
+.field input, .field select {
+  width: 100%; padding: 10px 14px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  font-size: 14px; font-family: inherit; background: var(--bg); color: var(--text-primary);
+  outline: none; transition: border-color .2s, box-shadow .2s;
+}
+.field input:focus, .field select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(45,106,79,.12);
+}
+.modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
+.btn-ghost { padding: 9px 18px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; color: var(--text-secondary); border: 1px solid var(--border); transition: background .2s; }
+.btn-ghost:hover { background: var(--border-light); }
+
+/* ── NAV TABS (navegação interna) ── */
+.nav-tabs { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 32px; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 8px; }
+.tab-btn { padding: 8px 16px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; color: var(--text-secondary); transition: background .2s, color .2s; }
+.tab-btn.active { background: var(--primary); color: #fff; }
+.tab-btn:hover:not(.active) { background: var(--border-light); color: var(--text-primary); }
+.tab-content { display: none; } .tab-content.active { display: block; }
+
+/* ── CHIP de diferença ── */
+.diff-chip {
+  display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 8px;
+  border-radius: 20px; letter-spacing: .05em; vertical-align: middle; margin-left: 8px;
+}
+.chip-new { background: rgba(5,150,105,.12); color: var(--success); }
+.chip-old { background: rgba(220,38,38,.08); color: var(--error); }
+
+/* ── BEFORE/AFTER wrapper ── */
+.ba-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media(max-width:600px) { .ba-grid { grid-template-columns: 1fr; } }
+.ba-card { border-radius: var(--radius-sm); padding: 16px; border: 1px solid var(--border); }
+.ba-card.before { border-color: rgba(220,38,38,.2); background: rgba(220,38,38,.03); }
+.ba-card.after  { border-color: rgba(5,150,105,.2); background: rgba(5,150,105,.03); }
+.ba-label { font-size: 10px; font-weight: 700; letter-spacing: .07em; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+.ba-card.before .ba-label { color: var(--error); }
+.ba-card.after  .ba-label { color: var(--success); }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="page-title">Preview — Polimento UI</div>
+  <div class="page-sub">EDR System V2 · Valide cada melhoria antes do deploy · Navegue pelas abas abaixo</div>
+
+  <!-- NAVEGAÇÃO -->
+  <nav class="nav-tabs">
+    <button class="tab-btn active" onclick="showTab('t1')">1 · Loading State</button>
+    <button class="tab-btn" onclick="showTab('t2')">2 · Empty States</button>
+    <button class="tab-btn" onclick="showTab('t3')">3 · Mobile Scroll</button>
+    <button class="tab-btn" onclick="showTab('t4')">4 · Hover Effects</button>
+    <button class="tab-btn" onclick="showTab('t5')">5 · Modal Focus</button>
+  </nav>
+
+  <!-- ══════════════════════════════════
+       TAB 1 — LOADING STATE
+  ══════════════════════════════════ -->
+  <div id="t1" class="tab-content active">
+    <div class="section-label"><span class="material-symbols-outlined" style="font-size:14px">hourglass_top</span> MELHORIA 1</div>
+    <div class="section-title">Loading State</div>
+    <div class="section-desc">Ao clicar num botão que faz chamada ao banco, ele fica com <strong>opacidade 0.7</strong> e <strong>desabilitado</strong> até a resposta chegar. Evita duplo clique e dá feedback visual de que algo está acontecendo.</div>
+
+    <div class="ba-grid">
+      <div class="ba-card before">
+        <div class="ba-label"><span class="material-symbols-outlined" style="font-size:14px">close</span> ANTES — sem feedback</div>
+        <button class="btn-primary">
+          <span class="material-symbols-outlined" style="font-size:16px">save</span> Salvar Nota
+        </button>
+        <p style="font-size:12px;color:var(--text-tertiary);margin-top:10px;">Usuário não sabe se o botão funcionou. Clica várias vezes.</p>
+      </div>
+      <div class="ba-card after">
+        <div class="ba-label"><span class="material-symbols-outlined" style="font-size:14px">check</span> DEPOIS — com .loading-state</div>
+        <button class="btn-primary loading-state">
+          <span class="spinner"></span> Salvando...
+        </button>
+        <p style="font-size:12px;color:var(--text-tertiary);margin-top:10px;">Botão fica opaco, desabilitado e mostra spinner.</p>
+      </div>
+    </div>
+
+    <div class="demo-box" style="margin-top:20px;">
+      <div class="label-before">Teste interativo</div>
+      <div class="demo-row">
+        <div>
+          <button class="btn-primary" id="btn-demo-load" onclick="demoLoading()">
+            <span class="material-symbols-outlined" style="font-size:16px">cloud_upload</span> Salvar (clique para simular)
+          </button>
+        </div>
+        <p style="font-size:12px;color:var(--text-tertiary);">Simula 2 segundos de carregamento</p>
+      </div>
+    </div>
+
+    <div class="demo-box" style="background:var(--bg);">
+      <div class="label-before">CSS que será adicionado em estilo-v2.css</div>
+      <pre style="font-size:12px;color:var(--text-secondary);line-height:1.7;overflow-x:auto;">.loading-state {
+  opacity: 0.7;
+  pointer-events: none;
+  cursor: not-allowed;
+}</pre>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       TAB 2 — EMPTY STATES
+  ══════════════════════════════════ -->
+  <div id="t2" class="tab-content">
+    <div class="section-label"><span class="material-symbols-outlined" style="font-size:14px">inbox</span> MELHORIA 2</div>
+    <div class="section-title">Empty States</div>
+    <div class="section-desc">Quando o array retorna vazio, em vez de uma tabela em branco ou silêncio, aparece a mensagem <strong>"Nenhum registro encontrado"</strong> centralizada com ícone. Aplicado em Estoque, Obras e Financeiro.</div>
+
+    <div class="ba-grid">
+      <div class="ba-card before">
+        <div class="ba-label"><span class="material-symbols-outlined" style="font-size:14px">close</span> ANTES — tabela vazia</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Material</th><th>Qtd</th><th>Unid</th><th>Valor</th></tr></thead>
+            <tbody><!-- nada --></tbody>
+          </table>
+        </div>
+        <p style="font-size:12px;color:var(--text-tertiary);margin-top:10px;">Usuário fica confuso: bug? filtro? dados não carregaram?</p>
+      </div>
+      <div class="ba-card after">
+        <div class="ba-label"><span class="material-symbols-outlined" style="font-size:14px">check</span> DEPOIS — empty state</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Material</th><th>Qtd</th><th>Unid</th><th>Valor</th></tr></thead>
+            <tbody>
+              <tr><td colspan="4">
+                <div class="empty-state">
+                  <span class="material-symbols-outlined">inventory_2</span>
+                  <p>Nenhum registro encontrado</p>
+                </div>
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="demo-box" style="margin-top:20px;">
+      <div class="label-before">Variações por módulo</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:8px;">
+        <div style="border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px;">
+          <div class="empty-state" style="padding:20px 12px;">
+            <span class="material-symbols-outlined">inventory_2</span>
+            <p>Estoque vazio</p>
+          </div>
+        </div>
+        <div style="border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px;">
+          <div class="empty-state" style="padding:20px 12px;">
+            <span class="material-symbols-outlined">construction</span>
+            <p>Nenhuma obra cadastrada</p>
+          </div>
+        </div>
+        <div style="border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px;">
+          <div class="empty-state" style="padding:20px 12px;">
+            <span class="material-symbols-outlined">account_tree</span>
+            <p>Nenhum lançamento</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       TAB 3 — MOBILE SCROLL
+  ══════════════════════════════════ -->
+  <div id="t3" class="tab-content">
+    <div class="section-label"><span class="material-symbols-outlined" style="font-size:14px">phone_iphone</span> MELHORIA 3</div>
+    <div class="section-title">Mobile — Scroll Horizontal em Tabelas</div>
+    <div class="section-desc">Em telas menores que 768px, tabelas ganham scroll horizontal. O conteúdo não quebra mais — usuário arrasta para o lado para ver o restante.</div>
+
+    <div class="ba-grid">
+      <div class="ba-card before">
+        <div class="ba-label"><span class="material-symbols-outlined" style="font-size:14px">close</span> ANTES — tabela sem scroll</div>
+        <p style="font-size:12px;color:var(--text-tertiary);margin-bottom:10px;">Conteúdo estoura o container, colunas ficam espremidas ou cortadas.</p>
+        <div style="overflow:hidden;border-radius:4px;border:1px solid rgba(220,38,38,.3);">
+          <table style="min-width:600px;font-size:11px;">
+            <thead><tr><th>Material</th><th>Qtd</th><th>Unid</th><th>Valor Unit.</th><th>Total</th><th>Fornecedor</th><th>Data</th></tr></thead>
+            <tbody>
+              <tr><td>CIMENTO CPII 50KG</td><td>10</td><td>SC</td><td>R$ 42,00</td><td>R$ 420,00</td><td>DEPOSITO X</td><td>06/04/2026</td></tr>
+              <tr><td>AREIA LAVADA</td><td>3</td><td>M³</td><td>R$ 180,00</td><td>R$ 540,00</td><td>DEPOSITO Y</td><td>06/04/2026</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p style="font-size:11px;color:var(--error);margin-top:8px;">⚠ Colunas cortadas sem aviso</p>
+      </div>
+      <div class="ba-card after">
+        <div class="ba-label"><span class="material-symbols-outlined" style="font-size:14px">check</span> DEPOIS — com overflow-x: auto</div>
+        <p style="font-size:12px;color:var(--text-tertiary);margin-bottom:10px;">Arraste para o lado para ver todas as colunas.</p>
+        <div class="table-container" style="border-radius:4px;border:1px solid rgba(5,150,105,.3);">
+          <table style="min-width:600px;font-size:11px;">
+            <thead><tr><th>Material</th><th>Qtd</th><th>Unid</th><th>Valor Unit.</th><th>Total</th><th>Fornecedor</th><th>Data</th></tr></thead>
+            <tbody>
+              <tr><td>CIMENTO CPII 50KG</td><td>10</td><td>SC</td><td>R$ 42,00</td><td>R$ 420,00</td><td>DEPOSITO X</td><td>06/04/2026</td></tr>
+              <tr><td>AREIA LAVADA</td><td>3</td><td>M³</td><td>R$ 180,00</td><td>R$ 540,00</td><td>DEPOSITO Y</td><td>06/04/2026</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p style="font-size:11px;color:var(--success);margin-top:8px;">✓ Scroll suave, todas as colunas acessíveis</p>
+      </div>
+    </div>
+
+    <div class="demo-box" style="background:var(--bg);margin-top:20px;">
+      <div class="label-before">CSS adicionado em estilo-v2.css</div>
+      <pre style="font-size:12px;color:var(--text-secondary);line-height:1.7;overflow-x:auto;">@media (max-width: 768px) {
+  .table-container,
+  .table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .table-container table,
+  .table-wrap table {
+    min-width: 560px;
+  }
+}</pre>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       TAB 4 — HOVER EFFECTS
+  ══════════════════════════════════ -->
+  <div id="t4" class="tab-content">
+    <div class="section-label"><span class="material-symbols-outlined" style="font-size:14px">auto_awesome</span> MELHORIA 4</div>
+    <div class="section-title">Efeitos de Hover</div>
+    <div class="section-desc">Cards do painel sobem levemente e ganham sombra suave (0.3s). Botões de ação ganham borda colorida e fundo suave ao passar o mouse. <strong>Passe o mouse nos exemplos abaixo.</strong></div>
+
+    <div class="demo-box">
+      <div class="label-before">Cards do Painel — hover para testar</div>
+      <div class="kpi-grid" style="margin-top:12px;">
+        <div class="kpi-card">
+          <div class="kpi-icon"><span class="material-symbols-outlined">construction</span></div>
+          <div class="kpi-value">4</div>
+          <div class="kpi-label">Obras Ativas</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon"><span class="material-symbols-outlined">payments</span></div>
+          <div class="kpi-value">R$ 128.400</div>
+          <div class="kpi-label">Receita Total</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon"><span class="material-symbols-outlined">inventory_2</span></div>
+          <div class="kpi-value">87</div>
+          <div class="kpi-label">Itens no Estoque</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="demo-box" style="margin-top:16px;">
+      <div class="label-before">Botões de Ação — hover para testar</div>
+      <div class="action-btns" style="margin-top:12px;">
+        <button class="btn-action">
+          <span class="material-symbols-outlined" style="font-size:16px">edit</span> Editar
+        </button>
+        <button class="btn-action">
+          <span class="material-symbols-outlined" style="font-size:16px">picture_as_pdf</span> PDF
+        </button>
+        <button class="btn-action">
+          <span class="material-symbols-outlined" style="font-size:16px">content_copy</span> Duplicar
+        </button>
+        <button class="btn-action danger">
+          <span class="material-symbols-outlined" style="font-size:16px">delete</span> Excluir
+        </button>
+      </div>
+    </div>
+
+    <div class="demo-box" style="background:var(--bg);margin-top:16px;">
+      <div class="label-before">CSS adicionado</div>
+      <pre style="font-size:12px;color:var(--text-secondary);line-height:1.7;overflow-x:auto;">.kpi-card {
+  transition: box-shadow .3s ease, transform .3s ease, border-color .3s ease;
+}
+.kpi-card:hover {
+  box-shadow: 0 8px 24px rgba(0,0,0,.08);
+  transform: translateY(-2px);
+  border-color: rgba(45,106,79,.25);
+}
+.btn-action {
+  transition: box-shadow .3s ease, border-color .3s ease, background .2s ease;
+}
+.btn-action:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,.1);
+  border-color: var(--primary);
+  background: var(--primary-surface);
+  color: var(--primary);
+}</pre>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       TAB 5 — MODAL FOCUS
+  ══════════════════════════════════ -->
+  <div id="t5" class="tab-content">
+    <div class="section-label"><span class="material-symbols-outlined" style="font-size:14px">center_focus_strong</span> MELHORIA 5</div>
+    <div class="section-title">Auto-Focus em Modais</div>
+    <div class="section-desc">Ao abrir qualquer modal, o primeiro campo de input recebe foco automaticamente. O cursor já fica piscando no campo — usuário começa a digitar sem precisar clicar.</div>
+
+    <div class="demo-box">
+      <div class="label-before">Teste — abra o modal e observe o cursor</div>
+      <div class="demo-row" style="margin-top:12px;gap:20px;">
+        <div>
+          <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px;line-height:1.6;">Clique no botão para abrir o modal. O campo <strong>"Nome do Fornecedor"</strong> já aparece com o cursor piscando — sem precisar clicar nele.</p>
+          <button class="btn-primary" onclick="document.getElementById('modal-demo').classList.add('active')">
+            <span class="material-symbols-outlined" style="font-size:16px">add</span> Nova Nota Fiscal
+          </button>
+        </div>
+        <div style="flex:1;background:var(--bg);border-radius:var(--radius-sm);padding:16px;">
+          <div class="ba-label" style="color:var(--success);margin-bottom:6px;"><span class="material-symbols-outlined" style="font-size:14px">check</span> COMPORTAMENTO ESPERADO</div>
+          <ul style="font-size:12px;color:var(--text-secondary);line-height:2;padding-left:16px;">
+            <li>Modal abre</li>
+            <li>Primeiro input recebe <code style="background:var(--border-light);padding:1px 5px;border-radius:3px;">focus()</code> automaticamente</li>
+            <li>Cursor pisca no campo</li>
+            <li>Usuário digita direto</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="demo-box" style="background:var(--bg);margin-top:16px;">
+      <div class="label-before">Código adicionado no infra.js (função showModal)</div>
+      <pre style="font-size:12px;color:var(--text-secondary);line-height:1.7;overflow-x:auto;">function showModal(id) {
+  const el = document.getElementById(id);
+  if (el) {
+    el.classList.add('active');
+    // NOVO: foca no primeiro input do modal
+    setTimeout(() => {
+      const firstInput = el.querySelector('input, select, textarea');
+      if (firstInput) firstInput.focus();
+    }, 80);
+  }
+}</pre>
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<!-- MODAL DEMO -->
+<div class="modal-overlay" id="modal-demo" onclick="if(event.target===this)this.classList.remove('active')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span class="modal-title">Nova Nota Fiscal</span>
+      <button class="modal-close" onclick="document.getElementById('modal-demo').classList.remove('active')">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div class="field">
+      <label>Fornecedor *</label>
+      <input type="text" id="modal-primeiro-input" placeholder="Nome do fornecedor">
+    </div>
+    <div class="field">
+      <label>Nº da Nota *</label>
+      <input type="text" placeholder="Ex: 001234">
+    </div>
+    <div class="field">
+      <label>Destino</label>
+      <select><option>ESTOQUE GERAL</option><option>OBRA</option></select>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="document.getElementById('modal-demo').classList.remove('active')">Cancelar</button>
+      <button class="btn-primary"><span class="material-symbols-outlined" style="font-size:16px">save</span> Salvar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function showTab(id) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// Demo loading state
+function demoLoading() {
+  const btn = document.getElementById('btn-demo-load');
+  const orig = btn.innerHTML;
+  btn.innerHTML = '<span class="spinner"></span> Salvando...';
+  btn.classList.add('loading-state');
+  setTimeout(() => {
+    btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:16px">check_circle</span> Salvo!';
+    btn.style.background = 'var(--success)';
+    btn.classList.remove('loading-state');
+    setTimeout(() => {
+      btn.innerHTML = orig;
+      btn.style.background = '';
+    }, 1800);
+  }, 2000);
+}
+
+// Auto-focus demo
+document.getElementById('modal-demo').addEventListener('transitionend', () => {});
+const observer = new MutationObserver(() => {
+  const modal = document.getElementById('modal-demo');
+  if (modal.classList.contains('active')) {
+    setTimeout(() => {
+      const first = modal.querySelector('input, select, textarea');
+      if (first) first.focus();
+    }, 80);
+  }
+});
+observer.observe(document.getElementById('modal-demo'), { attributes: true, attributeFilter: ['class'] });
+</script>
+</body>
+</html>

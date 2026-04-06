@@ -141,7 +141,12 @@ function confirmar(msg, onSim, onNao) {
 // ── SHOW MODAL (genérico) ────────────────
 function showModal(id) {
   const el = document.getElementById(id);
-  if (el) el.classList.add('active');
+  if (!el) return;
+  el.classList.add('active');
+  setTimeout(() => {
+    const first = el.querySelector('input:not([type=hidden]):not([readonly]), select, textarea');
+    if (first) first.focus();
+  }, 80);
 }
 
 // ── STUBS (funções esperadas pelos módulos V1→V2) ──
