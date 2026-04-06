@@ -118,20 +118,20 @@ function diarAbrirModalEquipe() {
   let modal = document.getElementById('diar-modalEquipe');
   if (!modal) {
     document.body.insertAdjacentHTML('beforeend', `
-    <div id="diar-modalEquipe" class="edr-modal-overlay" style="display:flex">
-      <div class="edr-modal-box" style="max-width:540px;max-height:90vh;overflow-y:auto;">
-        <div class="edr-modal-header">
-          <div class="edr-modal-title"><span class="material-symbols-outlined" style="font-size:20px">group</span> EQUIPE DE OBRA</div>
-          <button class="edr-modal-close" onclick="document.getElementById('diar-modalEquipe').style.display='none'">
+    <div id="diar-modalEquipe" class="modal-overlay active" onclick="if(event.target===this)document.getElementById('diar-modalEquipe').style.display='none'">
+      <div class="modal-box" style="max-width:540px;width:95vw;max-height:90vh;overflow-y:auto;">
+        <div class="modal-header">
+          <div class="modal-title"><span class="material-symbols-outlined" style="font-size:20px;vertical-align:middle;">group</span> EQUIPE DE OBRA</div>
+          <button class="modal-close" onclick="document.getElementById('diar-modalEquipe').style.display='none'">
             <span class="material-symbols-outlined">close</span>
           </button>
         </div>
-        <div id="diar-equipe-lista"></div>
-        <div style="margin-top:16px;border-top:1px solid var(--border-primary);padding-top:16px">
-          <div class="edr-section-label" style="color:var(--primary);margin-bottom:10px">+ ADICIONAR FUNCIONARIO</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
-            <input id="diar-eq-nome" class="edr-input" type="text" placeholder="Nome">
-            <select id="diar-eq-cargo" class="edr-select">
+        <div id="diar-equipe-lista" style="padding:0 4px;"></div>
+        <div style="margin-top:16px;border-top:1px solid var(--border);padding:16px 0 0;">
+          <div style="font-size:10px;font-weight:700;color:var(--primary);letter-spacing:1px;margin-bottom:10px;">+ ADICIONAR FUNCIONARIO</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+            <input id="diar-eq-nome" type="text" placeholder="Nome" style="padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-family:inherit;font-size:12px;width:100%;box-sizing:border-box;">
+            <select id="diar-eq-cargo" style="padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-family:inherit;font-size:12px;width:100%;box-sizing:border-box;">
               <option value="Servente">Servente</option>
               <option value="Pedreiro">Pedreiro</option>
               <option value="Betoneiro">Betoneiro</option>
@@ -140,11 +140,11 @@ function diarAbrirModalEquipe() {
               <option value="Encanador">Encanador</option>
             </select>
           </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
-            <input id="diar-eq-diaria" class="edr-input" type="number" placeholder="Diaria (R$)" min="0" step="5">
-            <input id="diar-eq-apelidos" class="edr-input" type="text" placeholder="Apelidos (virgula)">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+            <input id="diar-eq-diaria" type="number" placeholder="Diaria (R$)" min="0" step="5" style="padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-family:inherit;font-size:12px;width:100%;box-sizing:border-box;">
+            <input id="diar-eq-apelidos" type="text" placeholder="Apelidos (virgula)" style="padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-family:inherit;font-size:12px;width:100%;box-sizing:border-box;">
           </div>
-          <button onclick="diarAdicionarFuncionario()" class="edr-btn edr-btn-primary" style="width:100%">ADICIONAR</button>
+          <button onclick="diarAdicionarFuncionario()" class="btn btn-primary" style="width:100%;padding:10px;">ADICIONAR</button>
         </div>
       </div>
     </div>`);
@@ -170,25 +170,27 @@ function _diarRenderListaEquipe() {
   el.innerHTML = todos.map(f => {
     const apelidos = Array.isArray(f.apelidos) ? f.apelidos.filter(Boolean).join(', ') : '';
     const opaco = f.ativo ? '' : 'opacity:0.4;';
-    const statusCls = f.ativo ? 'edr-badge edr-badge-success' : 'edr-badge edr-badge-error';
+    const statusStyle = f.ativo
+      ? 'background:rgba(5,150,105,.1);color:var(--success);font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;'
+      : 'background:rgba(239,68,68,.1);color:var(--error);font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;';
     const statusText = f.ativo ? 'ATIVO' : 'INATIVO';
     const btnToggle = f.ativo
-      ? `<button onclick="diarToggleFuncionario('${esc(f.id)}',false)" class="edr-btn-sm edr-btn-danger-outline">desativar</button>`
+      ? `<button onclick="diarToggleFuncionario('${esc(f.id)}',false)" class="edr-btn-sm" style="color:var(--error);border-color:rgba(239,68,68,.3);">desativar</button>`
       : `<button onclick="diarToggleFuncionario('${esc(f.id)}',true)" class="edr-btn-sm edr-btn-success-outline">reativar</button>`;
-    const btnEditar = `<button onclick="diarEditarFuncionario('${esc(f.id)}')" class="edr-btn-sm edr-btn-info-outline">editar</button>`;
-    const btnExcluir = !f.ativo ? `<button onclick="diarExcluirFuncionario('${esc(f.id)}','${esc(f.nome)}')" class="edr-btn-sm edr-btn-danger-outline">excluir</button>` : '';
-    return `<div style="${opaco}display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border-primary);gap:8px;flex-wrap:wrap">
-      <div style="flex:1;min-width:140px">
-        <div style="display:flex;align-items:center;gap:8px">
+    const btnEditar = `<button onclick="diarEditarFuncionario('${esc(f.id)}')" class="edr-btn-sm" style="color:#60a5fa;border-color:rgba(96,165,250,.3);">editar</button>`;
+    const btnExcluir = !f.ativo ? `<button onclick="diarExcluirFuncionario('${esc(f.id)}','${esc(f.nome)}')" class="edr-btn-sm" style="color:var(--error);border-color:rgba(239,68,68,.3);">excluir</button>` : '';
+    return `<div style="${opaco}display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);gap:8px;min-width:0;">
+      <div style="flex:1;min-width:0;overflow:hidden;">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
           <span style="font-weight:700;font-size:13px">${esc(f.nome)}</span>
-          <span class="edr-text-tertiary" style="font-size:11px">${f.cargo}</span>
-          <span class="${statusCls}">${statusText}</span>
+          <span style="font-size:11px;color:var(--text-tertiary);">${f.cargo}</span>
+          <span style="${statusStyle}">${statusText}</span>
         </div>
-        <div class="edr-text-tertiary" style="font-size:11px;margin-top:2px">
+        <div style="font-size:11px;color:var(--text-tertiary);margin-top:2px;">
           R$ ${Number(f.diaria).toFixed(2)}${apelidos ? ' · apelidos: ' + apelidos : ''}
         </div>
       </div>
-      <div style="display:flex;gap:4px;flex-shrink:0">${btnEditar}${btnToggle}${btnExcluir}</div>
+      <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">${btnEditar}${btnToggle}${btnExcluir}</div>
     </div>`;
   }).join('');
 }
