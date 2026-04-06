@@ -24,7 +24,7 @@ if (typeof viewRegistry !== 'undefined') {
 
 // ── RENDER PRINCIPAL ────────────────────────────────────────────
 function renderNotasView() {
-  _notasShowLista();
+  // Não chamar _notasShowLista() aqui — já estamos nesta view via viewRegistry.invoke
   renderNotas();
   aplicarPerfil();
 }
@@ -924,4 +924,22 @@ function abrirFormNF() {
   _notasShowForm();
   restaurarRascunhoNF();
   setTimeout(() => document.getElementById('f-fornecedor')?.focus(), 100);
+}
+
+// ══════════════════════════════════════════════════════════════════
+// WRAPPERS GLOBAIS — botões do form NF chamam estas funções
+// (ImportModule carrega depois no order de scripts, mas executa depois)
+// ══════════════════════════════════════════════════════════════════
+function abrirImportXML() {
+  if (typeof ImportModule === 'undefined') { showToast('Modulo de importacao nao carregado.'); return; }
+  ImportModule.abrir();
+  setTimeout(() => ImportModule.abrirXML(), 150);
+}
+function abrirImportRapida() {
+  if (typeof ImportModule === 'undefined') { showToast('Modulo de importacao nao carregado.'); return; }
+  ImportModule.abrir();
+}
+function processarXMLNFe(input) {
+  if (typeof ImportModule === 'undefined') { showToast('Modulo de importacao nao carregado.'); return; }
+  ImportModule.processarXML(input);
 }

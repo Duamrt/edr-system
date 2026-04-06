@@ -590,6 +590,13 @@ const ImportModule = {
       if (!ok) return;
     }
 
+    // Salvar de-para para proximas importacoes do mesmo fornecedor
+    for (const item of this.itensPreview) {
+      if (item.cProd && item.codigoCat) {
+        this._deParaSet(item._cnpj, item.cProd, item.codigoCat);
+      }
+    }
+
     // Entrega cada item como JSON pro NotasModule
     for (const item of this.itensPreview) {
       const res = typeof classificarItem === 'function' ? classificarItem(item.descFinal) : null;
@@ -698,6 +705,27 @@ const ImportModule = {
   },
 
   // ══════════════════════════════════════════════════════════
+  // DE-PARA INTELIGENTE — cache localStorage de vinculacoes
+  // Chave: edr_dp_{cnpj}:{cProd}  Valor: codigo do catalogo EDR
+  // ══════════════════════════════════════════════════════════
+
+  _deParaKey(cnpj, cProd) {
+    const c = (cnpj || '').replace(/\D/g, '');
+    const p = (cProd || '').trim().toUpperCase();
+    return `edr_dp_${c}:${p}`;
+  },
+
+  _deParaGet(cnpj, cProd) {
+    if (!cProd) return null;
+    try { return localStorage.getItem(this._deParaKey(cnpj, cProd)) || null; } catch(e) { return null; }
+  },
+
+  _deParaSet(cnpj, cProd, codigoCat) {
+    if (!cProd || !codigoCat) return;
+    try { localStorage.setItem(this._deParaKey(cnpj, cProd), codigoCat); } catch(e) { }
+  },
+
+  // ══════════════════════════════════════════════════════════
   // IMPORTACAO VIA XML NF-e — PRESERVADA 100%
   // ══════════════════════════════════════════════════════════
 
@@ -753,6 +781,7 @@ const ImportModule = {
 
     const ide = getTag(xml, 'ide');
     const numero = ide ? getVal(ide, 'nNF') : '';
+    const serie = ide ? getVal(ide, 'serie') : '';
     const natureza = ide ? getVal(ide, 'natOp') : '';
     const dataEmissao = ide ? (getVal(ide, 'dhEmi') || getVal(ide, 'dEmi')) : '';
 
@@ -773,20 +802,24 @@ const ImportModule = {
       const preco = parseFloat(getVal(prod, 'vUnCom')) || parseFloat(getVal(prod, 'vUnTrib')) || 0;
       const unidade = (getVal(prod, 'uCom') || getVal(prod, 'uTrib') || 'UN').toUpperCase();
       const totalItem = parseFloat(getVal(prod, 'vProd')) || qtd * preco;
-      if (desc) itens.push({ descOriginal: desc, qtd, preco, unidade, total: totalItem });
+      const cProd = getVal(prod, 'cProd') || '';
+      if (desc) itens.push({ descOriginal: desc, qtd, preco, unidade, total: totalItem, cProd });
     }
 
     let dataFormatada = '';
     if (dataEmissao) dataFormatada = dataEmissao.substring(0, 10);
 
-    return { fornecedor, cnpj, numero, natureza, dataEmissao: dataFormatada, valorBruto, frete, itens };
+    return { fornecedor, cnpj, numero, serie, natureza, dataEmissao: dataFormatada, valorBruto, frete, itens };
   },
 
   _preencherFormComXML(nfe) {
     // Preencher cabecalho da NF (compativel com V2 NotasModule)
     const setVal = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val; };
-    setVal('f-numero', nfe.numero);
-    setVal('f-fornecedor', nfe.fornecedor);
+    // Numero inclui serie quando disponivel (ex: 123456/1) — padrão NF-e
+    const numComSerie = (nfe.serie && nfe.serie !== '') ? `${nfe.numero}/${nfe.serie}` : nfe.numero;
+    setVal('f-numero', numComSerie);
+    // Fornecedor em CAIXA ALTA sem acento (padrão BD)
+    setVal('f-fornecedor', typeof _normForn === 'function' ? _normForn(nfe.fornecedor) : nfe.fornecedor.toUpperCase());
 
     if (nfe.cnpj) {
       let c = nfe.cnpj.replace(/\D/g, '');
@@ -808,14 +841,26 @@ const ImportModule = {
       else if (natNorm.includes('transf')) natEl.value = 'TRANSFERENCIA';
     }
 
-    // Processar itens com match do catalogo
+    // Processar itens com de-para inteligente + match do catalogo
+    const cnpjDigits = (nfe.cnpj || '').replace(/\D/g, '');
     this.itensPreview = nfe.itens.map((item, idx) => {
-      const match = this.matchCatalogo(item.descOriginal);
-      const credito = typeof classificarItem === 'function' ? classificarItem(match ? match.material.nome : item.descOriginal) : null;
+      // Passo 1: De-Para — vinculacao salva de importacoes anteriores
+      let match = null;
+      const codigoDePara = this._deParaGet(cnpjDigits, item.cProd);
+      if (codigoDePara) {
+        const catalogo = typeof catalogoMateriais !== 'undefined' ? catalogoMateriais : [];
+        const matDP = catalogo.find(m => m.codigo === codigoDePara);
+        if (matDP) match = { material: matDP, score: 100, tipo: 'depara' };
+      }
+      // Passo 2: Match por nome (fallback)
+      if (!match) match = this.matchCatalogo(item.descOriginal);
       const confiavel = match && match.score >= 60;
+      const credito = typeof classificarItem === 'function' ? classificarItem(match ? match.material.nome : item.descOriginal) : null;
       return {
         idx,
         descOriginal: item.descOriginal,
+        cProd: item.cProd || '',
+        _cnpj: cnpjDigits,
         qtd: item.qtd,
         unidade: confiavel ? (match.material.unidade || item.unidade) : item.unidade,
         preco: item.preco,
