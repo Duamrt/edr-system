@@ -253,6 +253,35 @@ function selecionarContaForn(nome) {
 // ─────────────────────────────────────────────────────────────────
 
 let projecoesCaixa = [];
+let _saldoManual = null; // saldo digitado manualmente pelo usuario
+
+function _loadSaldoManual() {
+  try {
+    const raw = localStorage.getItem('edr_saldo_manual');
+    _saldoManual = raw !== null ? parseFloat(raw) : null;
+  } catch(e) { _saldoManual = null; }
+}
+
+function salvarSaldoManual() {
+  const inp = document.getElementById('caixa-saldo-manual-input');
+  if (!inp) return;
+  const val = parseFloat(inp.value);
+  if (isNaN(val)) { showToast('Informe um valor valido.'); return; }
+  _saldoManual = val;
+  try { localStorage.setItem('edr_saldo_manual', String(val)); } catch(e) {}
+  showToast('Saldo salvo');
+  renderCaixa();
+}
+
+function limparSaldoManual() {
+  _saldoManual = null;
+  try { localStorage.removeItem('edr_saldo_manual'); } catch(e) {}
+  renderCaixa();
+}
+
+function _calcSaldoBase() {
+  return _saldoManual !== null ? _saldoManual : _calcSaldoHoje();
+}
 
 async function _loadProjecoes() {
   try {
@@ -289,10 +318,12 @@ function renderCaixa() {
   const el = document.getElementById('caixa-content');
   if (!el) return;
 
-  const saldoHoje  = _calcSaldoHoje();
+  _loadSaldoManual();
+  const saldoBase  = _calcSaldoBase();
   const mediaSem   = _calcMediaSaidaSemanal();
-  const corSaldo   = saldoHoje >= 0 ? 'var(--success)' : 'var(--error)';
+  const corSaldo   = saldoBase >= 0 ? 'var(--success)' : 'var(--error)';
   const hoje       = hojeISO();
+  const isManual   = _saldoManual !== null;
 
   const d14 = new Date();
   d14.setDate(d14.getDate() + 14);
@@ -303,11 +334,19 @@ function renderCaixa() {
 
   let html = '';
 
-  // Card saldo
-  html += `<div style="background:var(--card);border:1.5px solid ${saldoHoje >= 0 ? 'rgba(5,150,105,0.3)' : 'rgba(220,38,38,0.3)'};border-radius:16px;padding:24px;margin-bottom:16px;text-align:center;">
-    <div style="font-size:10px;color:var(--text-tertiary);font-weight:700;letter-spacing:2px;margin-bottom:10px;">SALDO ATUAL (ENTRADAS - SAIDAS)</div>
-    <div style="font-size:32px;font-weight:800;color:${corSaldo};font-family:'Space Grotesk',monospace;line-height:1;">${fmtR(saldoHoje)}</div>
-    <div style="font-size:11px;color:var(--text-tertiary);margin-top:8px;">${saldoHoje >= 0 ? 'Caixa positivo' : 'Caixa negativo — atencao!'}</div>
+  // Card saldo com campo manual
+  html += `<div style="background:var(--card);border:1.5px solid ${saldoBase >= 0 ? 'rgba(5,150,105,0.3)' : 'rgba(220,38,38,0.3)'};border-radius:16px;padding:20px;margin-bottom:16px;">
+    <div style="font-size:10px;color:var(--text-tertiary);font-weight:700;letter-spacing:2px;margin-bottom:4px;display:flex;align-items:center;gap:6px;">
+      SALDO DISPONIVEL HOJE
+      ${isManual ? '<span style="font-size:9px;background:rgba(37,99,235,0.1);color:#3b82f6;padding:2px 7px;border-radius:10px;letter-spacing:0;font-weight:700;">MANUAL</span>' : '<span style="font-size:9px;background:rgba(107,114,128,0.1);color:var(--text-tertiary);padding:2px 7px;border-radius:10px;letter-spacing:0;">CALCULADO</span>'}
+    </div>
+    <div style="font-size:32px;font-weight:800;color:${corSaldo};font-family:'Space Grotesk',monospace;line-height:1;margin-bottom:14px;">${fmtR(saldoBase)}</div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <input type="number" id="caixa-saldo-manual-input" step="0.01" placeholder="Digite o saldo real (R$)" value="${isManual ? _saldoManual : ''}" style="flex:1;min-width:160px;padding:9px 13px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;background:var(--bg);color:var(--text-primary);" onkeydown="if(event.key==='Enter')salvarSaldoManual()">
+      <button onclick="salvarSaldoManual()" style="padding:9px 16px;border-radius:var(--radius-sm);border:none;background:var(--primary);color:#fff;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">Definir</button>
+      ${isManual ? `<button onclick="limparSaldoManual()" style="padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-tertiary);font-size:12px;cursor:pointer;" title="Usar saldo calculado">Limpar</button>` : ''}
+    </div>
+    <div style="font-size:10px;color:var(--text-tertiary);margin-top:8px;">${isManual ? 'Projecoes calculadas a partir deste saldo.' : 'Informe o valor real para projecoes precisas.'}</div>
   </div>`;
 
   // Cards 14 dias
@@ -398,7 +437,7 @@ function _renderGraficoCaixa() {
   let acum = 0;
   const saldos = dados.map(d => { acum += d.entradas - d.saidas; return acum; });
   const idxAtual = dados.findIndex(d => d.atual);
-  const offset = _calcSaldoHoje() - saldos[idxAtual];
+  const offset = _calcSaldoBase() - saldos[idxAtual];
   saldos.forEach((_, i) => saldos[i] += offset);
 
   const maxVal = Math.max(...dados.map(d => Math.max(d.entradas, d.saidas)), 1);
