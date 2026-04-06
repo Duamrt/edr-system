@@ -777,8 +777,8 @@ const CronogramaModule = {
           + pciOpts
         + '</select>'
       + '</div>'
-      + '<button class="btn-save" onclick="CronogramaModule._salvarEtapas()" style="width:100%;margin-top:4px;">GERAR CRONOGRAMA</button>'
-      + '<button class="btn-outline" onclick="fecharModal(\'cron-etapas\')" style="margin-top:6px;width:100%;">CANCELAR</button>';
+      + '<button class="btn-save" onclick="CronogramaModule._salvarEtapas()">GERAR CRONOGRAMA</button>'
+      + '<button class="btn-outline" onclick="fecharModal(\'cron-etapas\')">CANCELAR</button>';
 
     let overlay = document.getElementById('modal-cron-etapas');
     if (!overlay) {
