@@ -513,13 +513,13 @@ const CronogramaModule = {
       overlay.setAttribute('aria-modal', 'true');
       overlay.onclick = function(e) { if (e.target === overlay) overlay.classList.remove('active'); };
       const modal = document.createElement('div');
-      modal.className = 'modal';
+      modal.className = 'modal-box';
       modal.style.maxWidth = '400px';
       overlay.appendChild(modal);
       document.body.appendChild(overlay);
     }
 
-    overlay.querySelector('.modal').innerHTML = '<div class="modal-title">'
+    overlay.querySelector('.modal-box').innerHTML = '<div class="modal-title">'
       + '<span><span class="material-symbols-outlined" style="font-size:18px;vertical-align:middle;">playlist_add</span> NOVO SUB-ITEM</span>'
       + '<button class="modal-close" onclick="document.getElementById(\'modal-cron-addsub\').classList.remove(\'active\')"><span class="material-symbols-outlined">close</span></button>'
       + '</div>'
@@ -645,12 +645,12 @@ const CronogramaModule = {
       overlay.setAttribute('aria-modal', 'true');
       overlay.onclick = function(e) { if (e.target === overlay) fecharModal('cron-tarefa'); };
       const modal = document.createElement('div');
-      modal.className = 'modal';
+      modal.className = 'modal-box';
       modal.style.maxWidth = '500px';
       overlay.appendChild(modal);
       document.body.appendChild(overlay);
     }
-    overlay.querySelector('.modal').innerHTML = html;
+    overlay.querySelector('.modal-box').innerHTML = html;
     overlay.classList.add('active');
   },
 
@@ -789,12 +789,12 @@ const CronogramaModule = {
       overlay.setAttribute('aria-modal', 'true');
       overlay.onclick = function(e) { if (e.target === overlay) fecharModal('cron-etapas'); };
       const modal = document.createElement('div');
-      modal.className = 'modal';
+      modal.className = 'modal-box';
       modal.style.maxWidth = '480px';
       overlay.appendChild(modal);
       document.body.appendChild(overlay);
     }
-    overlay.querySelector('.modal').innerHTML = html;
+    overlay.querySelector('.modal-box').innerHTML = html;
     overlay.classList.add('active');
   },
 
