@@ -670,25 +670,46 @@ async function autocadastrarMateriais(itens) {
 }
 
 // ── VERIFICAÇÃO DE FORNECEDOR DUPLICADO ─────────────────────────
+// Normaliza nome: MAIÚSCULAS + sem acento + sem cedilha
+function _normForn(s) {
+  return (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim();
+}
+
 // Retorna o fornecedor existente (nome + cnpj) se nome normalizado ou CNPJ já estiver cadastrado
-// com grafia diferente. Retorna null se nenhum conflito.
+// com grafia diferente. Prefere a entrada mais completa (com CNPJ). Retorna null se sem conflito.
 function _detectarFornDuplicado(novoNome, novoCnpj) {
-  const normNovo = norm(novoNome);
+  const normNovo = _normForn(novoNome);
   const cnpjNovo = (novoCnpj || '').replace(/\D/g, '');
-  const mapa = {};
+  const mapaNome = {};  // normNome → entry (prefer entry with cnpj)
+  const mapaCnpj = {};  // cnpj → entry (prefer entry with longer name = more complete)
+
   notas.forEach(n => {
     if (!n.fornecedor) return;
-    const chave = norm(n.fornecedor);
-    if (!mapa[chave]) mapa[chave] = { nome: n.fornecedor, cnpj: (n.cnpj || '').replace(/\D/g, '') };
+    const chave = _normForn(n.fornecedor);
+    const cnpj = (n.cnpj || '').replace(/\D/g, '');
+    const entry = { nome: n.fornecedor, cnpj };
+
+    // Por nome: prefere entrada que tem CNPJ
+    if (!mapaNome[chave] || (!mapaNome[chave].cnpj && cnpj)) {
+      mapaNome[chave] = entry;
+    }
+    // Por CNPJ: prefere entrada com nome mais longo (mais informação)
+    if (cnpj.length >= 11) {
+      if (!mapaCnpj[cnpj] || mapaCnpj[cnpj].nome.length < n.fornecedor.length) {
+        mapaCnpj[cnpj] = entry;
+      }
+    }
   });
-  // 1) Mesmo CNPJ com nome diferente (normalizado)
-  if (cnpjNovo.length >= 11) {
-    const porCnpj = Object.values(mapa).find(f => f.cnpj === cnpjNovo && norm(f.nome) !== normNovo);
-    if (porCnpj) return porCnpj;
+
+  // 1) Mesmo CNPJ com nome normalizado diferente
+  if (cnpjNovo.length >= 11 && mapaCnpj[cnpjNovo]) {
+    const existente = mapaCnpj[cnpjNovo];
+    if (_normForn(existente.nome) !== normNovo) return existente;
   }
   // 2) Mesmo nome normalizado com grafia diferente
-  const porNome = mapa[normNovo];
-  if (porNome && porNome.nome !== novoNome) return porNome;
+  if (mapaNome[normNovo] && _normForn(mapaNome[normNovo].nome) !== normNovo) return mapaNome[normNovo];
+  // 3) Mesmo nome normalizado mas diferente do salvo (acento/caixa)
+  if (mapaNome[normNovo] && mapaNome[normNovo].nome !== novoNome) return mapaNome[normNovo];
   return null;
 }
 
@@ -734,7 +755,7 @@ async function salvarNota(notaData) {
   if (notaData && typeof notaData === 'object') {
     // Chamada programatica (JSON) — futuro: import XML
     numero = (notaData.numero || '').trim();
-    fornecedor = (notaData.fornecedor || '').trim().toUpperCase();
+    fornecedor = _normForn(notaData.fornecedor || '');
     emissao = notaData.emissao || '';
     recebimento = notaData.recebimento || emissao;
     cnpjVal = notaData.cnpj || '';
@@ -746,7 +767,7 @@ async function salvarNota(notaData) {
   } else {
     // Chamada do form HTML
     numero = (document.getElementById('f-numero').value || '').trim();
-    fornecedor = (document.getElementById('f-fornecedor').value || '').trim().toUpperCase();
+    fornecedor = _normForn(document.getElementById('f-fornecedor').value || '');
     emissao = document.getElementById('f-emissao')?.value || '';
     recebimento = document.getElementById('f-recebimento')?.value || emissao;
     cnpjVal = (document.getElementById('f-cnpj').value || '').trim();
