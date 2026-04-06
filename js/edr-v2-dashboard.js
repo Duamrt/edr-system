@@ -14,7 +14,7 @@ const DashboardModule = {
   finFiltro: null,       // null=geral, 'YYYY-MM'=mes
   currentTab: 0,
   _tabCount: 3,          // mobile
-  _deskTabCount: 4,      // desktop
+  _deskTabCount: 2,      // desktop
 };
 
 const _AGENDA_CORES = ['#2D6A4F','#3498db','#a855f7','#f59e0b','#ef4444','#06b6d4','#ec4899','#84cc16'];
@@ -750,8 +750,6 @@ function renderDashboard() {
       const deskPages = [
         { label: 'Resumo', icon: 'dashboard', html: _dashBuildKPIs(m, porObra) + _dashBuildAlertas(alertas) + _dashBuildContasVencidas() + _dashBuildAcaoNecessaria() },
         { label: 'Financeiro', icon: 'bar_chart', html: _dashBuildResumoFinanceiro(porObra) },
-        { label: 'Agenda', icon: 'calendar_month', html: _dashBuildAgenda() },
-        { label: 'Obras', icon: 'domain', html: _dashBuildSaudeObras(porObra) },
       ];
 
       const deskTabsHTML = deskPages.map((p, i) =>
@@ -795,7 +793,6 @@ function dashDesktopTab(idx) {
       tab.style.borderBottomColor = i === idx ? '#2D6A4F' : 'transparent';
     }
   }
-  if (idx === 2) setTimeout(_dashRenderAgendaLegenda, 50);
 }
 
 function dashMobileTab(idx) {
