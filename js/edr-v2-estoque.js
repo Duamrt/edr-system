@@ -981,8 +981,7 @@ function abrirVincularCodigo(chave) {
     .slice(0, 5);
 
   // Proximo codigo disponivel
-  const codigos = EstoqueModule.catalogoMateriais.map(m => parseInt(m.codigo)).filter(c => !isNaN(c));
-  const proximoCodigo = codigos.length ? String(Math.max(...codigos) + 1).padStart(6, '0') : '000001';
+  const proximoCodigo = obterProximoCodigoDisponivel(EstoqueModule.catalogoMateriais);
 
   content.innerHTML = `
     <div class="modal-title-v2">
@@ -1227,9 +1226,7 @@ function renderCatalogo() {
 // ── CRUD CATALOGO ───────────────────────────────────────────────
 
 async function novoMaterial() {
-  // Abre modal de cadastro rapido (mesmo pattern do V1)
-  // Implementacao completa na integracao com preview HTML
-  showToast('Cadastro rapido: abrir modal', 'info');
+  abrirModalNovoMaterial();
 }
 
 async function confirmarAutoMaterial(id) {
@@ -1264,8 +1261,7 @@ async function duplicarMaterial(id) {
   const mat = EstoqueModule.catalogoMateriais.find(m => m.id === id);
   if (!mat) return;
 
-  const codigos = EstoqueModule.catalogoMateriais.map(m => parseInt(m.codigo)).filter(c => !isNaN(c));
-  const proximoCodigo = String(Math.max(...codigos) + 1).padStart(6, '0');
+  const proximoCodigo = obterProximoCodigoDisponivel(EstoqueModule.catalogoMateriais);
 
   const resp = await sbPost('materiais', {
     codigo: proximoCodigo,
@@ -1418,15 +1414,37 @@ async function exportarEstoqueExcel() {
       { width: 22 }, { width: 14 }, { width: 14 }, { width: 14 },
     ];
 
-    // Dados
-    const itens = EstoqueModule._consolidado
-      .filter(i => i.saldo !== 0 || i.semCodigo)
-      .sort((a, b) => (a.desc || '').localeCompare(b.desc || '', 'pt-BR'));
+    // Dados: catálogo completo + órfãos do consolidado
+    const saldoMap = {};
+    for (const c of EstoqueModule._consolidado) {
+      if (c.codigo) saldoMap[c.codigo] = c.saldo;
+      else saldoMap['NOME:' + (c.desc || '')] = c.saldo;
+    }
+
+    // Itens do catálogo (todos, com ou sem saldo)
+    const itensCatalogo = EstoqueModule.catalogoMateriais.map(m => ({
+      codigo: m.codigo || null,
+      desc: m.nome,
+      unidade: m.unidade || 'UN',
+      categoria: m.categoria || '',
+      saldo: saldoMap[m.codigo] ?? 0,
+      semCodigo: !m.codigo,
+    }));
+
+    // Órfãos: itens no consolidado sem código e sem correspondência no catálogo
+    const nomesNoCatalogo = new Set(itensCatalogo.map(i => norm(i.desc)));
+    const orfaos = EstoqueModule._consolidado
+      .filter(c => !c.codigo && !nomesNoCatalogo.has(norm(c.desc)));
+
+    const itens = [
+      ...itensCatalogo,
+      ...orfaos.map(c => ({ codigo: null, desc: c.desc, unidade: c.unidade, categoria: c.categoria, saldo: c.saldo, semCodigo: true })),
+    ].sort((a, b) => (a.desc || '').localeCompare(b.desc || '', 'pt-BR'));
 
     itens.forEach((it, idx) => {
       const row = ws.addRow([
         idx + 1,
-        it.codigo || '---',
+        it.codigo || 'S/C',
         it.desc,
         it.unidade,
         it.categoria,
@@ -1980,6 +1998,17 @@ async function salvarAjusteModal() {
 
 
 // ── NOVO MATERIAL (CATÁLOGO) ────────────────────────────────
+
+// Retorna o menor código numérico disponível (preenche gaps de exclusões)
+function obterProximoCodigoDisponivel(cats) {
+  const usados = new Set(
+    cats.map(m => parseInt(m.codigo)).filter(c => !isNaN(c) && c > 0)
+  );
+  let prox = 1;
+  while (usados.has(prox)) prox++;
+  return String(prox).padStart(6, '0');
+}
+
 let _editandoMaterialId = null;
 
 function abrirModalNovoMaterial(nomeInicial) {
@@ -2049,8 +2078,7 @@ async function salvarMaterial() {
 
   const existe = cats.find(m => norm(m.nome) === norm(nome));
   if (existe) { showToast(`Material já existe: ${existe.codigo}`); return; }
-  const codigos = cats.map(m => parseInt(m.codigo)).filter(c => !isNaN(c));
-  const codigo = codigos.length ? String(Math.max(...codigos) + 1).padStart(6, '0') : '000001';
+  const codigo = obterProximoCodigoDisponivel(cats);
   btn.disabled = true; btn.textContent = 'SALVANDO...';
   try {
     const [saved] = await sbPost('materiais', { codigo, nome, unidade, categoria });
