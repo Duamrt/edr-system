@@ -161,11 +161,17 @@ function _agendarRefresh(expiresInSec, refreshToken) {
 // ── CARREGAR COMPANY ID ──────────────────────────────────────
 async function _carregarCompanyId() {
   try {
-    const rows = await sbGet('company_users?user_id=eq.' + usuarioAtual.id + '&select=company_id,role&limit=1');
+    const rows = await sbGet('company_users?user_id=eq.' + usuarioAtual.id + '&select=id,company_id,role&limit=1');
     if (rows && rows.length > 0) {
       _companyId = rows[0].company_id;
-      // Atualizar perfil com o role do company_users
       if (rows[0].role) usuarioAtual.perfil = rows[0].role;
+      // Salvar nome/email no company_users para aparecer na tela de permissões
+      if (usuarioAtual.nome || usuarioAtual.email) {
+        sbPatch('company_users', rows[0].id, {
+          nome: usuarioAtual.nome || '',
+          email: usuarioAtual.email || ''
+        }).catch(() => {});
+      }
     }
   } catch(e) {
     console.warn('Erro ao carregar company_id:', e);
@@ -222,27 +228,12 @@ async function renderPermissoes(container) {
   if (!c) return;
   c.innerHTML = '<div style="color:var(--text-tertiary);font-size:13px;padding:16px 0;">Carregando...</div>';
 
-  // Buscar usuários da empresa
+  // Buscar usuários da empresa (nome/email agora estão em company_users)
   let usuarios = [];
   if (_companyId) {
     try {
-      // company_users não tem nome/email — buscar separado da tabela usuarios
-      const [cuRows, usRows] = await Promise.all([
-        sbGet('company_users', '?company_id=eq.' + _companyId + '&select=id,user_id,role&order=created_at'),
-        sbGet('usuarios', '?select=id,nome,usuario&order=nome').catch(() => [])
-      ]);
-      const usMap = {};
-      if (Array.isArray(usRows)) usRows.forEach(u => { usMap[u.id] = u; });
-      usuarios = (Array.isArray(cuRows) ? cuRows : []).map(cu => {
-        const u = usMap[cu.user_id] || {};
-        return {
-          id: cu.id,
-          user_id: cu.user_id,
-          role: cu.role,
-          nome: u.nome || (usuarioAtual.id === cu.user_id ? usuarioAtual.nome : null) || u.usuario || '—',
-          email: usuarioAtual.id === cu.user_id ? usuarioAtual.email : (u.usuario || cu.user_id?.slice(0,8) + '…')
-        };
-      });
+      const rows = await sbGet('company_users', '?company_id=eq.' + _companyId + '&select=id,user_id,role,nome,email&order=nome');
+      usuarios = Array.isArray(rows) ? rows : [];
     } catch(e) { usuarios = []; }
   }
 
