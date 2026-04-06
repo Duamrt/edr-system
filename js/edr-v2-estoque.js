@@ -676,7 +676,7 @@ function abrirHistoricoMaterial(chave) {
             <div class="hist-desc"${clickNota}>${esc(m.desc)}</div>
             <div class="hist-meta">${esc(m.data || '---')} · ${esc(m.meta)}</div>
           </div>
-          <div class="hist-qty ${qtyClass}">${qtyPrefix}${fmt(m.qtd)}</div>
+          <div class="hist-qty ${qtyClass}">${qtyPrefix}${fmtQtd(m.qtd)}</div>
         </div>`;
       }).join('')}
     </div>

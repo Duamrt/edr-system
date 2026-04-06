@@ -108,6 +108,12 @@ function renderObrasView() {
   initCATS();
   _obrasShowOverview();
   populateSelects();
+  // BUG18: popular dropdown de centros de custo
+  const filtrocat = document.getElementById('obras-filtro-cat');
+  if (filtrocat) {
+    filtrocat.innerHTML = '<option value="">Todos centros de custo</option>' +
+      ETAPAS.map(e => `<option value="${e.key}">${e.lb}</option>`).join('');
+  }
   renderObrasCards();
   aplicarPerfil();
 }
@@ -286,18 +292,25 @@ function obrasSwitchTab(tab) {
 function obrasAtualizarOrdem(ordem) {
   ObrasModule.ordem = ordem;
   ObrasModule.lancPage = 0;
+  // BUG10: atualizar visual dos botoes de ordem
+  ['data','az','valor'].forEach(o => {
+    const btn = document.getElementById('obras-ord-' + o);
+    if (btn) btn.classList.toggle('ativo', o === ordem);
+  });
   filtrarLanc();
 }
 
 function obrasToggleSemCodigo() {
   ObrasModule.filtroSemCodigo = !ObrasModule.filtroSemCodigo;
   ObrasModule.lancPage = 0;
+  const btn = document.getElementById('obras-ord-codigo');
+  if (btn) btn.classList.toggle('ativo', ObrasModule.filtroSemCodigo);
   filtrarLanc();
 }
 
 function filtrarLanc() {
   const listaEl = document.getElementById('obras-lanc-lista');
-  const summaryEl = document.getElementById('obras-lanc-summary');
+  const summaryEl = document.getElementById('obras-total-filtro');
   if (!listaEl) return;
 
   const obraId = ObrasModule.obraAberta;
@@ -335,9 +348,9 @@ function filtrarLanc() {
   // Summary
   if (summaryEl) {
     if (!lista.length) {
-      summaryEl.style.display = 'none';
+      summaryEl.classList.add('hidden');
     } else {
-      summaryEl.style.display = '';
+      summaryEl.classList.remove('hidden');
       summaryEl.innerHTML = `
         <span class="lanc-summary-count">${lista.length} lancamento${lista.length !== 1 ? 's' : ''}</span>
         ${isAdmin ? `<span class="lanc-summary-value">${fmtR(totalFiltrado)}</span>` : ''}`;
@@ -399,6 +412,21 @@ function filtrarLanc() {
 
 function obrasCarregarMais() {
   ObrasModule.lancPage++;
+  filtrarLanc();
+}
+
+// BUG10+BUG11: filtros de obra e categoria ──────────────────────
+function onChangeObraFiltro() {
+  const obraId = document.getElementById('obras-filtro-obra')?.value || '';
+  ObrasModule.obraAberta = obraId || null;
+  ObrasModule.lancPage = 0;
+  const btnArq = document.getElementById('btn-arquivar-obra');
+  if (btnArq) btnArq.style.display = obraId ? '' : 'none';
+  filtrarLanc();
+}
+
+function filtrarLancCat() {
+  ObrasModule.lancPage = 0;
   filtrarLanc();
 }
 
@@ -654,7 +682,7 @@ async function salvarNovaObra() {
       renderObrasCards();
       showToast(`"${nome}" atualizada!`);
     } else {
-      const [nova] = await sbPost('obras', payload);
+      const [nova] = await sbPost('obras', { ...payload, id_usuario: usuarioAtual?.id });
       obras.push(nova);
       obras.sort((a, b) => a.nome.localeCompare(b.nome));
       populateSelects();
