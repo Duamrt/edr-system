@@ -735,29 +735,22 @@ const CronogramaModule = {
   // ══════════════════════════════════════════════════════════
 
   _gerarEtapas() {
-    const obraId = document.getElementById('cron-filtro-obra')?.value;
-    if (!obraId) { showToast('Selecione uma obra primeiro'); return; }
-
-    const obrasLista = typeof obras !== 'undefined' ? obras : [];
-    const obra = obrasLista.find(o => o.id === obraId);
-    if (!obra) return;
-
-    const existentes = this.tarefas.filter(t => t.obra_id === obraId);
-    if (existentes.length > 0) {
-      confirmar('Ja existem ' + existentes.length + ' tarefas pra ' + obra.nome + '. Adicionar etapas padrao mesmo assim?', function() {
-        CronogramaModule._abrirModalEtapas(obraId);
-      });
-    } else {
-      this._abrirModalEtapas(obraId);
-    }
+    this._abrirModalEtapas();
   },
 
-  _abrirModalEtapas(obraId) {
+  _abrirModalEtapas() {
     const obrasLista = typeof obras !== 'undefined' ? obras : [];
-    const obra = obrasLista.find(o => o.id === obraId);
     const hoje = new Date().toISOString().split('T')[0];
 
-    // Montar opcoes de PCI
+    // Pre-selecionar obra do filtro se houver
+    const obraFiltroAtual = document.getElementById('cron-filtro-obra')?.value || '';
+
+    // Opcoes de obra
+    const obraOpts = obrasLista.map(function(o) {
+      return '<option value="' + o.id + '"' + (o.id == obraFiltroAtual ? ' selected' : '') + '>' + esc(o.nome) + '</option>';
+    }).join('');
+
+    // Opcoes de PCI
     const pciOpts = (typeof PciModule !== 'undefined' && PciModule.state && PciModule.state.length)
       ? PciModule.state.map(function(p) {
           return '<option value="' + p.id + '">' + p.nome + (p.entrega !== 'A definir' ? ' — entrega ' + p.entrega : '') + '</option>';
@@ -768,9 +761,11 @@ const CronogramaModule = {
       + '<span><span class="material-symbols-outlined" style="font-size:18px;vertical-align:middle;">auto_fix_high</span> GERAR CRONOGRAMA</span>'
       + '<button class="modal-close" onclick="fecharModal(\'cron-etapas\')"><span class="material-symbols-outlined">close</span></button>'
       + '</div>'
-      + '<div style="font-size:12px;color:var(--texto2);margin-bottom:14px;padding:8px 12px;background:rgba(45,106,79,0.05);border:1px solid rgba(45,106,79,0.1);border-radius:8px;">'
-        + 'Obra: <strong>' + esc(obra?.nome || '') + '</strong><br>'
-        + 'Informe as datas e qual PCI usar. As etapas serao distribuidas proporcionalmente ao peso de cada fase.'
+      + '<div class="field"><label>OBRA</label>'
+        + '<select id="cron-etapas-obra" style="width:100%;padding:10px 14px;background:var(--bg2);border:1px solid var(--borda);border-radius:10px;color:var(--texto);font-size:13px;outline:none;font-family:inherit;">'
+          + '<option value="">Selecione a obra</option>'
+          + obraOpts
+        + '</select>'
       + '</div>'
       + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">'
         + '<div class="field"><label>DATA DE INICIO</label><input type="date" id="cron-etapas-inicio" value="' + hoje + '"></div>'
@@ -782,7 +777,7 @@ const CronogramaModule = {
           + pciOpts
         + '</select>'
       + '</div>'
-      + '<button class="btn-save" onclick="CronogramaModule._salvarEtapas(\'' + obraId + '\')" style="width:100%;margin-top:4px;">GERAR CRONOGRAMA</button>'
+      + '<button class="btn-save" onclick="CronogramaModule._salvarEtapas()" style="width:100%;margin-top:4px;">GERAR CRONOGRAMA</button>'
       + '<button class="btn-outline" onclick="fecharModal(\'cron-etapas\')" style="margin-top:6px;width:100%;">CANCELAR</button>';
 
     let overlay = document.getElementById('modal-cron-etapas');
@@ -803,11 +798,13 @@ const CronogramaModule = {
     overlay.classList.remove('hidden');
   },
 
-  async _salvarEtapas(obraId) {
+  async _salvarEtapas() {
+    const obraId = document.getElementById('cron-etapas-obra')?.value;
     const inicioStr = document.getElementById('cron-etapas-inicio')?.value;
     const fimStr = document.getElementById('cron-etapas-fim')?.value;
     const pciId = document.getElementById('cron-etapas-pci')?.value;
 
+    if (!obraId) { showToast('Selecione a obra'); return; }
     if (!inicioStr) { showToast('Informe a data de inicio'); return; }
     if (!fimStr) { showToast('Informe a data de entrega'); return; }
     if (fimStr <= inicioStr) { showToast('Data de entrega deve ser apos o inicio'); return; }
