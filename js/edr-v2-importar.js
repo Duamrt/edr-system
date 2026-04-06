@@ -338,7 +338,7 @@ const ImportModule = {
 
     this.itensPreview = itens.map((item, idx) => {
       const match = this.matchCatalogo(item.descOriginal);
-      const credito = typeof classificarItem === 'function' ? classificarItem(match ? match.material.nome : item.descOriginal) : null;
+      const credito = typeof classificarItemSync === 'function' ? classificarItemSync(match ? match.material.nome : item.descOriginal) : null;
       // GM diretriz 4: confianca baixa → revisao humana
       const confiavel = match && match.score >= 60;
       return {
@@ -481,7 +481,7 @@ const ImportModule = {
       item.descFinal = item.descOriginal;
       item.codigoCat = null;
       item.confirmado = false;
-      const cred = typeof classificarItem === 'function' ? classificarItem(item.descOriginal) : null;
+      const cred = typeof classificarItemSync === 'function' ? classificarItemSync(item.descOriginal) : null;
       item.credito = cred ? cred.credito : null;
       item.creditoCat = cred ? cred.cat : '';
     } else {
@@ -493,8 +493,8 @@ const ImportModule = {
         item.codigoCat = mat.codigo;
         item.unidade = mat.unidade || item.unidade;
         item.confirmado = true;
-        const cred = typeof classificarItem === 'function'
-          ? (classificarItem(mat.nome) || classificarItem(item.descOriginal))
+        const cred = typeof classificarItemSync === 'function'
+          ? (classificarItemSync(mat.nome, mat.codigo) || classificarItemSync(item.descOriginal, null))
           : null;
         item.credito = cred ? cred.credito : null;
         item.creditoCat = cred ? cred.cat : '';
@@ -599,7 +599,7 @@ const ImportModule = {
 
     // Entrega cada item como JSON pro NotasModule
     for (const item of this.itensPreview) {
-      const res = typeof classificarItem === 'function' ? classificarItem(item.descFinal) : null;
+      const res = typeof classificarItemSync === 'function' ? classificarItemSync(item.descFinal) : null;
       const itemData = {
         desc: item.descFinal,
         qtd: item.qtd,
@@ -855,7 +855,7 @@ const ImportModule = {
       // Passo 2: Match por nome (fallback)
       if (!match) match = this.matchCatalogo(item.descOriginal);
       const confiavel = match && match.score >= 60;
-      const credito = typeof classificarItem === 'function' ? classificarItem(match ? match.material.nome : item.descOriginal) : null;
+      const credito = typeof classificarItemSync === 'function' ? classificarItemSync(match ? match.material.nome : item.descOriginal) : null;
       return {
         idx,
         descOriginal: item.descOriginal,
