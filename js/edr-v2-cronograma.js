@@ -130,6 +130,8 @@ const CronogramaModule = {
         + '</div>'
         + '<button onclick="CronogramaModule._toggleTodos()" style="padding:6px 12px;border-radius:8px;border:1px solid var(--borda);background:var(--bg2);color:var(--texto2);font-size:12px;cursor:pointer;" id="cron-btn-toggle">'
           + '<span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;">unfold_more</span> Expandir</button>'
+        + '<button onclick="CronogramaModule._abrirModalImportarPCI()" style="padding:6px 12px;border-radius:8px;border:1px solid var(--primary);background:rgba(45,106,79,0.08);color:var(--primary);font-size:12px;cursor:pointer;font-weight:600;">'
+          + '<span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;">upload_file</span> Importar PCI</button>'
         + '<button onclick="CronogramaModule._gerarEtapas()" style="padding:6px 12px;border-radius:8px;border:1px solid var(--borda);background:var(--bg2);color:var(--texto2);font-size:12px;cursor:pointer;">'
           + '<span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;">auto_fix_high</span> Gerar Padrao</button>'
         + '<button onclick="CronogramaModule._abrirModal()" class="btn-save" style="padding:8px 16px;font-size:12px;">'
@@ -728,6 +730,204 @@ const CronogramaModule = {
         await CronogramaModule._carregarTarefas();
       } catch (e) { showToast('Erro ao excluir'); }
     });
+  },
+
+  // ══════════════════════════════════════════════════════════
+  // IMPORTAÇÃO DE PCI (XLSB da Caixa)
+  // ══════════════════════════════════════════════════════════
+
+  _pdfFile: null,
+
+  _abrirModalImportarPCI() {
+    const obrasLista = typeof obras !== 'undefined' ? obras : [];
+    const hoje = new Date().toISOString().split('T')[0];
+    const obraFiltroAtual = document.getElementById('cron-filtro-obra')?.value || '';
+
+    const obraOpts = obrasLista.map(function(o) {
+      return '<option value="' + o.id + '"' + (o.id == obraFiltroAtual ? ' selected' : '') + '>' + esc(o.nome) + '</option>';
+    }).join('');
+
+    const pciLista = (typeof PciModule !== 'undefined')
+      ? (PciModule.state && PciModule.state.length ? PciModule.state : PciModule._OBRAS_SEED)
+      : [];
+    const pciOpts = pciLista.map(function(p) {
+      return '<option value="' + p.id + '">' + p.nome + '</option>';
+    }).join('');
+
+    const html = '<div class="modal-title">'
+      + '<span><span class="material-symbols-outlined" style="font-size:18px;vertical-align:middle;">upload_file</span> IMPORTAR PCI</span>'
+      + '<button class="modal-close" onclick="fecharModal(\'cron-import-pci\')"><span class="material-symbols-outlined">close</span></button>'
+      + '</div>'
+      + '<div class="field"><label>OBRA (no sistema)</label>'
+        + '<select id="imp-obra"><option value="">Selecione a obra</option>' + obraOpts + '</select>'
+      + '</div>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">'
+        + '<div class="field"><label>DATA DE INICIO</label><input type="date" id="imp-inicio" value="' + hoje + '"></div>'
+        + '<div class="field"><label>DATA DE ENTREGA</label><input type="date" id="imp-fim"></div>'
+      + '</div>'
+      + '<div class="field"><label>QUAL PCI ESTA IMPORTANDO</label>'
+        + '<select id="imp-pci"><option value="">Selecione</option>' + pciOpts + '</select>'
+      + '</div>'
+      + '<div class="field"><label>ARQUIVO XLSB DA CAIXA</label>'
+        + '<div id="imp-area" onclick="document.getElementById(\'imp-file\').click()" style="border:2px dashed var(--border);border-radius:10px;padding:20px;text-align:center;cursor:pointer;transition:border-color .2s;">'
+          + '<span class="material-symbols-outlined" style="font-size:36px;color:var(--text-tertiary);">upload_file</span>'
+          + '<div id="imp-nome" style="font-size:12px;color:var(--text-secondary);margin-top:6px;">Clique para selecionar o .xlsb</div>'
+        + '</div>'
+        + '<input type="file" id="imp-file" accept=".xlsb,.xlsx,.xls" style="display:none;" onchange="CronogramaModule._onArquivoSelecionado(this)">'
+      + '</div>'
+      + '<button class="btn-save" id="imp-btn" onclick="CronogramaModule._processarImportacaoPCI()" disabled>IMPORTAR E GERAR CRONOGRAMA</button>'
+      + '<button class="btn-outline" onclick="fecharModal(\'cron-import-pci\')">CANCELAR</button>';
+
+    let overlay = document.getElementById('modal-cron-import-pci');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'modal-cron-import-pci';
+      overlay.className = 'modal-overlay';
+      overlay.setAttribute('role', 'dialog');
+      overlay.setAttribute('aria-modal', 'true');
+      overlay.onclick = function(e) { if (e.target === overlay) fecharModal('cron-import-pci'); };
+      const modal = document.createElement('div');
+      modal.className = 'modal-box';
+      modal.style.maxWidth = '500px';
+      overlay.appendChild(modal);
+      document.body.appendChild(overlay);
+    }
+    overlay.querySelector('.modal-box').innerHTML = html;
+    overlay.classList.add('active');
+    CronogramaModule._arquivoPCI = null;
+  },
+
+  _onArquivoSelecionado(input) {
+    const file = input.files[0];
+    if (!file) return;
+    CronogramaModule._arquivoPCI = file;
+    document.getElementById('imp-nome').textContent = file.name;
+    document.getElementById('imp-area').style.borderColor = 'var(--primary)';
+    document.getElementById('imp-btn').disabled = false;
+  },
+
+  async _carregarSheetJS() {
+    if (window.XLSX) return;
+    await new Promise(function(resolve, reject) {
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+      s.onload = resolve;
+      s.onerror = reject;
+      document.head.appendChild(s);
+    });
+  },
+
+  _extrairPesosDoPlanilha(workbook) {
+    const ws = workbook.Sheets['Proposta_Constr_Individual'];
+    if (!ws) return null;
+    // Coluna X (índice 23), linhas 120-139 (índice 119-138)
+    const pesos = [];
+    for (let row = 119; row <= 138; row++) {
+      const addr = 'X' + (row + 1);
+      const cell = ws[addr];
+      pesos.push(cell && typeof cell.v === 'number' ? Math.round(cell.v * 100) / 100 : 0);
+    }
+    const soma = pesos.reduce(function(a, b) { return a + b; }, 0);
+    if (soma < 80 || soma > 120) return null; // sanidade
+    return pesos;
+  },
+
+  async _processarImportacaoPCI() {
+    const obraId = document.getElementById('imp-obra')?.value;
+    const inicioStr = document.getElementById('imp-inicio')?.value;
+    const fimStr = document.getElementById('imp-fim')?.value;
+    const pciId = document.getElementById('imp-pci')?.value;
+    const file = CronogramaModule._arquivoPCI;
+
+    if (!obraId) { showToast('Selecione a obra'); return; }
+    if (!inicioStr) { showToast('Informe a data de inicio'); return; }
+    if (!fimStr) { showToast('Informe a data de entrega'); return; }
+    if (fimStr <= inicioStr) { showToast('Data de entrega deve ser apos o inicio'); return; }
+    if (!pciId) { showToast('Selecione qual PCI esta importando'); return; }
+    if (!file) { showToast('Selecione o arquivo XLSB'); return; }
+
+    const btn = document.getElementById('imp-btn');
+    btn.disabled = true;
+    btn.textContent = 'Lendo planilha...';
+
+    try {
+      await CronogramaModule._carregarSheetJS();
+      const buffer = await file.arrayBuffer();
+      const wb = XLSX.read(buffer, { type: 'array' });
+      const pesos = CronogramaModule._extrairPesosDoPlanilha(wb);
+
+      if (!pesos) {
+        showToast('Nao foi possivel ler os pesos da planilha. Verifique se e o arquivo correto.');
+        btn.disabled = false;
+        btn.textContent = 'IMPORTAR E GERAR CRONOGRAMA';
+        return;
+      }
+
+      btn.textContent = 'Gerando...';
+      await CronogramaModule._gerarDeImportacaoPCI(obraId, pciId, pesos, inicioStr, fimStr);
+      fecharModal('cron-import-pci');
+      showToast('PCI importada e cronograma gerado!');
+      await CronogramaModule._carregarTarefas();
+    } catch (e) {
+      console.error('Erro importando PCI:', e);
+      showToast('Erro ao processar o arquivo');
+      btn.disabled = false;
+      btn.textContent = 'IMPORTAR E GERAR CRONOGRAMA';
+    }
+  },
+
+  async _gerarDeImportacaoPCI(obraId, pciId, pesos, inicioStr, fimStr) {
+    const tInicio = new Date(inicioStr + 'T00:00:00');
+    const tFim = new Date(fimStr + 'T00:00:00');
+    const totalDias = Math.round((tFim - tInicio) / 86400000);
+    const totalPeso = pesos.reduce(function(a, b) { return a + b; }, 0);
+
+    // Atualizar pesos na PCI Medicoes
+    if (typeof PciModule !== 'undefined') {
+      const pciLista = PciModule.state && PciModule.state.length ? PciModule.state : PciModule._OBRAS_SEED;
+      const pciObra = pciLista.find(function(p) { return p.id === pciId; });
+      if (pciObra) {
+        pciObra.pesos = pesos;
+        if (typeof PciModule._salvar === 'function') PciModule._salvar();
+      }
+    }
+
+    // Criar tarefas do cronograma
+    let dataAtual = new Date(tInicio);
+    let anteriorId = null;
+    let criadas = 0;
+    const etapas = typeof PciModule !== 'undefined' ? PciModule.ETAPAS_CEF : [];
+
+    for (let i = 0; i < 20; i++) {
+      const peso = pesos[i] || 0;
+      if (!peso) continue;
+      const fase = etapas[i] || { nome: 'Fase ' + (i + 1), desc: '' };
+      const dias = Math.max(1, Math.round((peso / totalPeso) * totalDias));
+      const dInicio = dataAtual.toISOString().split('T')[0];
+      dataAtual.setDate(dataAtual.getDate() + dias);
+      if (dataAtual > tFim) dataAtual = new Date(tFim);
+      const dFim = dataAtual.toISOString().split('T')[0];
+      const subs = fase.desc ? fase.desc.split(',').map(function(s) { return { nome: s.trim(), feito: false }; }).filter(function(s) { return s.nome; }) : [];
+
+      try {
+        const r = await sbPost('cronograma_tarefas', {
+          obra_id: obraId, nome: fase.nome, data_inicio: dInicio, data_fim: dFim,
+          progresso: 0, dependencia: anteriorId, ordem: i, subitens: subs
+        });
+        if (r && r[0]?.id) anteriorId = r[0].id;
+        criadas++;
+      } catch (e) { console.error('Erro etapa', fase.nome, e); }
+    }
+
+    // Salvar mapeamento para PCI Medicoes
+    try {
+      const mapRows = await sbGet('tracker_sync?key=eq.pci-obra-map-v1&select=data');
+      let map = { mappings: [] };
+      if (mapRows && mapRows.length && mapRows[0].data) map = mapRows[0].data;
+      map.mappings = (map.mappings || []).filter(function(m) { return m.pci_id !== pciId && m.obra_id !== obraId; });
+      map.mappings.push({ pci_id: pciId, obra_id: obraId });
+      await sbPost('tracker_sync', { key: 'pci-obra-map-v1', data: map, updated_at: new Date().toISOString() }, { upsert: true });
+    } catch (e) { console.error('Erro mapa PCI-obra:', e); }
   },
 
   // ══════════════════════════════════════════════════════════
