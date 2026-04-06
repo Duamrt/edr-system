@@ -249,7 +249,7 @@ function _garantiasAbrirModal(chamadoId) {
     `<option value="${esc(k)}" ${c?.status === k ? 'selected' : ''}>${v.lb}</option>`
   ).join('');
 
-  overlay.innerHTML = `<div style="background:var(--bg-surface);border:1px solid var(--borda);border-radius:16px;max-width:560px;width:100%;max-height:90vh;overflow-y:auto;">
+  overlay.innerHTML = `<div style="background:var(--surface);border:1px solid var(--borda);border-radius:16px;max-width:560px;width:100%;max-height:90vh;overflow-y:auto;">
     <!-- Header -->
     <div style="padding:20px 20px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--borda);">
       <span style="font-size:16px;font-weight:700;color:var(--texto-pri);display:flex;align-items:center;gap:6px;">
@@ -351,7 +351,7 @@ function _garantiasSetupObraAC(chamado) {
   wrap.innerHTML = `<input id="gar-obra-input" type="text" value="${esc(obraAtualNome)}" placeholder="Buscar obra..." autocomplete="off"
     style="width:100%;padding:8px 10px;background:var(--input-bg);border:1px solid var(--borda);border-radius:8px;color:var(--texto-pri);font-size:12px;font-family:inherit;box-sizing:border-box;">
     <input id="gar-obra-id" type="hidden" value="${esc(chamado?.obra_id || '')}">
-    <div id="gar-obra-dropdown" style="position:absolute;top:100%;left:0;right:0;background:var(--bg-surface);border:1px solid var(--borda);border-radius:8px;max-height:180px;overflow-y:auto;display:none;z-index:10;margin-top:2px;"></div>`;
+    <div id="gar-obra-dropdown" style="position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--borda);border-radius:8px;max-height:180px;overflow-y:auto;display:none;z-index:10;margin-top:2px;"></div>`;
 
   const input = document.getElementById('gar-obra-input');
   const dd = document.getElementById('gar-obra-dropdown');

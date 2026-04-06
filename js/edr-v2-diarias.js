@@ -1798,16 +1798,19 @@ function diarTogglePanel() {
   const panel = document.getElementById('diar-panelLeft');
   const content = document.getElementById('diar-panelContent');
   const btn = document.getElementById('diar-togglePanel');
+  const grid = panel?.closest('.diarias-main');
   if (DiariasModule.panelRecolhido) {
     panel.classList.add('recolhido');
+    if (grid) grid.classList.add('panel-recolhido');
     content.style.display = 'none';
-    if (btn) { btn.textContent = 'chevron_right'; btn.title = 'Expandir painel'; }
+    if (btn) { btn.textContent = '▶'; btn.title = 'Expandir painel'; }
   } else {
     panel.classList.remove('recolhido');
+    if (grid) grid.classList.remove('panel-recolhido');
     content.style.display = 'flex';
     content.style.flexDirection = 'column';
     content.style.gap = '18px';
-    if (btn) { btn.textContent = 'chevron_left'; btn.title = 'Recolher painel'; }
+    if (btn) { btn.textContent = '◀'; btn.title = 'Recolher painel'; }
   }
 }
 

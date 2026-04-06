@@ -570,9 +570,104 @@ ${a.obs ? `<div class="clausula"><strong>OBSERVA\u00C7\u00D5ES:</strong> ${escHt
 
   _reRenderObra(obraId) {
     // Re-renderiza a tab de adicionais dentro da obra aberta
-    const container = document.getElementById('adicionais-container');
+    const container = document.getElementById('adicionais-lista');
     if (container && obraId) {
       this.render(obraId, container);
     }
+  },
+
+  // ══════════════════════════════════════════════════════════
+  // VIEW GERAL — Todos os adicionais (para viewRegistry)
+  // ══════════════════════════════════════════════════════════
+
+  async renderGeral(container) {
+    if (!container) return;
+    container.innerHTML = '<div style="padding:20px;text-align:center;"><span class="material-symbols-outlined" style="font-size:36px;animation:pulse 1.5s infinite;color:var(--primary)">hourglass_empty</span></div>';
+
+    if (!this._loaded) await this.load();
+
+    const todasObras = [
+      ...(typeof obras !== 'undefined' ? obras : []),
+      ...(typeof obrasArquivadas !== 'undefined' ? obrasArquivadas : [])
+    ].filter(o => !o.arquivada);
+
+    const totalGeral = this.adicionais.reduce((s, a) => s + Number(a.valor || 0), 0);
+    const totalPagoGeral = this.pagamentos.reduce((s, p) => s + Number(p.valor || 0), 0);
+    const totalPendentes = this.adicionais.filter(a => a.status === 'pendente').length;
+    const totalAprovados = this.adicionais.filter(a => a.status === 'aprovado' || a.status === 'em_andamento').length;
+
+    let html = `
+      <div class="sticky-header">
+        <div class="modulo-badge"><span class="material-symbols-outlined">construction</span> ADICIONAIS</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px;">
+          <div class="stat-mini"><div class="stat-mini-label">Total</div><div class="stat-mini-value">${this._fmtR(totalGeral)}</div></div>
+          <div class="stat-mini"><div class="stat-mini-label">Recebido</div><div class="stat-mini-value" style="color:var(--verde-hl);">${this._fmtR(totalPagoGeral)}</div></div>
+          <div class="stat-mini"><div class="stat-mini-label">Pendentes</div><div class="stat-mini-value" style="color:var(--amarelo);">${totalPendentes}</div></div>
+          <div class="stat-mini"><div class="stat-mini-label">Em andamento</div><div class="stat-mini-value" style="color:var(--primary);">${totalAprovados}</div></div>
+        </div>
+      </div>
+      <div style="padding:0 0 80px;">
+    `;
+
+    if (!this.adicionais.length) {
+      html += `<div class="empty-state" style="padding:60px 20px;text-align:center;">
+        <span class="material-symbols-outlined" style="font-size:48px;color:var(--text-tertiary);">construction</span>
+        <p style="color:var(--text-tertiary);margin-top:8px;">Nenhum adicional registrado.</p>
+      </div>`;
+    } else {
+      // Agrupar por obra
+      const porObra = {};
+      this.adicionais.forEach(a => {
+        if (!porObra[a.obra_id]) porObra[a.obra_id] = [];
+        porObra[a.obra_id].push(a);
+      });
+
+      Object.entries(porObra).forEach(([obraId, lista]) => {
+        const obra = todasObras.find(o => o.id === obraId);
+        const obraNome = obra?.nome || 'Obra desconhecida';
+        const totalObra = lista.reduce((s, a) => s + Number(a.valor || 0), 0);
+        const pagoObra = this.pagamentos.filter(p => lista.some(a => a.id === p.adicional_id)).reduce((s, p) => s + Number(p.valor || 0), 0);
+
+        html += `<div style="margin:14px 0 4px;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">
+            <div style="font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px;">
+              <span class="material-symbols-outlined" style="font-size:16px;color:var(--primary);">home_work</span>${typeof esc === 'function' ? esc(obraNome) : obraNome}
+            </div>
+            <div style="font-size:11px;color:var(--text-tertiary);">${this._fmtR(totalObra)} · pago ${this._fmtR(pagoObra)}</div>
+          </div>
+        </div>`;
+
+        lista.forEach(a => {
+          const st = this.STATUS[a.status] || this.STATUS.pendente;
+          const pgtos = this.pagamentos.filter(p => p.adicional_id === a.id);
+          const pagoParcial = pgtos.reduce((s, p) => s + Number(p.valor || 0), 0);
+          const saldoItem = Number(a.valor || 0) - pagoParcial;
+
+          html += `<div class="card-adicional" style="border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:6px;background:var(--surface);">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+              <div style="flex:1;">
+                <div style="font-size:13px;font-weight:600;color:var(--text-primary);">${typeof esc === 'function' ? esc(a.descricao) : a.descricao}</div>
+                ${a.data_acordo ? `<div style="font-size:11px;color:var(--text-tertiary);margin-top:2px;">${typeof fmtData === 'function' ? fmtData(a.data_acordo) : a.data_acordo}</div>` : ''}
+              </div>
+              <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+                <span class="badge" style="background:${st.cor}20;color:${st.cor};border:1px solid ${st.cor}40;font-size:10px;">
+                  <span class="material-symbols-outlined" style="font-size:12px;vertical-align:middle;">${st.icon}</span> ${st.label}
+                </span>
+                <span style="font-size:13px;font-weight:700;color:var(--text-primary);font-family:'Space Grotesk',monospace;">${this._fmtR(a.valor)}</span>
+                ${saldoItem > 0 ? `<span style="font-size:10px;color:var(--amarelo);">Saldo: ${this._fmtR(saldoItem)}</span>` : '<span style="font-size:10px;color:var(--verde-hl);">Quitado</span>'}
+              </div>
+            </div>
+          </div>`;
+        });
+      });
+    }
+
+    html += '</div>';
+    container.innerHTML = html;
   }
 };
+
+// ── Registro no viewRegistry ──
+if (typeof viewRegistry !== 'undefined') {
+  viewRegistry.register('adicionais', (container) => AdicionaisModule.renderGeral(container));
+}
