@@ -750,12 +750,13 @@ const CronogramaModule = {
       return '<option value="' + o.id + '"' + (o.id == obraFiltroAtual ? ' selected' : '') + '>' + esc(o.nome) + '</option>';
     }).join('');
 
-    // Opcoes de PCI
-    const pciOpts = (typeof PciModule !== 'undefined' && PciModule.state && PciModule.state.length)
-      ? PciModule.state.map(function(p) {
-          return '<option value="' + p.id + '">' + p.nome + (p.entrega !== 'A definir' ? ' — entrega ' + p.entrega : '') + '</option>';
-        }).join('')
-      : '';
+    // Opcoes de PCI — usa state se ja carregado, senao fallback no seed
+    const pciLista = (typeof PciModule !== 'undefined')
+      ? (PciModule.state && PciModule.state.length ? PciModule.state : PciModule._OBRAS_SEED)
+      : [];
+    const pciOpts = pciLista.map(function(p) {
+      return '<option value="' + p.id + '">' + p.nome + (p.entrega !== 'A definir' ? ' — entrega ' + p.entrega : '') + '</option>';
+    }).join('');
 
     const html = '<div class="modal-title">'
       + '<span><span class="material-symbols-outlined" style="font-size:18px;vertical-align:middle;">auto_fix_high</span> GERAR CRONOGRAMA</span>'
