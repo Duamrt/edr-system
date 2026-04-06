@@ -611,20 +611,16 @@ const ImportModule = {
         cat: res?.cat || item.creditoCat || 'Manual'
       };
 
-      // Usa NotasModule.adicionarItem se disponivel, senao itensForm direto
-      if (typeof NotasModule !== 'undefined' && typeof NotasModule.adicionarItem === 'function') {
-        NotasModule.adicionarItem(itemData);
-      } else if (typeof itensForm !== 'undefined' && Array.isArray(itensForm)) {
-        itensForm.push(itemData);
+      // adicionarItem e funcao global definida em edr-v2-notas.js
+      if (typeof adicionarItem === 'function') {
+        adicionarItem(itemData);
+      } else if (typeof NotasModule !== 'undefined') {
+        NotasModule.itens.push(itemData);
       }
     }
 
-    // Renderiza form de itens
-    if (typeof NotasModule !== 'undefined' && typeof NotasModule._renderItens === 'function') {
-      NotasModule._renderItens();
-    } else if (typeof renderItensForm === 'function') {
-      renderItensForm();
-    }
+    // Garante render mesmo se adicionarItem nao chamou (fallback)
+    if (typeof renderItensForm === 'function') renderItensForm();
 
     showToast(`${this.itensPreview.length} itens adicionados a nota`);
     this.fechar();
