@@ -226,8 +226,23 @@ async function renderPermissoes(container) {
   let usuarios = [];
   if (_companyId) {
     try {
-      usuarios = await sbGet('company_users', '?company_id=eq.' + _companyId + '&select=id,user_id,role,nome,email&order=nome');
-      if (!Array.isArray(usuarios)) usuarios = [];
+      // company_users não tem nome/email — buscar separado da tabela usuarios
+      const [cuRows, usRows] = await Promise.all([
+        sbGet('company_users', '?company_id=eq.' + _companyId + '&select=id,user_id,role&order=created_at'),
+        sbGet('usuarios', '?select=id,nome,usuario&order=nome').catch(() => [])
+      ]);
+      const usMap = {};
+      if (Array.isArray(usRows)) usRows.forEach(u => { usMap[u.id] = u; });
+      usuarios = (Array.isArray(cuRows) ? cuRows : []).map(cu => {
+        const u = usMap[cu.user_id] || {};
+        return {
+          id: cu.id,
+          user_id: cu.user_id,
+          role: cu.role,
+          nome: u.nome || (usuarioAtual.id === cu.user_id ? usuarioAtual.nome : null) || u.usuario || '—',
+          email: usuarioAtual.id === cu.user_id ? usuarioAtual.email : (u.usuario || cu.user_id?.slice(0,8) + '…')
+        };
+      });
     } catch(e) { usuarios = []; }
   }
 
