@@ -314,14 +314,14 @@ const ImportModule = {
       </div>
     `;
 
-    modal.classList.remove('hidden');
+    modal.classList.add('active');
     modal.style.display = 'flex';
     setTimeout(() => document.getElementById('import-texto-v2')?.focus(), 100);
   },
 
   fechar() {
     const modal = document.getElementById('modal-import-v2');
-    if (modal) { modal.classList.add('hidden'); modal.style.display = 'none'; }
+    if (modal) { modal.classList.remove('active'); modal.style.display = 'none'; }
     this.itensPreview = [];
   },
 
