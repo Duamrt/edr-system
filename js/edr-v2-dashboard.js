@@ -728,7 +728,7 @@ function renderDashboard() {
 
     if (isMobile) {
       const pages = [
-        { label: 'Resumo', icon: 'dashboard', html: _dashBuildKPIs(m, porObra) + _dashBuildAlertas(alertas) + _dashBuildContasVencidas() + _dashBuildAcaoNecessaria() + _dashBuildAgenda() },
+        { label: 'Resumo', icon: 'dashboard', html: _dashBuildKPIs(m, porObra) + _dashBuildAlertas(alertas) + _dashBuildContasVencidas() + _dashBuildAcaoNecessaria() + '<div id="dash-exec-obras-m"></div>' + _dashBuildAgenda() },
         { label: 'Financeiro', icon: 'bar_chart', html: _dashBuildResumoFinanceiro(porObra) },
         { label: 'Obras', icon: 'domain', html: _dashBuildSaudeObras(porObra) },
       ];
@@ -748,7 +748,7 @@ function renderDashboard() {
       _dashMobileSwipeInit();
     } else {
       const deskPages = [
-        { label: 'Resumo', icon: 'dashboard', html: _dashBuildKPIs(m, porObra) + _dashBuildAlertas(alertas) + _dashBuildContasVencidas() + _dashBuildAcaoNecessaria() },
+        { label: 'Resumo', icon: 'dashboard', html: _dashBuildKPIs(m, porObra) + _dashBuildAlertas(alertas) + _dashBuildContasVencidas() + _dashBuildAcaoNecessaria() + '<div id="dash-exec-obras"></div>' },
         { label: 'Financeiro', icon: 'bar_chart', html: _dashBuildResumoFinanceiro(porObra) },
       ];
 
@@ -768,8 +768,52 @@ function renderDashboard() {
     setTimeout(() => {
       if (typeof autoFitStatValues === 'function') autoFitStatValues();
       _dashRenderAgendaLegenda();
+      _dashRenderExecObras();
     }, 50);
   });
+}
+
+// ── EXECUÇÃO DE OBRAS (PCI) ───────────────────────────────────
+
+async function _dashRenderExecObras() {
+  try {
+    if (!PciModule.medicoes.length) await PciModule._carregar();
+    const obrasAtivas = (typeof obras !== 'undefined' ? obras : []).filter(o => !o.arquivada);
+    if (!obrasAtivas.length) return;
+
+    const rows = obrasAtivas.map(obra => {
+      const medicao = PciModule.medicoes.find(m => m.obra_id === obra.id);
+      const exec = medicao ? PciModule._calcExec(medicao.id) : null;
+      const cor = exec !== null ? PciModule._corProg(exec) : 'var(--text-tertiary)';
+      const dataAtual = medicao && medicao.data_levantamento
+        ? medicao.data_levantamento.split('-').reverse().join('/')
+        : '—';
+      return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:12px;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:Inter,sans-serif;">${esc(obra.nome)}</div>
+          <div style="font-size:10px;color:var(--text-tertiary);margin-top:2px;font-family:'Space Grotesk',monospace;">Última medição: ${dataAtual}</div>
+        </div>
+        <div style="width:90px;">
+          <div style="width:100%;height:5px;background:var(--border);border-radius:3px;overflow:hidden;">
+            <div style="width:${exec ?? 0}%;height:100%;background:${cor};border-radius:3px;transition:width .4s;"></div>
+          </div>
+        </div>
+        <span style="font-size:11px;font-weight:700;color:${cor};min-width:40px;text-align:right;font-family:'Space Grotesk',monospace;">${exec !== null ? exec.toFixed(1) + '%' : '—'}</span>
+      </div>`;
+    }).join('');
+
+    const html = `<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:14px;">
+      <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;color:#2D6A4F;letter-spacing:2px;margin-bottom:10px;display:flex;align-items:center;gap:6px;">
+        <span class="material-symbols-outlined" style="font-size:18px;">construction</span> EXECUÇÃO DAS OBRAS
+      </div>
+      ${rows}
+    </div>`;
+
+    ['dash-exec-obras', 'dash-exec-obras-m'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = html;
+    });
+  } catch(e) { console.warn('_dashRenderExecObras:', e); }
 }
 
 function _dashBuildHeader(dataStr) {
