@@ -1721,13 +1721,13 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
         <button id="btn-limpar-busca" class="btn-tipo btn-tipo-active-danger" onclick="document.getElementById('estoque-busca').value='';renderEstoque();toggleLimparBusca();document.getElementById('estoque-busca').focus();" style="display:none;position:absolute;right:8px;top:50%;transform:translateY(-50%);padding:4px 10px;min-height:32px;font-size:11px;"><span class="material-symbols-outlined icon-sm">close</span> LIMPAR</button>
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
-        <select id="estoque-filtro-obra" onchange="renderEstoque()" class="cat-btn">
+        <select id="estoque-filtro-obra" onchange="estoqueFiltrarObra(this.value)" class="cat-btn">
           <option value="">ALMOXARIFADO</option>
         </select>
         <span style="color:var(--border);">|</span>
-        <button class="cat-btn ativo" id="estoque-ord-az" onclick="estoqueOrdem='az';renderEstoque();estoqueAtualizarOrdem()">A-Z</button>
-        <button class="cat-btn" id="estoque-ord-maior" onclick="estoqueOrdem='maior';renderEstoque();estoqueAtualizarOrdem()">MAIOR ESTOQUE</button>
-        <button class="cat-btn" id="estoque-ord-menor" onclick="estoqueOrdem='menor';renderEstoque();estoqueAtualizarOrdem()">MENOR / NEGATIVO</button>
+        <button class="cat-btn ativo" id="estoque-ord-az" onclick="estoqueAtualizarOrdem('az')">A-Z</button>
+        <button class="cat-btn" id="estoque-ord-maior" onclick="estoqueAtualizarOrdem('maior')">MAIOR ESTOQUE</button>
+        <button class="cat-btn" id="estoque-ord-menor" onclick="estoqueAtualizarOrdem('menor')">MENOR / NEGATIVO</button>
         <span style="color:var(--border);">|</span>
         <button class="cat-btn" id="estoque-filtro-neg" onclick="toggleFiltroNegativo()" style="color:var(--error);"><span class="material-symbols-outlined icon-xs icon-inline">warning</span> SÓ NEGATIVOS</button>
       </div>
@@ -2443,37 +2443,37 @@ function updateShellUser(nome, perfil) {
 
 <!-- ═══════ MODULOS V2 (ordem de dependência) ═══════ -->
 <!-- 0. Infraestrutura: sbGet/sbPost/sbPatch/sbDelete, confirmar(), showModal, usuarioAtual -->
-<script src="js/edr-v2-infra.js?v=04061246"></script>
+<script src="js/edr-v2-infra.js?v=04061253"></script>
 <!-- 1. Utilitários globais (valorPorExtenso, fmtN) -->
-<script src="js/edr-v2-utils-extras.js?v=04061246"></script>
+<script src="js/edr-v2-utils-extras.js?v=04061253"></script>
 <!-- 2. Obras PRIMEIRO (ETAPAS, resolveEtapaKey, etapaCor, etapaLabel — vários módulos dependem) -->
-<script src="js/edr-v2-obras.js?v=04061246"></script>
+<script src="js/edr-v2-obras.js?v=04061253"></script>
 <!-- 3. PDF engine (pdfMake CDN + PdfModule) -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js?v=04061246"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js?v=04061246"></script>
-<script src="js/edr-v2-pdf.js?v=04061246"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js?v=04061253"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js?v=04061253"></script>
+<script src="js/edr-v2-pdf.js?v=04061253"></script>
 <!-- 4. Módulos core de negócio -->
-<script src="js/edr-v2-notas.js?v=04061246"></script>
-<script src="js/edr-v2-importar.js?v=04061246"></script>
-<script src="js/edr-v2-estoque.js?v=04061246"></script>
-<script src="js/edr-v2-custos.js?v=04061246"></script>
+<script src="js/edr-v2-notas.js?v=04061253"></script>
+<script src="js/edr-v2-importar.js?v=04061253"></script>
+<script src="js/edr-v2-estoque.js?v=04061253"></script>
+<script src="js/edr-v2-custos.js?v=04061253"></script>
 <!-- 5. Equipe e operacional -->
-<script src="js/edr-v2-diarias.js?v=04061246"></script>
-<script src="js/edr-v2-diario.js?v=04061246"></script>
+<script src="js/edr-v2-diarias.js?v=04061253"></script>
+<script src="js/edr-v2-diario.js?v=04061253"></script>
 <!-- 6. Relatórios e dashboard (dependem de obras.js pra etapaCor) -->
-<script src="js/edr-v2-relatorio.js?v=04061246"></script>
-<script src="js/edr-v2-dashboard.js?v=04061246"></script>
+<script src="js/edr-v2-relatorio.js?v=04061253"></script>
+<script src="js/edr-v2-dashboard.js?v=04061253"></script>
 <!-- 7. Módulos complementares -->
-<script src="js/edr-v2-leads.js?v=04061246"></script>
-<script src="js/edr-v2-garantias.js?v=04061246"></script>
-<script src="js/edr-v2-adicionais.js?v=04061246"></script>
-<script src="js/edr-v2-cronograma.js?v=04061246"></script>
-<script src="js/edr-v2-orcamento.js?v=04061246"></script>
+<script src="js/edr-v2-leads.js?v=04061253"></script>
+<script src="js/edr-v2-garantias.js?v=04061253"></script>
+<script src="js/edr-v2-adicionais.js?v=04061253"></script>
+<script src="js/edr-v2-cronograma.js?v=04061253"></script>
+<script src="js/edr-v2-orcamento.js?v=04061253"></script>
 <!-- 8. Documentação e medições -->
-<script src="js/edr-v2-termo-manual.js?v=04061246"></script>
-<script src="js/edr-v2-pci.js?v=04061246"></script>
+<script src="js/edr-v2-termo-manual.js?v=04061253"></script>
+<script src="js/edr-v2-pci.js?v=04061253"></script>
 <!-- 9. Auth (login, sessão, refresh — ÚLTIMO) -->
-<script src="js/edr-v2-auth.js?v=04061246"></script>
+<script src="js/edr-v2-auth.js?v=04061253"></script>
 
 <!-- ═══════════════════════════════════════════════════════════════ -->
 <!-- MODAIS (Fase 0 — containers para módulos que precisam)        -->

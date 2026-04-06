@@ -851,16 +851,49 @@ async function abrirAjusteEstoque(chave) {
   const item = EstoqueModule._consolidado.find(i => i.chave === chave);
   if (!item) return;
 
-  const input = await prompt(`Contagem fisica de "${item.desc}":\nSaldo sistema: ${fmt(item.saldo)} ${item.unidade}\n\nDigite a quantidade real:`);
-  if (input === null) return;
+  // Modal customizado — sem prompt() nativo (causa tela preta)
+  const real = await new Promise(resolve => {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay active';
+    overlay.id = '_ajuste-rapido-overlay';
+    overlay.innerHTML = `
+      <div class="modal-box" style="max-width:400px;">
+        <div class="modal-header">
+          <span class="modal-title">Ajuste de Estoque</span>
+          <button class="modal-close" onclick="document.getElementById('_ajuste-rapido-overlay').remove()">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+        <div class="modal-body" style="padding:16px 20px;">
+          <p style="font-size:13px;color:var(--text-secondary);margin-bottom:14px;">
+            Contagem física de <strong style="color:var(--text-primary);">${esc(item.desc)}</strong><br>
+            Saldo sistema: <strong style="color:var(--primary);">${fmt(item.saldo)} ${esc(item.unidade)}</strong>
+          </p>
+          <label class="dist-form-label">Digite a quantidade real:</label>
+          <input id="_ajuste-qtd-input" type="number" step="any" class="dist-form-input" placeholder="0" style="margin-top:6px;width:100%;" />
+        </div>
+        <div class="modal-footer">
+          <button class="btn" id="_ajuste-cancel-btn">Cancelar</button>
+          <button class="btn btn-primary" id="_ajuste-ok-btn">OK</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    const inp = overlay.querySelector('#_ajuste-qtd-input');
+    inp.focus();
+    const fechar = (val) => { overlay.remove(); resolve(val); };
+    overlay.querySelector('#_ajuste-ok-btn').onclick = () => fechar(parseFloat(inp.value));
+    overlay.querySelector('#_ajuste-cancel-btn').onclick = () => fechar(null);
+    overlay.querySelector('.modal-close').onclick = () => fechar(null);
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') fechar(parseFloat(inp.value)); if (e.key === 'Escape') fechar(null); });
+  });
 
-  const real = parseFloat(input);
-  if (isNaN(real)) return showToast('Quantidade invalida', 'error');
+  if (real === null || isNaN(real)) return showToast('Quantidade inválida', 'error');
 
   const diferenca = real - item.saldo;
-  if (diferenca === 0) return showToast('Saldo ja confere', 'info');
+  if (diferenca === 0) return showToast('Saldo já confere', 'info');
 
-  const ok = await confirmar(`Ajustar estoque de "${item.desc}"?\nSaldo sistema: ${fmt(item.saldo)}\nContagem real: ${fmt(real)}\nDiferenca: ${diferenca > 0 ? '+' : ''}${fmt(diferenca)}`);
+  const ok = await confirmar(`Ajustar "${esc(item.desc)}"?\nSaldo sistema: ${fmt(item.saldo)}\nContagem real: ${fmt(real)}\nDiferença: ${diferenca > 0 ? '+' : ''}${fmt(diferenca)}`);
   if (!ok) return;
 
   const resp = await sbPost('ajustes_estoque', {
@@ -876,7 +909,6 @@ async function abrirAjusteEstoque(chave) {
 
   showToast(`Estoque ajustado: ${diferenca > 0 ? '+' : ''}${fmt(diferenca)} ${item.unidade}`, 'success');
 
-  // Recarregar ajustes
   if (typeof ajustesEstoque !== 'undefined') {
     const novos = await sbGet('ajustes_estoque');
     if (novos) window.ajustesEstoque = novos;
@@ -1390,6 +1422,25 @@ function estoqueToggleSemCodigo() {
 function estoqueOrdenar(ordem) {
   EstoqueModule.ordem = ordem;
   renderEstoque();
+}
+
+// Bridges para botões do HTML
+function estoqueAtualizarOrdem(ordem) {
+  EstoqueModule.ordem = ordem;
+  EstoqueModule.page = 0;
+  renderEstoque();
+  ['az', 'maior', 'menor'].forEach(o => {
+    const btn = document.getElementById('estoque-ord-' + o);
+    if (btn) btn.classList.toggle('ativo', o === ordem);
+  });
+}
+
+function toggleFiltroNegativo() {
+  EstoqueModule.filtroNegativos = !EstoqueModule.filtroNegativos;
+  EstoqueModule.page = 0;
+  renderEstoque();
+  const btn = document.getElementById('estoque-filtro-neg');
+  if (btn) btn.classList.toggle('ativo', EstoqueModule.filtroNegativos);
 }
 
 function catalogoBuscar(valor) {
