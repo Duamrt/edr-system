@@ -1033,16 +1033,22 @@ async function _vincularSelecionado(chave) {
   const codigo = catItem.codigo;
   const enc = encodeURIComponent(desc);
 
+  if (!codigo) return showToast('Item do catálogo sem código definido', 'error');
+
   showToast('Vinculando...', 'info');
 
   // 1. entradas_diretas (ilike = case-insensitive)
-  await sbPatch(`entradas_diretas?item_desc=ilike.${enc}&codigo_catalogo=is.null`, { codigo_catalogo: codigo });
+  const r1 = await sbPatch(`entradas_diretas?item_desc=ilike.${enc}&codigo_catalogo=is.null`, { codigo_catalogo: codigo });
 
   // 2. ajustes_estoque
-  await sbPatch(`ajustes_estoque?item_desc=ilike.${enc}&codigo_catalogo=is.null`, { codigo_catalogo: codigo });
+  const r2 = await sbPatch(`ajustes_estoque?item_desc=ilike.${enc}&codigo_catalogo=is.null`, { codigo_catalogo: codigo });
 
   // 3. distribuicoes
-  await sbPatch(`distribuicoes?item_desc=ilike.${enc}&codigo_catalogo=is.null`, { codigo_catalogo: codigo });
+  const r3 = await sbPatch(`distribuicoes?item_desc=ilike.${enc}&codigo_catalogo=is.null`, { codigo_catalogo: codigo });
+
+  if (r1 === null && r2 === null && r3 === null) {
+    return showToast('Erro ao vincular — veja o console para detalhes', 'error');
+  }
 
   // 4. notas_fiscais — atualiza JSON dos itens (norm para match case-insensitive)
   const nDesc = norm(desc);

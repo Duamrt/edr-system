@@ -78,7 +78,7 @@ async function sbPatch(t, q, b) {
     const r = await fetch(`${SUPABASE_URL}/rest/v1/${t}${q||''}`, {
       method: 'PATCH', headers: _sbHeaders(), body: JSON.stringify(b)
     });
-    if (!r.ok) { console.warn('sbPatch erro:', r.status, t); return null; }
+    if (!r.ok) { r.text().then(body => console.warn('sbPatch erro:', r.status, t, body)); return null; }
     const data = await r.json();
     return Array.isArray(data) ? data[0] : data;
   } catch (e) { console.warn('sbPatch falha:', t, e); return null; }

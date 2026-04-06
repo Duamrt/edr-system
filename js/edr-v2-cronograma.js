@@ -378,7 +378,6 @@ const CronogramaModule = {
 
       this._gantt = new Gantt(wrap, tasks, {
         view_mode: this.viewMode,
-        language: 'pt-br',
         on_click: function(task) {
           CronogramaModule._abrirModal(task.id);
         },
