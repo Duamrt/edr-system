@@ -94,6 +94,19 @@ async function sbDelete(t, q='') {
   } catch (e) { console.warn('sbDelete falha:', t, e); return false; }
 }
 
+// ── SANITIZAÇÃO DE TEXTO PARA BANCO ─────────────────────────
+// Remove acentos, cedilhas e converte para CAIXA ALTA
+// Deve ser usada antes de gravar materiais, fornecedores e descrições de obra
+function sanitizarTexto(str) {
+  if (!str) return '';
+  return str
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')  // remove diacríticos (acentos, til, etc.)
+    .replace(/ç/gi, 'c')              // cedilha (pré-normalização, caso não decomponha)
+    .toUpperCase()
+    .trim();
+}
+
 // ── CONFIRMAR (substitui confirm() nativo) — retorna Promise ──
 function confirmar(msg, onSim, onNao) {
   return new Promise(resolve => {
@@ -199,7 +212,7 @@ async function checarLimiteUsuarios() {
     const users = await sbGet('company_users', '?company_id=eq.' + _companyId + '&select=id');
     if (users && users.length >= lim.usuarios) {
       const plano = _companyPlan?.plan || 'trial';
-      alert('Limite de usuarios atingido no plano ' + (PLANOS[plano]?.nome || plano) + ' (' + lim.usuarios + ').\n\nFaca upgrade para adicionar mais membros.');
+      alert('Limite de usuários atingido no plano ' + (PLANOS[plano]?.nome || plano) + ' (' + lim.usuarios + ').\n\nFaça upgrade para adicionar mais membros.');
       return false;
     }
   } catch(e) { console.error('checarLimiteUsuarios:', e); }

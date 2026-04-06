@@ -1417,7 +1417,7 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
         <span class="material-symbols-outlined">date_range</span> Cronograma
       </button>
       <button class="nav-btn" data-view="orcamento" onclick="setView('orcamento')">
-        <span class="material-symbols-outlined">calculate</span> Orcamento
+        <span class="material-symbols-outlined">calculate</span> Orçamento
       </button>
       <button class="nav-btn" data-view="adicionais" onclick="setView('adicionais')">
         <span class="material-symbols-outlined">add_circle</span> Adicionais
@@ -1426,10 +1426,10 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
         <span class="material-symbols-outlined">verified_user</span> Garantias
       </button>
       <button class="nav-btn" data-view="pci" onclick="setView('pci')">
-        <span class="material-symbols-outlined">architecture</span> PCI Medicoes
+        <span class="material-symbols-outlined">architecture</span> PCI Medições
       </button>
       <button class="nav-btn" data-view="diario" onclick="setView('diario')">
-        <span class="material-symbols-outlined">checklist</span> Diario de Obra
+        <span class="material-symbols-outlined">checklist</span> Diário de Obra
       </button>
     </div>
 
@@ -1457,7 +1457,7 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
         <span class="material-symbols-outlined">account_tree</span> Contas a Pagar
       </button>
       <button class="nav-btn" data-view="creditos" onclick="setView('creditos')">
-        <span class="material-symbols-outlined">savings</span> Creditos
+        <span class="material-symbols-outlined">savings</span> Créditos Tributários
       </button>
     </div>
 
@@ -1468,7 +1468,7 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
     </div>
     <div class="sidebar-group">
       <button class="nav-btn" data-view="diarias" onclick="setView('diarias')">
-        <span class="material-symbols-outlined">engineering</span> Diarias
+        <span class="material-symbols-outlined">engineering</span> Diárias
       </button>
     </div>
 
@@ -1485,15 +1485,15 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
 
     <!-- CONFIG -->
     <div class="sidebar-group-label" onclick="toggleSidebarGroup(this)">
-      <span>Configuracao</span>
+      <span>Configuração</span>
       <span class="material-symbols-outlined chevron">expand_more</span>
     </div>
     <div class="sidebar-group">
       <button class="nav-btn" data-view="banco" onclick="setView('banco')">
-        <span class="material-symbols-outlined">account_balance</span> Banco
+        <span class="material-symbols-outlined">account_balance</span> Banco de Dados
       </button>
       <button class="nav-btn" data-view="permissoes" onclick="setView('permissoes')">
-        <span class="material-symbols-outlined">admin_panel_settings</span> Permissoes
+        <span class="material-symbols-outlined">admin_panel_settings</span> Permissões
       </button>
       <button class="nav-btn" data-view="setup" onclick="setView('setup')">
         <span class="material-symbols-outlined">settings</span> Setup
@@ -1870,7 +1870,7 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
         <div class="item-form-title"><span class="material-symbols-outlined">add_circle</span> ADICIONAR ITEM MANUAL</div>
         <div class="field autocomplete-wrap">
           <label>DESCRIÇÃO DO ITEM *</label>
-          <input type="text" id="i-desc" data-next="i-qtd" placeholder="EX: CIMENTO, AREIA, MAO DE OBRA..." oninput="onDescInput()" autocomplete="off">
+          <input type="text" id="i-desc" data-next="i-qtd" placeholder="EX: CIMENTO, AREIA, MÃO DE OBRA..." oninput="onDescInput()" autocomplete="off">
           <div class="autocomplete-list hidden" id="ac-list"></div>
         </div>
         <div id="i-credito-badge" class="credito-badge duvida">Digite a descrição para classificação automática</div>
@@ -1907,7 +1907,8 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
     <div id="contas-lista"></div>
     </div>
     <div class="view" id="view-creditos">
-<div class="modulo-badge"><span class="material-symbols-outlined">menu_book</span> GUIA FISCAL</div>
+<div class="modulo-badge"><span class="material-symbols-outlined">savings</span> CRÉDITOS TRIBUTÁRIOS (IBS/CBS)</div>
+    <p style="font-size:12px;color:var(--text-tertiary);margin:0 0 12px 0;line-height:1.6;">Recuperação de impostos em Notas Fiscais — referência para classificação de créditos apuráveis sobre materiais e serviços adquiridos para a obra.</p>
     <div class="card">
       <div class="section-title">O que gera crédito IBS/CBS?</div>
       <p style="font-size:12px;color:var(--text-tertiary);margin-bottom:12px;">Referência baseada na LC 214/2025. Válido a partir de 2027.</p>
@@ -2049,7 +2050,8 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
     </div>
     <div class="view" id="view-banco">
 <div style="position:sticky;top:53px;z-index:90;background:var(--bg);padding:10px 0 8px 0;">
-      <div class="modulo-badge"><span class="material-symbols-outlined">database</span> DADOS</div>
+      <div class="modulo-badge"><span class="material-symbols-outlined">database</span> BANCO DE DADOS</div>
+      <p style="font-size:12px;color:var(--text-tertiary);margin:0 0 8px 0;">Configurações de conexão e tabelas do sistema.</p>
     </div>
 
     <!-- OBRAS CADASTRADAS -->
@@ -2071,7 +2073,7 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
     </div>
     </div>
     <div class="view" id="view-permissoes">
-<div class="modulo-badge"><span class="material-symbols-outlined">admin_panel_settings</span> PERMISSOES POR PERFIL</div>
+<div class="modulo-badge"><span class="material-symbols-outlined">admin_panel_settings</span> PERMISSÕES POR PERFIL</div>
     <div id="permissoes-container"></div>
     </div>
     <div class="view" id="view-setup">
@@ -2152,19 +2154,19 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
     <button class="nav-btn" data-view="caixa" onclick="setView('caixa')"><span class="material-symbols-outlined">payments</span> Fluxo de Caixa</button>
     <button class="nav-btn" data-view="custos" onclick="setView('custos')"><span class="material-symbols-outlined">account_balance_wallet</span> Custos</button>
     <button class="nav-btn" data-view="garantias" onclick="setView('garantias')"><span class="material-symbols-outlined">verified_user</span> Garantias</button>
-    <button class="nav-btn" data-view="catalogo" onclick="setView('catalogo')"><span class="material-symbols-outlined">category</span> Catalogo</button>
+    <button class="nav-btn" data-view="catalogo" onclick="setView('catalogo')"><span class="material-symbols-outlined">category</span> Catálogo</button>
     <button class="nav-btn" data-view="contas-pagar" onclick="setView('contas-pagar')"><span class="material-symbols-outlined">account_tree</span> Contas a Pagar</button>
-    <button class="nav-btn" data-view="creditos" onclick="setView('creditos')"><span class="material-symbols-outlined">savings</span> Creditos</button>
-    <button class="nav-btn" data-view="diarias" onclick="setView('diarias')"><span class="material-symbols-outlined">engineering</span> Diarias</button>
+    <button class="nav-btn" data-view="creditos" onclick="setView('creditos')"><span class="material-symbols-outlined">savings</span> Créditos Tributários</button>
+    <button class="nav-btn" data-view="diarias" onclick="setView('diarias')"><span class="material-symbols-outlined">engineering</span> Diárias</button>
     <button class="nav-btn" data-view="leads" onclick="setView('leads')"><span class="material-symbols-outlined">group_add</span> Leads</button>
-    <button class="nav-btn" data-view="banco" onclick="setView('banco')"><span class="material-symbols-outlined">account_balance</span> Banco</button>
-    <button class="nav-btn" data-view="permissoes" onclick="setView('permissoes')"><span class="material-symbols-outlined">admin_panel_settings</span> Permissoes</button>
+    <button class="nav-btn" data-view="banco" onclick="setView('banco')"><span class="material-symbols-outlined">account_balance</span> Banco de Dados</button>
+    <button class="nav-btn" data-view="permissoes" onclick="setView('permissoes')"><span class="material-symbols-outlined">admin_panel_settings</span> Permissões</button>
     <button class="nav-btn" data-view="setup" onclick="setView('setup')"><span class="material-symbols-outlined">settings</span> Setup</button>
     <button class="nav-btn" data-view="cronograma" onclick="setView('cronograma')"><span class="material-symbols-outlined">date_range</span> Cronograma</button>
-    <button class="nav-btn" data-view="orcamento" onclick="setView('orcamento')"><span class="material-symbols-outlined">calculate</span> Orcamento</button>
+    <button class="nav-btn" data-view="orcamento" onclick="setView('orcamento')"><span class="material-symbols-outlined">calculate</span> Orçamento</button>
     <button class="nav-btn" data-view="adicionais" onclick="setView('adicionais')"><span class="material-symbols-outlined">add_circle</span> Adicionais</button>
     <button class="nav-btn" data-view="pci" onclick="setView('pci')"><span class="material-symbols-outlined">architecture</span> PCI</button>
-    <button class="nav-btn" data-view="diario" onclick="setView('diario')"><span class="material-symbols-outlined">checklist</span> Diario</button>
+    <button class="nav-btn" data-view="diario" onclick="setView('diario')"><span class="material-symbols-outlined">checklist</span> Diário</button>
     <button class="nav-btn" data-view="importar" onclick="setView('importar')"><span class="material-symbols-outlined">upload_file</span> Importar XML</button>
     <button class="nav-btn" data-view="termo" onclick="setView('termo')"><span class="material-symbols-outlined">description</span> Termo</button>
     <button class="nav-btn" data-view="manual" onclick="setView('manual')"><span class="material-symbols-outlined">menu_book</span> Manual</button>
@@ -2182,15 +2184,15 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
 
 // ── VIEW TITLES ───────────────────────────
 const VIEW_TITLES = {
-  dashboard: 'Painel', relatorio: 'Relatorio P&L', caixa: 'Fluxo de Caixa',
+  dashboard: 'Painel', relatorio: 'Relatório P&L', caixa: 'Fluxo de Caixa',
   obras: 'Obras', custos: 'Custos', garantias: 'Garantias',
-  estoque: 'Estoque', catalogo: 'Catalogo', notas: 'Notas Fiscais', form: 'Nova Nota Fiscal',
-  'contas-pagar': 'Contas a Pagar', creditos: 'Creditos',
-  diarias: 'Diarias', leads: 'Leads / CRM',
-  banco: 'Banco', permissoes: 'Permissoes', setup: 'Configuracao',
-  cronograma: 'Cronograma', orcamento: 'Orcamento', usuarios: 'Usuarios',
+  estoque: 'Estoque', catalogo: 'Catálogo', notas: 'Notas Fiscais', form: 'Nova Nota Fiscal',
+  'contas-pagar': 'Contas a Pagar', creditos: 'Créditos Tributários (IBS/CBS)',
+  diarias: 'Diárias', leads: 'Leads / CRM',
+  banco: 'Banco de Dados', permissoes: 'Permissões', setup: 'Configuração',
+  cronograma: 'Cronograma', orcamento: 'Orçamento', usuarios: 'Usuários',
   importar: 'Importar XML', adicionais: 'Adicionais',
-  diario: 'Diario de Obra', pci: 'PCI Medicoes',
+  diario: 'Diário de Obra', pci: 'PCI Medições',
   termo: 'Termo de Entrega', manual: 'Manual do Sistema'
 };
 
@@ -2468,40 +2470,40 @@ function updateShellUser(nome, perfil) {
 
 <!-- ═══════ MODULOS V2 (ordem de dependência) ═══════ -->
 <!-- 0. Infraestrutura: sbGet/sbPost/sbPatch/sbDelete, confirmar(), showModal, usuarioAtual -->
-<script src="js/edr-v2-infra.js?v=04061955"></script>
+<script src="js/edr-v2-infra.js?v=04062000"></script>
 <!-- 1. Utilitários globais (valorPorExtenso, fmtN) -->
-<script src="js/edr-v2-utils-extras.js?v=04061955"></script>
+<script src="js/edr-v2-utils-extras.js?v=04062000"></script>
 <!-- 2. Obras PRIMEIRO (ETAPAS, resolveEtapaKey, etapaCor, etapaLabel — vários módulos dependem) -->
-<script src="js/edr-v2-obras.js?v=04061955"></script>
+<script src="js/edr-v2-obras.js?v=04062000"></script>
 <!-- 3. PDF engine (pdfMake CDN + PdfModule) -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js?v=04061955"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js?v=04061955"></script>
-<script src="js/edr-v2-pdf.js?v=04061955"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js?v=04062000"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js?v=04062000"></script>
+<script src="js/edr-v2-pdf.js?v=04062000"></script>
 <!-- 4. Módulos core de negócio -->
-<script src="js/edr-v2-notas.js?v=04061955"></script>
-<script src="js/edr-v2-importar.js?v=04061955"></script>
-<script src="js/edr-v2-estoque.js?v=04061955"></script>
-<script src="js/edr-v2-custos.js?v=04061955"></script>
+<script src="js/edr-v2-notas.js?v=04062000"></script>
+<script src="js/edr-v2-importar.js?v=04062000"></script>
+<script src="js/edr-v2-estoque.js?v=04062000"></script>
+<script src="js/edr-v2-custos.js?v=04062000"></script>
 <!-- 5. Equipe e operacional -->
-<script src="js/edr-v2-diarias.js?v=04061955"></script>
-<script src="js/edr-v2-diario.js?v=04061955"></script>
+<script src="js/edr-v2-diarias.js?v=04062000"></script>
+<script src="js/edr-v2-diario.js?v=04062000"></script>
 <!-- 6. Relatórios e dashboard (dependem de obras.js pra etapaCor) -->
-<script src="js/edr-v2-relatorio.js?v=04061955"></script>
-<script src="js/edr-v2-dashboard.js?v=04061955"></script>
+<script src="js/edr-v2-relatorio.js?v=04062000"></script>
+<script src="js/edr-v2-dashboard.js?v=04062000"></script>
 <!-- 7. Módulos complementares -->
-<script src="js/edr-v2-leads.js?v=04061955"></script>
-<script src="js/edr-v2-garantias.js?v=04061955"></script>
-<script src="js/edr-v2-adicionais.js?v=04061955"></script>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.css?v=04061955"/>
-<script src="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.min.js?v=04061955"></script>
-<script src="js/edr-v2-cronograma.js?v=04061955"></script>
-<script src="js/edr-v2-orcamento.js?v=04061955"></script>
+<script src="js/edr-v2-leads.js?v=04062000"></script>
+<script src="js/edr-v2-garantias.js?v=04062000"></script>
+<script src="js/edr-v2-adicionais.js?v=04062000"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.css?v=04062000"/>
+<script src="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.min.js?v=04062000"></script>
+<script src="js/edr-v2-cronograma.js?v=04062000"></script>
+<script src="js/edr-v2-orcamento.js?v=04062000"></script>
 <!-- 8. Documentação e medições -->
-<script src="js/edr-v2-termo-manual.js?v=04061955"></script>
-<script src="js/edr-v2-pci.js?v=04061955"></script>
+<script src="js/edr-v2-termo-manual.js?v=04062000"></script>
+<script src="js/edr-v2-pci.js?v=04062000"></script>
 <!-- 9. Auth (login, sessão, refresh — ÚLTIMO) -->
-<script src="js/edr-v2-auth.js?v=04061955"></script>
-<script src="js/edr-v2-financeiro.js?v=04061955"></script>
+<script src="js/edr-v2-auth.js?v=04062000"></script>
+<script src="js/edr-v2-financeiro.js?v=04062000"></script>
 
 <!-- ═══════════════════════════════════════════════════════════════ -->
 <!-- MODAIS (Fase 0 — containers para módulos que precisam)        -->
@@ -2764,7 +2766,7 @@ function updateShellUser(nome, perfil) {
       <div class="field"><label id="ajuste-qtd-label">QUANTIDADE A ADICIONAR *</label><input type="number" id="ajuste-qtd" placeholder="0" step="0.01"></div>
       <div class="field"><label>UNIDADE</label><input type="text" id="ajuste-unidade" placeholder="UN"></div>
     </div>
-    <div class="field"><label>MOTIVO / OBSERVACAO</label><input type="text" id="ajuste-motivo" placeholder="EX: CONTAGEM REALIZADA EM 12/03..."></div>
+    <div class="field"><label>MOTIVO / OBSERVAÇÃO</label><input type="text" id="ajuste-motivo" placeholder="EX: CONTAGEM REALIZADA EM 12/03..."></div>
     <button class="btn-save btn-save-info" onclick="salvarAjusteModal()"><span class="material-symbols-outlined">tune</span> CONFIRMAR AJUSTE</button>
     <button class="btn-outline" onclick="fecharModal('ajuste')">CANCELAR</button>
   </div>
