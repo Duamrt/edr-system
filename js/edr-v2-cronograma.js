@@ -204,7 +204,7 @@ const CronogramaModule = {
     const feitosGeral = this.tarefas.reduce((a, t) => a + (t.subitens || []).filter(s => s.feito).length, 0);
     const progGeral = totalGeral > 0 ? Math.round(feitosGeral / totalGeral * 100) : 0;
 
-    const rows = this.tarefas.map(t => {
+    const _renderRow = (t, mostrarObra) => {
       const obra = obrasLista.find(o => o.id === t.obra_id);
       const subs = t.subitens || [];
       const feitos = subs.filter(s => s.feito).length;
@@ -232,13 +232,23 @@ const CronogramaModule = {
           + '</div>';
       }
 
+      // BUG09: icone circle clicavel para tarefas sem subitens
+      const iconeEtapa = subs.length
+        ? '<span class="material-symbols-outlined" style="font-size:16px;color:var(--texto3);transition:transform 0.2s;transform:rotate(' + (aberto ? '90' : '0') + 'deg);">chevron_right</span>'
+        : '<span class="material-symbols-outlined" onclick="event.stopPropagation();CronogramaModule._abrirModal(\'' + t.id + '\')" title="Editar / Atualizar status" style="font-size:16px;color:' + corProg + ';cursor:pointer;">radio_button_checked</span>';
+
+      // Subinfo: omite nome da obra se já está no grupo
+      const subinfo = mostrarObra
+        ? esc(obra?.nome || '') + ' <span style="color:var(--texto3);">' + inicio + ' \u2192 ' + fim + '</span>'
+        : '<span style="color:var(--texto3);">' + inicio + ' \u2192 ' + fim + '</span>';
+
       return '<div style="border-bottom:' + (aberto ? 'none' : '1px solid var(--borda)') + ';">'
         + '<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;cursor:pointer;flex-wrap:wrap;" onclick="CronogramaModule._toggleExpand(\'' + t.id + '\')">'
           + '<div style="width:4px;height:28px;border-radius:2px;background:' + corObra.bar + ';flex-shrink:0;"></div>'
-          + '<span class="material-symbols-outlined" style="font-size:16px;color:var(--texto3);transition:transform 0.2s;transform:rotate(' + (aberto ? '90' : '0') + 'deg);">' + (subs.length ? 'chevron_right' : 'circle') + '</span>'
+          + iconeEtapa
           + '<div style="flex:1;min-width:150px;">'
             + '<div style="font-size:13px;color:var(--texto);font-weight:600;">' + esc(t.nome) + '</div>'
-            + '<div style="font-size:11px;color:' + corObra.label + ';">' + esc(obra?.nome || '') + ' <span style="color:var(--texto3);">' + inicio + ' \u2192 ' + fim + '</span></div>'
+            + '<div style="font-size:11px;color:' + corObra.label + ';">' + subinfo + '</div>'
           + '</div>'
           + '<div style="min-width:100px;display:flex;align-items:center;gap:6px;">'
             + '<div style="flex:1;background:var(--bg3);border-radius:4px;height:6px;overflow:hidden;">'
@@ -255,7 +265,35 @@ const CronogramaModule = {
         + '</div>'
         + subsHtml
         + '</div>';
-    }).join('');
+    };
+
+    // BUG07: agrupar por obra quando sem filtro e ha multiplas obras
+    const obrasUnicasNaLista = [...new Set(this.tarefas.map(t => t.obra_id))];
+    let rows = '';
+    if (!this.obraFiltro && obrasUnicasNaLista.length > 1) {
+      obrasUnicasNaLista.forEach(obraId => {
+        const obra = obrasLista.find(o => o.id === obraId);
+        const tarefasObra = this.tarefas.filter(t => t.obra_id === obraId);
+        const corIdx = this._obraCores[obraId] || 0;
+        const cor = this._CORES[corIdx] || this._CORES[0];
+        const totalO = tarefasObra.reduce((a, t) => a + (t.subitens || []).length, 0);
+        const feitosO = tarefasObra.reduce((a, t) => a + (t.subitens || []).filter(s => s.feito).length, 0);
+        const progO = totalO > 0 ? Math.round(feitosO / totalO * 100) : 0;
+        rows += '<div style="border-bottom:2px solid var(--borda);margin-top:8px;">'
+          + '<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(0,0,0,0.03);">'
+            + '<div style="width:10px;height:10px;border-radius:3px;background:' + cor.bar + ';flex-shrink:0;"></div>'
+            + '<span style="font-size:11px;font-weight:700;color:var(--texto2);letter-spacing:1px;font-family:\'Space Grotesk\',sans-serif;">' + esc(obra?.nome || 'SEM OBRA') + '</span>'
+            + '<div style="flex:1;background:var(--bg3);border-radius:4px;height:4px;overflow:hidden;max-width:80px;">'
+              + '<div style="width:' + progO + '%;height:100%;background:' + cor.bar + ';border-radius:4px;"></div>'
+            + '</div>'
+            + '<span style="font-size:10px;color:' + cor.label + ';font-weight:600;">' + progO + '%</span>'
+          + '</div>'
+          + tarefasObra.map(t => _renderRow(t, false)).join('')
+          + '</div>';
+      });
+    } else {
+      rows = this.tarefas.map(t => _renderRow(t, true)).join('');
+    }
 
     // Legenda cores por obra
     const legendaHtml = Object.entries(this._obraCores).map(function(entry) {
@@ -275,7 +313,7 @@ const CronogramaModule = {
         + '<span style="font-size:11px;color:var(--primary);font-weight:600;font-family:\'Space Grotesk\',sans-serif;">' + progGeral + '% geral</span>'
         + '</div>' : '')
       + '</div>'
-      + '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px;">' + legendaHtml + '</div>'
+      + ((!this.obraFiltro && obrasUnicasNaLista.length > 1) ? '' : '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px;">' + legendaHtml + '</div>')
       + '<div style="background:var(--bg2);border-radius:10px;border:1px solid var(--borda);overflow:hidden;">'
         + rows
       + '</div>';
@@ -310,15 +348,26 @@ const CronogramaModule = {
       if (lista) lista.style.display = 'none';
       wrap.innerHTML = '';
 
-      const tasks = this.tarefas.map(t => ({
-        id: t.id,
-        name: t.nome,
-        start: t.data_inicio,
-        end: t.data_fim,
-        progress: this._calcProgresso(t),
-        dependencies: t.dependencia || '',
-        custom_class: 'cron-bar-' + (this._obraCores[t.obra_id] || 0)
-      }));
+      const tasks = this.tarefas
+        .filter(t => t.data_inicio && t.data_fim && t.data_inicio <= t.data_fim)
+        .map(t => ({
+          id: t.id,
+          name: t.nome,
+          start: t.data_inicio,
+          end: t.data_fim,
+          progress: this._calcProgresso(t),
+          dependencies: t.dependencia || '',
+          custom_class: 'cron-bar-' + (this._obraCores[t.obra_id] || 0)
+        }));
+
+      if (tasks.length === 0) {
+        wrap.innerHTML = '<div style="padding:40px;text-align:center;color:var(--texto3);">'
+          + '<span class="material-symbols-outlined" style="font-size:40px;color:var(--texto4);">date_range</span>'
+          + '<div style="font-size:13px;margin-top:8px;">Nenhuma tarefa com datas validas para o Gantt.</div>'
+          + '<div style="font-size:11px;margin-top:4px;">Edite as tarefas e defina datas de inicio e fim.</div>'
+          + '</div>';
+        return;
+      }
 
       this._gantt = new Gantt(wrap, tasks, {
         view_mode: this.viewMode,
