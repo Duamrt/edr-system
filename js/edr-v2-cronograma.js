@@ -238,9 +238,14 @@ const CronogramaModule = {
         : '<span class="material-symbols-outlined" onclick="event.stopPropagation();CronogramaModule._abrirModal(\'' + t.id + '\')" title="Editar / Atualizar status" style="font-size:16px;color:' + corProg + ';cursor:pointer;">radio_button_checked</span>';
 
       // Subinfo: omite nome da obra se já está no grupo
+      const hoje = new Date().toISOString().split('T')[0];
+      const atrasado = t.data_fim && t.data_fim < hoje && prog < 100;
+      const statusTag = atrasado
+        ? ' <span style="color:#dc2626;font-size:10px;font-weight:700;background:rgba(220,38,38,0.08);padding:1px 5px;border-radius:4px;">ATRASADO</span>'
+        : '';
       const subinfo = mostrarObra
-        ? esc(obra?.nome || '') + ' <span style="color:var(--texto3);">' + inicio + ' \u2192 ' + fim + '</span>'
-        : '<span style="color:var(--texto3);">' + inicio + ' \u2192 ' + fim + '</span>';
+        ? esc(obra?.nome || '') + ' <span style="color:var(--texto3);">' + inicio + ' \u2192 ' + fim + '</span>' + statusTag
+        : '<span style="color:var(--texto3);">' + inicio + ' \u2192 ' + fim + '</span>' + statusTag;
 
       return '<div style="border-bottom:' + (aberto ? 'none' : '1px solid var(--borda)') + ';">'
         + '<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;cursor:pointer;flex-wrap:wrap;" onclick="CronogramaModule._toggleExpand(\'' + t.id + '\')">'
@@ -752,28 +757,32 @@ const CronogramaModule = {
     const obra = obrasLista.find(o => o.id === obraId);
     const hoje = new Date().toISOString().split('T')[0];
 
-    const etapasHtml = this._ETAPAS_PADRAO.map(function(e, i) {
-      return '<div style="border-bottom:1px solid var(--borda);padding:6px 0;">'
-        + '<div style="display:flex;align-items:center;gap:8px;">'
-          + '<input type="checkbox" id="cron-et-' + i + '" checked style="accent-color:var(--primary);">'
-          + '<label for="cron-et-' + i + '" style="flex:1;font-size:13px;color:var(--texto);cursor:pointer;font-weight:500;">' + e.nome + '</label>'
-          + '<span style="font-size:11px;color:var(--texto3);font-family:\'Space Grotesk\',sans-serif;">' + e.dias + 'd \u00B7 ' + e.subs.length + ' itens</span>'
-        + '</div>'
-        + '<div style="padding-left:28px;font-size:11px;color:var(--texto4);margin-top:2px;">' + e.subs.join(' \u00B7 ') + '</div>'
-        + '</div>';
-    }).join('');
+    // Montar opcoes de PCI
+    const pciOpts = (typeof PciModule !== 'undefined' && PciModule.state && PciModule.state.length)
+      ? PciModule.state.map(function(p) {
+          return '<option value="' + p.id + '">' + p.nome + (p.entrega !== 'A definir' ? ' — entrega ' + p.entrega : '') + '</option>';
+        }).join('')
+      : '';
 
     const html = '<div class="modal-title">'
-      + '<span><span class="material-symbols-outlined" style="font-size:18px;vertical-align:middle;">auto_fix_high</span> GERAR CRONOGRAMA COMPLETO</span>'
+      + '<span><span class="material-symbols-outlined" style="font-size:18px;vertical-align:middle;">auto_fix_high</span> GERAR CRONOGRAMA</span>'
       + '<button class="modal-close" onclick="fecharModal(\'cron-etapas\')"><span class="material-symbols-outlined">close</span></button>'
       + '</div>'
-      + '<div style="font-size:12px;color:var(--texto2);margin-bottom:12px;padding:8px;background:rgba(45,106,79,0.05);border:1px solid rgba(45,106,79,0.1);border-radius:8px;">'
-        + 'Gerar ' + CronogramaModule._ETAPAS_PADRAO.length + ' etapas com sub-itens para <strong>' + esc(obra?.nome || '') + '</strong>.<br>'
-        + 'Cada etapa vem com checklist de servicos. Progresso calcula automaticamente.'
+      + '<div style="font-size:12px;color:var(--texto2);margin-bottom:14px;padding:8px 12px;background:rgba(45,106,79,0.05);border:1px solid rgba(45,106,79,0.1);border-radius:8px;">'
+        + 'Obra: <strong>' + esc(obra?.nome || '') + '</strong><br>'
+        + 'Informe as datas e qual PCI usar. As etapas serao distribuidas proporcionalmente ao peso de cada fase.'
       + '</div>'
-      + '<div class="field"><label>DATA DE INICIO DA OBRA</label><input type="date" id="cron-etapas-inicio" value="' + hoje + '"></div>'
-      + '<div style="max-height:350px;overflow-y:auto;margin:8px 0;">' + etapasHtml + '</div>'
-      + '<button class="btn-save" onclick="CronogramaModule._salvarEtapas(\'' + obraId + '\')" style="width:100%;">GERAR CRONOGRAMA</button>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">'
+        + '<div class="field"><label>DATA DE INICIO</label><input type="date" id="cron-etapas-inicio" value="' + hoje + '"></div>'
+        + '<div class="field"><label>DATA DE ENTREGA</label><input type="date" id="cron-etapas-fim" value=""></div>'
+      + '</div>'
+      + '<div class="field"><label>PCI DA OBRA</label>'
+        + '<select id="cron-etapas-pci" style="width:100%;padding:10px 14px;background:var(--bg2);border:1px solid var(--borda);border-radius:10px;color:var(--texto);font-size:13px;outline:none;font-family:inherit;">'
+          + '<option value="">Sem PCI — etapas construtivas padrao</option>'
+          + pciOpts
+        + '</select>'
+      + '</div>'
+      + '<button class="btn-save" onclick="CronogramaModule._salvarEtapas(\'' + obraId + '\')" style="width:100%;margin-top:4px;">GERAR CRONOGRAMA</button>'
       + '<button class="btn-outline" onclick="fecharModal(\'cron-etapas\')" style="margin-top:6px;width:100%;">CANCELAR</button>';
 
     let overlay = document.getElementById('modal-cron-etapas');
@@ -786,7 +795,7 @@ const CronogramaModule = {
       overlay.onclick = function(e) { if (e.target === overlay) fecharModal('cron-etapas'); };
       const modal = document.createElement('div');
       modal.className = 'modal';
-      modal.style.maxWidth = '560px';
+      modal.style.maxWidth = '480px';
       overlay.appendChild(modal);
       document.body.appendChild(overlay);
     }
@@ -796,29 +805,56 @@ const CronogramaModule = {
 
   async _salvarEtapas(obraId) {
     const inicioStr = document.getElementById('cron-etapas-inicio')?.value;
-    if (!inicioStr) { showToast('Informe a data de inicio'); return; }
+    const fimStr = document.getElementById('cron-etapas-fim')?.value;
+    const pciId = document.getElementById('cron-etapas-pci')?.value;
 
-    let dataAtual = new Date(inicioStr + 'T00:00:00');
+    if (!inicioStr) { showToast('Informe a data de inicio'); return; }
+    if (!fimStr) { showToast('Informe a data de entrega'); return; }
+    if (fimStr <= inicioStr) { showToast('Data de entrega deve ser apos o inicio'); return; }
+
+    const tInicio = new Date(inicioStr + 'T00:00:00');
+    const tFim = new Date(fimStr + 'T00:00:00');
+    const totalDias = Math.round((tFim - tInicio) / 86400000);
+
+    let etapas;
+
+    // Usar PCI se selecionada
+    if (pciId && typeof PciModule !== 'undefined' && PciModule.state) {
+      const pciObra = PciModule.state.find(function(p) { return p.id === pciId; });
+      if (!pciObra) { showToast('PCI nao encontrada'); return; }
+
+      const totalPeso = pciObra.pesos.reduce(function(a, p) { return a + p; }, 0);
+      etapas = PciModule.ETAPAS_CEF.map(function(fase, i) {
+        const peso = pciObra.pesos[i] || 0;
+        if (!peso) return null;
+        const dias = Math.max(1, Math.round((peso / totalPeso) * totalDias));
+        const subs = fase.desc.split(',').map(function(s) { return s.trim(); }).filter(Boolean);
+        return { nome: fase.nome, dias: dias, subs: subs };
+      }).filter(Boolean);
+    } else {
+      // Fallback: etapas padrao com dias fixos
+      etapas = this._ETAPAS_PADRAO;
+    }
+
+    let dataAtual = new Date(tInicio);
     let criadas = 0;
     let anteriorId = null;
 
-    for (let i = 0; i < this._ETAPAS_PADRAO.length; i++) {
-      const check = document.getElementById('cron-et-' + i);
-      if (!check?.checked) continue;
-
-      const etapa = this._ETAPAS_PADRAO[i];
-      const inicio = dataAtual.toISOString().split('T')[0];
+    for (let i = 0; i < etapas.length; i++) {
+      const etapa = etapas[i];
+      const dInicio = dataAtual.toISOString().split('T')[0];
       dataAtual.setDate(dataAtual.getDate() + etapa.dias);
-      const fim = dataAtual.toISOString().split('T')[0];
+      if (dataAtual > tFim) dataAtual = new Date(tFim);
+      const dFim = dataAtual.toISOString().split('T')[0];
 
-      const subitens = etapa.subs.map(s => ({ nome: s, feito: false }));
+      const subitens = etapa.subs.map(function(s) { return { nome: s, feito: false }; });
 
       try {
         const r = await sbPost('cronograma_tarefas', {
           obra_id: obraId,
           nome: etapa.nome,
-          data_inicio: inicio,
-          data_fim: fim,
+          data_inicio: dInicio,
+          data_fim: dFim,
           progresso: 0,
           dependencia: anteriorId,
           ordem: i,
@@ -829,7 +865,7 @@ const CronogramaModule = {
       } catch (e) { console.error('Erro etapa', etapa.nome, e); }
     }
 
-    showToast(criadas + ' etapas criadas com sub-itens');
+    showToast(criadas + ' etapas criadas');
     fecharModal('cron-etapas');
     await this._carregarTarefas();
   },
