@@ -718,6 +718,7 @@ function renderDashboard() {
 
   // Async: libera thread pra pintar skeleton, depois calcula
   requestAnimationFrame(() => {
+    if (typeof calcularValorEstoque === 'function') calcularValorEstoque();
     const m = _dashCalcMetricas();
     const porObra = _dashCalcPorObra(m.lancAtivos);
     const alertas = porObra.filter(o => o.vv > 0 && o.margem < 0);
