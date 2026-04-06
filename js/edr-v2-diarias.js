@@ -244,19 +244,21 @@ function diarEditarFuncionario(id) {
   const f = DiariasModule.funcionariosRaw.find(f => f.id === id);
   if (!f) return;
   const apelidos = Array.isArray(f.apelidos) ? f.apelidos.join(', ') : '';
+  const inputStyle = 'padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-family:inherit;font-size:12px;width:100%;box-sizing:border-box;';
+  const labelStyle = 'display:block;font-size:10px;font-weight:700;color:var(--text-tertiary);letter-spacing:1px;margin-bottom:4px;';
   document.body.insertAdjacentHTML('beforeend', `
-  <div id="diar-editFunc" class="edr-modal-overlay" style="display:flex">
-    <div class="edr-modal-box" style="max-width:400px">
-      <div class="edr-modal-header">
-        <div class="edr-modal-title">Editar ${esc(f.nome)}</div>
-        <button class="edr-modal-close" onclick="document.getElementById('diar-editFunc').remove()">
+  <div id="diar-editFunc" class="modal-overlay active" onclick="if(event.target===this)document.getElementById('diar-editFunc').remove()">
+    <div class="modal-box" style="max-width:400px;width:95vw;">
+      <div class="modal-header">
+        <div class="modal-title">Editar ${esc(f.nome)}</div>
+        <button class="modal-close" onclick="document.getElementById('diar-editFunc').remove()">
           <span class="material-symbols-outlined">close</span>
         </button>
       </div>
-      <div style="display:flex;flex-direction:column;gap:10px">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-          <div><label class="edr-label">NOME</label><input id="diar-edit-nome" class="edr-input" type="text" value="${esc(f.nome)}"></div>
-          <div><label class="edr-label">CARGO</label><select id="diar-edit-cargo" class="edr-select">
+      <div style="padding:20px;display:flex;flex-direction:column;gap:12px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div><label style="${labelStyle}">NOME</label><input id="diar-edit-nome" type="text" value="${esc(f.nome)}" style="${inputStyle}"></div>
+          <div><label style="${labelStyle}">CARGO</label><select id="diar-edit-cargo" style="${inputStyle}">
             <option value="Servente" ${f.cargo === 'Servente' ? 'selected' : ''}>Servente</option>
             <option value="Pedreiro" ${f.cargo === 'Pedreiro' ? 'selected' : ''}>Pedreiro</option>
             <option value="Betoneiro" ${f.cargo === 'Betoneiro' ? 'selected' : ''}>Betoneiro</option>
@@ -265,14 +267,14 @@ function diarEditarFuncionario(id) {
             <option value="Encanador" ${f.cargo === 'Encanador' ? 'selected' : ''}>Encanador</option>
           </select></div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-          <div><label class="edr-label">DIARIA (R$)</label><input id="diar-edit-diaria" class="edr-input" type="number" value="${f.diaria}" min="0" step="5"></div>
-          <div><label class="edr-label">APELIDOS</label><input id="diar-edit-apelidos" class="edr-input" type="text" value="${apelidos}" placeholder="virgula"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div><label style="${labelStyle}">DIARIA (R$)</label><input id="diar-edit-diaria" type="number" value="${f.diaria}" min="0" step="5" style="${inputStyle}"></div>
+          <div><label style="${labelStyle}">APELIDOS</label><input id="diar-edit-apelidos" type="text" value="${apelidos}" placeholder="virgula" style="${inputStyle}"></div>
         </div>
-      </div>
-      <div class="edr-modal-actions">
-        <button onclick="document.getElementById('diar-editFunc').remove()" class="edr-btn edr-btn-secondary">CANCELAR</button>
-        <button onclick="diarSalvarEdicaoFunc('${id}')" class="edr-btn edr-btn-primary">SALVAR</button>
+        <div style="display:flex;justify-content:flex-end;gap:8px;padding-top:4px;">
+          <button onclick="document.getElementById('diar-editFunc').remove()" class="btn btn-outline">CANCELAR</button>
+          <button onclick="diarSalvarEdicaoFunc('${id}')" class="btn btn-primary">SALVAR</button>
+        </div>
       </div>
     </div>
   </div>`);
@@ -439,21 +441,21 @@ async function diarAbrirLixeira() {
       return `<div style="display:flex;justify-content:space-between;align-items:center;padding:12px;border-bottom:1px solid var(--border-primary);">
         <div>
           <div style="font-weight:700;font-size:13px;">${q.label}</div>
-          <div class="edr-text-tertiary" style="font-size:11px;">Excluida em ${dataExc}</div>
+          <div style="color:var(--text-tertiary);" style="font-size:11px;">Excluida em ${dataExc}</div>
         </div>
         <div style="display:flex;gap:8px;">
-          <button onclick="diarRestaurarQuinzena('${q.id}')" class="edr-btn edr-btn-primary edr-btn-sm">RESTAURAR</button>
-          <button onclick="diarExcluirDefinitivo('${q.id}','${(q.label || '').replace(/'/g, '')}')" class="edr-btn-sm edr-btn-danger-outline">APAGAR</button>
+          <button onclick="diarRestaurarQuinzena('${q.id}')" class="edr-btn-sm" style="background:var(--primary);color:#fff;border-color:var(--primary);">RESTAURAR</button>
+          <button onclick="diarExcluirDefinitivo('${q.id}','${(q.label || '').replace(/'/g, '')}')" class="edr-btn-sm" style="color:var(--error);border-color:rgba(239,68,68,.3);">APAGAR</button>
         </div>
       </div>`;
     }).join('');
 
     document.body.insertAdjacentHTML('beforeend', `
-    <div id="diar-modalLixeira" class="edr-modal-overlay" style="display:flex">
-      <div class="edr-modal-box" style="max-width:500px;max-height:80vh;overflow-y:auto;">
-        <div class="edr-modal-header">
-          <div class="edr-modal-title"><span class="material-symbols-outlined" style="font-size:20px">delete</span> LIXEIRA</div>
-          <button class="edr-modal-close" onclick="document.getElementById('diar-modalLixeira')?.remove()">
+    <div id="diar-modalLixeira" class="modal-overlay active">
+      <div class="modal-box" style="max-width:500px;max-height:80vh;overflow-y:auto;">
+        <div class="modal-header">
+          <div class="modal-title"><span class="material-symbols-outlined" style="font-size:20px">delete</span> LIXEIRA</div>
+          <button class="modal-close" onclick="document.getElementById('diar-modalLixeira')?.remove()">
             <span class="material-symbols-outlined">close</span>
           </button>
         </div>
@@ -480,19 +482,19 @@ async function diarExcluirDefinitivo(id, label) {
   // V2: modal de confirmacao com digitacao em vez de prompt() nativo
   const modalId = 'diar-confirmExcDef';
   document.body.insertAdjacentHTML('beforeend', `
-  <div id="${modalId}" class="edr-modal-overlay" style="display:flex">
-    <div class="edr-modal-box" style="max-width:400px">
-      <div class="edr-modal-header">
-        <div class="edr-modal-title" style="color:var(--error)">
+  <div id="${modalId}" class="modal-overlay active">
+    <div class="modal-box" style="max-width:400px">
+      <div class="modal-header">
+        <div class="modal-title" style="color:var(--error)">
           <span class="material-symbols-outlined">warning</span> EXCLUSAO DEFINITIVA
         </div>
       </div>
       <p style="font-size:13px;margin-bottom:12px;">Excluir definitivamente "<strong>${label}</strong>" e todos os registros?</p>
       <p style="font-size:12px;color:var(--text-tertiary);margin-bottom:12px;">Digite <strong>EXCLUIR</strong> para confirmar:</p>
-      <input id="diar-confirmExcDefInput" class="edr-input" type="text" placeholder="EXCLUIR" style="margin-bottom:16px;">
-      <div class="edr-modal-actions">
-        <button onclick="document.getElementById('${modalId}')?.remove()" class="edr-btn edr-btn-secondary">CANCELAR</button>
-        <button onclick="_diarConfirmarExcDefinitivo('${id}','${modalId}')" class="edr-btn edr-btn-danger">CONFIRMAR</button>
+      <input id="diar-confirmExcDefInput" style="padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-family:inherit;font-size:12px;width:100%;box-sizing:border-box;" type="text" placeholder="EXCLUIR" style="margin-bottom:16px;">
+      <div class="modal-footer">
+        <button onclick="document.getElementById('${modalId}')?.remove()" class="btn btn-outline">CANCELAR</button>
+        <button onclick="_diarConfirmarExcDefinitivo('${id}','${modalId}')" class="btn" style="background:rgba(239,68,68,.15);color:var(--error);border:1px solid rgba(239,68,68,.3);">CONFIRMAR</button>
       </div>
     </div>
   </div>`);
@@ -550,33 +552,33 @@ function diarAbrirModalNovaQuinzena() {
   if (usuarioAtual?.perfil === 'mestre') { showToast('Sem permissao para criar quinzena.'); return; }
   const hoje = hojeISO();
   document.body.insertAdjacentHTML('beforeend', `
-  <div id="diar-modalNQ" class="edr-modal-overlay" style="display:flex">
-    <div class="edr-modal-box" style="max-width:400px">
-      <div class="edr-modal-header">
-        <div class="edr-modal-title"><span class="material-symbols-outlined">add_circle</span> NOVA QUINZENA</div>
-        <button class="edr-modal-close" onclick="document.getElementById('diar-modalNQ').remove()">
+  <div id="diar-modalNQ" class="modal-overlay active">
+    <div class="modal-box" style="max-width:400px">
+      <div class="modal-header">
+        <div class="modal-title"><span class="material-symbols-outlined">add_circle</span> NOVA QUINZENA</div>
+        <button class="modal-close" onclick="document.getElementById('diar-modalNQ').remove()">
           <span class="material-symbols-outlined">close</span>
         </button>
       </div>
       <div style="display:flex;flex-direction:column;gap:12px">
         <div>
-          <label class="edr-label">NOME</label>
-          <input id="nq-label" class="edr-input" type="text" placeholder="Ex: 2a QUINZENA · MARCO 2026">
+          <label style="display:block;font-size:10px;font-weight:700;color:var(--text-tertiary);letter-spacing:1px;margin-bottom:4px;">NOME</label>
+          <input id="nq-label" style="padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-family:inherit;font-size:12px;width:100%;box-sizing:border-box;" type="text" placeholder="Ex: 2a QUINZENA · MARCO 2026">
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
           <div>
-            <label class="edr-label">DATA INICIO</label>
-            <input id="nq-inicio" class="edr-input" type="date" value="${hoje}" onchange="diarSugerirLabelNQ()">
+            <label style="display:block;font-size:10px;font-weight:700;color:var(--text-tertiary);letter-spacing:1px;margin-bottom:4px;">DATA INICIO</label>
+            <input id="nq-inicio" style="padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-family:inherit;font-size:12px;width:100%;box-sizing:border-box;" type="date" value="${hoje}" onchange="diarSugerirLabelNQ()">
           </div>
           <div>
-            <label class="edr-label">DATA FIM</label>
-            <input id="nq-fim" class="edr-input" type="date" value="${hoje}">
+            <label style="display:block;font-size:10px;font-weight:700;color:var(--text-tertiary);letter-spacing:1px;margin-bottom:4px;">DATA FIM</label>
+            <input id="nq-fim" style="padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-family:inherit;font-size:12px;width:100%;box-sizing:border-box;" type="date" value="${hoje}">
           </div>
         </div>
       </div>
-      <div class="edr-modal-actions">
-        <button onclick="document.getElementById('diar-modalNQ').remove()" class="edr-btn edr-btn-secondary">CANCELAR</button>
-        <button onclick="diarSalvarNovaQuinzena()" class="edr-btn edr-btn-primary" style="flex:2">CRIAR</button>
+      <div class="modal-footer">
+        <button onclick="document.getElementById('diar-modalNQ').remove()" class="btn btn-outline">CANCELAR</button>
+        <button onclick="diarSalvarNovaQuinzena()" class="btn btn-primary" style="flex:2">CRIAR</button>
       </div>
     </div>
   </div>`);
@@ -626,19 +628,19 @@ function diarEditarLabelQuinzena() {
   // V2: modal em vez de prompt() nativo
   const labelAtual = DiariasModule.quinzenaAtiva.label;
   document.body.insertAdjacentHTML('beforeend', `
-  <div id="diar-modalEditLabel" class="edr-modal-overlay" style="display:flex">
-    <div class="edr-modal-box" style="max-width:380px">
-      <div class="edr-modal-header">
-        <div class="edr-modal-title">Editar Quinzena</div>
-        <button class="edr-modal-close" onclick="document.getElementById('diar-modalEditLabel')?.remove()">
+  <div id="diar-modalEditLabel" class="modal-overlay active">
+    <div class="modal-box" style="max-width:380px">
+      <div class="modal-header">
+        <div class="modal-title">Editar Quinzena</div>
+        <button class="modal-close" onclick="document.getElementById('diar-modalEditLabel')?.remove()">
           <span class="material-symbols-outlined">close</span>
         </button>
       </div>
-      <label class="edr-label">DESCRICAO</label>
-      <input id="diar-editLabelInput" class="edr-input" type="text" value="${esc(labelAtual)}">
-      <div class="edr-modal-actions">
-        <button onclick="document.getElementById('diar-modalEditLabel')?.remove()" class="edr-btn edr-btn-secondary">CANCELAR</button>
-        <button onclick="_diarSalvarEditLabel()" class="edr-btn edr-btn-primary">SALVAR</button>
+      <label style="display:block;font-size:10px;font-weight:700;color:var(--text-tertiary);letter-spacing:1px;margin-bottom:4px;">DESCRICAO</label>
+      <input id="diar-editLabelInput" style="padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-family:inherit;font-size:12px;width:100%;box-sizing:border-box;" type="text" value="${esc(labelAtual)}">
+      <div class="modal-footer">
+        <button onclick="document.getElementById('diar-modalEditLabel')?.remove()" class="btn btn-outline">CANCELAR</button>
+        <button onclick="_diarSalvarEditLabel()" class="btn btn-primary">SALVAR</button>
       </div>
     </div>
   </div>`);
@@ -1045,12 +1047,12 @@ function _diarRenderPreview(regs) {
     const periodos = r.periodos.map(p => {
       const cls = p.turno === 'manha' ? 'diar-turno-manha' : p.turno === 'tarde' ? 'diar-turno-tarde' : 'diar-turno-dia';
       const label = p.turno === 'manha' ? 'MANHA' : p.turno === 'tarde' ? 'TARDE' : 'DIA TODO';
-      return `<span class="diar-turno-tag ${cls}">${label}</span><span class="edr-text-tertiary" style="font-size:10px">${p.obra}</span>`;
+      return `<span class="diar-turno-tag ${cls}">${label}</span><span style="color:var(--text-tertiary);" style="font-size:10px">${p.obra}</span>`;
     }).join(' · ');
     return `<div class="diar-func-card">
       <div class="diar-func-avatar">${r.funcionario[0]}</div>
       <div class="diar-func-info">
-        <div class="diar-func-nome">${r.funcionario} <span class="edr-text-tertiary" style="font-size:10px;font-weight:400">${r.cargo || ''}</span></div>
+        <div class="diar-func-nome">${r.funcionario} <span style="color:var(--text-tertiary);" style="font-size:10px;font-weight:400">${r.cargo || ''}</span></div>
         <div style="margin-top:3px">${periodos}</div>
       </div>
       ${isMestre ? '' : `<div class="diar-func-val">R$ ${Number(valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>`}
@@ -1209,12 +1211,12 @@ function diarEditarRegistro(regId) {
 
   let periodosHtml = periodos.map((p, i) => {
     return `<div style="display:flex;gap:8px;margin-bottom:8px;align-items:center;" data-idx="${i}">
-      <select class="ed-turno edr-select" style="flex:1;">
+      <select class="ed-turno" style="flex:1;padding:7px 8px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-family:inherit;font-size:12px;">
         <option value="dia" ${p.turno === 'dia' ? 'selected' : ''}>Dia inteiro (1.0)</option>
         <option value="manha" ${p.turno === 'manha' ? 'selected' : ''}>Manha (0.5)</option>
         <option value="tarde" ${p.turno === 'tarde' ? 'selected' : ''}>Tarde (0.5)</option>
       </select>
-      <select class="ed-obra edr-select" style="flex:1;">
+      <select class="ed-obra" style="flex:1;padding:7px 8px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-family:inherit;font-size:12px;">
         <option value="Nao especificada">Nao especificada</option>
         ${obrasOpts}
       </select>
@@ -1223,25 +1225,25 @@ function diarEditarRegistro(regId) {
   }).join('');
 
   document.body.insertAdjacentHTML('beforeend', `
-  <div id="diar-modalEdit" class="edr-modal-overlay" style="display:flex">
-    <div class="edr-modal-box" style="max-width:420px">
-      <div class="edr-modal-header">
-        <div class="edr-modal-title">EDITAR DIARIA</div>
-        <button class="edr-modal-close" onclick="document.getElementById('diar-modalEdit')?.remove()">
+  <div id="diar-modalEdit" class="modal-overlay active">
+    <div class="modal-box" style="max-width:420px">
+      <div class="modal-header">
+        <div class="modal-title">EDITAR DIARIA</div>
+        <button class="modal-close" onclick="document.getElementById('diar-modalEdit')?.remove()">
           <span class="material-symbols-outlined">close</span>
         </button>
       </div>
       <div style="margin-bottom:12px;">
         <span style="font-size:13px;font-weight:700;">${esc(reg.funcionario)}</span>
-        <span class="edr-text-tertiary" style="font-size:11px;margin-left:8px;">${reg.data} · R$ ${reg.diaria_base}/dia</span>
+        <span style="color:var(--text-tertiary);" style="font-size:11px;margin-left:8px;">${reg.data} · R$ ${reg.diaria_base}/dia</span>
       </div>
-      <div class="edr-label" style="margin-bottom:6px;">PERIODOS</div>
+      <div style="display:block;font-size:10px;font-weight:700;color:var(--text-tertiary);letter-spacing:1px;margin-bottom:4px;" style="margin-bottom:6px;">PERIODOS</div>
       <div id="ed-periodos">${periodosHtml}</div>
-      <button onclick="diarEditAddPeriodo()" class="edr-btn edr-btn-ghost" style="width:100%;margin-bottom:16px;">+ Adicionar periodo</button>
-      <div class="edr-modal-actions">
-        <button onclick="document.getElementById('diar-modalEdit')?.remove()" class="edr-btn edr-btn-secondary">CANCELAR</button>
-        <button onclick="diarSalvarEdicao('${regId}')" class="edr-btn edr-btn-primary" style="flex:2">SALVAR</button>
-        <button onclick="diarExcluirRegistro('${regId}')" class="edr-btn edr-btn-danger">EXCLUIR</button>
+      <button onclick="diarEditAddPeriodo()" class="btn btn-ghost" style="width:100%;margin-bottom:16px;">+ Adicionar periodo</button>
+      <div class="modal-footer">
+        <button onclick="document.getElementById('diar-modalEdit')?.remove()" class="btn btn-outline">CANCELAR</button>
+        <button onclick="diarSalvarEdicao('${regId}')" class="btn btn-primary" style="flex:2">SALVAR</button>
+        <button onclick="diarExcluirRegistro('${regId}')" class="btn" style="background:rgba(239,68,68,.15);color:var(--error);border:1px solid rgba(239,68,68,.3);">EXCLUIR</button>
       </div>
     </div>
   </div>`);
@@ -1260,12 +1262,12 @@ function diarEditAddPeriodo() {
   const obrasOpts = obras.map(o => `<option value="${esc(o.nome)}">${o.nome}</option>`).join('');
   container.insertAdjacentHTML('beforeend', `
     <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center;">
-      <select class="ed-turno edr-select" style="flex:1;">
+      <select class="ed-turno" style="flex:1;padding:7px 8px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-family:inherit;font-size:12px;">
         <option value="dia">Dia inteiro (1.0)</option>
         <option value="manha">Manha (0.5)</option>
         <option value="tarde">Tarde (0.5)</option>
       </select>
-      <select class="ed-obra edr-select" style="flex:1;">
+      <select class="ed-obra" style="flex:1;padding:7px 8px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-family:inherit;font-size:12px;">
         <option value="Nao especificada">Nao especificada</option>
         ${obrasOpts}
       </select>
@@ -1312,37 +1314,37 @@ function diarAdicionarNoDia(data) {
   const funcOpts = ativos.map(f => `<option value="${esc(f.nome)}" data-cargo="${f.cargo || ''}" data-diaria="${f.diaria || 0}">${f.nome} (${f.cargo || '-'})</option>`).join('');
 
   document.body.insertAdjacentHTML('beforeend', `
-  <div id="diar-modalAdd" class="edr-modal-overlay" style="display:flex">
-    <div class="edr-modal-box" style="max-width:420px">
-      <div class="edr-modal-header">
-        <div class="edr-modal-title"><span class="material-symbols-outlined" style="font-size:20px">person_add</span> ADICIONAR FUNCIONARIO</div>
-        <button class="edr-modal-close" onclick="document.getElementById('diar-modalAdd')?.remove()">
+  <div id="diar-modalAdd" class="modal-overlay active">
+    <div class="modal-box" style="max-width:420px">
+      <div class="modal-header">
+        <div class="modal-title"><span class="material-symbols-outlined" style="font-size:20px">person_add</span> ADICIONAR FUNCIONARIO</div>
+        <button class="modal-close" onclick="document.getElementById('diar-modalAdd')?.remove()">
           <span class="material-symbols-outlined">close</span>
         </button>
       </div>
-      <div class="edr-text-tertiary" style="font-size:12px;margin-bottom:16px;">${new Date(data + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit' })}</div>
-      <label class="edr-label">FUNCIONARIO</label>
-      <select id="add-func" class="edr-select" style="margin-bottom:12px;">${funcOpts}</select>
+      <div style="color:var(--text-tertiary);" style="font-size:12px;margin-bottom:16px;">${new Date(data + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit' })}</div>
+      <label style="display:block;font-size:10px;font-weight:700;color:var(--text-tertiary);letter-spacing:1px;margin-bottom:4px;">FUNCIONARIO</label>
+      <select id="add-func" style="padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-family:inherit;font-size:12px;width:100%;box-sizing:border-box;" style="margin-bottom:12px;">${funcOpts}</select>
       <div id="add-periodos">
         <div style="display:flex;gap:8px;margin-bottom:8px;">
           <div style="flex:1;">
-            <label class="edr-label">TURNO</label>
-            <select class="add-turno edr-select">
+            <label style="display:block;font-size:10px;font-weight:700;color:var(--text-tertiary);letter-spacing:1px;margin-bottom:4px;">TURNO</label>
+            <select class="add-turno" style="padding:7px 8px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-family:inherit;font-size:12px;width:100%;">
               <option value="dia">Dia inteiro (1.0)</option>
               <option value="manha">Manha (0.5)</option>
               <option value="tarde">Tarde (0.5)</option>
             </select>
           </div>
           <div style="flex:1;">
-            <label class="edr-label">OBRA</label>
-            <select class="add-obra edr-select">${obrasOpts}</select>
+            <label style="display:block;font-size:10px;font-weight:700;color:var(--text-tertiary);letter-spacing:1px;margin-bottom:4px;">OBRA</label>
+            <select class="add-obra" style="padding:7px 8px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-family:inherit;font-size:12px;width:100%;">${obrasOpts}</select>
           </div>
         </div>
       </div>
-      <button onclick="diarAddPeriodoModal()" class="edr-btn edr-btn-ghost" style="width:100%;margin-bottom:16px;">+ Segundo turno (outra obra)</button>
-      <div class="edr-modal-actions">
-        <button onclick="document.getElementById('diar-modalAdd')?.remove()" class="edr-btn edr-btn-secondary">CANCELAR</button>
-        <button onclick="diarConfirmarAdd('${data}')" class="edr-btn edr-btn-primary" style="flex:2">ADICIONAR</button>
+      <button onclick="diarAddPeriodoModal()" class="btn btn-ghost" style="width:100%;margin-bottom:16px;">+ Segundo turno (outra obra)</button>
+      <div class="modal-footer">
+        <button onclick="document.getElementById('diar-modalAdd')?.remove()" class="btn btn-outline">CANCELAR</button>
+        <button onclick="diarConfirmarAdd('${data}')" class="btn btn-primary" style="flex:2">ADICIONAR</button>
       </div>
     </div>
   </div>`);
@@ -1355,14 +1357,14 @@ function diarAddPeriodoModal() {
   container.insertAdjacentHTML('beforeend', `
     <div style="display:flex;gap:8px;margin-bottom:8px;">
       <div style="flex:1;">
-        <select class="add-turno edr-select">
+        <select class="add-turno" style="padding:7px 8px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-family:inherit;font-size:12px;width:100%;">
           <option value="dia">Dia inteiro (1.0)</option>
           <option value="manha">Manha (0.5)</option>
           <option value="tarde">Tarde (0.5)</option>
         </select>
       </div>
       <div style="flex:1;">
-        <select class="add-obra edr-select">${obrasOpts}</select>
+        <select class="add-obra" style="padding:7px 8px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-family:inherit;font-size:12px;width:100%;">${obrasOpts}</select>
       </div>
       <button onclick="this.parentElement.remove()" class="edr-btn-icon" style="color:var(--error);align-self:center;"><span class="material-symbols-outlined">close</span></button>
     </div>`);
@@ -1451,7 +1453,7 @@ function _diarGetFaltasQuinzena() {
 
 function buildSecaoFaltas() {
   const regs = _diarGetRegistrosQuinzena();
-  if (!regs.length) return '<div class="edr-card" style="margin-top:16px;"><div class="edr-card-title"><span class="material-symbols-outlined">warning</span> FALTAS — QUINZENA ATUAL</div><div class="edr-text-tertiary" style="font-size:12px;">Nenhum registro de diarias na quinzena ativa.</div></div>';
+  if (!regs.length) return '<div class="edr-card" style="margin-top:16px;"><div class="edr-card-title"><span class="material-symbols-outlined">warning</span> FALTAS — QUINZENA ATUAL</div><div style="color:var(--text-tertiary);" style="font-size:12px;">Nenhum registro de diarias na quinzena ativa.</div></div>';
 
   const diasLancados = [...new Set(regs.map(r => r.data))].sort();
   const faltas = _diarGetFaltasQuinzena();
@@ -1465,7 +1467,7 @@ function buildSecaoFaltas() {
     return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border-primary);">
       <span style="font-weight:600;font-size:13px;">${nome}</span>
       <div style="display:flex;align-items:center;gap:12px;">
-        <span class="edr-text-tertiary" style="font-size:11px;">${presencas}/${totalDias} dias</span>
+        <span style="color:var(--text-tertiary);" style="font-size:11px;">${presencas}/${totalDias} dias</span>
         ${f > 0 ? `<span class="edr-badge edr-badge-error">${f} falta${f > 1 ? 's' : ''}</span>` : '<span class="edr-badge edr-badge-success">Sem faltas</span>'}
         <div style="width:60px;height:6px;background:var(--surface-secondary);border-radius:3px;overflow:hidden;"><div style="height:100%;width:${pct}%;background:${cor};border-radius:3px;"></div></div>
       </div>
@@ -1528,7 +1530,7 @@ function diarAbrirCalendarioFunc(nome) {
       return `<div class="diar-cal-row diar-cal-fds">
         <div class="diar-cal-dot" style="background:var(--text-tertiary)"></div>
         <span class="diar-cal-date">${df}</span>
-        <span class="edr-text-tertiary" style="font-size:10px">fim de semana</span>
+        <span style="color:var(--text-tertiary);" style="font-size:10px">fim de semana</span>
       </div>`;
     }
     if (reg) {
@@ -1555,14 +1557,14 @@ function diarAbrirCalendarioFunc(nome) {
   }).join('');
 
   document.body.insertAdjacentHTML('beforeend', `
-  <div id="diar-modalCalendario" class="edr-modal-overlay" style="display:flex">
-    <div class="edr-modal-box" style="max-width:500px;max-height:90vh;overflow-y:auto;">
-      <div class="edr-modal-header">
-        <div class="edr-modal-title">
+  <div id="diar-modalCalendario" class="modal-overlay active">
+    <div class="modal-box" style="max-width:500px;max-height:90vh;overflow-y:auto;">
+      <div class="modal-header">
+        <div class="modal-title">
           <span class="material-symbols-outlined">calendar_month</span>
-          ${nome} <span class="edr-text-tertiary" style="font-size:11px;font-weight:400">${cargo}</span>
+          ${nome} <span style="color:var(--text-tertiary);" style="font-size:11px;font-weight:400">${cargo}</span>
         </div>
-        <button class="edr-modal-close" onclick="document.getElementById('diar-modalCalendario')?.remove()">
+        <button class="modal-close" onclick="document.getElementById('diar-modalCalendario')?.remove()">
           <span class="material-symbols-outlined">close</span>
         </button>
       </div>
@@ -1642,7 +1644,7 @@ function _diarRenderFolha() {
     const totalFunc = f.valor + extra;
     return `<tr>
       <td class="diar-td-nome" style="cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px;" onclick="diarAbrirCalendarioFunc('${esc(f.nome)}')" title="Ver calendario"><span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;opacity:.5">calendar_month</span> ${esc(f.nome)}</td>
-      <td class="edr-text-tertiary" style="font-size:11px">${f.cargo || '-'}</td>
+      <td style="color:var(--text-tertiary);" style="font-size:11px">${f.cargo || '-'}</td>
       ${isMestre ? '' : `<td class="edr-text-secondary" style="font-size:11px">R$ ${f.diaria} x ${f.fracoes.toFixed(1)}d</td>`}
       <td>${f.fracoes.toFixed(1)}d</td>
       ${isMestre ? '' : `<td style="text-align:center;font-weight:700;color:${(faltas[f.nome] || 0) > 0 ? 'var(--error)' : 'var(--text-tertiary)'};">${faltas[f.nome] || 0}</td>`}
@@ -1744,7 +1746,7 @@ function _diarRenderExtras() {
   if (!el) return;
   const extras = _diarGetExtrasQuinzena();
   if (!extras.length) {
-    el.innerHTML = '<div class="edr-text-tertiary" style="font-size:11px;padding:8px 0;">Nenhum extra lancado nesta quinzena.</div>';
+    el.innerHTML = '<div style="color:var(--text-tertiary);" style="font-size:11px;padding:8px 0;">Nenhum extra lancado nesta quinzena.</div>';
     return;
   }
   const totalExtras = extras.reduce((s, e) => s + e.valor, 0);
@@ -1754,11 +1756,11 @@ function _diarRenderExtras() {
         <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border-bottom:1px solid var(--border-primary);gap:8px;flex-wrap:wrap;">
           <div style="display:flex;flex-direction:column;gap:2px;flex:1;">
             <span style="font-weight:700;font-size:12px;">${e.funcionario}</span>
-            <span class="edr-text-tertiary" style="font-size:10px;">${e.descricao || e.desc || ''} · <span style="color:var(--success)">${e.obra}</span></span>
+            <span style="color:var(--text-tertiary);" style="font-size:10px;">${e.descricao || e.desc || ''} · <span style="color:var(--success)">${e.obra}</span></span>
           </div>
           <div style="display:flex;align-items:center;gap:10px;">
             <span style="font-weight:700;color:var(--success);font-family:'Space Grotesk',monospace;font-size:13px;">R$ ${e.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-            <button onclick="diarExcluirExtra('${esc(e.id)}')" class="edr-btn-sm edr-btn-danger-outline">
+            <button onclick="diarExcluirExtra('${esc(e.id)}')" class="edr-btn-sm" style="color:var(--error);border-color:rgba(239,68,68,.3);">
               <span class="material-symbols-outlined" style="font-size:14px">close</span>
             </button>
           </div>
@@ -2034,7 +2036,7 @@ async function diarAbrirModalEDR() {
   const modal = document.getElementById('diar-modalEDR');
   modal.style.display = 'flex';
   document.getElementById('diar-modalEDRBody').innerHTML =
-    '<div style="text-align:center;padding:28px;font-size:12px" class="edr-text-tertiary"><span class="material-symbols-outlined" style="font-size:24px;animation:spin 1s linear infinite">sync</span><p>Carregando obras do EDR System...</p></div>';
+    '<div style="text-align:center;padding:28px;font-size:12px" style="color:var(--text-tertiary);"><span class="material-symbols-outlined" style="font-size:24px;animation:spin 1s linear infinite">sync</span><p>Carregando obras do EDR System...</p></div>';
   modal.dataset.obs = obs;
 
   const obrasMap = await _diarBuscarObras();
@@ -2056,15 +2058,15 @@ async function diarAbrirModalEDR() {
   const total = Object.values(custoPorObra).reduce((s, v) => s + v, 0);
 
   document.getElementById('diar-modalEDRBody').innerHTML = `
-    <p class="edr-text-tertiary" style="font-size:12px;margin-bottom:10px">
+    <p style="color:var(--text-tertiary);" style="font-size:12px;margin-bottom:10px">
       Cada linha sera lancada como <strong>MAO DE OBRA</strong> na obra correspondente.<br>
       Obs: <em>${obs}</em>
     </p>
     <table style="width:100%;border-collapse:collapse">
       <thead><tr style="border-bottom:1px solid var(--border-primary)">
-        <th style="padding:5px;text-align:left;font-size:10px" class="edr-text-tertiary"></th>
-        <th style="padding:5px;text-align:left;font-size:10px" class="edr-text-tertiary">OBRA</th>
-        <th style="padding:5px;text-align:right;font-size:10px" class="edr-text-tertiary">CUSTO MO</th>
+        <th style="padding:5px;text-align:left;font-size:10px" style="color:var(--text-tertiary);"></th>
+        <th style="padding:5px;text-align:left;font-size:10px" style="color:var(--text-tertiary);">OBRA</th>
+        <th style="padding:5px;text-align:right;font-size:10px" style="color:var(--text-tertiary);">CUSTO MO</th>
       </tr></thead>
       <tbody>${linhas}</tbody>
       <tfoot><tr style="border-top:1px solid var(--border-primary)">
@@ -2072,7 +2074,7 @@ async function diarAbrirModalEDR() {
         <td style="padding:9px 5px;color:var(--success);font-weight:700;text-align:right;font-family:'Space Grotesk',monospace">R$ ${total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
       </tr></tfoot>
     </table>
-    <div id="diar-edrStatus" style="margin-top:10px;min-height:20px;font-size:11px" class="edr-text-tertiary"></div>`;
+    <div id="diar-edrStatus" style="margin-top:10px;min-height:20px;font-size:11px" style="color:var(--text-tertiary);"></div>`;
   modal.dataset.obs = obs;
 }
 
