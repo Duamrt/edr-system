@@ -511,7 +511,7 @@ const CronogramaModule = {
       overlay.className = 'modal-overlay';
       overlay.setAttribute('role', 'dialog');
       overlay.setAttribute('aria-modal', 'true');
-      overlay.onclick = function(e) { if (e.target === overlay) overlay.classList.add('hidden'); };
+      overlay.onclick = function(e) { if (e.target === overlay) overlay.classList.remove('active'); };
       const modal = document.createElement('div');
       modal.className = 'modal';
       modal.style.maxWidth = '400px';
@@ -521,14 +521,14 @@ const CronogramaModule = {
 
     overlay.querySelector('.modal').innerHTML = '<div class="modal-title">'
       + '<span><span class="material-symbols-outlined" style="font-size:18px;vertical-align:middle;">playlist_add</span> NOVO SUB-ITEM</span>'
-      + '<button class="modal-close" onclick="document.getElementById(\'modal-cron-addsub\').classList.add(\'hidden\')"><span class="material-symbols-outlined">close</span></button>'
+      + '<button class="modal-close" onclick="document.getElementById(\'modal-cron-addsub\').classList.remove(\'active\')"><span class="material-symbols-outlined">close</span></button>'
       + '</div>'
       + '<div class="field"><label>NOME DO SUB-ITEM</label>'
         + '<input type="text" id="cron-addsub-nome" placeholder="Ex: Concretagem, Fiacao..." style="width:100%;">'
       + '</div>'
       + '<button class="btn-save" onclick="CronogramaModule._confirmarAddSub(\'' + tarefaId + '\')" style="width:100%;margin-top:8px;">ADICIONAR</button>';
 
-    overlay.classList.remove('hidden');
+    overlay.classList.add('active');
     setTimeout(function() {
       const input = document.getElementById('cron-addsub-nome');
       if (input) input.focus();
@@ -552,7 +552,7 @@ const CronogramaModule = {
         progresso: t.progresso
       });
       const overlay = document.getElementById('modal-cron-addsub');
-      if (overlay) overlay.classList.add('hidden');
+      if (overlay) overlay.classList.remove('active');
       this._renderLista();
     } catch (e) { showToast('Erro ao adicionar sub-item'); }
   },
@@ -651,7 +651,7 @@ const CronogramaModule = {
       document.body.appendChild(overlay);
     }
     overlay.querySelector('.modal').innerHTML = html;
-    overlay.classList.remove('hidden');
+    overlay.classList.add('active');
   },
 
   _renderSubsModal() {
@@ -795,7 +795,7 @@ const CronogramaModule = {
       document.body.appendChild(overlay);
     }
     overlay.querySelector('.modal').innerHTML = html;
-    overlay.classList.remove('hidden');
+    overlay.classList.add('active');
   },
 
   async _salvarEtapas() {
