@@ -18,6 +18,9 @@ function parseItens(n) { try { return JSON.parse(n.itens||'[]'); } catch(e) { co
 // Formata valor como moeda BRL: 1234.5 → "R$ 1.234,50"
 function fmt(v) { return Number(v||0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
 
+// Formata quantidade (sem R$): 262 → "262" | 262.5 → "262,5"
+function fmtQtd(v) { const n = Number(v||0); return n % 1 === 0 ? n.toLocaleString('pt-BR') : n.toLocaleString('pt-BR', { maximumFractionDigits: 2 }); }
+
 // Formata moeda com opção abreviada: 15000 → "R$ 15.0k"
 function fmtR(v, abrev = false) {
   const n = Number(v) || 0;

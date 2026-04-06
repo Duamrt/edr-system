@@ -445,7 +445,7 @@ function renderEstoque() {
           ${esc(it.desc)}
         </div>
         <div class="mat-card-saldo">
-          <div class="mat-card-saldo-num ${saldoClass}">${fmt(it.saldo)}</div>
+          <div class="mat-card-saldo-num ${saldoClass}">${fmtQtd(it.saldo)}</div>
           <div class="mat-card-saldo-un">${esc(it.unidade)}</div>
         </div>
       </div>
@@ -989,10 +989,49 @@ async function _vincularSelecionado(chave) {
   const catItem = EstoqueModule.catalogoMateriais.find(m => m.id === materialId);
   if (!catItem) return;
 
-  // Atualizar todas as movimentacoes que usam esse desc sem codigo
-  // para apontar para o codigo do catalogo
-  showToast(`Vinculado: "${item.desc}" → ${catItem.codigo} · ${catItem.nome}`, 'success');
+  const desc = item.desc;
+  const codigo = catItem.codigo;
+  const enc = encodeURIComponent(desc);
+
+  showToast('Vinculando...', 'info');
+
+  // 1. entradas_diretas
+  await sbPatch(`entradas_diretas?item_desc=eq.${enc}&codigo_catalogo=is.null`, { codigo_catalogo: codigo });
+
+  // 2. ajustes_estoque
+  await sbPatch(`ajustes_estoque?item_desc=eq.${enc}&codigo_catalogo=is.null`, { codigo_catalogo: codigo });
+
+  // 3. distribuicoes
+  await sbPatch(`distribuicoes?item_desc=eq.${enc}&codigo_catalogo=is.null`, { codigo_catalogo: codigo });
+
+  // 4. notas_fiscais — atualiza JSON dos itens
+  const notasEDR = (typeof notas !== 'undefined' ? notas : []).filter(n => n.obra === 'EDR');
+  for (const n of notasEDR) {
+    const itens = parseItens(n);
+    let changed = false;
+    const updated = itens.map(it => {
+      const d = it.descricao || it.desc || '';
+      if (d === desc && !it.codigo_catalogo && !it.cod) {
+        changed = true;
+        return { ...it, codigo_catalogo: codigo };
+      }
+      return it;
+    });
+    if (changed) {
+      await sbPatch(`notas_fiscais?id=eq.${n.id}`, { itens: JSON.stringify(updated) });
+    }
+  }
+
   closeModal('vincular-modal');
+  showToast(`Vinculado: "${desc}" → ${codigo} · ${catItem.nome}`, 'success');
+
+  // Recarregar dados do banco e re-renderizar
+  await Promise.all([
+    loadNotas(),
+    loadEntradasDiretas(),
+    loadDistribuicoes(),
+    loadAjustesEstoque(),
+  ]);
   renderEstoque();
 }
 
