@@ -1,0 +1,9 @@
+node_modules/
+.git/
+*.png
+*.jpg
+*.jpeg
+*.svg
+dist/
+build/
+uploads/

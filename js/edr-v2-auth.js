@@ -183,3 +183,147 @@ window.addEventListener('DOMContentLoaded', async () => {
     _entrarNoApp();
   }
 });
+
+// ── PERMISSÕES POR PERFIL ────────────────────────────────────
+const _MODULOS_PERMISSAO = [
+  { id: 'dashboard',    label: 'Dashboard' },
+  { id: 'obras',        label: 'Obras' },
+  { id: 'cronograma',   label: 'Cronograma' },
+  { id: 'orcamento',    label: 'Orçamento' },
+  { id: 'adicionais',   label: 'Adicionais' },
+  { id: 'diario',       label: 'Diário de Obra' },
+  { id: 'garantias',    label: 'Garantias' },
+  { id: 'estoque',      label: 'Estoque' },
+  { id: 'notas',        label: 'Notas Fiscais' },
+  { id: 'contas-pagar', label: 'Contas a Pagar' },
+  { id: 'creditos',     label: 'Créditos' },
+  { id: 'diarias',      label: 'Diárias' },
+  { id: 'leads',        label: 'Leads / CRM' },
+  { id: 'pci',          label: 'PCI Medições' },
+  { id: 'banco',        label: 'Dados' },
+  { id: 'permissoes',   label: 'Permissões' },
+  { id: 'setup',        label: 'Configuração' },
+];
+
+const _PERFIS = [
+  { id: 'admin',       label: 'Admin',       cor: '#16a34a' },
+  { id: 'operacional', label: 'Operacional', cor: '#2563eb' },
+  { id: 'mestre',      label: 'Mestre',      cor: '#d97706' },
+  { id: 'visitante',   label: 'Visitante',   cor: '#6b7280' },
+];
+
+function _perfilTemAcesso(perfilId, viewId) {
+  const allowed = PERFIL_VIEWS[perfilId];
+  return allowed === null || (Array.isArray(allowed) && allowed.includes(viewId));
+}
+
+async function renderPermissoes(container) {
+  const c = document.getElementById('permissoes-container');
+  if (!c) return;
+  c.innerHTML = '<div style="color:var(--text-tertiary);font-size:13px;padding:16px 0;">Carregando...</div>';
+
+  // Buscar usuários da empresa
+  let usuarios = [];
+  if (_companyId) {
+    try {
+      usuarios = await sbGet('company_users', '?company_id=eq.' + _companyId + '&select=id,user_id,role,nome,email&order=nome');
+      if (!Array.isArray(usuarios)) usuarios = [];
+    } catch(e) { usuarios = []; }
+  }
+
+  const isAdmin = usuarioAtual?.perfil === 'admin';
+
+  // ── MATRIZ DE ACESSO ──
+  let matrizRows = _MODULOS_PERMISSAO.map(mod => {
+    const colunas = _PERFIS.map(p => {
+      const tem = _perfilTemAcesso(p.id, mod.id);
+      return `<td style="text-align:center;padding:7px 4px;">
+        ${tem
+          ? '<span class="material-symbols-outlined" style="color:#16a34a;font-size:18px;vertical-align:middle;">check_circle</span>'
+          : '<span class="material-symbols-outlined" style="color:#e5e7eb;font-size:18px;vertical-align:middle;">cancel</span>'
+        }
+      </td>`;
+    }).join('');
+    return `<tr style="border-bottom:1px solid var(--borda);">
+      <td style="padding:7px 8px;font-size:13px;color:var(--text-primary);">${mod.label}</td>
+      ${colunas}
+    </tr>`;
+  }).join('');
+
+  const cabecalhos = _PERFIS.map(p =>
+    `<th style="padding:8px 4px;font-size:11px;font-weight:700;letter-spacing:.5px;text-align:center;color:${p.cor};">${p.label.toUpperCase()}</th>`
+  ).join('');
+
+  // ── LISTA DE USUÁRIOS ──
+  let usersHTML = '';
+  if (usuarios.length === 0) {
+    usersHTML = '<div style="color:var(--text-tertiary);font-size:13px;padding:8px 0;">Nenhum usuário encontrado.</div>';
+  } else {
+    usersHTML = usuarios.map(u => {
+      const perfilAtual = u.role || 'operacional';
+      const opts = _PERFIS.map(p =>
+        `<option value="${p.id}" ${p.id === perfilAtual ? 'selected' : ''}>${p.label}</option>`
+      ).join('');
+      const selector = isAdmin
+        ? `<select onchange="alterarPerfilUsuario('${u.id}', this.value)"
+            style="background:var(--card);border:1px solid var(--borda);color:var(--text-primary);border-radius:6px;padding:5px 8px;font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:600;cursor:pointer;">${opts}</select>`
+        : `<span style="font-size:12px;font-weight:700;color:var(--text-secondary);">${perfilAtual.toUpperCase()}</span>`;
+
+      return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--borda);">
+        <div>
+          <div style="font-size:13px;font-weight:700;color:var(--text-primary);">${u.nome || '—'}</div>
+          <div style="font-size:11px;color:var(--text-tertiary);">${u.email || ''}</div>
+        </div>
+        ${selector}
+      </div>`;
+    }).join('');
+  }
+
+  c.innerHTML = `
+    <div class="card" style="margin-bottom:12px;padding:16px;overflow-x:auto;">
+      <div class="section-title" style="margin-bottom:12px;font-size:13px;">
+        <span class="material-symbols-outlined icon-sm icon-inline">grid_on</span> MATRIZ DE ACESSO
+      </div>
+      <table style="width:100%;border-collapse:collapse;">
+        <thead>
+          <tr style="border-bottom:2px solid var(--borda);">
+            <th style="padding:8px;font-size:11px;font-weight:700;letter-spacing:.5px;text-align:left;color:var(--text-tertiary);">MÓDULO</th>
+            ${cabecalhos}
+          </tr>
+        </thead>
+        <tbody>${matrizRows}</tbody>
+      </table>
+      <div style="margin-top:10px;font-size:11px;color:var(--text-tertiary);line-height:1.5;">
+        * Visitante tem acesso a tudo, porém em modo somente leitura (controlado em cada módulo).
+      </div>
+    </div>
+
+    <div class="card" style="padding:16px;">
+      <div class="section-title" style="margin-bottom:4px;font-size:13px;">
+        <span class="material-symbols-outlined icon-sm icon-inline">group</span> USUÁRIOS E PERFIS
+      </div>
+      ${!isAdmin ? '<div style="font-size:11px;color:var(--text-tertiary);margin-bottom:10px;">Apenas administradores podem alterar perfis.</div>' : ''}
+      ${usersHTML}
+    </div>
+  `;
+}
+
+async function alterarPerfilUsuario(companyUserId, novoPerfil) {
+  try {
+    const ok = await sbPatch('company_users', '?id=eq.' + companyUserId, { role: novoPerfil });
+    if (ok !== null) {
+      if (typeof showToast === 'function') showToast('Perfil atualizado.');
+    } else {
+      if (typeof showToast === 'function') showToast('Erro ao atualizar perfil.');
+    }
+  } catch(e) {
+    if (typeof showToast === 'function') showToast('Erro ao atualizar perfil.');
+  }
+}
+
+// Registrar view de permissões
+window.addEventListener('DOMContentLoaded', () => {
+  if (typeof viewRegistry !== 'undefined') {
+    viewRegistry.register('permissoes', renderPermissoes);
+  }
+});
