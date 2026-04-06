@@ -238,15 +238,20 @@ async function renderPermissoes(container) {
   }
 
   const isAdmin = usuarioAtual?.perfil === 'admin';
+  const _PERFIS_EDITAVEIS = ['operacional','mestre','visitante']; // admin sempre tem tudo
 
   // ── MATRIZ DE ACESSO ──
   let matrizRows = _MODULOS_PERMISSAO.map(mod => {
     const colunas = _PERFIS.map(p => {
       const tem = _perfilTemAcesso(p.id, mod.id);
+      const editavel = isAdmin && _PERFIS_EDITAVEIS.includes(p.id);
+      const icon = tem
+        ? `<span class="material-symbols-outlined" style="color:#16a34a;font-size:18px;vertical-align:middle;">check_circle</span>`
+        : `<span class="material-symbols-outlined" style="color:#e5e7eb;font-size:18px;vertical-align:middle;">cancel</span>`;
       return `<td style="text-align:center;padding:7px 4px;">
-        ${tem
-          ? '<span class="material-symbols-outlined" style="color:#16a34a;font-size:18px;vertical-align:middle;">check_circle</span>'
-          : '<span class="material-symbols-outlined" style="color:#e5e7eb;font-size:18px;vertical-align:middle;">cancel</span>'
+        ${editavel
+          ? `<span onclick="_togglePermissao('${p.id}','${mod.id}')" style="cursor:pointer;display:inline-block;" title="Clique para ${tem?'remover':'liberar'} acesso">${icon}</span>`
+          : icon
         }
       </td>`;
     }).join('');
@@ -300,7 +305,7 @@ async function renderPermissoes(container) {
         <tbody>${matrizRows}</tbody>
       </table>
       <div style="margin-top:10px;font-size:11px;color:var(--text-tertiary);line-height:1.5;">
-        * Visitante tem acesso a tudo, porém em modo somente leitura (controlado em cada módulo).
+        ${isAdmin ? '* Clique nos ícones de Operacional, Mestre e Visitante para liberar ou bloquear acesso.' : '* Visitante tem acesso somente leitura em cada módulo.'}
       </div>
     </div>
 
@@ -312,6 +317,38 @@ async function renderPermissoes(container) {
       ${usersHTML}
     </div>
   `;
+}
+
+async function _togglePermissao(perfilId, moduloId) {
+  if (usuarioAtual?.perfil !== 'admin') return;
+  const atual = PERFIL_VIEWS[perfilId];
+  if (atual === null) {
+    // Era tudo — vira lista sem esse módulo
+    const todos = _MODULOS_PERMISSAO.map(m => m.id).filter(id => id !== moduloId);
+    PERFIL_VIEWS[perfilId] = todos;
+  } else {
+    const lista = Array.isArray(atual) ? [...atual] : [];
+    const idx = lista.indexOf(moduloId);
+    if (idx >= 0) lista.splice(idx, 1); else lista.push(moduloId);
+    PERFIL_VIEWS[perfilId] = lista;
+  }
+  await _salvarPermissoes();
+  if (typeof renderPermissoes === 'function') renderPermissoes();
+}
+
+async function _salvarPermissoes() {
+  if (!_companyId) return;
+  const perms = {
+    operacional: PERFIL_VIEWS.operacional,
+    mestre: PERFIL_VIEWS.mestre,
+    visitante: PERFIL_VIEWS.visitante
+  };
+  try {
+    await sbPatch('companies', '?id=eq.' + _companyId, { permissions: perms });
+    if (typeof showToast === 'function') showToast('Permissões salvas.');
+  } catch(e) {
+    if (typeof showToast === 'function') showToast('Erro ao salvar permissões.');
+  }
 }
 
 async function alterarPerfilUsuario(companyUserId, novoPerfil) {

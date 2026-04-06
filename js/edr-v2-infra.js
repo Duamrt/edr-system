@@ -188,8 +188,11 @@ let _companyPlan = null;
 async function loadCompanyPlan() {
   if (MODO_DEMO || !_companyId) return;
   try {
-    const r = await sbGet('companies', '?id=eq.' + _companyId + '&select=plan,trial_ends_at');
-    if (r && r[0]) _companyPlan = r[0];
+    const r = await sbGet('companies', '?id=eq.' + _companyId + '&select=plan,trial_ends_at,permissions');
+    if (r && r[0]) {
+      _companyPlan = r[0];
+      if (typeof _aplicarPermissoesBanco === 'function') _aplicarPermissoesBanco(r[0].permissions);
+    }
   } catch(e) { console.error('loadCompanyPlan:', e); }
 }
 function getLimites() {
