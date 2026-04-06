@@ -151,6 +151,10 @@ function consolidarEstoque(obraId) {
         ajustes: 0,
         valorTotal: 0,
         lotes: [],         // { nota_id, data, qtd, qtd_disponivel, valor_un }
+        _ediretas: [],     // { qtd, date } — entradas diretas com data para filtro pós-contagem
+        _saidas: [],       // { qtd, date } — saídas com data para filtro pós-contagem
+        _ultimaContagem: undefined,      // valor absoluto da última contagem física
+        _ultimaContagemData: undefined,  // data da última contagem (Date object)
         temNF: false,
         semCodigo: !catItem?.codigo && !codigoCat,
         nfPendente: false,
@@ -202,6 +206,7 @@ function consolidarEstoque(obraId) {
       item.entradasDiretas += qtd;
       item.valorTotal += qtd * preco;
       if (!item.temNF) item.nfPendente = true;
+      item._ediretas.push({ qtd, date: e.criado_em || e.data || null });
     }
   }
 
@@ -214,7 +219,23 @@ function consolidarEstoque(obraId) {
     for (const a of ajFiltrados) {
       const chave = getChave(a.item_desc, a.codigo_catalogo);
       const item = garantir(chave, a.item_desc, a.codigo_catalogo, a.unidade);
-      item.ajustes += parseFloat(a.qtd) || 0;
+      if (a.tipo === 'contagem') {
+        // Extrair valor absoluto do motivo: "sistema X, real Y, dif Z"
+        const mReal = (a.motivo || '').match(/real\s+([\d.,]+)/i);
+        const realAbs = mReal ? parseFloat(mReal[1].replace(',', '.')) : null;
+        if (realAbs !== null) {
+          const dataA = a.data ? new Date(a.data) : null;
+          if (item._ultimaContagem === undefined || (dataA && (!item._ultimaContagemData || dataA >= item._ultimaContagemData))) {
+            item._ultimaContagem = realAbs;
+            item._ultimaContagemData = dataA;
+          }
+        } else {
+          // Motivo sem valor real legível → tratar como delta (backward compat)
+          item.ajustes += parseFloat(a.qtd) || 0;
+        }
+      } else {
+        item.ajustes += parseFloat(a.qtd) || 0;
+      }
     }
   }
 
@@ -229,6 +250,7 @@ function consolidarEstoque(obraId) {
       const item = garantir(chave, d.item_desc, d.codigo_catalogo, d.unidade);
       const qtd = parseFloat(d.qtd) || 0;
       item.saidas += qtd;
+      item._saidas.push({ qtd, date: d.criado_em || d.data || null });
 
       // Consumir FIFO dos lotes
       let restante = qtd;
@@ -247,7 +269,25 @@ function consolidarEstoque(obraId) {
 
   for (const chave in mapa) {
     const it = mapa[chave];
-    const saldo = it.entradas + it.entradasDiretas + it.ajustes - it.saidas;
+    let saldo;
+    if (it._ultimaContagem !== undefined) {
+      const cd = it._ultimaContagemData; // Date | null
+      // Entradas NF posteriores à contagem (lotes com data)
+      const postNF = cd
+        ? it.lotes.filter(l => !l.data || new Date(l.data) > cd).reduce((s, l) => s + l.qtd, 0)
+        : it.entradas;
+      // Entradas diretas posteriores
+      const postED = cd
+        ? it._ediretas.filter(e => !e.date || new Date(e.date) > cd).reduce((s, e) => s + e.qtd, 0)
+        : it.entradasDiretas;
+      // Saídas posteriores
+      const postS = cd
+        ? it._saidas.filter(s => !s.date || new Date(s.date) > cd).reduce((s, x) => s + x.qtd, 0)
+        : it.saidas;
+      saldo = it._ultimaContagem + postNF + postED + it.ajustes - postS;
+    } else {
+      saldo = it.entradas + it.entradasDiretas + it.ajustes - it.saidas;
+    }
     const totalEntradas = it.entradas + it.entradasDiretas + it.ajustes;
     const valorMedio = totalEntradas > 0 ? it.valorTotal / totalEntradas : 0;
 
@@ -995,23 +1035,24 @@ async function _vincularSelecionado(chave) {
 
   showToast('Vinculando...', 'info');
 
-  // 1. entradas_diretas
-  await sbPatch(`entradas_diretas?item_desc=eq.${enc}&codigo_catalogo=is.null`, { codigo_catalogo: codigo });
+  // 1. entradas_diretas (ilike = case-insensitive)
+  await sbPatch(`entradas_diretas?item_desc=ilike.${enc}&codigo_catalogo=is.null`, { codigo_catalogo: codigo });
 
   // 2. ajustes_estoque
-  await sbPatch(`ajustes_estoque?item_desc=eq.${enc}&codigo_catalogo=is.null`, { codigo_catalogo: codigo });
+  await sbPatch(`ajustes_estoque?item_desc=ilike.${enc}&codigo_catalogo=is.null`, { codigo_catalogo: codigo });
 
   // 3. distribuicoes
-  await sbPatch(`distribuicoes?item_desc=eq.${enc}&codigo_catalogo=is.null`, { codigo_catalogo: codigo });
+  await sbPatch(`distribuicoes?item_desc=ilike.${enc}&codigo_catalogo=is.null`, { codigo_catalogo: codigo });
 
-  // 4. notas_fiscais — atualiza JSON dos itens
+  // 4. notas_fiscais — atualiza JSON dos itens (norm para match case-insensitive)
+  const nDesc = norm(desc);
   const notasEDR = (typeof notas !== 'undefined' ? notas : []).filter(n => n.obra === 'EDR');
   for (const n of notasEDR) {
     const itens = parseItens(n);
     let changed = false;
     const updated = itens.map(it => {
       const d = it.descricao || it.desc || '';
-      if (d === desc && !it.codigo_catalogo && !it.cod) {
+      if (norm(d) === nDesc && !it.codigo_catalogo && !it.cod) {
         changed = true;
         return { ...it, codigo_catalogo: codigo };
       }
@@ -1904,6 +1945,8 @@ async function salvarAjusteModal() {
     if (diff === 0) { showToast('✅ Contagem igual ao saldo — nenhum ajuste necessário.'); return; }
     const ok = await confirmar(`Contagem física: ${qtd} ${unidade}\nSaldo sistema: ${saldoAtual} ${unidade}\nDiferença: ${diff > 0 ? '+' : ''}${diff} ${unidade}\n\nConfirma o ajuste?`);
     if (!ok) return;
+    // _motivoContagem embute o valor real para que consolidarEstoque use como reset point
+    window._motivoContagemOverride = `sistema ${saldoAtual}, real ${qtd}, dif ${diff > 0 ? '+' : ''}${diff}${motivo ? ' · ' + motivo : ''}`;
     qtd = diff;
   } else {
     const label = { inventario: 'Inventário inicial', correcao: 'Correção manual' }[ajusteTipoAtual];
@@ -1912,11 +1955,14 @@ async function salvarAjusteModal() {
   }
 
   const label = { inventario: 'Inventário inicial', contagem: 'Contagem física', correcao: 'Correção manual' }[ajusteTipoAtual];
+  // Para contagem: usar motivo com valor real embutido (para reset point no consolidarEstoque)
+  const motivoFinal = window._motivoContagemOverride || `${label}${motivo ? ' · ' + motivo : ''}`;
+  window._motivoContagemOverride = null;
   try {
     const [novo] = await sbPost('ajustes_estoque', {
       item_desc: desc, unidade, qtd,
       tipo: ajusteTipoAtual,
-      motivo: `${label}${motivo ? ' · ' + motivo : ''}`
+      motivo: motivoFinal
     });
     ajustesEstoque.unshift(novo);
     showToast(`Ajuste registrado: ${qtd > 0 ? '+' : ''}${qtd} ${unidade} de ${desc}`);
