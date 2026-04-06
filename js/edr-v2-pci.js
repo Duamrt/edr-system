@@ -1,82 +1,125 @@
 /* ============================================================
-   EDR V2 — PciModule
-   Fase 4.3 Lote 3 (fc8)
-   PCI — Acompanhamento de Medicoes CEF
-   ETAPAS_CEF hardcoded (regras da Caixa nao mudam)
-   Medicoes persistidas no Supabase (tracker_sync key pci-medicoes-v3)
-   ATENCAO: key pci-medicoes-v3 NUNCA trocar — PCI inteiro depende disso
+   EDR V2 — PciModule (v2 — Sub-Serviços CAIXA/MCMV)
+   Tabelas: pci_medicao + pci_itens (Supabase)
+   Templates: pci_categorias_template + pci_sub_servicos_template
+   LEGACY key pci-medicoes-v3 NUNCA trocar
    ============================================================ */
 
 const PciModule = {
 
   // ── Estado ──
-  state: [],
+  medicoes: [],
+  itens: [],
+  categorias: [],
+  subServicos: [],
   expanded: new Set(),
+  expandedCats: new Set(),
   _carregado: false,
-  _saveTimer: null,
   _container: null,
-  _mapa: {},       // pci_id → obra_uuid do Supabase
-  _cronTasks: {},  // pci_id → [{nome, data_inicio, data_fim}]
+
+  // ── Chaves legadas (NUNCA trocar) ──
+  SYNC_KEY: 'pci-medicoes-v3',
+  CACHE_KEY: 'pci_cache_v3',
   MAPA_KEY: 'pci-obra-map-v1',
 
-  // ── 20 Etapas CEF (extraidas dos .xlsb da Caixa) ──
-  // DIFERENTE das 36 ETAPAS financeiras do obras.js
-  ETAPAS_CEF: [
-    { nome: 'Servicos Preliminares e Gerais', desc: 'Limpeza terreno, tapume, locacao da obra, placa, canteiro' },
-    { nome: 'Infraestrutura', desc: 'Estacas, brocas, baldrames, sapatas, radier' },
-    { nome: 'Superestrutura', desc: 'Vigas, pilares, cintas, lajes, escadas' },
-    { nome: 'Paredes e Paineis', desc: 'Alvenaria de vedacao, paineis, vergas, contravergas' },
-    { nome: 'Esquadrias', desc: 'Portas, janelas, batentes, ferragens' },
-    { nome: 'Vidros e Plasticos', desc: 'Vidros das esquadrias, box, espelhos' },
-    { nome: 'Coberturas', desc: 'Estrutura do telhado, telhas, calhas, rufos, cumeeiras' },
-    { nome: 'Impermeabilizacoes', desc: 'Laje, banheiros, areas molhadas, baldrames' },
-    { nome: 'Revestimentos Internos', desc: 'Reboco interno, gesso, chapisco, massa corrida' },
-    { nome: 'Forros', desc: 'Forro de gesso, PVC, madeira' },
-    { nome: 'Revestimentos Externos', desc: 'Reboco externo, textura, grafiato, ceramica fachada' },
-    { nome: 'Pintura', desc: 'Pintura interna e externa, selador, massa PVA' },
-    { nome: 'Pisos', desc: 'Contrapiso, ceramica, porcelanato, cimentado, soleira' },
-    { nome: 'Acabamentos', desc: 'Soleiras, rodapes, peitoril, arremates gerais' },
-    { nome: 'Inst. Eletricas e Telefonicas', desc: 'Eletrodutos, fiacao, quadro, tomadas, interruptores, interfone' },
-    { nome: 'Instalacoes Hidraulicas', desc: 'Agua fria, agua quente, registros, caixa d\'agua, tubulacao' },
-    { nome: 'Inst. Esgoto e Aguas Pluviais', desc: 'Esgoto, caixa de gordura, caixa de passagem, aguas pluviais' },
-    { nome: 'Loucas e Metais', desc: 'Vasos, pias, torneiras, chuveiros, acessorios' },
-    { nome: 'Complementos', desc: 'Limpeza final, calafete, entrega de chaves' },
-    { nome: 'Outros Servicos', desc: 'Muro, portao, cisterna, fossa, calcada, area externa, paisagismo' }
+  // ── Templates hardcoded (fallback se DB não responder) ──
+  _CATS: [
+    { id:'t1',  ordem:1,  nome:'Servicos Preliminares e Gerais',    peso_percentual:2.83 },
+    { id:'t2',  ordem:2,  nome:'Infraestrutura',                    peso_percentual:6.60 },
+    { id:'t3',  ordem:3,  nome:'Supra Estrutura',                   peso_percentual:12.96 },
+    { id:'t4',  ordem:4,  nome:'Paredes e Paineis',                 peso_percentual:9.35 },
+    { id:'t5',  ordem:5,  nome:'Esquadrias',                        peso_percentual:8.01 },
+    { id:'t6',  ordem:6,  nome:'Vidros e Plasticos',                peso_percentual:1.20 },
+    { id:'t7',  ordem:7,  nome:'Coberturas',                        peso_percentual:0 },
+    { id:'t8',  ordem:8,  nome:'Impermeabilizacoes',                peso_percentual:4.24 },
+    { id:'t9',  ordem:9,  nome:'Revestimentos Internos',            peso_percentual:7.07 },
+    { id:'t10', ordem:10, nome:'Forros',                            peso_percentual:2.00 },
+    { id:'t11', ordem:11, nome:'Revestimentos Externos',            peso_percentual:4.24 },
+    { id:'t12', ordem:12, nome:'Pintura',                           peso_percentual:5.89 },
+    { id:'t13', ordem:13, nome:'Pisos',                             peso_percentual:8.72 },
+    { id:'t14', ordem:14, nome:'Acabamentos',                       peso_percentual:1.18 },
+    { id:'t15', ordem:15, nome:'Inst. Eletricas e Telefonicas',     peso_percentual:3.77 },
+    { id:'t16', ordem:16, nome:'Instalacoes Hidraulicas',           peso_percentual:3.77 },
+    { id:'t17', ordem:17, nome:'Inst. Esgoto e Aguas Pluviais',     peso_percentual:4.01 },
+    { id:'t18', ordem:18, nome:'Loucas e Metais',                   peso_percentual:4.48 },
+    { id:'t19', ordem:19, nome:'Complementos',                      peso_percentual:1.13 },
+    { id:'t20', ordem:20, nome:'Outros Servicos',                   peso_percentual:8.55 }
   ],
-
-  // ── Dados seed das obras (pesos do .xlsb) ──
-  _OBRAS_SEED: [
-    { id: 'junior', nome: 'JUNIOR', entrega: '11/06/2026', valor: 200000, medidoAnterior: 3.84,
-      pesos: [1.18,3.07,15.04,4.84,8.04,2.16,4.12,4.58,6.86,2.16,4.90,4.25,9.22,1.34,4.58,3.92,3.92,4.58,1.77,9.48],
-      exec: [1,1,1,1,0,0,1,1,0.8,1,0.7,0,0.3,0,0.6,1,0.9,0,0,0.8],
-      historico: [{ parcela: 0, data: '10/12/2025', execMes: 3.84, execAcum: 3.84 }] },
-    { id: 'dayana', nome: 'DAYANA', entrega: '02/07/2026', valor: 191000, medidoAnterior: 48.92,
-      pesos: [1.89,4.62,12.50,6.36,6.06,2.42,4.92,4.92,7.05,1.74,4.47,4.09,9.09,1.06,4.24,4.17,3.94,4.70,1.74,10.00],
-      exec: [1,1,1,1,0,0,1,1,0.8,0,1,0,0.3,0,0.6,1,0.5,0,0,0.8],
-      historico: [{ parcela: 1, data: '01/01/2026', execMes: 16.12, execAcum: 16.12 },{ parcela: 2, data: '01/02/2026', execMes: 16.04, execAcum: 32.16 },{ parcela: 3, data: '01/03/2026', execMes: 16.76, execAcum: 48.92 }] },
-    { id: 'pedro', nome: 'PEDRO', entrega: '24/07/2026', valor: 190500, medidoAnterior: 79.48,
-      pesos: [3.42,4.99,12.31,7.04,6.50,2.19,5.81,4.44,6.91,1.57,4.03,3.69,9.09,1.30,3.79,3.76,4.10,4.24,1.57,9.23],
-      exec: [1,1,1,1,0,0,1,1,1,0,1,0,0.3,0,0,1,0.5,0,0,0.6],
-      historico: [{ parcela: 1, data: '23/01/2026', execMes: 13.64, execAcum: 13.64 },{ parcela: 2, data: '23/02/2026', execMes: 17.94, execAcum: 31.58 },{ parcela: 3, data: '23/03/2026', execMes: 47.90, execAcum: 79.48 }] },
-    { id: 'leonardo', nome: 'LEONARDO', entrega: '09/08/2026', valor: 190025, medidoAnterior: 31.58,
-      pesos: [3.42,4.99,12.31,7.04,6.50,2.19,5.81,4.44,6.91,1.57,4.03,3.69,9.09,1.30,3.79,3.76,4.10,4.24,1.57,9.23],
-      exec: [1,1,0.7,0.8,0,0,0,0.3,0,0,0,0,0,0,0,0,0.5,0,0,0.6],
-      historico: [{ parcela: 1, data: '08/02/2026', execMes: 13.18, execAcum: 13.18 },{ parcela: 2, data: '08/03/2026', execMes: 18.40, execAcum: 31.58 }] },
-    { id: 'duamelyda', nome: 'DUAM + ELYDA', entrega: 'A definir', valor: 399891.20, medidoAnterior: 0,
-      pesos: [2.83,6.60,12.96,9.35,8.01,1.20,0,4.24,7.07,2.00,4.24,5.89,8.72,1.18,3.77,3.77,4.01,4.48,1.13,8.55],
-      exec: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-      historico: [] }
+  _SUBS: [
+    { categoria_id:'t1', descricao:'Limpeza do terreno', ordem:1 },
+    { categoria_id:'t1', descricao:'Locacao da obra', ordem:2 },
+    { categoria_id:'t1', descricao:'Ligacoes provisorias (agua/energia)', ordem:3 },
+    { categoria_id:'t1', descricao:'Tapume', ordem:4 },
+    { categoria_id:'t2', descricao:'Escavacao e aterro', ordem:1 },
+    { categoria_id:'t2', descricao:'Formas e armacao de fundacao', ordem:2 },
+    { categoria_id:'t2', descricao:'Concretagem de fundacao', ordem:3 },
+    { categoria_id:'t2', descricao:'Impermeabilizacao de fundacao', ordem:4 },
+    { categoria_id:'t3', descricao:'Pilares (forma, armacao, concretagem)', ordem:1 },
+    { categoria_id:'t3', descricao:'Vigas (forma, armacao, concretagem)', ordem:2 },
+    { categoria_id:'t3', descricao:'Laje (forma, armacao, concretagem)', ordem:3 },
+    { categoria_id:'t4', descricao:'Marcacao de paredes', ordem:1 },
+    { categoria_id:'t4', descricao:'Elevacao de alvenaria', ordem:2 },
+    { categoria_id:'t4', descricao:'Vergas e contravergas', ordem:3 },
+    { categoria_id:'t4', descricao:'Cinta de amarracao', ordem:4 },
+    { categoria_id:'t5', descricao:'Instalacao de portas internas', ordem:1 },
+    { categoria_id:'t5', descricao:'Instalacao de janelas', ordem:2 },
+    { categoria_id:'t5', descricao:'Porta principal', ordem:3 },
+    { categoria_id:'t5', descricao:'Grades e protecoes', ordem:4 },
+    { categoria_id:'t6', descricao:'Instalacao de vidros', ordem:1 },
+    { categoria_id:'t6', descricao:'Instalacao de PVC (rodapes, peitoris)', ordem:2 },
+    { categoria_id:'t7', descricao:'Estrutura do telhado', ordem:1 },
+    { categoria_id:'t7', descricao:'Instalacao de telhas', ordem:2 },
+    { categoria_id:'t7', descricao:'Cumeeira e arremates', ordem:3 },
+    { categoria_id:'t7', descricao:'Calhas e rufos', ordem:4 },
+    { categoria_id:'t8', descricao:'Impermeabilizacao de fundacoes', ordem:1 },
+    { categoria_id:'t8', descricao:'Impermeabilizacao de laje', ordem:2 },
+    { categoria_id:'t8', descricao:'Impermeabilizacao de areas molhadas', ordem:3 },
+    { categoria_id:'t9', descricao:'Chapisco interno', ordem:1 },
+    { categoria_id:'t9', descricao:'Emboco e reboco interno', ordem:2 },
+    { categoria_id:'t9', descricao:'Azulejo e ceramica em areas molhadas', ordem:3 },
+    { categoria_id:'t10', descricao:'Instalacao de forro', ordem:1 },
+    { categoria_id:'t10', descricao:'Arremates de forro', ordem:2 },
+    { categoria_id:'t11', descricao:'Chapisco externo', ordem:1 },
+    { categoria_id:'t11', descricao:'Emboco e reboco externo', ordem:2 },
+    { categoria_id:'t11', descricao:'Tratamento de fachada', ordem:3 },
+    { categoria_id:'t12', descricao:'Selador e massa corrida interna', ordem:1 },
+    { categoria_id:'t12', descricao:'Pintura interna', ordem:2 },
+    { categoria_id:'t12', descricao:'Pintura externa', ordem:3 },
+    { categoria_id:'t12', descricao:'Pintura de esquadrias', ordem:4 },
+    { categoria_id:'t13', descricao:'Contrapiso', ordem:1 },
+    { categoria_id:'t13', descricao:'Ceramica e porcelanato interno', ordem:2 },
+    { categoria_id:'t13', descricao:'Calcada e area externa', ordem:3 },
+    { categoria_id:'t13', descricao:'Soleiras e peitoris', ordem:4 },
+    { categoria_id:'t14', descricao:'Rodapes', ordem:1 },
+    { categoria_id:'t14', descricao:'Pingadeiras', ordem:2 },
+    { categoria_id:'t14', descricao:'Arremates gerais', ordem:3 },
+    { categoria_id:'t15', descricao:'Eletrodutos e fiacao', ordem:1 },
+    { categoria_id:'t15', descricao:'Quadro de distribuicao', ordem:2 },
+    { categoria_id:'t15', descricao:'Tomadas e interruptores', ordem:3 },
+    { categoria_id:'t15', descricao:'Iluminacao', ordem:4 },
+    { categoria_id:'t16', descricao:'Tubulacao de agua fria', ordem:1 },
+    { categoria_id:'t16', descricao:'Caixa dagua', ordem:2 },
+    { categoria_id:'t16', descricao:'Pontos de agua (pias, chuveiro, vaso)', ordem:3 },
+    { categoria_id:'t17', descricao:'Tubulacao de esgoto', ordem:1 },
+    { categoria_id:'t17', descricao:'Caixa de inspecao', ordem:2 },
+    { categoria_id:'t17', descricao:'Fossa e filtro', ordem:3 },
+    { categoria_id:'t17', descricao:'Captacao de aguas pluviais', ordem:4 },
+    { categoria_id:'t18', descricao:'Vaso sanitario', ordem:1 },
+    { categoria_id:'t18', descricao:'Pia de cozinha', ordem:2 },
+    { categoria_id:'t18', descricao:'Lavatorio', ordem:3 },
+    { categoria_id:'t18', descricao:'Tanque', ordem:4 },
+    { categoria_id:'t18', descricao:'Torneiras e registros', ordem:5 },
+    { categoria_id:'t18', descricao:'Chuveiro', ordem:6 },
+    { categoria_id:'t19', descricao:'Limpeza final da obra', ordem:1 },
+    { categoria_id:'t19', descricao:'Espelhos e acabamentos eletricos', ordem:2 },
+    { categoria_id:'t19', descricao:'Caixas de passagem', ordem:3 }
   ],
-
-  SYNC_KEY: 'pci-medicoes-v3',   // NUNCA trocar
-  CACHE_KEY: 'pci_cache_v3',
 
   // ── Render principal ──
   async render(container) {
     PciModule._container = container;
     container.innerHTML = PciModule._skeleton();
     await PciModule._carregar();
-    await PciModule._carregarCronograma();
     PciModule._carregado = true;
     requestAnimationFrame(() => {
       container.innerHTML = PciModule._html();
@@ -86,100 +129,95 @@ const PciModule = {
 
   _skeleton() {
     return '<div style="max-width:1200px;margin:0 auto;padding:20px;">' +
-      '<div style="height:80px;background:var(--skeleton);border-radius:12px;margin-bottom:16px;animation:pulse 1.5s infinite"></div>'.repeat(5) +
+      '<div style="height:80px;background:var(--skeleton,#eee);border-radius:12px;margin-bottom:16px;animation:pulse 1.5s infinite"></div>'.repeat(5) +
     '</div>';
   },
 
-  // ── Carregar ──
+  // ── Carregar dados ──
   async _carregar() {
-    // Tentar Supabase
+    // Templates
     try {
-      const rows = await sbGet('tracker_sync?key=eq.' + PciModule.SYNC_KEY + '&select=data');
-      if (rows && rows.length && rows[0].data && rows[0].data.obras) {
-        const saved = rows[0].data.obras;
-        PciModule.state = PciModule._OBRAS_SEED.map(o => {
-          const s = saved.find(x => x.id === o.id);
-          if (!s) return JSON.parse(JSON.stringify(o));
-          return {
-            ...JSON.parse(JSON.stringify(o)),
-            exec: s.exec || o.exec,
-            medidoAnterior: s.medidoAnterior != null ? s.medidoAnterior : o.medidoAnterior,
-            historico: s.historico || o.historico || []
-          };
-        });
-        PciModule._cacheLocal();
-        return;
+      const cats = await sbGet('pci_categorias_template?order=ordem');
+      if (cats && cats.length) {
+        PciModule.categorias = cats;
+        const subs = await sbGet('pci_sub_servicos_template?order=ordem');
+        PciModule.subServicos = subs || [];
+      } else {
+        PciModule.categorias = PciModule._CATS;
+        PciModule.subServicos = PciModule._SUBS;
       }
     } catch (e) {
-      console.error('PciModule._carregar supabase:', e);
+      PciModule.categorias = PciModule._CATS;
+      PciModule.subServicos = PciModule._SUBS;
     }
 
-    // Fallback cache local
+    // Medições
     try {
-      const cached = localStorage.getItem(PciModule.CACHE_KEY);
-      if (cached) { PciModule.state = JSON.parse(cached); return; }
-    } catch (e) {}
-
-    // Fallback seed
-    PciModule.state = JSON.parse(JSON.stringify(PciModule._OBRAS_SEED));
-  },
-
-  async _carregarCronograma() {
-    try {
-      const mapRows = await sbGet('tracker_sync?key=eq.' + PciModule.MAPA_KEY + '&select=data');
-      if (!mapRows || !mapRows.length || !mapRows[0].data || !mapRows[0].data.mappings) return;
-      PciModule._mapa = {};
-      PciModule._cronTasks = {};
-      mapRows[0].data.mappings.forEach(function(m) { PciModule._mapa[m.pci_id] = m.obra_id; });
-      for (const pciId of Object.keys(PciModule._mapa)) {
-        const obraId = PciModule._mapa[pciId];
-        const tasks = await sbGet('cronograma_tarefas?obra_id=eq.' + obraId + '&order=ordem');
-        if (tasks && tasks.length) PciModule._cronTasks[pciId] = tasks;
+      const meds = await sbGet('pci_medicao?order=created_at');
+      PciModule.medicoes = meds || [];
+      if (PciModule.medicoes.length) {
+        const ids = PciModule.medicoes.map(m => m.id).join(',');
+        const itens = await sbGet('pci_itens?medicao_id=in.(' + ids + ')&order=categoria_nome,created_at');
+        PciModule.itens = itens || [];
+      } else {
+        PciModule.itens = [];
       }
-    } catch (e) { console.error('PciModule._carregarCronograma:', e); }
-  },
-
-  _cacheLocal() {
-    try { localStorage.setItem(PciModule.CACHE_KEY, JSON.stringify(PciModule.state)); } catch (e) {}
-  },
-
-  async _salvar() {
-    PciModule._cacheLocal();
-    try {
-      await sbPost('tracker_sync', {
-        key: PciModule.SYNC_KEY,
-        data: { obras: PciModule.state },
-        updated_at: new Date().toISOString()
-      }, { upsert: true });
     } catch (e) {
-      console.error('PciModule._salvar:', e);
+      console.warn('PciModule._carregar:', e);
+      PciModule.medicoes = [];
+      PciModule.itens = [];
     }
   },
 
-  // ── Calculos ──
-  _calcExec(obra) {
+  // ── Calcular execução total da medição ──
+  _calcExec(medicaoId) {
+    const medicao = PciModule.medicoes.find(m => m.id === medicaoId);
+    if (!medicao) return 0;
+    const items = PciModule.itens.filter(i => i.medicao_id === medicaoId);
+    if (!items.length) return 0;
+
+    const cats = {};
+    items.forEach(item => {
+      if (!cats[item.categoria_nome]) cats[item.categoria_nome] = { peso: parseFloat(item.categoria_peso) || 0, items: [] };
+      cats[item.categoria_nome].items.push(item);
+    });
+
     let total = 0;
-    obra.pesos.forEach((p, i) => { total += p * (obra.exec[i] || 0); });
+    Object.entries(cats).forEach(([catNome, cat]) => {
+      let peso = cat.peso;
+      if (catNome === 'Coberturas' && medicao.cobertura_peso != null) peso = parseFloat(medicao.cobertura_peso) || 0;
+      if (!peso) return;
+      const aplicaveis = cat.items.filter(i => !i.nao_aplicavel);
+      if (!aplicaveis.length) return;
+      const executados = aplicaveis.filter(i => i.executado).length;
+      total += peso * (executados / aplicaveis.length);
+    });
+
     return Math.round(total * 100) / 100;
   },
 
-  _calcValorMedicao(obra) {
-    return (obra.valor || 0) * PciModule._calcExec(obra) / 100;
+  // ── Calcular execução por categoria ──
+  _calcCatExec(medicaoId, catNome) {
+    const items = PciModule.itens.filter(i => i.medicao_id === medicaoId && i.categoria_nome === catNome);
+    if (!items.length) return { pct: 0, done: 0, total: 0, na: 0 };
+    const naItems = items.filter(i => i.nao_aplicavel);
+    const aplicaveis = items.filter(i => !i.nao_aplicavel);
+    const done = aplicaveis.filter(i => i.executado).length;
+    const pct = aplicaveis.length ? Math.round(done / aplicaveis.length * 100) : 0;
+    return { pct, done, total: aplicaveis.length, na: naItems.length };
   },
 
-  _calcValorMensal(obra) {
-    const exec = PciModule._calcExec(obra);
-    const anterior = obra.medidoAnterior || 0;
-    const diff = exec - anterior;
-    return diff > 0 ? (obra.valor || 0) * diff / 100 : 0;
-  },
-
-  _diasRestantes(entrega) {
-    if (!entrega || !entrega.includes('/')) return 999;
-    const p = entrega.split('/');
-    const d = new Date(+p[2], +p[1] - 1, +p[0]);
-    const h = new Date(); h.setHours(0, 0, 0, 0);
-    return Math.ceil((d - h) / 86400000);
+  // ── Calcular soma dos pesos da medição ──
+  _calcSomaPesos(medicao) {
+    let soma = 0;
+    PciModule.categorias.forEach(cat => {
+      if (cat.nome === 'Coberturas') {
+        soma += medicao.cobertura_peso != null ? parseFloat(medicao.cobertura_peso) || 0 : 0;
+      } else {
+        soma += parseFloat(cat.peso_percentual) || 0;
+      }
+    });
+    return Math.round(soma * 100) / 100;
   },
 
   _fmtR$(v) {
@@ -188,325 +226,460 @@ const PciModule = {
 
   _corProg(pct) { return pct >= 80 ? '#2D6A4F' : pct >= 40 ? '#D4A017' : '#C0392B'; },
 
-  _fmtDia(str) {
-    const d = new Date(str + 'T00:00:00');
-    return d.getDate().toString().padStart(2, '0') + '/' + (d.getMonth() + 1).toString().padStart(2, '0');
-  },
-
-  _calcPlanejado(task) {
-    if (!task || !task.data_inicio || !task.data_fim) return null;
-    const inicio = new Date(task.data_inicio + 'T00:00:00');
-    const fim = new Date(task.data_fim + 'T00:00:00');
-    const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
-    if (hoje < inicio) return 0;
-    if (hoje >= fim) return 100;
-    return Math.round((hoje - inicio) / (fim - inicio) * 100);
-  },
-
-  // ── HTML ──
+  // ── HTML Principal ──
   _html() {
-    const state = PciModule.state;
+    const obrasAtivas = (typeof obras !== 'undefined' ? obras : []).filter(o => !o.arquivada);
     let html = '<div style="max-width:1200px;margin:0 auto;padding:20px;">';
 
-    // Header
     html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">' +
       '<div>' +
         '<h2 style="font-family:\'Plus Jakarta Sans\',sans-serif;font-size:20px;font-weight:700;margin:0;">PCI — Acompanhamento de Medicoes</h2>' +
-        '<div style="font-size:12px;color:var(--texto2);margin-top:4px;">EDR Engenharia</div>' +
+        '<div style="font-size:12px;color:var(--texto2);margin-top:4px;">EDR Engenharia · CAIXA/MCMV</div>' +
       '</div>' +
       '<button id="pci-btn-pdf" style="background:#2D6A4F;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;">' +
         '<span class="material-symbols-outlined" style="font-size:16px;">picture_as_pdf</span> Gerar PDF' +
       '</button>' +
     '</div>';
 
-    // Indicador de sync
-    html += '<div id="pci-sync-ind" style="position:fixed;top:12px;left:50%;transform:translateX(-50%);background:#2D6A4F;color:#fff;padding:6px 16px;border-radius:20px;font-size:12px;font-weight:600;opacity:0;transition:opacity .3s;z-index:999;">Sincronizando...</div>';
-
-    // Cards de obra
-    state.forEach(obra => {
-      const exec = PciModule._calcExec(obra);
-      const dias = PciModule._diasRestantes(obra.entrega);
-      const diasTxt = dias >= 999 ? 'Sem prazo' : dias + ' dias';
-      const diasCor = dias >= 999 ? 'var(--texto2)' : dias < 30 ? '#C0392B' : dias < 60 ? '#D4A017' : 'var(--texto2)';
-      const isOpen = PciModule.expanded.has(obra.id);
-      const corExec = PciModule._corProg(exec);
-      const feitas = obra.exec.filter((e, i) => e >= 1 && obra.pesos[i] > 0).length;
-      const total = obra.pesos.filter(p => p > 0).length;
-
-      html += '<div style="background:var(--fundo2);border:1px solid var(--borda);border-radius:12px;margin-bottom:16px;overflow:hidden;">';
-
-      // Header obra
-      html += '<div class="pci-obra-header" data-id="' + obra.id + '" style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;cursor:pointer;transition:background .2s;">' +
-        '<div>' +
-          '<div style="font-size:16px;font-weight:700;color:#2D6A4F;">' + obra.nome + '</div>' +
-          '<div style="font-size:12px;color:var(--texto2);display:flex;gap:16px;margin-top:4px;flex-wrap:wrap;">' +
-            '<span>Entrega: ' + obra.entrega + '</span>' +
-            '<span style="color:' + diasCor + ';font-weight:600;">' + diasTxt + '</span>' +
-            '<span>' + feitas + '/' + total + ' etapas concluidas</span>' +
-          '</div>' +
-        '</div>' +
-        '<div style="display:flex;align-items:center;gap:12px;">' +
-          '<div>' +
-            '<div style="width:120px;height:8px;background:var(--borda);border-radius:4px;overflow:hidden;">' +
-              '<div style="height:100%;width:' + exec + '%;background:' + corExec + ';border-radius:4px;transition:width .3s;"></div>' +
-            '</div>' +
-          '</div>' +
-          '<div style="font-size:20px;font-weight:700;min-width:60px;text-align:right;color:' + corExec + ';">' + exec.toFixed(1) + '%</div>' +
-          '<span class="material-symbols-outlined pci-arrow" id="pci-arrow-' + obra.id + '" style="font-size:20px;color:var(--texto3);transition:transform .2s;' + (isOpen ? 'transform:rotate(90deg);color:#2D6A4F;' : '') + '">chevron_right</span>' +
-        '</div>' +
-      '</div>';
-
-      // Body (expandido)
-      html += '<div class="pci-obra-body" id="pci-body-' + obra.id + '" style="' + (isOpen ? '' : 'display:none;') + 'padding:0 20px 20px;border-top:1px solid var(--borda);">';
-
-      // Stats
-      html += '<div style="display:flex;gap:12px;margin:16px 0;flex-wrap:wrap;">';
-      html += PciModule._stat(exec.toFixed(1) + '%', 'Executado total', exec >= 80 ? '#2D6A4F' : exec >= 40 ? '#D4A017' : '#C0392B');
-      html += PciModule._stat((obra.medidoAnterior || 0).toFixed(1) + '%', 'Ja medido CEF', 'var(--texto)');
-      html += PciModule._stat(PciModule._fmtR$(PciModule._calcValorMensal(obra)), 'Esta medicao (R$)', '#2D6A4F');
-      html += PciModule._stat((exec - (obra.medidoAnterior || 0)).toFixed(1) + '%', 'Esta medicao (%)', 'var(--texto)');
-      html += PciModule._stat(obra.valor ? PciModule._fmtR$(obra.valor) : '—', 'Contrato', 'var(--texto)');
-      html += PciModule._stat(diasTxt, 'Pra entrega', dias < 30 ? '#C0392B' : dias < 60 ? '#D4A017' : '#2D6A4F');
-      html += '</div>';
-
-      // Tabela de etapas
-      html += '<div style="overflow-x:auto;">';
-      html += '<table style="width:100%;border-collapse:collapse;margin-top:12px;font-size:13px;">';
-      html += '<thead><tr style="border-bottom:2px solid var(--borda);">' +
-        '<th style="text-align:left;padding:8px 10px;font-size:11px;color:var(--texto2);text-transform:uppercase;letter-spacing:.5px;">Etapa</th>' +
-        '<th style="text-align:left;padding:8px 10px;font-size:11px;color:var(--texto2);text-transform:uppercase;">Peso</th>' +
-        '<th style="text-align:left;padding:8px 10px;font-size:11px;color:var(--texto2);text-transform:uppercase;">Valor</th>' +
-        '<th style="text-align:left;padding:8px 10px;font-size:11px;color:var(--texto2);text-transform:uppercase;">Execucao</th>' +
-        '<th style="text-align:left;padding:8px 10px;font-size:11px;color:var(--texto2);text-transform:uppercase;">Ajustar</th>' +
-      '</tr></thead><tbody>';
-
-      const cronTasks = PciModule._cronTasks[obra.id] || [];
-
-      obra.pesos.forEach((p, i) => {
-        if (p === 0) return;
-        const e = obra.exec[i] || 0;
-        const pct = Math.round(e * 100);
-        const corBarra = PciModule._corProg(pct);
-        const corTxt = pct === 0 ? 'var(--texto3)' : pct >= 100 ? '#2D6A4F' : '#D4A017';
-
-        const task = cronTasks.find(function(t) { return t.nome === PciModule.ETAPAS_CEF[i].nome; });
-        const planejado = PciModule._calcPlanejado(task);
-        const datas = task ? '<div style="font-size:10px;color:#2D6A4F;margin-top:3px;font-family:\'Space Grotesk\',monospace;">' + PciModule._fmtDia(task.data_inicio) + ' → ' + PciModule._fmtDia(task.data_fim) + '</div>' : '';
-
-        let badge = '';
-        if (planejado !== null) {
-          const diff = pct - planejado;
-          if (diff > 5) badge = '<span style="font-size:9px;background:rgba(45,106,79,.15);color:#2D6A4F;padding:2px 5px;border-radius:4px;margin-left:6px;font-weight:700;vertical-align:middle;">+' + diff + '% ADIANT</span>';
-          else if (diff < -5) badge = '<span style="font-size:9px;background:rgba(192,57,43,.15);color:#C0392B;padding:2px 5px;border-radius:4px;margin-left:6px;font-weight:700;vertical-align:middle;">' + diff + '% ATRASO</span>';
-        }
-
-        html += '<tr style="border-bottom:1px solid var(--borda);" title="' + PciModule.ETAPAS_CEF[i].desc + '">' +
-          '<td style="padding:8px 10px;">' +
-            '<div style="font-weight:500;">' + PciModule.ETAPAS_CEF[i].nome + '</div>' +
-            '<div style="font-size:11px;color:var(--texto3);margin-top:1px;">' + PciModule.ETAPAS_CEF[i].desc + '</div>' +
-            datas +
-          '</td>' +
-          '<td style="padding:8px 10px;font-family:\'Space Grotesk\',monospace;color:var(--texto2);">' + p.toFixed(1) + '%</td>' +
-          '<td style="padding:8px 10px;font-family:\'Space Grotesk\',monospace;color:var(--texto2);">' + (obra.valor ? PciModule._fmtR$(obra.valor * p / 100) : '—') + '</td>' +
-          '<td style="padding:8px 10px;">' +
-            '<div style="display:inline-block;width:80px;height:6px;background:var(--borda);border-radius:3px;overflow:hidden;vertical-align:middle;margin-right:6px;">' +
-              '<div style="height:100%;width:' + pct + '%;background:' + corBarra + ';border-radius:3px;"></div>' +
-            '</div>' +
-            '<span style="font-family:\'Space Grotesk\',monospace;font-weight:600;color:' + corTxt + ';">' + pct + '%</span>' +
-            badge +
-          '</td>' +
-          '<td style="padding:8px 10px;">' +
-            '<input type="range" class="pci-slider" data-obra="' + obra.id + '" data-idx="' + i + '" min="0" max="100" step="5" value="' + pct + '" style="width:80px;accent-color:#2D6A4F;cursor:pointer;vertical-align:middle;">' +
-            '<span class="pci-slider-val" style="font-size:11px;color:#2D6A4F;margin-left:4px;font-family:\'Space Grotesk\',monospace;">' + pct + '%</span>' +
-          '</td>' +
-        '</tr>';
-      });
-
-      html += '</tbody></table></div>';
-
-      // Sugestao de compensacao
-      const compens = obra.pesos.map((p, i) => ({ nome: PciModule.ETAPAS_CEF[i].nome, peso: p, exec: obra.exec[i] || 0, idx: i }))
-        .filter(e => e.exec < 1 && e.peso > 0)
-        .sort((a, b) => b.peso - a.peso)
-        .slice(0, 5);
-
-      if (compens.length) {
-        html += '<div style="background:rgba(212,160,23,0.08);border:1px solid rgba(212,160,23,0.2);border-radius:8px;padding:12px 16px;margin-top:12px;">' +
-          '<h4 style="font-size:13px;color:#D4A017;margin-bottom:8px;display:flex;align-items:center;gap:6px;">' +
-            '<span class="material-symbols-outlined" style="font-size:18px;">tips_and_updates</span> Onde compensar pra subir a medicao' +
-          '</h4>';
-        compens.forEach(c => {
-          const ganho = c.peso * (1 - c.exec);
-          const ganhoR = obra.valor ? PciModule._fmtR$(obra.valor * ganho / 100) : '';
-          html += '<div style="font-size:13px;padding:4px 0;display:flex;justify-content:space-between;">' +
-            '<span>' + c.nome + ' (' + Math.round(c.exec * 100) + '% feito)</span>' +
-            '<span style="color:#2D6A4F;font-weight:600;font-family:\'Space Grotesk\',monospace;">+' + ganho.toFixed(1) + '%' + (ganhoR ? ' = ' + ganhoR : '') + '</span>' +
-          '</div>';
-        });
-        html += '</div>';
-      }
-
-      // Historico de medicoes
-      html += '<div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--borda);">';
-      html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">' +
-        '<h4 style="font-size:14px;color:var(--texto2);font-weight:600;display:flex;align-items:center;gap:6px;">' +
-          '<span class="material-symbols-outlined" style="font-size:18px;">history</span> Historico de Medicoes' +
-        '</h4>' +
-        '<button class="pci-fechar-btn" data-obra="' + obra.id + '" style="background:rgba(45,106,79,0.1);border:1px solid rgba(45,106,79,0.2);color:#2D6A4F;padding:8px 16px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:12px;font-weight:600;">Fechar medicao atual</button>' +
-      '</div>';
-
-      if (obra.historico && obra.historico.length) {
-        html += '<table style="width:100%;border-collapse:collapse;font-size:13px;">';
-        html += '<thead><tr style="border-bottom:2px solid var(--borda);">' +
-          '<th style="text-align:left;padding:6px 10px;font-size:11px;color:var(--texto2);">Parcela</th>' +
-          '<th style="text-align:left;padding:6px 10px;font-size:11px;color:var(--texto2);">Data</th>' +
-          '<th style="text-align:right;padding:6px 10px;font-size:11px;color:var(--texto2);">Exec. Mes</th>' +
-          '<th style="text-align:right;padding:6px 10px;font-size:11px;color:var(--texto2);">Acumulado</th>' +
-          '<th style="text-align:right;padding:6px 10px;font-size:11px;color:var(--texto2);">Valor</th>' +
-        '</tr></thead><tbody>';
-        obra.historico.forEach(h => {
-          html += '<tr style="border-bottom:1px solid var(--borda);">' +
-            '<td style="padding:6px 10px;">' + h.parcela + '</td>' +
-            '<td style="padding:6px 10px;">' + h.data + '</td>' +
-            '<td style="padding:6px 10px;text-align:right;color:#2D6A4F;font-weight:600;font-family:\'Space Grotesk\',monospace;">' + h.execMes.toFixed(2) + '%</td>' +
-            '<td style="padding:6px 10px;text-align:right;color:#2D6A4F;font-weight:600;font-family:\'Space Grotesk\',monospace;">' + h.execAcum.toFixed(2) + '%</td>' +
-            '<td style="padding:6px 10px;text-align:right;font-family:\'Space Grotesk\',monospace;">' + (obra.valor ? PciModule._fmtR$(obra.valor * h.execMes / 100) : '—') + '</td>' +
-          '</tr>';
-        });
-        html += '</tbody></table>';
-      } else {
-        html += '<div style="color:var(--texto3);font-size:13px;text-align:center;padding:12px;">Nenhuma medicao registrada</div>';
-      }
-      html += '</div>';
-
-      html += '</div>'; // body
-      html += '</div>'; // card
-    });
+    if (!obrasAtivas.length) {
+      html += '<div style="text-align:center;padding:40px;color:var(--texto3);">Nenhuma obra ativa</div>';
+    } else {
+      obrasAtivas.forEach(obra => { html += PciModule._htmlObraCard(obra); });
+    }
 
     html += '</div>';
     return html;
   },
 
+  _htmlObraCard(obra) {
+    const medicao = PciModule.medicoes.find(m => m.obra_id === obra.id);
+    const isOpen = PciModule.expanded.has(obra.id);
+    const exec = medicao ? PciModule._calcExec(medicao.id) : null;
+    const corExec = exec !== null ? PciModule._corProg(exec) : 'var(--texto3)';
+
+    let html = '<div style="background:var(--fundo2);border:1px solid var(--borda);border-radius:12px;margin-bottom:16px;overflow:hidden;">';
+
+    html += '<div class="pci-obra-header" data-id="' + obra.id + '" style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;cursor:pointer;transition:background .15s;">' +
+      '<div>' +
+        '<div style="font-size:16px;font-weight:700;color:#2D6A4F;">' + esc(obra.nome) + '</div>' +
+        '<div style="font-size:12px;color:var(--texto2);margin-top:4px;">' +
+          (medicao ? (obra.valor_venda ? PciModule._fmtR$(obra.valor_venda) + ' · ' : '') + 'PCI ativo' : 'Sem PCI gerado') +
+        '</div>' +
+      '</div>' +
+      '<div style="display:flex;align-items:center;gap:12px;">';
+
+    if (exec !== null) {
+      html += '<div style="width:120px;height:8px;background:var(--borda);border-radius:4px;overflow:hidden;">' +
+        '<div style="height:100%;width:' + exec + '%;background:' + corExec + ';border-radius:4px;transition:width .3s;"></div>' +
+      '</div>' +
+      '<div style="font-size:20px;font-weight:700;min-width:60px;text-align:right;color:' + corExec + ';">' + exec.toFixed(1) + '%</div>';
+    } else {
+      html += '<div style="font-size:13px;color:var(--texto3);min-width:60px;text-align:right;">—</div>';
+    }
+
+    html += '<span class="material-symbols-outlined" style="font-size:20px;color:var(--texto3);transition:transform .2s;' + (isOpen ? 'transform:rotate(90deg);color:#2D6A4F;' : '') + '">chevron_right</span>' +
+    '</div></div>';
+
+    if (isOpen) {
+      html += '<div style="padding:0 20px 20px;border-top:1px solid var(--borda);">';
+      html += medicao ? PciModule._htmlMedicaoBody(medicao, obra) : PciModule._htmlCriarMedicao(obra);
+      html += '</div>';
+    }
+
+    html += '</div>';
+    return html;
+  },
+
+  _htmlCriarMedicao(obra) {
+    return '<div style="padding:32px;text-align:center;">' +
+      '<span class="material-symbols-outlined" style="font-size:48px;color:var(--texto3);display:block;margin-bottom:12px;">assignment</span>' +
+      '<div style="font-size:15px;font-weight:600;margin-bottom:8px;">Nenhuma PCI para esta obra</div>' +
+      '<div style="font-size:13px;color:var(--texto2);margin-bottom:20px;">Gera os 20 sub-serviços CAIXA/MCMV pré-carregados automaticamente</div>' +
+      '<button class="pci-criar-btn" data-obra="' + obra.id + '" style="background:#2D6A4F;color:#fff;border:none;border-radius:8px;padding:10px 24px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;">' +
+        'Gerar PCI desta Obra' +
+      '</button>' +
+    '</div>';
+  },
+
+  _htmlMedicaoBody(medicao, obra) {
+    const exec = PciModule._calcExec(medicao.id);
+    const corExec = PciModule._corProg(exec);
+    const itensMedicao = PciModule.itens.filter(i => i.medicao_id === medicao.id);
+    const feitos = itensMedicao.filter(i => i.executado && !i.nao_aplicavel).length;
+    const aplicaveis = itensMedicao.filter(i => !i.nao_aplicavel).length;
+    const somaPesos = PciModule._calcSomaPesos(medicao);
+    const somaDiff = Math.abs(somaPesos - 100) > 0.1;
+
+    let html = '';
+
+    // Stats
+    html += '<div style="display:flex;gap:12px;margin:16px 0;flex-wrap:wrap;">';
+    html += PciModule._stat(exec.toFixed(1) + '%', 'Executado', corExec);
+    html += PciModule._stat(feitos + '/' + aplicaveis, 'Sub-servicos', 'var(--texto)');
+    if (obra.valor_venda) html += PciModule._stat(PciModule._fmtR$(obra.valor_venda * exec / 100), 'Valor executado', '#2D6A4F');
+    html += PciModule._stat(somaPesos.toFixed(2) + '%', 'Soma dos pesos', somaDiff ? '#D97706' : '#2D6A4F');
+    html += '</div>';
+
+    // Aviso soma ≠ 100%
+    if (somaDiff) {
+      const diff = (somaPesos - 100).toFixed(2);
+      html += '<div style="background:rgba(217,119,6,0.1);border:1px solid rgba(217,119,6,0.3);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:#D97706;">' +
+        '<span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle;margin-right:6px;">warning</span>' +
+        'Soma dos pesos: <strong>' + somaPesos.toFixed(2) + '%</strong>' +
+        (somaDiff ? ' (' + (parseFloat(diff) > 0 ? '+' : '') + diff + '% em relação a 100%). ' : '') +
+        'Ajuste o peso de <strong>Coberturas</strong> para fechar 100%.' +
+      '</div>';
+    }
+
+    // Categorias
+    PciModule.categorias.forEach(cat => {
+      html += PciModule._htmlCategoria(cat, medicao);
+    });
+
+    // Ações
+    html += '<div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--borda);display:flex;justify-content:flex-end;gap:8px;">';
+    if (medicao.data_levantamento) {
+      html += '<div style="font-size:12px;color:var(--texto2);align-self:center;">Ultima medicao fechada: ' + medicao.data_levantamento + '</div>';
+    }
+    html += '<button class="pci-fechar-btn" data-med="' + medicao.id + '" data-obra="' + esc(obra.nome) + '" style="background:rgba(45,106,79,0.1);border:1px solid rgba(45,106,79,0.3);color:#2D6A4F;padding:8px 16px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;">' +
+      '<span class="material-symbols-outlined" style="font-size:16px;">check_circle</span> Fechar Medicao' +
+    '</button></div>';
+
+    return html;
+  },
+
+  _htmlCategoria(cat, medicao) {
+    const catKey = medicao.id + '-' + cat.nome;
+    const isOpen = PciModule.expandedCats.has(catKey);
+    const itensCat = PciModule.itens.filter(i => i.medicao_id === medicao.id && i.categoria_nome === cat.nome);
+    const hasItems = itensCat.length > 0;
+
+    let peso = parseFloat(cat.peso_percentual) || 0;
+    if (cat.nome === 'Coberturas' && medicao.cobertura_peso != null) peso = parseFloat(medicao.cobertura_peso) || 0;
+
+    const { pct, done, total, na } = PciModule._calcCatExec(medicao.id, cat.nome);
+    const corPct = PciModule._corProg(pct);
+
+    let html = '<div style="border:1px solid var(--borda);border-radius:8px;margin-bottom:6px;overflow:hidden;">';
+
+    // Header categoria
+    html += '<div class="pci-cat-header" data-key="' + catKey + '" style="display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;background:var(--fundo);user-select:none;">' +
+      '<span style="font-size:11px;font-weight:700;color:var(--texto3);min-width:20px;text-align:right;">' + cat.ordem + '</span>' +
+      '<div style="flex:1;min-width:0;">' +
+        '<div style="font-size:13px;font-weight:600;">' + esc(cat.nome) + '</div>' +
+        (hasItems
+          ? '<div style="font-size:11px;color:var(--texto2);margin-top:1px;">' + done + '/' + total + ' feitos' + (na ? ' · ' + na + ' N/A' : '') + '</div>'
+          : '<div style="font-size:11px;color:var(--texto3);">sem itens</div>') +
+      '</div>' +
+      '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0;" onclick="event.stopPropagation();">';
+
+    if (cat.nome === 'Coberturas') {
+      html += '<input type="number" class="pci-cob-peso" data-med="' + medicao.id + '" value="' + peso + '" min="0" max="30" step="0.01" style="width:64px;padding:4px 6px;border:1px solid #2D6A4F;border-radius:6px;font-size:12px;text-align:center;background:var(--fundo);" title="Peso editavel para Coberturas">' +
+        '<span style="font-size:11px;color:var(--texto2);">%</span>';
+    } else {
+      html += '<span style="font-size:12px;color:var(--texto2);font-family:\'Space Grotesk\',monospace;">' + peso.toFixed(2) + '%</span>';
+    }
+
+    if (hasItems) {
+      html += '<div style="width:64px;height:5px;background:var(--borda);border-radius:3px;overflow:hidden;">' +
+        '<div style="height:100%;width:' + pct + '%;background:' + corPct + ';border-radius:3px;"></div>' +
+      '</div>' +
+      '<span style="font-size:12px;font-weight:700;color:' + corPct + ';min-width:32px;text-align:right;font-family:\'Space Grotesk\',monospace;">' + pct + '%</span>';
+    }
+
+    html += '<span class="material-symbols-outlined" style="font-size:18px;color:var(--texto3);transition:transform .2s;pointer-events:none;' + (isOpen ? 'transform:rotate(90deg);color:#2D6A4F;' : '') + '">chevron_right</span>' +
+    '</div></div>';
+
+    // Body categoria
+    if (isOpen) {
+      html += '<div style="padding:8px 14px 12px;background:var(--fundo2);">';
+
+      itensCat.forEach(item => { html += PciModule._htmlItem(item); });
+
+      // Adicionar manual
+      html += '<div style="display:flex;gap:8px;margin-top:10px;padding-top:8px;border-top:1px solid var(--borda);">' +
+        '<input type="text" class="pci-manual-desc" data-med="' + medicao.id + '" data-cat="' + esc(cat.nome) + '" data-peso="' + peso + '" placeholder="Adicionar sub-servico..." ' +
+          'style="flex:1;padding:6px 10px;border:1px solid var(--borda);border-radius:6px;font-family:inherit;font-size:13px;background:var(--fundo);">' +
+        '<button class="pci-manual-btn" data-med="' + medicao.id + '" data-cat="' + esc(cat.nome) + '" data-peso="' + peso + '" ' +
+          'style="background:#2D6A4F;color:#fff;border:none;border-radius:6px;padding:6px 12px;cursor:pointer;" title="Adicionar">' +
+          '<span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle;">add</span>' +
+        '</button>' +
+      '</div>';
+
+      html += '</div>';
+    }
+
+    html += '</div>';
+    return html;
+  },
+
+  _htmlItem(item) {
+    const esmaecido = item.nao_aplicavel ? 'opacity:0.45;' : '';
+    const riscado = (item.executado && !item.nao_aplicavel) ? 'text-decoration:line-through;color:var(--texto3);' : '';
+    return '<div class="pci-item-row" style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--borda);' + esmaecido + '">' +
+      '<input type="checkbox" class="pci-check-exec" data-id="' + item.id + '" ' +
+        (item.executado ? 'checked ' : '') +
+        (item.nao_aplicavel ? 'disabled ' : '') +
+        'style="width:16px;height:16px;accent-color:#2D6A4F;cursor:pointer;flex-shrink:0;">' +
+      '<span style="flex:1;font-size:13px;' + riscado + (item.manual ? 'font-style:italic;' : '') + '">' + esc(item.sub_servico_descricao) + '</span>' +
+      (item.manual ? '<span style="font-size:10px;background:rgba(45,106,79,0.12);color:#2D6A4F;padding:2px 6px;border-radius:4px;font-weight:600;flex-shrink:0;">manual</span>' : '') +
+      '<button class="pci-na-btn" data-id="' + item.id + '" ' +
+        'style="background:' + (item.nao_aplicavel ? 'rgba(220,38,38,0.1)' : 'transparent') + ';border:1px solid ' + (item.nao_aplicavel ? '#DC2626' : 'var(--borda)') + ';border-radius:5px;padding:3px 8px;cursor:pointer;font-size:11px;color:' + (item.nao_aplicavel ? '#DC2626' : 'var(--texto3)') + ';flex-shrink:0;" ' +
+        'title="' + (item.nao_aplicavel ? 'Reativar' : 'Nao aplicavel') + '">' +
+        'N/A' +
+      '</button>' +
+      (item.manual
+        ? '<button class="pci-del-btn" data-id="' + item.id + '" style="background:transparent;border:none;cursor:pointer;color:var(--texto3);padding:2px;flex-shrink:0;" title="Remover">' +
+            '<span class="material-symbols-outlined" style="font-size:16px;">delete</span>' +
+          '</button>'
+        : '') +
+    '</div>';
+  },
+
   _stat(valor, label, cor) {
-    return '<div style="background:var(--fundo);border:1px solid var(--borda);border-radius:8px;padding:10px 14px;flex:1;min-width:120px;">' +
-      '<div style="font-family:\'Space Grotesk\',monospace;font-size:16px;font-weight:700;color:' + cor + ';line-height:1;margin-bottom:4px;">' + valor + '</div>' +
-      '<div style="font-size:11px;color:var(--texto2);text-transform:uppercase;letter-spacing:.5px;">' + label + '</div>' +
+    return '<div style="background:var(--fundo);border:1px solid var(--borda);border-radius:8px;padding:10px 14px;flex:1;min-width:110px;">' +
+      '<div style="font-family:\'Space Grotesk\',monospace;font-size:15px;font-weight:700;color:' + cor + ';line-height:1;margin-bottom:4px;">' + valor + '</div>' +
+      '<div style="font-size:10px;color:var(--texto2);text-transform:uppercase;letter-spacing:.5px;">' + label + '</div>' +
     '</div>';
   },
 
   // ── Bind ──
   _bind(container) {
-    // Toggle obras
-    container.querySelectorAll('.pci-obra-header').forEach(header => {
-      header.addEventListener('click', () => {
-        const id = header.dataset.id;
+    // Toggle obra
+    container.querySelectorAll('.pci-obra-header').forEach(h => {
+      h.addEventListener('click', () => {
+        const id = h.dataset.id;
         if (PciModule.expanded.has(id)) PciModule.expanded.delete(id);
         else PciModule.expanded.add(id);
-        requestAnimationFrame(() => {
-          container.innerHTML = PciModule._html();
-          PciModule._bind(container);
-        });
+        PciModule._rerender();
       });
     });
 
-    // Sliders
-    container.querySelectorAll('.pci-slider').forEach(slider => {
-      const valSpan = slider.nextElementSibling;
-
-      slider.addEventListener('input', () => {
-        if (valSpan) valSpan.textContent = slider.value + '%';
-      });
-
-      slider.addEventListener('change', () => {
-        const obraId = slider.dataset.obra;
-        const idx = parseInt(slider.dataset.idx);
-        const val = Number(slider.value) / 100;
-        const obra = PciModule.state.find(o => o.id === obraId);
-        if (!obra) return;
-        obra.exec[idx] = val;
-
-        // Re-render e debounce save
-        requestAnimationFrame(() => {
-          container.innerHTML = PciModule._html();
-          PciModule._bind(container);
-        });
-        clearTimeout(PciModule._saveTimer);
-        PciModule._saveTimer = setTimeout(() => PciModule._salvar(), 800);
+    // Criar medição
+    container.querySelectorAll('.pci-criar-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        btn.disabled = true;
+        btn.textContent = 'Gerando...';
+        await PciModule._criarMedicao(btn.dataset.obra);
+        PciModule._rerender();
       });
     });
 
-    // Fechar medicao
+    // Toggle categoria
+    container.querySelectorAll('.pci-cat-header').forEach(h => {
+      h.addEventListener('click', () => {
+        const key = h.dataset.key;
+        if (PciModule.expandedCats.has(key)) PciModule.expandedCats.delete(key);
+        else PciModule.expandedCats.add(key);
+        PciModule._rerender();
+      });
+    });
+
+    // Checkbox executado
+    container.querySelectorAll('.pci-check-exec').forEach(cb => {
+      cb.addEventListener('change', async () => {
+        await PciModule._toggleItem(cb.dataset.id, 'executado', cb.checked);
+        PciModule._rerender();
+      });
+    });
+
+    // N/A
+    container.querySelectorAll('.pci-na-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const item = PciModule.itens.find(i => i.id === btn.dataset.id);
+        if (!item) return;
+        const novoNA = !item.nao_aplicavel;
+        await PciModule._toggleItem(btn.dataset.id, 'nao_aplicavel', novoNA);
+        // Se marcou NA, desmarcar executado
+        if (novoNA && item.executado) await PciModule._toggleItem(btn.dataset.id, 'executado', false);
+        PciModule._rerender();
+      });
+    });
+
+    // Deletar item manual
+    container.querySelectorAll('.pci-del-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        await PciModule._removerItem(btn.dataset.id);
+        PciModule._rerender();
+      });
+    });
+
+    // Coberturas peso
+    container.querySelectorAll('.pci-cob-peso').forEach(input => {
+      input.addEventListener('change', async (e) => {
+        e.stopPropagation();
+        const val = parseFloat(input.value) || 0;
+        await PciModule._editarCoberturas(input.dataset.med, val);
+        PciModule._rerender();
+      });
+    });
+
+    // Adicionar manual — botão
+    container.querySelectorAll('.pci-manual-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const row = btn.parentElement;
+        const inp = row.querySelector('.pci-manual-desc');
+        const desc = inp ? inp.value.trim() : '';
+        if (!desc) return;
+        inp.value = '';
+        await PciModule._adicionarManual(btn.dataset.med, btn.dataset.cat, parseFloat(btn.dataset.peso) || 0, desc);
+        PciModule._rerender();
+      });
+    });
+
+    // Adicionar manual — Enter
+    container.querySelectorAll('.pci-manual-desc').forEach(inp => {
+      inp.addEventListener('keydown', async (e) => {
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+        const desc = inp.value.trim();
+        if (!desc) return;
+        inp.value = '';
+        await PciModule._adicionarManual(inp.dataset.med, inp.dataset.cat, parseFloat(inp.dataset.peso) || 0, desc);
+        PciModule._rerender();
+      });
+      inp.addEventListener('click', e => e.stopPropagation());
+    });
+
+    // Fechar medição
     container.querySelectorAll('.pci-fechar-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        PciModule._fecharMedicao(btn.dataset.obra, container);
+        PciModule._fecharMedicao(btn.dataset.med, btn.dataset.obra);
       });
     });
 
     // PDF
     const btnPdf = container.querySelector('#pci-btn-pdf');
-    if (btnPdf) {
-      btnPdf.addEventListener('click', () => PciModule._gerarPdf());
-    }
+    if (btnPdf) btnPdf.addEventListener('click', () => PciModule._gerarPdf());
   },
 
-  // ── Fechar medicao ──
-  async _fecharMedicao(obraId, container) {
-    const obra = PciModule.state.find(o => o.id === obraId);
-    if (!obra) return;
+  _rerender() {
+    if (!PciModule._container) return;
+    requestAnimationFrame(() => {
+      PciModule._container.innerHTML = PciModule._html();
+      PciModule._bind(PciModule._container);
+    });
+  },
 
-    const exec = PciModule._calcExec(obra);
-    const anterior = obra.medidoAnterior || 0;
-    const diff = Math.round((exec - anterior) * 100) / 100;
+  // ── Criar medição (auto-gera itens do template) ──
+  async _criarMedicao(obraId) {
+    const med = await sbPost('pci_medicao', { obra_id: obraId, houve_repactuacao: false });
+    if (!med || !med.id) { console.error('Falha ao criar pci_medicao'); return; }
+    PciModule.medicoes.push(med);
 
-    if (diff <= 0) {
-      if (typeof confirmar === 'function') {
-        confirmar('Nada novo pra medir. Ajuste os sliders primeiro.', null, { soInfo: true });
-      }
-      return;
-    }
-
-    const hoje = new Date();
-    const dataStr = String(hoje.getDate()).padStart(2, '0') + '/' + String(hoje.getMonth() + 1).padStart(2, '0') + '/' + hoje.getFullYear();
-
-    const msg = 'Fechar medicao?\n\nExec. esta medicao: ' + diff.toFixed(2) + '%\nAcumulado: ' + exec.toFixed(2) + '%\nValor: ' + PciModule._fmtR$(obra.valor * diff / 100) + '\nData: ' + dataStr;
-
-    if (typeof confirmar === 'function') {
-      confirmar(msg, async () => {
-        if (!obra.historico) obra.historico = [];
-        const parcela = obra.historico.length > 0 ? obra.historico[obra.historico.length - 1].parcela + 1 : 1;
-        obra.historico.push({ parcela, data: dataStr, execMes: diff, execAcum: exec });
-        obra.medidoAnterior = exec;
-        await PciModule._salvar();
-        requestAnimationFrame(() => {
-          container.innerHTML = PciModule._html();
-          PciModule._bind(container);
+    const itensParaInserir = [];
+    PciModule.categorias.forEach(cat => {
+      if (cat.nome === 'Outros Servicos') return;
+      const subsCat = PciModule.subServicos.filter(s => s.categoria_id === cat.id);
+      subsCat.forEach(sub => {
+        itensParaInserir.push({
+          medicao_id: med.id,
+          categoria_nome: cat.nome,
+          categoria_peso: parseFloat(cat.peso_percentual) || 0,
+          sub_servico_descricao: sub.descricao,
+          executado: false,
+          nao_aplicavel: false,
+          manual: false
         });
       });
+    });
+
+    if (itensParaInserir.length) {
+      const ok = await sbPostMinimal('pci_itens', itensParaInserir);
+      if (!ok) { console.error('Falha ao inserir pci_itens'); return; }
+      const itens = await sbGet('pci_itens?medicao_id=eq.' + med.id + '&order=categoria_nome,created_at');
+      if (itens) PciModule.itens.push(...itens);
     }
   },
 
-  // ── PDF via PdfModule ──
+  // ── Toggle campo de item ──
+  async _toggleItem(itemId, field, value) {
+    const item = PciModule.itens.find(i => i.id === itemId);
+    if (!item) return;
+    item[field] = value;
+    await sbPatch('pci_itens?id=eq.' + itemId, { [field]: value });
+  },
+
+  // ── Editar peso de Coberturas ──
+  async _editarCoberturas(medicaoId, novoPeso) {
+    const med = PciModule.medicoes.find(m => m.id === medicaoId);
+    if (!med) return;
+    med.cobertura_peso = novoPeso;
+    await sbPatch('pci_medicao?id=eq.' + medicaoId, { cobertura_peso: novoPeso });
+    // Atualiza categoria_peso nos itens de Coberturas para consistência
+    PciModule.itens
+      .filter(i => i.medicao_id === medicaoId && i.categoria_nome === 'Coberturas')
+      .forEach(i => { i.categoria_peso = novoPeso; });
+  },
+
+  // ── Adicionar sub-serviço manual ──
+  async _adicionarManual(medicaoId, catNome, catPeso, descricao) {
+    const item = await sbPost('pci_itens', {
+      medicao_id: medicaoId,
+      categoria_nome: catNome,
+      categoria_peso: catPeso,
+      sub_servico_descricao: descricao,
+      executado: false,
+      nao_aplicavel: false,
+      manual: true
+    });
+    if (item && item.id) PciModule.itens.push(item);
+  },
+
+  // ── Remover item manual ──
+  async _removerItem(itemId) {
+    await sbDelete('pci_itens?id=eq.' + itemId);
+    PciModule.itens = PciModule.itens.filter(i => i.id !== itemId);
+  },
+
+  // ── Fechar medição ──
+  _fecharMedicao(medicaoId, obNome) {
+    const med = PciModule.medicoes.find(m => m.id === medicaoId);
+    if (!med) return;
+    const exec = PciModule._calcExec(medicaoId);
+    const dataHoje = new Date().toISOString().slice(0, 10);
+    const dataFmt = dataHoje.split('-').reverse().join('/');
+
+    confirmar('Fechar medicao de ' + (obNome || '') + '?\n\nExecucao atual: ' + exec.toFixed(2) + '%\nData: ' + dataFmt, async () => {
+      await sbPatch('pci_medicao?id=eq.' + medicaoId, { data_levantamento: dataHoje });
+      med.data_levantamento = dataHoje;
+      PciModule._rerender();
+    });
+  },
+
+  // ── PDF ──
   _gerarPdf() {
     if (typeof PdfModule === 'undefined' || !PdfModule.gerarPCI) {
       console.error('PdfModule.gerarPCI nao disponivel');
       return;
     }
-    const dados = PciModule.state.map(obra => ({
-      nome: obra.nome,
-      entrega: obra.entrega,
-      valor: obra.valor,
-      execTotal: PciModule._calcExec(obra),
-      medidoAnterior: obra.medidoAnterior,
-      valorMensal: PciModule._calcValorMensal(obra),
-      etapas: obra.pesos.map((p, i) => ({
-        nome: PciModule.ETAPAS_CEF[i].nome,
-        peso: p,
-        exec: Math.round((obra.exec[i] || 0) * 100),
-        valor: obra.valor ? obra.valor * p / 100 : 0
-      })).filter(e => e.peso > 0),
-      historico: obra.historico || []
-    }));
+    const obrasAtivas = (typeof obras !== 'undefined' ? obras : []).filter(o => !o.arquivada);
+    const dados = obrasAtivas.map(obra => {
+      const med = PciModule.medicoes.find(m => m.obra_id === obra.id);
+      if (!med) return null;
+      const exec = PciModule._calcExec(med.id);
+      const etapas = PciModule.categorias.map(cat => {
+        let peso = parseFloat(cat.peso_percentual) || 0;
+        if (cat.nome === 'Coberturas' && med.cobertura_peso != null) peso = parseFloat(med.cobertura_peso) || 0;
+        const { pct } = PciModule._calcCatExec(med.id, cat.nome);
+        return { nome: cat.nome, peso, exec: pct, valor: obra.valor_venda ? obra.valor_venda * peso / 100 : 0 };
+      }).filter(e => e.peso > 0);
+      return {
+        nome: obra.nome,
+        entrega: '—',
+        valor: obra.valor_venda || 0,
+        execTotal: exec,
+        medidoAnterior: 0,
+        valorMensal: 0,
+        etapas,
+        historico: []
+      };
+    }).filter(Boolean);
     PdfModule.gerarPCI(dados);
   }
 };
