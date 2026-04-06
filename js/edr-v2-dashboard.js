@@ -400,20 +400,20 @@ function _dashBuildKPIs(m, porObra) {
   const materialMes = lancMes.reduce((s, l) => s + Number(l.total || 0), 0) - maoMes;
 
   const kpis = [
-    { num: fmt(m.receitaTotal), label: 'Receita Total', icon: 'account_balance_wallet', bg: 'linear-gradient(135deg,#1B4332,#2D6A4F)' },
-    { num: fmt(m.custoTotal), label: 'Custo Total', icon: 'trending_down', bg: 'linear-gradient(135deg,#92400e,#d97706)' },
-    { num: fmt(m.lucroGeral), label: 'Lucro', icon: m.lucroGeral >= 0 ? 'trending_up' : 'trending_down', bg: m.lucroGeral >= 0 ? 'linear-gradient(135deg,#14532d,#22c55e)' : 'linear-gradient(135deg,#7f1d1d,#ef4444)' },
-    { num: m.valorVendaTotal > 0 ? m.margemGeral.toFixed(1) + '%' : '—', label: 'Margem', icon: 'percent', bg: 'linear-gradient(135deg,#4c1d95,#7c3aed)' },
-    { num: porObra.length.toString(), label: 'Obras Ativas', icon: 'domain', bg: 'linear-gradient(135deg,#1B4332,#2D6A4F)' },
-    { num: contasVenc.toString(), label: 'Contas Vencidas', icon: 'warning', bg: contasVenc > 0 ? 'linear-gradient(135deg,#7f1d1d,#ef4444)' : 'linear-gradient(135deg,#14532d,#22c55e)' },
+    { num: fmt(m.receitaTotal), label: 'Receita Total', icon: 'account_balance_wallet', bg: 'linear-gradient(135deg,#1B4332,#2D6A4F)', action: "setView('relatorio')" },
+    { num: fmt(m.custoTotal), label: 'Custo Total', icon: 'trending_down', bg: 'linear-gradient(135deg,#92400e,#d97706)', action: "setView('custos')" },
+    { num: fmt(m.lucroGeral), label: 'Lucro', icon: m.lucroGeral >= 0 ? 'trending_up' : 'trending_down', bg: m.lucroGeral >= 0 ? 'linear-gradient(135deg,#14532d,#22c55e)' : 'linear-gradient(135deg,#7f1d1d,#ef4444)', action: "setView('relatorio')" },
+    { num: m.valorVendaTotal > 0 ? m.margemGeral.toFixed(1) + '%' : '—', label: 'Margem', icon: 'percent', bg: 'linear-gradient(135deg,#4c1d95,#7c3aed)', action: "setView('relatorio')" },
+    { num: porObra.length.toString(), label: 'Obras Ativas', icon: 'domain', bg: 'linear-gradient(135deg,#1B4332,#2D6A4F)', action: "setView('obras')" },
+    { num: contasVenc.toString(), label: 'Contas Vencidas', icon: 'warning', bg: contasVenc > 0 ? 'linear-gradient(135deg,#7f1d1d,#ef4444)' : 'linear-gradient(135deg,#14532d,#22c55e)', action: "setView('contas-pagar')" },
     // NOVOS KPIs (GM)
-    { num: _dashFmtR(valEstoque), label: 'Estoque em Material', icon: 'inventory_2', bg: 'linear-gradient(135deg,#78350f,#f59e0b)' },
-    { num: (maoMes + materialMes) > 0 ? (maoMes / (maoMes + materialMes) * 100).toFixed(0) + '% / ' + (materialMes / (maoMes + materialMes) * 100).toFixed(0) + '%' : '—', label: 'Mao Obra vs Material', icon: 'compare', bg: 'linear-gradient(135deg,#1e3a5f,#3b82f6)' },
+    { num: _dashFmtR(valEstoque), label: 'Estoque em Material', icon: 'inventory_2', bg: 'linear-gradient(135deg,#78350f,#f59e0b)', action: "setView('estoque')" },
+    { num: (maoMes + materialMes) > 0 ? (maoMes / (maoMes + materialMes) * 100).toFixed(0) + '% / ' + (materialMes / (maoMes + materialMes) * 100).toFixed(0) + '%' : '—', label: 'Mao Obra vs Material', icon: 'compare', bg: 'linear-gradient(135deg,#1e3a5f,#3b82f6)', action: "setView('relatorio')" },
   ];
 
   const kpiCols = window.innerWidth <= 768 ? 2 : 4;
   return `<div style="display:grid;grid-template-columns:repeat(${kpiCols},1fr);gap:10px;margin-bottom:16px;">
-    ${kpis.map(k => `<div style="background:${k.bg};border-radius:14px;padding:16px 12px;text-align:center;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+    ${kpis.map(k => `<div style="background:${k.bg};border-radius:14px;padding:16px 12px;text-align:center;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;" onclick="${k.action}" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
       <div style="position:absolute;top:10px;right:12px;opacity:0.15;"><span class="material-symbols-outlined" style="font-size:32px;color:#fff;">${k.icon}</span></div>
       <div style="font-size:18px;font-weight:800;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,0.3);line-height:1.2;font-family:'Space Grotesk',monospace;">${k.num}</div>
       <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.85);letter-spacing:0.8px;text-transform:uppercase;margin-top:4px;font-family:Inter,sans-serif;">${k.label}</div>
