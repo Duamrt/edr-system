@@ -862,6 +862,18 @@ const CronogramaModule = {
       } catch (e) { console.error('Erro etapa', etapa.nome, e); }
     }
 
+    // Salvar mapeamento obra_id → pci_id para PCI Medições
+    if (pciId && criadas > 0) {
+      try {
+        const mapRows = await sbGet('tracker_sync?key=eq.pci-obra-map-v1&select=data');
+        let map = { mappings: [] };
+        if (mapRows && mapRows.length && mapRows[0].data) map = mapRows[0].data;
+        map.mappings = (map.mappings || []).filter(function(m) { return m.pci_id !== pciId && m.obra_id !== obraId; });
+        map.mappings.push({ pci_id: pciId, obra_id: obraId });
+        await sbPost('tracker_sync', { key: 'pci-obra-map-v1', data: map, updated_at: new Date().toISOString() }, { upsert: true });
+      } catch (e) { console.error('Erro mapa PCI-obra:', e); }
+    }
+
     showToast(criadas + ' etapas criadas');
     fecharModal('cron-etapas');
     await this._carregarTarefas();

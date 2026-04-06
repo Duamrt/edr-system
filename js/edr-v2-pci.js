@@ -15,6 +15,9 @@ const PciModule = {
   _carregado: false,
   _saveTimer: null,
   _container: null,
+  _mapa: {},       // pci_id → obra_uuid do Supabase
+  _cronTasks: {},  // pci_id → [{nome, data_inicio, data_fim}]
+  MAPA_KEY: 'pci-obra-map-v1',
 
   // ── 20 Etapas CEF (extraidas dos .xlsb da Caixa) ──
   // DIFERENTE das 36 ETAPAS financeiras do obras.js
@@ -73,6 +76,7 @@ const PciModule = {
     PciModule._container = container;
     container.innerHTML = PciModule._skeleton();
     await PciModule._carregar();
+    await PciModule._carregarCronograma();
     PciModule._carregado = true;
     requestAnimationFrame(() => {
       container.innerHTML = PciModule._html();
@@ -118,6 +122,21 @@ const PciModule = {
 
     // Fallback seed
     PciModule.state = JSON.parse(JSON.stringify(PciModule._OBRAS_SEED));
+  },
+
+  async _carregarCronograma() {
+    try {
+      const mapRows = await sbGet('tracker_sync?key=eq.' + PciModule.MAPA_KEY + '&select=data');
+      if (!mapRows || !mapRows.length || !mapRows[0].data || !mapRows[0].data.mappings) return;
+      PciModule._mapa = {};
+      PciModule._cronTasks = {};
+      mapRows[0].data.mappings.forEach(function(m) { PciModule._mapa[m.pci_id] = m.obra_id; });
+      for (const pciId of Object.keys(PciModule._mapa)) {
+        const obraId = PciModule._mapa[pciId];
+        const tasks = await sbGet('cronograma_tarefas?obra_id=eq.' + obraId + '&order=ordem');
+        if (tasks && tasks.length) PciModule._cronTasks[pciId] = tasks;
+      }
+    } catch (e) { console.error('PciModule._carregarCronograma:', e); }
   },
 
   _cacheLocal() {
@@ -168,6 +187,21 @@ const PciModule = {
   },
 
   _corProg(pct) { return pct >= 80 ? '#2D6A4F' : pct >= 40 ? '#D4A017' : '#C0392B'; },
+
+  _fmtDia(str) {
+    const d = new Date(str + 'T00:00:00');
+    return d.getDate().toString().padStart(2, '0') + '/' + (d.getMonth() + 1).toString().padStart(2, '0');
+  },
+
+  _calcPlanejado(task) {
+    if (!task || !task.data_inicio || !task.data_fim) return null;
+    const inicio = new Date(task.data_inicio + 'T00:00:00');
+    const fim = new Date(task.data_fim + 'T00:00:00');
+    const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+    if (hoje < inicio) return 0;
+    if (hoje >= fim) return 100;
+    return Math.round((hoje - inicio) / (fim - inicio) * 100);
+  },
 
   // ── HTML ──
   _html() {
@@ -246,6 +280,8 @@ const PciModule = {
         '<th style="text-align:left;padding:8px 10px;font-size:11px;color:var(--texto2);text-transform:uppercase;">Ajustar</th>' +
       '</tr></thead><tbody>';
 
+      const cronTasks = PciModule._cronTasks[obra.id] || [];
+
       obra.pesos.forEach((p, i) => {
         if (p === 0) return;
         const e = obra.exec[i] || 0;
@@ -253,10 +289,22 @@ const PciModule = {
         const corBarra = PciModule._corProg(pct);
         const corTxt = pct === 0 ? 'var(--texto3)' : pct >= 100 ? '#2D6A4F' : '#D4A017';
 
+        const task = cronTasks.find(function(t) { return t.nome === PciModule.ETAPAS_CEF[i].nome; });
+        const planejado = PciModule._calcPlanejado(task);
+        const datas = task ? '<div style="font-size:10px;color:#2D6A4F;margin-top:3px;font-family:\'Space Grotesk\',monospace;">' + PciModule._fmtDia(task.data_inicio) + ' → ' + PciModule._fmtDia(task.data_fim) + '</div>' : '';
+
+        let badge = '';
+        if (planejado !== null) {
+          const diff = pct - planejado;
+          if (diff > 5) badge = '<span style="font-size:9px;background:rgba(45,106,79,.15);color:#2D6A4F;padding:2px 5px;border-radius:4px;margin-left:6px;font-weight:700;vertical-align:middle;">+' + diff + '% ADIANT</span>';
+          else if (diff < -5) badge = '<span style="font-size:9px;background:rgba(192,57,43,.15);color:#C0392B;padding:2px 5px;border-radius:4px;margin-left:6px;font-weight:700;vertical-align:middle;">' + diff + '% ATRASO</span>';
+        }
+
         html += '<tr style="border-bottom:1px solid var(--borda);" title="' + PciModule.ETAPAS_CEF[i].desc + '">' +
           '<td style="padding:8px 10px;">' +
             '<div style="font-weight:500;">' + PciModule.ETAPAS_CEF[i].nome + '</div>' +
             '<div style="font-size:11px;color:var(--texto3);margin-top:1px;">' + PciModule.ETAPAS_CEF[i].desc + '</div>' +
+            datas +
           '</td>' +
           '<td style="padding:8px 10px;font-family:\'Space Grotesk\',monospace;color:var(--texto2);">' + p.toFixed(1) + '%</td>' +
           '<td style="padding:8px 10px;font-family:\'Space Grotesk\',monospace;color:var(--texto2);">' + (obra.valor ? PciModule._fmtR$(obra.valor * p / 100) : '—') + '</td>' +
@@ -265,6 +313,7 @@ const PciModule = {
               '<div style="height:100%;width:' + pct + '%;background:' + corBarra + ';border-radius:3px;"></div>' +
             '</div>' +
             '<span style="font-family:\'Space Grotesk\',monospace;font-weight:600;color:' + corTxt + ';">' + pct + '%</span>' +
+            badge +
           '</td>' +
           '<td style="padding:8px 10px;">' +
             '<input type="range" class="pci-slider" data-obra="' + obra.id + '" data-idx="' + i + '" min="0" max="100" step="5" value="' + pct + '" style="width:80px;accent-color:#2D6A4F;cursor:pointer;vertical-align:middle;">' +
