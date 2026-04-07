@@ -18,7 +18,11 @@ serve(async (req) => {
     const authHeader = req.headers.get('Authorization') ?? ''
     const callerToken = authHeader.replace('Bearer ', '').trim()
     if (!callerToken) {
-      return json({ error: 'Não autorizado' }, 401)
+      return json({ error: 'Não autorizado', step: 1 }, 401)
+    }
+
+    if (!SERVICE_KEY) {
+      return json({ error: 'SERVICE_KEY não configurado', step: 0 }, 500)
     }
 
     // 2. Verificar se o caller é admin via service key (mais confiável)
@@ -29,11 +33,12 @@ serve(async (req) => {
       }
     })
     if (!userRes.ok) {
-      return json({ error: 'Token inválido' }, 401)
+      const errBody = await userRes.json().catch(() => ({}))
+      return json({ error: 'Token inválido', step: 2, detail: errBody }, 401)
     }
     const userData = await userRes.json()
     const callerId = userData?.id
-    if (!callerId) return json({ error: 'Usuário não identificado' }, 401)
+    if (!callerId) return json({ error: 'Usuário não identificado', step: 2 }, 401)
 
     // 3. Checar role via company_users (usando service key pra bypassar RLS)
     const roleRes = await fetch(
@@ -47,18 +52,18 @@ serve(async (req) => {
     )
     const roleRows = await roleRes.json()
     if (!Array.isArray(roleRows) || roleRows[0]?.role !== 'admin') {
-      return json({ error: 'Apenas admins podem redefinir senhas.' }, 403)
+      return json({ error: 'Apenas admins podem redefinir senhas.', step: 3, role: roleRows[0]?.role ?? 'nenhum' }, 403)
     }
 
     // 4. Receber dados
     const { user_id, password } = await req.json()
     if (!user_id || !password || password.length < 6) {
-      return json({ error: 'Dados inválidos. Mínimo 6 caracteres.' }, 400)
+      return json({ error: 'Dados inválidos. Mínimo 6 caracteres.', step: 4 }, 400)
     }
 
     // 5. Atualizar senha via Admin API
     const updateRes = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${user_id}`, {
-      method: 'PATCH',
+      method: 'PUT',
       headers: {
         'apikey': SERVICE_KEY,
         'Authorization': `Bearer ${SERVICE_KEY}`,
@@ -68,14 +73,14 @@ serve(async (req) => {
     })
 
     if (!updateRes.ok) {
-      const err = await updateRes.json().catch(() => ({}))
-      return json({ error: err.message || 'Erro ao atualizar senha.' }, 500)
+      const errText = await updateRes.text().catch(() => '(sem corpo)')
+      return json({ error: 'Erro ao atualizar senha.', step: 5, status: updateRes.status, detail: errText }, 500)
     }
 
     return json({ ok: true }, 200)
 
   } catch (e) {
-    return json({ error: String(e) }, 500)
+    return json({ error: String(e), step: 'catch' }, 500)
   }
 })
 
