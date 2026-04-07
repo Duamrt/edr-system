@@ -1114,11 +1114,30 @@ async function _carregarCatalogo() {
 }
 
 function renderCatalogo() {
+  // Sincronizar estado com o DOM
+  const buscaInput = document.getElementById('catalogo-busca');
+  if (buscaInput) EstoqueModule.catBusca = buscaInput.value;
+
+  // Popular filtro de categorias se ainda vazio
+  const filtroEl = document.getElementById('catalogo-cat-filtro');
+  if (filtroEl && filtroEl.options.length <= 1 && typeof ETAPAS !== 'undefined') {
+    const val = filtroEl.value;
+    filtroEl.innerHTML = '<option value="">Todos centros de custo</option>' +
+      ETAPAS.map(e => `<option value="${esc(e.key)}">${esc(e.lb)}</option>`).join('');
+    if (val) filtroEl.value = val;
+  }
+
   let itens = [...EstoqueModule.catalogoMateriais];
 
   // Filtrar AUTO
   if (EstoqueModule.catFiltroAuto) {
     itens = itens.filter(m => m.auto === true);
+  }
+
+  // Filtrar por categoria
+  const catFiltro = filtroEl?.value || '';
+  if (catFiltro) {
+    itens = itens.filter(m => (m.categoria || '') === catFiltro);
   }
 
   // Filtrar busca
@@ -1161,10 +1180,7 @@ function renderCatalogo() {
 
   // Etapas para select inline
   const etapasOpts = (typeof ETAPAS !== 'undefined' && Array.isArray(ETAPAS))
-    ? ETAPAS.map(e => {
-        const nome = e.nome || e;
-        return `<option value="${esc(nome)}">${esc(nome)}</option>`;
-      }).join('')
+    ? ETAPAS.map(e => `<option value="${esc(e.key)}">${esc(e.lb)}</option>`).join('')
     : '';
 
   el.innerHTML = visiveis.map(m => {
@@ -1244,7 +1260,7 @@ async function editarMaterial(id) {
   _editandoMaterialId = id;
   const selCat = document.getElementById('mat-categoria');
   if (selCat && typeof ETAPAS !== 'undefined') {
-    selCat.innerHTML = '<option value="">— Selecione —</option>' + ETAPAS.map(e => `<option value="${e.nome || e}">${e.nome || e}</option>`).join('');
+    selCat.innerHTML = '<option value="">— Selecione —</option>' + ETAPAS.map(e => `<option value="${e.key}">${e.lb}</option>`).join('');
   }
   document.getElementById('mat-nome').value = mat.nome || '';
   document.getElementById('mat-unidade').value = mat.unidade || 'UN';
@@ -2017,7 +2033,7 @@ function abrirModalNovoMaterial(nomeInicial) {
   document.getElementById('mat-unidade').value = 'UN';
   const selCat = document.getElementById('mat-categoria');
   if (selCat && typeof ETAPAS !== 'undefined') {
-    selCat.innerHTML = '<option value="">— Selecione —</option>' + ETAPAS.map(e => `<option value="${e.nome || e}">${e.nome || e}</option>`).join('');
+    selCat.innerHTML = '<option value="">— Selecione —</option>' + ETAPAS.map(e => `<option value="${e.key}">${e.lb}</option>`).join('');
   }
   if (selCat) selCat.value = '';
   const aviso = document.getElementById('modal-material-aviso');
@@ -2162,3 +2178,10 @@ function renderBanco() {
     }
   }
 }
+
+// ── ALIASES E COMPAT ────────────────────────────────────────────
+// abrirReconciliacao: botão no HTML chama esta função
+function abrirReconciliacao() { escanearOrfaos(); }
+
+// editCentroCusto: alias para editarMaterial (compatibilidade)
+window.editCentroCusto = function(id) { editarMaterial(id); };
