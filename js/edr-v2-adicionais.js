@@ -262,8 +262,7 @@ const AdicionaisModule = {
       </div>
     `;
 
-    modal.classList.remove('hidden');
-    modal.style.display = 'flex';
+    modal.classList.remove('hidden'); modal.classList.add('active');
   },
 
   editar(id) {
@@ -391,8 +390,7 @@ const AdicionaisModule = {
       </div>
     `;
 
-    modal.classList.remove('hidden');
-    modal.style.display = 'flex';
+    modal.classList.remove('hidden'); modal.classList.add('active');
   },
 
   async salvarPgto() {

@@ -650,7 +650,8 @@ function abrirModalObra(obraId) {
   document.getElementById('nova-obra-slug').value = obra ? (obra.slug_entrega || '') : '';
   document.getElementById('nova-obra-area').value = obra ? (obra.area_m2 || '') : '';
   document.getElementById('modal-obra-titulo').textContent = obra ? 'Editar Obra' : 'Nova Obra';
-  document.getElementById('modal-obra').classList.remove('hidden');
+  const _mObra = document.getElementById('modal-obra');
+  _mObra.classList.remove('hidden'); _mObra.classList.add('active');
   setTimeout(() => document.getElementById('nova-obra-nome').focus(), 100);
 }
 
@@ -715,7 +716,8 @@ function abrirModalConclusao(obraId) {
   document.getElementById('concluir-cep').value = obra.endereco_cep || '';
   const slugSugerido = obra.slug_entrega || gerarSlug(obra.nome.replace(/^(CASA|RESID[ÊE]NCIA|PROJ\.?|PROJETO)\s+/i, ''));
   document.getElementById('concluir-slug').value = slugSugerido;
-  document.getElementById('modal-concluir-obra').classList.remove('hidden');
+  const _mConc = document.getElementById('modal-concluir-obra');
+  _mConc.classList.remove('hidden'); _mConc.classList.add('active');
   setTimeout(() => document.getElementById('concluir-proprietario').focus(), 100);
 }
 
