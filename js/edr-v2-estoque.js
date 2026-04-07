@@ -753,7 +753,6 @@ async function confirmarDistribuicaoItem(chave, obraDestino, etapa, quantidade) 
     qtd,
     valor: valorProporcional,
     unidade: item.unidade,
-    lotes_consumidos: JSON.stringify(lotesConcumidos),
   };
 
   const resp = await sbPost('distribuicoes', payload);
