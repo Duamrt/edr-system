@@ -272,20 +272,21 @@ async function renderPermissoes(container) {
   } else {
     usersHTML = usuarios.map(u => {
       const perfilAtual = u.role || 'operacional';
-      const opts = _PERFIS.map(p =>
-        `<option value="${p.id}" ${p.id === perfilAtual ? 'selected' : ''}>${p.label}</option>`
-      ).join('');
-      const selector = isAdmin
-        ? `<select onchange="alterarPerfilUsuario('${u.id}', this.value)"
-            style="background:var(--card);border:1px solid var(--borda);color:var(--text-primary);border-radius:6px;padding:5px 8px;font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:600;cursor:pointer;">${opts}</select>`
-        : `<span style="font-size:12px;font-weight:700;color:var(--text-secondary);">${perfilAtual.toUpperCase()}</span>`;
+      const perfilCor = (_PERFIS.find(p => p.id === perfilAtual) || {}).cor || '#6b7280';
+      const editBtn = isAdmin
+        ? `<button onclick="abrirModalEditarUsuario('${u.id}','${(u.nome||'').replace(/'/g,"\\'")}','${(u.email||'').replace(/'/g,"\\'")}','${perfilAtual}')"
+            style="background:none;border:1px solid var(--borda);border-radius:6px;padding:4px 8px;cursor:pointer;color:var(--text-secondary);display:flex;align-items:center;gap:4px;font-size:11px;font-weight:700;">
+            <span class="material-symbols-outlined" style="font-size:14px;">edit</span>EDITAR
+          </button>`
+        : `<span style="font-size:12px;font-weight:700;color:${perfilCor};">${perfilAtual.toUpperCase()}</span>`;
 
       return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--borda);">
         <div>
           <div style="font-size:13px;font-weight:700;color:var(--text-primary);">${u.nome || '—'}</div>
-          <div style="font-size:11px;color:var(--text-tertiary);">${u.email || ''}</div>
+          <div style="font-size:11px;color:var(--text-tertiary);">${u.email || u.user_id || ''}</div>
+          <div style="font-size:11px;font-weight:700;color:${perfilCor};margin-top:2px;">${perfilAtual.toUpperCase()}</div>
         </div>
-        ${selector}
+        ${editBtn}
       </div>`;
     }).join('');
   }
@@ -363,6 +364,76 @@ async function alterarPerfilUsuario(companyUserId, novoPerfil) {
     if (typeof showToast === 'function') showToast('Erro ao atualizar perfil.');
   }
 }
+
+// ── MODAL EDITAR USUÁRIO ─────────────────────────────────────
+let _editarUsuarioCompanyUserId = null;
+
+function abrirModalEditarUsuario(companyUserId, nome, email, perfil) {
+  if (usuarioAtual?.perfil !== 'admin') return;
+  _editarUsuarioCompanyUserId = companyUserId;
+  document.getElementById('editar-usuario-id').value = companyUserId;
+  document.getElementById('editar-usuario-nome').value = nome || '';
+  document.getElementById('editar-usuario-email-display').value = email || '';
+  document.getElementById('editar-usuario-email-hidden').value = email || '';
+  document.getElementById('editar-usuario-perfil').value = perfil || 'operacional';
+  if (typeof openModal === 'function') openModal('editar-usuario');
+  else {
+    const modal = document.getElementById('modal-editar-usuario');
+    modal.classList.remove('hidden'); modal.classList.add('active');
+  }
+}
+
+function fecharModalEditarUsuario() {
+  if (typeof fecharModal === 'function') fecharModal('editar-usuario');
+  else {
+    const modal = document.getElementById('modal-editar-usuario');
+    modal.classList.remove('active'); modal.classList.add('hidden');
+  }
+  _editarUsuarioCompanyUserId = null;
+}
+
+async function salvarEdicaoUsuario() {
+  const id = document.getElementById('editar-usuario-id').value;
+  const nome = document.getElementById('editar-usuario-nome').value.trim();
+  const perfil = document.getElementById('editar-usuario-perfil').value;
+  if (!id || !nome) { showToast('Informe o nome.'); return; }
+  try {
+    const ok = await sbPatch('company_users', '?id=eq.' + id, { nome, role: perfil });
+    if (ok !== null) {
+      showToast('Usuário atualizado.');
+      fecharModalEditarUsuario();
+      renderPermissoes();
+    } else {
+      showToast('Erro ao salvar.');
+    }
+  } catch(e) {
+    showToast('Erro ao salvar.');
+  }
+}
+
+async function resetarSenhaUsuario() {
+  const email = document.getElementById('editar-usuario-email-hidden').value;
+  if (!email) { showToast('Usuário sem e-mail cadastrado.'); return; }
+  try {
+    const r = await fetch(`${SUPABASE_URL}/auth/v1/recover`, {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    if (r.ok || r.status === 200) {
+      showToast('E-mail de redefinição enviado para ' + email);
+    } else {
+      showToast('Erro ao enviar e-mail de redefinição.');
+    }
+  } catch(e) {
+    showToast('Erro de conexão.');
+  }
+}
+
+window.abrirModalEditarUsuario = abrirModalEditarUsuario;
+window.fecharModalEditarUsuario = fecharModalEditarUsuario;
+window.salvarEdicaoUsuario = salvarEdicaoUsuario;
+window.resetarSenhaUsuario = resetarSenhaUsuario;
 
 // Registrar view de permissões
 window.addEventListener('DOMContentLoaded', () => {
