@@ -1369,27 +1369,106 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
 <body>
 
 <!-- ═══════ TELA DE LOGIN ═══════ -->
-<div id="login-screen" style="display:flex; align-items:center; justify-content:center; min-height:100vh; background:var(--bg); padding:20px;">
-  <div style="width:100%; max-width:400px; background:var(--card-bg, #fff); border-radius:16px; padding:40px 32px; box-shadow:0 8px 32px rgba(0,0,0,.08);">
-    <div style="text-align:center; margin-bottom:32px;">
-      <h1 style="font-family:'Plus Jakarta Sans',sans-serif; font-size:28px; font-weight:800; color:#2D6A4F;">EDR System</h1>
-      <span style="display:inline-block; background:#2D6A4F; color:#fff; font-size:11px; font-weight:700; padding:2px 8px; border-radius:6px; margin-top:4px;">V2</span>
-      <p style="color:var(--text-secondary, #666); font-size:13px; margin-top:12px;">Gestão inteligente de obras</p>
-    </div>
-    <div style="display:grid; gap:14px;">
-      <div>
-        <label style="font-size:12px; font-weight:600; color:var(--text-secondary, #666); display:block; margin-bottom:6px;">Email</label>
-        <input id="login-user" type="email" placeholder="seu@email.com" style="width:100%; padding:12px 14px; border:1px solid var(--border, #e0e0e0); border-radius:10px; font-size:14px; background:var(--bg, #fff); color:var(--text-primary, #111); outline:none; transition:border .2s;" onfocus="this.style.borderColor='#2D6A4F'" onblur="this.style.borderColor=''">
+<style>
+  #login-screen { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; background:#FAFAFA; }
+  .login-left { display:none; }
+  @media(min-width:1024px){
+    .login-left { display:block !important; }
+    .login-mobile-logo { display:none !important; }
+    #login-main-grid { grid-template-columns:1fr 1fr !important; }
+    #login-form-side { grid-column:2 !important; grid-row:1 !important; }
+  }
+  #login-pass-input:focus, #login-user:focus { border-color:#2D6A4F !important; box-shadow:0 0 0 3px rgba(45,106,79,.12); }
+</style>
+<div id="login-screen">
+  <!-- Nav -->
+  <nav style="position:fixed; top:0; width:100%; display:flex; justify-content:space-between; align-items:center; padding:20px 32px; background:transparent; z-index:10; box-sizing:border-box;">
+    <div style="display:flex; align-items:center; gap:12px;">
+      <div style="width:44px; height:44px; background:#2D6A4F; border-radius:10px; display:flex; flex-direction:column; align-items:center; justify-content:center; flex-shrink:0;">
+        <span style="color:#fff; font-weight:700; font-size:13px; font-family:'Plus Jakarta Sans',sans-serif; letter-spacing:-0.03em; line-height:1;">EDR</span>
+        <span style="color:rgba(255,255,255,.8); font-weight:400; font-size:6.5px; font-family:'Space Grotesk',sans-serif; letter-spacing:0.18em; margin-top:2px;">SYSTEM</span>
       </div>
-      <div>
-        <label style="font-size:12px; font-weight:600; color:var(--text-secondary, #666); display:block; margin-bottom:6px;">Senha</label>
-        <input id="login-pass" type="password" placeholder="••••••••" style="width:100%; padding:12px 14px; border:1px solid var(--border, #e0e0e0); border-radius:10px; font-size:14px; background:var(--bg, #fff); color:var(--text-primary, #111); outline:none; transition:border .2s;" onfocus="this.style.borderColor='#2D6A4F'" onblur="this.style.borderColor=''" onkeydown="if(event.key==='Enter')fazerLogin()">
-      </div>
-      <p id="login-error" style="color:#dc2626; font-size:13px; min-height:18px;"></p>
-      <button id="login-btn" onclick="fazerLogin()" style="width:100%; padding:14px; background:#2D6A4F; color:#fff; font-size:14px; font-weight:700; border-radius:10px; cursor:pointer; transition:background .2s; border:none;" onmouseover="this.style.background='#245a42'" onmouseout="this.style.background='#2D6A4F'">ENTRAR</button>
+      <span style="font-size:18px; font-weight:700; color:#111827; font-family:'Plus Jakarta Sans',sans-serif;">EDR System</span>
     </div>
-    <p style="text-align:center; margin-top:24px; font-size:11px; color:var(--text-secondary, #999);">EDR Engenharia &copy; 2026</p>
-  </div>
+  </nav>
+
+  <!-- Card principal -->
+  <main id="login-main-grid" style="width:100%; max-width:1100px; display:grid; grid-template-columns:1fr; background:#fff; border-radius:14px; border:1px solid #E5E7EB; box-shadow:0 1px 4px rgba(0,0,0,.06); overflow:hidden; margin:80px 16px 32px;">
+
+    <!-- Lado esquerdo — imagem (só desktop) -->
+    <div class="login-left" style="position:relative; min-height:580px; overflow:hidden; grid-column:1; grid-row:1;">
+      <div style="position:absolute; inset:0; background-image:url('https://lh3.googleusercontent.com/aida-public/AB6AXuDckLheToSGwke_keJD73gfnIsBFjGQG8b77TYBi4GKPmKbVcYJATXUSs_g88--73jiJyDA_pAruHjhFvmlPzrR2-UBTBzwjtrtVhMQZo45VA5WGvIwi3hYJ9L9PscoWjDbO8bE0sJICCQM24m88xfQPv7Rh0ss8saQ8Kj8XXnNslG9n_CPcXz4zNVyxBmR5yrYfz40W4dL4NAId6smx8x9R70ls_Qe0v8m4pvux1kEno1_WGp7xJCG4o4_sbuKLEhccLBKUTKayNay'); background-size:cover; background-position:center;"></div>
+      <div style="position:absolute; inset:0; background:rgba(27,67,50,.5);"></div>
+      <div style="position:absolute; bottom:48px; left:48px; right:48px; color:#fff;">
+        <p style="font-family:'Space Grotesk',sans-serif; font-size:11px; text-transform:uppercase; letter-spacing:.18em; margin-bottom:14px; opacity:.85;">Construindo o futuro</p>
+        <h2 style="font-family:'Plus Jakarta Sans',sans-serif; font-size:32px; font-weight:800; line-height:1.25; margin-bottom:16px;">Gestão inteligente para sua obra de ponta a ponta.</h2>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <div style="height:4px; width:40px; background:#fff; border-radius:4px;"></div>
+          <div style="height:4px; width:8px; background:rgba(255,255,255,.35); border-radius:4px;"></div>
+          <div style="height:4px; width:8px; background:rgba(255,255,255,.35); border-radius:4px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lado direito — formulário -->
+    <div id="login-form-side" style="display:flex; flex-direction:column; justify-content:center; padding:48px 64px; background:#fff; grid-column:1; grid-row:1;">
+
+      <!-- Logo mobile -->
+      <div class="login-mobile-logo" style="display:flex; justify-content:center; margin-bottom:32px;">
+        <div style="width:56px; height:56px; background:#2D6A4F; border-radius:12px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+          <span style="color:#fff; font-weight:700; font-size:16px; font-family:'Plus Jakarta Sans',sans-serif; letter-spacing:-0.03em; line-height:1;">EDR</span>
+          <span style="color:rgba(255,255,255,.8); font-size:7px; font-family:'Space Grotesk',sans-serif; letter-spacing:.18em; margin-top:2px;">SYSTEM</span>
+        </div>
+      </div>
+
+      <div style="margin-bottom:32px;">
+        <h1 style="font-family:'Plus Jakarta Sans',sans-serif; font-size:28px; font-weight:800; color:#111827; margin-bottom:6px;">Bem-vindo de volta</h1>
+        <p style="font-size:14px; color:#6B7280;">Acesse sua conta para gerenciar seus centros de custo.</p>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:18px;">
+        <!-- Email -->
+        <div>
+          <label style="display:block; font-size:11px; font-weight:700; font-family:'Space Grotesk',sans-serif; text-transform:uppercase; letter-spacing:.12em; color:#6B7280; margin-bottom:6px;">E-mail Corporativo</label>
+          <div style="position:relative;">
+            <span class="material-symbols-outlined" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); font-size:18px; color:#9CA3AF; pointer-events:none;">mail</span>
+            <input id="login-user" type="email" placeholder="nome@empresa.com.br" style="width:100%; height:44px; padding:0 14px 0 38px; border:1px solid #D1D5DB; border-radius:8px; font-size:14px; color:#111827; background:#fff; outline:none; transition:border .15s, box-shadow .15s; box-sizing:border-box;">
+          </div>
+        </div>
+
+        <!-- Senha -->
+        <div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <label style="font-size:11px; font-weight:700; font-family:'Space Grotesk',sans-serif; text-transform:uppercase; letter-spacing:.12em; color:#6B7280;">Senha</label>
+          </div>
+          <div style="position:relative;">
+            <span class="material-symbols-outlined" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); font-size:18px; color:#9CA3AF; pointer-events:none;">lock</span>
+            <input id="login-pass" type="password" placeholder="••••••••" style="width:100%; height:44px; padding:0 44px 0 38px; border:1px solid #D1D5DB; border-radius:8px; font-size:14px; color:#111827; background:#fff; outline:none; transition:border .15s, box-shadow .15s; box-sizing:border-box;" onkeydown="if(event.key==='Enter')fazerLogin()">
+            <button type="button" onclick="var i=document.getElementById('login-pass');i.type=i.type==='password'?'text':'password';this.querySelector('span').textContent=i.type==='password'?'visibility':'visibility_off';" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; color:#9CA3AF; display:flex; align-items:center;">
+              <span class="material-symbols-outlined" style="font-size:20px;">visibility</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Erro -->
+        <p id="login-error" style="color:#dc2626; font-size:13px; min-height:16px; margin:0;"></p>
+
+        <!-- Botão -->
+        <button id="login-btn" onclick="fazerLogin()" style="width:100%; height:46px; background:#2D6A4F; color:#fff; font-size:14px; font-weight:600; font-family:'Inter',sans-serif; border-radius:8px; border:none; cursor:pointer; transition:background .15s, transform .1s; box-shadow:0 1px 3px rgba(0,0,0,.1);" onmouseover="this.style.background='#1B4332'" onmouseout="this.style.background='#2D6A4F'" onmousedown="this.style.transform='scale(.98)'" onmouseup="this.style.transform=''">
+          Entrar no Sistema
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer style="position:fixed; bottom:0; width:100%; display:flex; justify-content:center; align-items:center; gap:32px; padding:20px; background:transparent;">
+    <span style="font-size:12px; font-weight:600; color:#6B7280; font-family:'Plus Jakarta Sans',sans-serif;">EDR System &copy; 2026</span>
+    <div style="display:flex; gap:20px;">
+      <a href="#" style="font-size:11px; color:#9CA3AF; text-decoration:none; font-family:'Space Grotesk',sans-serif; text-transform:uppercase; letter-spacing:.1em;">Termos de Uso</a>
+      <a href="#" style="font-size:11px; color:#9CA3AF; text-decoration:none; font-family:'Space Grotesk',sans-serif; text-transform:uppercase; letter-spacing:.1em;">Privacidade</a>
+    </div>
+  </footer>
 </div>
 
 <!-- ═══════ APP SHELL ═══════ -->
@@ -2505,40 +2584,40 @@ function updateShellUser(nome, perfil) {
 
 <!-- ═══════ MODULOS V2 (ordem de dependência) ═══════ -->
 <!-- 0. Infraestrutura: sbGet/sbPost/sbPatch/sbDelete, confirmar(), showModal, usuarioAtual -->
-<script src="js/edr-v2-infra.js?v=04070440"></script>
+<script src="js/edr-v2-infra.js?v=04070448"></script>
 <!-- 1. Utilitários globais (valorPorExtenso, fmtN) -->
-<script src="js/edr-v2-utils-extras.js?v=04070440"></script>
+<script src="js/edr-v2-utils-extras.js?v=04070448"></script>
 <!-- 2. Obras PRIMEIRO (ETAPAS, resolveEtapaKey, etapaCor, etapaLabel — vários módulos dependem) -->
-<script src="js/edr-v2-obras.js?v=04070440"></script>
+<script src="js/edr-v2-obras.js?v=04070448"></script>
 <!-- 3. PDF engine (pdfMake CDN + PdfModule) -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js?v=04070440"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js?v=04070440"></script>
-<script src="js/edr-v2-pdf.js?v=04070440"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js?v=04070448"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js?v=04070448"></script>
+<script src="js/edr-v2-pdf.js?v=04070448"></script>
 <!-- 4. Módulos core de negócio -->
-<script src="js/edr-v2-notas.js?v=04070440"></script>
-<script src="js/edr-v2-importar.js?v=04070440"></script>
-<script src="js/edr-v2-estoque.js?v=04070440"></script>
-<script src="js/edr-v2-custos.js?v=04070440"></script>
+<script src="js/edr-v2-notas.js?v=04070448"></script>
+<script src="js/edr-v2-importar.js?v=04070448"></script>
+<script src="js/edr-v2-estoque.js?v=04070448"></script>
+<script src="js/edr-v2-custos.js?v=04070448"></script>
 <!-- 5. Equipe e operacional -->
-<script src="js/edr-v2-diarias.js?v=04070440"></script>
-<script src="js/edr-v2-diario.js?v=04070440"></script>
+<script src="js/edr-v2-diarias.js?v=04070448"></script>
+<script src="js/edr-v2-diario.js?v=04070448"></script>
 <!-- 6. Relatórios e dashboard (dependem de obras.js pra etapaCor) -->
-<script src="js/edr-v2-relatorio.js?v=04070440"></script>
-<script src="js/edr-v2-dashboard.js?v=04070440"></script>
+<script src="js/edr-v2-relatorio.js?v=04070448"></script>
+<script src="js/edr-v2-dashboard.js?v=04070448"></script>
 <!-- 7. Módulos complementares -->
-<script src="js/edr-v2-leads.js?v=04070440"></script>
-<script src="js/edr-v2-garantias.js?v=04070440"></script>
-<script src="js/edr-v2-adicionais.js?v=04070440"></script>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.css?v=04070440"/>
-<script src="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.min.js?v=04070440"></script>
-<script src="js/edr-v2-cronograma.js?v=04070440"></script>
-<script src="js/edr-v2-orcamento.js?v=04070440"></script>
+<script src="js/edr-v2-leads.js?v=04070448"></script>
+<script src="js/edr-v2-garantias.js?v=04070448"></script>
+<script src="js/edr-v2-adicionais.js?v=04070448"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.css?v=04070448"/>
+<script src="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.min.js?v=04070448"></script>
+<script src="js/edr-v2-cronograma.js?v=04070448"></script>
+<script src="js/edr-v2-orcamento.js?v=04070448"></script>
 <!-- 8. Documentação e medições -->
-<script src="js/edr-v2-termo-manual.js?v=04070440"></script>
-<script src="js/edr-v2-pci.js?v=04070440"></script>
+<script src="js/edr-v2-termo-manual.js?v=04070448"></script>
+<script src="js/edr-v2-pci.js?v=04070448"></script>
 <!-- 9. Auth (login, sessão, refresh — ÚLTIMO) -->
-<script src="js/edr-v2-auth.js?v=04070440"></script>
-<script src="js/edr-v2-financeiro.js?v=04070440"></script>
+<script src="js/edr-v2-auth.js?v=04070448"></script>
+<script src="js/edr-v2-financeiro.js?v=04070448"></script>
 
 <!-- ═══════════════════════════════════════════════════════════════ -->
 <!-- MODAIS (Fase 0 — containers para módulos que precisam)        -->
