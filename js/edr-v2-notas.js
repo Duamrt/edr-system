@@ -346,7 +346,24 @@ document.addEventListener('DOMContentLoaded', () => {
     const el = document.getElementById(id);
     if (el) el.addEventListener('input', salvarRascunhoNF);
   });
+  const cnpjEl = document.getElementById('f-cnpj');
+  if (cnpjEl) cnpjEl.addEventListener('blur', _onCnpjBlur);
 });
+
+// Auto-preenche fornecedor ao sair do campo CNPJ
+function _onCnpjBlur() {
+  const cnpjEl = document.getElementById('f-cnpj');
+  const fornEl = document.getElementById('f-fornecedor');
+  if (!cnpjEl || !fornEl || fornEl.value.trim()) return;
+  const cnpj = cnpjEl.value.replace(/\D/g, '');
+  if (cnpj.length !== 14) return;
+  const match = notas.find(n => n.cnpj && n.cnpj.replace(/\D/g, '') === cnpj);
+  if (match) {
+    fornEl.value = match.fornecedor;
+    showToast('Fornecedor preenchido automaticamente.');
+    salvarRascunhoNF();
+  }
+}
 
 // ══════════════════════════════════════════════════════════════════
 // FORM NF: CABECALHO
@@ -782,11 +799,9 @@ async function salvarNota(notaData) {
   if (!fornecedor || !emissao || !numero) { showToast('Preencha fornecedor, numero da nota e data.'); return false; }
   if (!itens.length) { showToast('Adicione pelo menos um item.'); return false; }
 
-  // Trava de fornecedor duplicado
+  // Trava de fornecedor duplicado — usa cadastro existente silenciosamente
   const _fornDup = _detectarFornDuplicado(fornecedor, cnpjVal);
   if (_fornDup) {
-    const acao = await _alertarFornDuplicado(_fornDup, fornecedor, cnpjVal);
-    if (acao !== 'usar') return false; // cancelado — usuário deve corrigir o campo
     fornecedor = _fornDup.nome;
     if (_fornDup.cnpj && !cnpjVal) cnpjVal = _fornDup.cnpj;
     const fEl = document.getElementById('f-fornecedor');

@@ -814,8 +814,15 @@ const ImportModule = {
     // Numero inclui serie quando disponivel (ex: 123456/1) — padrão NF-e
     const numComSerie = (nfe.serie && nfe.serie !== '') ? `${nfe.numero}/${nfe.serie}` : nfe.numero;
     setVal('f-numero', numComSerie);
-    // Fornecedor em CAIXA ALTA sem acento (padrão BD)
-    setVal('f-fornecedor', typeof _normForn === 'function' ? _normForn(nfe.fornecedor) : nfe.fornecedor.toUpperCase());
+    // Fornecedor: usa nome cadastrado se CNPJ já existe, senão normaliza o nome do XML
+    const _cnpjCheck = (nfe.cnpj || '').replace(/\D/g, '');
+    const _fornExist = _cnpjCheck.length === 14 && Array.isArray(notas)
+      ? notas.find(n => n.cnpj && n.cnpj.replace(/\D/g, '') === _cnpjCheck)
+      : null;
+    const _nomeForn = _fornExist
+      ? _fornExist.fornecedor
+      : (typeof _normForn === 'function' ? _normForn(nfe.fornecedor) : nfe.fornecedor.toUpperCase());
+    setVal('f-fornecedor', _nomeForn);
 
     if (nfe.cnpj) {
       let c = nfe.cnpj.replace(/\D/g, '');
@@ -877,22 +884,7 @@ const ImportModule = {
     this._renderPreview();
     showToast(`XML importado: ${nfe.itens.length} itens - ${nfe.fornecedor} - NF ${nfe.numero}`);
 
-    // Alerta de fornecedor duplicado após preencher o form via XML
-    const cnpjXml = (nfe.cnpj || '').replace(/\D/g, '');
-    const fornDup = typeof _detectarFornDuplicado === 'function'
-      ? _detectarFornDuplicado(nfe.fornecedor.trim().toUpperCase(), cnpjXml)
-      : null;
-    if (fornDup) {
-      _alertarFornDuplicado(fornDup, nfe.fornecedor.trim().toUpperCase(), cnpjXml).then(acao => {
-        if (acao === 'usar') {
-          const fEl = document.getElementById('f-fornecedor');
-          const cEl = document.getElementById('f-cnpj');
-          if (fEl) fEl.value = fornDup.nome;
-          if (cEl && fornDup.cnpj) cEl.value = fornDup.cnpj;
-          showToast('Fornecedor substituído pelo cadastro existente.');
-        }
-      });
-    }
+    // Fornecedor já resolvido acima via CNPJ antes de preencher o form
   }
 };
 
