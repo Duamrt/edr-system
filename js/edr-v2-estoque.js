@@ -1202,12 +1202,13 @@ function renderCatalogo() {
       acoesCol += `<button class="cat-action-btn" onclick="excluirMaterial('${esc(m.id)}')"><span class="material-symbols-outlined icon-sm">delete</span></button>`;
     }
 
-    // Categoria: se AUTO, mostrar select inline
+    // Categoria: select inline para todos os itens (admin)
     const _et = typeof ETAPAS !== 'undefined' ? ETAPAS.find(e => e.key === m.categoria) : null;
     let catCol = esc(_et ? _et.lb : (m.categoria || ''));
-    if (isAuto && isAdmin) {
-      catCol = `<select style="padding:4px 8px;border-radius:6px;border:1px solid var(--warning);background:transparent;font-size:12px;color:var(--text-primary);outline:none;" onchange="_updateCategoriaMaterial('${esc(m.id)}',this.value)">
-        ${etapasOpts.replace(`value="${esc(m.categoria)}"`, `value="${esc(m.categoria)}" selected`)}
+    if (isAdmin) {
+      const borderStyle = isAuto ? 'border:1px solid var(--warning);' : 'border:1px solid var(--border);';
+      catCol = `<select style="padding:4px 8px;border-radius:6px;${borderStyle}background:transparent;font-size:12px;color:var(--text-primary);outline:none;max-width:160px;" onchange="_updateCategoriaMaterial('${esc(m.id)}',this.value)">
+        <option value="">—</option>${etapasOpts.replace(`value="${esc(m.categoria)}"`, `value="${esc(m.categoria)}" selected`)}
       </select>`;
     }
 
@@ -1315,9 +1316,12 @@ async function excluirMaterial(id) {
 }
 
 async function _updateCategoriaMaterial(id, novaCategoria) {
-  await sbPatch('materiais', id, { categoria: novaCategoria });
+  const ok = await sbPatch('materiais', id, { categoria: novaCategoria });
+  if (!ok) { showToast('Erro ao atualizar centro de custo', 'error'); return; }
   const mat = EstoqueModule.catalogoMateriais.find(m => m.id === id);
   if (mat) mat.categoria = novaCategoria;
+  const etapa = typeof ETAPAS !== 'undefined' ? ETAPAS.find(e => e.key === novaCategoria) : null;
+  showToast(`Centro de custo: ${etapa ? etapa.lb : novaCategoria}`, 'success');
 }
 
 
