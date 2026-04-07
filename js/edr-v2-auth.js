@@ -423,28 +423,19 @@ async function salvarEdicaoUsuario() {
   }
 }
 
-async function definirSenhaUsuario() {
-  const authUserId = document.getElementById('editar-usuario-user-id').value;
-  const senha = document.getElementById('editar-usuario-senha').value;
-  if (!senha || senha.length < 6) { showToast('Mínimo 6 caracteres.'); return; }
-  if (!SUPABASE_SERVICE_KEY) { showToast('Service key não configurada — fale com o admin do sistema.'); return; }
-  if (!authUserId) { showToast('ID do usuário não encontrado.'); return; }
+async function resetarSenhaUsuario() {
+  const email = document.getElementById('editar-usuario-email').value.trim();
+  if (!email) { showToast('Salve o e-mail do usuário antes de enviar o link.'); return; }
   try {
-    const r = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${authUserId}`, {
-      method: 'PATCH',
-      headers: {
-        'apikey': SUPABASE_SERVICE_KEY,
-        'Authorization': 'Bearer ' + SUPABASE_SERVICE_KEY,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ password: senha })
+    const r = await fetch(`${SUPABASE_URL}/auth/v1/recover`, {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
     });
     if (r.ok) {
-      showToast('Senha atualizada com sucesso.');
-      document.getElementById('editar-usuario-senha').value = '';
+      showToast('Link enviado para ' + email);
     } else {
-      const err = await r.json().catch(() => ({}));
-      showToast('Erro: ' + (err.message || r.status));
+      showToast('Erro ao enviar. Verifique o e-mail.');
     }
   } catch(e) {
     showToast('Erro de conexão.');
@@ -471,7 +462,7 @@ async function excluirUsuario(companyUserId, nome) {
 window.abrirModalEditarUsuario = abrirModalEditarUsuario;
 window.fecharModalEditarUsuario = fecharModalEditarUsuario;
 window.salvarEdicaoUsuario = salvarEdicaoUsuario;
-window.definirSenhaUsuario = definirSenhaUsuario;
+window.resetarSenhaUsuario = resetarSenhaUsuario;
 window.excluirUsuario = excluirUsuario;
 
 // Registrar view de permissões
