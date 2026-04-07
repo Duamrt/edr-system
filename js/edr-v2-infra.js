@@ -6,7 +6,7 @@
 // ── SUPABASE CONFIG ──────────────────────
 const SUPABASE_URL = 'https://mepzoxoahpwcvvlymlfh.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_Z9E8KLU8ZIMcWjD-bMG5gg_eM585qWq';
-const SUPABASE_SERVICE_KEY = '';
+const SUPABASE_SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1lcHpveG9haHB3Y3Z2bHltbGZoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MjI3MDIwNSwiZXhwIjoyMDg3ODQ2MjA1fQ.5gT3Ye2x9d0SXv_DNUnZ3Y-jSNU31GwvdlwT1koxQwQ';
 
 let _supabaseToken = null;
 
