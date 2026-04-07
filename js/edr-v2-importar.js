@@ -784,6 +784,8 @@ const ImportModule = {
     const total = getTag(xml, 'ICMSTot');
     const valorBruto = total ? parseFloat(getVal(total, 'vProd')) || 0 : 0;
     const frete = total ? parseFloat(getVal(total, 'vFrete')) || 0 : 0;
+    // vNF = total real da nota (já inclui IPI, frete e demais impostos)
+    const vNF = total ? parseFloat(getVal(total, 'vNF')) || 0 : 0;
 
     const dets = getAllTag(xml, 'det');
     if (!dets.length) return null;
@@ -797,7 +799,16 @@ const ImportModule = {
       const qtd = parseFloat(getVal(prod, 'qCom')) || parseFloat(getVal(prod, 'qTrib')) || 0;
       const preco = parseFloat(getVal(prod, 'vUnCom')) || parseFloat(getVal(prod, 'vUnTrib')) || 0;
       const unidade = (getVal(prod, 'uCom') || getVal(prod, 'uTrib') || 'UN').toUpperCase();
-      const totalItem = parseFloat(getVal(prod, 'vProd')) || qtd * preco;
+      const vProdItem = parseFloat(getVal(prod, 'vProd')) || qtd * preco;
+      // Captura IPI: tenta IPITrib primeiro, depois IPINT
+      const ipiNode = getTag(det, 'IPI');
+      let vIPI = 0;
+      if (ipiNode) {
+        const ipiTrib = getTag(ipiNode, 'IPITrib');
+        const ipiNT   = getTag(ipiNode, 'IPINT');
+        vIPI = parseFloat(getVal(ipiTrib || ipiNT || ipiNode, 'vIPI')) || 0;
+      }
+      const totalItem = Math.round((vProdItem + vIPI) * 100) / 100;
       const cProd = getVal(prod, 'cProd') || '';
       if (desc) itens.push({ descOriginal: desc, qtd, preco, unidade, total: totalItem, cProd });
     }
@@ -805,7 +816,7 @@ const ImportModule = {
     let dataFormatada = '';
     if (dataEmissao) dataFormatada = dataEmissao.substring(0, 10);
 
-    return { fornecedor, cnpj, numero, serie, natureza, dataEmissao: dataFormatada, valorBruto, frete, itens };
+    return { fornecedor, cnpj, numero, serie, natureza, dataEmissao: dataFormatada, valorBruto, frete, vNF, itens };
   },
 
   _preencherFormComXML(nfe) {
