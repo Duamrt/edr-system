@@ -816,11 +816,8 @@ function abrirDistribuicao(chave) {
     : '<option value="">Nenhuma obra</option>';
 
   // Etapas (ETAPAS como fonte unica)
-  const etapasOpts = (typeof ETAPAS !== 'undefined' && Array.isArray(ETAPAS))
-    ? ETAPAS.map((e, i) => {
-        const nome = e.nome || e;
-        return `<option value="${esc(nome)}">${String(i + 1).padStart(2, '0')} · ${esc(nome)}</option>`;
-      }).join('')
+  const etapasOpts = (typeof etapaSelectOpts === 'function')
+    ? etapaSelectOpts('', false)
     : '';
 
   content.innerHTML = `
