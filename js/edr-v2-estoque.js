@@ -1203,7 +1203,8 @@ function renderCatalogo() {
     }
 
     // Categoria: se AUTO, mostrar select inline
-    let catCol = esc(m.categoria || '');
+    const _et = typeof ETAPAS !== 'undefined' ? ETAPAS.find(e => e.key === m.categoria) : null;
+    let catCol = esc(_et ? _et.lb : (m.categoria || ''));
     if (isAuto && isAdmin) {
       catCol = `<select style="padding:4px 8px;border-radius:6px;border:1px solid var(--warning);background:transparent;font-size:12px;color:var(--text-primary);outline:none;" onchange="_updateCategoriaMaterial('${esc(m.id)}',this.value)">
         ${etapasOpts.replace(`value="${esc(m.categoria)}"`, `value="${esc(m.categoria)}" selected`)}
