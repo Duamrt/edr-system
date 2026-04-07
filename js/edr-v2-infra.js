@@ -53,7 +53,7 @@ async function sbPost(t, b) {
     const r = await fetch(`${SUPABASE_URL}/rest/v1/${t}`, {
       method: 'POST', headers: _sbHeaders(), body: JSON.stringify(b)
     });
-    if (!r.ok) { console.warn('sbPost erro:', r.status, t); return null; }
+    if (!r.ok) { const errBody = await r.json().catch(()=>{}); console.warn('sbPost erro:', r.status, t, errBody); return null; }
     const data = await r.json();
     return Array.isArray(data) ? data[0] : data;
   } catch (e) { console.warn('sbPost falha:', t, e); return null; }
