@@ -6,6 +6,7 @@
 // ── SUPABASE CONFIG ──────────────────────
 const SUPABASE_URL = 'https://mepzoxoahpwcvvlymlfh.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_Z9E8KLU8ZIMcWjD-bMG5gg_eM585qWq';
+const SUPABASE_SERVICE_KEY = '';
 
 let _supabaseToken = null;
 

@@ -273,23 +273,26 @@ async function renderPermissoes(container) {
     usersHTML = usuarios.map(u => {
       const perfilAtual = u.role || 'operacional';
       const perfilCor = (_PERFIS.find(p => p.id === perfilAtual) || {}).cor || '#6b7280';
+      const nomeEsc = (u.nome||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+      const emailEsc = (u.email||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+      const nomeLabel = (u.nome||u.email||'este usuário').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
       const editBtn = isAdmin
         ? `<div style="display:flex;gap:6px;align-items:center;">
-            <button onclick="abrirModalEditarUsuario('${u.id}','${(u.nome||'').replace(/'/g,"\\'")}','${(u.email||'').replace(/'/g,"\\'")}','${perfilAtual}')"
-              style="background:none;border:1px solid var(--borda);border-radius:6px;padding:4px 8px;cursor:pointer;color:var(--text-secondary);display:flex;align-items:center;gap:3px;font-size:11px;font-weight:700;">
+            <button onclick="abrirModalEditarUsuario('${u.id}','${u.user_id||''}','${nomeEsc}','${emailEsc}','${perfilAtual}')"
+              style="background:none;border:1px solid var(--border);border-radius:6px;padding:4px 8px;cursor:pointer;color:var(--text-secondary);display:flex;align-items:center;gap:3px;font-size:11px;font-weight:700;">
               <span class="material-symbols-outlined" style="font-size:14px;">edit</span>EDITAR
             </button>
-            <button onclick="excluirUsuario('${u.id}','${(u.nome||u.email||'este usuário').replace(/'/g,"\\'")}')"
+            <button onclick="excluirUsuario('${u.id}','${nomeLabel}')"
               style="background:none;border:1px solid #fca5a5;border-radius:6px;padding:4px 8px;cursor:pointer;color:#dc2626;display:flex;align-items:center;gap:3px;font-size:11px;font-weight:700;">
               <span class="material-symbols-outlined" style="font-size:14px;">delete</span>
             </button>
           </div>`
         : `<span style="font-size:12px;font-weight:700;color:${perfilCor};">${perfilAtual.toUpperCase()}</span>`;
 
-      return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--borda);">
+      return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;margin-bottom:8px;border:1px solid var(--border);border-radius:8px;background:var(--card);">
         <div>
           <div style="font-size:13px;font-weight:700;color:var(--text-primary);">${u.nome || '—'}</div>
-          <div style="font-size:11px;color:var(--text-tertiary);">${u.email || u.user_id || ''}</div>
+          <div style="font-size:11px;color:var(--text-tertiary);">${u.email || ''}</div>
           <div style="font-size:11px;font-weight:700;color:${perfilCor};margin-top:2px;">${perfilAtual.toUpperCase()}</div>
         </div>
         ${editBtn}
@@ -374,14 +377,16 @@ async function alterarPerfilUsuario(companyUserId, novoPerfil) {
 // ── MODAL EDITAR USUÁRIO ─────────────────────────────────────
 let _editarUsuarioCompanyUserId = null;
 
-function abrirModalEditarUsuario(companyUserId, nome, email, perfil) {
+function abrirModalEditarUsuario(companyUserId, authUserId, nome, email, perfil) {
   if (usuarioAtual?.perfil !== 'admin') return;
   _editarUsuarioCompanyUserId = companyUserId;
   document.getElementById('editar-usuario-id').value = companyUserId;
+  document.getElementById('editar-usuario-user-id').value = authUserId || '';
   document.getElementById('editar-usuario-nome').value = nome || '';
-  document.getElementById('editar-usuario-email-display').value = email || '';
-  document.getElementById('editar-usuario-email-hidden').value = email || '';
+  document.getElementById('editar-usuario-email').value = email || '';
   document.getElementById('editar-usuario-perfil').value = perfil || 'operacional';
+  const senhaEl = document.getElementById('editar-usuario-senha');
+  if (senhaEl) senhaEl.value = '';
   if (typeof openModal === 'function') openModal('editar-usuario');
   else {
     const modal = document.getElementById('modal-editar-usuario');
@@ -401,10 +406,11 @@ function fecharModalEditarUsuario() {
 async function salvarEdicaoUsuario() {
   const id = document.getElementById('editar-usuario-id').value;
   const nome = document.getElementById('editar-usuario-nome').value.trim();
+  const email = document.getElementById('editar-usuario-email').value.trim();
   const perfil = document.getElementById('editar-usuario-perfil').value;
   if (!id || !nome) { showToast('Informe o nome.'); return; }
   try {
-    const ok = await sbPatch('company_users', '?id=eq.' + id, { nome, role: perfil });
+    const ok = await sbPatch('company_users', '?id=eq.' + id, { nome, email, role: perfil });
     if (ok !== null) {
       showToast('Usuário atualizado.');
       fecharModalEditarUsuario();
@@ -417,19 +423,28 @@ async function salvarEdicaoUsuario() {
   }
 }
 
-async function resetarSenhaUsuario() {
-  const email = document.getElementById('editar-usuario-email-hidden').value;
-  if (!email) { showToast('Usuário sem e-mail cadastrado.'); return; }
+async function definirSenhaUsuario() {
+  const authUserId = document.getElementById('editar-usuario-user-id').value;
+  const senha = document.getElementById('editar-usuario-senha').value;
+  if (!senha || senha.length < 6) { showToast('Mínimo 6 caracteres.'); return; }
+  if (!SUPABASE_SERVICE_KEY) { showToast('Service key não configurada — fale com o admin do sistema.'); return; }
+  if (!authUserId) { showToast('ID do usuário não encontrado.'); return; }
   try {
-    const r = await fetch(`${SUPABASE_URL}/auth/v1/recover`, {
-      method: 'POST',
-      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email })
+    const r = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${authUserId}`, {
+      method: 'PATCH',
+      headers: {
+        'apikey': SUPABASE_SERVICE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_SERVICE_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ password: senha })
     });
-    if (r.ok || r.status === 200) {
-      showToast('E-mail de redefinição enviado para ' + email);
+    if (r.ok) {
+      showToast('Senha atualizada com sucesso.');
+      document.getElementById('editar-usuario-senha').value = '';
     } else {
-      showToast('Erro ao enviar e-mail de redefinição.');
+      const err = await r.json().catch(() => ({}));
+      showToast('Erro: ' + (err.message || r.status));
     }
   } catch(e) {
     showToast('Erro de conexão.');
@@ -456,7 +471,7 @@ async function excluirUsuario(companyUserId, nome) {
 window.abrirModalEditarUsuario = abrirModalEditarUsuario;
 window.fecharModalEditarUsuario = fecharModalEditarUsuario;
 window.salvarEdicaoUsuario = salvarEdicaoUsuario;
-window.resetarSenhaUsuario = resetarSenhaUsuario;
+window.definirSenhaUsuario = definirSenhaUsuario;
 window.excluirUsuario = excluirUsuario;
 
 // Registrar view de permissões
