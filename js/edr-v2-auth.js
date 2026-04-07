@@ -500,12 +500,13 @@ async function excluirUsuario(companyUserId, nome) {
 // ── PERMISSÕES VISUAIS DO MENU ───────────────────────────────
 function aplicarPermissoesVisuais(perfil, permissions) {
   const btns = document.querySelectorAll('.sidebar .nav-btn[data-view]');
-  if (perfil === 'admin' || !permissions) {
+  const permsArray = Array.isArray(permissions) ? permissions : null;
+  if (perfil === 'admin' || !permsArray) {
     btns.forEach(b => b.classList.remove('perm-hidden'));
     document.querySelectorAll('.sidebar-group, .sidebar-group-label').forEach(el => el.classList.remove('perm-hidden'));
     return;
   }
-  const permsSet = new Set(permissions);
+  const permsSet = new Set(permsArray);
   btns.forEach(b => {
     b.classList.toggle('perm-hidden', !permsSet.has(b.getAttribute('data-view')));
   });
