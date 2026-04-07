@@ -423,19 +423,26 @@ async function salvarEdicaoUsuario() {
   }
 }
 
-async function resetarSenhaUsuario() {
-  const email = document.getElementById('editar-usuario-email').value.trim();
-  if (!email) { showToast('Salve o e-mail do usuário antes de enviar o link.'); return; }
+async function definirSenhaUsuario() {
+  const authUserId = document.getElementById('editar-usuario-user-id').value;
+  const senha = document.getElementById('editar-usuario-senha').value;
+  if (!senha || senha.length < 6) { showToast('Mínimo 6 caracteres.'); return; }
+  if (!authUserId) { showToast('ID do usuário não encontrado. Salve primeiro.'); return; }
   try {
-    const r = await fetch(`${SUPABASE_URL}/auth/v1/recover`, {
+    const r = await fetch(`${SUPABASE_URL}/functions/v1/set-user-password`, {
       method: 'POST',
-      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email })
+      headers: {
+        'Authorization': 'Bearer ' + _supabaseToken,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ user_id: authUserId, password: senha })
     });
-    if (r.ok) {
-      showToast('Link enviado para ' + email);
+    const data = await r.json();
+    if (r.ok && data.ok) {
+      showToast('Senha definida com sucesso.');
+      document.getElementById('editar-usuario-senha').value = '';
     } else {
-      showToast('Erro ao enviar. Verifique o e-mail.');
+      showToast(data.error || 'Erro ao definir senha.');
     }
   } catch(e) {
     showToast('Erro de conexão.');
@@ -462,7 +469,7 @@ async function excluirUsuario(companyUserId, nome) {
 window.abrirModalEditarUsuario = abrirModalEditarUsuario;
 window.fecharModalEditarUsuario = fecharModalEditarUsuario;
 window.salvarEdicaoUsuario = salvarEdicaoUsuario;
-window.resetarSenhaUsuario = resetarSenhaUsuario;
+window.definirSenhaUsuario = definirSenhaUsuario;
 window.excluirUsuario = excluirUsuario;
 
 // Registrar view de permissões
