@@ -114,8 +114,20 @@ function renderObrasView() {
     filtrocat.innerHTML = '<option value="">Todos centros de custo</option>' +
       ETAPAS.map(e => `<option value="${e.key}">${e.lb}</option>`).join('');
   }
+  _obrasPopularFiltroUsuario();
   renderObrasCards();
   aplicarPerfil();
+}
+
+function _obrasPopularFiltroUsuario() {
+  const sel = document.getElementById('obras-filtro-usuario');
+  if (!sel) return;
+  const usuarios = [...new Set(
+    (typeof lancamentos !== 'undefined' ? lancamentos : [])
+      .map(l => l.criado_por).filter(Boolean)
+  )].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  sel.innerHTML = '<option value="">Todos usuários</option>' +
+    usuarios.map(u => `<option value="${u}">${u}</option>`).join('');
 }
 
 // ── OVERVIEW vs DETALHE ─────────────────────────────────────────
@@ -316,6 +328,7 @@ function filtrarLanc() {
   const obraId = ObrasModule.obraAberta;
   const busca = norm(document.getElementById('obras-busca')?.value || '');
   const catFiltro = document.getElementById('obras-filtro-cat')?.value || '';
+  const usuarioFiltro = document.getElementById('obras-filtro-usuario')?.value || '';
 
   // Pool correto (ativas ou concluidas)
   const obraPool = ObrasModule.mostandoArquivadas ? obrasArquivadas : obras;
@@ -324,6 +337,7 @@ function filtrarLanc() {
   let lista = lancamentos.filter(l => obraIds.has(l.obra_id));
   if (obraId) lista = lista.filter(l => l.obra_id === obraId);
   if (busca) lista = lista.filter(l => norm(l.descricao || '').includes(busca));
+  if (usuarioFiltro) lista = lista.filter(l => (l.criado_por || '') === usuarioFiltro);
   if (catFiltro) lista = lista.filter(l => {
     const resolved = typeof resolveEtapaKey === 'function' ? resolveEtapaKey(l.etapa || '36_outros') : (l.etapa || '36_outros');
     return resolved === catFiltro;
