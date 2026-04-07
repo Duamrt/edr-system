@@ -242,7 +242,7 @@ function consolidarEstoque(obraId) {
   // 4) DISTRIBUICOES (SAIDAS)
   if (typeof distribuicoes !== 'undefined' && Array.isArray(distribuicoes)) {
     const distFiltradas = obraId
-      ? distribuicoes.filter(d => d.obra_destino === obraId)
+      ? distribuicoes.filter(d => d.obra_id === obraId)
       : distribuicoes;
 
     for (const d of distFiltradas) {
@@ -623,7 +623,7 @@ function abrirHistoricoMaterial(chave) {
       if (match) {
         movs.push({
           tipo: 'saida',
-          desc: `Distribuicao → ${d.obra_nome || d.obra_destino || '---'}`,
+          desc: `Distribuicao → ${d.obra_nome || '---'}`,
           data: d.data,
           qtd: parseFloat(d.qtd) || 0,
           meta: `Etapa: ${d.etapa || '---'} · ${fmtR(d.valor || 0)}`,
@@ -748,11 +748,12 @@ async function confirmarDistribuicaoItem(chave, obraDestino, etapa, quantidade) 
   const payload = {
     item_desc: item.desc,
     codigo_catalogo: item.codigo || null,
-    obra_destino: obraDestino,
+    obra_id: obraDestino,
+    obra_nome: obras.find(o => o.id === obraDestino)?.nome || '',
     etapa,
     qtd,
     valor: valorProporcional,
-    unidade: item.unidade,
+    data: hojeISO(),
   };
 
   const resp = await sbPost('distribuicoes', payload);
@@ -1872,8 +1873,9 @@ async function salvarSaidaMaterial() {
   try {
     const valor = qtd * valorUnit;
     const nova = await sbPost('distribuicoes', {
-      item_desc: desc, obra_destino: obraId,
-      qtd, valor, etapa, unidade
+      item_desc: desc, obra_id: obraId,
+      obra_nome: obraObj?.nome || '',
+      qtd, valor, etapa, data
     });
     if (!nova) { showToast('❌ Erro ao salvar saída. Verifique o console.'); return; }
     distribuicoes.unshift(nova);
