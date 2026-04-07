@@ -1521,6 +1521,12 @@ async function exportarEstoqueExcel() {
 // FILTROS E BUSCAS (conecta aos elementos do preview)
 // ══════════════════════════════════════════════════════════════════
 
+function toggleLimparBusca() {
+  const btn = document.getElementById('btn-limpar-busca');
+  const val = document.getElementById('estoque-busca')?.value || '';
+  if (btn) btn.style.display = val ? 'flex' : 'none';
+}
+
 function estoqueBuscar(valor) {
   clearTimeout(EstoqueModule._buscaTimer);
   EstoqueModule._buscaTimer = setTimeout(() => {
