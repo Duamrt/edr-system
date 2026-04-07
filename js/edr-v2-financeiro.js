@@ -255,27 +255,41 @@ function selecionarContaForn(nome) {
 let projecoesCaixa = [];
 let _saldoManual = null; // saldo digitado manualmente pelo usuario
 
-function _loadSaldoManual() {
+async function _loadSaldoManual() {
   try {
+    if (_companyId) {
+      const r = await sbGet('companies', '?id=eq.' + _companyId + '&select=saldo_manual');
+      if (r && r[0] && r[0].saldo_manual !== null && r[0].saldo_manual !== undefined) {
+        _saldoManual = parseFloat(r[0].saldo_manual);
+        try { localStorage.setItem('edr_saldo_manual', String(_saldoManual)); } catch(e) {}
+        return;
+      }
+    }
+    // fallback localStorage
     const raw = localStorage.getItem('edr_saldo_manual');
     _saldoManual = raw !== null ? parseFloat(raw) : null;
-  } catch(e) { _saldoManual = null; }
+  } catch(e) {
+    const raw = localStorage.getItem('edr_saldo_manual');
+    _saldoManual = raw !== null ? parseFloat(raw) : null;
+  }
 }
 
-function salvarSaldoManual() {
+async function salvarSaldoManual() {
   const inp = document.getElementById('caixa-saldo-manual-input');
   if (!inp) return;
   const val = parseFloat(inp.value);
   if (isNaN(val)) { showToast('Informe um valor valido.'); return; }
   _saldoManual = val;
   try { localStorage.setItem('edr_saldo_manual', String(val)); } catch(e) {}
+  if (_companyId) await sbPatch('companies', '?id=eq.' + _companyId, { saldo_manual: val });
   showToast('Saldo salvo');
   renderCaixa();
 }
 
-function limparSaldoManual() {
+async function limparSaldoManual() {
   _saldoManual = null;
   try { localStorage.removeItem('edr_saldo_manual'); } catch(e) {}
+  if (_companyId) await sbPatch('companies', '?id=eq.' + _companyId, { saldo_manual: null });
   renderCaixa();
 }
 
@@ -314,11 +328,11 @@ function _calcMediaSaidaSemanal() {
   return total / (90 / 7);
 }
 
-function renderCaixa() {
+async function renderCaixa() {
   const el = document.getElementById('caixa-content');
   if (!el) return;
 
-  _loadSaldoManual();
+  await _loadSaldoManual();
   const saldoBase  = _calcSaldoBase();
   const mediaSem   = _calcMediaSaidaSemanal();
   const corSaldo   = saldoBase >= 0 ? 'var(--success)' : 'var(--error)';
