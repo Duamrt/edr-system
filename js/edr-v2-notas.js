@@ -121,6 +121,7 @@ function renderNotas() {
         <span class="nf-tag ${tagClass}">${tagCredito}</span>
       </div>
       <div class="nf-card-cnpj">${esc(n.cnpj || 'SEM CNPJ')}</div>
+      ${isAdmin ? `<div class="nf-card-acoes"><button class="btn-excluir-nf" onclick="event.stopPropagation();confirmarExclusaoNota('${esc(n.id)}')"><span class="material-symbols-outlined icon-sm">delete</span> Excluir nota</button></div>` : ''}
     </div>`;
   }).join('');
 
@@ -959,4 +960,96 @@ function abrirImportRapida() {
 function processarXMLNFe(input) {
   if (typeof ImportModule === 'undefined') { showToast('Modulo de importacao nao carregado.'); return; }
   ImportModule.processarXML(input);
+}
+
+// ══════════════════════════════════════════════════════════════════
+// EXCLUSAO DE NOTA FISCAL COM ESTORNO
+// ══════════════════════════════════════════════════════════════════
+async function confirmarExclusaoNota(id) {
+  const nota = notas.find(n => n.id === id || n.id === Number(id));
+  if (!nota) { showToast('Nota nao encontrada.', 'error'); return; }
+
+  // Trava: nota paga no financeiro
+  if (typeof contasPagar !== 'undefined' && Array.isArray(contasPagar)) {
+    const nfNum = (nota.numero_nf || '').toUpperCase().trim();
+    const contaPaga = contasPagar.find(c =>
+      c.status === 'pago' && (c.nota_ref || '').toUpperCase().trim() === nfNum
+    );
+    if (contaPaga) {
+      showToast(`NF ${nota.numero_nf} ja esta PAGA no financeiro. Cancele o pagamento antes de excluir.`, 'error');
+      return;
+    }
+  }
+
+  const destino = nota.obra || 'sem destino';
+  const itens = parseItens(nota);
+  const ok = confirm(
+    `Excluir NF ${nota.numero_nf || '(sem numero)'} de ${nota.fornecedor}?\n\n` +
+    `Destino: ${destino}\n` +
+    `Itens: ${itens.length}\n` +
+    `Valor: ${fmtR(nota.valor_bruto)}\n\n` +
+    `O estoque/custo sera estornado automaticamente.\n` +
+    `Esta acao NAO pode ser desfeita.`
+  );
+  if (!ok) return;
+  await processarExclusaoNota(id);
+}
+
+async function processarExclusaoNota(id) {
+  const nota = notas.find(n => n.id === id || n.id === Number(id));
+  if (!nota) { showToast('Nota nao encontrada.', 'error'); return; }
+
+  const nfNum = (nota.numero_nf || '').toUpperCase().trim();
+  const erros = [];
+
+  try {
+    // Passo A: Excluir distribuicoes vinculadas (tem nota_id real)
+    try {
+      await sbDelete('distribuicoes', `?nota_id=eq.${nota.id}`);
+      if (typeof distribuicoes !== 'undefined' && Array.isArray(distribuicoes)) {
+        distribuicoes = distribuicoes.filter(d => d.nota_id !== nota.id);
+      }
+    } catch(e) {
+      erros.push('distribuicoes: ' + (e.message || e));
+      console.error('[EDR] Erro ao excluir distribuicoes da NF', nota.id, e);
+    }
+
+    // Passo B: Excluir lancamentos de "baixa automatica" desta NF (por ID)
+    if (typeof lancamentos !== 'undefined' && Array.isArray(lancamentos) && nfNum) {
+      const lancsDaNota = lancamentos.filter(l =>
+        l.obs && l.obs.toUpperCase().includes('NF ' + nfNum)
+      );
+      for (const l of lancsDaNota) {
+        try {
+          await sbDelete('lancamentos', `?id=eq.${l.id}`);
+        } catch(e) {
+          erros.push(`lancamento ${l.id}: ` + (e.message || e));
+          console.error('[EDR] Erro ao excluir lancamento', l.id, e);
+        }
+      }
+      if (lancsDaNota.length) {
+        lancamentos = lancamentos.filter(l => !lancsDaNota.some(x => x.id === l.id));
+      }
+    }
+
+    // Passo C: Excluir a nota principal
+    await sbDelete('notas_fiscais', `?id=eq.${nota.id}`);
+
+    // Atualizar memoria local
+    notas = notas.filter(n => n.id !== nota.id);
+
+    // Re-renderizar
+    renderNotas();
+    if (typeof renderEstoque === 'function') renderEstoque();
+    if (typeof renderDashboard === 'function') renderDashboard();
+
+    if (erros.length) {
+      showToast(`Nota excluida com avisos: ${erros.join('; ')}`, 'warning');
+    } else {
+      showToast(`NF ${nota.numero_nf || ''} excluida. Estorno aplicado.`, 'success');
+    }
+  } catch(e) {
+    console.error('[EDR] Erro critico ao excluir nota', id, e);
+    showToast('Erro ao excluir nota: ' + (e.message || 'verifique o console.'), 'error');
+  }
 }
