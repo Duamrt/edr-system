@@ -470,6 +470,8 @@ function renderEstoque() {
     if (it.saldo > 0) {
       acoes += `<button class="mat-action-btn distribuir" onclick="abrirDistribuicao('${esc(it.chave)}')">
         <span class="material-symbols-outlined">local_shipping</span>Distribuir</button>`;
+      acoes += `<button class="mat-action-btn" style="border-color:var(--error);color:var(--error);" onclick="abrirSaidaMaterial('${esc(it.desc)}','${esc(it.unidade||'UN')}')" title="Baixa Rápida">
+        <span class="material-symbols-outlined">remove_circle</span>Baixa</button>`;
     }
     acoes += `<button class="mat-action-btn" onclick="abrirHistoricoMaterial('${esc(it.chave)}')">
       <span class="material-symbols-outlined">history</span>Historico</button>`;
@@ -1753,12 +1755,12 @@ async function salvarEntradaDireta() {
       const codMat = cats.find(m => norm(m.nome) === norm(desc));
       const descLanc = codMat ? `${codMat.codigo} · ${desc}` : desc;
       const obsLanc = [fornecedor, obs || 'ENTRADA DIRETA SEM NF'].filter(Boolean).join(' · ');
-      const [lanc] = await sbPost('lancamentos', { obra_id: obraId, descricao: descLanc, qtd, preco, total: valor, data, obs: obsLanc, etapa, nota_id: null });
-      lancamentos.unshift(lanc);
+      const lanc = await sbPost('lancamentos', { obra_id: obraId, descricao: descLanc, qtd, preco, total: valor, data, obs: obsLanc, etapa, nota_id: null });
+      if (lanc) lancamentos.unshift(lanc);
       showToast(`✅ ${qtd} ${unidade} de ${desc} → ${obraObj.nome}!`);
     } else {
-      const [nova] = await sbPost('entradas_diretas', { item_desc: desc, unidade, qtd, preco, fornecedor, data, obs, obra: 'EDR' });
-      entradasDiretas.unshift(nova);
+      const nova = await sbPost('entradas_diretas', { item_desc: desc, unidade, qtd, preco, fornecedor, data, obs, obra: 'EDR' });
+      if (nova) entradasDiretas.unshift(nova);
       showToast(`✅ ${qtd} ${unidade} de ${desc} no estoque!`);
     }
     fecharModal('entrada');
@@ -1873,21 +1875,22 @@ async function salvarSaidaMaterial() {
 
   try {
     const valor = qtd * valorUnit;
-    const [nova] = await sbPost('distribuicoes', {
-      item_desc: desc, obra_destino: obraId, obra_nome: obraObj?.nome || '',
-      qtd, valor, data, etapa, unidade
+    const nova = await sbPost('distribuicoes', {
+      item_desc: desc, obra_destino: obraId,
+      qtd, valor, etapa, unidade
     });
+    if (!nova) { showToast('❌ Erro ao salvar saída. Verifique o console.'); return; }
     distribuicoes.unshift(nova);
     if (valor > 0) {
       const cats = EstoqueModule.catalogoMateriais.length ? EstoqueModule.catalogoMateriais : (typeof catalogoMateriais !== 'undefined' ? catalogoMateriais : []);
       const codSaida = cats.find(m => norm(m.nome) === norm(desc));
       const descSaida = codSaida ? `${codSaida.codigo} · ${desc}` : desc;
-      const [lanc] = await sbPost('lancamentos', {
+      const lanc = await sbPost('lancamentos', {
         obra_id: obraId, descricao: descSaida,
         qtd, preco: valorUnit, total: valor, data,
         obs: obs || 'SAÍDA MANUAL DE ESTOQUE', etapa
       });
-      lancamentos.unshift(lanc);
+      if (lanc) lancamentos.unshift(lanc);
     }
     showToast(`✅ Baixa de ${qtd} ${unidade} de ${desc} registrada!`);
     fecharModal('saida');
