@@ -500,7 +500,12 @@ async function excluirUsuario(companyUserId, nome) {
 // ── PERMISSÕES VISUAIS DO MENU ───────────────────────────────
 function aplicarPermissoesVisuais(perfil, permissions) {
   const btns = document.querySelectorAll('.sidebar .nav-btn[data-view]');
-  const permsArray = Array.isArray(permissions) ? permissions : null;
+  // Prioridade: permissões por usuário → PERFIL_VIEWS da role → tudo
+  let permsArray = Array.isArray(permissions) ? permissions : null;
+  if (!permsArray && typeof PERFIL_VIEWS !== 'undefined') {
+    const rolePerms = PERFIL_VIEWS[perfil];
+    permsArray = Array.isArray(rolePerms) ? rolePerms : null;
+  }
   if (perfil === 'admin' || !permsArray) {
     btns.forEach(b => b.classList.remove('perm-hidden'));
     document.querySelectorAll('.sidebar-group, .sidebar-group-label').forEach(el => el.classList.remove('perm-hidden'));
