@@ -747,6 +747,7 @@ async function confirmarDistribuicaoItem(chave, obraDestino, etapa, quantidade) 
   // Salvar distribuicao no Supabase
   const payload = {
     item_desc: item.desc,
+    item_idx: 0,
     codigo_catalogo: item.codigo || null,
     obra_id: obraDestino,
     obra_nome: obras.find(o => o.id === obraDestino)?.nome || '',
@@ -1873,7 +1874,7 @@ async function salvarSaidaMaterial() {
   try {
     const valor = qtd * valorUnit;
     const nova = await sbPost('distribuicoes', {
-      item_desc: desc, obra_id: obraId,
+      item_desc: desc, item_idx: 0, obra_id: obraId,
       obra_nome: obraObj?.nome || '',
       qtd, valor, etapa, data
     });
