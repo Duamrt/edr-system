@@ -71,6 +71,16 @@ function _entrarNoApp() {
   if (typeof updateShellUser === 'function') {
     updateShellUser(usuarioAtual.nome, usuarioAtual.perfil);
   }
+  // Atualizar sessão com dados completos (perfil + permissions vindos do banco)
+  try {
+    const sess = JSON.parse(localStorage.getItem('edr_auth') || '{}');
+    if (sess.access_token) {
+      sess.user = { ...sess.user, ...usuarioAtual };
+      localStorage.setItem('edr_auth', JSON.stringify(sess));
+    }
+  } catch(e) {}
+  // Aplicar filtro visual de permissões no menu
+  aplicarPermissoesVisuais(usuarioAtual.perfil, usuarioAtual.permissions);
   // Restaurar última view ou ir pro dashboard
   const lastView = localStorage.getItem('edr_last_view');
   if (typeof setView === 'function') setView(lastView || 'dashboard');
@@ -161,10 +171,11 @@ function _agendarRefresh(expiresInSec, refreshToken) {
 // ── CARREGAR COMPANY ID ──────────────────────────────────────
 async function _carregarCompanyId() {
   try {
-    const rows = await sbGet('company_users?user_id=eq.' + usuarioAtual.id + '&select=id,company_id,role&limit=1');
+    const rows = await sbGet('company_users?user_id=eq.' + usuarioAtual.id + '&select=id,company_id,role,permissions&limit=1');
     if (rows && rows.length > 0) {
       _companyId = rows[0].company_id;
       if (rows[0].role) usuarioAtual.perfil = rows[0].role;
+      if (rows[0].permissions !== undefined) usuarioAtual.permissions = rows[0].permissions;
       // Salvar nome/email no company_users para aparecer na tela de permissões
       if (usuarioAtual.nome || usuarioAtual.email) {
         sbPatch('company_users', rows[0].id, {
@@ -381,7 +392,7 @@ async function alterarPerfilUsuario(companyUserId, novoPerfil) {
 // ── MODAL EDITAR USUÁRIO ─────────────────────────────────────
 let _editarUsuarioCompanyUserId = null;
 
-function abrirModalEditarUsuario(companyUserId, authUserId, nome, email, perfil) {
+async function abrirModalEditarUsuario(companyUserId, authUserId, nome, email, perfil) {
   if (usuarioAtual?.perfil !== 'admin') return;
   _editarUsuarioCompanyUserId = companyUserId;
   document.getElementById('editar-usuario-id').value = companyUserId;
@@ -391,6 +402,13 @@ function abrirModalEditarUsuario(companyUserId, authUserId, nome, email, perfil)
   document.getElementById('editar-usuario-perfil').value = perfil || 'operacional';
   const senhaEl = document.getElementById('editar-usuario-senha');
   if (senhaEl) senhaEl.value = '';
+  // Carregar e renderizar permissões do usuário
+  let userPerms = null;
+  try {
+    const rows = await sbGet('company_users?id=eq.' + companyUserId + '&select=permissions&limit=1');
+    if (rows && rows.length > 0) userPerms = rows[0].permissions;
+  } catch(e) {}
+  _renderPermissoesCheckboxes(userPerms, perfil || 'operacional');
   if (typeof openModal === 'function') openModal('editar-usuario');
   else {
     const modal = document.getElementById('modal-editar-usuario');
@@ -413,8 +431,16 @@ async function salvarEdicaoUsuario() {
   const email = document.getElementById('editar-usuario-email').value.trim();
   const perfil = document.getElementById('editar-usuario-perfil').value;
   if (!id || !nome) { showToast('Informe o nome.'); return; }
+  // Coletar permissões marcadas (null = sem restrição se for admin ou sem grid)
+  let permissions = null;
+  if (perfil !== 'admin') {
+    const checkboxes = document.querySelectorAll('#editar-usuario-permissoes-grid input[type="checkbox"][data-perm]');
+    if (checkboxes.length > 0) {
+      permissions = Array.from(checkboxes).filter(c => c.checked).map(c => c.getAttribute('data-perm'));
+    }
+  }
   try {
-    const ok = await sbPatch('company_users', '?id=eq.' + id, { nome, email, role: perfil });
+    const ok = await sbPatch('company_users', '?id=eq.' + id, { nome, email, role: perfil, permissions });
     if (ok !== null) {
       showToast('Usuário atualizado.');
       fecharModalEditarUsuario();
@@ -471,11 +497,57 @@ async function excluirUsuario(companyUserId, nome) {
   }
 }
 
+// ── PERMISSÕES VISUAIS DO MENU ───────────────────────────────
+function aplicarPermissoesVisuais(perfil, permissions) {
+  const btns = document.querySelectorAll('.sidebar .nav-btn[data-view]');
+  if (perfil === 'admin' || !permissions) {
+    btns.forEach(b => b.classList.remove('perm-hidden'));
+    document.querySelectorAll('.sidebar-group, .sidebar-group-label').forEach(el => el.classList.remove('perm-hidden'));
+    return;
+  }
+  const permsSet = new Set(permissions);
+  btns.forEach(b => {
+    b.classList.toggle('perm-hidden', !permsSet.has(b.getAttribute('data-view')));
+  });
+  // Ocultar grupos que ficaram sem nenhum item visível
+  document.querySelectorAll('.sidebar-group').forEach(group => {
+    const hasVisible = Array.from(group.querySelectorAll('.nav-btn[data-view]')).some(b => !b.classList.contains('perm-hidden'));
+    const label = group.previousElementSibling;
+    group.classList.toggle('perm-hidden', !hasVisible);
+    if (label?.classList.contains('sidebar-group-label')) label.classList.toggle('perm-hidden', !hasVisible);
+  });
+}
+
+// ── CHECKBOXES DE PERMISSÃO NO MODAL ─────────────────────────
+function _renderPermissoesCheckboxes(permissions, perfil) {
+  const section = document.getElementById('editar-usuario-permissoes-section');
+  const grid = document.getElementById('editar-usuario-permissoes-grid');
+  if (!section || !grid) return;
+  if (perfil === 'admin') { section.style.display = 'none'; return; }
+  section.style.display = '';
+  // null = acesso total (sem restrição ainda definida → marcar tudo)
+  const checkedSet = permissions ? new Set(permissions) : new Set(_MODULOS_PERMISSAO.map(m => m.id));
+  grid.innerHTML = _MODULOS_PERMISSAO.map(mod =>
+    `<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;padding:3px 0;color:var(--text-primary);">
+      <input type="checkbox" data-perm="${mod.id}" ${checkedSet.has(mod.id) ? 'checked' : ''}
+        style="accent-color:var(--primary);width:13px;height:13px;flex-shrink:0;">
+      ${mod.label}
+    </label>`
+  ).join('');
+}
+
+function _toggleTodasPermissoes() {
+  const checkboxes = document.querySelectorAll('#editar-usuario-permissoes-grid input[type="checkbox"]');
+  const allChecked = Array.from(checkboxes).every(c => c.checked);
+  checkboxes.forEach(c => { c.checked = !allChecked; });
+}
+
 window.abrirModalEditarUsuario = abrirModalEditarUsuario;
 window.fecharModalEditarUsuario = fecharModalEditarUsuario;
 window.salvarEdicaoUsuario = salvarEdicaoUsuario;
 window.definirSenhaUsuario = definirSenhaUsuario;
 window.excluirUsuario = excluirUsuario;
+window._toggleTodasPermissoes = _toggleTodasPermissoes;
 
 // Registrar view de permissões
 window.addEventListener('DOMContentLoaded', () => {
