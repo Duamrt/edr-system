@@ -374,9 +374,13 @@ function filtrarLanc() {
   listaEl.innerHTML = pagina.map(l => {
     const semCodigo = !/^\d{4,6}\s*[·-]/.test(l.descricao || '');
     const etapaKey = l.etapa || '36_outros';
+    const notaVinc = l.nota_id ? (notas || []).find(n => n.id === l.nota_id) : null;
+    const nfBadge = notaVinc
+      ? `<span title="Ver NF ${esc(notaVinc.numero_nf || '')}" onclick="event.stopPropagation();abrirNota('${esc(l.nota_id)}')" style="cursor:pointer;display:inline-flex;align-items:center;gap:2px;background:rgba(var(--primary-rgb,34,139,87),.12);color:var(--primary);border:1px solid rgba(var(--primary-rgb,34,139,87),.3);border-radius:4px;font-size:9px;font-weight:700;padding:1px 5px;letter-spacing:.3px;">NF ${esc(notaVinc.numero_nf || '?')}</span>`
+      : '';
     return `<div class="lanc-item" onclick="abrirNotaDoLancamento('${esc(l.id)}')">
       <div class="lanc-item-left">
-        <div class="lanc-item-desc">${esc(l.descricao || '—')}</div>
+        <div class="lanc-item-desc">${esc(l.descricao || '—')} ${nfBadge}</div>
         <div class="lanc-item-meta">
           <span class="etapa-chip" style="font-size:9px;padding:2px 6px;">${esc(etapaLabel(etapaKey))}</span>
           <span>${l.data ? fmtData(l.data) : '—'}</span>
@@ -973,11 +977,15 @@ async function confirmarEditDesc() {
 function abrirNotaDoLancamento(lancId) {
   const lanc = lancamentos.find(l => l.id === lancId);
   if (!lanc) return;
+  // Via FK direta (nota_id)
+  if (lanc.nota_id) { abrirNota(lanc.nota_id); return; }
+  // Lançamentos manuais/diárias sem NF
   const obs = (lanc.obs || '').toUpperCase();
   if (obs.includes('ENTRADA DIRETA') || obs.includes('SAIDA MANUAL') || obs.includes('SA\u00cdDA MANUAL')) {
     showToast('Lancamento direto (sem nota fiscal).');
     return;
   }
+  // Fallback legado: busca por texto no obs ("NF 1234")
   const descRaw = (lanc.descricao || '').toUpperCase();
   const desc = descRaw.replace(/^\d{4,6}\s*[·-]\s*/, '').trim();
   const obraObj = obras.find(o => o.id === lanc.obra_id) || obrasArquivadas.find(o => o.id === lanc.obra_id);
