@@ -1738,9 +1738,19 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
         <input type="text" id="obras-busca" placeholder="Buscar lançamento..." oninput="filtrarLanc()">
         <select id="obras-filtro-obra" onchange="onChangeObraFiltro()"><option value="">Todas as obras</option></select>
         <button id="btn-arquivar-obra" onclick="onClickArquivarObra()" class="admin-only btn-tipo btn-tipo-active-warning" style="display:none;padding:9px 14px;min-height:auto;font-size:10px;white-space:nowrap;" title="Arquivar obra selecionada"><span class="material-symbols-outlined icon-sm">archive</span> ARQUIVAR</button>
-        <select id="obras-filtro-cat" onchange="filtrarLancCat()" style="min-width:160px;">
-          <option value="">Todos centros de custo</option>
-        </select>
+        <div id="obras-filtro-cat-wrap" style="position:relative;">
+          <button id="obras-filtro-cat-btn" onclick="obrasToggleCatMenu(event)" style="display:flex;align-items:center;gap:4px;padding:8px 12px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12px;color:var(--text-secondary);cursor:pointer;white-space:nowrap;min-width:160px;justify-content:space-between;">
+            <span id="obras-filtro-cat-label">Centros de custo</span>
+            <span class="material-symbols-outlined" style="font-size:15px;opacity:.6;">expand_more</span>
+          </button>
+          <div id="obras-filtro-cat-menu" style="display:none;position:absolute;top:calc(100% + 4px);left:0;z-index:999;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);box-shadow:0 4px 16px rgba(0,0,0,.18);min-width:220px;max-height:300px;overflow-y:auto;padding:6px 0;">
+            <div style="padding:6px 12px;border-bottom:1px solid var(--border);display:flex;gap:8px;">
+              <button onclick="obrasCatSelecionarTodos()" style="font-size:10px;padding:2px 8px;background:var(--primary);color:#fff;border:none;border-radius:3px;cursor:pointer;">Todos</button>
+              <button onclick="obrasCatLimpar()" style="font-size:10px;padding:2px 8px;background:transparent;color:var(--text-secondary);border:1px solid var(--border);border-radius:3px;cursor:pointer;">Limpar</button>
+            </div>
+            <div id="obras-filtro-cat-lista"></div>
+          </div>
+        </div>
         <select id="obras-filtro-usuario" onchange="filtrarLanc()" style="min-width:140px;">
           <option value="">Todos usuários</option>
         </select>
@@ -2598,40 +2608,40 @@ function updateShellUser(nome, perfil) {
 
 <!-- ═══════ MODULOS V2 (ordem de dependência) ═══════ -->
 <!-- 0. Infraestrutura: sbGet/sbPost/sbPatch/sbDelete, confirmar(), showModal, usuarioAtual -->
-<script src="js/edr-v2-infra.js?v=04071132"></script>
+<script src="js/edr-v2-infra.js?v=04071137"></script>
 <!-- 1. Utilitários globais (valorPorExtenso, fmtN) -->
-<script src="js/edr-v2-utils-extras.js?v=04071132"></script>
+<script src="js/edr-v2-utils-extras.js?v=04071137"></script>
 <!-- 2. Obras PRIMEIRO (ETAPAS, resolveEtapaKey, etapaCor, etapaLabel — vários módulos dependem) -->
-<script src="js/edr-v2-obras.js?v=04071132"></script>
+<script src="js/edr-v2-obras.js?v=04071137"></script>
 <!-- 3. PDF engine (pdfMake CDN + PdfModule) -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js?v=04071132"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js?v=04071132"></script>
-<script src="js/edr-v2-pdf.js?v=04071132"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js?v=04071137"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js?v=04071137"></script>
+<script src="js/edr-v2-pdf.js?v=04071137"></script>
 <!-- 4. Módulos core de negócio -->
 <script src="js/edr-v2-notas.js?v=20260407-EDR-DEL"></script>
 <script src="js/edr-v2-importar.js?v=20260407-XML-IPI"></script>
-<script src="js/edr-v2-estoque.js?v=04071132"></script>
-<script src="js/edr-v2-custos.js?v=04071132"></script>
+<script src="js/edr-v2-estoque.js?v=04071137"></script>
+<script src="js/edr-v2-custos.js?v=04071137"></script>
 <!-- 5. Equipe e operacional -->
-<script src="js/edr-v2-diarias.js?v=04071132"></script>
-<script src="js/edr-v2-diario.js?v=04071132"></script>
+<script src="js/edr-v2-diarias.js?v=04071137"></script>
+<script src="js/edr-v2-diario.js?v=04071137"></script>
 <!-- 6. Relatórios e dashboard (dependem de obras.js pra etapaCor) -->
-<script src="js/edr-v2-relatorio.js?v=04071132"></script>
-<script src="js/edr-v2-dashboard.js?v=04071132"></script>
+<script src="js/edr-v2-relatorio.js?v=04071137"></script>
+<script src="js/edr-v2-dashboard.js?v=04071137"></script>
 <!-- 7. Módulos complementares -->
-<script src="js/edr-v2-leads.js?v=04071132"></script>
-<script src="js/edr-v2-garantias.js?v=04071132"></script>
-<script src="js/edr-v2-adicionais.js?v=04071132"></script>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.css?v=04071132"/>
-<script src="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.min.js?v=04071132"></script>
-<script src="js/edr-v2-cronograma.js?v=04071132"></script>
-<script src="js/edr-v2-orcamento.js?v=04071132"></script>
+<script src="js/edr-v2-leads.js?v=04071137"></script>
+<script src="js/edr-v2-garantias.js?v=04071137"></script>
+<script src="js/edr-v2-adicionais.js?v=04071137"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.css?v=04071137"/>
+<script src="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.min.js?v=04071137"></script>
+<script src="js/edr-v2-cronograma.js?v=04071137"></script>
+<script src="js/edr-v2-orcamento.js?v=04071137"></script>
 <!-- 8. Documentação e medições -->
-<script src="js/edr-v2-termo-manual.js?v=04071132"></script>
-<script src="js/edr-v2-pci.js?v=04071132"></script>
+<script src="js/edr-v2-termo-manual.js?v=04071137"></script>
+<script src="js/edr-v2-pci.js?v=04071137"></script>
 <!-- 9. Auth (login, sessão, refresh — ÚLTIMO) -->
-<script src="js/edr-v2-auth.js?v=04071132"></script>
-<script src="js/edr-v2-financeiro.js?v=04071132"></script>
+<script src="js/edr-v2-auth.js?v=04071137"></script>
+<script src="js/edr-v2-financeiro.js?v=04071137"></script>
 
 <!-- ═══════════════════════════════════════════════════════════════ -->
 <!-- MODAIS (Fase 0 — containers para módulos que precisam)        -->

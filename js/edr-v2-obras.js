@@ -92,6 +92,7 @@ const ObrasModule = {
   filtroSemCodigo: false,
   mostandoArquivadas: false,
   catFiltro: null,
+  catsFiltro: new Set(),
   obraAberta: null,    // id da obra no detalhe
   lancPage: 0,         // pagina atual de lancamentos
   lancPageSize: 50,    // lancamentos por pagina
@@ -108,15 +109,68 @@ function renderObrasView() {
   initCATS();
   _obrasShowOverview();
   populateSelects();
-  // BUG18: popular dropdown de centros de custo
-  const filtrocat = document.getElementById('obras-filtro-cat');
-  if (filtrocat) {
-    filtrocat.innerHTML = '<option value="">Todos centros de custo</option>' +
-      ETAPAS.map(e => `<option value="${e.key}">${e.lb}</option>`).join('');
-  }
+  _obrasPopularFiltrosCat();
   _obrasPopularFiltroUsuario();
+  document.addEventListener('click', _obrasCatMenuClickFora, true);
   renderObrasCards();
   aplicarPerfil();
+}
+
+function _obrasPopularFiltrosCat() {
+  const lista = document.getElementById('obras-filtro-cat-lista');
+  if (!lista) return;
+  lista.innerHTML = ETAPAS.map(e => `
+    <label style="display:flex;align-items:center;gap:8px;padding:6px 12px;cursor:pointer;font-size:12px;color:var(--text-primary);transition:background .1s;" onmouseenter="this.style.background='rgba(255,255,255,.04)'" onmouseleave="this.style.background=''">
+      <input type="checkbox" value="${e.key}" onchange="obrasCatToggle('${e.key}')" style="accent-color:var(--primary);width:14px;height:14px;cursor:pointer;">
+      ${e.lb}
+    </label>`).join('');
+}
+
+function _obrasCatMenuClickFora(e) {
+  const wrap = document.getElementById('obras-filtro-cat-wrap');
+  if (wrap && !wrap.contains(e.target)) _obrasCatFecharMenu();
+}
+
+function obrasToggleCatMenu(e) {
+  if (e) e.stopPropagation();
+  const menu = document.getElementById('obras-filtro-cat-menu');
+  if (!menu) return;
+  menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+}
+
+function _obrasCatFecharMenu() {
+  const menu = document.getElementById('obras-filtro-cat-menu');
+  if (menu) menu.style.display = 'none';
+}
+
+function obrasCatToggle(key) {
+  if (ObrasModule.catsFiltro.has(key)) ObrasModule.catsFiltro.delete(key);
+  else ObrasModule.catsFiltro.add(key);
+  _obrasCatAtualizarLabel();
+  filtrarLanc();
+}
+
+function obrasCatSelecionarTodos() {
+  ETAPAS.forEach(e => ObrasModule.catsFiltro.add(e.key));
+  document.querySelectorAll('#obras-filtro-cat-lista input[type=checkbox]').forEach(cb => cb.checked = true);
+  _obrasCatAtualizarLabel();
+  filtrarLanc();
+}
+
+function obrasCatLimpar() {
+  ObrasModule.catsFiltro.clear();
+  document.querySelectorAll('#obras-filtro-cat-lista input[type=checkbox]').forEach(cb => cb.checked = false);
+  _obrasCatAtualizarLabel();
+  filtrarLanc();
+}
+
+function _obrasCatAtualizarLabel() {
+  const label = document.getElementById('obras-filtro-cat-label');
+  if (!label) return;
+  const n = ObrasModule.catsFiltro.size;
+  label.textContent = n === 0 ? 'Centros de custo' : `${n} selecionado${n > 1 ? 's' : ''}`;
+  const btn = document.getElementById('obras-filtro-cat-btn');
+  if (btn) btn.style.borderColor = n > 0 ? 'var(--primary)' : 'var(--border)';
 }
 
 function _obrasPopularFiltroUsuario() {
@@ -327,7 +381,6 @@ function filtrarLanc() {
 
   const obraId = ObrasModule.obraAberta;
   const busca = norm(document.getElementById('obras-busca')?.value || '');
-  const catFiltro = document.getElementById('obras-filtro-cat')?.value || '';
   const usuarioFiltro = document.getElementById('obras-filtro-usuario')?.value || '';
 
   // Pool correto (ativas ou concluidas)
@@ -338,9 +391,9 @@ function filtrarLanc() {
   if (obraId) lista = lista.filter(l => l.obra_id === obraId);
   if (busca) lista = lista.filter(l => norm(l.descricao || '').includes(busca));
   if (usuarioFiltro) lista = lista.filter(l => (l.criado_por || '') === usuarioFiltro);
-  if (catFiltro) lista = lista.filter(l => {
+  if (ObrasModule.catsFiltro.size > 0) lista = lista.filter(l => {
     const resolved = typeof resolveEtapaKey === 'function' ? resolveEtapaKey(l.etapa || '36_outros') : (l.etapa || '36_outros');
-    return resolved === catFiltro;
+    return ObrasModule.catsFiltro.has(resolved);
   });
   if (ObrasModule.filtroSemCodigo) lista = lista.filter(l => !/^\d{4,6}\s*[·-]/.test(l.descricao || ''));
 
