@@ -432,6 +432,7 @@ async function definirSenhaUsuario() {
     const r = await fetch(`${SUPABASE_URL}/functions/v1/set-user-password`, {
       method: 'POST',
       headers: {
+        'apikey': SUPABASE_KEY,
         'Authorization': 'Bearer ' + _supabaseToken,
         'Content-Type': 'application/json'
       },
