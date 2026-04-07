@@ -274,10 +274,16 @@ async function renderPermissoes(container) {
       const perfilAtual = u.role || 'operacional';
       const perfilCor = (_PERFIS.find(p => p.id === perfilAtual) || {}).cor || '#6b7280';
       const editBtn = isAdmin
-        ? `<button onclick="abrirModalEditarUsuario('${u.id}','${(u.nome||'').replace(/'/g,"\\'")}','${(u.email||'').replace(/'/g,"\\'")}','${perfilAtual}')"
-            style="background:none;border:1px solid var(--borda);border-radius:6px;padding:4px 8px;cursor:pointer;color:var(--text-secondary);display:flex;align-items:center;gap:4px;font-size:11px;font-weight:700;">
-            <span class="material-symbols-outlined" style="font-size:14px;">edit</span>EDITAR
-          </button>`
+        ? `<div style="display:flex;gap:6px;align-items:center;">
+            <button onclick="abrirModalEditarUsuario('${u.id}','${(u.nome||'').replace(/'/g,"\\'")}','${(u.email||'').replace(/'/g,"\\'")}','${perfilAtual}')"
+              style="background:none;border:1px solid var(--borda);border-radius:6px;padding:4px 8px;cursor:pointer;color:var(--text-secondary);display:flex;align-items:center;gap:3px;font-size:11px;font-weight:700;">
+              <span class="material-symbols-outlined" style="font-size:14px;">edit</span>EDITAR
+            </button>
+            <button onclick="excluirUsuario('${u.id}','${(u.nome||u.email||'este usuário').replace(/'/g,"\\'")}')"
+              style="background:none;border:1px solid #fca5a5;border-radius:6px;padding:4px 8px;cursor:pointer;color:#dc2626;display:flex;align-items:center;gap:3px;font-size:11px;font-weight:700;">
+              <span class="material-symbols-outlined" style="font-size:14px;">delete</span>
+            </button>
+          </div>`
         : `<span style="font-size:12px;font-weight:700;color:${perfilCor};">${perfilAtual.toUpperCase()}</span>`;
 
       return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--borda);">
@@ -430,10 +436,28 @@ async function resetarSenhaUsuario() {
   }
 }
 
+async function excluirUsuario(companyUserId, nome) {
+  if (usuarioAtual?.perfil !== 'admin') return;
+  const ok = await confirmar(`Remover "${nome}" do sistema? O usuário perderá o acesso ao EDR.`);
+  if (!ok) return;
+  try {
+    const r = await sbDelete('company_users', '?id=eq.' + companyUserId);
+    if (r) {
+      showToast('Usuário removido.');
+      renderPermissoes();
+    } else {
+      showToast('Erro ao remover usuário.');
+    }
+  } catch(e) {
+    showToast('Erro ao remover usuário.');
+  }
+}
+
 window.abrirModalEditarUsuario = abrirModalEditarUsuario;
 window.fecharModalEditarUsuario = fecharModalEditarUsuario;
 window.salvarEdicaoUsuario = salvarEdicaoUsuario;
 window.resetarSenhaUsuario = resetarSenhaUsuario;
+window.excluirUsuario = excluirUsuario;
 
 // Registrar view de permissões
 window.addEventListener('DOMContentLoaded', () => {
