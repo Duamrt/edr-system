@@ -44,6 +44,7 @@ function renderNotas() {
   const fo = document.getElementById('filtro-obra')?.value || '';
   const ff = document.getElementById('filtro-fornecedor')?.value || '';
   const fc = document.getElementById('filtro-credito')?.value || '';
+  const fn = (document.getElementById('filtro-numero-nf')?.value || '').trim().toLowerCase();
 
   // Popular select de fornecedores (uma vez por render)
   const selForn = document.getElementById('filtro-fornecedor');
@@ -64,6 +65,7 @@ function renderNotas() {
   if (fc === 'nao') lista = lista.filter(n => !n.gera_credito && n.obra !== COMPANY_DEFAULTS.estoqueGeral && n.obra !== COMPANY_DEFAULTS.escritorio);
   if (fc === 'estoque') lista = lista.filter(n => n.obra === COMPANY_DEFAULTS.estoqueGeral);
   if (fc === 'escritorio') lista = lista.filter(n => n.obra === COMPANY_DEFAULTS.escritorio);
+  if (fn) lista = lista.filter(n => (n.numero_nf || '').toLowerCase().includes(fn));
 
   const el = document.getElementById('notas-lista');
   if (!el) return;
