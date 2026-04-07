@@ -678,7 +678,7 @@ async function autocadastrarMateriais(itens) {
     const categoria = typeof getCatEstoque === 'function' ? getCatEstoque(it.desc) : '';
     const unidade = it.unidade || 'UN';
     try {
-      const [saved] = await sbPost('materiais', { codigo, nome: it.desc.toUpperCase().trim(), unidade, categoria, auto: true });
+      const saved = await sbPost('materiais', { codigo, nome: it.desc.toUpperCase().trim(), unidade, categoria, auto: true });
       if (saved) {
         catalogoMateriais.push(saved);
         catalogoMateriais.sort((a, b) => a.codigo.localeCompare(b.codigo));
@@ -846,7 +846,7 @@ async function salvarNota(notaData) {
       gera_credito: temCredito, credito_status: csSimples,
       itens: JSON.stringify(itens), obs
     };
-    const [saved] = await sbPost('notas_fiscais', payload);
+    const saved = await sbPost('notas_fiscais', payload);
     const notaSalva = { ...saved, valor_bruto: totalBruto, frete };
     notas.unshift(notaSalva);
 
@@ -866,14 +866,14 @@ async function salvarNota(notaData) {
           const hoje = hojeISO();
           for (const it of itensEscritorio) {
             const itemIdx = itens.indexOf(it);
-            const [dist] = await sbPost('distribuicoes', {
+            const dist = await sbPost('distribuicoes', {
               nota_id: saved.id, item_desc: it.desc, item_idx: itemIdx,
               obra_id: obraEsc.id, obra_nome: obraEsc.nome,
               qtd: it.qtd, valor: it.total, data: hoje
             });
             if (dist) distribuicoes.push({ ...dist, obra_nome: obraEsc.nome });
             const descLanc = it.codigo ? `${it.codigo} \u00b7 ${it.desc}` : it.desc;
-            const [lanc] = await sbPost('lancamentos', {
+            const lanc = await sbPost('lancamentos', {
               obra_id: obraEsc.id, descricao: descLanc,
               qtd: it.qtd, preco: it.preco, total: it.total,
               data: hoje, obs: `NF ${numero} \u00b7 ${fornecedor} \u00b7 Baixa automatica`,

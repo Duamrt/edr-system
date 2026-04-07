@@ -2016,7 +2016,7 @@ async function salvarAjusteModal() {
   const motivoFinal = window._motivoContagemOverride || `${label}${motivo ? ' · ' + motivo : ''}`;
   window._motivoContagemOverride = null;
   try {
-    const [novo] = await sbPost('ajustes_estoque', {
+    const novo = await sbPost('ajustes_estoque', {
       item_desc: desc, unidade, qtd,
       tipo: ajusteTipoAtual,
       motivo: motivoFinal
@@ -2114,7 +2114,7 @@ async function salvarMaterial() {
   const codigo = obterProximoCodigoDisponivel(cats);
   btn.disabled = true; btn.textContent = 'SALVANDO...';
   try {
-    const [saved] = await sbPost('materiais', { codigo, nome, unidade, categoria });
+    const saved = await sbPost('materiais', { codigo, nome, unidade, categoria });
     cats.push(saved);
     cats.sort((a,b) => (a.codigo||'').localeCompare(b.codigo||''));
     if (EstoqueModule.catalogoMateriais !== cats) EstoqueModule.catalogoMateriais = cats;

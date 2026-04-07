@@ -404,7 +404,7 @@ async function _garantiasSalvar() {
       if (idx >= 0) GarantiasModule.chamados[idx] = { ...GarantiasModule.chamados[idx], ...atualizado };
       showToast('Chamado atualizado.');
     } else {
-      const [novo] = await sbPost('garantia_chamados', payload);
+      const novo = await sbPost('garantia_chamados', payload);
       GarantiasModule.chamados.unshift(novo);
       showToast('Chamado registrado.');
     }

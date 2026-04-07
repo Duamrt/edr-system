@@ -289,7 +289,7 @@ const AdicionaisModule = {
         if (idx >= 0) Object.assign(this.adicionais[idx], { descricao, valor, condicao, obs, data_acordo });
         showToast('Adicional atualizado');
       } else {
-        const [novo] = await sbPost('obra_adicionais', { obra_id: obraId, descricao, valor, condicao, obs, data_acordo, status: 'pendente' });
+        const novo = await sbPost('obra_adicionais', { obra_id: obraId, descricao, valor, condicao, obs, data_acordo, status: 'pendente' });
         if (novo) this.adicionais.unshift(novo);
         showToast('Adicional criado');
       }
@@ -402,7 +402,7 @@ const AdicionaisModule = {
     if (!valor || !data) { showToast('Preencha valor e data'); return; }
 
     try {
-      const [novo] = await sbPost('adicional_pagamentos', { adicional_id, valor, data, forma });
+      const novo = await sbPost('adicional_pagamentos', { adicional_id, valor, data, forma });
       if (novo) this.pagamentos.unshift(novo);
 
       // Auto-conclusao quando totalmente pago

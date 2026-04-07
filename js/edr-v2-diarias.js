@@ -206,7 +206,7 @@ async function diarAdicionarFuncionario() {
     showToast('Ja existe um funcionario com esse nome.'); return;
   }
   try {
-    const [novo] = await sbPost('diarias_funcionarios', { nome, cargo, diaria, apelidos, ativo: true });
+    const novo = await sbPost('diarias_funcionarios', { nome, cargo, diaria, apelidos, ativo: true });
     DiariasModule.funcionariosRaw.push(novo);
     _diarReconstruirMapa();
     _diarRenderListaEquipe();
@@ -376,7 +376,7 @@ async function _diarCriarQuinzenaAuto() {
     } catch (e) { /* segue pra criar */ }
 
     try {
-      const [nova] = await sbPost('diarias_quinzenas', { label, data_inicio: inicio, data_fim: fim });
+      const nova = await sbPost('diarias_quinzenas', { label, data_inicio: inicio, data_fim: fim });
       DiariasModule.quinzenas = [nova];
       DiariasModule.quinzenaAtiva = nova;
     } catch (e) { showToast('Erro ao criar quinzena: ' + (e.message || '')); }
@@ -1723,7 +1723,7 @@ async function diarSalvarExtra() {
   if (!valor || valor <= 0) { showToast('Informe um valor valido.'); return; }
   if (!obra) { showToast('Selecione a obra.'); return; }
   try {
-    const [novo] = await sbPost('diarias_extras', { quinzena_id: DiariasModule.quinzenaAtiva.id, funcionario: func, descricao: desc, valor, obra });
+    const novo = await sbPost('diarias_extras', { quinzena_id: DiariasModule.quinzenaAtiva.id, funcionario: func, descricao: desc, valor, obra });
     DiariasModule.extras.push(novo);
     diarFecharModalExtra(); _diarRenderExtras(); _diarRenderFolha();
     showToast('Extra registrado!');

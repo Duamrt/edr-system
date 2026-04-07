@@ -545,7 +545,7 @@ async function _leadsCriar() {
   };
 
   try {
-    const [novo] = await sbPost('leads', payload);
+    const novo = await sbPost('leads', payload);
     LeadsModule.data.unshift(novo);
     showToast('Lead criado.');
     _leadsFecharModal();
