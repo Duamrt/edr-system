@@ -467,12 +467,10 @@ function renderEstoque() {
       acoes += `<button class="mat-action-btn" style="border-color:var(--warning);color:var(--warning);" onclick="abrirVincularCodigo('${esc(it.chave)}')" title="Vincular codigo">
         <span class="material-symbols-outlined">link</span>Vincular</button>`;
     }
-    if (it.saldo > 0) {
-      acoes += `<button class="mat-action-btn distribuir" onclick="abrirDistribuicao('${esc(it.chave)}')">
-        <span class="material-symbols-outlined">local_shipping</span>Distribuir</button>`;
-      acoes += `<button class="mat-action-btn" style="border-color:var(--error);color:var(--error);" onclick="abrirSaidaMaterial('${esc(it.desc)}','${esc(it.unidade||'UN')}')" title="Baixa Rápida">
-        <span class="material-symbols-outlined">remove_circle</span>Baixa</button>`;
-    }
+    acoes += `<button class="mat-action-btn distribuir" onclick="abrirDistribuicao('${esc(it.chave)}')">
+      <span class="material-symbols-outlined">local_shipping</span>Distribuir</button>`;
+    acoes += `<button class="mat-action-btn" style="border-color:var(--error);color:var(--error);" onclick="abrirSaidaMaterial('${esc(it.desc)}','${esc(it.unidade||'UN')}')" title="Baixa Rápida">
+      <span class="material-symbols-outlined">remove_circle</span>Baixa</button>`;
     acoes += `<button class="mat-action-btn" onclick="abrirHistoricoMaterial('${esc(it.chave)}')">
       <span class="material-symbols-outlined">history</span>Historico</button>`;
     if (isAdmin) {
