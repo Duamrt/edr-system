@@ -762,6 +762,11 @@ async function confirmarDistribuicaoItem(chave, obraDestino, etapa, quantidade) 
     ? `${item.codigo} · ${item.desc} (distribuicao estoque)`
     : `${item.desc} (distribuicao estoque)`;
 
+  // nota_id dominante = lote com maior valor consumido (FIFO pode cruzar notas)
+  const lotePrincipal = lotesConcumidos.length
+    ? lotesConcumidos.reduce((a, b) => (b.qtd * b.valor_un > a.qtd * a.valor_un ? b : a))
+    : null;
+
   await sbPost('lancamentos', {
     obra_id: obraDestino,
     descricao: descLanc,
@@ -770,6 +775,7 @@ async function confirmarDistribuicaoItem(chave, obraDestino, etapa, quantidade) 
     tipo: 'material',
     data: hojeISO(),
     origem: 'distribuicao_estoque',
+    nota_id: lotePrincipal?.nota_id || null,
   });
 
   showToast(`${fmt(qtd)} ${item.unidade} distribuido(s) com sucesso`, 'success');
@@ -1747,7 +1753,7 @@ async function salvarEntradaDireta() {
       const codMat = cats.find(m => norm(m.nome) === norm(desc));
       const descLanc = codMat ? `${codMat.codigo} · ${desc}` : desc;
       const obsLanc = [fornecedor, obs || 'ENTRADA DIRETA SEM NF'].filter(Boolean).join(' · ');
-      const [lanc] = await sbPost('lancamentos', { obra_id: obraId, descricao: descLanc, qtd, preco, total: valor, data, obs: obsLanc, etapa });
+      const [lanc] = await sbPost('lancamentos', { obra_id: obraId, descricao: descLanc, qtd, preco, total: valor, data, obs: obsLanc, etapa, nota_id: null });
       lancamentos.unshift(lanc);
       showToast(`✅ ${qtd} ${unidade} de ${desc} → ${obraObj.nome}!`);
     } else {

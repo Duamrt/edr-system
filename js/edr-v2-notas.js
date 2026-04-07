@@ -876,7 +876,8 @@ async function salvarNota(notaData) {
             const [lanc] = await sbPost('lancamentos', {
               obra_id: obraEsc.id, descricao: descLanc,
               qtd: it.qtd, preco: it.preco, total: it.total,
-              data: hoje, obs: `NF ${numero} \u00b7 ${fornecedor} \u00b7 Baixa automatica`
+              data: hoje, obs: `NF ${numero} \u00b7 ${fornecedor} \u00b7 Baixa automatica`,
+              nota_id: saved.id,
             });
             if (lanc) lancamentos.unshift(lanc);
           }
@@ -981,29 +982,77 @@ async function confirmarExclusaoNota(id) {
     }
   }
 
-  const destino = nota.obra || 'sem destino';
-  const itens = parseItens(nota);
-  const ok = confirm(
-    `Excluir NF ${nota.numero_nf || '(sem numero)'} de ${nota.fornecedor}?\n\n` +
-    `Destino: ${destino}\n` +
-    `Itens: ${itens.length}\n` +
-    `Valor: ${fmtR(nota.valor_bruto)}\n\n` +
-    `O estoque/custo sera estornado automaticamente.\n` +
-    `Esta acao NAO pode ser desfeita.`
-  );
-  if (!ok) return;
-  await processarExclusaoNota(id);
+  // Mapear lancamentos vinculados para mostrar no alerta
+  const lancsDaNota = _mapearLancamentosNota(nota);
+  const totalLancs = lancsDaNota.length;
+  const obrasAfetadas = [...new Set(
+    lancsDaNota.map(l => {
+      const o = typeof obras !== 'undefined' ? obras.find(x => x.id === l.obra_id) : null;
+      return o ? o.nome : l.obra_id;
+    }).filter(Boolean)
+  )];
+
+  const nfNum = nota.numero_nf || '(sem numero)';
+  let msg = `Excluir NF ${nfNum} de ${nota.fornecedor}?\n\n`;
+  msg += `Destino: ${nota.obra || 'sem destino'}\n`;
+  msg += `Valor: ${fmtR(nota.valor_bruto)}\n`;
+  if (totalLancs > 0) {
+    msg += `\n⚠️ ${totalLancs} lancamento(s) de custo serao removidos`;
+    if (obrasAfetadas.length) msg += `\n   Obras afetadas: ${obrasAfetadas.join(', ')}`;
+    const totalCusto = lancsDaNota.reduce((s, l) => s + Number(l.total || l.valor || 0), 0);
+    if (totalCusto > 0) msg += `\n   Valor estornado: ${fmtR(totalCusto)}`;
+  }
+  msg += '\n\nEsta acao NAO pode ser desfeita.';
+
+  if (!confirm(msg)) return;
+  await processarExclusaoNota(id, lancsDaNota);
 }
 
-async function processarExclusaoNota(id) {
+// Mapeia todos os lancamentos vinculados a uma nota (FK + fallback texto)
+function _mapearLancamentosNota(nota) {
+  if (typeof lancamentos === 'undefined' || !Array.isArray(lancamentos)) return [];
+  const nfNum = (nota.numero_nf || '').toUpperCase().trim();
+  const porFK    = lancamentos.filter(l => l.nota_id && (l.nota_id === nota.id || l.nota_id === String(nota.id)));
+  const porTexto = nfNum
+    ? lancamentos.filter(l => !l.nota_id && l.obs && l.obs.toUpperCase().includes('NF ' + nfNum))
+    : [];
+  // União sem duplicatas
+  const ids = new Set(porFK.map(l => l.id));
+  return [...porFK, ...porTexto.filter(l => !ids.has(l.id))];
+}
+
+async function processarExclusaoNota(id, lancsPremapeados) {
   const nota = notas.find(n => n.id === id || n.id === Number(id));
   if (!nota) { showToast('Nota nao encontrada.', 'error'); return; }
 
-  const nfNum = (nota.numero_nf || '').toUpperCase().trim();
+  const lancsDaNota = lancsPremapeados || _mapearLancamentosNota(nota);
   const erros = [];
 
   try {
-    // Passo A: Excluir distribuicoes vinculadas (tem nota_id real)
+    // Passo A: Excluir lancamentos vinculados (FK nota_id + fallback texto obs)
+    if (lancsDaNota.length) {
+      // Delete em bloco por nota_id (FK)
+      try {
+        await sbDelete('lancamentos', `?nota_id=eq.${nota.id}`);
+      } catch(e) {
+        erros.push('lancamentos FK: ' + (e.message || e));
+        console.error('[EDR] Erro ao excluir lancamentos por nota_id', nota.id, e);
+      }
+      // Delete individual para os legados encontrados por texto (sem nota_id)
+      const legacy = lancsDaNota.filter(l => !l.nota_id);
+      for (const l of legacy) {
+        try {
+          await sbDelete('lancamentos', `?id=eq.${l.id}`);
+        } catch(e) {
+          erros.push(`lancamento legacy ${l.id}: ` + (e.message || e));
+          console.error('[EDR] Erro ao excluir lancamento legacy', l.id, e);
+        }
+      }
+      const idsRemovidos = new Set(lancsDaNota.map(l => l.id));
+      lancamentos = lancamentos.filter(l => !idsRemovidos.has(l.id));
+    }
+
+    // Passo B: Excluir distribuicoes vinculadas
     try {
       await sbDelete('distribuicoes', `?nota_id=eq.${nota.id}`);
       if (typeof distribuicoes !== 'undefined' && Array.isArray(distribuicoes)) {
@@ -1014,28 +1063,8 @@ async function processarExclusaoNota(id) {
       console.error('[EDR] Erro ao excluir distribuicoes da NF', nota.id, e);
     }
 
-    // Passo B: Excluir lancamentos de "baixa automatica" desta NF (por ID)
-    if (typeof lancamentos !== 'undefined' && Array.isArray(lancamentos) && nfNum) {
-      const lancsDaNota = lancamentos.filter(l =>
-        l.obs && l.obs.toUpperCase().includes('NF ' + nfNum)
-      );
-      for (const l of lancsDaNota) {
-        try {
-          await sbDelete('lancamentos', `?id=eq.${l.id}`);
-        } catch(e) {
-          erros.push(`lancamento ${l.id}: ` + (e.message || e));
-          console.error('[EDR] Erro ao excluir lancamento', l.id, e);
-        }
-      }
-      if (lancsDaNota.length) {
-        lancamentos = lancamentos.filter(l => !lancsDaNota.some(x => x.id === l.id));
-      }
-    }
-
     // Passo C: Excluir a nota principal
     await sbDelete('notas_fiscais', `?id=eq.${nota.id}`);
-
-    // Atualizar memoria local
     notas = notas.filter(n => n.id !== nota.id);
 
     // Re-renderizar
@@ -1046,10 +1075,10 @@ async function processarExclusaoNota(id) {
     if (erros.length) {
       showToast(`Nota excluida com avisos: ${erros.join('; ')}`, 'warning');
     } else {
-      showToast(`NF ${nota.numero_nf || ''} excluida. Estorno aplicado.`, 'success');
+      showToast(`NF ${nota.numero_nf || ''} excluida. Estorno completo.`, 'success');
     }
   } catch(e) {
     console.error('[EDR] Erro critico ao excluir nota', id, e);
-    showToast('Erro ao excluir nota: ' + (e.message || 'verifique o console.'), 'error');
+    showToast('Erro ao excluir: ' + (e.message || 'verifique o console.'), 'error');
   }
 }
