@@ -889,6 +889,23 @@ async function salvarNota(notaData) {
         showToast('Nota fiscal lancada!');
       }
     } else {
+      // NF direta pra obra: criar lancamentos automaticamente
+      if (destino !== COMPANY_DEFAULTS.escritorio) {
+        const obraDestino = [...obras, ...obrasArquivadas].find(o => o.nome === destino);
+        if (obraDestino) {
+          const dataLanc = recebimento || emissao;
+          for (const it of itens) {
+            const descLanc = it.codigo ? `${it.codigo} \u00b7 ${it.desc}` : it.desc;
+            const lanc = await sbPost('lancamentos', {
+              obra_id: obraDestino.id, descricao: descLanc,
+              qtd: it.qtd, preco: it.preco, total: it.total,
+              data: dataLanc, obs: `NF ${numero} \u00b7 ${fornecedor}`,
+              nota_id: saved.id,
+            });
+            if (lanc) lancamentos.unshift(lanc);
+          }
+        }
+      }
       showToast('Nota fiscal lancada!');
     }
 

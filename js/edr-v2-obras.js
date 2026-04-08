@@ -497,6 +497,7 @@ function onChangeObraFiltro() {
   const btnArq = document.getElementById('btn-arquivar-obra');
   if (btnArq) btnArq.style.display = obraId ? '' : 'none';
   filtrarLanc();
+  if (ObrasModule.tab === 'mat') renderObrasMateriais();
 }
 
 function filtrarLancCat() {
