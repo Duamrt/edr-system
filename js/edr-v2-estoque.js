@@ -699,7 +699,7 @@ function abrirHistoricoMaterial(chave) {
 // A logica FIFO roda no frontend por enquanto. Quando multi-tenant
 // estiver ativo, substituir por chamada atomica via sbPost('rpc/...')
 // para evitar race condition entre usuarios simultaneos.
-async function confirmarDistribuicaoItem(chave, obraDestino, etapa, quantidade) {
+async function confirmarDistribuicaoItem(chave, obraDestino, etapa, quantidade, dataSaida) {
   const item = EstoqueModule._consolidado.find(i => i.chave === chave);
   if (!item) return showToast('Material nao encontrado', 'error');
 
@@ -752,7 +752,7 @@ async function confirmarDistribuicaoItem(chave, obraDestino, etapa, quantidade) 
     etapa,
     qtd,
     valor: valorProporcional,
-    data: hojeISO(),
+    data: dataSaida || hojeISO(),
   };
 
   const resp = await sbPost('distribuicoes', payload);
@@ -774,7 +774,7 @@ async function confirmarDistribuicaoItem(chave, obraDestino, etapa, quantidade) 
     valor: valorProporcional,
     etapa,
     tipo: 'material',
-    data: hojeISO(),
+    data: dataSaida || hojeISO(),
     origem: 'distribuicao_estoque',
     nota_id: lotePrincipal?.nota_id || null,
   });
@@ -850,6 +850,10 @@ function abrirDistribuicao(chave) {
         <input class="dist-form-input" id="dist-qtd" type="number" value="1" min="1" max="${item.saldo > 0 ? item.saldo : 9999}" oninput="_atualizarValorDistribuicao('${esc(item.chave)}')"/>
       </div>
       <div class="dist-form-field">
+        <label class="dist-form-label">Data de Saída</label>
+        <input class="dist-form-input" id="dist-data" type="date" value="${hojeISO()}"/>
+      </div>
+      <div class="dist-form-field">
         <label class="dist-form-label">Valor Estimado</label>
         <input class="dist-form-input" id="dist-valor" type="text" value="${fmtR(item.valorMedio)}" readonly style="font-weight:700;color:var(--primary);background:var(--primary-surface);"/>
       </div>
@@ -868,7 +872,7 @@ function abrirDistribuicao(chave) {
     </div>` : ''}
     <div class="btn-row btn-row-mt" style="margin-top:24px;">
       <button class="btn-primary" style="flex:1;padding:14px;font-size:15px;justify-content:center;"
-        onclick="confirmarDistribuicaoItem('${esc(item.chave)}', document.getElementById('dist-obra').value, document.getElementById('dist-etapa').value, document.getElementById('dist-qtd').value)">
+        onclick="confirmarDistribuicaoItem('${esc(item.chave)}', document.getElementById('dist-obra').value, document.getElementById('dist-etapa').value, document.getElementById('dist-qtd').value, document.getElementById('dist-data').value)">
         <span class="material-symbols-outlined icon-lg">check_circle</span>
         Confirmar Distribuicao
       </button>
@@ -915,6 +919,9 @@ async function abrirAjusteEstoque(chave) {
           </p>
           <label class="dist-form-label">Digite a quantidade real:</label>
           <input id="_ajuste-qtd-input" type="number" step="any" class="dist-form-input" placeholder="0" style="margin-top:6px;width:100%;" />
+          <label class="dist-form-label" style="margin-top:12px;">Corrigir valor unitário (opcional):</label>
+          <input id="_ajuste-preco-input" type="number" step="0.01" min="0" class="dist-form-input" placeholder="Ex: 45.90" style="margin-top:6px;width:100%;" />
+          <div style="font-size:11px;color:var(--text-tertiary);margin-top:4px;">Deixe em branco para manter o preço atual. Atualiza entradas sem preço definido.</div>
         </div>
         <div class="modal-footer">
           <button class="btn" id="_ajuste-cancel-btn">Cancelar</button>
@@ -924,34 +931,49 @@ async function abrirAjusteEstoque(chave) {
     `;
     document.body.appendChild(overlay);
     const inp = overlay.querySelector('#_ajuste-qtd-input');
+    const inpPreco = overlay.querySelector('#_ajuste-preco-input');
     inp.focus();
     const fechar = (val) => { overlay.remove(); resolve(val); };
-    overlay.querySelector('#_ajuste-ok-btn').onclick = () => fechar(parseFloat(inp.value));
+    overlay.querySelector('#_ajuste-ok-btn').onclick = () => fechar({ real: parseFloat(inp.value), preco: parseFloat(inpPreco.value) || null });
     overlay.querySelector('#_ajuste-cancel-btn').onclick = () => fechar(null);
     overlay.querySelector('.modal-close').onclick = () => fechar(null);
-    inp.addEventListener('keydown', e => { if (e.key === 'Enter') fechar(parseFloat(inp.value)); if (e.key === 'Escape') fechar(null); });
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') inpPreco.focus(); if (e.key === 'Escape') fechar(null); });
+    inpPreco.addEventListener('keydown', e => { if (e.key === 'Enter') fechar({ real: parseFloat(inp.value), preco: parseFloat(inpPreco.value) || null }); if (e.key === 'Escape') fechar(null); });
   });
 
-  if (real === null || isNaN(real)) return showToast('Quantidade inválida', 'error');
+  if (real === null) return;
+  const { real: realQtd, preco: novoPreco } = real;
+  if (realQtd === undefined || isNaN(realQtd)) return showToast('Quantidade inválida', 'error');
 
-  const diferenca = real - item.saldo;
-  if (diferenca === 0) return showToast('Saldo já confere', 'info');
+  const diferenca = realQtd - item.saldo;
+  const msgPreco = novoPreco ? `\nNovo preço unitário: ${fmtR(novoPreco)}` : '';
+  if (diferenca === 0 && !novoPreco) return showToast('Saldo já confere e nenhum preço informado', 'info');
 
-  const ok = await confirmar(`Ajustar "${esc(item.desc)}"?\nSaldo sistema: ${fmt(item.saldo)}\nContagem real: ${fmt(real)}\nDiferença: ${diferenca > 0 ? '+' : ''}${fmt(diferenca)}`);
+  const ok = await confirmar(`Ajustar "${esc(item.desc)}"?\nSaldo sistema: ${fmt(item.saldo)}\nContagem real: ${fmt(realQtd)}\nDiferença: ${diferenca > 0 ? '+' : ''}${fmt(diferenca)}${msgPreco}`);
   if (!ok) return;
 
-  const resp = await sbPost('ajustes_estoque', {
-    item_desc: item.desc,
-    codigo_catalogo: item.codigo || null,
-    qtd: diferenca,
-    tipo: 'contagem',
-    motivo: `Contagem fisica: sistema ${fmt(item.saldo)}, real ${fmt(real)}, dif ${diferenca > 0 ? '+' : ''}${fmt(diferenca)}`,
-    data: hojeISO(),
-  });
+  if (diferenca !== 0) {
+    const resp = await sbPost('ajustes_estoque', {
+      item_desc: item.desc,
+      codigo_catalogo: item.codigo || null,
+      qtd: diferenca,
+      tipo: 'contagem',
+      motivo: `Contagem fisica: sistema ${fmt(item.saldo)}, real ${fmt(realQtd)}, dif ${diferenca > 0 ? '+' : ''}${fmt(diferenca)}`,
+      data: hojeISO(),
+    });
+    if (!resp) return showToast('Erro ao salvar ajuste', 'error');
+  }
 
-  if (!resp) return showToast('Erro ao salvar ajuste', 'error');
+  if (novoPreco && novoPreco > 0) {
+    const enc = encodeURIComponent(item.desc);
+    const filtro = item.codigo
+      ? `entradas_diretas?codigo_catalogo=eq.${encodeURIComponent(item.codigo)}&preco=eq.0`
+      : `entradas_diretas?item_desc=ilike.${enc}&preco=eq.0`;
+    await sbPatch(filtro, { preco: novoPreco });
+    showToast(`Preço atualizado: ${fmtR(novoPreco)}/${item.unidade}`, 'success');
+  }
 
-  showToast(`Estoque ajustado: ${diferenca > 0 ? '+' : ''}${fmt(diferenca)} ${item.unidade}`, 'success');
+  if (diferenca !== 0) showToast(`Estoque ajustado: ${diferenca > 0 ? '+' : ''}${fmt(diferenca)} ${item.unidade}`, 'success');
 
   if (typeof ajustesEstoque !== 'undefined') {
     const novos = await sbGet('ajustes_estoque');
