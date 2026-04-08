@@ -272,7 +272,7 @@ async function criar() {
     const res = await fetch(`${SUPABASE_URL}/functions/v1/criar-cliente`, {
       method: 'POST',
       headers: { 'apikey': ANON_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ empresa, nome, email, password: senha })
+      body: JSON.stringify({ empresa, nome, email, password: senha, adminSecret: SENHA_ACESSO })
     });
     const data = await res.json();
 

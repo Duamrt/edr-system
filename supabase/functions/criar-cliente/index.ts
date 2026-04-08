@@ -14,33 +14,12 @@ serve(async (req) => {
   }
 
   try {
-    // 1. Verificar token do caller
-    const authHeader = req.headers.get('Authorization') ?? ''
-    const callerToken = authHeader.replace('Bearer ', '').trim()
-    if (!callerToken) return json({ error: 'Não autorizado' }, 401)
     if (!SERVICE_KEY) return json({ error: 'SERVICE_KEY não configurado' }, 500)
 
-    // 2. Verificar identidade do caller
-    const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-      headers: { 'apikey': SERVICE_KEY, 'Authorization': `Bearer ${callerToken}` }
-    })
-    if (!userRes.ok) return json({ error: 'Token inválido' }, 401)
-    const userData = await userRes.json()
-    const callerId = userData?.id
-    if (!callerId) return json({ error: 'Usuário não identificado' }, 401)
-
-    // 3. Verificar se é admin
-    const roleRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/company_users?user_id=eq.${callerId}&select=role&limit=1`,
-      { headers: { 'apikey': SERVICE_KEY, 'Authorization': `Bearer ${SERVICE_KEY}` } }
-    )
-    const roleRows = await roleRes.json()
-    if (!Array.isArray(roleRows) || roleRows[0]?.role !== 'admin') {
-      return json({ error: 'Apenas admins podem criar clientes.' }, 403)
-    }
-
-    // 4. Receber dados
-    const { empresa, nome, email, password } = await req.json()
+    // 1. Receber dados e verificar senha de admin
+    const { empresa, nome, email, password, adminSecret } = await req.json()
+    const ADMIN_SECRET = Deno.env.get('EDR_ADMIN_SECRET') ?? 'edr@admin2026'
+    if (adminSecret !== ADMIN_SECRET) return json({ error: 'Não autorizado' }, 401)
     if (!empresa || !email || !password || password.length < 6) {
       return json({ error: 'Dados inválidos. Empresa, email e senha (mín. 6 chars) obrigatórios.' }, 400)
     }
