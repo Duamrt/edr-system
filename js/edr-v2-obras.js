@@ -383,12 +383,15 @@ function filtrarLanc() {
   const busca = norm(document.getElementById('obras-busca')?.value || '');
   const usuarioFiltro = document.getElementById('obras-filtro-usuario')?.value || '';
 
-  // Pool correto (ativas ou concluidas)
-  const obraPool = ObrasModule.mostandoArquivadas ? obrasArquivadas : obras;
-  const obraIds = new Set(obraPool.map(o => o.id));
-
-  let lista = lancamentos.filter(l => obraIds.has(l.obra_id));
-  if (obraId) lista = lista.filter(l => l.obra_id === obraId);
+  // Pool correto (ativas ou concluidas); quando obra especifica, busca direto
+  let lista;
+  if (obraId) {
+    lista = lancamentos.filter(l => l.obra_id === obraId);
+  } else {
+    const obraPool = ObrasModule.mostandoArquivadas ? obrasArquivadas : obras;
+    const obraIds = new Set(obraPool.map(o => o.id));
+    lista = lancamentos.filter(l => obraIds.has(l.obra_id));
+  }
   if (busca) lista = lista.filter(l => norm(l.descricao || '').includes(busca));
   if (usuarioFiltro) lista = lista.filter(l => (l.criado_por || '') === usuarioFiltro);
   if (ObrasModule.catsFiltro.size > 0) lista = lista.filter(l => {

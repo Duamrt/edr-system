@@ -48,8 +48,9 @@ function populateSelects() {
   const optsNome = obras.map(o => `<option value="${esc(o.nome)}">${esc(o.nome)}</option>`).join('');
   const fObra = document.getElementById('f-obra');
   if (fObra) fObra.innerHTML = `<option value="${COMPANY_DEFAULTS.estoqueGeral}">${COMPANY_DEFAULTS.estoqueLabel} (ESTOQUE)</option><option value="${COMPANY_DEFAULTS.escritorio}">${COMPANY_DEFAULTS.escritorioLabel} (CONSUMO DIRETO)</option>${optsNome}`;
+  const optsNomeTodas = [...obras, ...obrasArquivadas].sort((a,b) => a.nome.localeCompare(b.nome,'pt-BR')).map(o => `<option value="${esc(o.nome)}">${esc(o.nome)}</option>`).join('');
   const filtroObra = document.getElementById('filtro-obra');
-  if (filtroObra) filtroObra.innerHTML = `<option value="">TODAS AS OBRAS</option><option value="${COMPANY_DEFAULTS.estoqueGeral}">${COMPANY_DEFAULTS.estoqueLabel}</option>${optsNome}`;
+  if (filtroObra) filtroObra.innerHTML = `<option value="">TODAS AS OBRAS</option><option value="${COMPANY_DEFAULTS.estoqueGeral}">${COMPANY_DEFAULTS.estoqueLabel}</option>${optsNomeTodas}`;
   const distObra = document.getElementById('dist-obra');
   if (distObra) distObra.innerHTML = opts;
   const obrasFiltro = document.getElementById('obras-filtro-obra');
