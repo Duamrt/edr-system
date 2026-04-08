@@ -675,6 +675,8 @@ async function autocadastrarMateriais(itens) {
     const existe = catalogoMateriais.find(m => norm(m.nome) === nomeNorm);
     if (existe) continue;
     const codigo = typeof _proxCodigoCatalogo === 'function' ? _proxCodigoCatalogo() : '';
+    // Verificar unicidade do codigo antes de inserir (evita duplicata por catalogo desatualizado)
+    if (catalogoMateriais.find(m => m.codigo === codigo)) continue;
     const categoria = typeof getCatEstoque === 'function' ? getCatEstoque(it.desc) : '';
     const unidade = it.unidade || 'UN';
     try {

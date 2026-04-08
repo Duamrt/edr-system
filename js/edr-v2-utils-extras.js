@@ -177,9 +177,14 @@ async function salvarCadastroRapido() {
   const existe = catalogoMateriais.find(m => (m.nome||'').toUpperCase() === nome);
   if (existe) { aviso.textContent = 'Já existe: ' + existe.codigo + ' — ' + existe.nome; aviso.style.display='block'; return; }
   const btn = document.getElementById('cr-btn-salvar');
+  // Recarregar catalogo para garantir codigo unico
+  if (typeof loadMateriais === 'function') await loadMateriais();
+  const existeAposRecarga = catalogoMateriais.find(m => (m.nome||'').toUpperCase() === nome);
+  if (existeAposRecarga) { aviso.textContent = 'Já existe: ' + existeAposRecarga.codigo + ' — ' + existeAposRecarga.nome; aviso.style.display='block'; btn.disabled=false; btn.textContent='CADASTRAR E USAR'; return; }
   btn.disabled = true; btn.textContent = 'SALVANDO...';
   try {
     const codigo = _proxCodigoCatalogo();
+    if (catalogoMateriais.find(m => m.codigo === codigo)) { aviso.textContent = 'Erro de código duplicado — tente novamente.'; aviso.style.display='block'; btn.disabled=false; btn.textContent='CADASTRAR E USAR'; return; }
     const saved = await sbPost('materiais', { codigo, nome, unidade, categoria });
     if (saved) {
       catalogoMateriais.push(saved);

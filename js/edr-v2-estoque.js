@@ -1089,6 +1089,13 @@ async function _criarMaterialEVincular(chave, proximoCodigo) {
   const item = EstoqueModule._consolidado.find(i => i.chave === chave);
   if (!item) return;
 
+  // Verificar unicidade do codigo antes de inserir
+  const cats = EstoqueModule.catalogoMateriais;
+  if (cats.find(m => m.codigo === proximoCodigo)) {
+    await _carregarCatalogo();
+    return showToast('Código já em uso — catálogo recarregado, tente novamente.', 'error');
+  }
+
   const resp = await sbPost('materiais', {
     codigo: proximoCodigo,
     nome: item.desc,
@@ -1283,6 +1290,7 @@ async function duplicarMaterial(id) {
   const mat = EstoqueModule.catalogoMateriais.find(m => m.id === id);
   if (!mat) return;
 
+  await _carregarCatalogo();
   const proximoCodigo = obterProximoCodigoDisponivel(EstoqueModule.catalogoMateriais);
 
   const resp = await sbPost('materiais', {
@@ -2111,13 +2119,17 @@ async function salvarMaterial() {
 
   const existe = cats.find(m => norm(m.nome) === norm(nome));
   if (existe) { showToast(`Material já existe: ${existe.codigo}`); return; }
-  const codigo = obterProximoCodigoDisponivel(cats);
+  // Recarregar catalogo para garantir codigo unico
+  await _carregarCatalogo();
+  const catsAtualizados = EstoqueModule.catalogoMateriais;
+  const existeApos = catsAtualizados.find(m => norm(m.nome) === norm(nome));
+  if (existeApos) { showToast(`Material já existe: ${existeApos.codigo}`); return; }
+  const codigo = obterProximoCodigoDisponivel(catsAtualizados);
   btn.disabled = true; btn.textContent = 'SALVANDO...';
   try {
     const saved = await sbPost('materiais', { codigo, nome, unidade, categoria });
-    cats.push(saved);
-    cats.sort((a,b) => (a.codigo||'').localeCompare(b.codigo||''));
-    if (EstoqueModule.catalogoMateriais !== cats) EstoqueModule.catalogoMateriais = cats;
+    catsAtualizados.push(saved);
+    catsAtualizados.sort((a,b) => (a.codigo||'').localeCompare(b.codigo||''));
     fecharModal('material');
     renderCatalogo();
     showToast(`✅ Material ${codigo} — ${nome} cadastrado!`);
