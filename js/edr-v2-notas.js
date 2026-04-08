@@ -668,6 +668,8 @@ function renderItensForm() {
 
 // Auto-cadastro de materiais novos no catalogo
 async function autocadastrarMateriais(itens) {
+  // Recarregar catálogo do banco antes do loop para evitar código duplicado
+  if (typeof loadMateriais === 'function') await loadMateriais();
   const novos = [];
   for (const it of itens) {
     const nomeNorm = norm(it.desc);
