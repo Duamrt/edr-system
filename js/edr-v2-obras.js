@@ -297,6 +297,7 @@ function toggleObrasArquivadas() {
 // ── DETALHE DA OBRA ─────────────────────────────────────────────
 function obrasAbrirDetalhe(obraId) {
   ObrasModule.obraAberta = obraId;
+  ObrasModule.catsFiltro.clear();
   ObrasModule.tab = 'lanc';
   ObrasModule.lancPage = 0;
 

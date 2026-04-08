@@ -1059,13 +1059,13 @@ function _vincularBuscaInput(busca, chave) {
   if (b.length >= 2) {
     lista = EstoqueModule.catalogoMateriais
       .filter(m => norm(m.nome).includes(b) || (m.codigo && m.codigo.toLowerCase().includes(b)))
-      .slice(0, 12);
+      .slice(0, 50);
   } else {
     const item = EstoqueModule._consolidado.find(i => i.chave === chave);
     const palavras = item ? norm(item.desc).split(/\s+/).filter(p => p.length > 2) : [];
     lista = EstoqueModule.catalogoMateriais
       .filter(m => { const nNome = norm(m.nome); return palavras.some(p => nNome.includes(p)); })
-      .slice(0, 8);
+      .slice(0, 50);
   }
   const el = document.getElementById('_vincular-lista');
   if (!el) return;
