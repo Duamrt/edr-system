@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EDR System — Novo Cliente</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0f1a13; color: #e8f5e9; font-family: 'Segoe UI', sans-serif; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+  .card { background: #1a2e1f; border: 1px solid #2d4a35; border-radius: 12px; padding: 40px; width: 100%; max-width: 440px; }
+  h1 { font-size: 1.3rem; color: #4caf50; margin-bottom: 6px; }
+  p.sub { color: #7a9e7e; font-size: 0.85rem; margin-bottom: 28px; }
+  label { display: block; font-size: 0.8rem; color: #7a9e7e; margin-bottom: 6px; margin-top: 16px; text-transform: uppercase; letter-spacing: .5px; }
+  input { width: 100%; background: #0f1a13; border: 1px solid #2d4a35; border-radius: 8px; padding: 10px 14px; color: #e8f5e9; font-size: 0.95rem; outline: none; }
+  input:focus { border-color: #4caf50; }
+  button { margin-top: 28px; width: 100%; background: #4caf50; color: #0f1a13; font-weight: 700; font-size: 1rem; border: none; border-radius: 8px; padding: 13px; cursor: pointer; }
+  button:hover { background: #43a047; }
+  button:disabled { background: #2d4a35; color: #7a9e7e; cursor: not-allowed; }
+  .msg { margin-top: 18px; padding: 12px 16px; border-radius: 8px; font-size: 0.9rem; display: none; }
+  .msg.ok { background: #1b3a1e; border: 1px solid #4caf50; color: #81c784; display: block; }
+  .msg.err { background: #3a1b1b; border: 1px solid #e53935; color: #ef9a9a; display: block; }
+  hr { border: none; border-top: 1px solid #2d4a35; margin: 28px 0; }
+  #lock { text-align: center; }
+  #lock input { margin: 0 auto; max-width: 240px; text-align: center; letter-spacing: 4px; font-size: 1.2rem; }
+  #lock button { max-width: 240px; margin: 16px auto 0; display: block; width: auto; padding: 10px 32px; }
+</style>
+</head>
+<body>
+
+<div class="card">
+
+  <!-- Tela de senha -->
+  <div id="lock">
+    <h1>EDR System</h1>
+    <p class="sub" style="margin-bottom:24px">Acesso restrito</p>
+    <input type="password" id="lockPwd" placeholder="Senha" onkeydown="if(event.key==='Enter')unlock()">
+    <button onclick="unlock()">Entrar</button>
+    <div id="lockMsg" class="msg err"></div>
+  </div>
+
+  <!-- Formulário principal -->
+  <div id="form" style="display:none">
+    <h1>Novo Cliente</h1>
+    <p class="sub">Cria empresa + usuário admin no EDR System</p>
+
+    <label>Nome da empresa</label>
+    <input type="text" id="empresa" placeholder="Ex: Rodrigues Construtora">
+
+    <label>Nome do responsável</label>
+    <input type="text" id="nome" placeholder="Ex: João Rodrigues">
+
+    <label>E-mail do admin</label>
+    <input type="email" id="email" placeholder="joao@empresa.com.br">
+
+    <label>Senha inicial</label>
+    <input type="text" id="senha" placeholder="Mín. 6 caracteres">
+
+    <button id="btn" onclick="criar()">Criar Cliente</button>
+    <div id="msg" class="msg"></div>
+  </div>
+
+</div>
+
+<script>
+const SUPABASE_URL = 'https://mepzoxoahpwcvvlymlfh.supabase.co';
+const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1lcHpveG9haHB3Y3Z2bHltbGZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyNzAyMDUsImV4cCI6MjA4Nzg0NjIwNX0.2_4hqT2vzM5Dw3iesOF_5V7esxkZafDnMFpDkCSBVlE';
+const SENHA_ACESSO = 'edr@admin2026';
+
+function unlock() {
+  const v = document.getElementById('lockPwd').value;
+  if (v === SENHA_ACESSO) {
+    document.getElementById('lock').style.display = 'none';
+    document.getElementById('form').style.display = 'block';
+  } else {
+    const m = document.getElementById('lockMsg');
+    m.textContent = 'Senha incorreta.';
+    m.className = 'msg err';
+  }
+}
+
+async function criar() {
+  const empresa = document.getElementById('empresa').value.trim();
+  const nome    = document.getElementById('nome').value.trim();
+  const email   = document.getElementById('email').value.trim();
+  const senha   = document.getElementById('senha').value.trim();
+  const msg     = document.getElementById('msg');
+  const btn     = document.getElementById('btn');
+
+  msg.className = 'msg';
+  msg.textContent = '';
+
+  if (!empresa || !email || !senha) {
+    msg.textContent = 'Preencha empresa, e-mail e senha.';
+    msg.className = 'msg err';
+    return;
+  }
+  if (senha.length < 6) {
+    msg.textContent = 'Senha precisa ter pelo menos 6 caracteres.';
+    msg.className = 'msg err';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Criando...';
+
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/criar-cliente`, {
+      method: 'POST',
+      headers: {
+        'apikey': ANON_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ empresa, nome, email, password: senha })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || data.error) {
+      msg.textContent = data.error || 'Erro desconhecido.';
+      msg.className = 'msg err';
+    } else {
+      msg.textContent = `✓ Cliente "${empresa}" criado com sucesso! Login: ${email}`;
+      msg.className = 'msg ok';
+      document.getElementById('empresa').value = '';
+      document.getElementById('nome').value = '';
+      document.getElementById('email').value = '';
+      document.getElementById('senha').value = '';
+    }
+  } catch (e) {
+    msg.textContent = 'Erro de conexão: ' + e.message;
+    msg.className = 'msg err';
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Criar Cliente';
+}
+</script>
+</body>
+</html>
