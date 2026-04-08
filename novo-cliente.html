@@ -280,8 +280,9 @@ async function criar() {
       msg.textContent = data.error || 'Erro desconhecido.';
       msg.className = 'msg err';
     } else {
-      msg.textContent = `Cliente "${empresa}" criado com sucesso. Login: ${email}`;
+      msg.textContent = `✓ Cliente "${empresa}" criado! Login: ${email}`;
       msg.className = 'msg ok';
+      alert(`✓ Cliente criado com sucesso!\n\nEmpresa: ${empresa}\nLogin: ${email}\nSenha: ${senha}`);
       document.getElementById('empresa').value = '';
       document.getElementById('nome').value = '';
       document.getElementById('email').value = '';
