@@ -7,74 +7,105 @@
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { -webkit-font-smoothing: antialiased; }
+html, body { height: 100%; -webkit-font-smoothing: antialiased; }
 
 body {
   font-family: 'Inter', sans-serif;
-  background: #FAFAFA;
-  color: #111827;
-  min-height: 100vh;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
+  min-height: 100vh;
 }
 
-.wrap {
-  width: 100%;
-  max-width: 460px;
+/* ── LADO ESQUERDO ── */
+.left {
+  width: 420px;
+  min-height: 100vh;
+  background: #1B4332;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 48px 44px;
+  flex-shrink: 0;
 }
 
-.logo {
+.left-logo {
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-weight: 800;
   font-size: 1.5rem;
-  color: #2D6A4F;
+  color: #fff;
   letter-spacing: -0.5px;
-  margin-bottom: 32px;
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.logo span {
-  background: #2D6A4F;
-  color: #fff;
-  font-size: 0.7rem;
+.left-logo span {
+  background: rgba(255,255,255,.15);
+  color: rgba(255,255,255,.9);
+  font-size: 0.65rem;
   font-weight: 700;
-  padding: 3px 8px;
+  padding: 3px 9px;
   border-radius: 6px;
-  letter-spacing: 1px;
+  letter-spacing: 1.5px;
   text-transform: uppercase;
 }
 
-.card {
-  background: #fff;
-  border: 1px solid #E5E7EB;
-  border-radius: 16px;
-  padding: 36px 32px;
-  box-shadow: 0 1px 3px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.04);
+.left-body { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+
+.left-body h1 {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 800;
+  font-size: 2rem;
+  color: #fff;
+  line-height: 1.25;
+  margin-bottom: 16px;
 }
 
-.card h2 {
+.left-body p {
+  font-size: 0.95rem;
+  color: rgba(255,255,255,.6);
+  line-height: 1.65;
+  max-width: 300px;
+}
+
+.left-footer {
+  font-size: 0.8rem;
+  color: rgba(255,255,255,.3);
+}
+
+/* ── LADO DIREITO ── */
+.right {
+  flex: 1;
+  background: #FAFAFA;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 32px;
+}
+
+.form-wrap {
+  width: 100%;
+  max-width: 400px;
+}
+
+.form-wrap h2 {
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-weight: 700;
-  font-size: 1.25rem;
+  font-size: 1.35rem;
   color: #111827;
   margin-bottom: 6px;
 }
 
-.card p {
+.form-wrap .sub {
   font-size: 0.875rem;
   color: #6B7280;
-  margin-bottom: 28px;
+  margin-bottom: 32px;
 }
 
 .field { margin-bottom: 18px; }
 
 label {
   display: block;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 600;
   color: #374151;
   margin-bottom: 6px;
@@ -83,7 +114,7 @@ label {
 
 input {
   width: 100%;
-  background: #FAFAFA;
+  background: #fff;
   border: 1.5px solid #E5E7EB;
   border-radius: 10px;
   padding: 11px 14px;
@@ -91,10 +122,14 @@ input {
   font-size: 0.9rem;
   color: #111827;
   outline: none;
-  transition: border-color .15s;
+  transition: border-color .15s, box-shadow .15s;
 }
 
-input:focus { border-color: #2D6A4F; background: #fff; }
+input:focus {
+  border-color: #2D6A4F;
+  box-shadow: 0 0 0 3px rgba(45,106,79,.1);
+}
+
 input::placeholder { color: #9CA3AF; }
 
 .btn {
@@ -107,13 +142,12 @@ input::placeholder { color: #9CA3AF; }
   font-size: 0.95rem;
   border-radius: 10px;
   padding: 13px;
-  transition: background .15s;
-  cursor: pointer;
   border: none;
+  cursor: pointer;
+  transition: background .15s;
 }
-
 .btn:hover { background: #1B4332; }
-.btn:disabled { background: #D1FAE5; color: #6B7280; cursor: not-allowed; }
+.btn:disabled { background: #A7F3D0; color: #6B7280; cursor: not-allowed; }
 
 .msg {
   margin-top: 16px;
@@ -121,51 +155,53 @@ input::placeholder { color: #9CA3AF; }
   border-radius: 10px;
   font-size: 0.875rem;
   display: none;
+  line-height: 1.5;
 }
+.msg.ok { background: #ECFDF5; border: 1px solid #A7F3D0; color: #065F46; display: block; }
+.msg.err { background: #FEF2F2; border: 1px solid #FECACA; color: #991B1B; display: block; }
 
-.msg.ok {
-  background: #ECFDF5;
-  border: 1px solid #A7F3D0;
-  color: #065F46;
-  display: block;
+/* Mobile */
+@media (max-width: 720px) {
+  body { flex-direction: column; }
+  .left { width: 100%; min-height: auto; padding: 32px 24px; }
+  .left-body h1 { font-size: 1.5rem; }
+  .left-body p, .left-footer { display: none; }
+  .right { padding: 32px 20px; }
 }
-
-.msg.err {
-  background: #FEF2F2;
-  border: 1px solid #FECACA;
-  color: #991B1B;
-  display: block;
-}
-
-/* Lock screen */
-#lock .card { max-width: 360px; margin: 0 auto; text-align: center; }
-#lock input { text-align: center; letter-spacing: 3px; font-size: 1rem; }
 </style>
 </head>
 <body>
-<div class="wrap">
 
-  <div class="logo">EDR System <span>Admin</span></div>
+<!-- Esquerda -->
+<div class="left">
+  <div class="left-logo">EDR System <span>Admin</span></div>
+  <div class="left-body">
+    <h1>Onboarding de novos clientes</h1>
+    <p>Crie a conta de uma nova construtora no EDR System. O acesso é imediato após o cadastro.</p>
+  </div>
+  <div class="left-footer">sistema.edreng.com.br · acesso restrito</div>
+</div>
 
-  <!-- Tela de senha -->
-  <div id="lock">
-    <div class="card">
+<!-- Direita -->
+<div class="right">
+  <div class="form-wrap">
+
+    <!-- Lock -->
+    <div id="lock">
       <h2>Acesso restrito</h2>
-      <p>Área exclusiva para onboarding de novos clientes</p>
+      <p class="sub">Digite a senha para continuar</p>
       <div class="field">
-        <label>Senha de acesso</label>
-        <input type="password" id="lockPwd" placeholder="••••••••••" onkeydown="if(event.key==='Enter')unlock()">
+        <label>Senha</label>
+        <input type="password" id="lockPwd" placeholder="••••••••" onkeydown="if(event.key==='Enter')unlock()">
       </div>
       <button class="btn" onclick="unlock()">Entrar</button>
       <div id="lockMsg" class="msg"></div>
     </div>
-  </div>
 
-  <!-- Formulário -->
-  <div id="form" style="display:none">
-    <div class="card">
+    <!-- Form -->
+    <div id="form" style="display:none">
       <h2>Novo cliente</h2>
-      <p>Cria a empresa e o usuário admin no EDR System</p>
+      <p class="sub">Preencha os dados da construtora</p>
 
       <div class="field">
         <label>Nome da empresa</label>
@@ -187,9 +223,10 @@ input::placeholder { color: #9CA3AF; }
       <button class="btn" id="btn" onclick="criar()">Criar cliente</button>
       <div id="msg" class="msg"></div>
     </div>
-  </div>
 
+  </div>
 </div>
+
 <script>
 const SUPABASE_URL = 'https://mepzoxoahpwcvvlymlfh.supabase.co';
 const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1lcHpveG9haHB3Y3Z2bHltbGZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyNzAyMDUsImV4cCI6MjA4Nzg0NjIwNX0.2_4hqT2vzM5Dw3iesOF_5V7esxkZafDnMFpDkCSBVlE';
