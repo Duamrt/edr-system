@@ -315,7 +315,23 @@ async function renderPermissoes(container) {
     }).join('');
   }
 
+  const isSuperAdmin = usuarioAtual?.email === 'admin@edreng.com.br';
+
   c.innerHTML = `
+    ${isSuperAdmin ? `
+    <div class="card" style="margin-bottom:12px;padding:16px;background:linear-gradient(135deg,#1B4332 0%,#2D6A4F 100%);">
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:2px;">Novo Cliente</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.6);">Cria empresa + acesso no sistema</div>
+        </div>
+        <button onclick="abrirModalNovoCliente()" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);color:#fff;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;font-family:inherit;">
+          <span class="material-symbols-outlined" style="font-size:16px;">add_business</span>CRIAR CLIENTE
+        </button>
+      </div>
+    </div>
+    ` : ''}
+
     <div class="card" style="margin-bottom:12px;padding:16px;overflow-x:auto;">
       <div class="section-title" style="margin-bottom:12px;font-size:13px;">
         <span class="material-symbols-outlined icon-sm icon-inline">grid_on</span> MATRIZ DE ACESSO
@@ -554,6 +570,155 @@ window.salvarEdicaoUsuario = salvarEdicaoUsuario;
 window.definirSenhaUsuario = definirSenhaUsuario;
 window.excluirUsuario = excluirUsuario;
 window._toggleTodasPermissoes = _toggleTodasPermissoes;
+
+// ── NOVO CLIENTE ─────────────────────────────────────────────
+function _gerarSenha() {
+  const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+  let s = '';
+  for (let i = 0; i < 8; i++) s += chars[Math.floor(Math.random() * chars.length)];
+  return s;
+}
+
+function abrirModalNovoCliente() {
+  let m = document.getElementById('modal-novo-cliente');
+  if (!m) {
+    m = document.createElement('div');
+    m.id = 'modal-novo-cliente';
+    m.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:16px;';
+    m.innerHTML = `
+      <div style="background:var(--card);border-radius:var(--radius-md);padding:24px;width:100%;max-width:420px;box-shadow:0 8px 32px rgba(0,0,0,.2);">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+          <div style="font-size:15px;font-weight:700;color:var(--text-primary);display:flex;align-items:center;gap:8px;">
+            <span class="material-symbols-outlined" style="color:var(--primary);font-size:20px;">add_business</span>Novo Cliente
+          </div>
+          <button onclick="fecharModalNovoCliente()" style="background:none;border:none;cursor:pointer;color:var(--text-tertiary);display:flex;">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+
+        <div id="ncl-form">
+          <div style="display:flex;flex-direction:column;gap:14px;">
+            <div>
+              <label style="font-size:11px;font-weight:700;color:var(--text-tertiary);letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:5px;">Nome da Empresa *</label>
+              <input id="ncl-empresa" type="text" placeholder="Ex: Construtora Silva" style="width:100%;height:40px;padding:0 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text-primary);background:var(--bg);outline:none;font-family:inherit;box-sizing:border-box;">
+            </div>
+            <div>
+              <label style="font-size:11px;font-weight:700;color:var(--text-tertiary);letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:5px;">Nome do Responsável</label>
+              <input id="ncl-nome" type="text" placeholder="Ex: João Silva" style="width:100%;height:40px;padding:0 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text-primary);background:var(--bg);outline:none;font-family:inherit;box-sizing:border-box;">
+            </div>
+            <div>
+              <label style="font-size:11px;font-weight:700;color:var(--text-tertiary);letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:5px;">E-mail de Acesso *</label>
+              <input id="ncl-email" type="email" placeholder="joao@construtora.com" style="width:100%;height:40px;padding:0 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text-primary);background:var(--bg);outline:none;font-family:inherit;box-sizing:border-box;">
+            </div>
+            <div>
+              <label style="font-size:11px;font-weight:700;color:var(--text-tertiary);letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:5px;">Senha Inicial</label>
+              <div style="display:flex;gap:8px;">
+                <input id="ncl-senha" type="text" value="${_gerarSenha()}" style="flex:1;height:40px;padding:0 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text-primary);background:var(--bg);outline:none;font-family:monospace;letter-spacing:.1em;box-sizing:border-box;">
+                <button onclick="document.getElementById('ncl-senha').value=_gerarSenha()" style="padding:0 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg);cursor:pointer;color:var(--text-secondary);font-size:11px;font-weight:700;white-space:nowrap;font-family:inherit;">GERAR</button>
+              </div>
+            </div>
+          </div>
+          <p id="ncl-erro" style="color:var(--error);font-size:12px;margin:10px 0 0;min-height:16px;"></p>
+          <button onclick="criarNovoCliente()" id="ncl-btn" style="width:100%;margin-top:16px;height:44px;background:var(--primary);color:#fff;font-size:13px;font-weight:700;border-radius:8px;border:none;cursor:pointer;font-family:inherit;">CRIAR CLIENTE</button>
+        </div>
+
+        <div id="ncl-sucesso" style="display:none;text-align:center;">
+          <div style="width:48px;height:48px;border-radius:50%;background:rgba(5,150,105,.1);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">
+            <span class="material-symbols-outlined" style="color:#059669;font-size:28px;">check_circle</span>
+          </div>
+          <div style="font-size:15px;font-weight:700;color:var(--text-primary);margin-bottom:6px;">Cliente criado!</div>
+          <div id="ncl-resumo" style="font-size:12px;color:var(--text-secondary);margin-bottom:16px;line-height:1.6;"></div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <button id="ncl-btn-wa" onclick="_enviarWhatsApp()" style="width:100%;height:44px;background:#25D366;color:#fff;font-size:13px;font-weight:700;border-radius:8px;border:none;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;">
+              <span style="font-size:18px;">📱</span>COPIAR MENSAGEM WHATSAPP
+            </button>
+            <button onclick="fecharModalNovoCliente()" style="width:100%;height:40px;border:1px solid var(--border);background:transparent;color:var(--text-secondary);font-size:13px;font-weight:700;border-radius:8px;cursor:pointer;font-family:inherit;">FECHAR</button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(m);
+    m.addEventListener('click', e => { if (e.target === m) fecharModalNovoCliente(); });
+  }
+  m.style.display = 'flex';
+  document.getElementById('ncl-form').style.display = '';
+  document.getElementById('ncl-sucesso').style.display = 'none';
+  document.getElementById('ncl-erro').textContent = '';
+}
+
+function fecharModalNovoCliente() {
+  const m = document.getElementById('modal-novo-cliente');
+  if (m) m.style.display = 'none';
+}
+
+let _nclDados = {};
+
+async function criarNovoCliente() {
+  const empresa = (document.getElementById('ncl-empresa').value || '').trim();
+  const nome    = (document.getElementById('ncl-nome').value || '').trim();
+  const email   = (document.getElementById('ncl-email').value || '').trim().toLowerCase();
+  const senha   = (document.getElementById('ncl-senha').value || '').trim();
+  const erroEl  = document.getElementById('ncl-erro');
+  const btn     = document.getElementById('ncl-btn');
+
+  erroEl.textContent = '';
+  if (!empresa) { erroEl.textContent = 'Informe o nome da empresa.'; return; }
+  if (!email || !email.includes('@')) { erroEl.textContent = 'Informe um e-mail válido.'; return; }
+  if (senha.length < 6) { erroEl.textContent = 'Senha mínima de 6 caracteres.'; return; }
+
+  btn.disabled = true;
+  btn.textContent = 'CRIANDO...';
+
+  try {
+    const r = await fetch(`${SUPABASE_URL}/functions/v1/criar-cliente`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${_supabaseToken}`,
+        'apikey': SUPABASE_KEY,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ empresa, nome, email, password: senha })
+    });
+    const data = await r.json();
+    if (!r.ok || !data.ok) {
+      erroEl.textContent = data.error || 'Erro ao criar cliente.';
+      btn.disabled = false;
+      btn.textContent = 'CRIAR CLIENTE';
+      return;
+    }
+
+    _nclDados = { empresa, nome, email, senha };
+    document.getElementById('ncl-resumo').innerHTML =
+      `<strong>${empresa}</strong><br>${nome || '—'}<br>${email}<br>Senha: <code style="background:var(--border-light);padding:1px 5px;border-radius:4px;">${senha}</code>`;
+    document.getElementById('ncl-form').style.display = 'none';
+    document.getElementById('ncl-sucesso').style.display = '';
+
+  } catch(e) {
+    erroEl.textContent = 'Erro de conexão.';
+    btn.disabled = false;
+    btn.textContent = 'CRIAR CLIENTE';
+  }
+}
+
+function _enviarWhatsApp() {
+  const { empresa, nome, email, senha } = _nclDados;
+  const msg = `Olá${nome ? ', ' + nome.split(' ')[0] : ''}! 👋\n\nSeu acesso ao *EDR System* foi criado.\n\n🔗 *Link:* https://sistema.edreng.com.br\n📧 *E-mail:* ${email}\n🔑 *Senha:* ${senha}\n\nRecomendo trocar a senha após o primeiro acesso. Qualquer dúvida é só chamar!`;
+  navigator.clipboard.writeText(msg).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = msg;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+  });
+  const btn = document.getElementById('ncl-btn-wa');
+  if (btn) { btn.textContent = '✅ COPIADO!'; setTimeout(() => { btn.innerHTML = '<span style="font-size:18px;">📱</span>COPIAR MENSAGEM WHATSAPP'; }, 2500); }
+}
+
+window.abrirModalNovoCliente = abrirModalNovoCliente;
+window.fecharModalNovoCliente = fecharModalNovoCliente;
+window.criarNovoCliente = criarNovoCliente;
+window._enviarWhatsApp = _enviarWhatsApp;
 
 // Registrar view de permissões
 window.addEventListener('DOMContentLoaded', () => {
