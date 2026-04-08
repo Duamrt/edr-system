@@ -572,6 +572,68 @@ window.definirSenhaUsuario = definirSenhaUsuario;
 window.excluirUsuario = excluirUsuario;
 window._toggleTodasPermissoes = _toggleTodasPermissoes;
 
+// ── CRIAR NOVO USUÁRIO ────────────────────────────────────────
+function abrirModalNovoUsuario() {
+  if (usuarioAtual?.perfil !== 'admin') return;
+  const modal = document.getElementById('modal-novo-usuario');
+  if (!modal) return;
+  document.getElementById('novo-usuario-nome').value = '';
+  document.getElementById('novo-usuario-email').value = '';
+  document.getElementById('novo-usuario-senha').value = '';
+  document.getElementById('novo-usuario-perfil').value = 'operacional';
+  document.getElementById('novo-usuario-erro').textContent = '';
+  modal.classList.remove('hidden'); modal.classList.add('active');
+  setTimeout(() => document.getElementById('novo-usuario-nome').focus(), 100);
+}
+
+function fecharModalNovoUsuario() {
+  const modal = document.getElementById('modal-novo-usuario');
+  if (!modal) return;
+  modal.classList.remove('active'); modal.classList.add('hidden');
+}
+
+async function salvarNovoUsuario() {
+  const nome = document.getElementById('novo-usuario-nome').value.trim();
+  const email = document.getElementById('novo-usuario-email').value.trim().toLowerCase();
+  const senha = document.getElementById('novo-usuario-senha').value;
+  const perfil = document.getElementById('novo-usuario-perfil').value;
+  const erroEl = document.getElementById('novo-usuario-erro');
+  const btn = document.getElementById('novo-usuario-btn-salvar');
+
+  erroEl.textContent = '';
+  if (!nome) { erroEl.textContent = 'Informe o nome.'; return; }
+  if (!email || !email.includes('@')) { erroEl.textContent = 'Informe um email válido.'; return; }
+  if (!senha || senha.length < 6) { erroEl.textContent = 'Senha com mínimo 6 caracteres.'; return; }
+
+  btn.disabled = true; btn.textContent = 'CRIANDO...';
+  try {
+    const r = await fetch(`${SUPABASE_URL}/functions/v1/create-user`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': 'Bearer ' + _supabaseToken,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ nome, email, password: senha, role: perfil })
+    });
+    const data = await r.json();
+    if (r.ok && data.ok) {
+      showToast('Usuário criado com sucesso!');
+      fecharModalNovoUsuario();
+      renderPermissoes();
+    } else {
+      erroEl.textContent = data.error || 'Erro ao criar usuário.';
+    }
+  } catch(e) {
+    erroEl.textContent = 'Erro de conexão.';
+  }
+  btn.disabled = false; btn.textContent = 'CRIAR USUÁRIO';
+}
+
+window.abrirModalNovoUsuario = abrirModalNovoUsuario;
+window.fecharModalNovoUsuario = fecharModalNovoUsuario;
+window.salvarNovoUsuario = salvarNovoUsuario;
+
 // ── NOVO CLIENTE ─────────────────────────────────────────────
 function _gerarSenha() {
   const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';

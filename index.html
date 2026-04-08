@@ -2609,40 +2609,40 @@ function updateShellUser(nome, perfil) {
 
 <!-- ═══════ MODULOS V2 (ordem de dependência) ═══════ -->
 <!-- 0. Infraestrutura: sbGet/sbPost/sbPatch/sbDelete, confirmar(), showModal, usuarioAtual -->
-<script src="js/edr-v2-infra.js?v=04081456"></script>
+<script src="js/edr-v2-infra.js?v=04081501"></script>
 <!-- 1. Utilitários globais (valorPorExtenso, fmtN) -->
-<script src="js/edr-v2-utils-extras.js?v=04081456"></script>
+<script src="js/edr-v2-utils-extras.js?v=04081501"></script>
 <!-- 2. Obras PRIMEIRO (ETAPAS, resolveEtapaKey, etapaCor, etapaLabel — vários módulos dependem) -->
-<script src="js/edr-v2-obras.js?v=04081456"></script>
+<script src="js/edr-v2-obras.js?v=04081501"></script>
 <!-- 3. PDF engine (pdfMake CDN + PdfModule) -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js?v=04081456"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js?v=04081456"></script>
-<script src="js/edr-v2-pdf.js?v=04081456"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js?v=04081501"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js?v=04081501"></script>
+<script src="js/edr-v2-pdf.js?v=04081501"></script>
 <!-- 4. Módulos core de negócio -->
 <script src="js/edr-v2-notas.js?v=20260407-EDR-DEL"></script>
 <script src="js/edr-v2-importar.js?v=20260407-XML-IPI"></script>
-<script src="js/edr-v2-estoque.js?v=04081456"></script>
-<script src="js/edr-v2-custos.js?v=04081456"></script>
+<script src="js/edr-v2-estoque.js?v=04081501"></script>
+<script src="js/edr-v2-custos.js?v=04081501"></script>
 <!-- 5. Equipe e operacional -->
-<script src="js/edr-v2-diarias.js?v=04081456"></script>
-<script src="js/edr-v2-diario.js?v=04081456"></script>
+<script src="js/edr-v2-diarias.js?v=04081501"></script>
+<script src="js/edr-v2-diario.js?v=04081501"></script>
 <!-- 6. Relatórios e dashboard (dependem de obras.js pra etapaCor) -->
-<script src="js/edr-v2-relatorio.js?v=04081456"></script>
-<script src="js/edr-v2-dashboard.js?v=04081456"></script>
+<script src="js/edr-v2-relatorio.js?v=04081501"></script>
+<script src="js/edr-v2-dashboard.js?v=04081501"></script>
 <!-- 7. Módulos complementares -->
-<script src="js/edr-v2-leads.js?v=04081456"></script>
-<script src="js/edr-v2-garantias.js?v=04081456"></script>
-<script src="js/edr-v2-adicionais.js?v=04081456"></script>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.css?v=04081456"/>
-<script src="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.min.js?v=04081456"></script>
-<script src="js/edr-v2-cronograma.js?v=04081456"></script>
-<script src="js/edr-v2-orcamento.js?v=04081456"></script>
+<script src="js/edr-v2-leads.js?v=04081501"></script>
+<script src="js/edr-v2-garantias.js?v=04081501"></script>
+<script src="js/edr-v2-adicionais.js?v=04081501"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.css?v=04081501"/>
+<script src="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.min.js?v=04081501"></script>
+<script src="js/edr-v2-cronograma.js?v=04081501"></script>
+<script src="js/edr-v2-orcamento.js?v=04081501"></script>
 <!-- 8. Documentação e medições -->
-<script src="js/edr-v2-termo-manual.js?v=04081456"></script>
-<script src="js/edr-v2-pci.js?v=04081456"></script>
+<script src="js/edr-v2-termo-manual.js?v=04081501"></script>
+<script src="js/edr-v2-pci.js?v=04081501"></script>
 <!-- 9. Auth (login, sessão, refresh — ÚLTIMO) -->
-<script src="js/edr-v2-auth.js?v=04081456"></script>
-<script src="js/edr-v2-financeiro.js?v=04081456"></script>
+<script src="js/edr-v2-auth.js?v=04081501"></script>
+<script src="js/edr-v2-financeiro.js?v=04081501"></script>
 
 <!-- ═══════════════════════════════════════════════════════════════ -->
 <!-- MODAIS (Fase 0 — containers para módulos que precisam)        -->
@@ -3044,6 +3044,37 @@ function abrirNota(id) {
 </script>
 
 <!-- MODAL EDITAR USUÁRIO -->
+<div id="modal-novo-usuario" class="modal-overlay hidden" role="dialog" aria-modal="true" onclick="if(event.target===this)fecharModalNovoUsuario()">
+  <div class="modal-box" style="max-width:400px;width:95vw;padding:20px 24px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <span style="font-size:16px;font-weight:800;color:var(--text-primary);">Novo Usuário</span>
+      <button class="modal-close" onclick="fecharModalNovoUsuario()"><span class="material-symbols-outlined">close</span></button>
+    </div>
+    <div style="margin-bottom:12px;">
+      <label style="font-size:11px;font-weight:700;color:var(--text-tertiary);letter-spacing:1px;display:block;margin-bottom:4px;">NOME *</label>
+      <input type="text" id="novo-usuario-nome" placeholder="Nome completo" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;background:var(--bg);color:var(--text-primary);box-sizing:border-box;">
+    </div>
+    <div style="margin-bottom:12px;">
+      <label style="font-size:11px;font-weight:700;color:var(--text-tertiary);letter-spacing:1px;display:block;margin-bottom:4px;">EMAIL *</label>
+      <input type="email" id="novo-usuario-email" placeholder="usuario@edreng.com.br" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;background:var(--bg);color:var(--text-primary);box-sizing:border-box;">
+    </div>
+    <div style="margin-bottom:12px;">
+      <label style="font-size:11px;font-weight:700;color:var(--text-tertiary);letter-spacing:1px;display:block;margin-bottom:4px;">PERFIL</label>
+      <select id="novo-usuario-perfil" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;background:var(--bg);color:var(--text-primary);box-sizing:border-box;">
+        <option value="operacional">Operacional</option>
+        <option value="mestre">Mestre</option>
+        <option value="visitante">Visitante</option>
+        <option value="admin">Admin</option>
+      </select>
+    </div>
+    <div style="margin-bottom:16px;">
+      <label style="font-size:11px;font-weight:700;color:var(--text-tertiary);letter-spacing:1px;display:block;margin-bottom:4px;">SENHA INICIAL *</label>
+      <input type="password" id="novo-usuario-senha" placeholder="Mínimo 6 caracteres" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;background:var(--bg);color:var(--text-primary);box-sizing:border-box;">
+    </div>
+    <div id="novo-usuario-erro" style="font-size:12px;color:var(--error);margin-bottom:10px;min-height:18px;"></div>
+    <button id="novo-usuario-btn-salvar" onclick="salvarNovoUsuario()" style="width:100%;padding:12px;background:var(--primary);color:#fff;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:1px;">CRIAR USUÁRIO</button>
+  </div>
+</div>
 <div id="modal-editar-usuario" class="modal-overlay hidden" role="dialog" aria-modal="true" onclick="if(event.target===this)fecharModalEditarUsuario()">
   <div class="modal-box" style="max-width:420px;width:95vw;padding:20px 24px;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
