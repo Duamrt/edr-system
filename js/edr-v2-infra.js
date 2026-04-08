@@ -186,10 +186,10 @@ function notificarTelegram(chatId, texto) {
 
 // ── PLANOS E LIMITES ──
 const PLANOS = {
-  trial:          { nome: 'Trial',          obras: 1, usuarios: 2,  dias: 14 },
-  obra:           { nome: 'Obra',           obras: 1, usuarios: 2  },
-  construtora:    { nome: 'Construtora',    obras: 3, usuarios: 5  },
-  incorporadora:  { nome: 'Incorporadora',  obras: 999, usuarios: 999 }
+  trial:        { nome: 'Trial',        obras: 1,   usuarios: 3   },
+  essencial:    { nome: 'Essencial',    obras: 3,   usuarios: 5   },
+  profissional: { nome: 'Profissional', obras: 5,   usuarios: 10  },
+  construtora:  { nome: 'Construtora', obras: 999, usuarios: 999 }
 };
 let _companyPlan = null;
 
@@ -217,8 +217,9 @@ async function checarLimiteObras() {
   const obrasAtivas = obras.filter(o => !o.arquivada);
   if (obrasAtivas.length >= lim.obras) {
     const plano = _companyPlan?.plan || 'trial';
-    const nomes = { trial: 'Trial', obra: 'Obra', construtora: 'Construtora' };
-    alert('Limite de obras atingido no plano ' + (nomes[plano] || plano) + ' (' + lim.obras + ' obra' + (lim.obras > 1 ? 's' : '') + ').\n\nFaça upgrade para criar mais obras.');
+    const nomePlano = PLANOS[plano]?.nome || plano;
+    alert('Limite de obras atingido no plano ' + nomePlano + ' (' + lim.obras + ' obra' + (lim.obras > 1 ? 's' : '') + ').\n\nFale com o suporte para fazer upgrade.');
+
     return false;
   }
   return true;
