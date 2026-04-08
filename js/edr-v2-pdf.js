@@ -628,6 +628,137 @@ const PdfModule = {
 
     const hoje = new Date().toISOString().split('T')[0];
     this._gerarPdf({ content }, `pci-medicao-${hoje}.pdf`);
+  },
+
+  // ══════════════════════════════════════════════════════════
+  // TERMO DE ENTREGA + MANUAL DO PROPRIETÁRIO
+  // ══════════════════════════════════════════════════════════
+
+  gerarTermo(p) {
+    const verde = '#2D6A4F';
+    const verdeClaro = '#D8F3DC';
+    const cinza = '#374151';
+    const cinzaClaro = '#6b7280';
+    const emp = p.empresa || {};
+
+    const secao = (titulo) => ([
+      { text: titulo, fontSize: 11, bold: true, color: '#fff', background: verde, margin: [0, 12, 0, 0], fillColor: verde },
+    ]);
+
+    // Cabeçalho
+    const cabecalho = [
+      { text: emp.nome || 'EDR ENGENHARIA', fontSize: 18, bold: true, color: verde, alignment: 'center', margin: [0, 0, 0, 2] },
+      { text: 'CNPJ ' + (emp.cnpj || '') + ' — ' + (emp.endereco || ''), fontSize: 8, color: cinzaClaro, alignment: 'center' },
+      { text: (emp.whatsapp || '') + ' | ' + (emp.instagram || '') + ' | ' + (emp.responsavel || '') + ' · ' + (emp.crea || ''), fontSize: 8, color: cinzaClaro, alignment: 'center', margin: [0, 0, 0, 10] },
+      this._linha(),
+      { text: 'TERMO DE ENTREGA DE OBRA\nMANUAL DO PROPRIETÁRIO', fontSize: 15, bold: true, color: verde, alignment: 'center', margin: [0, 8, 0, 8] },
+      this._linha(),
+    ];
+
+    // Dados do proprietário
+    const dadosBox = {
+      table: {
+        widths: ['*', '*'],
+        body: [
+          [
+            { text: 'PROPRIETÁRIO: ' + (p.proprietario || '___________________________'), fontSize: 10, bold: true, color: cinza, border: [false,false,false,false] },
+            { text: 'CPF: ' + (p.cpf || '___________________'), fontSize: 10, color: cinza, border: [false,false,false,false] }
+          ],
+          [
+            { text: 'ENDEREÇO: ' + (p.endereco || '') + (p.numero ? ', ' + p.numero : ''), fontSize: 10, color: cinza, border: [false,false,false,false] },
+            { text: 'CIDADE: ' + (p.cidade || ''), fontSize: 10, color: cinza, border: [false,false,false,false] }
+          ],
+          [
+            { text: 'DATA ENTREGA: ' + (p.dataEntrega || '___/___/______'), fontSize: 10, color: cinza, border: [false,false,false,false] },
+            { text: 'MODELO: ' + (p.modelo || ''), fontSize: 10, color: cinza, border: [false,false,false,false] }
+          ]
+        ]
+      },
+      layout: 'noBorders',
+      fillColor: '#f9fafb',
+      margin: [0, 6, 0, 10]
+    };
+
+    // Garantias
+    const garantiasRows = (p.garantias || []).map(g => ([
+      { text: g.item, fontSize: 9, color: cinza, border: [false,false,false,true], borderColor: ['','','','#e5e7eb'] },
+      { text: g.garantia, fontSize: 9, color: verde, bold: true, alignment: 'center', border: [false,false,false,true], borderColor: ['','','','#e5e7eb'] },
+      { text: g.obs || '', fontSize: 8, color: cinzaClaro, border: [false,false,false,true], borderColor: ['','','','#e5e7eb'] }
+    ]));
+    const garantiasTable = garantiasRows.length ? {
+      table: {
+        headerRows: 1,
+        widths: ['*', 70, 120],
+        body: [
+          [
+            { text: 'ITEM', fontSize: 9, bold: true, color: '#fff', fillColor: verde, border: [false,false,false,false] },
+            { text: 'GARANTIA', fontSize: 9, bold: true, color: '#fff', fillColor: verde, alignment: 'center', border: [false,false,false,false] },
+            { text: 'OBSERVAÇÃO', fontSize: 9, bold: true, color: '#fff', fillColor: verde, border: [false,false,false,false] }
+          ],
+          ...garantiasRows
+        ]
+      },
+      layout: { hLineWidth: (i,n) => i===0||i===n.table.body.length?0:0.3, hLineColor:()=>'#e5e7eb', vLineWidth:()=>0, paddingLeft:()=>4, paddingRight:()=>4, paddingTop:()=>3, paddingBottom:()=>3 },
+      margin: [0, 4, 0, 10]
+    } : {};
+
+    // Checklist
+    const checklist = (p.checklist || []).map(item => ({
+      text: '☐  ' + item, fontSize: 9, color: cinza, margin: [0, 2, 0, 0]
+    }));
+
+    // Listas genéricas
+    const lista = (arr) => (arr || []).map(t => ({ text: '• ' + t, fontSize: 9, color: cinza, margin: [6, 1, 0, 0] }));
+
+    // Assinaturas
+    const assinaturas = {
+      table: {
+        widths: ['*', '*'],
+        body: [[
+          { stack: [
+            { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 200, y2: 0, lineWidth: 0.5, lineColor: '#9ca3af' }] },
+            { text: emp.responsavel || 'Responsável Técnico', fontSize: 9, color: cinzaClaro, alignment: 'center', margin: [0, 2, 0, 0] },
+            { text: emp.crea || '', fontSize: 8, color: cinzaClaro, alignment: 'center' }
+          ], border: [false,false,false,false], margin: [0, 20, 0, 0] },
+          { stack: [
+            { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 200, y2: 0, lineWidth: 0.5, lineColor: '#9ca3af' }] },
+            { text: p.proprietario || 'Proprietário', fontSize: 9, color: cinzaClaro, alignment: 'center', margin: [0, 2, 0, 0] },
+            { text: 'CPF: ' + (p.cpf || ''), fontSize: 8, color: cinzaClaro, alignment: 'center' }
+          ], border: [false,false,false,false], margin: [0, 20, 0, 0] }
+        ]]
+      },
+      layout: 'noBorders',
+      margin: [0, 30, 0, 0]
+    };
+
+    const content = [
+      ...cabecalho,
+      dadosBox,
+
+      { text: 'PRAZO DE GARANTIA', fontSize: 11, bold: true, color: '#fff', background: verde, fillColor: verde, margin: [0, 8, 0, 0], padding: [4, 4, 4, 4] },
+      garantiasTable,
+
+      { text: 'CHECKLIST DE VISTORIA', fontSize: 11, bold: true, color: '#fff', background: verde, fillColor: verde, margin: [0, 8, 0, 4], padding: [4, 4, 4, 4] },
+      ...checklist,
+
+      { text: 'ORIENTAÇÕES DE USO E MANUTENÇÃO', fontSize: 11, bold: true, color: '#fff', background: verde, fillColor: verde, margin: [0, 12, 0, 4], padding: [4, 4, 4, 4] },
+      ...lista(p.orientacoes),
+
+      { text: 'MANUTENÇÕES PREVENTIVAS', fontSize: 11, bold: true, color: '#fff', background: verde, fillColor: verde, margin: [0, 12, 0, 4], padding: [4, 4, 4, 4] },
+      ...lista((p.manutencao || []).map(m => m.item + ' — ' + m.freq + (m.resp ? ' (' + m.resp + ')' : ''))),
+
+      { text: 'PERDA DE GARANTIA', fontSize: 11, bold: true, color: '#fff', background: verde, fillColor: verde, margin: [0, 12, 0, 4], padding: [4, 4, 4, 4] },
+      ...lista(p.perdaGarantia),
+
+      { text: 'RESPONSABILIDADES DO PROPRIETÁRIO', fontSize: 11, bold: true, color: '#fff', background: verde, fillColor: verde, margin: [0, 12, 0, 4], padding: [4, 4, 4, 4] },
+      ...lista(p.responsabilidades),
+
+      { text: '\n' + (p.localData || ''), fontSize: 9, color: cinzaClaro, alignment: 'right', margin: [0, 16, 0, 0] },
+      assinaturas,
+      ...this._rodape()
+    ];
+
+    this._gerarPdf({ content }, `termo-entrega-${(p.proprietario||'obra').replace(/\s+/g,'-').toLowerCase()}.pdf`);
   }
 };
 
