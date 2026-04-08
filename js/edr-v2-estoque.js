@@ -1271,7 +1271,7 @@ function renderCatalogo() {
       <td>${esc(m.unidade || '')}</td>
       <td>${catCol}</td>
       <td style="font-family:'Space Grotesk',monospace;font-size:12px;color:${preco > 0 ? 'var(--text-primary)' : 'var(--text-tertiary)'};">${preco > 0 ? fmtR(preco) : '—'}</td>
-      <td><strong style="color:${saldoColor};">${fmt(saldo)}</strong></td>
+      <td><strong style="color:${saldoColor};">${Number(saldo).toLocaleString('pt-BR', { maximumFractionDigits: 3 })}</strong></td>
       <td>${statusCol}</td>
       <td class="cat-actions">${acoesCol}</td>
     </tr>`;
