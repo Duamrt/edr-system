@@ -549,7 +549,7 @@ function _renderCategoriasSidebar(consolidado) {
   for (const [cat, count] of cats) {
     const active = EstoqueModule.filtroCategoria === cat ? 'active' : '';
     html += `<div class="cat-item ${active}" onclick="EstoqueModule.filtroCategoria='${esc(cat)}';EstoqueModule.page=0;renderEstoque();">
-      <span>${esc(cat)}</span><span class="cat-count">${count}</span></div>`;
+      <span>${esc(typeof etapaLabel === 'function' ? etapaLabel(cat) : cat)}</span><span class="cat-count">${count}</span></div>`;
   }
 
   el.innerHTML = html;
@@ -975,38 +975,47 @@ function abrirVincularCodigo(chave) {
   const content = modal.querySelector('.modal');
   if (!content) return;
 
-  // Buscar similares no catalogo por palavras em comum
-  const palavras = norm(item.desc).split(/\s+/).filter(p => p.length > 2);
-  const similares = EstoqueModule.catalogoMateriais
-    .filter(m => {
-      const nNome = norm(m.nome);
-      return palavras.some(p => nNome.includes(p));
-    })
-    .slice(0, 5);
-
   // Proximo codigo disponivel
   const proximoCodigo = obterProximoCodigoDisponivel(EstoqueModule.catalogoMateriais);
 
+  // Similares iniciais por palavras em comum
+  const palavras = norm(item.desc).split(/\s+/).filter(p => p.length > 2);
+  const _calcSimilares = (busca) => {
+    const b = norm(busca || '');
+    if (b.length >= 2) {
+      return EstoqueModule.catalogoMateriais
+        .filter(m => norm(m.nome).includes(b) || (m.codigo && m.codigo.toLowerCase().includes(b)))
+        .slice(0, 12);
+    }
+    return EstoqueModule.catalogoMateriais
+      .filter(m => { const nNome = norm(m.nome); return palavras.some(p => nNome.includes(p)); })
+      .slice(0, 8);
+  };
+
+  const _renderOpcoes = (lista) => {
+    if (!lista.length) return '<p style="color:var(--text-tertiary);text-align:center;padding:12px 0;font-size:13px;">Nenhum item encontrado</p>';
+    return lista.map(s => `
+      <label class="vincular-option">
+        <input type="radio" name="vincular-item" value="${esc(s.id)}"/>
+        <div>
+          <div class="vincular-option-name">${esc(s.codigo || '—')} — ${esc(s.nome)}</div>
+          <div class="vincular-option-sub">${esc(typeof etapaLabel === 'function' ? etapaLabel(s.categoria || '') : (s.categoria || ''))} · ${esc(s.unidade || '')} · Saldo: ${fmt(s.saldo || 0)}</div>
+        </div>
+      </label>`).join('');
+  };
+
   content.innerHTML = `
     <div class="modal-title-v2">
-      <h3><span class="material-symbols-outlined" style="color:var(--warning);">link</span> Vincular Codigo — ${esc(item.desc)}</h3>
+      <h3><span class="material-symbols-outlined" style="color:var(--warning);">link</span> Vincular — ${esc(item.desc)}</h3>
       <button class="modal-close" onclick="closeModal('vincular-modal')"><span class="material-symbols-outlined">close</span></button>
     </div>
-    ${similares.length ? `
-    <div style="margin-bottom:20px;">
-      <div class="dist-form-label" style="margin-bottom:8px;">Similares encontrados no catalogo</div>
-      <div style="display:flex;flex-direction:column;gap:4px;">
-        ${similares.map(s => `
-        <label class="vincular-option">
-          <input type="radio" name="vincular-item" value="${esc(s.id)}"/>
-          <div>
-            <div class="vincular-option-name">${esc(s.codigo)} — ${esc(s.nome)}</div>
-            <div class="vincular-option-sub">${esc(s.categoria || '')} · ${esc(s.unidade || '')} · Saldo: ${fmt(s.saldo || 0)}</div>
-          </div>
-        </label>`).join('')}
+    <div style="margin-bottom:14px;">
+      <input id="_vincular-busca" type="text" placeholder="Pesquisar no catálogo..." class="dist-form-input" style="width:100%;margin-bottom:10px;" oninput="_vincularBuscaInput(this.value,'${esc(chave)}')"/>
+      <div id="_vincular-lista" style="display:flex;flex-direction:column;gap:4px;max-height:280px;overflow-y:auto;">
+        ${_renderOpcoes(_calcSimilares(''))}
       </div>
     </div>
-    <div class="vincular-divider">— ou —</div>` : ''}
+    <div class="vincular-divider">— ou —</div>
     <button class="btn-secondary" style="width:100%;justify-content:center;" onclick="_criarMaterialEVincular('${esc(item.chave)}', '${proximoCodigo}')">
       <span class="material-symbols-outlined icon-md">add_circle</span>
       Criar Novo Material no Catalogo (proximo codigo: ${proximoCodigo})
@@ -1019,6 +1028,37 @@ function abrirVincularCodigo(chave) {
     </div>`;
 
   openModal('vincular-modal');
+  setTimeout(() => document.getElementById('_vincular-busca')?.focus(), 80);
+}
+
+function _vincularBuscaInput(busca, chave) {
+  const b = norm(busca || '');
+  let lista;
+  if (b.length >= 2) {
+    lista = EstoqueModule.catalogoMateriais
+      .filter(m => norm(m.nome).includes(b) || (m.codigo && m.codigo.toLowerCase().includes(b)))
+      .slice(0, 12);
+  } else {
+    const item = EstoqueModule._consolidado.find(i => i.chave === chave);
+    const palavras = item ? norm(item.desc).split(/\s+/).filter(p => p.length > 2) : [];
+    lista = EstoqueModule.catalogoMateriais
+      .filter(m => { const nNome = norm(m.nome); return palavras.some(p => nNome.includes(p)); })
+      .slice(0, 8);
+  }
+  const el = document.getElementById('_vincular-lista');
+  if (!el) return;
+  if (!lista.length) {
+    el.innerHTML = '<p style="color:var(--text-tertiary);text-align:center;padding:12px 0;font-size:13px;">Nenhum item encontrado</p>';
+    return;
+  }
+  el.innerHTML = lista.map(s => `
+    <label class="vincular-option">
+      <input type="radio" name="vincular-item" value="${esc(s.id)}"/>
+      <div>
+        <div class="vincular-option-name">${esc(s.codigo || '—')} — ${esc(s.nome)}</div>
+        <div class="vincular-option-sub">${esc(typeof etapaLabel === 'function' ? etapaLabel(s.categoria || '') : (s.categoria || ''))} · ${esc(s.unidade || '')}</div>
+      </div>
+    </label>`).join('');
 }
 
 async function _vincularSelecionado(chave) {
@@ -1438,20 +1478,20 @@ async function exportarEstoqueExcel() {
     ws.getCell('A3').alignment = { horizontal: 'center' };
 
     // Colunas
-    ws.getRow(5).values = ['#', 'Codigo', 'Material', 'Unidade', 'Categoria', 'Saldo Sistema', 'Contagem Real', 'Diferenca'];
+    ws.getRow(5).values = ['#', 'Codigo', 'Material', 'Unidade', 'Categoria', 'Valor Medio', 'Total R$', 'Saldo Sistema', 'Contagem Real', 'Diferenca', 'Preco Corrigido'];
     ws.getRow(5).font = { bold: true };
     ws.getRow(5).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD1FAE5' } };
 
     ws.columns = [
       { width: 6 }, { width: 10 }, { width: 40 }, { width: 8 },
-      { width: 22 }, { width: 14 }, { width: 14 }, { width: 14 },
+      { width: 22 }, { width: 14 }, { width: 14 }, { width: 14 }, { width: 14 }, { width: 14 }, { width: 16 },
     ];
 
     // Dados: catálogo completo + órfãos do consolidado
-    const saldoMap = {};
+    const saldoMap = {}, valorMap = {};
     for (const c of EstoqueModule._consolidado) {
-      if (c.codigo) saldoMap[c.codigo] = c.saldo;
-      else saldoMap['NOME:' + (c.desc || '')] = c.saldo;
+      if (c.codigo) { saldoMap[c.codigo] = c.saldo; valorMap[c.codigo] = c.valorMedio || 0; }
+      else { saldoMap['NOME:' + (c.desc || '')] = c.saldo; valorMap['NOME:' + (c.desc || '')] = c.valorMedio || 0; }
     }
 
     // Itens do catálogo (todos, com ou sem saldo)
@@ -1461,6 +1501,7 @@ async function exportarEstoqueExcel() {
       unidade: m.unidade || 'UN',
       categoria: m.categoria || '',
       saldo: saldoMap[m.codigo] ?? 0,
+      valorMedio: valorMap[m.codigo] ?? 0,
       semCodigo: !m.codigo,
     }));
 
@@ -1471,24 +1512,33 @@ async function exportarEstoqueExcel() {
 
     const itens = [
       ...itensCatalogo,
-      ...orfaos.map(c => ({ codigo: null, desc: c.desc, unidade: c.unidade, categoria: c.categoria, saldo: c.saldo, semCodigo: true })),
+      ...orfaos.map(c => ({ codigo: null, desc: c.desc, unidade: c.unidade, categoria: c.categoria, saldo: c.saldo, valorMedio: c.valorMedio || 0, semCodigo: true })),
     ].sort((a, b) => (a.desc || '').localeCompare(b.desc || '', 'pt-BR'));
 
     itens.forEach((it, idx) => {
+      const catLabel = typeof etapaLabel === 'function' ? etapaLabel(it.categoria) : it.categoria;
       const row = ws.addRow([
         idx + 1,
-        it.codigo || 'S/C',
+        it.codigo || '',
         it.desc,
         it.unidade,
-        it.categoria,
+        catLabel,
+        it.valorMedio || 0,
+        (it.saldo || 0) * (it.valorMedio || 0),
         it.saldo,
         null, // contagem real (preenchido manualmente)
-        null, // diferenca (formula)
+        null, // diferenca (formula J = I - H)
+        null, // preco corrigido (editavel pelo usuario para reimport)
       ]);
+
+      // Formatar valores monetários
+      row.getCell(6).numFmt = '#,##0.00';
+      row.getCell(7).numFmt = '#,##0.00';
+      row.getCell(11).numFmt = '#,##0.00';
 
       // Formula: Diferenca = Contagem Real - Saldo Sistema
       const rowNum = idx + 6;
-      row.getCell(8).value = { formula: `G${rowNum}-F${rowNum}` };
+      row.getCell(10).value = { formula: `I${rowNum}-H${rowNum}` };
 
       // Zebra
       if (idx % 2 === 1) {
@@ -1496,8 +1546,13 @@ async function exportarEstoqueExcel() {
       }
     });
 
+    // Destaque coluna "Preço Corrigido" (K) para indicar que é editável
+    const precoCabecalho = ws.getCell('K5');
+    precoCabecalho.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFF9C4' } };
+    precoCabecalho.note = 'Preencha aqui o preco correto e reimporte via botao "Importar Precos"';
+
     // Auto filtro
-    ws.autoFilter = { from: 'A5', to: `H${itens.length + 5}` };
+    ws.autoFilter = { from: 'A5', to: `K${itens.length + 5}` };
 
     // Rodape
     const lastRow = itens.length + 7;
@@ -1522,6 +1577,78 @@ async function exportarEstoqueExcel() {
     console.error('Erro ao exportar Excel:', err);
     showToast('Falha ao gerar planilha. Verifique sua conexao e tente novamente.', 'error');
   }
+}
+
+
+// ══════════════════════════════════════════════════════════════════
+// IMPORTAR PRECOS (reimport de planilha exportada com col K preenchida)
+// ══════════════════════════════════════════════════════════════════
+
+function importarPrecosEstoque() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.xlsx';
+  input.onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    try {
+      if (typeof ExcelJS === 'undefined') {
+        showToast('Carregando leitor de planilha...', 'info');
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js';
+          script.onload = resolve; script.onerror = reject;
+          document.head.appendChild(script);
+        });
+      }
+      const buffer = await file.arrayBuffer();
+      const wb = new ExcelJS.Workbook();
+      await wb.xlsx.load(buffer);
+      const ws = wb.worksheets[0];
+
+      // Linha 5 = cabeçalho, dados a partir de linha 6
+      // Col B = codigo, Col C = material, Col K = preco corrigido
+      const atualizacoes = [];
+      ws.eachRow((row, rowNum) => {
+        if (rowNum <= 5) return;
+        const codigo = (row.getCell(2).value || '').toString().trim();
+        const nome   = (row.getCell(3).value || '').toString().trim();
+        const preco  = parseFloat(row.getCell(11).value) || 0;
+        if (preco > 0 && (codigo || nome)) {
+          atualizacoes.push({ codigo, nome, preco });
+        }
+      });
+
+      if (!atualizacoes.length) {
+        return showToast('Nenhum preço corrigido encontrado na coluna K', 'info');
+      }
+
+      showToast(`Atualizando ${atualizacoes.length} preços...`, 'info');
+      let ok = 0, erros = 0;
+
+      for (const a of atualizacoes) {
+        // Atualiza entradas_diretas com preco=0 para esse item (não sobrescreve preços corretos)
+        let r = null;
+        if (a.codigo) {
+          r = await sbPatch(`entradas_diretas?codigo_catalogo=eq.${encodeURIComponent(a.codigo)}&preco=eq.0`, { preco: a.preco });
+        }
+        if (!r && a.nome) {
+          r = await sbPatch(`entradas_diretas?item_desc=ilike.${encodeURIComponent(a.nome)}&preco=eq.0`, { preco: a.preco });
+        }
+        if (r !== null) ok++; else erros++;
+      }
+
+      showToast(`Preços atualizados: ${ok} itens${erros ? ` (${erros} sem entradas diretas com preço zero)` : ''}`, erros ? 'info' : 'success');
+
+      // Recarregar
+      await loadEntradasDiretas();
+      renderEstoque();
+    } catch (err) {
+      console.error('Erro ao importar preços:', err);
+      showToast('Erro ao ler planilha', 'error');
+    }
+  };
+  input.click();
 }
 
 
