@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manual do Proprietário, Termo de Garantia e Entrega</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700;900&family=Barlow+Condensed:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  @page { size: A4; margin: 12mm 14mm 12mm 14mm; }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --verde: #0a3d18; --verde2: #0d5220; --verde-claro: #1a7a30;
+    --off-white: #f5f2eb; --preto: #111; --cinza: #555; --borda: #d4d4d4;
+  }
+  body { font-family: 'Barlow', sans-serif; font-size: 11pt; color: var(--preto); line-height: 1.6; background: #e8e8e8; }
+  .page { width: 210mm; min-height: 297mm; margin: 10mm auto; background: #fff; padding: 20mm 18mm 25mm 18mm; box-shadow: 0 2px 16px rgba(0,0,0,0.12); position: relative; }
+  @media print {
+    body { background: #fff; font-size: 10pt; line-height: 1.45; }
+    .page { width: auto; min-height: auto; margin: 0; padding: 0; box-shadow: none; page-break-after: always; }
+    .page:last-child { page-break-after: auto; }
+    .no-print { display: none !important; }
+    .footer { position: static; margin-top: 20px; border-top: 1.5px solid var(--verde); padding-top: 6px; }
+    .header { padding-bottom: 8px; margin-bottom: 12px; }
+    .header-logo { height: 44px; }
+    .header-logo-sm { height: 30px; }
+    h2 { font-size: 11pt; margin: 14px 0 6px 0; page-break-after: avoid; }
+    h3 { font-size: 10pt; margin: 10px 0 4px 0; page-break-after: avoid; }
+    p { margin-bottom: 5px; font-size: 10pt; }
+    li { margin-bottom: 2px; font-size: 10pt; }
+    table { page-break-inside: avoid; }
+    table td, table th { font-size: 8.5pt; padding: 4px 6px; }
+    .ficha { padding: 10px 12px; margin-bottom: 10px; }
+    .ficha-label { font-size: 7pt; }
+    .ficha-valor { font-size: 10pt; }
+    .assinaturas { page-break-inside: avoid; margin-top: 30px; }
+    .checklist { page-break-inside: avoid; }
+    .checklist li { padding: 4px 0 4px 28px; }
+    .nota { page-break-inside: avoid; font-size: 9pt; padding: 6px 10px; }
+    .doc-title { font-size: 17pt; margin-bottom: 4px; }
+    .doc-subtitle { font-size: 9pt; margin-bottom: 16px; }
+    .local-data { margin-top: 20px; }
+    .assinatura-linha { margin-top: 40px; }
+  }
+  .header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 12px; border-bottom: 3px solid var(--verde); margin-bottom: 20px; }
+  .header-logo { height: 60px; }
+  .header-logo-sm { height: 40px; }
+  .header-info { text-align: right; font-size: 8.5pt; color: var(--cinza); line-height: 1.5; }
+  .header-info strong { font-size: 10pt; color: var(--verde); letter-spacing: 1px; }
+  .footer { position: absolute; bottom: 18mm; left: 18mm; right: 18mm; border-top: 2px solid var(--verde); padding-top: 8px; display: flex; justify-content: space-between; font-size: 7.5pt; color: #888; }
+  .doc-title { font-family: 'Barlow Condensed', sans-serif; font-size: 20pt; font-weight: 700; color: var(--verde); text-transform: uppercase; letter-spacing: 2px; text-align: center; margin-bottom: 6px; }
+  .doc-subtitle { text-align: center; font-size: 9.5pt; color: var(--cinza); margin-bottom: 24px; letter-spacing: 0.5px; }
+  h2 { font-family: 'Barlow Condensed', sans-serif; font-size: 13pt; font-weight: 700; color: var(--verde); text-transform: uppercase; letter-spacing: 1.5px; border-bottom: 2px solid rgba(10,61,24,0.15); padding-bottom: 4px; margin: 22px 0 10px 0; }
+  h2:first-of-type { margin-top: 0; }
+  h3 { font-size: 11pt; font-weight: 700; color: var(--verde2); margin: 14px 0 6px 0; }
+  .ficha { background: #f8faf8; border: 1px solid rgba(10,61,24,0.12); border-radius: 6px; padding: 14px 16px; margin-bottom: 16px; }
+  .ficha-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 24px; }
+  .ficha-item { display: flex; flex-direction: column; }
+  .ficha-label { font-size: 8pt; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--verde); margin-bottom: 1px; }
+  .ficha-valor { font-size: 11pt; font-weight: 500; color: var(--preto); border-bottom: 1px dotted var(--borda); padding-bottom: 2px; min-height: 20px; }
+  .ficha-full { grid-column: 1 / -1; }
+  ul, ol { padding-left: 20px; margin: 6px 0; }
+  li { margin-bottom: 4px; }
+  table { width: 100%; border-collapse: collapse; margin: 10px 0 16px 0; font-size: 10pt; }
+  table th { background: var(--verde); color: #fff; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; font-size: 8.5pt; padding: 8px 10px; text-align: left; }
+  table td { padding: 7px 10px; border-bottom: 1px solid #e5e5e5; }
+  table tr:nth-child(even) td { background: #fafafa; }
+  table tr:last-child td { border-bottom: 2px solid var(--verde); }
+  .tag-sim { display: inline-block; background: rgba(10,61,24,0.08); color: var(--verde); font-weight: 700; font-size: 9pt; padding: 2px 10px; border-radius: 4px; }
+  .tag-nao { display: inline-block; background: rgba(200,30,30,0.08); color: #c81e1e; font-weight: 700; font-size: 9pt; padding: 2px 10px; border-radius: 4px; }
+  .tag-ressalva { display: inline-block; background: rgba(210,160,20,0.12); color: #8a6d00; font-weight: 700; font-size: 8pt; padding: 2px 8px; border-radius: 4px; white-space: nowrap; }
+  .checklist { list-style: none; padding-left: 0; }
+  .checklist li { padding: 6px 0 6px 28px; position: relative; border-bottom: 1px solid #f0f0f0; }
+  .checklist li::before { content: ''; position: absolute; left: 0; top: 7px; width: 16px; height: 16px; border: 2px solid var(--verde); border-radius: 3px; }
+  .assinaturas { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 50px; padding-top: 10px; }
+  .assinatura-box { text-align: center; }
+  .assinatura-linha { border-top: 1px solid var(--preto); margin-top: 60px; padding-top: 6px; font-size: 10pt; font-weight: 600; }
+  .assinatura-sub { font-size: 8.5pt; color: var(--cinza); }
+  .local-data { margin-top: 30px; font-size: 10.5pt; }
+  .local-data span { border-bottom: 1px dotted var(--borda); padding-bottom: 2px; }
+  .nota { background: #fffbe6; border-left: 3px solid #d4a017; padding: 8px 12px; font-size: 9.5pt; color: #6b5900; margin: 10px 0; border-radius: 0 4px 4px 0; }
+  p { margin-bottom: 8px; }
+  .print-bar { position: fixed; top: 0; left: 0; right: 0; background: var(--verde); color: #fff; display: flex; align-items: center; justify-content: center; gap: 16px; padding: 12px; z-index: 999; box-shadow: 0 2px 12px rgba(0,0,0,0.3); }
+  .print-bar button { background: #fff; color: var(--verde); border: none; padding: 8px 24px; border-radius: 6px; font-family: 'Barlow', sans-serif; font-weight: 700; font-size: 12pt; cursor: pointer; letter-spacing: 1px; }
+  .print-bar button:hover { background: var(--off-white); }
+</style>
+</head>
+<body>
+
+<!-- BARRA DE IMPRESSAO -->
+<div class="print-bar no-print">
+  <span style="font-weight:600;letter-spacing:1px;" id="print-bar-titulo">Documento Pronto</span>
+  <button onclick="window.print()">IMPRIMIR / SALVAR PDF</button>
+</div>
+<div class="no-print" style="height:56px;"></div>
+
+<!-- PAGINA 1 — CAPA + DADOS + ORIENTACOES -->
+<div class="page">
+  <div class="header">
+    <img src="img/logo-edr-preto.svg" class="header-logo" alt="EDR Engenharia" onerror="this.style.display='none'">
+    <div class="header-info">
+      <strong id="h-empresa">EDR ENGENHARIA</strong><br>
+      CNPJ 49.909.440/0001-55<br>
+      Rua Gerson Ferreira de Almeida, 89 — Centro, Jupi-PE<br>
+      (87) 9 8171-3987 &nbsp;|&nbsp; @elydaedr
+    </div>
+  </div>
+
+  <div class="doc-title">Manual do Proprietário</div>
+  <div class="doc-subtitle">Termo de Garantia &amp; Termo de Entrega de Imóvel</div>
+
+  <h2>1. Dados do Proprietário e Imóvel</h2>
+  <div class="ficha">
+    <div class="ficha-grid">
+      <div class="ficha-item ficha-full">
+        <span class="ficha-label">Nome do Proprietário</span>
+        <span class="ficha-valor" id="t-proprietario">&nbsp;</span>
+      </div>
+      <div class="ficha-item">
+        <span class="ficha-label">CPF</span>
+        <span class="ficha-valor" id="t-cpf">&nbsp;</span>
+      </div>
+      <div class="ficha-item">
+        <span class="ficha-label">RG</span>
+        <span class="ficha-valor">&nbsp;</span>
+      </div>
+      <div class="ficha-item ficha-full">
+        <span class="ficha-label">Endereço do Imóvel</span>
+        <span class="ficha-valor" id="t-endereco">&nbsp;</span>
+      </div>
+      <div class="ficha-item">
+        <span class="ficha-label">Nº / Lote</span>
+        <span class="ficha-valor" id="t-numero">&nbsp;</span>
+      </div>
+      <div class="ficha-item">
+        <span class="ficha-label">Cidade / UF</span>
+        <span class="ficha-valor" id="t-cidade">&nbsp;</span>
+      </div>
+      <div class="ficha-item">
+        <span class="ficha-label">Data de Entrega</span>
+        <span class="ficha-valor" id="t-data-entrega">&nbsp;</span>
+      </div>
+      <div class="ficha-item">
+        <span class="ficha-label">Modelo / Projeto</span>
+        <span class="ficha-valor" id="t-modelo">&nbsp;</span>
+      </div>
+    </div>
+  </div>
+
+  <p>Este documento tem como objetivo orientar o(a) proprietário(a) sobre o uso, manutenção e garantias da unidade habitacional construída pela <strong id="t-empresa-p1">EDR Engenharia</strong>, conforme as normas técnicas brasileiras:</p>
+  <ul>
+    <li>ABNT NBR 14037:2011 — Manual de uso, operação e manutenção das edificações</li>
+    <li>ABNT NBR 5674:2012 — Manutenção de edificações</li>
+    <li>ABNT NBR 15575 — Desempenho das edificações habitacionais</li>
+  </ul>
+
+  <h2>2. Orientações Gerais de Uso</h2>
+  <ul>
+    <li>Evite sobrecarga em armários e prateleiras fixadas em paredes de alvenaria.</li>
+    <li><strong>Não altere</strong> a instalação elétrica ou hidráulica sem acompanhamento de responsável técnico habilitado.</li>
+    <li>Evite o uso de produtos químicos agressivos (ácido muriático, soda cáustica) em revestimentos cerâmicos, metais sanitários e bancadas.</li>
+    <li>Realize limpeza e manutenção regular de calhas, rufos, ralos com fecho hídrico e caixas de gordura.</li>
+    <li>Sempre que possível, mantenha as janelas abertas para garantir a ventilação adequada do imóvel. A circulação de ar é essencial para evitar o surgimento de mofo e bolor, especialmente em ambientes como banheiros, cozinha e áreas de serviço.</li>
+    <li>Mantenha os rejuntes em bom estado para evitar infiltrações.</li>
+    <li>Antes de perfurar paredes, pisos ou lajes, tenha cautela: existem tubulações hidráulicas e fiações elétricas embutidas. Na dúvida, consulte um profissional habilitado que possua detector de tubulações.</li>
+    <li>Em caso de ausência prolongada, feche o <strong>registro geral de água</strong>, localizado na saída da caixa d'água.</li>
+  </ul>
+
+  <div class="footer">
+    <span id="footer-empresa-p1">EDR Engenharia — Manual do Proprietário, Termo de Garantia e Entrega</span>
+    <span>Página 1 de 4</span>
+  </div>
+</div>
+
+<!-- PAGINA 2 — GARANTIAS + PODE OU NAO PODE -->
+<div class="page">
+  <div class="header">
+    <img src="img/logo-edr-preto.svg" class="header-logo-sm" alt="EDR" onerror="this.style.display='none'">
+    <div class="header-info" style="font-size:7.5pt;"><strong id="h-empresa-p2">EDR ENGENHARIA</strong> &mdash; CNPJ 49.909.440/0001-55</div>
+  </div>
+
+  <h2>3. Tabela de Garantias por Serviço</h2>
+  <p>Os prazos de garantia seguem os requisitos legais, normativos (NBR 15575) e contratuais. A contagem inicia na <strong>data de entrega do imóvel</strong>.</p>
+
+  <table>
+    <thead><tr><th style="width:45%;">Elemento / Serviço</th><th style="width:15%;text-align:center;">Prazo</th><th style="width:40%;">Observações</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Fundações e estrutura</strong> (vigas, pilares, lajes, radier)</td><td style="text-align:center;font-weight:700;color:var(--verde);">5 anos</td><td>Segurança e estabilidade global. Trincas estruturais ou recalques.</td></tr>
+      <tr><td><strong>Paredes de vedação</strong> (alvenaria)</td><td style="text-align:center;font-weight:700;color:var(--verde);">5 anos</td><td>Fissuras passantes que comprometam estanqueidade.</td></tr>
+      <tr><td><strong>Impermeabilização</strong> (laje, cobertura, banheiros)</td><td style="text-align:center;font-weight:700;color:var(--verde);">3 anos</td><td>Infiltrações por falha de impermeabilização original.</td></tr>
+      <tr><td><strong>Cobertura</strong> (estrutura do telhado, telhas, rufos, calhas)</td><td style="text-align:center;font-weight:700;color:var(--verde);">3 anos</td><td>Goteiras por defeito de execução. Exclui vendavais e granizo.</td></tr>
+      <tr><td><strong>Instalações hidráulicas</strong> (água fria/quente, esgoto)</td><td style="text-align:center;font-weight:700;color:var(--verde);">2 anos</td><td>Vazamentos em tubulações, conexões e registros embutidos.</td></tr>
+      <tr><td><strong>Instalações elétricas</strong> (fiação, disjuntores, QDC)</td><td style="text-align:center;font-weight:700;color:var(--verde);">2 anos</td><td>Defeitos na fiação original, mau contato, dimensionamento.</td></tr>
+      <tr><td><strong>Revestimentos de parede</strong> (reboco, massa, cerâmica)</td><td style="text-align:center;font-weight:700;color:var(--verde);">2 anos</td><td>Desplacamento, estufamento ou fissuras no revestimento.</td></tr>
+      <tr><td><strong>Revestimentos de piso</strong> (cerâmica, porcelanato)</td><td style="text-align:center;font-weight:700;color:var(--verde);">2 anos</td><td>Desplacamento ou quebra por defeito de assentamento.</td></tr>
+      <tr><td><strong>Pintura interna e externa</strong></td><td style="text-align:center;font-weight:700;color:var(--verde);">1 ano</td><td>Descascamento, bolhas ou manchas por falha de preparo.</td></tr>
+      <tr><td><strong>Esquadrias</strong> (portas, janelas, fechaduras)</td><td style="text-align:center;font-weight:700;color:var(--verde);">1 ano</td><td>Defeitos de funcionamento, vedação e acabamento.</td></tr>
+      <tr><td><strong>Rejuntes</strong></td><td style="text-align:center;font-weight:700;color:var(--verde);">1 ano</td><td>Manutenção periódica é de responsabilidade do proprietário.</td></tr>
+      <tr><td><strong>Louças e metais sanitários</strong></td><td style="text-align:center;font-weight:700;color:var(--verde);">1 ano</td><td>Defeitos de instalação. Garantia do fabricante segue à parte.</td></tr>
+      <tr><td><strong>Forro de gesso / PVC</strong></td><td style="text-align:center;font-weight:700;color:var(--verde);">2 anos</td><td>Trincas, desplacamento ou abaulamento por falha de execução.</td></tr>
+      <tr><td><strong>Contrapiso e regularização</strong></td><td style="text-align:center;font-weight:700;color:var(--verde);">3 anos</td><td>Fissuras, desníveis ou destacamento do substrato.</td></tr>
+      <tr><td><strong>Muro, calçada e piso externo</strong></td><td style="text-align:center;font-weight:700;color:var(--verde);">2 anos</td><td>Exclui danos por raízes de árvores ou tráfego de veículos pesados.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>4. Pode ou Não Pode?</h2>
+  <table>
+    <thead><tr><th style="width:50%;">Ação</th><th style="width:15%;text-align:center;">Permitido?</th><th style="width:35%;">Observação</th></tr></thead>
+    <tbody>
+      <tr><td>Fixar armários com buchas e parafusos leves</td><td style="text-align:center;"><span class="tag-sim">SIM</span></td><td>Evite sobrecarga ou impactos excessivos</td></tr>
+      <tr><td>Perfurar parede para passagem de tubulação</td><td style="text-align:center;"><span class="tag-nao">NÃO</span></td><td>Risco de danificar instalações embutidas</td></tr>
+      <tr><td>Trocar piso cerâmico</td><td style="text-align:center;"><span class="tag-sim">SIM</span></td><td>Somente por profissional qualificado</td></tr>
+      <tr><td>Alterar fiação elétrica ou acrescentar circuitos</td><td style="text-align:center;"><span class="tag-nao">NÃO</span></td><td>Apenas com responsável técnico registrado (CREA/CFT)</td></tr>
+      <tr><td>Instalar ar-condicionado ou aquecedor</td><td style="text-align:center;"><span class="tag-sim">SIM</span></td><td>Verificar capacidade do circuito elétrico antes</td></tr>
+      <tr><td>Ampliar o imóvel (cômodos, garagem, muro)</td><td style="text-align:center;"><span class="tag-ressalva">COM RESSALVAS</span></td><td>Obrigatório contratar responsável técnico (engenheiro/arquiteto com ART/RRT). Intervenções estruturais podem gerar fissuras; a construtora não se responsabiliza por ampliações de terceiros.</td></tr>
+      <tr><td>Pintar paredes internas</td><td style="text-align:center;"><span class="tag-sim">SIM</span></td><td>Use tintas compatíveis com o acabamento original</td></tr>
+      <tr><td>Subir na laje / cobertura</td><td style="text-align:center;"><span class="tag-ressalva">COM CUIDADOS</span></td><td>Pisar somente sobre os apoios de alvenaria, nunca no vão livre da telha. Use uma tábua para distribuir a carga. Danos por pisada incorreta não são cobertos pela garantia.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="footer">
+    <span id="footer-empresa-p2">EDR Engenharia — Manual do Proprietário, Termo de Garantia e Entrega</span>
+    <span>Página 2 de 4</span>
+  </div>
+</div>
+
+<!-- PAGINA 3 — PERDA DE GARANTIA + MANUTENCAO PREVENTIVA -->
+<div class="page">
+  <div class="header">
+    <img src="img/logo-edr-preto.svg" class="header-logo-sm" alt="EDR" onerror="this.style.display='none'">
+    <div class="header-info" style="font-size:7.5pt;"><strong id="h-empresa-p3">EDR ENGENHARIA</strong> &mdash; CNPJ 49.909.440/0001-55</div>
+  </div>
+
+  <h2>5. Perda de Garantia</h2>
+  <p>A garantia será <strong>automaticamente cancelada</strong> nos seguintes casos:</p>
+  <ol>
+    <li>Realização de reformas, ampliações ou modificações estruturais sem acompanhamento de responsável técnico habilitado (ART/RRT).</li>
+    <li>Inexistência de manutenção preventiva conforme orientações deste manual (limpeza de calhas, verificação de rejuntes, desobstrução de ralos, etc.).</li>
+    <li>Utilização inadequada dos ambientes, sistemas, instalações ou materiais.</li>
+    <li>Manutenções ou reparos executados por profissionais não habilitados.</li>
+    <li>Danos causados por terceiros, caso fortuito ou força maior (enchentes, vendavais, queda de árvores, raios, etc.).</li>
+    <li>Desgaste natural por uso e tempo de vida útil dos materiais.</li>
+    <li>Não comunicação formal de defeitos dentro do prazo de garantia.</li>
+  </ol>
+
+  <div class="nota">
+    <strong>Importante:</strong> O proprietário deve notificar a construtora por escrito (WhatsApp, e-mail ou carta) sobre qualquer defeito aparente <strong>tão logo seja identificado</strong>, dentro do prazo de garantia.
+  </div>
+
+  <h2>6. Manutenção Preventiva Recomendada</h2>
+  <table>
+    <thead><tr><th style="width:35%;">Item</th><th style="width:20%;text-align:center;">Periodicidade</th><th style="width:45%;">O que fazer</th></tr></thead>
+    <tbody>
+      <tr><td>Calhas, rufos e ralos</td><td style="text-align:center;">A cada 3 meses</td><td>Limpar detritos, folhas e verificar escoamento</td></tr>
+      <tr><td>Caixa de gordura</td><td style="text-align:center;">A cada 6 meses</td><td>Limpar e remover resíduos de gordura acumulados</td></tr>
+      <tr><td>Rejuntes (pisos e paredes)</td><td style="text-align:center;">Anual</td><td>Verificar integridade; refazer onde houver falhas</td></tr>
+      <tr><td>Pintura externa</td><td style="text-align:center;">A cada 3 anos</td><td>Repintar fachadas para proteção contra intempéries</td></tr>
+      <tr><td>Instalação elétrica</td><td style="text-align:center;">Anual</td><td>Verificar disjuntores, tomadas e fiações aparentes</td></tr>
+      <tr><td>Registros e válvulas</td><td style="text-align:center;">Semestral</td><td>Abrir e fechar completamente para evitar travamento</td></tr>
+      <tr><td>Telhado</td><td style="text-align:center;">Anual</td><td>Verificar telhas quebradas ou deslocadas (por profissional)</td></tr>
+      <tr><td>Impermeabilização</td><td style="text-align:center;">A cada 2 anos</td><td>Inspecionar lajes e banheiros; refazer se necessário</td></tr>
+    </tbody>
+  </table>
+
+  <h2>7. Responsabilidades do Proprietário</h2>
+  <ul>
+    <li>Executar as manutenções periódicas preventivas descritas neste manual.</li>
+    <li>Não realizar intervenções estruturais, elétricas ou hidráulicas sem orientação técnica especializada.</li>
+    <li>Notificar a construtora formalmente sobre qualquer defeito aparente dentro do prazo de garantia.</li>
+    <li>Utilizar o imóvel de acordo com a finalidade para a qual foi projetado (residencial).</li>
+    <li>Conservar este documento para eventuais consultas e comprovação de garantia.</li>
+  </ul>
+
+  <h2>8. Assistência Técnica</h2>
+  <p>A assistência técnica será prestada pela equipe da <strong id="t-empresa-p3">EDR Engenharia</strong>, mediante agendamento prévio, durante o prazo de garantia, após avaliação técnica in loco.</p>
+
+  <div class="footer">
+    <span id="footer-empresa-p3">EDR Engenharia — Manual do Proprietário, Termo de Garantia e Entrega</span>
+    <span>Página 3 de 4</span>
+  </div>
+</div>
+
+<!-- PAGINA 4 — TERMO DE ENTREGA + CHECKLIST + ASSINATURAS -->
+<div class="page">
+  <div class="header">
+    <img src="img/logo-edr-preto.svg" class="header-logo-sm" alt="EDR" onerror="this.style.display='none'">
+    <div class="header-info" style="font-size:7.5pt;"><strong id="h-empresa-p4">EDR ENGENHARIA</strong> &mdash; CNPJ 49.909.440/0001-55</div>
+  </div>
+
+  <h2>9. Termo de Entrega do Imóvel</h2>
+  <p>Pelo presente Termo de Entrega, a <strong id="t-empresa-termo">EDR ENGENHARIA</strong>, inscrita no CNPJ sob o nº <strong>49.909.440/0001-55</strong>, com sede na Rua Gerson Ferreira de Almeida, 89, Centro, Jupi-PE, declara que realizou a entrega do imóvel ao(à) proprietário(a) identificado(a) na Seção 1 deste documento, devidamente concluído e em condições de uso, conforme as condições contratadas e vistoriadas no ato da entrega.</p>
+
+  <h3>Declaração do Proprietário</h3>
+  <p>O(A) proprietário(a) declara, por meio deste, que:</p>
+  <ol>
+    <li>Recebeu o imóvel em plenas condições de uso, conforme vistoria realizada no ato da entrega.</li>
+    <li>Recebeu o presente documento contendo o <strong>Manual do Proprietário</strong>, o <strong>Termo de Garantia</strong> e o <strong>Termo de Entrega</strong>, com todas as orientações de uso, manutenção e prazos de garantia.</li>
+    <li>Está ciente de suas responsabilidades quanto à manutenção preventiva e ao uso adequado do imóvel, conforme descrito neste documento.</li>
+    <li>Está ciente de que o descumprimento das orientações aqui descritas acarretará a <strong>perda automática da garantia</strong>.</li>
+  </ol>
+
+  <h2>10. Checklist de Entrega</h2>
+  <p style="font-size:9.5pt;color:var(--cinza);margin-bottom:10px;">Preencher no ato da entrega — marcar com "X" os itens conferidos:</p>
+  <ul class="checklist">
+    <li>Manual do Proprietário, Termo de Garantia e Entrega entregues</li>
+    <li>Chaves do imóvel entregues (porta principal, portão, cadeados)</li>
+    <li>Instalação elétrica testada e funcional</li>
+    <li>Instalação hidráulica testada e funcional (água e esgoto)</li>
+    <li>Vistoria de entrega realizada com o proprietário</li>
+    <li>Proprietário ciente das obrigações de manutenção preventiva</li>
+    <li>Contatos de assistência técnica informados</li>
+    <li>Proprietário ciente dos prazos de garantia por serviço</li>
+  </ul>
+
+  <h3 style="margin-top:20px;">Observações da vistoria:</h3>
+  <div style="border:1px solid var(--borda);border-radius:6px;min-height:60px;padding:10px;margin-bottom:16px;">&nbsp;</div>
+
+  <div class="local-data">
+    <strong>Local e Data:</strong> &nbsp;<span id="t-local-data" style="min-width:300px;display:inline-block;">&nbsp;</span>
+  </div>
+
+  <div class="assinaturas">
+    <div class="assinatura-box">
+      <div class="assinatura-linha">Proprietário(a)</div>
+      <div class="assinatura-sub" id="t-ass-proprietario">CPF: _____________________________________</div>
+    </div>
+    <div class="assinatura-box">
+      <div class="assinatura-linha" id="t-ass-empresa">EDR Engenharia</div>
+      <div class="assinatura-sub">Responsável Técnico</div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span id="footer-empresa-p4">EDR Engenharia — Manual do Proprietário, Termo de Garantia e Entrega</span>
+    <span>Página 4 de 4</span>
+  </div>
+</div>
+
+<script>
+(function() {
+  try {
+    const raw = localStorage.getItem('edr-termo-dados');
+    if (!raw) return;
+    const d = JSON.parse(raw);
+    localStorage.removeItem('edr-termo-dados');
+
+    const set = (id, val) => { const el = document.getElementById(id); if (el && val) el.textContent = val; };
+
+    // Dados do proprietário
+    set('t-proprietario', d.proprietario);
+    set('t-cpf', d.cpf);
+    set('t-numero', d.numero);
+    set('t-cidade', d.cidade);
+    set('t-modelo', d.modelo);
+    const end = [d.rua, d.bairro].filter(Boolean).join(', ');
+    set('t-endereco', end || null);
+    if (d.dataEntrega) {
+      const parts = d.dataEntrega.includes('/') ? d.dataEntrega : (([y,m,day]) => `${day}/${m}/${y}`)(d.dataEntrega.split('-'));
+      set('t-data-entrega', parts);
+    }
+
+    // Local e data na assinatura
+    const hoje = new Date();
+    const meses = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+    const cidadeLocal = d.cidade ? d.cidade.split('/')[0].trim() : '___________';
+    set('t-local-data', `${cidadeLocal}, ${hoje.getDate()} de ${meses[hoje.getMonth()]} de ${hoje.getFullYear()}`);
+
+    // Assinatura proprietário
+    const assEl = document.getElementById('t-ass-proprietario');
+    if (assEl) {
+      const parts = [];
+      if (d.proprietario) parts.push(d.proprietario);
+      if (d.cpf) parts.push('CPF: ' + d.cpf);
+      if (parts.length) assEl.innerHTML = parts.join('<br>');
+    }
+
+    // Nome da empresa dinâmico
+    const empresa = d.empresaNome || 'EDR ENGENHARIA';
+    const ids = ['h-empresa','h-empresa-p2','h-empresa-p3','h-empresa-p4','t-empresa-p1','t-empresa-p3','t-empresa-termo','t-ass-empresa'];
+    ids.forEach(id => set(id, empresa));
+    const footerIds = ['footer-empresa-p1','footer-empresa-p2','footer-empresa-p3','footer-empresa-p4'];
+    footerIds.forEach(id => set(id, empresa + ' — Manual do Proprietário, Termo de Garantia e Entrega'));
+    document.getElementById('print-bar-titulo').textContent = empresa + ' — Documento Pronto';
+    document.title = empresa + ' — Manual do Proprietário';
+
+  } catch(e) { console.error('Erro ao preencher termo:', e); }
+})();
+</script>
+</body>
+</html>

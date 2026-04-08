@@ -846,7 +846,8 @@ async function confirmarConclusaoObra() {
 }
 
 function gerarTermoEntrega(dados) {
-  localStorage.setItem('edr-termo-dados', JSON.stringify(dados));
+  const empresaNome = (typeof _companyPlan !== 'undefined' && _companyPlan?.name) ? _companyPlan.name : 'EDR ENGENHARIA';
+  localStorage.setItem('edr-termo-dados', JSON.stringify({ ...dados, empresaNome }));
   window.open('termo-entrega.html', '_blank');
 }
 

@@ -69,11 +69,9 @@ const TermoModule = {
    * @param {Object} dados — { proprietario, cpf, rua, bairro, numero, cidade, dataEntrega, modelo }
    */
   gerar(dados) {
-    if (typeof PdfModule === 'undefined' || !PdfModule.gerarTermo) {
-      console.error('PdfModule.gerarTermo nao disponivel');
-      return;
-    }
-    PdfModule.gerarTermo(TermoModule._montarPayload(dados));
+    const empresaNome = (typeof _companyPlan !== 'undefined' && _companyPlan?.name) ? _companyPlan.name : 'EDR ENGENHARIA';
+    localStorage.setItem('edr-termo-dados', JSON.stringify({ ...dados, empresaNome }));
+    window.open('termo-entrega.html', '_blank');
   },
 
   /**
