@@ -20,8 +20,10 @@ function _sbHeaders(preferOverride) {
   };
 }
 
-// ── MULTI-TENANT (só para INSERTs — RLS cuida das leituras) ──
+// ── MULTI-TENANT ─────────────────────────────────────────────
 const _TABELAS_SEM_TENANT = ['companies', 'company_users', 'usuarios'];
+// Tabelas que pertencem a um tenant — leituras filtradas por company_id
+const _TABELAS_TENANT = new Set(['lancamentos','notas_fiscais','distribuicoes','entradas_diretas','repasses_cef','obra_adicionais','adicional_pagamentos','diarias','obras','projecoes_caixa','ajustes_estoque']);
 
 function _addCompanyToBody(tabela, body) {
   if (_TABELAS_SEM_TENANT.includes(tabela) || !_companyId) return body;
@@ -35,10 +37,14 @@ function _addCriadoPor(t, b) {
   return b;
 }
 
-// ── SUPABASE REST HELPERS (RLS filtra por empresa) ──
+// ── SUPABASE REST HELPERS ─────────────────────────────────────
 async function sbGet(t, q='') {
   // Compatibilidade: query pode vir junto no t (ex: 'tabela?order=x')
   if (q === '' && t.includes('?')) { const i = t.indexOf('?'); q = t.substring(i); t = t.substring(0, i); }
+  // Filtro automático por empresa para tabelas tenant-específicas
+  if (_companyId && _TABELAS_TENANT.has(t)) {
+    q = q ? q + '&company_id=eq.' + _companyId : '?company_id=eq.' + _companyId;
+  }
   try {
     const r = await fetch(`${SUPABASE_URL}/rest/v1/${t}${q}`, { headers: _sbHeaders() });
     if (!r.ok) { console.warn('sbGet erro:', r.status, t); return []; }
@@ -190,10 +196,12 @@ let _companyPlan = null;
 async function loadCompanyPlan() {
   if (MODO_DEMO || !_companyId) return;
   try {
-    const r = await sbGet('companies', '?id=eq.' + _companyId + '&select=plan,trial_ends_at,permissions');
+    const r = await sbGet('companies', '?id=eq.' + _companyId + '&select=plan,trial_ends_at,permissions,name');
     if (r && r[0]) {
       _companyPlan = r[0];
       if (typeof _aplicarPermissoesBanco === 'function') _aplicarPermissoesBanco(r[0].permissions);
+      const el = document.getElementById('sidebar-company-name');
+      if (el && r[0].name) el.textContent = r[0].name;
     }
   } catch(e) { console.error('loadCompanyPlan:', e); }
 }

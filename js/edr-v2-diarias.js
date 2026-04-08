@@ -126,7 +126,7 @@ function diarAbrirModalEquipe() {
             <span class="material-symbols-outlined">close</span>
           </button>
         </div>
-        <div id="diar-equipe-lista" style="padding:0 4px;"></div>
+        <div id="diar-equipe-lista" style="padding:0 20px;"></div>
         <div style="margin-top:16px;border-top:1px solid var(--border);padding:16px 0 0;">
           <div style="font-size:10px;font-weight:700;color:var(--primary);letter-spacing:1px;margin-bottom:10px;">+ ADICIONAR FUNCIONARIO</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">

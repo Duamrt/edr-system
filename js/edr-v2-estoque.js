@@ -1934,7 +1934,7 @@ function abrirSaidaMaterial(descPreenchida, unidadePreenchida) {
   const obraSelect = document.getElementById('saida-obra');
   obraSelect.innerHTML = '<option value="">— Selecione a obra —</option>' +
     obras.map(o => `<option value="${o.id}">${esc(o.nome)}</option>`).join('');
-  document.getElementById('saida-etapa').innerHTML = etapaSelectOpts('', false);
+  document.getElementById('saida-etapa').innerHTML = etapaSelectOpts('', true);
   document.getElementById('saida-data').value = hojeISO();
   document.getElementById('saida-desc').value = descPreenchida || '';
   document.getElementById('saida-qtd').value = '';

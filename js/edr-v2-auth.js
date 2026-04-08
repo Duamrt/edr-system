@@ -143,7 +143,8 @@ async function _refreshAuthToken(refreshToken) {
     _supabaseToken = data.access_token;
     const meta = data.user?.user_metadata || {};
     usuarioAtual.id = data.user.id;
-    usuarioAtual.nome = meta.nome || usuarioAtual.nome;
+    // meta.nome vazio não herda nome de sessão anterior (evita vazar nome entre tenants)
+    usuarioAtual.nome = meta.nome || data.user?.email || usuarioAtual.nome;
     usuarioAtual.perfil = meta.perfil || usuarioAtual.perfil;
     try {
       localStorage.setItem('edr_auth', JSON.stringify({
