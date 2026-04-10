@@ -1777,7 +1777,7 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
     <!-- Aba Lançamentos -->
     <div id="obras-tab-content-lanc">
       <div style="margin-bottom:10px;">
-        <button class="btn-save" style="padding:10px 18px;width:auto;font-size:12px;" onclick="irParaEntradaDireta()"><span class="material-symbols-outlined icon-sm">inventory_2</span> Estoque</button>
+        <button class="btn-save" style="padding:10px 18px;width:auto;font-size:12px;" onclick="irParaEntradaDireta()" title="Registrar compra de material direto nesta obra (sem nota fiscal)"><span class="material-symbols-outlined icon-sm">add_shopping_cart</span> Lançar Material</button>
       </div>
       <div id="obras-total-filtro" class="hidden" style="display:flex;justify-content:space-between;align-items:center;background:var(--bg2);border:1px solid var(--verde-bd);border-radius:10px;padding:10px 14px;margin-bottom:10px;"></div>
       <div id="obras-lanc-lista"></div>
@@ -1867,8 +1867,8 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
 <div id="estoque-sticky" class="sticky-header">
       <div class="modulo-badge"><span class="material-symbols-outlined">inventory_2</span> ESTOQUE EDR</div>
       <div class="btn-row" style="margin-bottom:8px;">
-        <button class="btn-tipo btn-tipo-edr-primary" style="font-size:13px;" onclick="abrirEntradaDireta()"><span class="material-symbols-outlined icon-md">move_to_inbox</span> ENTRADA</button>
-        <button class="btn-tipo btn-tipo-edr-danger" style="font-size:13px;" onclick="abrirSaidaMaterial()"><span class="material-symbols-outlined icon-md">output</span> SAÍDA</button>
+        <button class="btn-tipo btn-tipo-edr-primary" style="font-size:13px;" onclick="abrirEntradaDireta()" title="Registrar material que chegou no almoxarifado (sem nota fiscal)"><span class="material-symbols-outlined icon-md">move_to_inbox</span> ENTRADA</button>
+        <button class="btn-tipo btn-tipo-edr-danger" style="font-size:13px;" onclick="abrirSaidaMaterial()" title="Dar baixa em material que já está no estoque para uma obra"><span class="material-symbols-outlined icon-md">output</span> SAÍDA</button>
         <button class="btn-tipo btn-tipo-edr-muted admin-only" style="font-size:13px;" onclick="abrirAjusteEstoque()"><span class="material-symbols-outlined icon-md">tune</span> AJUSTE</button>
         <button class="btn-tipo btn-tipo-edr-muted" style="padding:10px 8px;font-size:11px;flex:0;white-space:nowrap;" onclick="exportarEstoqueExcel()" title="Exportar planilha de inventário"><span class="material-symbols-outlined icon-md">download</span></button>
         <button class="btn-tipo btn-tipo-edr-muted admin-only" style="padding:10px 8px;font-size:11px;flex:0;white-space:nowrap;" onclick="importarPrecosEstoque()" title="Importar planilha com preços corrigidos (col K)"><span class="material-symbols-outlined icon-md">upload</span></button>
@@ -2860,41 +2860,41 @@ function updateShellUser(nome, perfil) {
 
 <!-- ═══════ MODULOS V2 (ordem de dependência) ═══════ -->
 <!-- 0. Infraestrutura: sbGet/sbPost/sbPatch/sbDelete, confirmar(), showModal, usuarioAtual -->
-<script src="js/edr-v2-infra.js?v=04101618"></script>
+<script src="js/edr-v2-infra.js?v=04101627"></script>
 <!-- 1. Utilitários globais (valorPorExtenso, fmtN) -->
-<script src="js/edr-v2-utils-extras.js?v=04101618"></script>
+<script src="js/edr-v2-utils-extras.js?v=04101627"></script>
 <!-- 2. Obras PRIMEIRO (ETAPAS, resolveEtapaKey, etapaCor, etapaLabel — vários módulos dependem) -->
-<script src="js/edr-v2-obras.js?v=04101618"></script>
+<script src="js/edr-v2-obras.js?v=04101627"></script>
 <!-- 3. PDF engine (pdfMake CDN + PdfModule) -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js?v=04101618"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js?v=04101618"></script>
-<script src="js/edr-v2-pdf.js?v=04101618"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js?v=04101627"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js?v=04101627"></script>
+<script src="js/edr-v2-pdf.js?v=04101627"></script>
 <!-- 4. Módulos core de negócio -->
 <script src="js/edr-v2-notas.js?v=20260407-EDR-DEL"></script>
 <script src="js/edr-v2-importar.js?v=20260407-XML-IPI"></script>
-<script src="js/edr-v2-estoque.js?v=04101618"></script>
-<script src="js/edr-v2-custos.js?v=04101618"></script>
+<script src="js/edr-v2-estoque.js?v=04101627"></script>
+<script src="js/edr-v2-custos.js?v=04101627"></script>
 <!-- 5. Equipe e operacional -->
-<script src="js/edr-v2-diarias.js?v=04101618"></script>
-<script src="js/edr-v2-diario.js?v=04101618"></script>
+<script src="js/edr-v2-diarias.js?v=04101627"></script>
+<script src="js/edr-v2-diario.js?v=04101627"></script>
 <!-- 6. Relatórios e dashboard (dependem de obras.js pra etapaCor) -->
-<script src="js/edr-v2-relatorio.js?v=04101618"></script>
-<script src="js/edr-v2-dashboard.js?v=04101618"></script>
+<script src="js/edr-v2-relatorio.js?v=04101627"></script>
+<script src="js/edr-v2-dashboard.js?v=04101627"></script>
 <!-- 7. Módulos complementares -->
-<script src="js/edr-v2-leads.js?v=04101618"></script>
-<script src="js/edr-v2-garantias.js?v=04101618"></script>
-<script src="js/edr-v2-adicionais.js?v=04101618"></script>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.css?v=04101618"/>
-<script src="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.min.js?v=04101618"></script>
-<script src="js/edr-v2-cronograma.js?v=04101618"></script>
-<script src="js/edr-v2-orcamento.js?v=04101618"></script>
+<script src="js/edr-v2-leads.js?v=04101627"></script>
+<script src="js/edr-v2-garantias.js?v=04101627"></script>
+<script src="js/edr-v2-adicionais.js?v=04101627"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.css?v=04101627"/>
+<script src="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.min.js?v=04101627"></script>
+<script src="js/edr-v2-cronograma.js?v=04101627"></script>
+<script src="js/edr-v2-orcamento.js?v=04101627"></script>
 <!-- 8. Documentação e medições -->
-<script src="js/edr-v2-termo-manual.js?v=04101618"></script>
-<script src="js/edr-v2-pci.js?v=04101618"></script>
+<script src="js/edr-v2-termo-manual.js?v=04101627"></script>
+<script src="js/edr-v2-pci.js?v=04101627"></script>
 <!-- 9. Auth (login, sessão, refresh — ÚLTIMO) -->
-<script src="js/edr-v2-alertas.js?v=04101618"></script>
-<script src="js/edr-v2-auth.js?v=04101618"></script>
-<script src="js/edr-v2-financeiro.js?v=04101618"></script>
+<script src="js/edr-v2-alertas.js?v=04101627"></script>
+<script src="js/edr-v2-auth.js?v=04101627"></script>
+<script src="js/edr-v2-financeiro.js?v=04101627"></script>
 
 <!-- ═══════════════════════════════════════════════════════════════ -->
 <!-- MODAIS (Fase 0 — containers para módulos que precisam)        -->
@@ -3067,7 +3067,8 @@ function updateShellUser(nome, perfil) {
 <!-- MODAL ENTRADA DIRETA -->
 <div id="modal-entrada" class="modal-overlay" onclick="closeModalOutside(event,'entrada')">
   <div class="modal-box" style="max-width:500px;width:95vw;max-height:90vh;overflow-y:auto;">
-    <div class="modal-title-v2"><h3><span class="material-symbols-outlined">move_to_inbox</span> ENTRADA DIRETA (SEM NOTA)</h3><button class="modal-close" onclick="fecharModal('entrada')"><span class="material-symbols-outlined">close</span></button></div>
+    <div class="modal-title-v2"><h3><span class="material-symbols-outlined">add_shopping_cart</span> REGISTRAR MATERIAL</h3><button class="modal-close" onclick="fecharModal('entrada')"><span class="material-symbols-outlined">close</span></button></div>
+    <div style="font-size:11px;color:var(--text-tertiary);padding:0 20px 10px;margin-top:-8px;">Compra sem nota fiscal. Escolha o destino abaixo: <strong>Obra</strong> lança direto no custo da obra · <strong>Estoque</strong> entrada no almoxarifado.</div>
     <div class="field autocomplete-wrap">
       <label>MATERIAL *</label>
       <input type="text" id="entrada-desc" placeholder="EX: CIMENTO, AREIA..." oninput="onEntradaDescInput()" autocomplete="off">

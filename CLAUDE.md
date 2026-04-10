@@ -21,6 +21,7 @@ Sempre responda em português brasileiro.
 obras · estoque · notas · diarias · leads · caixa · garantias · catalogo · equipe · relatorio · fiscal
 
 ## Gotchas CRÍTICOS
+- **populateSelects() APAGA valores de select:** NUNCA setar `obras-filtro-obra.value` ANTES de chamar `populateSelects()` — ela reconstrói o innerHTML e zera qualquer valor setado. Em `obrasAbrirDetalhe()` o `populateSelects()` DEVE vir primeiro, só depois setar o `.value`. Já quebrou e foi corrigido — não reverter.
 - **Modal V2:** SEMPRE `classList.remove('hidden'); classList.add('active')` pra abrir — NUNCA só um dos dois
 - **sbPost:** retorna objeto direto (não array) — NUNCA `const [x] = await sbPost(...)`
 - **RLS:** NUNCA subquery em `profiles` dentro de policy
