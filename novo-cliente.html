@@ -219,6 +219,15 @@ input::placeholder { color: #9CA3AF; }
         <label>Senha inicial</label>
         <input type="text" id="senha" placeholder="Mínimo 6 caracteres">
       </div>
+      <div class="field">
+        <label>Plano</label>
+        <select id="plano" style="width:100%;height:42px;padding:0 12px;border:1.5px solid #E5E7EB;border-radius:10px;font-family:Inter,sans-serif;font-size:0.9rem;color:#111827;background:#fff;outline:none;cursor:pointer;">
+          <option value="trial">Trial (1 obra, 3 usuários)</option>
+          <option value="essencial">Essencial (3 obras, 5 usuários)</option>
+          <option value="profissional">Profissional (5 obras, 10 usuários)</option>
+          <option value="construtora">Construtora (ilimitado)</option>
+        </select>
+      </div>
 
       <button class="btn" id="btn" onclick="criar()">Criar cliente</button>
       <div id="msg" class="msg"></div>
@@ -248,6 +257,7 @@ async function criar() {
   const nome    = document.getElementById('nome').value.trim();
   const email   = document.getElementById('email').value.trim();
   const senha   = document.getElementById('senha').value.trim();
+  const plano   = document.getElementById('plano').value;
   const msg     = document.getElementById('msg');
   const btn     = document.getElementById('btn');
 
@@ -272,7 +282,7 @@ async function criar() {
     const res = await fetch(`${SUPABASE_URL}/functions/v1/criar-cliente`, {
       method: 'POST',
       headers: { 'apikey': ANON_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ empresa, nome, email, password: senha, adminSecret: SENHA_ACESSO })
+      body: JSON.stringify({ empresa, nome, email, password: senha, adminSecret: SENHA_ACESSO, plan: plano })
     });
     const data = await res.json();
 

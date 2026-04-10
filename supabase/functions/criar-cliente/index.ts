@@ -17,12 +17,15 @@ serve(async (req) => {
     if (!SERVICE_KEY) return json({ error: 'SERVICE_KEY não configurado' }, 500)
 
     // 1. Receber dados e verificar senha de admin
-    const { empresa, nome, email, password, adminSecret } = await req.json()
+    const { empresa, nome, email, password, adminSecret, plan } = await req.json()
     const ADMIN_SECRET = Deno.env.get('EDR_ADMIN_SECRET') ?? 'edr@admin2026'
     if (adminSecret !== ADMIN_SECRET) return json({ error: 'Não autorizado' }, 401)
     if (!empresa || !email || !password || password.length < 6) {
       return json({ error: 'Dados inválidos. Empresa, email e senha (mín. 6 chars) obrigatórios.' }, 400)
     }
+
+    const PLANOS_VALIDOS = ['trial', 'essencial', 'profissional', 'construtora']
+    const planFinal = PLANOS_VALIDOS.includes(plan) ? plan : 'trial'
 
     // 5. Criar empresa em companies
     const slug = empresa.toLowerCase()
@@ -37,7 +40,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
         'Prefer': 'return=representation',
       },
-      body: JSON.stringify({ name: empresa, slug, plan: 'trial' })
+      body: JSON.stringify({ name: empresa, slug, plan: planFinal })
     })
     if (!compRes.ok) {
       const err = await compRes.text()
