@@ -310,12 +310,12 @@ function obrasAbrirDetalhe(obraId) {
   const obra = [...obras, ...obrasArquivadas].find(o => o.id === obraId);
   if (!obra) return;
 
-  // Selecionar obra no filtro do sticky
+  // Popular selects — DEVE vir antes de setar o valor (populateSelects reconstrói o innerHTML)
+  populateSelects();
+
+  // Selecionar obra no filtro do sticky (após populateSelects para não ser resetado)
   const filtroObra = document.getElementById('obras-filtro-obra');
   if (filtroObra) filtroObra.value = obraId;
-
-  // Popular select de centro de custo
-  populateSelects();
 
   // Renderizar aba padrao (lancamentos)
   obrasSwitchTab('lanc');
@@ -657,7 +657,17 @@ function renderObrasMateriais() {
   const el = document.getElementById('obras-mat-lista');
   if (!el) return;
 
-  const dists = distribuicoes.filter(d => !obraId || d.obra_id === obraId);
+  const busca = (document.getElementById('mat-busca')?.value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const dataDE = document.getElementById('mat-data-de')?.value || '';
+  const dataATE = document.getElementById('mat-data-ate')?.value || '';
+
+  const dists = distribuicoes.filter(d => {
+    if (obraId && d.obra_id !== obraId) return false;
+    if (busca && !(d.item_desc || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes(busca)) return false;
+    if (dataDE && (d.data || '') < dataDE) return false;
+    if (dataATE && (d.data || '') > dataATE) return false;
+    return true;
+  });
 
   if (!dists.length) {
     el.innerHTML = `<div style="text-align:center;padding:48px;color:var(--text-tertiary);">
