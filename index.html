@@ -2607,42 +2607,284 @@ function updateShellUser(nome, perfil) {
 
 </div><!-- /app-shell -->
 
+<!-- ═══════ ONBOARDING WIZARD ═══════ -->
+<style>
+#onboarding-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:9000;
+  display:flex; align-items:center; justify-content:center;
+  opacity:0; pointer-events:none; transition:opacity .3s;
+}
+#onboarding-overlay.active { opacity:1; pointer-events:auto; }
+#onboarding-box {
+  background:#fff; border-radius:20px; width:100%; max-width:520px;
+  margin:16px; padding:40px 36px 32px; box-shadow:0 24px 64px rgba(0,0,0,.18);
+  position:relative; transform:translateY(24px); transition:transform .3s;
+}
+#onboarding-overlay.active #onboarding-box { transform:translateY(0); }
+.ob-progress { display:flex; gap:6px; margin-bottom:32px; }
+.ob-step-dot { height:4px; flex:1; border-radius:4px; background:#E5E7EB; transition:background .3s; }
+.ob-step-dot.done { background:#2D6A4F; }
+.ob-step-dot.active { background:#52B788; }
+.ob-icon { width:52px; height:52px; border-radius:14px; background:#ECFDF5; display:flex; align-items:center; justify-content:center; font-size:24px; margin-bottom:20px; }
+.ob-title { font-size:20px; font-weight:700; color:#111827; font-family:'Plus Jakarta Sans',sans-serif; margin-bottom:8px; }
+.ob-sub { font-size:14px; color:#6B7280; margin-bottom:28px; line-height:1.5; }
+.ob-field { margin-bottom:16px; }
+.ob-field label { display:block; font-size:13px; font-weight:600; color:#374151; margin-bottom:6px; }
+.ob-field input, .ob-field select {
+  width:100%; padding:10px 13px; border:1px solid #D1D5DB; border-radius:10px;
+  font-size:14px; color:#111827; background:#FAFAFA; box-sizing:border-box;
+  transition:border-color .2s;
+}
+.ob-field input:focus, .ob-field select:focus { outline:none; border-color:#2D6A4F; box-shadow:0 0 0 3px rgba(45,106,79,.1); background:#fff; }
+.ob-actions { display:flex; gap:10px; margin-top:24px; }
+.ob-btn-primary {
+  flex:1; padding:12px; border:none; border-radius:10px;
+  background:#2D6A4F; color:#fff; font-size:14px; font-weight:600;
+  cursor:pointer; font-family:'Plus Jakarta Sans',sans-serif; transition:background .2s;
+}
+.ob-btn-primary:hover { background:#1B4332; }
+.ob-btn-primary:disabled { background:#9CA3AF; cursor:not-allowed; }
+.ob-btn-skip { padding:12px 16px; border:1px solid #E5E7EB; border-radius:10px; background:#fff; color:#6B7280; font-size:13px; cursor:pointer; font-family:'Plus Jakarta Sans',sans-serif; }
+.ob-btn-skip:hover { background:#F9FAFB; }
+.ob-success { text-align:center; padding:16px 0; }
+.ob-success .ob-big-icon { font-size:56px; margin-bottom:16px; }
+.ob-success h2 { font-size:22px; font-weight:700; color:#111827; font-family:'Plus Jakarta Sans',sans-serif; margin-bottom:8px; }
+.ob-success p { font-size:14px; color:#6B7280; line-height:1.6; }
+</style>
+
+<div id="onboarding-overlay">
+  <div id="onboarding-box">
+    <div class="ob-progress">
+      <div class="ob-step-dot active" id="ob-dot-1"></div>
+      <div class="ob-step-dot" id="ob-dot-2"></div>
+      <div class="ob-step-dot" id="ob-dot-3"></div>
+      <div class="ob-step-dot" id="ob-dot-4"></div>
+      <div class="ob-step-dot" id="ob-dot-5"></div>
+    </div>
+    <div id="ob-content"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const STEPS = [
+    {
+      icon: '🏢', title: 'Bem-vindo ao EDR System!',
+      sub: 'Vamos configurar sua conta em menos de 2 minutos. Primeiro, confirme os dados da sua empresa.',
+      fields: [
+        { id:'ob-empresa-nome', label:'Nome da empresa', type:'text', placeholder:'Ex: Silva Construções Ltda' },
+        { id:'ob-empresa-cidade', label:'Cidade / Estado', type:'text', placeholder:'Ex: Recife / PE' }
+      ]
+    },
+    {
+      icon: '🏗️', title: 'Crie sua primeira obra',
+      sub: 'Cadastre a obra que você está gerenciando agora. Você pode adicionar mais depois.',
+      fields: [
+        { id:'ob-obra-nome', label:'Nome da obra', type:'text', placeholder:'Ex: Residencial Jardins — Lote 3' },
+        { id:'ob-obra-valor', label:'Valor de venda (R$)', type:'number', placeholder:'Ex: 280000' }
+      ]
+    },
+    {
+      icon: '👤', title: 'Convide seu primeiro usuário',
+      sub: 'Adicione o engenheiro, mestre ou operacional que vai usar o sistema com você.',
+      fields: [
+        { id:'ob-user-nome', label:'Nome', type:'text', placeholder:'Ex: João Mestre' },
+        { id:'ob-user-email', label:'E-mail', type:'text', placeholder:'Ex: joao@empresa.com' },
+        { id:'ob-user-perfil', label:'Perfil', type:'select', options:['mestre','operacional','engenheiro','financeiro'] }
+      ]
+    },
+    {
+      icon: '💰', title: 'Lance seu primeiro custo',
+      sub: 'Registre uma saída real da obra para ver o sistema funcionando.',
+      fields: [
+        { id:'ob-custo-desc', label:'Descrição', type:'text', placeholder:'Ex: Compra de cimento 50kg' },
+        { id:'ob-custo-valor', label:'Valor (R$)', type:'number', placeholder:'Ex: 850' }
+      ]
+    },
+    { icon: null, title: null, sub: null, fields: [] } // sucesso
+  ];
+
+  let _step = 0;
+  let _obraIdCriada = null;
+
+  function dots() {
+    for (let i = 1; i <= 5; i++) {
+      const d = document.getElementById('ob-dot-' + i);
+      if (!d) continue;
+      d.className = 'ob-step-dot ' + (i - 1 < _step ? 'done' : i - 1 === _step ? 'active' : '');
+    }
+  }
+
+  function render() {
+    const el = document.getElementById('ob-content');
+    if (_step === 4) {
+      el.innerHTML = `
+        <div class="ob-success">
+          <div class="ob-big-icon">🎉</div>
+          <h2>Tudo pronto!</h2>
+          <p>Sua conta está configurada. O painel já está preenchido com seus dados. Bem-vindo ao EDR System!</p>
+          <div class="ob-actions" style="justify-content:center;margin-top:28px;">
+            <button class="ob-btn-primary" style="max-width:200px;" onclick="OB.concluir()">Ir para o painel</button>
+          </div>
+        </div>`;
+      dots();
+      return;
+    }
+    const s = STEPS[_step];
+    const fieldsHtml = s.fields.map(f => {
+      if (f.type === 'select') {
+        const opts = f.options.map(o => `<option value="${o}">${o.charAt(0).toUpperCase()+o.slice(1)}</option>`).join('');
+        return `<div class="ob-field"><label>${f.label}</label><select id="${f.id}">${opts}</select></div>`;
+      }
+      return `<div class="ob-field"><label>${f.label}</label><input type="${f.type}" id="${f.id}" placeholder="${f.placeholder}" /></div>`;
+    }).join('');
+
+    const skipLabel = _step === 2 || _step === 3 ? 'Pular este passo' : null;
+
+    el.innerHTML = `
+      <div class="ob-icon">${s.icon}</div>
+      <div class="ob-title">${s.title}</div>
+      <div class="ob-sub">${s.sub}</div>
+      ${fieldsHtml}
+      <div class="ob-actions">
+        ${skipLabel ? `<button class="ob-btn-skip" onclick="OB.pular()">${skipLabel}</button>` : ''}
+        <button class="ob-btn-primary" id="ob-next-btn" onclick="OB.avancar()">
+          ${_step === 3 ? 'Concluir configuração' : 'Continuar →'}
+        </button>
+      </div>`;
+    dots();
+  }
+
+  async function salvarPasso() {
+    const btn = document.getElementById('ob-next-btn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
+
+    try {
+      if (_step === 0) {
+        // Atualizar dados da empresa
+        const nome = document.getElementById('ob-empresa-nome').value.trim();
+        const cidade = document.getElementById('ob-empresa-cidade').value.trim();
+        if (!nome) { alert('Informe o nome da empresa.'); return false; }
+        await sbPatch('companies', '?id=eq.' + _companyId, { name: nome, cidade: cidade });
+        // Atualizar sidebar
+        const el = document.getElementById('company-name-sidebar');
+        if (el) el.textContent = nome;
+
+      } else if (_step === 1) {
+        // Criar primeira obra
+        const nome = document.getElementById('ob-obra-nome').value.trim();
+        const valor = parseFloat(document.getElementById('ob-obra-valor').value) || 0;
+        if (!nome) { alert('Informe o nome da obra.'); return false; }
+        const obra = await sbPost('obras', {
+          company_id: _companyId,
+          nome, valor_venda: valor,
+          status: 'em_andamento', area: 0
+        });
+        _obraIdCriada = obra ? obra.id : null;
+        await loadObras();
+        if (typeof populateSelects === 'function') populateSelects();
+
+      } else if (_step === 2) {
+        // Convidar usuário
+        const nome = document.getElementById('ob-user-nome').value.trim();
+        const email = document.getElementById('ob-user-email').value.trim();
+        const perfil = document.getElementById('ob-user-perfil').value;
+        if (!nome || !email) { alert('Informe nome e e-mail.'); return false; }
+        // Criar via Edge Function
+        await fetch('https://mepzoxoahpwcvvlymlfh.supabase.co/functions/v1/criar-usuario', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY },
+          body: JSON.stringify({ nome, email, perfil, company_id: _companyId, senha: 'Edr@2026' })
+        }).catch(() => {}); // erro não trava o wizard
+
+      } else if (_step === 3) {
+        // Lançar primeiro custo
+        const desc = document.getElementById('ob-custo-desc').value.trim();
+        const valor = parseFloat(document.getElementById('ob-custo-valor').value) || 0;
+        if (!desc || !valor) { alert('Informe descrição e valor.'); return false; }
+        const obraId = _obraIdCriada || (obras.length > 0 ? obras[0].id : null);
+        if (obraId) {
+          await sbPost('lancamentos', {
+            company_id: _companyId, obra_id: obraId,
+            descricao: desc, valor, tipo: 'saida',
+            categoria: 'material', criado_por: usuarioAtual.nome || 'Onboarding'
+          });
+          await loadLancamentos();
+        }
+      }
+      return true;
+    } catch(e) {
+      console.warn('Onboarding erro passo', _step, e);
+      return true; // não travar o wizard por erro
+    } finally {
+      if (btn) { btn.disabled = false; }
+    }
+  }
+
+  window.OB = {
+    async avancar() {
+      const ok = await salvarPasso();
+      if (!ok) return;
+      _step++;
+      if (_step > 4) _step = 4;
+      render();
+    },
+    pular() {
+      _step++;
+      render();
+    },
+    async concluir() {
+      await sbPatch('companies', '?id=eq.' + _companyId, { onboarding_done: true });
+      document.getElementById('onboarding-overlay').classList.remove('active');
+      // Recarregar view atual
+      if (typeof setView === 'function') setView('dashboard');
+    }
+  };
+
+  window.abrirOnboarding = function() {
+    _step = 0;
+    render();
+    document.getElementById('onboarding-overlay').classList.add('active');
+  };
+})();
+</script>
+
 <!-- ═══════ MODULOS V2 (ordem de dependência) ═══════ -->
 <!-- 0. Infraestrutura: sbGet/sbPost/sbPatch/sbDelete, confirmar(), showModal, usuarioAtual -->
-<script src="js/edr-v2-infra.js?v=04101352"></script>
+<script src="js/edr-v2-infra.js?v=04101516"></script>
 <!-- 1. Utilitários globais (valorPorExtenso, fmtN) -->
-<script src="js/edr-v2-utils-extras.js?v=04101352"></script>
+<script src="js/edr-v2-utils-extras.js?v=04101516"></script>
 <!-- 2. Obras PRIMEIRO (ETAPAS, resolveEtapaKey, etapaCor, etapaLabel — vários módulos dependem) -->
-<script src="js/edr-v2-obras.js?v=04101352"></script>
+<script src="js/edr-v2-obras.js?v=04101516"></script>
 <!-- 3. PDF engine (pdfMake CDN + PdfModule) -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js?v=04101352"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js?v=04101352"></script>
-<script src="js/edr-v2-pdf.js?v=04101352"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js?v=04101516"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js?v=04101516"></script>
+<script src="js/edr-v2-pdf.js?v=04101516"></script>
 <!-- 4. Módulos core de negócio -->
 <script src="js/edr-v2-notas.js?v=20260407-EDR-DEL"></script>
 <script src="js/edr-v2-importar.js?v=20260407-XML-IPI"></script>
-<script src="js/edr-v2-estoque.js?v=04101352"></script>
-<script src="js/edr-v2-custos.js?v=04101352"></script>
+<script src="js/edr-v2-estoque.js?v=04101516"></script>
+<script src="js/edr-v2-custos.js?v=04101516"></script>
 <!-- 5. Equipe e operacional -->
-<script src="js/edr-v2-diarias.js?v=04101352"></script>
-<script src="js/edr-v2-diario.js?v=04101352"></script>
+<script src="js/edr-v2-diarias.js?v=04101516"></script>
+<script src="js/edr-v2-diario.js?v=04101516"></script>
 <!-- 6. Relatórios e dashboard (dependem de obras.js pra etapaCor) -->
-<script src="js/edr-v2-relatorio.js?v=04101352"></script>
-<script src="js/edr-v2-dashboard.js?v=04101352"></script>
+<script src="js/edr-v2-relatorio.js?v=04101516"></script>
+<script src="js/edr-v2-dashboard.js?v=04101516"></script>
 <!-- 7. Módulos complementares -->
-<script src="js/edr-v2-leads.js?v=04101352"></script>
-<script src="js/edr-v2-garantias.js?v=04101352"></script>
-<script src="js/edr-v2-adicionais.js?v=04101352"></script>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.css?v=04101352"/>
-<script src="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.min.js?v=04101352"></script>
-<script src="js/edr-v2-cronograma.js?v=04101352"></script>
-<script src="js/edr-v2-orcamento.js?v=04101352"></script>
+<script src="js/edr-v2-leads.js?v=04101516"></script>
+<script src="js/edr-v2-garantias.js?v=04101516"></script>
+<script src="js/edr-v2-adicionais.js?v=04101516"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.css?v=04101516"/>
+<script src="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.min.js?v=04101516"></script>
+<script src="js/edr-v2-cronograma.js?v=04101516"></script>
+<script src="js/edr-v2-orcamento.js?v=04101516"></script>
 <!-- 8. Documentação e medições -->
-<script src="js/edr-v2-termo-manual.js?v=04101352"></script>
-<script src="js/edr-v2-pci.js?v=04101352"></script>
+<script src="js/edr-v2-termo-manual.js?v=04101516"></script>
+<script src="js/edr-v2-pci.js?v=04101516"></script>
 <!-- 9. Auth (login, sessão, refresh — ÚLTIMO) -->
-<script src="js/edr-v2-auth.js?v=04101352"></script>
-<script src="js/edr-v2-financeiro.js?v=04101352"></script>
+<script src="js/edr-v2-auth.js?v=04101516"></script>
+<script src="js/edr-v2-financeiro.js?v=04101516"></script>
 
 <!-- ═══════════════════════════════════════════════════════════════ -->
 <!-- MODAIS (Fase 0 — containers para módulos que precisam)        -->

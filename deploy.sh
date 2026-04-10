@@ -56,3 +56,8 @@ echo "=== Deploy concluido! ==="
 echo "Versao: $SHORT_V"
 echo "Cache SW: edr-system-v$VERSION"
 echo "Todos os usuarios vao atualizar automaticamente."
+
+# Fechar demand no DM Stack (opcional: ./deploy.sh "msg" "keyword")
+if [ -n "${2:-}" ]; then
+  bash "$HOME/dms-resolve.sh" "$2" "EDR"
+fi

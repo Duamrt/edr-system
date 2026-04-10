@@ -84,6 +84,12 @@ function _entrarNoApp() {
   // Restaurar última view ou ir pro dashboard
   const lastView = localStorage.getItem('edr_last_view');
   if (typeof setView === 'function') setView(lastView || 'dashboard');
+  // Onboarding wizard para novos tenants
+  if (_companyId && typeof abrirOnboarding === 'function') {
+    sbGet('companies', '?id=eq.' + _companyId + '&select=onboarding_done').then(r => {
+      if (r && r[0] && r[0].onboarding_done === false) abrirOnboarding();
+    }).catch(() => {});
+  }
 }
 
 // ── LOGOUT ───────────────────────────────────────────────────
