@@ -22,6 +22,14 @@ for f in *.html; do
   sed -i -E "s/\.css(\?v=[0-9a-zA-Z]+)?\"/.css?v=$SHORT_V\"/g" "$f"
 done
 
+# Atualizar _VER em novo-cliente.html
+node -e "
+const fs=require('fs');
+let c=fs.readFileSync('novo-cliente.html','utf8');
+c=c.replace(/const _VER = 'edr-[0-9]+';/, \"const _VER = 'edr-$SHORT_V';\");
+fs.writeFileSync('novo-cliente.html',c);
+"
+
 # 2. Atualizar CACHE_NAME no service worker
 echo "[2/4] Atualizando Service Worker..."
 sed -i -E "s/const CACHE_NAME = 'edr-system-v[0-9]+';/const CACHE_NAME = 'edr-system-v$VERSION';/" sw.js
