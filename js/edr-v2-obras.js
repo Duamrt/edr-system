@@ -707,6 +707,7 @@ function renderObrasMateriais() {
             <div style="display:flex;gap:12px;align-items:center;">
               <span style="font-weight:700;">${Number(d.qtd).toFixed(2)}</span>
               ${isAdmin && d.valor > 0 ? `<span style="color:var(--primary);font-size:12px;">${fmtR(d.valor)}</span>` : ''}
+              ${isAdmin ? `<button onclick="excluirDistribuicao('${esc(d.id)}')" title="Excluir" style="background:none;border:none;cursor:pointer;color:var(--error);padding:2px;line-height:1;"><span class="material-symbols-outlined" style="font-size:16px;">delete</span></button>` : ''}
             </div>
           </div>`;
         }).join('');
@@ -723,6 +724,24 @@ function renderObrasMateriais() {
         ${rows}
       </div>`;
     }).join('');
+}
+
+async function excluirDistribuicao(id) {
+  if (!confirm('Excluir esta movimentação de material?')) return;
+  try {
+    const d = distribuicoes.find(x => x.id === id);
+    await sbDelete('distribuicoes', `?id=eq.${id}`);
+    // Se tiver lancamento vinculado, excluir também
+    if (d?.lancamento_id) {
+      await sbDelete('lancamentos', `?id=eq.${d.lancamento_id}`);
+      const li = lancamentos.findIndex(l => l.id === d.lancamento_id);
+      if (li !== -1) lancamentos.splice(li, 1);
+    }
+    const idx = distribuicoes.findIndex(x => x.id === id);
+    if (idx !== -1) distribuicoes.splice(idx, 1);
+    renderObrasMateriais();
+    showToast('Movimentação excluída.');
+  } catch(e) { showToast('Erro ao excluir: ' + e.message); }
 }
 
 // ── CRUD: NOVA / EDITAR OBRA ────────────────────────────────────
