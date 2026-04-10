@@ -57,15 +57,12 @@ echo "Versao: $SHORT_V"
 echo "Cache SW: edr-system-v$VERSION"
 echo "Todos os usuarios vao atualizar automaticamente."
 
-# Fechar itens no DM Stack — usa keyword explícita ou extrai palavras do commit
-DMS_KW="${2:-}"
-if [ -z "$DMS_KW" ]; then
-  # Extrai palavras-chave do commit message (palavras com 5+ chars, sem stopwords)
-  DMS_KW=$(echo "$MSG" | tr '[:upper:]' '[:lower:]' | \
-    grep -oE '[a-záàâãéèêíïóôõöúüç-]{5,}' | \
-    grep -vE '^(cache|busting|deploy|versao|fixes|update|remove|corrige|corrigir|adiciona|adicionar|atualiza|atualizar|insere|inserir)$' | \
-    head -1)
-fi
+# Fechar itens no DM Stack — extrai keyword do commit message (NUNCA usar $2 como keyword,
+# pois $2 é o sistema e não uma keyword específica — isso fecharia TODOS os bugs do sistema)
+DMS_KW=$(echo "$MSG" | tr '[:upper:]' '[:lower:]' | \
+  grep -oE '[a-z]{5,}' | \
+  grep -vE '^(cache|busting|deploy|versao|fixes|update|remove|corrige|corrigir|adiciona|adicionar|atualiza|atualizar|insere|inserir|agora|gravem|gravam|bloquear|duplicata|lancamento|lancamentos|codigo|sistema|diaria|diarias|modal|valor|campo|botao|registro|registros)$' | \
+  head -1)
 if [ -n "$DMS_KW" ]; then
   bash "$HOME/dms-resolve.sh" "$DMS_KW" "EDR"
 fi
