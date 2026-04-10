@@ -532,6 +532,11 @@ function aplicarPermissoesVisuais(perfil, permissions) {
   if (perfil === 'admin' || !permsArray) {
     btns.forEach(b => b.classList.remove('perm-hidden'));
     document.querySelectorAll('.sidebar-group, .sidebar-group-label').forEach(el => el.classList.remove('perm-hidden'));
+    // Setup só visível para o super admin da plataforma
+    if (usuarioAtual?.email !== 'admin@edreng.com.br') {
+      const setupBtn = document.querySelector('.sidebar .nav-btn[data-view="setup"]');
+      if (setupBtn) setupBtn.classList.add('perm-hidden');
+    }
     return;
   }
   const permsSet = new Set(permsArray);
