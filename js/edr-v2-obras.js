@@ -281,6 +281,7 @@ function renderObrasCards() {
             <button class="obra-action-btn" style="color:#8B5CF6;background:rgba(139,92,246,.06);border:1px solid rgba(139,92,246,.15);" onclick="event.stopPropagation();reimprimirTermo('${esc(o.id)}')">Termo</button>
             <button class="obra-action-btn" style="color:var(--success);background:rgba(5,150,105,.06);border:1px solid rgba(5,150,105,.15);" onclick="event.stopPropagation();reativarObra('${esc(o.id)}')">Reativar</button>
           ` : ''}
+          ${isAdmin ? `<button class="obra-action-btn" style="color:#0d5220;background:rgba(13,82,32,.06);border:1px solid rgba(13,82,32,.18);" onclick="event.stopPropagation();gerarRelatorioObra('${esc(o.id)}')">Relatório</button>` : ''}
           <span class="obra-card-link">Detalhes <span class="material-symbols-outlined" style="font-size:16px;">arrow_forward</span></span>
         </div>
       </div>
@@ -843,6 +844,58 @@ async function confirmarConclusaoObra() {
     fecharModal('concluir-obra');
     showToast(`"${nome}" concluida! Termo aberto em nova aba.`);
   } catch (e) { showToast('Nao foi possivel concluir a obra.'); console.error(e); }
+}
+
+async function gerarRelatorioObra(obraId) {
+  const obra = [...obras, ...obrasArquivadas].find(o => o.id === obraId);
+  if (!obra) { showToast('Obra não encontrada.'); return; }
+
+  showToast('Gerando relatório...');
+
+  let cronograma = [];
+  try {
+    const r = await sbGet('cronograma_tarefas', `?obra_id=eq.${obraId}&order=ordem.asc,data_inicio.asc`);
+    if (Array.isArray(r)) cronograma = r;
+  } catch(e) { console.warn('[REL] cronograma:', e); }
+
+  const lancs = (Array.isArray(lancamentos) ? lancamentos : [])
+    .filter(l => l.obra_id === obraId)
+    .sort((a, b) => (a.data || '') < (b.data || '') ? -1 : 1);
+
+  const porEtapa = {};
+  lancs.forEach(l => {
+    const key = l.etapa || 'sem_etapa';
+    const label = key === 'sem_etapa' ? 'Sem categoria' : etapaLabel(key);
+    if (!porEtapa[key]) porEtapa[key] = { label, itens: [], total: 0 };
+    porEtapa[key].itens.push({ data: l.data, descricao: l.descricao, qtd: l.qtd, preco: l.preco, total: l.total });
+    porEtapa[key].total += Number(l.total || 0);
+  });
+
+  const progFisico = cronograma.length
+    ? Math.round(cronograma.reduce((s, t) => s + Number(t.progresso || 0), 0) / cronograma.length)
+    : 0;
+  const totalGasto = lancs.reduce((s, l) => s + Number(l.total || 0), 0);
+  const empresaNome = (typeof _companyPlan !== 'undefined' && _companyPlan?.name) ? _companyPlan.name : 'EDR ENGENHARIA';
+
+  const dados = {
+    empresa: empresaNome,
+    obra: {
+      nome: obra.nome || '',
+      contratante: obra.contratante || obra.proprietario || '',
+      cpf: obra.cpf_contratante || '',
+      endereco: [obra.endereco_rua, obra.endereco_numero, obra.endereco_bairro, obra.cidade].filter(Boolean).join(', '),
+      area_m2: obra.area_m2 || '',
+      valor_contrato: obra.valor_venda || 0,
+    },
+    cronograma: cronograma.map(t => ({ nome: t.nome, data_inicio: t.data_inicio || '', data_fim: t.data_fim || '', progresso: Number(t.progresso || 0) })),
+    porEtapa,
+    totalGasto,
+    progFisico,
+    geradoEm: hojeISO(),
+  };
+
+  localStorage.setItem('edr-relatorio-dados', JSON.stringify(dados));
+  window.open('relatorio-obra.html', '_blank');
 }
 
 function gerarTermoEntrega(dados) {

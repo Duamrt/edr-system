@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Relatório de Obra</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700;900&family=Barlow+Condensed:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  @page { size: A4; margin: 12mm 14mm 12mm 14mm; }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --verde: #0a3d18; --verde2: #0d5220; --verde-claro: #1a7a30;
+    --off-white: #f5f2eb; --preto: #111; --cinza: #555; --borda: #d4d4d4;
+  }
+  body { font-family: 'Barlow', sans-serif; font-size: 11pt; color: var(--preto); line-height: 1.6; background: #e8e8e8; }
+  .page { width: 210mm; min-height: 297mm; margin: 10mm auto; background: #fff; padding: 18mm 18mm 22mm 18mm; box-shadow: 0 2px 16px rgba(0,0,0,.12); position: relative; }
+  @media print {
+    body { background: #fff; font-size: 10pt; }
+    .page { width: auto; min-height: auto; margin: 0; padding: 0; box-shadow: none; page-break-after: always; }
+    .page:last-child { page-break-after: auto; }
+    .no-print { display: none !important; }
+    table td, table th { font-size: 8.5pt; padding: 3px 5px; }
+    .ficha-label { font-size: 7pt; }
+    .ficha-valor { font-size: 10pt; }
+    h2 { font-size: 11pt; margin: 14px 0 6px 0; page-break-after: avoid; }
+    .cc-bloco { page-break-inside: avoid; }
+    .stats-grid { page-break-inside: avoid; }
+  }
+
+  /* Print bar */
+  .print-bar { position: fixed; top: 0; left: 0; right: 0; z-index: 999; background: var(--verde); color: #fff; padding: 10px 20px; display: flex; align-items: center; justify-content: space-between; font-size: 13px; font-weight: 600; letter-spacing: 0.5px; }
+  .print-bar button { background: #fff; color: var(--verde); border: none; padding: 7px 20px; border-radius: 5px; font-family: 'Barlow', sans-serif; font-weight: 700; font-size: 12px; cursor: pointer; letter-spacing: 0.5px; }
+  .print-spacer { height: 46px; }
+
+  /* Header */
+  .header { display: flex; align-items: flex-start; justify-content: space-between; padding-bottom: 12px; border-bottom: 3px solid var(--verde); margin-bottom: 20px; }
+  .header-empresa { font-family: 'Barlow Condensed', sans-serif; font-size: 18pt; font-weight: 700; color: var(--verde); text-transform: uppercase; letter-spacing: 2px; line-height: 1.1; }
+  .header-sub { font-size: 8pt; color: var(--cinza); margin-top: 2px; }
+  .header-info { text-align: right; font-size: 8pt; color: var(--cinza); line-height: 1.6; }
+  .header-info strong { font-size: 9pt; color: var(--verde); display: block; }
+
+  /* Título */
+  .doc-title { font-family: 'Barlow Condensed', sans-serif; font-size: 22pt; font-weight: 700; color: var(--verde); text-transform: uppercase; letter-spacing: 3px; text-align: center; margin-bottom: 4px; }
+  .doc-subtitle { text-align: center; font-size: 9pt; color: var(--cinza); margin-bottom: 20px; letter-spacing: 0.5px; }
+
+  /* Ficha */
+  .ficha { background: #f8faf8; border: 1px solid rgba(10,61,24,.12); border-radius: 6px; padding: 12px 14px; margin-bottom: 16px; }
+  .ficha-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 24px; }
+  .ficha-full { grid-column: 1 / -1; }
+  .ficha-item { display: flex; flex-direction: column; }
+  .ficha-label { font-size: 8pt; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--verde); margin-bottom: 1px; }
+  .ficha-valor { font-size: 10.5pt; font-weight: 500; color: var(--preto); border-bottom: 1px dotted var(--borda); padding-bottom: 2px; min-height: 20px; }
+
+  /* Stats */
+  .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
+  .stat-card { background: #f8faf8; border: 1px solid rgba(10,61,24,.12); border-radius: 6px; padding: 10px 12px; text-align: center; }
+  .stat-label { font-size: 8pt; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--verde); margin-bottom: 4px; }
+  .stat-val { font-size: 14pt; font-weight: 700; color: var(--preto); line-height: 1.1; }
+  .stat-sub { font-size: 8pt; color: var(--cinza); margin-top: 2px; }
+
+  /* Seções */
+  h2 { font-family: 'Barlow Condensed', sans-serif; font-size: 13pt; font-weight: 700; color: var(--verde); text-transform: uppercase; letter-spacing: 1.5px; border-bottom: 2px solid rgba(10,61,24,.15); padding-bottom: 4px; margin: 20px 0 10px 0; }
+  h2:first-of-type { margin-top: 0; }
+
+  /* Cronograma */
+  .cron-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+  .cron-table th { font-size: 8pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--verde); background: rgba(10,61,24,.06); padding: 5px 7px; text-align: left; border-bottom: 2px solid var(--borda); }
+  .cron-table td { font-size: 9pt; padding: 5px 7px; border-bottom: 1px solid #eee; vertical-align: middle; }
+  .cron-table tr:last-child td { border-bottom: none; }
+  .prog-bar { height: 8px; background: #e8f0e8; border-radius: 4px; overflow: hidden; min-width: 60px; }
+  .prog-fill { height: 100%; background: var(--verde-claro); border-radius: 4px; }
+  .prog-fill.done { background: #15803d; }
+  .prog-fill.late { background: #dc2626; }
+  .prog-label { font-size: 8pt; font-weight: 700; color: var(--cinza); white-space: nowrap; }
+  .tag-status { font-size: 7pt; font-weight: 700; padding: 1px 6px; border-radius: 10px; white-space: nowrap; }
+  .tag-concluida { background: #dcfce7; color: #15803d; }
+  .tag-andamento { background: #dbeafe; color: #1d4ed8; }
+  .tag-atrasada  { background: #fee2e2; color: #dc2626; }
+  .tag-nao-iniciada { background: #f3f4f6; color: #6b7280; }
+
+  /* Financeiro */
+  .cc-bloco { margin-bottom: 14px; }
+  .cc-header { display: flex; justify-content: space-between; align-items: center; background: rgba(10,61,24,.07); padding: 5px 9px; border-radius: 4px; margin-bottom: 4px; }
+  .cc-nome { font-size: 9pt; font-weight: 700; color: var(--verde); text-transform: uppercase; letter-spacing: 0.5px; }
+  .cc-total { font-size: 9pt; font-weight: 700; color: var(--verde); }
+  .lanc-table { width: 100%; border-collapse: collapse; }
+  .lanc-table th { font-size: 7.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--cinza); padding: 3px 6px; text-align: left; border-bottom: 1px solid #ddd; }
+  .lanc-table td { font-size: 8.5pt; padding: 3px 6px; border-bottom: 1px solid #f0f0f0; }
+  .lanc-table td.num { text-align: right; }
+  .lanc-table tr:last-child td { border-bottom: none; }
+
+  /* Totais */
+  .total-row { display: flex; justify-content: flex-end; margin-top: 12px; }
+  .total-box { background: var(--verde); color: #fff; border-radius: 6px; padding: 10px 20px; text-align: right; }
+  .total-box-label { font-size: 8pt; text-transform: uppercase; letter-spacing: 1px; opacity: .8; }
+  .total-box-val { font-size: 16pt; font-weight: 700; }
+
+  /* Footer */
+  .footer { position: absolute; bottom: 14mm; left: 18mm; right: 18mm; border-top: 1.5px solid var(--borda); padding-top: 6px; display: flex; justify-content: space-between; font-size: 7.5pt; color: #999; }
+</style>
+</head>
+<body>
+
+<div class="print-bar no-print">
+  <span>Relatório de Obra — EDR System</span>
+  <button onclick="window.print()">IMPRIMIR / SALVAR PDF</button>
+</div>
+<div class="print-spacer no-print"></div>
+
+<div id="report-root"></div>
+
+<script>
+function fmtR(v) {
+  const n = Number(v) || 0;
+  return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+function fmtData(iso) {
+  if (!iso) return '—';
+  const [y, m, d] = iso.split('-');
+  return `${d}/${m}/${y}`;
+}
+function pct(v, total) {
+  if (!total) return '0%';
+  return (v / total * 100).toFixed(1) + '%';
+}
+
+const dados = (() => {
+  try { return JSON.parse(localStorage.getItem('edr-relatorio-dados') || 'null'); } catch(e) { return null; }
+})();
+
+if (!dados) {
+  document.getElementById('report-root').innerHTML = '<div style="padding:60px;text-align:center;font-family:sans-serif;color:#888;">Nenhum dado encontrado. Gere o relatório pelo sistema.</div>';
+} else {
+  render(dados);
+}
+
+function tagStatus(t, hoje) {
+  if (Number(t.progresso) >= 100) return '<span class="tag-status tag-concluida">Concluída</span>';
+  if (t.data_fim && t.data_fim < hoje) return '<span class="tag-status tag-atrasada">Atrasada</span>';
+  if (t.data_inicio && t.data_inicio <= hoje) return '<span class="tag-status tag-andamento">Em andamento</span>';
+  return '<span class="tag-status tag-nao-iniciada">Não iniciada</span>';
+}
+
+function render(d) {
+  const o = d.obra;
+  const hoje = d.geradoEm || new Date().toISOString().substring(0, 10);
+  const totalContrato = Number(o.valor_contrato) || 0;
+  const pctFinanceiro = totalContrato > 0 ? (d.totalGasto / totalContrato * 100).toFixed(1) : '—';
+
+  // ── PÁGINA 1: Capa e Resumo ─────────────────────────────────────
+  const pg1 = document.createElement('div');
+  pg1.className = 'page';
+  pg1.innerHTML = `
+    <div class="header">
+      <div>
+        <div class="header-empresa">${escH(d.empresa)}</div>
+        <div class="header-sub">Construtora · Gestão de Obras</div>
+      </div>
+      <div class="header-info">
+        <strong>RELATÓRIO DE OBRA</strong>
+        Gerado em: ${fmtData(hoje)}
+      </div>
+    </div>
+
+    <div class="doc-title">${escH(o.nome)}</div>
+    <div class="doc-subtitle">Relatório de Acompanhamento de Obra</div>
+
+    <div class="ficha">
+      <div class="ficha-grid">
+        <div class="ficha-item ficha-full">
+          <span class="ficha-label">Contratante</span>
+          <span class="ficha-valor">${escH(o.contratante || '—')}${o.cpf ? ` &nbsp;·&nbsp; CPF: ${escH(o.cpf)}` : ''}</span>
+        </div>
+        ${o.endereco ? `<div class="ficha-item ficha-full">
+          <span class="ficha-label">Endereço</span>
+          <span class="ficha-valor">${escH(o.endereco)}</span>
+        </div>` : ''}
+        ${o.area_m2 ? `<div class="ficha-item">
+          <span class="ficha-label">Área construída</span>
+          <span class="ficha-valor">${Number(o.area_m2).toLocaleString('pt-BR')} m²</span>
+        </div>` : ''}
+        ${totalContrato > 0 ? `<div class="ficha-item">
+          <span class="ficha-label">Valor do contrato</span>
+          <span class="ficha-valor">${fmtR(totalContrato)}</span>
+        </div>` : ''}
+      </div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Total Gasto</div>
+        <div class="stat-val">${fmtR(d.totalGasto)}</div>
+        ${totalContrato > 0 ? `<div class="stat-sub">${pctFinanceiro}% do contrato</div>` : ''}
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Avanço Físico</div>
+        <div class="stat-val">${d.progFisico}%</div>
+        <div class="stat-sub">Média das etapas do cronograma</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Lançamentos</div>
+        <div class="stat-val">${Object.values(d.porEtapa).reduce((s, e) => s + e.itens.length, 0)}</div>
+        <div class="stat-sub">${Object.keys(d.porEtapa).length} centros de custo</div>
+      </div>
+    </div>
+
+    ${d.cronograma.length ? (() => {
+      const concluidas = d.cronograma.filter(t => t.progresso >= 100).length;
+      const atrasadas = d.cronograma.filter(t => t.progresso < 100 && t.data_fim && t.data_fim < hoje).length;
+      const emAndamento = d.cronograma.filter(t => t.progresso > 0 && t.progresso < 100).length;
+      return `<h2>Resumo do Cronograma</h2>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Concluídas</div>
+          <div class="stat-val" style="color:#15803d;">${concluidas}</div>
+          <div class="stat-sub">de ${d.cronograma.length} etapas</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Em andamento</div>
+          <div class="stat-val" style="color:#1d4ed8;">${emAndamento}</div>
+          <div class="stat-sub">etapas</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Atrasadas</div>
+          <div class="stat-val" style="color:${atrasadas > 0 ? '#dc2626' : 'var(--preto)'};">${atrasadas}</div>
+          <div class="stat-sub">etapas</div>
+        </div>
+      </div>`;
+    })() : ''}
+
+    <div class="footer">
+      <span>${escH(d.empresa)} · Relatório gerado em ${fmtData(hoje)}</span>
+      <span>EDR System — sistema.edreng.com.br</span>
+    </div>`;
+
+  document.getElementById('report-root').appendChild(pg1);
+
+  // ── PÁGINA 2: Cronograma ────────────────────────────────────────
+  if (d.cronograma.length) {
+    const pg2 = document.createElement('div');
+    pg2.className = 'page';
+
+    const rows = d.cronograma.map(t => {
+      const p = Number(t.progresso) || 0;
+      const fillClass = p >= 100 ? 'done' : (t.data_fim && t.data_fim < hoje && p < 100 ? 'late' : '');
+      return `<tr>
+        <td>${escH(t.nome)}</td>
+        <td>${fmtData(t.data_inicio)}</td>
+        <td>${fmtData(t.data_fim)}</td>
+        <td>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <div class="prog-bar"><div class="prog-fill ${fillClass}" style="width:${p}%;"></div></div>
+            <span class="prog-label">${p}%</span>
+          </div>
+        </td>
+        <td>${tagStatus(t, hoje)}</td>
+      </tr>`;
+    }).join('');
+
+    pg2.innerHTML = `
+      <div class="header">
+        <div class="header-empresa">${escH(d.empresa)}</div>
+        <div class="header-info"><strong>CRONOGRAMA</strong>${escH(o.nome)}</div>
+      </div>
+      <h2>Cronograma de Etapas</h2>
+      <table class="cron-table">
+        <thead>
+          <tr>
+            <th style="width:34%;">Etapa</th>
+            <th style="width:13%;">Início</th>
+            <th style="width:13%;">Término</th>
+            <th style="width:28%;">Progresso</th>
+            <th style="width:12%;">Status</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div class="footer">
+        <span>${escH(d.empresa)} · Relatório gerado em ${fmtData(hoje)}</span>
+        <span>Cronograma · ${d.cronograma.length} etapas</span>
+      </div>`;
+    document.getElementById('report-root').appendChild(pg2);
+  }
+
+  // ── PÁGINA 3+: Financeiro por CC ────────────────────────────────
+  if (Object.keys(d.porEtapa).length) {
+    const pg3 = document.createElement('div');
+    pg3.className = 'page';
+
+    const blocos = Object.values(d.porEtapa)
+      .sort((a, b) => b.total - a.total)
+      .map(cc => {
+        const rows = cc.itens.map(l => `<tr>
+          <td>${fmtData(l.data)}</td>
+          <td>${escH(l.descricao || '—')}</td>
+          <td class="num">${Number(l.qtd || 0).toLocaleString('pt-BR', {maximumFractionDigits:3})}</td>
+          <td class="num">${fmtR(l.preco || 0)}</td>
+          <td class="num"><strong>${fmtR(l.total || 0)}</strong></td>
+        </tr>`).join('');
+
+        return `<div class="cc-bloco">
+          <div class="cc-header">
+            <span class="cc-nome">${escH(cc.label)}</span>
+            <span class="cc-total">${fmtR(cc.total)}</span>
+          </div>
+          <table class="lanc-table">
+            <thead><tr>
+              <th style="width:10%;">Data</th>
+              <th>Descrição</th>
+              <th class="num" style="width:10%;">Qtd</th>
+              <th class="num" style="width:14%;">Unit.</th>
+              <th class="num" style="width:14%;">Total</th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>`;
+      }).join('');
+
+    pg3.innerHTML = `
+      <div class="header">
+        <div class="header-empresa">${escH(d.empresa)}</div>
+        <div class="header-info"><strong>FINANCEIRO</strong>${escH(o.nome)}</div>
+      </div>
+      <h2>Lançamentos por Centro de Custo</h2>
+      ${blocos}
+      <div class="total-row">
+        <div class="total-box">
+          <div class="total-box-label">Total Geral</div>
+          <div class="total-box-val">${fmtR(d.totalGasto)}</div>
+        </div>
+      </div>
+      <div class="footer">
+        <span>${escH(d.empresa)} · Relatório gerado em ${fmtData(hoje)}</span>
+        <span>Financeiro · ${Object.values(d.porEtapa).reduce((s, e) => s + e.itens.length, 0)} lançamentos</span>
+      </div>`;
+    document.getElementById('report-root').appendChild(pg3);
+  }
+
+  document.title = `Relatório — ${o.nome} — ${fmtData(hoje)}`;
+}
+
+function escH(s) {
+  if (s == null) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+</script>
+</body>
+</html>
