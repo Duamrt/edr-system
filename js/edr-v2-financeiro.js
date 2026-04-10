@@ -294,7 +294,7 @@ async function limparSaldoManual() {
 }
 
 function _calcSaldoBase() {
-  return _saldoManual !== null ? _saldoManual : _calcSaldoHoje();
+  return (_saldoManual !== null ? _saldoManual : 0) + _calcSaldoHoje();
 }
 
 async function _loadProjecoes() {
@@ -348,19 +348,34 @@ async function renderCaixa() {
 
   let html = '';
 
-  // Card saldo com campo manual
+  // Card saldo calculado automaticamente
+  const _entradas = _getRepassesCef().reduce((s, r) => s + Number(r.valor || 0), 0) +
+    (typeof adicionaisPgtos !== 'undefined' ? adicionaisPgtos : []).reduce((s, p) => s + Number(p.valor || 0), 0);
+  const _saidas = (typeof lancamentos !== 'undefined' ? lancamentos : []).reduce((s, l) => s + Number(l.total || 0), 0) +
+    contasPagar.filter(c => c.status === 'pago' && !c.obra_id).reduce((s, c) => s + Number(c.valor || 0), 0);
+  const _inicio = _saldoManual !== null ? _saldoManual : 0;
   html += `<div style="background:var(--card);border:1.5px solid ${saldoBase >= 0 ? 'rgba(5,150,105,0.3)' : 'rgba(220,38,38,0.3)'};border-radius:16px;padding:20px;margin-bottom:16px;">
     <div style="font-size:10px;color:var(--text-tertiary);font-weight:700;letter-spacing:2px;margin-bottom:4px;display:flex;align-items:center;gap:6px;">
       SALDO DISPONIVEL HOJE
-      ${isManual ? '<span style="font-size:9px;background:rgba(37,99,235,0.1);color:#3b82f6;padding:2px 7px;border-radius:10px;letter-spacing:0;font-weight:700;">MANUAL</span>' : '<span style="font-size:9px;background:rgba(107,114,128,0.1);color:var(--text-tertiary);padding:2px 7px;border-radius:10px;letter-spacing:0;">CALCULADO</span>'}
+      <span style="font-size:9px;background:rgba(34,197,94,0.1);color:var(--success);padding:2px 7px;border-radius:10px;letter-spacing:0;font-weight:700;">AUTOMATICO</span>
     </div>
-    <div style="font-size:32px;font-weight:800;color:${corSaldo};font-family:'Space Grotesk',monospace;line-height:1;margin-bottom:14px;">${fmtR(saldoBase)}</div>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-      <input type="number" id="caixa-saldo-manual-input" step="0.01" placeholder="Digite o saldo real (R$)" value="${isManual ? _saldoManual : ''}" style="flex:1;min-width:160px;padding:9px 13px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;background:var(--bg);color:var(--text-primary);" onkeydown="if(event.key==='Enter')salvarSaldoManual()">
-      <button onclick="salvarSaldoManual()" style="padding:9px 16px;border-radius:var(--radius-sm);border:none;background:var(--primary);color:#fff;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">Definir</button>
-      ${isManual ? `<button onclick="limparSaldoManual()" style="padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-tertiary);font-size:12px;cursor:pointer;" title="Usar saldo calculado">Limpar</button>` : ''}
+    <div style="font-size:32px;font-weight:800;color:${corSaldo};font-family:'Space Grotesk',monospace;line-height:1;margin-bottom:10px;">${fmtR(saldoBase)}</div>
+    <div style="display:flex;gap:16px;font-size:10px;flex-wrap:wrap;margin-bottom:14px;">
+      ${_inicio !== 0 ? `<span style="color:var(--text-tertiary);">Inicial: <strong style="color:var(--text-secondary);font-family:'Space Grotesk',monospace;">${fmtR(_inicio)}</strong></span>` : ''}
+      <span style="color:var(--text-tertiary);">Entradas: <strong style="color:var(--success);font-family:'Space Grotesk',monospace;">+${fmtR(_entradas)}</strong></span>
+      <span style="color:var(--text-tertiary);">Saidas: <strong style="color:var(--error);font-family:'Space Grotesk',monospace;">-${fmtR(_saidas)}</strong></span>
     </div>
-    <div style="font-size:10px;color:var(--text-tertiary);margin-top:8px;">${isManual ? 'Projecoes calculadas a partir deste saldo.' : 'Informe o valor real para projecoes precisas.'}</div>
+    <details style="border-top:1px solid var(--border);padding-top:12px;">
+      <summary style="font-size:11px;color:var(--text-tertiary);cursor:pointer;list-style:none;display:flex;align-items:center;gap:4px;user-select:none;">
+        <span style="font-size:14px;line-height:1;">⚙</span> Saldo inicial da conta ${isManual ? `<strong style="color:var(--text-secondary);font-family:'Space Grotesk',monospace;">${fmtR(_saldoManual)}</strong>` : '(nao configurado)'}
+      </summary>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px;">
+        <input type="number" id="caixa-saldo-manual-input" step="0.01" placeholder="Saldo da conta antes de usar o EDR (R$)" value="${isManual ? _saldoManual : ''}" style="flex:1;min-width:160px;padding:9px 13px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;background:var(--bg);color:var(--text-primary);" onkeydown="if(event.key==='Enter')salvarSaldoManual()">
+        <button onclick="salvarSaldoManual()" style="padding:9px 16px;border-radius:var(--radius-sm);border:none;background:var(--primary);color:#fff;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">Salvar</button>
+        ${isManual ? `<button onclick="limparSaldoManual()" style="padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-tertiary);font-size:12px;cursor:pointer;">Limpar</button>` : ''}
+      </div>
+      <div style="font-size:10px;color:var(--text-tertiary);margin-top:6px;">Configure uma vez. O saldo diario sera calculado automaticamente a partir dai.</div>
+    </details>
   </div>`;
 
   // Cards 14 dias
