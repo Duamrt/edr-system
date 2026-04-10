@@ -57,7 +57,15 @@ echo "Versao: $SHORT_V"
 echo "Cache SW: edr-system-v$VERSION"
 echo "Todos os usuarios vao atualizar automaticamente."
 
-# Fechar demand no DM Stack (opcional: ./deploy.sh "msg" "keyword")
-if [ -n "${2:-}" ]; then
-  bash "$HOME/dms-resolve.sh" "$2" "EDR"
+# Fechar itens no DM Stack — usa keyword explícita ou extrai palavras do commit
+DMS_KW="${2:-}"
+if [ -z "$DMS_KW" ]; then
+  # Extrai palavras-chave do commit message (palavras com 5+ chars, sem stopwords)
+  DMS_KW=$(echo "$MSG" | tr '[:upper:]' '[:lower:]' | \
+    grep -oE '[a-záàâãéèêíïóôõöúüç-]{5,}' | \
+    grep -vE '^(cache|busting|deploy|versao|fixes|update|remove|corrige|corrigir|adiciona|adicionar|atualiza|atualizar|insere|inserir)$' | \
+    head -1)
+fi
+if [ -n "$DMS_KW" ]; then
+  bash "$HOME/dms-resolve.sh" "$DMS_KW" "EDR"
 fi
