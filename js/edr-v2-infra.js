@@ -2,6 +2,7 @@
 // EDR SYSTEM V2 — INFRAESTRUTURA (Supabase bridge + UI helpers)
 // Carrega ANTES de todos os módulos
 // ══════════════════════════════════════════
+(function(){const v=(document.currentScript?.src||'').match(/\?v=(\d+)/)?.[1]||'?';console.log('%c EDR System %c v'+v+' ','background:#14532d;color:#4ade80;font-weight:700;padding:3px 7px;border-radius:3px 0 0 3px','background:#4ade80;color:#14532d;font-weight:700;padding:3px 7px;border-radius:0 3px 3px 0');})();
 
 // ── SUPABASE CONFIG ──────────────────────
 const SUPABASE_URL = 'https://mepzoxoahpwcvvlymlfh.supabase.co';

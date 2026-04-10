@@ -1,39 +1,48 @@
-# EDR System — Sistema de Gestão
+# EDR System V2 — Sistema de Gestão SaaS
 
 Sempre responda em português brasileiro.
 
 ## Projeto
 - **Stack:** HTML + CSS + JS vanilla + Supabase (PostgreSQL)
-- **Deploy:** GitHub Pages (branch main) → sistema.edreng.com.br
-- **Branches:** `dev` (desenvolvimento) → merge para `main` (produção)
+- **Deploy:** `./deploy.sh "mensagem"` → sistema.edreng.com.br (GitHub Pages, branch main)
+- **Rollback:** `./rollback.sh`
+- **Branches:** dev → main (merge automático via deploy.sh)
 - **Servidor local:** `npx serve -s .`
+- **Supabase:** projeto EDR (mepzoxoahpwcvvlymlfh)
 
-## Estrutura
-- `index.html` — HTML principal
-- `css/styles.css` — CSS externo (inclui mobile completo)
-- `js/` — 20 módulos JS (ver ordem de carregamento abaixo)
+## Arquitetura V2
+- É um **SaaS multi-tenant** — EDR Engenharia é apenas um cliente/tenant
+- Tenant = `company_id` na tabela `companies`
+- Usuários em `company_users` (não Supabase Auth direto)
+- Auth: `edr-v2-auth.js` + `infra.js` como core
+- Permissões granulares: `company_users.permissions` (JSONB) + role
 
-## Ordem de carregamento dos scripts (IMPORTANTE)
-config → demo → api → utils → diarias → relatorio → estoque → obras → adicionais → notas → importar → fiscal → banco → catalogo → dashboard → custos → menu → ui → auth → app
+## Módulos principais
+obras · estoque · notas · diarias · leads · caixa · garantias · catalogo · equipe · relatorio · fiscal
 
-**Cuidado:** funções chamadas no top-level de um módulo devem estar definidas em módulos carregados ANTES dele.
+## Gotchas CRÍTICOS
+- **Modal V2:** SEMPRE `classList.remove('hidden'); classList.add('active')` pra abrir — NUNCA só um dos dois
+- **sbPost:** retorna objeto direto (não array) — NUNCA `const [x] = await sbPost(...)`
+- **RLS:** NUNCA subquery em `profiles` dentro de policy
+- **Multitenancy:** sbGet filtra company_id automaticamente via infra.js — não duplicar filtro
+- **fmt(v):** formata como R$ (currency) — para quantidade usar `Number(v).toLocaleString('pt-BR',...)`
+- **DOM:** NUNCA appendChild/reparent de elemento existente — só inserir novos
+- **Deploy:** SEMPRE via ./deploy.sh — push manual não faz cache busting
+- **Autocomplete:** listas grandes SEMPRE usar autocomplete, nunca select com scroll
 
-## Camada de API (js/api.js) — CENTRALIZADA
-- Todo acesso ao Supabase passa por api.js — zero fetch direto nos módulos
-- `sbGet`, `sbPost`, `sbPostMinimal`, `sbPatch`, `sbDelete`
+## Clientes ativos
+- EDR Engenharia (construtora, plano ilimitado)
+- Jackson Alcantara (essencial, 3 obras)
 
-## Centro de Custo / Etapas
-- **Fonte única:** array `ETAPAS` em `obras.js` — 36 categorias numeradas (01-36)
-- **Mapa de aliases:** `ETAPA_ALIAS` em `relatorio.js`
-- Todos os selects são dinâmicos via JS, nenhum hardcoded no HTML
+## RLS
+- Policies usam `auth_oficina_id()` — NUNCA subquery em profiles
+- Anon key: nunca expor service_role no frontend
 
-## Autenticação
-- Login por usuário/senha (NÃO usa Supabase Auth)
-- Perfis: admin, operacional, mestre, visitante
-- Sessão via localStorage (admin=30d, operador=8h)
+## Permissões por perfil
+- Matriz em `edr-v2-auth.js/_MODULOS_PERMISSAO`
+- 21 módulos — admin configura via modal Editar Usuário
+- `aplicarPermissoesVisuais()` controla o que aparece no menu
 
-## Regras
-- Não criar arquivos desnecessários
-- Commitar com frequência em progresso significativo
-- Testar sempre com `npx serve -s .`
-- Salvar contexto na memória quando pedido
+## Deploy / Cache
+- Cache buster automático no deploy.sh
+- Service Worker: CACHE_NAME atualizado automaticamente pelo deploy.sh
