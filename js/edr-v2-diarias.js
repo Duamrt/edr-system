@@ -1097,6 +1097,7 @@ async function diarConfirmarLancamento() {
 }
 
 // Lançamento automático na tabela lancamentos após confirmar diárias
+// IMPORTANTE: usa upsert por obra_id+data+obs para evitar duplicatas quando Anderson salva parcialmente
 async function _diarAutoLancarPL(novos) {
   const obrasMap = await _diarBuscarObras();
   if (!obrasMap) return;
@@ -1111,15 +1112,26 @@ async function _diarAutoLancarPL(novos) {
   });
   const data = novos[0]?.data || hojeISO();
   const obs = 'Diaria · ' + data + ' · ' + (DiariasModule.quinzenaAtiva?.label || 'Quinzena');
-  const promessas = Object.entries(porObra).map(([chave, { valor, nome }]) => {
+  for (const [chave, { valor }] of Object.entries(porObra)) {
     const obraId = obrasMap[chave];
-    if (!obraId || valor <= 0) return Promise.resolve();
-    return sbPostMinimal('lancamentos', {
-      obra_id: obraId, descricao: '000460 \u00b7 MAO DE OBRA', qtd: 1,
-      preco: valor, total: valor, data, obs, etapa: '28_mao'
-    });
-  });
-  await Promise.all(promessas);
+    if (!obraId || valor <= 0) continue;
+    try {
+      // Verificar se já existe lançamento de diária para essa obra/data/quinzena
+      const existente = await sbGet('lancamentos',
+        `?obra_id=eq.${obraId}&data=eq.${data}&obs=eq.${encodeURIComponent(obs)}&etapa=eq.28_mao&select=id`);
+      if (Array.isArray(existente) && existente.length > 0) {
+        // Atualizar valor existente em vez de criar duplicata
+        await sbPatch('lancamentos',
+          `?id=eq.${existente[0].id}`,
+          { preco: valor, total: valor, descricao: '000460 \u00b7 MAO DE OBRA' });
+      } else {
+        await sbPostMinimal('lancamentos', {
+          obra_id: obraId, descricao: '000460 \u00b7 MAO DE OBRA', qtd: 1,
+          preco: valor, total: valor, data, obs, etapa: '28_mao'
+        });
+      }
+    } catch(e) { console.warn('[DIAR] auto-lancar PL:', e); }
+  }
 }
 
 function _diarNormStr(s) {
@@ -2090,8 +2102,16 @@ async function diarConfirmarLancamentosEDR() {
     const obra = row.dataset.obra; const valor = parseFloat(row.dataset.valor); const obraId = row.dataset.id;
     if (!obraId) { statusEl.innerHTML += `<div style="color:var(--warning)"><span class="material-symbols-outlined" style="font-size:14px">warning</span> ${obra}: sem ID, pulando</div>`; erro++; continue; }
     try {
-      await sbPostMinimal('lancamentos', { obra_id: obraId, descricao: '000460 \u00b7 MAO DE OBRA', qtd: 1, preco: valor, total: valor, data: hoje, obs, etapa: '28_mao' });
-      statusEl.innerHTML += `<div style="color:var(--success)"><span class="material-symbols-outlined" style="font-size:14px">check_circle</span> ${obra}: R$ ${valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} lancado</div>`;
+      // Verificar duplicata: mesma obra + obs (contém label da quinzena) + etapa
+      const existente = await sbGet('lancamentos',
+        `?obra_id=eq.${obraId}&obs=eq.${encodeURIComponent(obs)}&etapa=eq.28_mao&select=id`);
+      if (Array.isArray(existente) && existente.length > 0) {
+        await sbPatch('lancamentos', `?id=eq.${existente[0].id}`, { preco: valor, total: valor, descricao: '000460 \u00b7 MAO DE OBRA' });
+        statusEl.innerHTML += `<div style="color:var(--warning)"><span class="material-symbols-outlined" style="font-size:14px">update</span> ${obra}: atualizado (ja existia)</div>`;
+      } else {
+        await sbPostMinimal('lancamentos', { obra_id: obraId, descricao: '000460 \u00b7 MAO DE OBRA', qtd: 1, preco: valor, total: valor, data: hoje, obs, etapa: '28_mao' });
+        statusEl.innerHTML += `<div style="color:var(--success)"><span class="material-symbols-outlined" style="font-size:14px">check_circle</span> ${obra}: R$ ${valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} lancado</div>`;
+      }
       ok++;
     } catch (e) { statusEl.innerHTML += `<div style="color:var(--error)"><span class="material-symbols-outlined" style="font-size:14px">error</span> ${obra}: ${e.message}</div>`; erro++; }
   }
