@@ -171,7 +171,7 @@ function _leadsKanbanCard(l) {
   }
 
   return `<div onclick="_leadsAbrirModal('${esc(l.id)}')"
-    style="background:var(--card-bg);border:1px solid var(--borda);border-left:3px solid ${cfg.cor};
+    style="background:var(--card);border:1px solid var(--borda);border-left:3px solid ${cfg.cor};
     border-radius:10px;padding:12px;cursor:pointer;transition:all .15s;"
     onmouseenter="this.style.borderColor='${cfg.cor}40'" onmouseleave="this.style.borderColor='var(--borda)'">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px;">
@@ -240,7 +240,7 @@ function _leadsAbrirModal(leadId) {
       if (linha.startsWith('Duda:')) return `<div style="margin:4px 0;padding:6px 10px;background:rgba(245,158,11,0.06);border-radius:8px 8px 2px 8px;font-size:12px;color:var(--texto-pri);text-align:right;"><strong style="color:#f59e0b;">Duda:</strong>${esc(linha.replace('Duda:', ''))}</div>`;
       return linha.trim() ? `<div style="font-size:11px;color:var(--texto-sec);margin:2px 0;">${esc(linha)}</div>` : '';
     }).join('');
-    conversaHtml = `<div style="max-height:200px;overflow-y:auto;padding:8px;background:var(--card-bg);border:1px solid var(--borda);border-radius:10px;">${linhas}</div>`;
+    conversaHtml = `<div style="max-height:200px;overflow-y:auto;padding:8px;background:var(--card);border:1px solid var(--borda);border-radius:10px;">${linhas}</div>`;
   }
 
   // Montar modal
@@ -306,7 +306,7 @@ function _leadsAbrirModal(leadId) {
       </div>
 
       <!-- Proxima acao -->
-      <div style="background:var(--card-bg);border:1px solid var(--borda);border-radius:10px;padding:12px;margin-bottom:12px;">
+      <div style="background:var(--card);border:1px solid var(--borda);border-radius:10px;padding:12px;margin-bottom:12px;">
         <div style="font-size:11px;font-weight:700;color:var(--texto-sec);margin-bottom:8px;letter-spacing:.5px;display:flex;align-items:center;gap:4px;">
           <span class="material-symbols-outlined" style="font-size:14px;">schedule</span> PROXIMA ACAO
         </div>
@@ -321,7 +321,7 @@ function _leadsAbrirModal(leadId) {
       </div>
 
       <!-- Vincular obra -->
-      ${lead.status !== 'convertido' ? `<div style="background:var(--card-bg);border:1px solid var(--borda);border-radius:10px;padding:12px;margin-bottom:16px;">
+      ${lead.status !== 'convertido' ? `<div style="background:var(--card);border:1px solid var(--borda);border-radius:10px;padding:12px;margin-bottom:16px;">
         <div style="font-size:11px;font-weight:700;color:var(--texto-sec);margin-bottom:8px;letter-spacing:.5px;display:flex;align-items:center;gap:4px;">
           <span class="material-symbols-outlined" style="font-size:14px;">engineering</span> VINCULAR A OBRA
         </div>
@@ -331,7 +331,7 @@ function _leadsAbrirModal(leadId) {
       </div>`}
 
       <!-- Mudar status -->
-      <div style="background:var(--card-bg);border:1px solid var(--borda);border-radius:10px;padding:12px;margin-bottom:16px;">
+      <div style="background:var(--card);border:1px solid var(--borda);border-radius:10px;padding:12px;margin-bottom:16px;">
         <div style="font-size:11px;font-weight:700;color:var(--texto-sec);margin-bottom:8px;letter-spacing:.5px;display:flex;align-items:center;gap:4px;">
           <span class="material-symbols-outlined" style="font-size:14px;">swap_horiz</span> ALTERAR STATUS
         </div>
@@ -382,7 +382,7 @@ function _leadsAbrirModal(leadId) {
       <div style="font-size:11px;font-weight:700;color:var(--texto-sec);margin-bottom:8px;letter-spacing:.5px;">NOTAS ANTERIORES</div>
       ${notas.length ? notas.map(n => {
         const dt = n.criado_em ? new Date(n.criado_em).toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }) : '';
-        return `<div style="background:var(--card-bg);border:1px solid var(--borda);border-radius:8px;padding:10px;margin-bottom:6px;">
+        return `<div style="background:var(--card);border:1px solid var(--borda);border-radius:8px;padding:10px;margin-bottom:6px;">
           <div style="font-size:12px;color:var(--texto-sec);white-space:pre-wrap;word-break:break-word;">${esc(n.conteudo || '')}</div>
           <div style="font-size:10px;color:var(--texto-ter);margin-top:4px;">${dt}${n.usuario ? ' · ' + esc(n.usuario) : ''}</div>
         </div>`;
@@ -489,7 +489,7 @@ function _leadsBuildFormNovo() {
 
 function _leadsInfoChip(label, valor, icon) {
   if (!valor) return '';
-  return `<div style="background:var(--card-bg);border:1px solid var(--borda);border-radius:8px;padding:8px 10px;">
+  return `<div style="background:var(--card);border:1px solid var(--borda);border-radius:8px;padding:8px 10px;">
     <div style="font-size:9px;color:var(--texto-ter);font-weight:700;letter-spacing:.5px;margin-bottom:2px;display:flex;align-items:center;gap:3px;">
       <span class="material-symbols-outlined" style="font-size:11px;">${icon}</span> ${esc(label)}
     </div>
