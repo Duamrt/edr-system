@@ -1115,7 +1115,7 @@ async function _diarAutoLancarPL(novos) {
     const obraId = obrasMap[chave];
     if (!obraId || valor <= 0) return Promise.resolve();
     return sbPostMinimal('lancamentos', {
-      obra_id: obraId, descricao: 'MAO DE OBRA', qtd: 1,
+      obra_id: obraId, descricao: '000460 \u00b7 MAO DE OBRA', qtd: 1,
       preco: valor, total: valor, data, obs, etapa: '28_mao'
     });
   });
@@ -2090,7 +2090,7 @@ async function diarConfirmarLancamentosEDR() {
     const obra = row.dataset.obra; const valor = parseFloat(row.dataset.valor); const obraId = row.dataset.id;
     if (!obraId) { statusEl.innerHTML += `<div style="color:var(--warning)"><span class="material-symbols-outlined" style="font-size:14px">warning</span> ${obra}: sem ID, pulando</div>`; erro++; continue; }
     try {
-      await sbPostMinimal('lancamentos', { obra_id: obraId, descricao: 'MAO DE OBRA', qtd: 1, preco: valor, total: valor, data: hoje, obs, etapa: '28_mao' });
+      await sbPostMinimal('lancamentos', { obra_id: obraId, descricao: '000460 \u00b7 MAO DE OBRA', qtd: 1, preco: valor, total: valor, data: hoje, obs, etapa: '28_mao' });
       statusEl.innerHTML += `<div style="color:var(--success)"><span class="material-symbols-outlined" style="font-size:14px">check_circle</span> ${obra}: R$ ${valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} lancado</div>`;
       ok++;
     } catch (e) { statusEl.innerHTML += `<div style="color:var(--error)"><span class="material-symbols-outlined" style="font-size:14px">error</span> ${obra}: ${e.message}</div>`; erro++; }
