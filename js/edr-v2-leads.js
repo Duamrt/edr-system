@@ -155,9 +155,11 @@ function _leadsBuildKanban() {
 function _leadsKanbanCard(l) {
   const cfg = LEAD_STATUS[l.status] || LEAD_STATUS.novo;
   const data = l.criado_em ? fmtData(l.criado_em) : '';
-  const origemTag = l.observacoes
-    ? `<span style="font-size:9px;padding:1px 6px;border-radius:4px;background:rgba(59,130,246,0.1);color:#60a5fa;font-weight:700;">Chatbot</span>`
-    : '';
+  const origemTag = l.origem
+    ? `<span style="font-size:9px;padding:1px 6px;border-radius:4px;background:rgba(59,130,246,0.1);color:#60a5fa;font-weight:700;">${esc(l.origem)}</span>`
+    : l.observacoes
+      ? `<span style="font-size:9px;padding:1px 6px;border-radius:4px;background:rgba(59,130,246,0.1);color:#60a5fa;font-weight:700;">Chatbot</span>`
+      : '';
 
   let acaoHtml = '';
   if (l.tipo_acao && l.proxima_data) {
@@ -180,6 +182,7 @@ function _leadsKanbanCard(l) {
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;">
       ${l.faixa ? `<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:rgba(255,255,255,0.04);color:var(--texto-sec);">${esc(l.faixa)}</span>` : ''}
       ${l.modelo_escolhido ? `<span style="font-size:10px;color:#f59e0b;">${esc(l.modelo_escolhido)}</span>` : ''}
+      ${l.valor_estimado ? `<span style="font-size:10px;color:#22c55e;font-weight:700;">R$ ${Number(l.valor_estimado).toLocaleString('pt-BR',{minimumFractionDigits:0})}</span>` : ''}
     </div>
     ${acaoHtml}
     <div style="font-size:9px;color:var(--texto-ter);margin-top:6px;">${data}</div>
@@ -297,6 +300,9 @@ function _leadsAbrirModal(leadId) {
         ${_leadsInfoChip('Modelo', lead.modelo_escolhido, 'home')}
         ${_leadsInfoChip('Terreno', lead.tem_terreno === true ? 'Sim' : lead.tem_terreno === false ? 'Nao' : '', 'landscape')}
         ${_leadsInfoChip('FGTS', lead.tem_fgts === true ? 'Sim' : lead.tem_fgts === false ? 'Nao' : '', 'account_balance')}
+        ${_leadsInfoChip('Origem', lead.origem, 'ads_click')}
+        ${_leadsInfoChip('Valor Est.', lead.valor_estimado ? 'R$ ' + Number(lead.valor_estimado).toLocaleString('pt-BR', {minimumFractionDigits:0}) : '', 'attach_money')}
+        ${_leadsInfoChip('Responsável', lead.responsavel, 'person')}
       </div>
 
       <!-- Proxima acao -->
@@ -433,7 +439,7 @@ function _leadsBuildFormNovo() {
         <input id="lead-new-modelo" type="text" placeholder="Modelo da casa" style="width:100%;padding:8px 10px;background:var(--input-bg);border:1px solid var(--borda);border-radius:8px;color:var(--texto-pri);font-size:12px;font-family:inherit;box-sizing:border-box;">
       </div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
       <div>
         <label style="font-size:10px;font-weight:700;color:var(--texto-sec);display:block;margin-bottom:4px;">TEM TERRENO?</label>
         <select id="lead-new-terreno" style="width:100%;padding:8px 10px;background:var(--input-bg);border:1px solid var(--borda);border-radius:8px;color:var(--texto-pri);font-size:12px;font-family:inherit;">
@@ -445,6 +451,29 @@ function _leadsBuildFormNovo() {
         <select id="lead-new-fgts" style="width:100%;padding:8px 10px;background:var(--input-bg);border:1px solid var(--borda);border-radius:8px;color:var(--texto-pri);font-size:12px;font-family:inherit;">
           <option value="">—</option><option value="true">Sim</option><option value="false">Nao</option>
         </select>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px;">
+      <div>
+        <label style="font-size:10px;font-weight:700;color:var(--texto-sec);display:block;margin-bottom:4px;">ORIGEM</label>
+        <select id="lead-new-origem" style="width:100%;padding:8px 10px;background:var(--input-bg);border:1px solid var(--borda);border-radius:8px;color:var(--texto-pri);font-size:12px;font-family:inherit;">
+          <option value="">—</option>
+          <option value="Instagram">Instagram</option>
+          <option value="WhatsApp">WhatsApp</option>
+          <option value="Indicacao">Indicação</option>
+          <option value="Site">Site</option>
+          <option value="Feirao">Feirão</option>
+          <option value="Facebook">Facebook</option>
+          <option value="Outro">Outro</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:10px;font-weight:700;color:var(--texto-sec);display:block;margin-bottom:4px;">VALOR ESTIMADO</label>
+        <input id="lead-new-valor" type="number" placeholder="0.00" style="width:100%;padding:8px 10px;background:var(--input-bg);border:1px solid var(--borda);border-radius:8px;color:var(--texto-pri);font-size:12px;font-family:inherit;box-sizing:border-box;">
+      </div>
+      <div>
+        <label style="font-size:10px;font-weight:700;color:var(--texto-sec);display:block;margin-bottom:4px;">RESPONSÁVEL</label>
+        <input id="lead-new-responsavel" type="text" placeholder="Nome do responsável" style="width:100%;padding:8px 10px;background:var(--input-bg);border:1px solid var(--borda);border-radius:8px;color:var(--texto-pri);font-size:12px;font-family:inherit;box-sizing:border-box;">
       </div>
     </div>
     <div style="display:flex;gap:8px;justify-content:flex-end;">
@@ -541,6 +570,9 @@ async function _leadsCriar() {
     modelo_escolhido: (document.getElementById('lead-new-modelo')?.value || '').trim() || null,
     tem_terreno: _leadsBool('lead-new-terreno'),
     tem_fgts: _leadsBool('lead-new-fgts'),
+    origem: document.getElementById('lead-new-origem')?.value || null,
+    valor_estimado: parseFloat(document.getElementById('lead-new-valor')?.value) || null,
+    responsavel: (document.getElementById('lead-new-responsavel')?.value || '').trim() || null,
     status: 'novo',
   };
 
