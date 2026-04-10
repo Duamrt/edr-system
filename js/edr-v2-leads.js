@@ -185,7 +185,7 @@ function _leadsKanbanCard(l) {
       ${l.valor_estimado ? `<span style="font-size:10px;color:#22c55e;font-weight:700;">R$ ${Number(l.valor_estimado).toLocaleString('pt-BR',{minimumFractionDigits:0})}</span>` : ''}
     </div>
     ${acaoHtml}
-    <div style="font-size:9px;color:var(--texto-ter);margin-top:6px;">${data}</div>
+    <div style="font-size:9px;color:var(--text-tertiary);margin-top:6px;">${data}</div>
   </div>`;
 }
 
@@ -249,7 +249,7 @@ function _leadsAbrirModal(leadId) {
   overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:12px;backdrop-filter:blur(4px);';
   overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
 
-  overlay.innerHTML = `<div style="background:var(--bg-surface);border:1px solid var(--borda);border-radius:16px;max-width:640px;width:100%;max-height:90vh;overflow-y:auto;display:flex;flex-direction:column;">
+  overlay.innerHTML = `<div style="background:var(--surface);border:1px solid var(--borda);border-radius:16px;max-width:640px;width:100%;max-height:90vh;overflow-y:auto;display:flex;flex-direction:column;">
     <!-- Header -->
     <div style="padding:20px 20px 0;flex-shrink:0;">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
@@ -362,7 +362,7 @@ function _leadsAbrirModal(leadId) {
           <span class="material-symbols-outlined" style="font-size:18px;color:var(--texto-sec);">${ico}</span>
           <div style="flex:1;min-width:0;">
             <div style="font-size:12px;color:var(--texto-sec);word-break:break-word;">${esc(h.conteudo || '')}</div>
-            <div style="font-size:10px;color:var(--texto-ter);margin-top:2px;">${dt}${h.usuario ? ' · ' + esc(h.usuario) : ''}</div>
+            <div style="font-size:10px;color:var(--text-tertiary);margin-top:2px;">${dt}${h.usuario ? ' · ' + esc(h.usuario) : ''}</div>
           </div>
         </div>`;
       }).join('') : `<div style="text-align:center;padding:24px;color:var(--texto-sec);">
@@ -384,7 +384,7 @@ function _leadsAbrirModal(leadId) {
         const dt = n.criado_em ? new Date(n.criado_em).toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }) : '';
         return `<div style="background:var(--card);border:1px solid var(--borda);border-radius:8px;padding:10px;margin-bottom:6px;">
           <div style="font-size:12px;color:var(--texto-sec);white-space:pre-wrap;word-break:break-word;">${esc(n.conteudo || '')}</div>
-          <div style="font-size:10px;color:var(--texto-ter);margin-top:4px;">${dt}${n.usuario ? ' · ' + esc(n.usuario) : ''}</div>
+          <div style="font-size:10px;color:var(--text-tertiary);margin-top:4px;">${dt}${n.usuario ? ' · ' + esc(n.usuario) : ''}</div>
         </div>`;
       }).join('') : '<div style="color:var(--texto-sec);font-size:12px;">Nenhuma nota ainda.</div>'}
     </div>
@@ -490,7 +490,7 @@ function _leadsBuildFormNovo() {
 function _leadsInfoChip(label, valor, icon) {
   if (!valor) return '';
   return `<div style="background:var(--card);border:1px solid var(--borda);border-radius:8px;padding:8px 10px;">
-    <div style="font-size:9px;color:var(--texto-ter);font-weight:700;letter-spacing:.5px;margin-bottom:2px;display:flex;align-items:center;gap:3px;">
+    <div style="font-size:9px;color:var(--text-tertiary);font-weight:700;letter-spacing:.5px;margin-bottom:2px;display:flex;align-items:center;gap:3px;">
       <span class="material-symbols-outlined" style="font-size:11px;">${icon}</span> ${esc(label)}
     </div>
     <div style="font-size:13px;color:var(--texto-pri);font-weight:600;">${esc(String(valor))}</div>
@@ -532,7 +532,7 @@ function _leadsBindAutocomplete() {
   wrap.innerHTML = `<input id="lead-obra-input" type="text" value="${esc(obraAtualNome)}" placeholder="Buscar obra..." autocomplete="off"
     style="width:100%;padding:8px 10px;background:var(--input-bg);border:1px solid var(--borda);border-radius:8px;color:var(--texto-pri);font-size:12px;font-family:inherit;box-sizing:border-box;">
     <input id="lead-obra-id" type="hidden" value="${esc(obraAtual?.obra_id || '')}">
-    <div id="lead-obra-dropdown" style="position:absolute;top:100%;left:0;right:0;background:var(--bg-surface);border:1px solid var(--borda);border-radius:8px;max-height:180px;overflow-y:auto;display:none;z-index:10;margin-top:2px;"></div>`;
+    <div id="lead-obra-dropdown" style="position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--borda);border-radius:8px;max-height:180px;overflow-y:auto;display:none;z-index:10;margin-top:2px;"></div>`;
 
   const input = document.getElementById('lead-obra-input');
   const dd = document.getElementById('lead-obra-dropdown');
