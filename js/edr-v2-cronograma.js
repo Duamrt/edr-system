@@ -889,9 +889,11 @@ const CronogramaModule = {
 
     // pciId vem como obra_id — resolver para pci_medicao.id
     var medicaoId = null;
+    console.log('[PCI-IMPORT] pciId recebido:', pciId, '| medicoes carregadas:', typeof PciModule !== 'undefined' ? PciModule.medicoes.length : 'PciModule UNDEF', '| itens:', typeof PciModule !== 'undefined' ? PciModule.itens.length : 0);
     if (typeof PciModule !== 'undefined' && pciId) {
       var med = PciModule.medicoes.find(function(m) { return m.obra_id === pciId; });
       medicaoId = med ? med.id : null;
+      console.log('[PCI-IMPORT] medicao encontrada:', med ? med.id : 'NENHUMA', '| medicoes obra_ids:', PciModule.medicoes.map(function(m){return m.obra_id;}));
     }
 
     // Criar tarefas do cronograma
