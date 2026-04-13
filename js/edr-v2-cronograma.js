@@ -915,7 +915,7 @@ const CronogramaModule = {
           return it.medicao_id === pciId && it.categoria_nome === fase.nome && !it.nao_aplicavel;
         });
         if (itensCat.length) {
-          subitens = itensCat.map(function(it) { return { nome: it.descricao, feito: !!it.executado }; });
+          subitens = itensCat.map(function(it) { return { nome: it.sub_servico_descricao || it.descricao || '', feito: !!it.executado }; });
         } else {
           // Fallback: sub-serviços template por categoria
           var catId = fase.id || '';
