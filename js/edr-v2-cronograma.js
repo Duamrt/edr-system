@@ -893,7 +893,7 @@ const CronogramaModule = {
     let dataAtual = new Date(tInicio);
     let anteriorId = null;
     let criadas = 0;
-    const etapas = typeof PciModule !== 'undefined' ? PciModule.ETAPAS_CEF : [];
+    const etapas = typeof PciModule !== 'undefined' ? (PciModule.ETAPAS_CEF || PciModule.categorias || []) : [];
 
     for (let i = 0; i < 20; i++) {
       const peso = pesos[i] || 0;
@@ -911,7 +911,7 @@ const CronogramaModule = {
           obra_id: obraId, nome: fase.nome, data_inicio: dInicio, data_fim: dFim,
           progresso: 0, dependencia: anteriorId, ordem: i, subitens: subs
         });
-        if (r && r[0]?.id) anteriorId = r[0].id;
+        if (r && r.id) anteriorId = r.id;
         criadas++;
       } catch (e) { console.error('Erro etapa', fase.nome, e); }
     }
@@ -1057,7 +1057,7 @@ const CronogramaModule = {
           ordem: i,
           subitens: subitens
         });
-        if (r && r[0]?.id) anteriorId = r[0].id;
+        if (r && r.id) anteriorId = r.id;
         criadas++;
       } catch (e) { console.error('Erro etapa', etapa.nome, e); }
     }
