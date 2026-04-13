@@ -905,16 +905,29 @@ const CronogramaModule = {
       if (dataAtual > tFim) dataAtual = new Date(tFim);
       const dFim = dataAtual.toISOString().split('T')[0];
 
-      // Buscar progresso real da PCI para esta categoria
+      // Buscar progresso real e subitens da PCI para esta categoria
       var progresso = 0;
+      var subitens = [];
       if (typeof PciModule !== 'undefined' && pciId && fase.nome) {
         progresso = PciModule._calcCatExec(pciId, fase.nome).pct || 0;
+        // Subitens do banco (itens reais da medição)
+        var itensCat = PciModule.itens.filter(function(it) {
+          return it.medicao_id === pciId && it.categoria_nome === fase.nome && !it.nao_aplicavel;
+        });
+        if (itensCat.length) {
+          subitens = itensCat.map(function(it) { return { nome: it.descricao, feito: !!it.executado }; });
+        } else {
+          // Fallback: sub-serviços template por categoria
+          var catId = fase.id || '';
+          subitens = (PciModule._SUBS || []).filter(function(s) { return s.categoria_id === catId; })
+            .map(function(s) { return { nome: s.descricao, feito: false }; });
+        }
       }
 
       try {
         const r = await sbPost('cronograma_tarefas', {
           obra_id: obraId, nome: fase.nome, data_inicio: dInicio, data_fim: dFim,
-          progresso: progresso, dependencia: anteriorId, ordem: i, subitens: []
+          progresso: progresso, dependencia: anteriorId, ordem: i, subitens: subitens
         });
         if (r && r.id) anteriorId = r.id;
         criadas++;
