@@ -361,6 +361,9 @@ const PciModule = {
           + '<span style="font-size:12px;color:var(--texto2);">' + dataFmt + '</span>'
           + '<span style="font-size:13px;font-weight:600;color:var(--texto);margin-left:auto;">' + h.exec_pct.toFixed(1) + '%</span>'
           + '<span style="font-size:13px;font-weight:700;color:#2D6A4F;min-width:110px;text-align:right;">' + valorFmt + '</span>'
+          + '<button class="pci-del-pls-btn" data-hid="' + h.id + '" title="Excluir este PLS" style="background:none;border:none;color:var(--texto3);cursor:pointer;padding:2px 4px;display:flex;align-items:center;">'
+            + '<span class="material-symbols-outlined" style="font-size:16px;">delete</span>'
+          + '</button>'
           + '</div>';
       });
       html += '</div></div>';
@@ -371,8 +374,8 @@ const PciModule = {
     if (!histObra.length && medicao.data_levantamento) {
       html += '<div style="font-size:12px;color:var(--texto2);align-self:center;">Ultima medicao fechada: ' + medicao.data_levantamento + '</div>';
     }
-    html += '<button class="pci-excluir-btn" data-med="' + medicao.id + '" data-obra="' + esc(obra.nome) + '" style="background:rgba(220,38,38,0.07);border:1px solid rgba(220,38,38,0.2);color:#dc2626;padding:8px 14px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;">' +
-      '<span class="material-symbols-outlined" style="font-size:16px;">delete</span> Excluir' +
+    html += '<button class="pci-excluir-btn" data-med="' + medicao.id + '" data-obra="' + esc(obra.nome) + '" style="background:none;border:1px solid rgba(220,38,38,0.2);color:#dc2626;padding:8px 14px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;">' +
+      '<span class="material-symbols-outlined" style="font-size:15px;">restart_alt</span> Resetar PCI' +
     '</button>';
     html += '<button class="pci-fechar-btn" data-med="' + medicao.id + '" data-obra="' + esc(obra.nome) + '" data-valor="' + (obra.valor_venda || 0) + '" data-exec="' + exec.toFixed(2) + '" style="background:rgba(45,106,79,0.1);border:1px solid rgba(45,106,79,0.3);color:#2D6A4F;padding:8px 16px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;">' +
       '<span class="material-symbols-outlined" style="font-size:16px;">check_circle</span> Fechar Medicao' +
@@ -586,11 +589,19 @@ const PciModule = {
       });
     });
 
-    // Excluir medição
+    // Resetar PCI (apaga tudo)
     container.querySelectorAll('.pci-excluir-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         PciModule._excluirMedicao(btn.dataset.med, btn.dataset.obra);
+      });
+    });
+
+    // Excluir PLS individual do histórico
+    container.querySelectorAll('.pci-del-pls-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        PciModule._excluirPls(btn.dataset.hid);
       });
     });
 
@@ -714,17 +725,34 @@ const PciModule = {
   },
 
   async _excluirMedicao(medicaoId, obNome) {
-    confirmar('Excluir PCI de ' + (obNome || '') + '?\n\nTodos os itens e progresso serão apagados. Esta ação não pode ser desfeita.', async () => {
+    confirmar('RESETAR PCI de ' + (obNome || '') + '?\n\nIsso apaga TODOS os itens importados e o histórico desta obra. Use só para reimportar do zero.', async () => {
       try {
         await sbDelete('pci_itens', '?medicao_id=eq.' + medicaoId);
+        await sbDelete('pci_historico', '?medicao_id=eq.' + medicaoId);
         await sbDelete('pci_medicao', '?id=eq.' + medicaoId);
         PciModule.medicoes = PciModule.medicoes.filter(m => m.id !== medicaoId);
         PciModule.itens = PciModule.itens.filter(i => i.medicao_id !== medicaoId);
+        PciModule.historico = PciModule.historico.filter(h => h.medicao_id !== medicaoId);
         PciModule._rerender();
-        showToast('PCI excluída');
+        showToast('PCI resetada');
       } catch(e) {
-        console.error('[PCI-EXCLUIR]', e);
-        showToast('Erro ao excluir PCI');
+        console.error('[PCI-RESETAR]', e);
+        showToast('Erro ao resetar PCI');
+      }
+    });
+  },
+
+  async _excluirPls(histId) {
+    confirmar('Excluir este registro de medição fechada?\n\nOs dados da PCI continuam intactos.', async () => {
+      try {
+        await sbDelete('pci_historico', '?id=eq.' + histId);
+        PciModule.historico = PciModule.historico.filter(h => h.id !== histId);
+        // Renumerar em memória
+        const obraId = (PciModule.historico.find(h => h.id === histId) || {}).obra_id;
+        PciModule._rerender();
+        showToast('Medição removida do histórico');
+      } catch(e) {
+        showToast('Erro ao excluir medição');
       }
     });
   },
