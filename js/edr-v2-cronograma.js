@@ -219,14 +219,14 @@ const CronogramaModule = {
       const corProg = prog >= 100 ? '#2D6A4F' : prog >= 50 ? '#B7791F' : prog > 0 ? '#E85D04' : '#dc2626';
 
       let subsHtml = '';
-      if (aberto && subs.length > 0) {
+      if (aberto) {
         subsHtml = '<div style="padding:8px 12px 12px 32px;border-bottom:1px solid var(--borda);background:var(--bg2);">'
-          + subs.map((s, i) =>
+          + (subs.length ? subs.map((s, i) =>
             '<label style="display:flex;align-items:center;gap:8px;padding:5px 0;cursor:pointer;' + (s.feito ? 'opacity:0.6;' : '') + '">'
             + '<input type="checkbox" ' + (s.feito ? 'checked' : '') + ' onchange="CronogramaModule._toggleSub(\'' + t.id + '\',' + i + ')" style="accent-color:var(--primary);width:16px;height:16px;cursor:pointer;">'
             + '<span style="font-size:13px;color:var(--texto);' + (s.feito ? 'text-decoration:line-through;' : '') + '">' + esc(s.nome) + '</span>'
             + '</label>'
-          ).join('')
+          ).join('') : '<p style="font-size:12px;color:var(--texto3);margin:0 0 8px;">Nenhum sub-item ainda.</p>')
           + '<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--borda);display:flex;gap:6px;">'
             + '<button onclick="CronogramaModule._abrirModalAddSub(\'' + t.id + '\')" style="padding:4px 10px;border-radius:6px;border:1px solid rgba(45,106,79,0.2);background:rgba(45,106,79,0.06);color:var(--primary);font-size:11px;cursor:pointer;">'
               + '<span class="material-symbols-outlined" style="font-size:12px;vertical-align:middle;">add</span> Sub-item</button>'
@@ -234,10 +234,8 @@ const CronogramaModule = {
           + '</div>';
       }
 
-      // BUG09: icone circle clicavel para tarefas sem subitens
-      const iconeEtapa = subs.length
-        ? '<span class="material-symbols-outlined" style="font-size:16px;color:var(--texto3);transition:transform 0.2s;transform:rotate(' + (aberto ? '90' : '0') + 'deg);">chevron_right</span>'
-        : '<span class="material-symbols-outlined" onclick="event.stopPropagation();CronogramaModule._abrirModal(\'' + t.id + '\')" title="Editar / Atualizar status" style="font-size:16px;color:' + corProg + ';cursor:pointer;">radio_button_checked</span>';
+      // Sempre mostra chevron para expandir (mesmo sem subitens)
+      const iconeEtapa = '<span class="material-symbols-outlined" style="font-size:16px;color:var(--texto3);transition:transform 0.2s;transform:rotate(' + (aberto ? '90' : '0') + 'deg);">chevron_right</span>';
 
       // Subinfo: omite nome da obra se já está no grupo
       const hoje = new Date().toISOString().split('T')[0];
