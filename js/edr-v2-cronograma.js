@@ -887,6 +887,13 @@ const CronogramaModule = {
       await PciModule._carregar();
     }
 
+    // pciId vem como obra_id — resolver para pci_medicao.id
+    var medicaoId = null;
+    if (typeof PciModule !== 'undefined' && pciId) {
+      var med = PciModule.medicoes.find(function(m) { return m.obra_id === pciId; });
+      medicaoId = med ? med.id : null;
+    }
+
     // Criar tarefas do cronograma
     let dataAtual = new Date(tInicio);
     let anteriorId = null;
@@ -905,23 +912,25 @@ const CronogramaModule = {
       if (dataAtual > tFim) dataAtual = new Date(tFim);
       const dFim = dataAtual.toISOString().split('T')[0];
 
-      // Buscar progresso real e subitens da PCI para esta categoria
+      // Progresso real da PCI
       var progresso = 0;
+      if (medicaoId && fase.nome) {
+        progresso = PciModule._calcCatExec(medicaoId, fase.nome).pct || 0;
+      }
+
+      // Subitens: itens reais da medição → fallback template
       var subitens = [];
-      if (typeof PciModule !== 'undefined' && pciId && fase.nome) {
-        progresso = PciModule._calcCatExec(pciId, fase.nome).pct || 0;
-        // Subitens do banco (itens reais da medição)
+      if (medicaoId && fase.nome) {
         var itensCat = PciModule.itens.filter(function(it) {
-          return it.medicao_id === pciId && it.categoria_nome === fase.nome && !it.nao_aplicavel;
+          return it.medicao_id === medicaoId && it.categoria_nome === fase.nome && !it.nao_aplicavel;
         });
         if (itensCat.length) {
           subitens = itensCat.map(function(it) { return { nome: it.sub_servico_descricao || it.descricao || '', feito: !!it.executado }; });
-        } else {
-          // Fallback: sub-serviços template por categoria
-          var catId = fase.id || '';
-          subitens = (PciModule._SUBS || []).filter(function(s) { return s.categoria_id === catId; })
-            .map(function(s) { return { nome: s.descricao, feito: false }; });
         }
+      }
+      if (!subitens.length && typeof PciModule !== 'undefined' && fase.id) {
+        subitens = (PciModule._SUBS || []).filter(function(s) { return s.categoria_id === fase.id; })
+          .map(function(s) { return { nome: s.descricao, feito: false }; });
       }
 
       try {
