@@ -289,6 +289,115 @@ async function loadAdicionais() {
   try { const r = await sbGet('adicional_pagamentos', '?order=data.desc'); adicionaisPgtos = Array.isArray(r) ? r : []; } catch(e) { adicionaisPgtos = []; }
 }
 
+function _trialExpiradoEDR() {
+  if (!_companyPlan) return false;
+  const plan = _companyPlan.plan;
+  if (['essencial', 'profissional', 'construtora'].includes(plan)) return false;
+  if (plan === 'trial' && _companyPlan.trial_ends_at) {
+    const hoje = new Date().toISOString().split('T')[0];
+    const fim = _companyPlan.trial_ends_at.split('T')[0];
+    return fim < hoje;
+  }
+  return false;
+}
+
+function _mostrarBloqueioEDR() {
+  const empresa = _companyPlan?.name || 'Sua Empresa';
+  const fimRaw = _companyPlan?.trial_ends_at || '';
+  const fimFmt = fimRaw
+    ? new Date(fimRaw + 'T12:00:00').toLocaleDateString('pt-BR')
+    : '';
+
+  // Esconde sidebar e conteúdo principal
+  const sidebar = document.querySelector('.sidebar');
+  const main = document.querySelector('.main-content, #main-content, main');
+  if (sidebar) sidebar.style.display = 'none';
+  if (main) main.style.display = 'none';
+
+  const overlay = document.createElement('div');
+  overlay.id = 'edr-trial-block';
+  overlay.style.cssText = [
+    'position:fixed;inset:0;z-index:99999',
+    'background:#F0FDF4',
+    'display:flex;align-items:center;justify-content:center',
+    'padding:24px',
+    'font-family:Inter,sans-serif'
+  ].join(';');
+
+  overlay.innerHTML = `
+    <div style="width:100%;max-width:420px;">
+
+      <!-- Logo EDR System -->
+      <div style="text-align:center;margin-bottom:32px;">
+        <div style="font-family:'Plus Jakarta Sans',Inter,sans-serif;font-size:22px;font-weight:800;color:#1A1D23;letter-spacing:-.5px;">
+          EDR <span style="color:#2D6A4F;">System</span>
+        </div>
+        <div style="font-size:11px;color:#9CA3AF;letter-spacing:2px;text-transform:uppercase;margin-top:2px;">
+          Gestão de Obras
+        </div>
+      </div>
+
+      <!-- Card -->
+      <div style="background:#fff;border:1px solid #E5E7EB;border-radius:8px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.07);">
+
+        <!-- Faixa vermelha -->
+        <div style="background:rgba(220,38,38,0.08);border-bottom:1px solid rgba(220,38,38,0.15);padding:10px 24px;display:flex;align-items:center;gap:8px;">
+          <div style="width:6px;height:6px;border-radius:50%;background:#DC2626;flex-shrink:0;box-shadow:0 0 6px #DC2626;"></div>
+          <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#DC2626;">Acesso Suspenso</span>
+        </div>
+
+        <div style="padding:28px 24px;">
+
+          <!-- Empresa -->
+          <div style="margin-bottom:20px;">
+            <div style="font-family:'Plus Jakarta Sans',Inter,sans-serif;font-size:20px;font-weight:800;color:#111827;margin-bottom:4px;">${empresa}</div>
+            <div style="display:flex;align-items:center;gap:14px;font-size:12px;">
+              <span style="color:#9CA3AF;text-transform:uppercase;letter-spacing:1px;font-weight:600;">Trial</span>
+              ${fimFmt ? `<span style="color:#DC2626;font-weight:600;">Expirou em ${fimFmt}</span>` : ''}
+            </div>
+          </div>
+
+          <!-- Separador -->
+          <div style="height:1px;background:#F3F4F6;margin-bottom:20px;"></div>
+
+          <!-- Mensagem -->
+          <p style="font-size:14px;color:#6B7280;line-height:1.65;margin-bottom:24px;">
+            Seu período de teste gratuito encerrou. Para reativar o acesso e continuar usando o EDR System, entre em contato e escolha um plano.
+          </p>
+
+          <!-- Botão WhatsApp -->
+          <a href="https://wa.me/5587981713987" target="_blank"
+             style="display:flex;align-items:center;justify-content:center;gap:10px;width:100%;background:#2D6A4F;color:#fff;font-size:15px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;padding:13px 20px;border-radius:6px;text-decoration:none;margin-bottom:10px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+              <path d="M12 0C5.373 0 0 5.373 0 12c0 2.124.558 4.115 1.535 5.836L.057 23.215a.75.75 0 0 0 .93.927l5.487-1.461A11.943 11.943 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.891 0-3.667-.5-5.207-1.377l-.374-.213-3.876 1.032 1.056-3.773-.228-.37A9.944 9.944 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/>
+            </svg>
+            Falar no WhatsApp
+          </a>
+
+          <!-- Botão secundário -->
+          <a href="landing.html"
+             style="display:flex;align-items:center;justify-content:center;width:100%;background:none;color:#6B7280;font-size:13px;padding:10px;border-radius:6px;text-decoration:none;border:1px solid #E5E7EB;">
+            Ver planos e preços
+          </a>
+
+        </div>
+
+        <!-- Rodapé -->
+        <div style="background:#F9FAFB;border-top:1px solid #E5E7EB;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;">
+          <span style="font-size:11px;color:#9CA3AF;">A partir de R$ 197/mês</span>
+          <span style="font-size:11px;color:#9CA3AF;">(87) 9 8171-3987</span>
+        </div>
+
+      </div>
+    </div>`;
+
+  document.body.appendChild(overlay);
+
+  // Bloqueia ESC e clique fora
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') e.stopImmediatePropagation(); }, true);
+}
+
 async function iniciarApp() {
   console.log('[INFRA] iniciarApp chamado');
   await loadObras();
@@ -305,6 +414,12 @@ async function iniciarApp() {
     loadCompanyPlan().catch(e => console.warn('loadCompanyPlan:', e))
   ]);
   console.log('[INFRA] Promise.all concluido. notas:', notas.length, 'lancamentos:', lancamentos.length, 'materiais:', catalogoMateriais.length);
+  // Checar trial expirado (plataforma admin nunca é bloqueada)
+  const _isAdmin = usuarioAtual?.email === 'admin@edreng.com.br';
+  if (!_isAdmin && _trialExpiradoEDR()) {
+    _mostrarBloqueioEDR();
+    return;
+  }
   // Sincronizar AdicionaisModule com globais carregadas no boot
   if (typeof AdicionaisModule !== 'undefined') {
     AdicionaisModule.adicionais = obrasAdicionais;
