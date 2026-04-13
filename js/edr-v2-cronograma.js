@@ -881,7 +881,7 @@ const CronogramaModule = {
 
     // Atualizar pesos na PCI Medicoes
     if (typeof PciModule !== 'undefined') {
-      const pciLista = PciModule.state && PciModule.state.length ? PciModule.state : PciModule._OBRAS_SEED;
+      const pciLista = PciModule.state && PciModule.state.length ? PciModule.state : (PciModule._OBRAS_SEED || []);
       const pciObra = pciLista.find(function(p) { return p.id === pciId; });
       if (pciObra) {
         pciObra.pesos = pesos;
@@ -947,12 +947,14 @@ const CronogramaModule = {
       return '<option value="' + o.id + '"' + (o.id == obraFiltroAtual ? ' selected' : '') + '>' + esc(o.nome) + '</option>';
     }).join('');
 
-    // Opcoes de PCI — usa state se ja carregado, senao fallback no seed
+    // Opcoes de PCI — usa medicoes do Supabase (V2)
     const pciLista = (typeof PciModule !== 'undefined')
-      ? (PciModule.state && PciModule.state.length ? PciModule.state : PciModule._OBRAS_SEED)
+      ? (PciModule.state && PciModule.state.length ? PciModule.state : (PciModule._OBRAS_SEED || PciModule.medicoes || []))
       : [];
     const pciOpts = pciLista.map(function(p) {
-      return '<option value="' + p.id + '">' + p.nome + (p.entrega !== 'A definir' ? ' — entrega ' + p.entrega : '') + '</option>';
+      const obraNome = p.nome || (obras.find(function(o) { return o.id === p.obra_id; }) || {}).nome || 'PCI ' + p.id;
+      const entregaLabel = p.entrega && p.entrega !== 'A definir' ? ' — entrega ' + p.entrega : '';
+      return '<option value="' + p.id + '">' + obraNome + entregaLabel + '</option>';
     }).join('');
 
     const html = '<div class="modal-title">'
