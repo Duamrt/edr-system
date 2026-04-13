@@ -132,6 +132,8 @@ const CronogramaModule = {
           + '<span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;">unfold_more</span> Expandir</button>'
         + '<button onclick="CronogramaModule._abrirModalImportarPCI()" style="padding:6px 12px;border-radius:8px;border:1px solid var(--primary);background:rgba(45,106,79,0.08);color:var(--primary);font-size:12px;cursor:pointer;font-weight:600;">'
           + '<span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;">upload_file</span> Importar PCI</button>'
+        + '<button onclick="CronogramaModule._syncComPCI()" id="cron-btn-sync-pci" style="padding:6px 12px;border-radius:8px;border:1px solid var(--borda);background:var(--bg2);color:var(--texto2);font-size:12px;cursor:pointer;">'
+          + '<span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;">sync</span> Sync PCI</button>'
         + '<button onclick="CronogramaModule._gerarEtapas()" style="padding:6px 12px;border-radius:8px;border:1px solid var(--borda);background:var(--bg2);color:var(--texto2);font-size:12px;cursor:pointer;">'
           + '<span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;">auto_fix_high</span> Gerar Padrao</button>'
         + '<button onclick="CronogramaModule._abrirModal()" class="btn-save" style="padding:8px 16px;font-size:12px;">'
@@ -473,6 +475,71 @@ const CronogramaModule = {
       if (btn) btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;">unfold_less</span> Recolher';
     }
     this._renderLista();
+  },
+
+  // ══════════════════════════════════════════════════════════
+  // SYNC COM PCI
+  // ══════════════════════════════════════════════════════════
+
+  async _syncComPCI() {
+    const btn = document.getElementById('cron-btn-sync-pci');
+    if (btn) btn.disabled = true;
+    try {
+      // Garantir dados PCI carregados
+      if (typeof PciModule === 'undefined') { showToast('Módulo PCI não disponível'); return; }
+      if (!PciModule.medicoes.length || !PciModule.itens.length) {
+        await PciModule._carregar();
+      }
+
+      // Descobrir obras únicas no cronograma atual
+      const obraIds = [...new Set(this.tarefas.map(t => t.obra_id))];
+      let atualizados = 0;
+
+      for (const obraId of obraIds) {
+        const med = PciModule.medicoes.find(function(m) { return m.obra_id === obraId; });
+        if (!med) continue; // obra sem PCI, pula
+
+        const tarefasObra = this.tarefas.filter(function(t) { return t.obra_id === obraId; });
+
+        for (const tarefa of tarefasObra) {
+          // Buscar itens da PCI para esta categoria
+          const itensCat = PciModule.itens.filter(function(it) {
+            return it.medicao_id === med.id && it.categoria_nome === tarefa.nome && !it.nao_aplicavel;
+          });
+
+          if (itensCat.length) {
+            const subitens = itensCat.map(function(it) {
+              return { nome: it.sub_servico_descricao || it.descricao || '', feito: !!it.executado };
+            });
+            const progresso = Math.round(subitens.filter(function(s) { return s.feito; }).length / subitens.length * 100);
+
+            await sbPatch('cronograma_tarefas', '?id=eq.' + tarefa.id, {
+              subitens: subitens,
+              progresso: progresso
+            });
+            tarefa.subitens = subitens;
+            tarefa.progresso = progresso;
+            atualizados++;
+          } else {
+            // Sem itens individuais — usar % calculada pela categoria
+            const calc = PciModule._calcCatExec(med.id, tarefa.nome);
+            if (calc && calc.pct > 0) {
+              await sbPatch('cronograma_tarefas', '?id=eq.' + tarefa.id, { progresso: calc.pct });
+              tarefa.progresso = calc.pct;
+              atualizados++;
+            }
+          }
+        }
+      }
+
+      this._renderLista();
+      showToast(atualizados > 0 ? atualizados + ' tarefa(s) sincronizada(s) com a PCI' : 'Nenhuma tarefa atualizada — verifique se a PCI tem dados');
+    } catch(e) {
+      console.error('[SYNC-PCI]', e);
+      showToast('Erro ao sincronizar com PCI');
+    } finally {
+      if (btn) btn.disabled = false;
+    }
   },
 
   // ══════════════════════════════════════════════════════════
