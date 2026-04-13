@@ -179,6 +179,32 @@ const PciModule = {
   },
 
   // ── Calcular execução total da medição ──
+  // Normaliza pesos dos itens aplicáveis de uma categoria.
+  // Se todos têm item_peso: usa direto. Se alguns têm, distribui o restante igualmente.
+  // Se nenhum tem: igual (1/N cada).
+  _normalizarPesos(aplicaveis) {
+    const comPeso = aplicaveis.filter(i => i.item_peso > 0);
+    const semPeso = aplicaveis.filter(i => !(i.item_peso > 0));
+    if (!semPeso.length) {
+      // Todos têm peso definido
+      const soma = comPeso.reduce((a, i) => a + parseFloat(i.item_peso), 0);
+      return aplicaveis.map(i => ({ id: i.id, w: parseFloat(i.item_peso) / (soma || 100) }));
+    }
+    if (!comPeso.length) {
+      // Nenhum tem peso → igual
+      const w = 1 / aplicaveis.length;
+      return aplicaveis.map(i => ({ id: i.id, w }));
+    }
+    // Misturado: com peso declarado + sem peso dividem o restante
+    const somaDeclarada = comPeso.reduce((a, i) => a + parseFloat(i.item_peso), 0);
+    const restante = Math.max(0, 100 - somaDeclarada);
+    const wSemPeso = semPeso.length ? restante / semPeso.length / 100 : 0;
+    return aplicaveis.map(i => ({
+      id: i.id,
+      w: i.item_peso > 0 ? parseFloat(i.item_peso) / 100 : wSemPeso
+    }));
+  },
+
   _calcExec(medicaoId) {
     const medicao = PciModule.medicoes.find(m => m.id === medicaoId);
     if (!medicao) return 0;
@@ -198,8 +224,12 @@ const PciModule = {
       if (!peso) return;
       const aplicaveis = cat.items.filter(i => !i.nao_aplicavel);
       if (!aplicaveis.length) return;
-      const executados = aplicaveis.filter(i => i.executado).length;
-      total += peso * (executados / aplicaveis.length);
+      const pesos = PciModule._normalizarPesos(aplicaveis);
+      const execPeso = aplicaveis.reduce((a, it) => {
+        const pw = (pesos.find(p => p.id === it.id) || {}).w || 0;
+        return a + (it.executado ? pw : 0);
+      }, 0);
+      total += peso * execPeso;
     });
 
     return Math.round(total * 100) / 100;
@@ -211,9 +241,14 @@ const PciModule = {
     if (!items.length) return { pct: 0, done: 0, total: 0, na: 0 };
     const naItems = items.filter(i => i.nao_aplicavel);
     const aplicaveis = items.filter(i => !i.nao_aplicavel);
-    const done = aplicaveis.filter(i => i.executado).length;
-    const pct = aplicaveis.length ? Math.round(done / aplicaveis.length * 100) : 0;
-    return { pct, done, total: aplicaveis.length, na: naItems.length };
+    if (!aplicaveis.length) return { pct: 0, done: 0, total: 0, na: naItems.length };
+    const pesos = PciModule._normalizarPesos(aplicaveis);
+    const execPeso = aplicaveis.reduce((a, it) => {
+      const pw = (pesos.find(p => p.id === it.id) || {}).w || 0;
+      return a + (it.executado ? pw : 0);
+    }, 0);
+    const pct = Math.round(execPeso * 100);
+    return { pct, done: aplicaveis.filter(i => i.executado).length, total: aplicaveis.length, na: naItems.length };
   },
 
   // ── Calcular soma dos pesos da medição ──
@@ -452,6 +487,9 @@ const PciModule = {
   _htmlItem(item) {
     const esmaecido = item.nao_aplicavel ? 'opacity:0.45;' : '';
     const riscado = (item.executado && !item.nao_aplicavel) ? 'text-decoration:line-through;color:var(--texto3);' : '';
+    const pesoBadge = item.item_peso > 0
+      ? '<input type="number" class="pci-item-peso" data-id="' + item.id + '" value="' + parseFloat(item.item_peso).toFixed(1) + '" min="0" max="100" step="0.1" title="Peso deste item na categoria (%)" style="width:52px;padding:3px 5px;border:1px solid rgba(45,106,79,0.3);border-radius:5px;font-size:11px;text-align:center;background:rgba(45,106,79,0.06);color:#2D6A4F;font-weight:600;"><span style="font-size:10px;color:var(--texto3);">%</span>'
+      : '<input type="number" class="pci-item-peso" data-id="' + item.id + '" value="" min="0" max="100" step="0.1" placeholder="auto" title="Peso deste item na categoria (%)" style="width:52px;padding:3px 5px;border:1px solid var(--borda);border-radius:5px;font-size:11px;text-align:center;background:var(--fundo);color:var(--texto3);"><span style="font-size:10px;color:var(--texto3);">%</span>';
     return '<div class="pci-item-row" style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--borda);' + esmaecido + '">' +
       '<input type="checkbox" class="pci-check-exec" data-id="' + item.id + '" ' +
         (item.executado ? 'checked ' : '') +
@@ -459,6 +497,7 @@ const PciModule = {
         'style="width:16px;height:16px;accent-color:#2D6A4F;cursor:pointer;flex-shrink:0;">' +
       '<span style="flex:1;font-size:13px;' + riscado + (item.manual ? 'font-style:italic;' : '') + '">' + esc(item.sub_servico_descricao) + '</span>' +
       (item.manual ? '<span style="font-size:10px;background:rgba(45,106,79,0.12);color:#2D6A4F;padding:2px 6px;border-radius:4px;font-weight:600;flex-shrink:0;">manual</span>' : '') +
+      pesoBadge +
       '<button class="pci-na-btn" data-id="' + item.id + '" ' +
         'style="background:' + (item.nao_aplicavel ? 'rgba(220,38,38,0.1)' : 'transparent') + ';border:1px solid ' + (item.nao_aplicavel ? '#DC2626' : 'var(--borda)') + ';border-radius:5px;padding:3px 8px;cursor:pointer;font-size:11px;color:' + (item.nao_aplicavel ? '#DC2626' : 'var(--texto3)') + ';flex-shrink:0;" ' +
         'title="' + (item.nao_aplicavel ? 'Reativar' : 'Nao aplicavel') + '">' +
@@ -541,6 +580,21 @@ const PciModule = {
         await PciModule._removerItem(btn.dataset.id);
         PciModule._rerender();
       });
+    });
+
+    // Peso individual por item
+    container.querySelectorAll('.pci-item-peso').forEach(input => {
+      input.addEventListener('change', async (e) => {
+        e.stopPropagation();
+        const id = input.dataset.id;
+        const val = input.value === '' ? null : parseFloat(input.value) || 0;
+        const item = PciModule.itens.find(i => i.id === id);
+        if (!item) return;
+        item.item_peso = val;
+        await sbPatch('pci_itens?id=eq.' + id, { item_peso: val });
+        PciModule._rerender();
+      });
+      input.addEventListener('click', e => e.stopPropagation());
     });
 
     // Coberturas peso
