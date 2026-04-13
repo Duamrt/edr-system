@@ -931,8 +931,10 @@ const CronogramaModule = {
         }
       }
       if (!subitens.length && typeof PciModule !== 'undefined' && fase.id) {
-        subitens = (PciModule._SUBS || []).filter(function(s) { return s.categoria_id === fase.id; })
+        var subsFonte = (PciModule.subServicos && PciModule.subServicos.length) ? PciModule.subServicos : (PciModule._SUBS || []);
+        subitens = subsFonte.filter(function(s) { return s.categoria_id === fase.id; })
           .map(function(s) { return { nome: s.descricao, feito: false }; });
+        console.log('[PCI-IMPORT] fallback template', fase.nome, 'id='+fase.id, subitens.length+'itens', 'fonte:'+(PciModule.subServicos&&PciModule.subServicos.length?'DB':'_SUBS'));
       }
 
       try {
