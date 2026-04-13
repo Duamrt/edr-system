@@ -10,6 +10,7 @@ const PciModule = {
   // ── Estado ──
   medicoes: [],
   itens: [],
+  historico: [],
   categorias: [],
   subServicos: [],
   expanded: new Set(),
@@ -166,6 +167,14 @@ const PciModule = {
       console.warn('PciModule._carregar:', e);
       PciModule.medicoes = [];
       PciModule.itens = [];
+    }
+
+    // Histórico de medições fechadas (PLS 01, PLS 02...)
+    try {
+      const hist = await sbGet('pci_historico?order=obra_id,numero');
+      PciModule.historico = hist || [];
+    } catch (e) {
+      PciModule.historico = [];
     }
   },
 
@@ -336,9 +345,30 @@ const PciModule = {
       html += PciModule._htmlCategoria(cat, medicao);
     });
 
+    // Histórico PLS
+    const histObra = PciModule.historico.filter(function(h) { return h.obra_id === medicao.obra_id; })
+      .sort(function(a, b) { return a.numero - b.numero; });
+    if (histObra.length) {
+      html += '<div style="margin-top:20px;border-top:1px solid var(--borda);padding-top:16px;">';
+      html += '<div style="font-size:12px;font-weight:700;color:var(--texto2);letter-spacing:.05em;margin-bottom:10px;">HISTÓRICO DE MEDIÇÕES</div>';
+      html += '<div style="display:flex;flex-direction:column;gap:6px;">';
+      histObra.forEach(function(h) {
+        const plsLabel = 'PLS ' + String(h.numero).padStart(2, '0');
+        const dataFmt = h.data_fechamento ? h.data_fechamento.split('-').reverse().join('/') : '—';
+        const valorFmt = h.valor_executado ? PciModule._fmtR$(h.valor_executado) : '—';
+        html += '<div style="display:flex;align-items:center;gap:12px;padding:8px 12px;background:var(--bg2);border-radius:8px;border:1px solid var(--borda);">'
+          + '<span style="font-size:12px;font-weight:700;color:#2D6A4F;min-width:52px;">' + plsLabel + '</span>'
+          + '<span style="font-size:12px;color:var(--texto2);">' + dataFmt + '</span>'
+          + '<span style="font-size:13px;font-weight:600;color:var(--texto);margin-left:auto;">' + h.exec_pct.toFixed(1) + '%</span>'
+          + '<span style="font-size:13px;font-weight:700;color:#2D6A4F;min-width:110px;text-align:right;">' + valorFmt + '</span>'
+          + '</div>';
+      });
+      html += '</div></div>';
+    }
+
     // Ações
     html += '<div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--borda);display:flex;justify-content:flex-end;gap:8px;">';
-    if (medicao.data_levantamento) {
+    if (!histObra.length && medicao.data_levantamento) {
       html += '<div style="font-size:12px;color:var(--texto2);align-self:center;">Ultima medicao fechada: ' + medicao.data_levantamento + '</div>';
     }
     html += '<button class="pci-excluir-btn" data-med="' + medicao.id + '" data-obra="' + esc(obra.nome) + '" style="background:rgba(220,38,38,0.07);border:1px solid rgba(220,38,38,0.2);color:#dc2626;padding:8px 14px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;">' +
@@ -655,15 +685,30 @@ const PciModule = {
     const exec = execPct || PciModule._calcExec(medicaoId);
     const dataHoje = new Date().toISOString().slice(0, 10);
     const dataFmt = dataHoje.split('-').reverse().join('/');
-    const valorExec = valorVenda ? PciModule._fmtR$(valorVenda * exec / 100) : null;
+    const valorExec = valorVenda ? valorVenda * exec / 100 : null;
+    const histObra = PciModule.historico.filter(h => h.obra_id === med.obra_id);
+    const proximoNum = histObra.length + 1;
+    const plsLabel = 'PLS ' + String(proximoNum).padStart(2, '0');
 
-    let msg = 'Fechar medicao de ' + (obNome || '') + '?\n\nExecucao atual: ' + exec.toFixed(2) + '%';
-    if (valorExec) msg += '\nValor executado: ' + valorExec;
+    let msg = 'Fechar ' + plsLabel + ' de ' + (obNome || '') + '?\n\nExecucao acumulada: ' + exec.toFixed(2) + '%';
+    if (valorExec) msg += '\nValor executado: ' + PciModule._fmtR$(valorExec);
     msg += '\nData: ' + dataFmt;
 
     confirmar(msg, async () => {
       await sbPatch('pci_medicao?id=eq.' + medicaoId, { data_levantamento: dataHoje });
       med.data_levantamento = dataHoje;
+      // Salvar snapshot no histórico
+      try {
+        const snap = await sbPost('pci_historico', {
+          obra_id: med.obra_id,
+          medicao_id: medicaoId,
+          numero: proximoNum,
+          data_fechamento: dataHoje,
+          exec_pct: parseFloat(exec.toFixed(2)),
+          valor_executado: valorExec ? parseFloat(valorExec.toFixed(2)) : null
+        });
+        if (snap && snap.id) PciModule.historico.push(snap);
+      } catch(e) { console.warn('[PCI-HISTORICO] erro ao salvar snapshot:', e); }
       PciModule._rerender();
     });
   },
