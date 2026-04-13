@@ -889,11 +889,9 @@ const CronogramaModule = {
 
     // pciId vem como obra_id — resolver para pci_medicao.id
     var medicaoId = null;
-    console.log('[PCI-IMPORT] pciId recebido:', pciId, '| medicoes carregadas:', typeof PciModule !== 'undefined' ? PciModule.medicoes.length : 'PciModule UNDEF', '| itens:', typeof PciModule !== 'undefined' ? PciModule.itens.length : 0);
     if (typeof PciModule !== 'undefined' && pciId) {
       var med = PciModule.medicoes.find(function(m) { return m.obra_id === pciId; });
       medicaoId = med ? med.id : null;
-      console.log('[PCI-IMPORT] medicao encontrada:', med ? med.id : 'NENHUMA', '| medicoes obra_ids:', PciModule.medicoes.map(function(m){return m.obra_id;}));
     }
 
     // Criar tarefas do cronograma
@@ -934,7 +932,6 @@ const CronogramaModule = {
         var subsFonte = (PciModule.subServicos && PciModule.subServicos.length) ? PciModule.subServicos : (PciModule._SUBS || []);
         subitens = subsFonte.filter(function(s) { return s.categoria_id === fase.id; })
           .map(function(s) { return { nome: s.descricao, feito: false }; });
-        console.log('[PCI-IMPORT] fallback template', fase.nome, 'id='+fase.id, subitens.length+'itens', 'fonte:'+(PciModule.subServicos&&PciModule.subServicos.length?'DB':'_SUBS'));
       }
 
       try {
@@ -947,15 +944,7 @@ const CronogramaModule = {
       } catch (e) { console.error('Erro etapa', fase.nome, e); }
     }
 
-    // Salvar mapeamento para PCI Medicoes
-    try {
-      const mapRows = await sbGet('tracker_sync?key=eq.pci-obra-map-v1&select=data');
-      let map = { mappings: [] };
-      if (mapRows && mapRows.length && mapRows[0].data) map = mapRows[0].data;
-      map.mappings = (map.mappings || []).filter(function(m) { return m.pci_id !== pciId && m.obra_id !== obraId; });
-      map.mappings.push({ pci_id: pciId, obra_id: obraId });
-      await sbPost('tracker_sync', { key: 'pci-obra-map-v1', data: map, updated_at: new Date().toISOString() }, { upsert: true });
-    } catch (e) { console.error('Erro mapa PCI-obra:', e); }
+    // (mapeamento PCI-obra removido — tracker_sync sem RLS)
   },
 
   // ══════════════════════════════════════════════════════════
