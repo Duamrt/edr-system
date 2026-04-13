@@ -257,6 +257,7 @@ function getAdicionaisGeral(obraIds) {
   return { valorTotal, totalRecebido, saldo: valorTotal - totalRecebido };
 }
 async function loadCompanyId() {
+  if (!usuarioAtual?.id) return;
   try {
     const rows = await fetch(`${SUPABASE_URL}/rest/v1/company_users?user_id=eq.${usuarioAtual.id}&select=company_id&limit=1`, { headers: _sbHeaders() }).then(r => r.json());
     if (rows && rows.length > 0) _companyId = rows[0].company_id;

@@ -873,11 +873,16 @@ function diarParseMensagem(msgOriginal) {
     }
   });
 
+  const _matchPalavra = (texto, palavra) => {
+    const escaped = palavra.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return new RegExp('(?:^|[\\s,.;:!?/(\\[])' + escaped + '(?=[\\s,.;:!?/)\\]]|$)').test(texto);
+  };
+
   const resolverAliasObra = (trecho) => {
     const t = trecho.toLowerCase().trim();
     for (const [nomeObra, aliases] of Object.entries(OBRAS_ALIASES)) {
       for (const alias of aliases) {
-        if (t.includes(alias)) {
+        if (_matchPalavra(t, alias)) {
           const obraReal = obras.find(o => normTxt(o.nome) === normTxt(nomeObra));
           if (obraReal) return obraReal.nome;
         }
@@ -891,7 +896,7 @@ function diarParseMensagem(msgOriginal) {
     if (aliasMatch) return aliasMatch;
     for (const o of obrasNomes) {
       const primeiroNome = o.norm.split(' ')[0];
-      if (primeiroNome.length >= 4 && trecho.includes(primeiroNome)) return o.original;
+      if (primeiroNome.length >= 4 && _matchPalavra(trecho, primeiroNome)) return o.original;
     }
     const m = trecho.match(/cas[ao]\s+d[eio]\s+([a-záéíóúãõâêôàü\s]+?)(?:\s+\d|\s*$)/i)
       || trecho.match(/obra\s+([a-záéíóúãõâêôàü]+)/i);
