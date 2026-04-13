@@ -879,37 +879,42 @@ const CronogramaModule = {
     const totalDias = Math.round((tFim - tInicio) / 86400000);
     const totalPeso = pesos.reduce(function(a, b) { return a + b; }, 0);
 
-    // Atualizar pesos na PCI Medicoes
-    if (typeof PciModule !== 'undefined') {
-      const pciLista = PciModule.state && PciModule.state.length ? PciModule.state : (PciModule._OBRAS_SEED || []);
-      const pciObra = pciLista.find(function(p) { return p.id === pciId; });
-      if (pciObra) {
-        pciObra.pesos = pesos;
-        if (typeof PciModule._salvar === 'function') PciModule._salvar();
-      }
+    // Limpar tarefas existentes da obra antes de regerar
+    await sbDelete('cronograma_tarefas', '?obra_id=eq.' + obraId);
+
+    // Garantir que dados da PCI estejam carregados
+    if (typeof PciModule !== 'undefined' && !PciModule.medicoes.length) {
+      await PciModule._carregar();
     }
 
     // Criar tarefas do cronograma
     let dataAtual = new Date(tInicio);
     let anteriorId = null;
     let criadas = 0;
-    const etapas = typeof PciModule !== 'undefined' ? (PciModule.ETAPAS_CEF || PciModule.categorias || []) : [];
+    const etapas = typeof PciModule !== 'undefined'
+      ? (PciModule.categorias && PciModule.categorias.length ? PciModule.categorias : PciModule._CATS)
+      : [];
 
     for (let i = 0; i < 20; i++) {
       const peso = pesos[i] || 0;
       if (!peso) continue;
-      const fase = etapas[i] || { nome: 'Fase ' + (i + 1), desc: '' };
+      const fase = etapas[i] || { nome: 'Fase ' + (i + 1) };
       const dias = Math.max(1, Math.round((peso / totalPeso) * totalDias));
       const dInicio = dataAtual.toISOString().split('T')[0];
       dataAtual.setDate(dataAtual.getDate() + dias);
       if (dataAtual > tFim) dataAtual = new Date(tFim);
       const dFim = dataAtual.toISOString().split('T')[0];
-      const subs = fase.desc ? fase.desc.split(',').map(function(s) { return { nome: s.trim(), feito: false }; }).filter(function(s) { return s.nome; }) : [];
+
+      // Buscar progresso real da PCI para esta categoria
+      var progresso = 0;
+      if (typeof PciModule !== 'undefined' && pciId && fase.nome) {
+        progresso = PciModule._calcCatExec(pciId, fase.nome).pct || 0;
+      }
 
       try {
         const r = await sbPost('cronograma_tarefas', {
           obra_id: obraId, nome: fase.nome, data_inicio: dInicio, data_fim: dFim,
-          progresso: 0, dependencia: anteriorId, ordem: i, subitens: subs
+          progresso: progresso, dependencia: anteriorId, ordem: i, subitens: []
         });
         if (r && r.id) anteriorId = r.id;
         criadas++;
