@@ -341,7 +341,10 @@ const PciModule = {
     if (medicao.data_levantamento) {
       html += '<div style="font-size:12px;color:var(--texto2);align-self:center;">Ultima medicao fechada: ' + medicao.data_levantamento + '</div>';
     }
-    html += '<button class="pci-fechar-btn" data-med="' + medicao.id + '" data-obra="' + esc(obra.nome) + '" style="background:rgba(45,106,79,0.1);border:1px solid rgba(45,106,79,0.3);color:#2D6A4F;padding:8px 16px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;">' +
+    html += '<button class="pci-excluir-btn" data-med="' + medicao.id + '" data-obra="' + esc(obra.nome) + '" style="background:rgba(220,38,38,0.07);border:1px solid rgba(220,38,38,0.2);color:#dc2626;padding:8px 14px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;">' +
+      '<span class="material-symbols-outlined" style="font-size:16px;">delete</span> Excluir' +
+    '</button>';
+    html += '<button class="pci-fechar-btn" data-med="' + medicao.id + '" data-obra="' + esc(obra.nome) + '" data-valor="' + (obra.valor_venda || 0) + '" data-exec="' + exec.toFixed(2) + '" style="background:rgba(45,106,79,0.1);border:1px solid rgba(45,106,79,0.3);color:#2D6A4F;padding:8px 16px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;">' +
       '<span class="material-symbols-outlined" style="font-size:16px;">check_circle</span> Fechar Medicao' +
     '</button></div>';
 
@@ -549,7 +552,15 @@ const PciModule = {
     container.querySelectorAll('.pci-fechar-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        PciModule._fecharMedicao(btn.dataset.med, btn.dataset.obra);
+        PciModule._fecharMedicao(btn.dataset.med, btn.dataset.obra, parseFloat(btn.dataset.valor) || 0, parseFloat(btn.dataset.exec) || 0);
+      });
+    });
+
+    // Excluir medição
+    container.querySelectorAll('.pci-excluir-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        PciModule._excluirMedicao(btn.dataset.med, btn.dataset.obra);
       });
     });
 
@@ -638,17 +649,38 @@ const PciModule = {
   },
 
   // ── Fechar medição ──
-  _fecharMedicao(medicaoId, obNome) {
+  _fecharMedicao(medicaoId, obNome, valorVenda, execPct) {
     const med = PciModule.medicoes.find(m => m.id === medicaoId);
     if (!med) return;
-    const exec = PciModule._calcExec(medicaoId);
+    const exec = execPct || PciModule._calcExec(medicaoId);
     const dataHoje = new Date().toISOString().slice(0, 10);
     const dataFmt = dataHoje.split('-').reverse().join('/');
+    const valorExec = valorVenda ? PciModule._fmtR$(valorVenda * exec / 100) : null;
 
-    confirmar('Fechar medicao de ' + (obNome || '') + '?\n\nExecucao atual: ' + exec.toFixed(2) + '%\nData: ' + dataFmt, async () => {
+    let msg = 'Fechar medicao de ' + (obNome || '') + '?\n\nExecucao atual: ' + exec.toFixed(2) + '%';
+    if (valorExec) msg += '\nValor executado: ' + valorExec;
+    msg += '\nData: ' + dataFmt;
+
+    confirmar(msg, async () => {
       await sbPatch('pci_medicao?id=eq.' + medicaoId, { data_levantamento: dataHoje });
       med.data_levantamento = dataHoje;
       PciModule._rerender();
+    });
+  },
+
+  async _excluirMedicao(medicaoId, obNome) {
+    confirmar('Excluir PCI de ' + (obNome || '') + '?\n\nTodos os itens e progresso serão apagados. Esta ação não pode ser desfeita.', async () => {
+      try {
+        await sbDelete('pci_itens', '?medicao_id=eq.' + medicaoId);
+        await sbDelete('pci_medicao', '?id=eq.' + medicaoId);
+        PciModule.medicoes = PciModule.medicoes.filter(m => m.id !== medicaoId);
+        PciModule.itens = PciModule.itens.filter(i => i.medicao_id !== medicaoId);
+        PciModule._rerender();
+        showToast('PCI excluída');
+      } catch(e) {
+        console.error('[PCI-EXCLUIR]', e);
+        showToast('Erro ao excluir PCI');
+      }
     });
   },
 
