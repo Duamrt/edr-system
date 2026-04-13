@@ -172,7 +172,7 @@ const PciModule = {
     // Histórico de medições fechadas (PLS 01, PLS 02...)
     try {
       const hist = await sbGet('pci_historico?order=obra_id,numero');
-      PciModule.historico = hist || [];
+      PciModule.historico = Array.isArray(hist) ? hist : [];
     } catch (e) {
       PciModule.historico = [];
     }
@@ -346,7 +346,7 @@ const PciModule = {
     });
 
     // Histórico PLS
-    const histObra = PciModule.historico.filter(function(h) { return h.obra_id === medicao.obra_id; })
+    const histObra = (Array.isArray(PciModule.historico) ? PciModule.historico : []).filter(function(h) { return h.obra_id === medicao.obra_id; })
       .sort(function(a, b) { return a.numero - b.numero; });
     if (histObra.length) {
       html += '<div style="margin-top:20px;border-top:1px solid var(--borda);padding-top:16px;">';
