@@ -13,6 +13,7 @@ const PciModule = {
   historico: [],
   categorias: [],
   subServicos: [],
+  obrasComCronograma: new Set(), // obra_ids que têm ao menos 1 tarefa no cronograma
   expanded: new Set(),
   expandedCats: new Set(),
   _carregado: false,
@@ -176,6 +177,14 @@ const PciModule = {
     } catch (e) {
       PciModule.historico = [];
     }
+
+    // Obras que têm cronograma (ao menos 1 tarefa)
+    try {
+      const tarefas = await sbGet('cronograma_tarefas?select=obra_id');
+      PciModule.obrasComCronograma = new Set((tarefas || []).map(t => t.obra_id));
+    } catch (e) {
+      PciModule.obrasComCronograma = new Set();
+    }
   },
 
   // ── Calcular execução total da medição ──
@@ -335,6 +344,15 @@ const PciModule = {
   },
 
   _htmlCriarMedicao(obra) {
+    const temCronograma = PciModule.obrasComCronograma.has(obra.id);
+    if (!temCronograma) {
+      return '<div style="padding:32px;text-align:center;">' +
+        '<span class="material-symbols-outlined" style="font-size:48px;color:var(--texto3);display:block;margin-bottom:12px;">schedule</span>' +
+        '<div style="font-size:15px;font-weight:600;margin-bottom:8px;">Cronograma não anexado</div>' +
+        '<div style="font-size:13px;color:var(--texto2);margin-bottom:8px;">Anexe o cronograma desta obra antes de gerar a PCI.</div>' +
+        '<div style="font-size:12px;color:var(--texto3);">Acesse <strong>Cronograma</strong> e importe o arquivo desta obra.</div>' +
+      '</div>';
+    }
     return '<div style="padding:32px;text-align:center;">' +
       '<span class="material-symbols-outlined" style="font-size:48px;color:var(--texto3);display:block;margin-bottom:12px;">assignment</span>' +
       '<div style="font-size:15px;font-weight:600;margin-bottom:8px;">Nenhuma PCI para esta obra</div>' +
@@ -534,6 +552,10 @@ const PciModule = {
     container.querySelectorAll('.pci-criar-btn').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         e.stopPropagation();
+        if (!PciModule.obrasComCronograma.has(btn.dataset.obra)) {
+          showToast('Anexe o cronograma desta obra antes de gerar a PCI.', 'error');
+          return;
+        }
         btn.disabled = true;
         btn.textContent = 'Gerando...';
         await PciModule._criarMedicao(btn.dataset.obra);
