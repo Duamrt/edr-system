@@ -1001,6 +1001,15 @@ const CronogramaModule = {
           subitens = itensCat.map(function(it) { return { nome: it.sub_servico_descricao || it.descricao || '', feito: !!it.executado }; });
         }
       }
+      if (!subitens.length && typeof PciModule !== 'undefined' && PciModule.templatePadrao && PciModule.templatePadrao.length) {
+        var nomeLowerFase = (fase.nome || '').toLowerCase().trim();
+        var tplFase = PciModule.templatePadrao.filter(function(t) {
+          return (t.categoria_nome || '').toLowerCase().trim() === nomeLowerFase && !t.nao_aplicavel;
+        });
+        if (tplFase.length) {
+          subitens = tplFase.map(function(t) { return { nome: t.sub_servico_descricao || '', feito: false }; });
+        }
+      }
       if (!subitens.length && typeof PciModule !== 'undefined' && fase.id) {
         var subsFonte = (PciModule.subServicos && PciModule.subServicos.length) ? PciModule.subServicos : (PciModule._SUBS || []);
         subitens = subsFonte.filter(function(s) { return s.categoria_id === fase.id; })

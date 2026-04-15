@@ -13,6 +13,7 @@ const PciModule = {
   historico: [],
   categorias: [],
   subServicos: [],
+  templatePadrao: [],
   obrasComCronograma: new Set(), // obra_ids que têm ao menos 1 tarefa no cronograma
   expanded: new Set(),
   expandedCats: new Set(),
@@ -184,6 +185,14 @@ const PciModule = {
       PciModule.obrasComCronograma = new Set((tarefas || []).map(t => t.obra_id));
     } catch (e) {
       PciModule.obrasComCronograma = new Set();
+    }
+
+    // Template padrão da empresa
+    try {
+      const tpl = await sbGet('pci_template_padrao?order=ordem');
+      PciModule.templatePadrao = tpl || [];
+    } catch (e) {
+      PciModule.templatePadrao = [];
     }
   },
 
@@ -430,6 +439,9 @@ const PciModule = {
     html += '<button class="pci-excluir-btn" data-med="' + medicao.id + '" data-obra="' + esc(obra.nome) + '" style="background:none;border:1px solid rgba(220,38,38,0.2);color:#dc2626;padding:8px 14px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;">' +
       '<span class="material-symbols-outlined" style="font-size:15px;">restart_alt</span> Resetar PCI' +
     '</button>';
+    html += '<button class="pci-salvar-padrao-btn" data-med="' + medicao.id + '" title="Salva esta configuração como padrão para novas obras" style="background:none;border:1px solid rgba(45,106,79,0.3);color:#2D6A4F;padding:8px 14px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;">' +
+      '<span class="material-symbols-outlined" style="font-size:15px;">bookmark</span> Salvar como padrão' +
+    '</button>';
     html += '<button class="pci-fechar-btn" data-med="' + medicao.id + '" data-obra="' + esc(obra.nome) + '" data-valor="' + (obra.valor_venda || 0) + '" data-exec="' + exec.toFixed(2) + '" style="background:rgba(45,106,79,0.1);border:1px solid rgba(45,106,79,0.3);color:#2D6A4F;padding:8px 16px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;">' +
       '<span class="material-symbols-outlined" style="font-size:16px;">check_circle</span> Fechar Medicao' +
     '</button></div>';
@@ -673,6 +685,16 @@ const PciModule = {
       });
     });
 
+    // Salvar como padrão
+    container.querySelectorAll('.pci-salvar-padrao-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        btn.disabled = true;
+        await PciModule._salvarComoPadrao(btn.dataset.med);
+        btn.disabled = false;
+      });
+    });
+
     // Excluir PLS individual do histórico
     container.querySelectorAll('.pci-del-pls-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
@@ -694,34 +716,83 @@ const PciModule = {
     });
   },
 
-  // ── Criar medição (auto-gera itens do template) ──
+  // ── Criar medição (usa template da empresa ou padrão genérico) ──
   async _criarMedicao(obraId) {
     const med = await sbPost('pci_medicao', { obra_id: obraId, houve_repactuacao: false });
     if (!med || !med.id) { console.error('Falha ao criar pci_medicao'); return; }
     PciModule.medicoes.push(med);
 
     const itensParaInserir = [];
-    PciModule.categorias.forEach(cat => {
-      if (cat.nome === 'Outros Servicos') return;
-      const subsCat = PciModule.subServicos.filter(s => s.categoria_id === cat.id);
-      subsCat.forEach(sub => {
+
+    if (PciModule.templatePadrao.length) {
+      // Usar template salvo da empresa
+      PciModule.templatePadrao.forEach((t, idx) => {
+        const cat = PciModule.categorias.find(c => c.nome === t.categoria_nome);
         itensParaInserir.push({
           medicao_id: med.id,
-          categoria_nome: cat.nome,
-          categoria_peso: parseFloat(cat.peso_percentual) || 0,
-          sub_servico_descricao: sub.descricao,
+          categoria_nome: t.categoria_nome,
+          categoria_peso: t.categoria_peso || (cat ? parseFloat(cat.peso_percentual) || 0 : 0),
+          sub_servico_descricao: t.sub_servico_descricao,
           executado: false,
-          nao_aplicavel: false,
-          manual: false
+          nao_aplicavel: t.nao_aplicavel || false,
+          item_peso: t.item_peso || null,
+          manual: t.manual || false
         });
       });
-    });
+    } else {
+      // Padrão genérico (comportamento original)
+      PciModule.categorias.forEach(cat => {
+        if (cat.nome === 'Outros Servicos') return;
+        const subsCat = PciModule.subServicos.filter(s => s.categoria_id === cat.id);
+        subsCat.forEach(sub => {
+          itensParaInserir.push({
+            medicao_id: med.id,
+            categoria_nome: cat.nome,
+            categoria_peso: parseFloat(cat.peso_percentual) || 0,
+            sub_servico_descricao: sub.descricao,
+            executado: false,
+            nao_aplicavel: false,
+            manual: false
+          });
+        });
+      });
+    }
 
     if (itensParaInserir.length) {
       const ok = await sbPostMinimal('pci_itens', itensParaInserir);
       if (!ok) { console.error('Falha ao inserir pci_itens'); return; }
       const itens = await sbGet('pci_itens?medicao_id=eq.' + med.id + '&order=categoria_nome,created_at');
       if (itens) PciModule.itens.push(...itens);
+    }
+  },
+
+  // ── Salvar configuração atual como padrão para novas obras ──
+  async _salvarComoPadrao(medicaoId) {
+    const itensMed = PciModule.itens.filter(i => i.medicao_id === medicaoId);
+    if (!itensMed.length) { showToast('Nenhum item para salvar', 'error'); return; }
+    try {
+      if (typeof _companyId !== 'undefined' && _companyId) {
+        await sbDelete('pci_template_padrao', '?company_id=eq.' + _companyId);
+      }
+      const novoTemplate = itensMed.map((it, idx) => ({
+        categoria_nome: it.categoria_nome,
+        categoria_peso: it.categoria_peso || 0,
+        sub_servico_descricao: it.sub_servico_descricao,
+        nao_aplicavel: !!it.nao_aplicavel,
+        item_peso: it.item_peso || null,
+        manual: !!it.manual,
+        ordem: idx
+      }));
+      const ok = await sbPostMinimal('pci_template_padrao', novoTemplate);
+      if (ok) {
+        PciModule.templatePadrao = await sbGet('pci_template_padrao?order=ordem') || [];
+        showToast('Padrão salvo — novas obras já usam essa configuração');
+      } else {
+        showToast('Erro ao salvar padrão', 'error');
+      }
+    } catch(e) {
+      console.error('[PCI-TEMPLATE]', e);
+      showToast('Erro ao salvar padrão', 'error');
     }
   },
 
