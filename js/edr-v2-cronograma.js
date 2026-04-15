@@ -880,8 +880,12 @@ const CronogramaModule = {
   },
 
   _extrairPesosDoPlanilha(workbook) {
+    console.log('[PCI Import] Abas encontradas:', workbook.SheetNames);
     const ws = workbook.Sheets['Proposta_Constr_Individual'];
-    if (!ws) return null;
+    if (!ws) {
+      console.warn('[PCI Import] Aba Proposta_Constr_Individual nao encontrada');
+      return null;
+    }
     // Coluna X (índice 23), linhas 120-139 (índice 119-138)
     const pesos = [];
     for (let row = 119; row <= 138; row++) {
@@ -890,7 +894,11 @@ const CronogramaModule = {
       pesos.push(cell && typeof cell.v === 'number' ? Math.round(cell.v * 100) / 100 : 0);
     }
     const soma = pesos.reduce(function(a, b) { return a + b; }, 0);
-    if (soma < 80 || soma > 120) return null; // sanidade
+    console.log('[PCI Import] Pesos lidos:', pesos, '| Soma:', soma.toFixed(2));
+    if (soma < 80 || soma > 120) {
+      console.warn('[PCI Import] Soma fora do intervalo esperado (80-120):', soma.toFixed(2));
+      return null;
+    }
     return pesos;
   },
 
