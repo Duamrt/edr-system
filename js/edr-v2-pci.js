@@ -121,6 +121,12 @@ const PciModule = {
   // ── Render principal ──
   async render(container) {
     PciModule._container = container;
+    if (PciModule._carregado) {
+      // Já carregado — só re-renderiza sem ir ao banco
+      container.innerHTML = PciModule._html();
+      PciModule._bind(container);
+      return;
+    }
     container.innerHTML = PciModule._skeleton();
     await PciModule._carregar();
     PciModule._carregado = true;
@@ -138,61 +144,35 @@ const PciModule = {
 
   // ── Carregar dados ──
   async _carregar() {
-    // Templates
-    try {
-      const cats = await sbGet('pci_categorias_template?order=ordem');
-      if (cats && cats.length) {
-        PciModule.categorias = cats;
-        const subs = await sbGet('pci_sub_servicos_template?order=ordem');
-        PciModule.subServicos = subs || [];
-      } else {
-        PciModule.categorias = PciModule._CATS;
-        PciModule.subServicos = PciModule._SUBS;
-      }
-    } catch (e) {
-      PciModule.categorias = PciModule._CATS;
-      PciModule.subServicos = PciModule._SUBS;
-    }
+    // Batch 1 — tudo em paralelo (independentes entre si)
+    const [cats, subs, meds, hist, tarefas, tpl] = await Promise.all([
+      sbGet('pci_categorias_template?order=ordem').catch(() => null),
+      sbGet('pci_sub_servicos_template?order=ordem').catch(() => null),
+      sbGet('pci_medicao?order=created_at').catch(() => null),
+      sbGet('pci_historico?order=obra_id,numero').catch(() => null),
+      sbGet('cronograma_tarefas?select=obra_id').catch(() => null),
+      sbGet('pci_template_padrao?order=ordem').catch(() => null)
+    ]);
 
-    // Medições
-    try {
-      const meds = await sbGet('pci_medicao?order=created_at');
-      PciModule.medicoes = meds || [];
-      if (PciModule.medicoes.length) {
+    PciModule.categorias  = (cats && cats.length) ? cats : PciModule._CATS;
+    PciModule.subServicos = (subs && subs.length) ? subs : PciModule._SUBS;
+    PciModule.medicoes    = Array.isArray(meds) ? meds : [];
+    PciModule.historico   = Array.isArray(hist) ? hist : [];
+    PciModule.obrasComCronograma = new Set((tarefas || []).map(t => t.obra_id));
+    PciModule.templatePadrao = tpl || [];
+
+    // Batch 2 — itens dependem dos IDs das medições
+    if (PciModule.medicoes.length) {
+      try {
         const ids = PciModule.medicoes.map(m => m.id).join(',');
         const itens = await sbGet('pci_itens?medicao_id=in.(' + ids + ')&order=categoria_nome,created_at');
         PciModule.itens = itens || [];
-      } else {
+      } catch(e) {
+        console.warn('PciModule._carregar itens:', e);
         PciModule.itens = [];
       }
-    } catch (e) {
-      console.warn('PciModule._carregar:', e);
-      PciModule.medicoes = [];
+    } else {
       PciModule.itens = [];
-    }
-
-    // Histórico de medições fechadas (PLS 01, PLS 02...)
-    try {
-      const hist = await sbGet('pci_historico?order=obra_id,numero');
-      PciModule.historico = Array.isArray(hist) ? hist : [];
-    } catch (e) {
-      PciModule.historico = [];
-    }
-
-    // Obras que têm cronograma (ao menos 1 tarefa)
-    try {
-      const tarefas = await sbGet('cronograma_tarefas?select=obra_id');
-      PciModule.obrasComCronograma = new Set((tarefas || []).map(t => t.obra_id));
-    } catch (e) {
-      PciModule.obrasComCronograma = new Set();
-    }
-
-    // Template padrão da empresa
-    try {
-      const tpl = await sbGet('pci_template_padrao?order=ordem');
-      PciModule.templatePadrao = tpl || [];
-    } catch (e) {
-      PciModule.templatePadrao = [];
     }
   },
 
