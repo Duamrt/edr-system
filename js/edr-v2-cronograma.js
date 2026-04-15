@@ -895,8 +895,8 @@ const CronogramaModule = {
     }
     const soma = pesos.reduce(function(a, b) { return a + b; }, 0);
     console.log('[PCI Import] Pesos lidos:', pesos, '| Soma:', soma.toFixed(2));
-    if (soma < 80 || soma > 120) {
-      console.warn('[PCI Import] Soma fora do intervalo esperado (80-120):', soma.toFixed(2));
+    if (soma < 50 || soma > 150) {
+      console.warn('[PCI Import] Soma fora do intervalo esperado (50-150):', soma.toFixed(2));
       return null;
     }
     return pesos;
