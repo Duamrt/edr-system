@@ -731,6 +731,34 @@ const PciModule = {
     if (!item) return;
     item[field] = value;
     await sbPatch('pci_itens?id=eq.' + itemId, { [field]: value });
+    // Sync automático no cronograma (silencioso)
+    if (field === 'executado' || field === 'nao_aplicavel') {
+      PciModule._syncItemNoCronograma(item.medicao_id, item.categoria_nome).catch(() => {});
+    }
+  },
+
+  // ── Sync automático PCI → Cronograma (por categoria) ──
+  async _syncItemNoCronograma(medicaoId, categoriaNome) {
+    try {
+      const med = PciModule.medicoes.find(m => m.id === medicaoId);
+      if (!med) return;
+      // Buscar tarefa correspondente direto do banco (cronograma pode não estar carregado)
+      const nomeLower = (categoriaNome || '').toLowerCase().trim();
+      const tarefas = await sbGet('cronograma_tarefas?obra_id=eq.' + med.obra_id + '&select=id,nome,subitens,progresso');
+      if (!tarefas || !tarefas.length) return;
+      const tarefa = tarefas.find(t => (t.nome || '').toLowerCase().trim() === nomeLower);
+      if (!tarefa) return;
+      const itensCat = PciModule.itens.filter(i => i.medicao_id === medicaoId && (i.categoria_nome || '').toLowerCase().trim() === nomeLower && !i.nao_aplicavel);
+      if (!itensCat.length) return;
+      const subitens = itensCat.map(i => ({ nome: i.sub_servico_descricao || i.descricao || '', feito: !!i.executado }));
+      const progresso = Math.round(subitens.filter(s => s.feito).length / subitens.length * 100);
+      await sbPatch('cronograma_tarefas', '?id=eq.' + tarefa.id, { subitens, progresso });
+      // Atualizar estado em memória do CronogramaModule se estiver carregado
+      if (typeof CronogramaModule !== 'undefined' && CronogramaModule.tarefas) {
+        const t = CronogramaModule.tarefas.find(x => x.id === tarefa.id);
+        if (t) { t.subitens = subitens; t.progresso = progresso; }
+      }
+    } catch(e) { /* silencioso */ }
   },
 
   // ── Editar peso de Coberturas ──
