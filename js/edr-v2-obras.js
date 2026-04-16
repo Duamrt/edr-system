@@ -789,7 +789,7 @@ async function salvarNovaObra() {
       renderObrasCards();
       showToast(`"${nome}" atualizada!`);
     } else {
-      const nova = await sbPost('obras', { ...payload, id_usuario: usuarioAtual?.id });
+      const nova = await sbPost('obras', payload);
       if (nova) {
         obras.push(nova);
         obras.sort((a, b) => a.nome.localeCompare(b.nome));
