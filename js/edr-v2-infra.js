@@ -24,7 +24,7 @@ function _sbHeaders(preferOverride) {
 // ── MULTI-TENANT ─────────────────────────────────────────────
 const _TABELAS_SEM_TENANT = ['companies', 'company_users', 'usuarios', 'tracker_sync'];
 // Tabelas que pertencem a um tenant — leituras filtradas por company_id
-const _TABELAS_TENANT = new Set(['lancamentos','notas_fiscais','distribuicoes','entradas_diretas','repasses_cef','obra_adicionais','adicional_pagamentos','diarias','obras','projecoes_caixa','ajustes_estoque','garantia_chamados','diarias_funcionarios','diarias_quinzenas','diarias_extras','leads','lead_historico','pci_template_padrao']);
+const _TABELAS_TENANT = new Set(['lancamentos','notas_fiscais','distribuicoes','entradas_diretas','repasses_cef','obra_adicionais','adicional_pagamentos','diarias','obras','projecoes_caixa','ajustes_estoque','garantia_chamados','diarias_funcionarios','diarias_quinzenas','diarias_extras','leads','lead_historico','pci_template_padrao','pci_medicao','pci_itens','pci_historico']);
 
 function _addCompanyToBody(tabela, body) {
   if (_TABELAS_SEM_TENANT.includes(tabela) || !_companyId) return body;

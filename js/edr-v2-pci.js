@@ -17,7 +17,6 @@ const PciModule = {
   obrasComCronograma: new Set(), // obra_ids que têm ao menos 1 tarefa no cronograma
   expanded: new Set(),
   expandedCats: new Set(),
-  _carregado: false,
   _container: null,
 
   // ── Chaves legadas (NUNCA trocar) ──
@@ -121,15 +120,8 @@ const PciModule = {
   // ── Render principal ──
   async render(container) {
     PciModule._container = container;
-    if (PciModule._carregado) {
-      // Já carregado — só re-renderiza sem ir ao banco
-      container.innerHTML = PciModule._html();
-      PciModule._bind(container);
-      return;
-    }
     container.innerHTML = PciModule._skeleton();
     await PciModule._carregar();
-    PciModule._carregado = true;
     requestAnimationFrame(() => {
       container.innerHTML = PciModule._html();
       PciModule._bind(container);
