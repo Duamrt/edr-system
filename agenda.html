@@ -1052,11 +1052,9 @@ document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='dTit'
 // ── Init ──
 async function init(){
   loadTema();
-  // chave por usuário: cada pessoa vê só a própria agenda
-  if(db&&!isOff){
-    try{const{data:{user}}=await db.auth.getUser();
-    if(user){SYNC='agenda-'+user.id;CACHE='agenda_cache_'+user.id}}catch(e){}
-  }
+  // chave por usuário: lê sessão do EDR System (localStorage edr_auth)
+  try{const sess=JSON.parse(localStorage.getItem('edr_auth')||'{}');
+  if(sess.user?.id){SYNC='agenda-'+sess.user.id;CACHE='agenda_cache_'+sess.user.id}}catch(e){}
   const ok=await load();
   if(!ok||!state.length){state=seed();await save(state)}
   diaSel=fmtHoje();irHoje();
