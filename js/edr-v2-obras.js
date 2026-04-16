@@ -346,6 +346,10 @@ function obrasSwitchTab(tab) {
     if (panel) panel.style.display = t === tab ? '' : 'none';
   });
 
+  // Mostrar barra de ordem só em LANÇAMENTOS
+  const ordBar = document.getElementById('obras-ord-bar');
+  if (ordBar) ordBar.style.display = tab === 'lanc' ? '' : 'none';
+
   // Lazy loading: so buscar dados quando clicar na aba
   if (tab === 'lanc') { ObrasModule.lancPage = 0; filtrarLanc(); }
   if (tab === 'mat') loadDistribuicoes().then(renderObrasMateriais);
@@ -661,7 +665,6 @@ function renderObrasMateriais() {
   const dataDE = document.getElementById('mat-data-de')?.value || '';
   const dataATE = document.getElementById('mat-data-ate')?.value || '';
 
-  console.log('[MAT-FILTER] obraId:', obraId, 'dataDE:', dataDE, 'dataATE:', dataATE, 'total distribuicoes:', distribuicoes.length, 'exemplo d.data:', distribuicoes[0]?.data);
   const dists = distribuicoes.filter(d => {
     if (obraId && d.obra_id !== obraId) return false;
     if (busca && !(d.item_desc || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes(busca)) return false;
@@ -669,7 +672,6 @@ function renderObrasMateriais() {
     if (dataATE && (d.data || '') > dataATE) return false;
     return true;
   });
-  console.log('[MAT-FILTER] resultado:', dists.length, 'registros');
 
   if (!dists.length) {
     el.innerHTML = `<div style="text-align:center;padding:48px;color:var(--text-tertiary);">
