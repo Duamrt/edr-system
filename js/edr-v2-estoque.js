@@ -2277,8 +2277,12 @@ async function salvarMaterial() {
   btn.disabled = true; btn.textContent = 'SALVANDO...';
   try {
     const saved = await sbPost('materiais', { codigo, nome, unidade, categoria });
-    catsAtualizados.push(saved);
-    catsAtualizados.sort((a,b) => (a.codigo||'').localeCompare(b.codigo||''));
+    if (saved) {
+      catsAtualizados.push(saved);
+      catsAtualizados.sort((a,b) => (a.codigo||'').localeCompare(b.codigo||''));
+    } else {
+      await _carregarCatalogo();
+    }
     fecharModal('material');
     renderCatalogo();
     showToast(`✅ Material ${codigo} — ${nome} cadastrado!`);

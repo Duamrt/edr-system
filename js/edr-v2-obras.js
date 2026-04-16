@@ -790,13 +790,17 @@ async function salvarNovaObra() {
       showToast(`"${nome}" atualizada!`);
     } else {
       const nova = await sbPost('obras', { ...payload, id_usuario: usuarioAtual?.id });
-      obras.push(nova);
-      obras.sort((a, b) => a.nome.localeCompare(b.nome));
+      if (nova) {
+        obras.push(nova);
+        obras.sort((a, b) => a.nome.localeCompare(b.nome));
+      } else {
+        await loadObras();
+      }
       populateSelects();
       renderDashboard();
       renderObrasCards();
       showToast(`Obra ${nome} cadastrada!`);
-      if (typeof clickupCriarObra === 'function') clickupCriarObra(nome, nova.id);
+      if (typeof clickupCriarObra === 'function' && nova?.id) clickupCriarObra(nome, nova.id);
     }
     fecharModal('obra');
   } catch (e) { showToast('Nao foi possivel salvar a obra.'); }
