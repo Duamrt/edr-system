@@ -881,20 +881,64 @@ const CronogramaModule = {
 
   _extrairPesosDoPlanilha(workbook) {
     console.log('[PCI Import] Abas encontradas:', workbook.SheetNames);
-    const ws = workbook.Sheets['Proposta_Constr_Individual'];
+
+    // Usar a primeira aba (Aba 1)
+    var sheetName = workbook.SheetNames[0];
+    var ws = workbook.Sheets[sheetName];
     if (!ws) {
-      console.warn('[PCI Import] Aba Proposta_Constr_Individual nao encontrada');
+      console.warn('[PCI Import] Nenhuma aba encontrada no workbook');
       return null;
     }
-    // Coluna X (índice 23), linhas 120-139 (índice 119-138)
-    const pesos = [];
-    for (let row = 119; row <= 138; row++) {
-      const addr = 'X' + (row + 1);
-      const cell = ws[addr];
-      pesos.push(cell && typeof cell.v === 'number' ? Math.round(cell.v * 100) / 100 : 0);
+    console.log('[PCI Import] Usando aba:', sheetName);
+
+    // Converter aba para array de arrays
+    var data = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+
+    // Localizar coluna "Incidência" (busca case-insensitive, sem acento)
+    function normalizar(s) {
+      return String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
     }
-    const soma = pesos.reduce(function(a, b) { return a + b; }, 0);
+    var headerRow = -1, incidenciaCol = -1;
+    for (var r = 0; r < Math.min(data.length, 150); r++) {
+      var row = data[r];
+      for (var c = 0; c < row.length; c++) {
+        var cell = normalizar(row[c]);
+        if (cell === 'incidencia' || cell === 'incidencia (%)' || cell === '% incidencia' || cell.startsWith('incid')) {
+          headerRow = r;
+          incidenciaCol = c;
+          break;
+        }
+      }
+      if (headerRow >= 0) break;
+    }
+
+    if (headerRow < 0 || incidenciaCol < 0) {
+      console.warn('[PCI Import] Coluna "Incidencia" nao encontrada nas primeiras 150 linhas');
+      console.warn('[PCI Import] Cabecalhos encontrados na linha 0:', data[0]);
+      return null;
+    }
+    console.log('[PCI Import] Incidencia na linha', headerRow + 1, ', coluna', incidenciaCol + 1);
+
+    // Ler exatamente 20 valores nas linhas seguintes ao cabeçalho
+    var pesos = [];
+    for (var i = headerRow + 1; i <= headerRow + 20; i++) {
+      if (i >= data.length) { pesos.push(0); continue; }
+      var val = data[i][incidenciaCol];
+      var num = typeof val === 'number' ? val : parseFloat(String(val).replace(',', '.'));
+      pesos.push(isNaN(num) ? 0 : num);
+    }
+
+    // Detectar se valores estão em decimal (0.1296) ou percentual (12.96)
+    var soma = pesos.reduce(function(a, b) { return a + b; }, 0);
+    if (soma > 0 && soma <= 1.5) {
+      pesos = pesos.map(function(p) { return Math.round(p * 10000) / 100; });
+      soma = pesos.reduce(function(a, b) { return a + b; }, 0);
+    } else {
+      pesos = pesos.map(function(p) { return Math.round(p * 100) / 100; });
+    }
+
     console.log('[PCI Import] Pesos lidos:', pesos, '| Soma:', soma.toFixed(2));
+
     if (soma < 50 || soma > 150) {
       console.warn('[PCI Import] Soma fora do intervalo esperado (50-150):', soma.toFixed(2));
       return null;
