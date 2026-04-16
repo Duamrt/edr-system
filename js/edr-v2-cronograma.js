@@ -134,6 +134,8 @@ const CronogramaModule = {
           + '<span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;">upload_file</span> Importar PCI</button>'
         + '<button onclick="CronogramaModule._syncComPCI()" id="cron-btn-sync-pci" style="padding:6px 12px;border-radius:8px;border:1px solid var(--borda);background:var(--bg2);color:var(--texto2);font-size:12px;cursor:pointer;">'
           + '<span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;">sync</span> Sync PCI</button>'
+        + '<button onclick="CronogramaModule._limparObra()" id="cron-btn-limpar" style="padding:6px 12px;border-radius:8px;border:1px solid rgba(220,38,38,0.3);background:rgba(220,38,38,0.06);color:#dc2626;font-size:12px;cursor:pointer;display:none;">'
+          + '<span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;">delete_sweep</span> Limpar obra</button>'
         + '<button onclick="CronogramaModule._gerarEtapas()" style="padding:6px 12px;border-radius:8px;border:1px solid var(--borda);background:var(--bg2);color:var(--texto2);font-size:12px;cursor:pointer;">'
           + '<span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;">auto_fix_high</span> Gerar Padrao</button>'
         + '<button onclick="CronogramaModule._abrirModal()" class="btn-save" style="padding:8px 16px;font-size:12px;">'
@@ -446,7 +448,28 @@ const CronogramaModule = {
 
   _filtrarObra() {
     this.obraFiltro = document.getElementById('cron-filtro-obra')?.value || '';
+    var btnLimpar = document.getElementById('cron-btn-limpar');
+    if (btnLimpar) btnLimpar.style.display = this.obraFiltro ? '' : 'none';
     this._carregarTarefas();
+  },
+
+  async _limparObra() {
+    if (!this.obraFiltro) { showToast('Selecione uma obra no filtro primeiro'); return; }
+    const obrasLista = typeof obras !== 'undefined' ? obras : [];
+    const obra = obrasLista.find(function(o) { return o.id === CronogramaModule.obraFiltro; });
+    const nomeObra = obra ? obra.nome : 'esta obra';
+    confirmar('Limpar TODO o cronograma de "' + nomeObra + '"?\n\nIsso remove todas as etapas. Use antes de reimportar a PCI.', async function() {
+      try {
+        await sbDelete('cronograma_tarefas', '?obra_id=eq.' + CronogramaModule.obraFiltro);
+        CronogramaModule.tarefas = [];
+        showToast('Cronograma de "' + nomeObra + '" limpo. Agora importe a PCI.');
+        CronogramaModule._renderLista();
+        var vazio = document.getElementById('cron-vazio');
+        if (vazio) vazio.classList.remove('hidden');
+      } catch(e) {
+        showToast('Erro ao limpar cronograma');
+      }
+    });
   },
 
   _scrollHoje() {
