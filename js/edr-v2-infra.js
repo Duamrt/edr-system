@@ -175,13 +175,13 @@ let _isSuperAdmin = false;
 let MODO_DEMO = false;
 
 // ── TELEGRAM ──
-const TG_BOT = '8644194982:AAElTdJXnZS7EMgrbYb0dqlDGsrPeYH6r_4';
 const TG_CHAT_EDR = '-5239426430';
 function notificarTelegram(chatId, texto) {
-  fetch('https://api.telegram.org/bot' + TG_BOT + '/sendMessage', {
+  // Token fica na Edge Function — não exposto no JS
+  fetch(SUPABASE_URL + '/functions/v1/notificar-telegram', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chat_id: chatId, text: texto, parse_mode: 'HTML' })
+    headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY },
+    body: JSON.stringify({ chat_id: chatId, texto })
   }).catch(() => {});
 }
 
