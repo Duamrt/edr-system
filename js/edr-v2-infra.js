@@ -175,7 +175,7 @@ let _isSuperAdmin = false;
 let MODO_DEMO = false;
 
 // ── TELEGRAM ──
-const TG_BOT = '8644194982:AAHINYIfONhhBVh9J9T9NILHRzo93w7PtlE';
+const TG_BOT = '8644194982:AAElTdJXnZS7EMgrbYb0dqlDGsrPeYH6r_4';
 const TG_CHAT_EDR = '-5239426430';
 function notificarTelegram(chatId, texto) {
   fetch('https://api.telegram.org/bot' + TG_BOT + '/sendMessage', {
