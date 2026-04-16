@@ -248,7 +248,9 @@ const PciModule = {
       if (cat.nome === 'Coberturas') {
         soma += medicao.cobertura_peso != null ? parseFloat(medicao.cobertura_peso) || 0 : 0;
       } else {
-        soma += parseFloat(cat.peso_percentual) || 0;
+        // Usar peso real dos itens se existirem, senão template
+        const itCat = PciModule.itens.filter(i => i.medicao_id === medicao.id && i.categoria_nome === cat.nome);
+        soma += itCat.length ? parseFloat(itCat[0].categoria_peso) || 0 : parseFloat(cat.peso_percentual) || 0;
       }
     });
     return Math.round(soma * 100) / 100;
@@ -427,7 +429,8 @@ const PciModule = {
     const itensCat = PciModule.itens.filter(i => i.medicao_id === medicao.id && i.categoria_nome === cat.nome);
     const hasItems = itensCat.length > 0;
 
-    let peso = parseFloat(cat.peso_percentual) || 0;
+    // Usar peso real salvo nos itens (importado da planilha), fallback para template
+    let peso = itensCat.length ? parseFloat(itensCat[0].categoria_peso) || 0 : parseFloat(cat.peso_percentual) || 0;
     if (cat.nome === 'Coberturas' && medicao.cobertura_peso != null) peso = parseFloat(medicao.cobertura_peso) || 0;
 
     const { pct, done, total, na } = PciModule._calcCatExec(medicao.id, cat.nome);
