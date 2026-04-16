@@ -348,7 +348,7 @@ function obrasSwitchTab(tab) {
 
   // Lazy loading: so buscar dados quando clicar na aba
   if (tab === 'lanc') { ObrasModule.lancPage = 0; filtrarLanc(); }
-  if (tab === 'mat') renderObrasMateriais();
+  if (tab === 'mat') loadDistribuicoes().then(renderObrasMateriais);
   if (tab === 'add') {
     const addContainer = document.getElementById('adicionais-lista');
     if (addContainer && typeof AdicionaisModule !== 'undefined') AdicionaisModule.render(ObrasModule.obraAberta, addContainer);
