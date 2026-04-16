@@ -101,15 +101,15 @@ const AdicionaisModule = {
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;">
         <div class="stat-mini">
           <div class="stat-mini-label">Valor Total</div>
-          <div class="stat-mini-value" style="color:var(--texto1);">${this._fmtR(totalValor)}</div>
+          <div class="stat-mini-value" style="color:var(--texto1);">${fmtR(totalValor)}</div>
         </div>
         <div class="stat-mini">
           <div class="stat-mini-label">Pago</div>
-          <div class="stat-mini-value" style="color:var(--verde-hl);">${this._fmtR(totalPago)}</div>
+          <div class="stat-mini-value" style="color:var(--verde-hl);">${fmtR(totalPago)}</div>
         </div>
         <div class="stat-mini">
           <div class="stat-mini-label">Saldo</div>
-          <div class="stat-mini-value" style="color:${saldo > 0 ? 'var(--amarelo)' : 'var(--verde-hl)'};">${this._fmtR(saldo)}</div>
+          <div class="stat-mini-value" style="color:${saldo > 0 ? 'var(--amarelo)' : 'var(--verde-hl)'};">${fmtR(saldo)}</div>
         </div>
       </div>
     `;
@@ -131,7 +131,7 @@ const AdicionaisModule = {
           `<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:11px;border-bottom:1px solid var(--borda);">
             <span style="color:var(--texto3);">${typeof fmtData === 'function' ? fmtData(p.data) : p.data}</span>
             <span style="color:var(--texto2);">${p.forma || ''}</span>
-            <span style="color:var(--verde-hl);font-weight:700;font-family:'Space Grotesk',monospace;">${this._fmtR(p.valor)}</span>
+            <span style="color:var(--verde-hl);font-weight:700;font-family:'Space Grotesk',monospace;">${fmtR(p.valor)}</span>
           </div>`
         ).join('');
 
@@ -177,7 +177,7 @@ const AdicionaisModule = {
           </div>
 
           <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
-            <div style="font-size:16px;font-weight:700;color:var(--texto1);font-family:'Space Grotesk',monospace;">${this._fmtR(a.valor)}</div>
+            <div style="font-size:16px;font-weight:700;color:var(--texto1);font-family:'Space Grotesk',monospace;">${fmtR(a.valor)}</div>
             <div style="font-size:11px;color:var(--texto3);">${a.data_acordo ? (typeof fmtData === 'function' ? fmtData(a.data_acordo) : a.data_acordo) : ''}</div>
           </div>
 
@@ -185,7 +185,7 @@ const AdicionaisModule = {
           <div style="margin-top:8px;">
             <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px;">
               <span style="color:var(--texto3);">Pagamento: ${pagoPct}%</span>
-              <span style="color:${saldoItem > 0 ? 'var(--amarelo)' : 'var(--verde-hl)'};">Saldo: ${this._fmtR(saldoItem)}</span>
+              <span style="color:${saldoItem > 0 ? 'var(--amarelo)' : 'var(--verde-hl)'};">Saldo: ${fmtR(saldoItem)}</span>
             </div>
             <div style="height:6px;background:var(--borda);border-radius:3px;overflow:hidden;">
               <div style="height:100%;width:${Math.min(pagoPct, 100)}%;background:var(--verde-hl);border-radius:3px;transition:width 0.3s;"></div>
@@ -372,7 +372,7 @@ const AdicionaisModule = {
           <input type="hidden" id="pgto-add-id" value="${addId}">
           <div style="margin-bottom:12px;padding:10px;background:var(--bg2);border-radius:8px;border:1px solid var(--borda);">
             <div style="font-size:11px;color:var(--texto3);">Saldo restante</div>
-            <div style="font-size:18px;font-weight:700;color:${saldo > 0 ? 'var(--amarelo)' : 'var(--verde-hl)'};font-family:'Space Grotesk',monospace;">${this._fmtR(saldo)}</div>
+            <div style="font-size:18px;font-weight:700;color:${saldo > 0 ? 'var(--amarelo)' : 'var(--verde-hl)'};font-family:'Space Grotesk',monospace;">${fmtR(saldo)}</div>
           </div>
           <div class="form-group">
             <label class="form-label">Valor (R$)</label>
@@ -562,10 +562,6 @@ ${a.obs ? `<div class="clausula"><strong>OBSERVA\u00C7\u00D5ES:</strong> ${escHt
   // UTILITARIOS INTERNOS
   // ══════════════════════════════════════════════════════════
 
-  _fmtR(n) {
-    return 'R$ ' + Number(n || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  },
-
   _fecharModal(id) {
     const modal = document.getElementById('modal-' + id);
     if (modal) { modal.classList.add('hidden'); modal.style.display = 'none'; }
@@ -603,8 +599,8 @@ ${a.obs ? `<div class="clausula"><strong>OBSERVA\u00C7\u00D5ES:</strong> ${escHt
       <div class="sticky-header">
         <div class="modulo-badge"><span class="material-symbols-outlined">construction</span> ADICIONAIS</div>
         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px;">
-          <div class="stat-mini"><div class="stat-mini-label">Total</div><div class="stat-mini-value">${this._fmtR(totalGeral)}</div></div>
-          <div class="stat-mini"><div class="stat-mini-label">Recebido</div><div class="stat-mini-value" style="color:var(--verde-hl);">${this._fmtR(totalPagoGeral)}</div></div>
+          <div class="stat-mini"><div class="stat-mini-label">Total</div><div class="stat-mini-value">${fmtR(totalGeral)}</div></div>
+          <div class="stat-mini"><div class="stat-mini-label">Recebido</div><div class="stat-mini-value" style="color:var(--verde-hl);">${fmtR(totalPagoGeral)}</div></div>
           <div class="stat-mini"><div class="stat-mini-label">Pendentes</div><div class="stat-mini-value" style="color:var(--amarelo);">${totalPendentes}</div></div>
           <div class="stat-mini"><div class="stat-mini-label">Em andamento</div><div class="stat-mini-value" style="color:var(--primary);">${totalAprovados}</div></div>
         </div>
@@ -636,7 +632,7 @@ ${a.obs ? `<div class="clausula"><strong>OBSERVA\u00C7\u00D5ES:</strong> ${escHt
             <div style="font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px;">
               <span class="material-symbols-outlined" style="font-size:16px;color:var(--primary);">home_work</span>${typeof esc === 'function' ? esc(obraNome) : obraNome}
             </div>
-            <div style="font-size:11px;color:var(--text-tertiary);">${this._fmtR(totalObra)} · pago ${this._fmtR(pagoObra)}</div>
+            <div style="font-size:11px;color:var(--text-tertiary);">${fmtR(totalObra)} · pago ${fmtR(pagoObra)}</div>
           </div>
         </div>`;
 
@@ -656,8 +652,8 @@ ${a.obs ? `<div class="clausula"><strong>OBSERVA\u00C7\u00D5ES:</strong> ${escHt
                 <span class="badge" style="background:${st.cor}20;color:${st.cor};border:1px solid ${st.cor}40;font-size:10px;">
                   <span class="material-symbols-outlined" style="font-size:12px;vertical-align:middle;">${st.icon}</span> ${st.label}
                 </span>
-                <span style="font-size:13px;font-weight:700;color:var(--text-primary);font-family:'Space Grotesk',monospace;">${this._fmtR(a.valor)}</span>
-                ${saldoItem > 0 ? `<span style="font-size:10px;color:var(--amarelo);">Saldo: ${this._fmtR(saldoItem)}</span>` : '<span style="font-size:10px;color:var(--verde-hl);">Quitado</span>'}
+                <span style="font-size:13px;font-weight:700;color:var(--text-primary);font-family:'Space Grotesk',monospace;">${fmtR(a.valor)}</span>
+                ${saldoItem > 0 ? `<span style="font-size:10px;color:var(--amarelo);">Saldo: ${fmtR(saldoItem)}</span>` : '<span style="font-size:10px;color:var(--verde-hl);">Quitado</span>'}
               </div>
             </div>
           </div>`;

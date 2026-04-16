@@ -4,6 +4,10 @@
 // Entrega JSON limpo pro NotasModule.adicionarItem()
 // ══════════════════════════════════════════════════════════════
 
+if (typeof fmtR !== 'function') {
+  var fmtR = v => 'R$ ' + Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 const ImportModule = {
 
   // ── Estado encapsulado ──────────────────────────────────
@@ -452,7 +456,7 @@ const ImportModule = {
     html += `
       <div style="display:flex;justify-content:space-between;padding:12px;background:var(--bg2);border-radius:8px;margin-top:8px;border:1px solid var(--borda);">
         <span style="font-weight:700;color:var(--texto1);">TOTAL ${this.itensPreview.length} ITENS</span>
-        <span style="font-weight:800;color:var(--verde-hl);font-family:'Space Grotesk',monospace;">${typeof fmtR === 'function' ? fmtR(totalGeral) : 'R$ ' + totalGeral.toFixed(2)}</span>
+        <span style="font-weight:800;color:var(--verde-hl);font-family:'Space Grotesk',monospace;">${fmtR(totalGeral)}</span>
       </div>
     `;
 
