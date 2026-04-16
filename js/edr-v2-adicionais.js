@@ -5,6 +5,11 @@
 // valorPorExtenso() referenciado de utils.js
 // ══════════════════════════════════════════════════════════════
 
+// Garantia: esc() nunca cai no fallback sem sanitização
+if (typeof esc !== 'function') {
+  var esc = s => (s == null ? '' : String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
 const AdicionaisModule = {
 
   // ── Estado encapsulado ──────────────────────────────────
