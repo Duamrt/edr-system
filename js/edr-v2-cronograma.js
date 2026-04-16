@@ -1026,7 +1026,91 @@ const CronogramaModule = {
       } catch (e) { console.error('Erro etapa', fase.nome, e); }
     }
 
-    // (mapeamento PCI-obra removido — tracker_sync sem RLS)
+    // Sincronizar pesos reais da planilha com PCI Medições
+    try {
+      await CronogramaModule._syncPesosPCI(obraId, pesos, etapas);
+    } catch(e) {
+      console.warn('[SYNC-PESOS-PCI]', e);
+    }
+  },
+
+  // ── Sincroniza pesos reais do XLSB com pci_medicao + pci_itens ──
+  async _syncPesosPCI(obraId, pesos, etapas) {
+    if (typeof PciModule === 'undefined') return;
+
+    const cats = (PciModule.categorias && PciModule.categorias.length) ? PciModule.categorias : PciModule._CATS;
+    const subsSource = (PciModule.subServicos && PciModule.subServicos.length) ? PciModule.subServicos : PciModule._SUBS;
+    const coberturaPeso = pesos[6] || 0; // índice 6 = Coberturas
+
+    // Encontrar ou criar pci_medicao
+    let med = PciModule.medicoes.find(function(m) { return m.obra_id === obraId; });
+    if (!med) {
+      med = await sbPost('pci_medicao', { obra_id: obraId, houve_repactuacao: false, cobertura_peso: coberturaPeso });
+      if (!med || !med.id) return;
+      PciModule.medicoes.push(med);
+    } else {
+      await sbPatch('pci_medicao?id=eq.' + med.id, { cobertura_peso: coberturaPeso });
+      med.cobertura_peso = coberturaPeso;
+    }
+
+    // Buscar itens existentes desta medicao
+    let itensExistentes = PciModule.itens.filter(function(i) { return i.medicao_id === med.id; });
+    if (!itensExistentes.length) {
+      const itensDb = await sbGet('pci_itens?medicao_id=eq.' + med.id + '&order=categoria_nome,created_at');
+      itensExistentes = Array.isArray(itensDb) ? itensDb : [];
+      if (itensExistentes.length) itensExistentes.forEach(function(it) { PciModule.itens.push(it); });
+    }
+
+    if (itensExistentes.length) {
+      // Já tem itens — só atualizar categoria_peso em cada categoria
+      for (var i = 0; i < 20; i++) {
+        var cat = cats[i] || etapas[i];
+        if (!cat || !cat.nome) continue;
+        var catPeso = pesos[i] || 0;
+        var itensCat = itensExistentes.filter(function(it) { return it.categoria_nome === cat.nome; });
+        if (itensCat.length && itensCat[0].categoria_peso !== catPeso) {
+          await sbPatch('pci_itens?medicao_id=eq.' + med.id + '&categoria_nome=eq.' + encodeURIComponent(cat.nome), { categoria_peso: catPeso });
+          itensCat.forEach(function(it) { it.categoria_peso = catPeso; });
+        }
+      }
+    } else {
+      // Sem itens — criar com pesos reais da planilha
+      var itensParaInserir = [];
+      for (var j = 0; j < 20; j++) {
+        var catJ = cats[j];
+        if (!catJ) continue;
+        var catPesoJ = pesos[j] || 0;
+        var subsJ = subsSource.filter(function(s) { return s.categoria_id === catJ.id; });
+        if (subsJ.length) {
+          subsJ.forEach(function(sub) {
+            itensParaInserir.push({
+              medicao_id: med.id,
+              categoria_nome: catJ.nome,
+              categoria_peso: catPesoJ,
+              sub_servico_descricao: sub.descricao,
+              executado: false,
+              nao_aplicavel: false,
+              manual: false
+            });
+          });
+        } else if (catPesoJ > 0) {
+          itensParaInserir.push({
+            medicao_id: med.id,
+            categoria_nome: catJ.nome,
+            categoria_peso: catPesoJ,
+            sub_servico_descricao: catJ.nome,
+            executado: false,
+            nao_aplicavel: false,
+            manual: false
+          });
+        }
+      }
+      if (itensParaInserir.length) {
+        await sbPostMinimal('pci_itens', itensParaInserir);
+        var itensNovos = await sbGet('pci_itens?medicao_id=eq.' + med.id + '&order=categoria_nome,created_at');
+        if (Array.isArray(itensNovos)) itensNovos.forEach(function(it) { PciModule.itens.push(it); });
+      }
+    }
   },
 
   // ══════════════════════════════════════════════════════════
