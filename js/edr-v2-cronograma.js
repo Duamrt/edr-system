@@ -882,68 +882,70 @@ const CronogramaModule = {
   _extrairPesosDoPlanilha(workbook) {
     console.log('[PCI Import] Abas encontradas:', workbook.SheetNames);
 
-    // Usar a primeira aba (Aba 1)
-    var sheetName = workbook.SheetNames[0];
+    // Preferir Proposta_Constr_Individual, senão primeira aba
+    var sheetName = workbook.SheetNames.indexOf('Proposta_Constr_Individual') >= 0
+      ? 'Proposta_Constr_Individual' : workbook.SheetNames[0];
     var ws = workbook.Sheets[sheetName];
-    if (!ws) {
-      console.warn('[PCI Import] Nenhuma aba encontrada no workbook');
-      return null;
-    }
+    if (!ws) { console.warn('[PCI Import] Nenhuma aba encontrada'); return null; }
     console.log('[PCI Import] Usando aba:', sheetName);
 
-    // Converter aba para array de arrays
     var data = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
 
-    // Localizar coluna "Incidência" (busca case-insensitive, sem acento)
     function normalizar(s) {
       return String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
     }
-    var headerRow = -1, incidenciaCol = -1;
-    for (var r = 0; r < Math.min(data.length, 150); r++) {
+
+    function lerPesos(startRow, col) {
+      var arr = [];
+      for (var i = startRow; i < startRow + 20; i++) {
+        if (i >= data.length) { arr.push(0); continue; }
+        var val = data[i][col];
+        var num = typeof val === 'number' ? val : parseFloat(String(val).replace(',', '.'));
+        arr.push(isNaN(num) ? 0 : num);
+      }
+      var soma = arr.reduce(function(a, b) { return a + b; }, 0);
+      // Converter decimal → percentual se necessário
+      if (soma > 0 && soma <= 1.5) {
+        arr = arr.map(function(p) { return Math.round(p * 10000) / 100; });
+        soma = arr.reduce(function(a, b) { return a + b; }, 0);
+      }
+      return { pesos: arr, soma: soma };
+    }
+
+    // Coletar TODAS as ocorrências de "Incidência" na planilha
+    var ocorrencias = [];
+    for (var r = 0; r < data.length; r++) {
       var row = data[r];
       for (var c = 0; c < row.length; c++) {
-        var cell = normalizar(row[c]);
-        if (cell === 'incidencia' || cell === 'incidencia (%)' || cell === '% incidencia' || cell.startsWith('incid')) {
-          headerRow = r;
-          incidenciaCol = c;
-          break;
+        if (normalizar(row[c]).startsWith('incid')) {
+          ocorrencias.push({ r: r, c: c });
         }
       }
-      if (headerRow >= 0) break;
     }
+    console.log('[PCI Import] Ocorrencias de Incidencia encontradas:', ocorrencias.length);
 
-    if (headerRow < 0 || incidenciaCol < 0) {
-      console.warn('[PCI Import] Coluna "Incidencia" nao encontrada nas primeiras 150 linhas');
-      console.warn('[PCI Import] Cabecalhos encontrados na linha 0:', data[0]);
+    // Testar cada ocorrência e escolher a que soma mais próximo de 100%
+    var melhor = null, melhorDiff = Infinity;
+    ocorrencias.forEach(function(occ) {
+      var resultado = lerPesos(occ.r + 1, occ.c);
+      var diff = Math.abs(resultado.soma - 100);
+      console.log('[PCI Import] Tentativa linha', occ.r + 1, 'col', occ.c + 1,
+        '| Soma:', resultado.soma.toFixed(2), '| Diff:', diff.toFixed(2));
+      if (resultado.soma >= 50 && resultado.soma <= 150 && diff < melhorDiff) {
+        melhorDiff = diff;
+        melhor = { pesos: resultado.pesos, soma: resultado.soma, r: occ.r, c: occ.c };
+      }
+    });
+
+    if (!melhor) {
+      console.warn('[PCI Import] Nenhuma ocorrencia com soma valida (50-150%)');
       return null;
     }
-    console.log('[PCI Import] Incidencia na linha', headerRow + 1, ', coluna', incidenciaCol + 1);
 
-    // Ler exatamente 20 valores nas linhas seguintes ao cabeçalho
-    var pesos = [];
-    for (var i = headerRow + 1; i <= headerRow + 20; i++) {
-      if (i >= data.length) { pesos.push(0); continue; }
-      var val = data[i][incidenciaCol];
-      var num = typeof val === 'number' ? val : parseFloat(String(val).replace(',', '.'));
-      pesos.push(isNaN(num) ? 0 : num);
-    }
-
-    // Detectar se valores estão em decimal (0.1296) ou percentual (12.96)
-    var soma = pesos.reduce(function(a, b) { return a + b; }, 0);
-    if (soma > 0 && soma <= 1.5) {
-      pesos = pesos.map(function(p) { return Math.round(p * 10000) / 100; });
-      soma = pesos.reduce(function(a, b) { return a + b; }, 0);
-    } else {
-      pesos = pesos.map(function(p) { return Math.round(p * 100) / 100; });
-    }
-
-    console.log('[PCI Import] Pesos lidos:', pesos, '| Soma:', soma.toFixed(2));
-
-    if (soma < 50 || soma > 150) {
-      console.warn('[PCI Import] Soma fora do intervalo esperado (50-150):', soma.toFixed(2));
-      return null;
-    }
-    return pesos;
+    console.log('[PCI Import] Melhor: linha', melhor.r + 1, 'col', melhor.c + 1,
+      '| Soma:', melhor.soma.toFixed(2));
+    console.log('[PCI Import] Pesos finais:', melhor.pesos);
+    return melhor.pesos;
   },
 
   async _processarImportacaoPCI() {
