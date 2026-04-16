@@ -1143,37 +1143,59 @@ const CronogramaModule = {
         }
       }
     } else {
-      // Sem itens — criar com pesos reais da planilha
+      // Sem itens — criar com pesos reais da planilha + sub-itens do template (Dayana) ou genérico
+      var temTemplate = PciModule.templatePadrao && PciModule.templatePadrao.length > 0;
       var itensParaInserir = [];
-      for (var j = 0; j < 20; j++) {
-        var catJ = cats[j];
-        if (!catJ) continue;
-        var catPesoJ = pesos[j] || 0;
-        var subsJ = subsSource.filter(function(s) { return s.categoria_id === catJ.id; });
-        if (subsJ.length) {
-          subsJ.forEach(function(sub) {
+
+      if (temTemplate) {
+        // Usar template salvo (estrutura da Dayana), trocando apenas o categoria_peso pelo real da planilha
+        PciModule.templatePadrao.forEach(function(t) {
+          var catIdx = cats.findIndex(function(c) { return c.nome === t.categoria_nome; });
+          var catPesoReal = catIdx >= 0 ? (pesos[catIdx] || 0) : (t.categoria_peso || 0);
+          itensParaInserir.push({
+            medicao_id: med.id,
+            categoria_nome: t.categoria_nome,
+            categoria_peso: catPesoReal,
+            sub_servico_descricao: t.sub_servico_descricao,
+            executado: false,
+            nao_aplicavel: t.nao_aplicavel || false,
+            item_peso: t.item_peso || null,
+            manual: t.manual || false
+          });
+        });
+      } else {
+        // Fallback: sub-serviços genéricos
+        for (var j = 0; j < 20; j++) {
+          var catJ = cats[j];
+          if (!catJ) continue;
+          var catPesoJ = pesos[j] || 0;
+          var subsJ = subsSource.filter(function(s) { return s.categoria_id === catJ.id; });
+          if (subsJ.length) {
+            subsJ.forEach(function(sub) {
+              itensParaInserir.push({
+                medicao_id: med.id,
+                categoria_nome: catJ.nome,
+                categoria_peso: catPesoJ,
+                sub_servico_descricao: sub.descricao,
+                executado: false,
+                nao_aplicavel: false,
+                manual: false
+              });
+            });
+          } else if (catPesoJ > 0) {
             itensParaInserir.push({
               medicao_id: med.id,
               categoria_nome: catJ.nome,
               categoria_peso: catPesoJ,
-              sub_servico_descricao: sub.descricao,
+              sub_servico_descricao: catJ.nome,
               executado: false,
               nao_aplicavel: false,
               manual: false
             });
-          });
-        } else if (catPesoJ > 0) {
-          itensParaInserir.push({
-            medicao_id: med.id,
-            categoria_nome: catJ.nome,
-            categoria_peso: catPesoJ,
-            sub_servico_descricao: catJ.nome,
-            executado: false,
-            nao_aplicavel: false,
-            manual: false
-          });
+          }
         }
       }
+
       if (itensParaInserir.length) {
         await sbPostMinimal('pci_itens', itensParaInserir);
         var itensNovos = await sbGet('pci_itens?medicao_id=eq.' + med.id + '&order=categoria_nome,created_at');
