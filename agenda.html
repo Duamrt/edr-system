@@ -787,7 +787,8 @@ body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--tex
 const SU='https://mepzoxoahpwcvvlymlfh.supabase.co';
 const SK='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1lcHpveG9haHB3Y3Z2bHltbGZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyNzAyMDUsImV4cCI6MjA4Nzg0NjIwNX0.2_4hqT2vzM5Dw3iesOF_5V7esxkZafDnMFpDkCSBVlE';
 let db;try{db=window.supabase.createClient(SU,SK)}catch(e){db=null}
-const SYNC='elyda-agenda-v1',CACHE='elyda_agenda_cache';
+const LEGACY_SYNC='elyda-agenda-v1',LEGACY_CACHE='elyda_agenda_cache';
+let SYNC=LEGACY_SYNC,CACHE=LEGACY_CACHE;
 let state=[],mesAt=new Date().getMonth(),anoAt=new Date().getFullYear(),diaSel=null,mobTab='hoje',mobDate=new Date();
 let isOff=!navigator.onLine;
 window.addEventListener('online',()=>{isOff=false;document.getElementById('offBar').classList.remove('vis');save(state)});
@@ -807,7 +808,13 @@ async function save(ev){
 async function load(){
   if(db&&!isOff){
     try{const{data}=await db.from('tracker_sync').select('data').eq('key',SYNC).single();
-    if(data?.data?.eventos){state=data.data.eventos;cache(state);return true}}catch(e){}}
+    if(data?.data?.eventos){state=data.data.eventos;cache(state);return true}}catch(e){}
+    // migração: se a chave é por usuário e não achou dados, tenta herdar do legado
+    if(SYNC!==LEGACY_SYNC){
+      try{const{data}=await db.from('tracker_sync').select('data').eq('key',LEGACY_SYNC).single();
+      if(data?.data?.eventos){state=data.data.eventos;cache(state);await save(state);return true}}catch(e){}
+    }
+  }
   const c=fromCache();if(c.length){state=c;if(isOff)document.getElementById('offBar').classList.add('vis');return true}
   return false;
 }
@@ -1045,6 +1052,11 @@ document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='dTit'
 // ── Init ──
 async function init(){
   loadTema();
+  // chave por usuário: cada pessoa vê só a própria agenda
+  if(db&&!isOff){
+    try{const{data:{user}}=await db.auth.getUser();
+    if(user){SYNC='agenda-'+user.id;CACHE='agenda_cache_'+user.id}}catch(e){}
+  }
   const ok=await load();
   if(!ok||!state.length){state=seed();await save(state)}
   diaSel=fmtHoje();irHoje();
