@@ -851,6 +851,7 @@ async function salvarNota(notaData) {
       itens: JSON.stringify(itens), obs
     };
     const saved = await sbPost('notas_fiscais', payload);
+    if (!saved) { showToast('Erro ao salvar nota fiscal. Tente novamente.'); return false; }
     const notaSalva = { ...saved, valor_bruto: totalBruto, frete };
     notas.unshift(notaSalva);
 
@@ -1165,7 +1166,12 @@ async function processarExclusaoNota(id, lancsPremapeados) {
     }
 
     // Passo C: Excluir a nota principal
-    await sbDelete('notas_fiscais', `?id=eq.${nota.id}`);
+    try {
+      await sbDelete('notas_fiscais', `?id=eq.${nota.id}`);
+    } catch(e) {
+      erros.push('nota_principal: ' + (e.message || e));
+      console.error('[EDR] Erro ao excluir nota principal', nota.id, e);
+    }
     notas = notas.filter(n => n.id !== nota.id);
 
     // Re-renderizar

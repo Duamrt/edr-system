@@ -198,7 +198,7 @@ const DiarioModule = {
             '</div>' +
             '<div style="display:flex;align-items:center;gap:8px;">' +
               '<span style="font-size:18px;" title="' + (r.clima || '') + '">' + climaIcon + '</span>' +
-              '<button onclick="DiarioModule.excluir(\'' + r.id + '\')" style="background:none;border:none;cursor:pointer;color:var(--text-tertiary);padding:2px;" title="Excluir">' +
+              '<button onclick="DiarioModule.excluir(\'' + r.id.replace(/'/g,"&#39;") + '\')" style="background:none;border:none;cursor:pointer;color:var(--text-tertiary);padding:2px;" title="Excluir">' +
                 '<span class="material-symbols-outlined" style="font-size:16px;">delete</span>' +
               '</button>' +
             '</div>' +

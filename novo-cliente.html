@@ -193,7 +193,7 @@ input::placeholder { color: #9CA3AF; }
       <p class="sub">Digite a senha para continuar</p>
       <div class="field">
         <label>Senha</label>
-        <input type="password" id="lockPwd" placeholder="••••••••" value="edr@admin2026" onkeydown="if(event.key==='Enter')unlock()">
+        <input type="password" id="lockPwd" placeholder="••••••••" onkeydown="if(event.key==='Enter')unlock()">
       </div>
       <button class="btn" onclick="unlock()">Entrar</button>
       <div id="lockMsg" class="msg"></div>
@@ -238,20 +238,18 @@ input::placeholder { color: #9CA3AF; }
 </div>
 
 <script>
-const _VER = 'edr-04161855';
+const _VER = 'edr-04170611';
 console.log('%c EDR System %c v' + _VER.split('-')[1] + ' ','background:#14532d;color:#4ade80;font-weight:700;padding:3px 7px;border-radius:3px 0 0 3px','background:#4ade80;color:#14532d;font-weight:700;padding:3px 7px;border-radius:0 3px 3px 0');
 
 const SUPABASE_URL = 'https://mepzoxoahpwcvvlymlfh.supabase.co';
 const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1lcHpveG9haHB3Y3Z2bHltbGZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyNzAyMDUsImV4cCI6MjA4Nzg0NjIwNX0.2_4hqT2vzM5Dw3iesOF_5V7esxkZafDnMFpDkCSBVlE';
-const SENHA_ACESSO = 'edr@admin2026';
-
 function unlock() {
-  if (document.getElementById('lockPwd').value === SENHA_ACESSO) {
+  if (document.getElementById('lockPwd').value.trim()) {
     document.getElementById('lock').style.display = 'none';
     document.getElementById('form').style.display = 'block';
   } else {
     const m = document.getElementById('lockMsg');
-    m.textContent = 'Senha incorreta.';
+    m.textContent = 'Digite a senha.';
     m.className = 'msg err';
   }
 }
@@ -286,7 +284,7 @@ async function criar() {
     const res = await fetch(`${SUPABASE_URL}/functions/v1/criar-cliente`, {
       method: 'POST',
       headers: { 'apikey': ANON_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ empresa, nome, email, password: senha, adminSecret: SENHA_ACESSO, plan: plano })
+      body: JSON.stringify({ empresa, nome, email, password: senha, adminSecret: document.getElementById('lockPwd').value, plan: plano })
     });
     const data = await res.json();
 
