@@ -1034,29 +1034,13 @@ function toggleFiltro(){document.getElementById('filtroDD').classList.toggle('sh
 document.addEventListener('click',e=>{if(!e.target.closest('.filtro-wrap'))document.getElementById('filtroDD').classList.remove('show')});
 
 // ── Seed ──
-function seed(){const h=new Date(),y=h.getFullYear(),m=h.getMonth(),d=h.getDate();
-  const ex=[
-    {data:fmt(y,m,d),titulo:'Consulta pediatra — João',hora:'09:00',categoria:'pessoal',prioridade:'alta',obs:'Levar cartão do SUS',concluido:false},
-    {data:fmt(y,m,d),titulo:'Visita obra Júnior',hora:'14:00',categoria:'trabalho',prioridade:'alta',obs:'Conferir fundação',concluido:false},
-    {data:fmt(y,m,d),titulo:'Comprar cimento (30 sacos)',hora:'16:00',categoria:'compra',prioridade:'media',obs:'Depósito Silva',concluido:true},
-    {data:fmt(y,m,d+1),titulo:'Reunião cliente Dayana',hora:'10:00',categoria:'trabalho',prioridade:'alta',obs:'Apresentar orçamento',concluido:false},
-    {data:fmt(y,m,d+1),titulo:'Buscar meninos na escola',hora:'17:30',categoria:'pessoal',prioridade:'baixa',obs:'',concluido:false},
-    {data:fmt(y,m,d+2),titulo:'Entrega de laudo — Pedro',hora:'08:00',categoria:'trabalho',prioridade:'alta',obs:'Imprimir 2 vias',concluido:false},
-    {data:fmt(y,m,d+3),titulo:'Dentista Elyda',hora:'14:30',categoria:'pessoal',prioridade:'baixa',obs:'',concluido:false},
-    {data:fmt(y,m,d+4),titulo:'Pagar CREA',hora:'08:00',categoria:'lembrete',prioridade:'alta',obs:'Vence dia 30',concluido:false}];
-  ex.forEach(e=>e.id=Date.now()+Math.random()*10000);return ex}
-
 // ── Keyboard ──
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='dTit')addEvento('d');if(e.key==='Enter'&&e.target.id==='mTit')addEvento('m')});
 
 // ── Init ──
 async function init(){
   loadTema();
-  // chave por usuário: lê sessão do EDR System (localStorage edr_auth)
-  try{const sess=JSON.parse(localStorage.getItem('edr_auth')||'{}');
-  if(sess.user?.id){SYNC='agenda-'+sess.user.id;CACHE='agenda_cache_'+sess.user.id}}catch(e){}
-  const ok=await load();
-  if(!ok||!state.length){state=seed();await save(state)}
+  await load();
   diaSel=fmtHoje();irHoje();
   const o=document.getElementById('loadO');o.classList.add('gone');setTimeout(()=>o.remove(),300)}
 init();
