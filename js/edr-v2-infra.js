@@ -197,7 +197,7 @@ let _companyPlan = null;
 async function loadCompanyPlan() {
   if (MODO_DEMO || !_companyId) return;
   try {
-    const r = await sbGet('companies', '?id=eq.' + _companyId + '&select=plan,trial_ends_at,permissions,name');
+    const r = await sbGet('companies', '?id=eq.' + _companyId + '&select=plan,trial_ends_at,permissions,name,status_pagamento,dias_atraso,bloqueado_em');
     if (r && r[0]) {
       _companyPlan = r[0];
       if (typeof _aplicarPermissoesBanco === 'function') _aplicarPermissoesBanco(r[0].permissions);
@@ -288,6 +288,52 @@ async function loadAjustesEstoque() { try { const r = await sbGet('ajustes_estoq
 async function loadAdicionais() {
   try { const r = await sbGet('obra_adicionais', '?order=criado_em.desc'); obrasAdicionais = Array.isArray(r) ? r : []; } catch(e) { obrasAdicionais = []; }
   try { const r = await sbGet('adicional_pagamentos', '?order=data.desc'); adicionaisPgtos = Array.isArray(r) ? r : []; } catch(e) { adicionaisPgtos = []; }
+}
+
+function _pagamentoBloqueadoEDR() {
+  if (!_companyPlan) return false;
+  return _companyPlan.status_pagamento === 'bloqueado';
+}
+
+function _mostrarBloqueioPagamentoEDR() {
+  const empresa = _companyPlan?.name || 'Sua Empresa';
+  const dias = _companyPlan?.dias_atraso || 0;
+  const sidebar = document.querySelector('.sidebar');
+  const main = document.querySelector('.main-content, #main-content, main');
+  if (sidebar) sidebar.style.display = 'none';
+  if (main) main.style.display = 'none';
+  const overlay = document.createElement('div');
+  overlay.id = 'edr-pagto-block';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#FFFBEB;display:flex;align-items:center;justify-content:center;padding:24px;font-family:Inter,sans-serif;';
+  overlay.innerHTML = `
+    <div style="width:100%;max-width:420px;">
+      <div style="text-align:center;margin-bottom:32px;">
+        <div style="font-family:'Plus Jakarta Sans',Inter,sans-serif;font-size:22px;font-weight:800;color:#1A1D23;letter-spacing:-.5px;">EDR <span style="color:#2D6A4F;">System</span></div>
+        <div style="font-size:11px;color:#9CA3AF;letter-spacing:2px;text-transform:uppercase;margin-top:2px;">Gestão de Obras</div>
+      </div>
+      <div style="background:#fff;border:1px solid #E5E7EB;border-radius:8px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.07);">
+        <div style="background:rgba(234,88,12,0.1);border-bottom:1px solid rgba(234,88,12,0.2);padding:10px 24px;display:flex;align-items:center;gap:8px;">
+          <div style="width:6px;height:6px;border-radius:50%;background:#EA580C;flex-shrink:0;box-shadow:0 0 6px #EA580C;"></div>
+          <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#EA580C;">Pagamento em Atraso</span>
+        </div>
+        <div style="padding:28px 24px;">
+          <div style="margin-bottom:20px;">
+            <div style="font-family:'Plus Jakarta Sans',Inter,sans-serif;font-size:20px;font-weight:800;color:#111827;margin-bottom:4px;">${empresa}</div>
+            <div style="font-size:12px;color:#EA580C;font-weight:600;">${dias} dia(s) em atraso — acesso bloqueado</div>
+          </div>
+          <div style="height:1px;background:#F3F4F6;margin-bottom:20px;"></div>
+          <p style="font-size:14px;color:#6B7280;line-height:1.65;margin-bottom:24px;">Sua assinatura está com pagamento em atraso há mais de 7 dias. Para reativar o acesso, regularize o pagamento ou fale com o suporte.</p>
+          <a href="meu-plano.html" style="display:flex;align-items:center;justify-content:center;gap:10px;width:100%;background:#1B4332;color:#fff;font-size:15px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;padding:13px 20px;border-radius:6px;text-decoration:none;margin-bottom:10px;">Regularizar pagamento</a>
+          <a href="https://wa.me/5587981713987" target="_blank" style="display:flex;align-items:center;justify-content:center;width:100%;background:none;color:#6B7280;font-size:13px;padding:10px;border-radius:6px;text-decoration:none;border:1px solid #E5E7EB;">Falar com suporte</a>
+        </div>
+        <div style="background:#F9FAFB;border-top:1px solid #E5E7EB;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;">
+          <span style="font-size:11px;color:#9CA3AF;">EDR System</span>
+          <span style="font-size:11px;color:#9CA3AF;">(87) 9 8171-3987</span>
+        </div>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') e.stopImmediatePropagation(); }, true);
 }
 
 function _trialExpiradoEDR() {
@@ -415,8 +461,12 @@ async function iniciarApp() {
     loadCompanyPlan().catch(e => console.warn('loadCompanyPlan:', e))
   ]);
   console.log('[INFRA] Promise.all concluido. notas:', notas.length, 'lancamentos:', lancamentos.length, 'materiais:', catalogoMateriais.length);
-  // Checar trial expirado (plataforma admin nunca é bloqueada)
+  // Checar trial expirado / pagamento em atraso (plataforma admin nunca é bloqueada)
   const _isAdmin = usuarioAtual?.email === 'admin@edreng.com.br';
+  if (!_isAdmin && _pagamentoBloqueadoEDR()) {
+    _mostrarBloqueioPagamentoEDR();
+    return;
+  }
   if (!_isAdmin && _trialExpiradoEDR()) {
     _mostrarBloqueioEDR();
     return;
