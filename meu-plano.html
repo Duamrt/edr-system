@@ -6,8 +6,11 @@
 <title>EDR System — Minha Assinatura</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<script src="js/edr-v2-infra.js?v=04180707"></script>
-<script src="js/edr-v2-auth.js?v=04180707"></script>
+<!-- Standalone: sem edr-v2-infra/auth pra evitar conflito de PLANOS + login-screen -->
+<script>
+const SUPABASE_URL = 'https://mepzoxoahpwcvvlymlfh.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1lcHpveG9haHB3Y3Z2bHltbGZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyNzAyMDUsImV4cCI6MjA4Nzg0NjIwNX0.2_4hqT2vzM5Dw3iesOF_5V7esxkZafDnMFpDkCSBVlE';
+</script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 html,body{height:100%;-webkit-font-smoothing:antialiased;}
@@ -142,7 +145,7 @@ body{font-family:'Inter',sans-serif;background:#F7F8F7;min-height:100vh;color:#1
 
 <script>
 const APP_VERSION = 'v04181700';
-const PLANOS = [
+const ASAAS_PLANOS = [
   { id:'essencial', nome:'Essencial', valor:397.00,
     desc:'Pra quem está estruturando o controle. 3 obras simultâneas.',
     features:['3 obras simultâneas','Dashboard + lançamentos por etapa','Folha quinzenal com PDF','Fluxo de caixa','Importação NF-e XML','Estoque de materiais','Relatório de lucro básico','3 usuários inclusos'] },
@@ -238,7 +241,7 @@ function renderDetalhes(){
 function renderPlanos(){
   const planoAtual = ASSINATURA?.plano || COMPANY?.plan;
   const ehDono = ['dono','admin'].includes(COMPANY_USER?.role);
-  const cards = PLANOS.map(p=>{
+  const cards = ASAAS_PLANOS.map(p=>{
     const atual = p.id === planoAtual && ASSINATURA;
     const lbl = atual ? 'Plano atual' : (ASSINATURA ? 'Mudar para este' : 'Assinar');
     return `<div class="plano-card ${atual?'atual':''} ${p.destaque?'destaque':''}">
