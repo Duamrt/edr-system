@@ -58,6 +58,8 @@ body{font-family:'Inter',sans-serif;background:#F7F8F7;min-height:100vh;color:#1
 .plano-feat{list-style:none;margin:8px 0;display:flex;flex-direction:column;gap:6px;}
 .plano-feat li{font-size:13px;color:#1F2937;padding-left:22px;position:relative;}
 .plano-feat li::before{content:"✓";color:#10B981;font-weight:700;position:absolute;left:0;}
+.plano-formas{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 2px;}
+.plano-formas span{font-size:10px;padding:3px 8px;border-radius:4px;background:#F3F4F6;color:#4B5563;letter-spacing:.5px;border:1px solid #E5E7EB;font-weight:600;}
 .plano-btn{padding:12px;background:#1B4332;border:none;border-radius:8px;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#fff;cursor:pointer;margin-top:auto;font-family:'Plus Jakarta Sans',sans-serif;}
 .plano-btn:hover{background:#2D6A4F;}
 .plano-btn:disabled{opacity:.45;cursor:not-allowed;}
@@ -144,7 +146,7 @@ body{font-family:'Inter',sans-serif;background:#F7F8F7;min-height:100vh;color:#1
 <div id="loading"><div class="spin"></div></div>
 
 <script>
-const APP_VERSION = 'v04182000';
+const APP_VERSION = 'v04182100';
 const ASAAS_PLANOS = [
   { id:'essencial', nome:'Essencial', valor:397.00,
     desc:'Pra quem está estruturando o controle. 3 obras simultâneas.',
@@ -271,6 +273,7 @@ function renderPlanos(){
       <div class="plano-valor"><span class="plano-valor-n">${fmt(p.valor).replace('R$','R$ ')}</span><span class="plano-valor-c">/mês</span></div>
       <div class="plano-desc">${esc(p.desc)}</div>
       <ul class="plano-feat">${p.features.map(f=>`<li>${esc(f)}</li>`).join('')}</ul>
+      <div class="plano-formas"><span>💳 Cartão</span><span>PIX</span><span>Boleto</span></div>
       <button class="plano-btn ${atual?'ghost':''}" ${atual||!ehDono?'disabled':''} onclick="assinar('${p.id}',${p.valor})">${lbl}</button>
     </div>`;
   }).join('');
@@ -325,7 +328,7 @@ async function assinar(planoId, valor){
   const ok = await abrirConfirmMP({
     tag:'Confirmar assinatura',
     titulo:`${nomePlano} — ${fmt(valor)}/mês`,
-    texto:`Você vai ativar a assinatura <strong>${nomePlano}</strong> por <strong>${fmt(valor)}/mês</strong> e será redirecionado pro pagamento (cartão ou PIX).<br><br>Sem fidelidade. Cancele quando quiser.`,
+    texto:`Você vai ativar a assinatura <strong>${nomePlano}</strong> por <strong>${fmt(valor)}/mês</strong> e será redirecionado para o pagamento (cartão, PIX ou boleto).<br><br>Sem fidelidade. Cancele quando quiser.`,
     okLabel:'Continuar para o pagamento',
   });
   if (!ok) return;
@@ -348,6 +351,6 @@ async function assinar(planoId, valor){
 console.log(`%c🌲 EDR System — Minha Assinatura ${APP_VERSION}`,'color:#1B4332;font-weight:bold;');
 init();
 </script>
-<div style="position:fixed;bottom:6px;right:10px;font-size:10px;color:#9CA3AF;z-index:100;letter-spacing:.5px;">EDR System v04182000</div>
+<div style="position:fixed;bottom:6px;right:10px;font-size:10px;color:#9CA3AF;z-index:100;letter-spacing:.5px;">EDR System v04182100</div>
 </body>
 </html>
