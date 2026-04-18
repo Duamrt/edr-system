@@ -321,7 +321,7 @@ async function assinar(planoId, valor){
     COMPANY.cnpj = novo;
   }
 
-  const nomePlano = PLANOS.find(p=>p.id===planoId)?.nome || planoId;
+  const nomePlano = ASAAS_PLANOS.find(p=>p.id===planoId)?.nome || planoId;
   const ok = await abrirConfirmMP({
     tag:'Confirmar assinatura',
     titulo:`${nomePlano} — ${fmt(valor)}/mês`,
