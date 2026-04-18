@@ -182,8 +182,29 @@ async function sair(){
   window.location.href='index.html';
 }
 
+async function getValidToken(){
+  const auth = JSON.parse(localStorage.getItem('edr_auth')||'{}');
+  if (!auth.access_token) return null;
+  if (auth.expires_at && auth.expires_at - 30000 < Date.now()){
+    if (!auth.refresh_token) return null;
+    try {
+      const rr = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`,{
+        method:'POST',
+        headers:{apikey:SUPABASE_ANON_KEY,'content-type':'application/json'},
+        body: JSON.stringify({refresh_token: auth.refresh_token}),
+      });
+      if (!rr.ok) return null;
+      const nd = await rr.json();
+      const novo = { ...auth, access_token: nd.access_token, refresh_token: nd.refresh_token, expires_at: Date.now() + (nd.expires_in*1000) };
+      localStorage.setItem('edr_auth', JSON.stringify(novo));
+      return nd.access_token;
+    } catch(_) { return null; }
+  }
+  return auth.access_token;
+}
+
 async function init(){
-  const token = (JSON.parse(localStorage.getItem('edr_auth')||'{}').access_token||'');
+  const token = await getValidToken();
   if (!token){ document.getElementById('nao-logado').style.display='block'; return; }
 
   // busca user via JWT
@@ -277,7 +298,7 @@ function pedirCpfCnpj(){
 }
 
 async function salvarCnpjCompany(novo){
-  const token = (JSON.parse(localStorage.getItem('edr_auth')||'{}').access_token||'');
+  const token = await getValidToken();
   const res = await fetch(`${SUPABASE_URL}/rest/v1/companies?id=eq.${COMPANY.id}`,{
     method:'PATCH',
     headers:{apikey:SUPABASE_ANON_KEY,Authorization:'Bearer '+token,'content-type':'application/json',Prefer:'return=minimal'},
@@ -310,7 +331,7 @@ async function assinar(planoId, valor){
   if (!ok) return;
   document.getElementById('loading').classList.add('open');
   try{
-    const token = (JSON.parse(localStorage.getItem('edr_auth')||'{}').access_token||'');
+    const token = await getValidToken();
     const res = await fetch(`${SUPABASE_URL}/functions/v1/asaas-criar-assinatura`,{
       method:'POST',
       headers:{'authorization':`Bearer ${token}`,'content-type':'application/json','apikey':SUPABASE_ANON_KEY},
