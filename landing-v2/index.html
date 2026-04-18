@@ -1,0 +1,799 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>EDR System — ERP de obras MCMV</title>
+<meta name="description" content="ERP feito dentro de obra MCMV. Diárias, folha quinzenal, PCI/medições CEF, lucro real por obra. Começa com 1 obra grátis." />
+
+<!-- Open Graph / WhatsApp preview -->
+<meta property="og:type" content="website" />
+<meta property="og:title" content="EDR System — ERP de obras MCMV" />
+<meta property="og:description" content="Feito dentro de obra, não dentro de escritório. Diárias, folha quinzenal, medições CEF e lucro real por obra." />
+<meta property="og:image" content="https://sistema.edreng.com.br/landing-v2/uploads/saas-painel-dark.png" />
+<meta property="og:url" content="https://sistema.edreng.com.br/landing-v2/" />
+<meta property="og:locale" content="pt_BR" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="EDR System — ERP de obras MCMV" />
+<meta name="twitter:description" content="Feito dentro de obra, não dentro de escritório. Diárias, folha quinzenal, medições CEF e lucro real por obra." />
+<meta name="twitter:image" content="https://sistema.edreng.com.br/landing-v2/uploads/saas-painel-dark.png" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+<link rel="stylesheet" href="sections.css" />
+</head>
+<body>
+
+<!-- ============ NAV ============ -->
+<header class="nav">
+  <div class="nav__l">
+    <a href="#" class="brand" aria-label="EDR System">
+      <span class="brand__txt">EDR System</span>
+      <span class="brand__tag">v2</span>
+    </a>
+  </div>
+
+  <div class="nav__c" id="crumb" aria-live="polite">
+    <span class="crumb__item">PAINEL</span>
+    <span class="crumb__sep">›</span>
+    <span class="crumb__item">OBRAS</span>
+    <span class="crumb__sep">›</span>
+    <span class="crumb__item crumb__item--on">DIÁRIAS</span>
+  </div>
+
+  <div class="nav__r">
+    <button id="themeToggle" class="linkish" aria-label="Alternar tema">
+      <span data-theme-label>DARK</span>
+    </button>
+    <span class="pipe">|</span>
+    <a href="#wa" class="linkish">FALAR</a>
+  </div>
+</header>
+
+<!-- ============ HERO ============ -->
+<section class="hero" id="hero">
+  <!-- Camada 1: cards isométricos flutuando -->
+  <div class="iso" aria-hidden="true">
+    <div class="iso__stage" id="isoStage">
+      <div class="iso__card iso--receita"  data-d="0"    data-z="120"  style="--x:-380px; --y:-220px;">
+        <span class="iso__val">R$ 1.670.000</span>
+        <span class="iso__lbl">RECEITA TOTAL</span>
+      </div>
+      <div class="iso__card iso--custo"    data-d="800"  data-z="40"   style="--x:280px; --y:-260px;">
+        <span class="iso__val">R$ 1.224.000</span>
+        <span class="iso__lbl">CUSTO TOTAL</span>
+      </div>
+      <div class="iso__card iso--lucro iso--big" data-d="400" data-z="180" style="--x:420px; --y:40px;">
+        <span class="iso__val">R$ 446.000</span>
+        <span class="iso__lbl">LUCRO</span>
+      </div>
+      <div class="iso__card iso--margem"   data-d="1200" data-z="80"   style="--x:-480px; --y:120px;">
+        <span class="iso__val">26,7%</span>
+        <span class="iso__lbl">MARGEM</span>
+      </div>
+      <div class="iso__card iso--obras"    data-d="600"  data-z="60"   style="--x:-180px; --y:240px;">
+        <span class="iso__val">4</span>
+        <span class="iso__lbl">OBRAS ATIVAS</span>
+      </div>
+      <div class="iso__card iso--estoque"  data-d="1000" data-z="100"  style="--x:160px; --y:260px;">
+        <span class="iso__val">R$ 39.938</span>
+        <span class="iso__lbl">ESTOQUE</span>
+      </div>
+      <div class="iso__card iso--prop"     data-d="1400" data-z="30"   style="--x:-320px; --y:-40px;">
+        <span class="iso__val iso__val--split"><b>30</b><i>/</i><b>70</b></span>
+        <span class="iso__lbl">MDO · MATERIAL</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Papel milimetrado -->
+  <div class="graph-paper" aria-hidden="true"></div>
+
+  <!-- Camada 2-3: foco -->
+  <div class="hero__focus">
+    <div class="hero__meta mono">
+      <span class="hero__meta-dot"></span>
+      PAINEL EDR <span class="dim">·</span> ABRIL 2026 <span class="dim">·</span> 4 OBRAS ATIVAS
+    </div>
+
+    <div class="bignum" id="bignum" data-target="446000.00">
+      <span class="bignum__cur">R$</span>
+      <span class="bignum__val" id="bignumVal">446.000,00</span>
+    </div>
+
+    <div class="bignum__row">
+      <div class="bignum__lbl">
+        <span class="mono dim">› </span>LUCRO REAL <span class="dim">·</span> EM TEMPO REAL
+      </div>
+      <div class="pci">
+        <div class="pci__track">
+          <div class="pci__fill" style="--w:26.7%"></div>
+        </div>
+        <div class="pci__num mono"><span id="pciPct">26,7</span>% MARGEM</div>
+      </div>
+    </div>
+
+    <h1 class="hero__statement">
+      Você não precisa mais esperar a obra terminar<br/>
+      para saber se ela deu lucro.
+    </h1>
+
+    <div class="hero__links">
+      <a href="#wa" class="arrow-link arrow-link--primary">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M17.5 14.4c-.3-.1-1.7-.8-1.9-.9-.3-.1-.5-.1-.7.1-.2.3-.8.9-1 1.1-.2.2-.4.2-.6.1-.3-.1-1.2-.4-2.3-1.4-.8-.7-1.4-1.6-1.5-1.9-.2-.3 0-.4.1-.6l.4-.5c.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5-.1-.1-.7-1.5-.9-2.1-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4s-1 1-1 2.4.9 2.8 1.1 3c.1.2 2 3.1 4.8 4.3.7.3 1.2.5 1.6.6.7.2 1.3.2 1.8.1.5-.1 1.7-.7 1.9-1.3.2-.7.2-1.2.2-1.3-.1-.2-.3-.3-.6-.4zM12 2.2c-5.4 0-9.8 4.4-9.8 9.8 0 1.7.5 3.4 1.3 4.8L2 22l5.3-1.4c1.4.8 3 1.2 4.7 1.2 5.4 0 9.8-4.4 9.8-9.8S17.4 2.2 12 2.2z"/></svg>
+        <span class="arrow-link__txt">Falar com a equipe no WhatsApp</span>
+        <span class="arrow-link__arrow">→</span>
+      </a>
+      <span class="hero__links-sep">|</span>
+      <a href="#planos" class="arrow-link">
+        <span class="arrow-link__txt">Ver planos e preços</span>
+        <span class="arrow-link__arrow">→</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Régua de canteiro -->
+  <div class="ruler" aria-hidden="true">
+    <div class="ruler__marks"></div>
+    <div class="ruler__legend mono">
+      <span>0</span><span>10</span><span>20</span><span>30</span><span>40</span><span>50</span><span>60</span><span>70</span><span>80</span><span>90</span><span>100</span>
+    </div>
+  </div>
+</section>
+
+<!-- Transição -->
+<div class="sec-trans" aria-hidden="true">
+  <div class="sec-trans__line"></div>
+  <div class="sec-trans__lbl mono">↓ 01 <span class="dim">·</span> DIÁRIAS COM IA <span class="dim">·</span> CONTINUE ROLANDO</div>
+</div>
+
+<!-- ============ SEÇÃO 2: WHATSAPP → TERMINAL ============ -->
+<section class="sec2" id="wa">
+  <div class="sec2__head">
+    <div class="sec2__eye mono">01 <span class="dim">·</span> DIÁRIAS COM IA</div>
+    <h2 class="sec2__title">Mestre manda mensagem no WhatsApp.<br/>Quinzena fecha sozinha.</h2>
+    <p class="sec2__sub">Áudio ou texto. A IA interpreta, distribui os peões por obra e gera o PDF pra pagar.</p>
+  </div>
+
+  <div class="sec2__grid">
+    <!-- Timeline -->
+    <ol class="timeline" aria-label="Etapas do processo">
+      <li class="timeline__item">
+        <div class="timeline__num mono">01</div>
+        <div class="timeline__bar"><i></i></div>
+        <div class="timeline__lbl">RECEBIDO</div>
+        <div class="timeline__meta mono">17:42</div>
+      </li>
+      <li class="timeline__item">
+        <div class="timeline__num mono">02</div>
+        <div class="timeline__bar"><i></i></div>
+        <div class="timeline__lbl">INTERPRETADO</div>
+        <div class="timeline__meta mono">17:42:08</div>
+      </li>
+      <li class="timeline__item">
+        <div class="timeline__num mono">03</div>
+        <div class="timeline__bar"><i></i></div>
+        <div class="timeline__lbl">PAGO</div>
+        <div class="timeline__meta mono">PDF ✓</div>
+      </li>
+    </ol>
+
+    <!-- Phone -->
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="phone__notch"></div>
+        <div class="phone__screen">
+          <div class="phone__hdr">
+            <span class="phone__back">‹</span>
+            <div class="phone__peer">
+              <div class="phone__ava">MR</div>
+              <div>
+                <div class="phone__name">Mestre Manoel</div>
+                <div class="phone__status">online</div>
+              </div>
+            </div>
+          </div>
+          <div class="phone__chat" id="chat">
+            <div class="chat-date">hoje</div>
+            <div class="bub is-in" data-bub="greet">Bom dia chefe<span class="bub__t">14:32 <span class="bub__ck">✓✓</span></span></div>
+            <div class="bub is-in" data-bub="intro">hoje os meninos tao distribuidos assim<span class="bub__t">14:32 <span class="bub__ck">✓✓</span></span></div>
+            <div class="bub is-in" data-bub="EVERALDO GENIVALDO MARCOS">Everaldo e Genivaldo pra casa do Marcos ate meio dia<span class="bub__t">14:33 <span class="bub__ck">✓✓</span></span></div>
+            <div class="bub is-in" data-bub="EVERALDO GENIVALDO JOAQUIM">de tarde os 2 vao pra casa do Joaquim<span class="bub__t">14:33 <span class="bub__ck">✓✓</span></span></div>
+            <div class="bub is-in" data-bub="EDVALDO ALVORADA">Edvaldo na obra da Alvorada o dia todo<span class="bub__t">14:34 <span class="bub__ck">✓✓</span></span></div>
+            <div class="bub is-in" data-bub="SEBASTIAO WASHINGTON JEQUITIBA">Sebastião e Washington na obra do Jequitibá<span class="bub__t">14:34 <span class="bub__ck">✓✓</span></span></div>
+            <div class="bub is-in" data-bub="VALDECIR MANOEL MARCOS NILTON">Valdecir e Manoel no Marcos de manhã e Nilton à tarde<span class="bub__t">14:35 <span class="bub__ck">✓✓</span></span></div>
+            <div class="bub bub--miss is-in" data-bub="ZEZINHO">Zezinho nao veio hoje<span class="bub__t">14:35 <span class="bub__ck">✓✓</span></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Terminal -->
+    <div class="term" id="term">
+      <div class="term__chrome">
+        <span class="term__dot"></span><span class="term__dot"></span><span class="term__dot"></span>
+        <span class="term__path mono">edr@quinzena · abril/2026 · ~/folha</span>
+      </div>
+      <pre class="term__body" id="termBody" aria-live="polite"><span class="t-dim">$</span> edr folha --quinzena=2 --mes=abril
+
+<span class="t-ok">›</span> Analisando mensagem do mestre...
+<span class="t-ok">›</span> <span class="t-ok">✓</span> Mensagem recebida (<span class="t-num">8</span> linhas)
+<span class="t-ok">›</span> Detectados: <span class="t-num">8</span> funcionários · <span class="t-num">4</span> obras
+<span class="t-ok">›</span> Cruzando com cadastro de equipe...
+<span class="t-ok">›</span> <span class="t-ok">✓</span> Distribuição concluída
+
+<span class="t-dim">  ───────────────────────────────────────────</span>
+  <span class="t-dim">NOME      FUNÇÃO    OBRA              VALOR</span>
+<span class="t-dim">  ───────────────────────────────────────────</span>
+  <span class="t-hdr">ANDERSON  </span><span class="t-dim">Mestre    </span><span class="t-obra">DUAM       </span><span class="t-num">R$ 170,00</span>
+  <span class="t-hdr">JOSIMAR   </span><span class="t-dim">Betoneiro </span><span class="t-obra">DUAM       </span><span class="t-num">R$  90,00</span>
+  <span class="t-hdr">DIOGO     </span><span class="t-dim">Pedreiro  </span><span class="t-obra-p">LEO</span>·<span class="t-obra">DUAM  </span><span class="t-num">R$ 130,00</span>
+  <span class="t-hdr">ROBERTO   </span><span class="t-dim">Servente  </span><span class="t-obra-p">LEO</span>·<span class="t-obra">DUAM  </span><span class="t-num">R$  80,00</span>
+  <span class="t-hdr">NALDINHO  </span><span class="t-dim">Pedreiro  </span><span class="t-obra-p">DAYANA     </span><span class="t-num">R$ 130,00</span>
+  <span class="t-hdr">ADEILTON  </span><span class="t-dim">Pedreiro  </span><span class="t-obra-n">JUNIOR     </span><span class="t-num">R$ 130,00</span>
+  <span class="t-hdr">ROSINALDO </span><span class="t-dim">Servente  </span><span class="t-obra-n">JUNIOR     </span><span class="t-num">R$  80,00</span>
+<span class="t-dim">  ───────────────────────────────────────────</span>
+
+<span class="t-warn">⚠</span> <span class="t-miss">FALTOU: IVANILTON</span> <span class="t-dim">(registrado como falta)</span>
+
+<span class="t-ok">›</span> <span class="t-hdr">TOTAL DA QUINZENA:</span> <span class="t-num">R$ 810,00</span>
+<span class="t-ok">›</span> Gerando PDF...
+<span class="t-ok">›</span> <span class="t-ok">✓</span> <span class="t-hdr">folha-q2-abr-2026.pdf</span> <span class="t-dim">(48kb)</span>
+
+<span class="t-ok">›</span> <span class="t-ok">pronto pra pagar.</span></pre>
+      <div class="term__caret" id="termCaret">▍</div>
+    </div>
+  </div>
+
+  <!-- Small badges -->
+  <div class="kpis">
+    <div class="kpi">
+      <div class="kpi__num">&lt; 15<span class="kpi__unit">min</span></div>
+      <div class="kpi__lbl">pra fechar a quinzena inteira</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi__num">1<span class="kpi__unit">PDF</span></div>
+      <div class="kpi__lbl">por centro de custo, já pronto pra pagar</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi__num">0<span class="kpi__unit">planilhas</span></div>
+      <div class="kpi__lbl">a diária lançada já vira custo na obra</div>
+    </div>
+  </div>
+
+  <!-- 02b · ANTES / DEPOIS -->
+  <div class="ba reveal" data-reveal>
+    <div class="ba__col ba__col--before">
+      <div class="ba__tag">ANTES</div>
+      <ul class="ba__list">
+        <li>planilha Excel compartilhada no Drive</li>
+        <li>2 horas conferindo linha por linha</li>
+        <li>erro de soma toda quinzena</li>
+        <li>mestre manda áudio, engenheiro copia no braço</li>
+        <li>"ah, esqueci o Zezinho"</li>
+      </ul>
+      <div class="ba__foot">FECHAMENTO <strong>~ 2H</strong> · RETRABALHO ALTO</div>
+    </div>
+    <div class="ba__col ba__col--after">
+      <div class="ba__tag">DEPOIS</div>
+      <ul class="ba__list">
+        <li>mestre manda 1 áudio no WhatsApp</li>
+        <li>IA interpreta em 8 segundos</li>
+        <li>distribuição por obra, automática</li>
+        <li>PDF por centro de custo, 1 clique</li>
+        <li>custo já lançado na obra certa</li>
+      </ul>
+      <div class="ba__foot">FECHAMENTO <strong>&lt; 15 MIN</strong> · 0 RETRABALHO</div>
+    </div>
+  </div>
+
+  <div class="sec__bignum reveal" data-reveal>
+    15 MIN <span class="dim">vs</span> 2H<br/>
+    <span class="dim">· 8× mais rápido, mesma quinzena ·</span>
+  </div>
+</section>
+
+<!-- Transição 02→03 -->
+<div class="sec-trans" aria-hidden="true">
+  <div class="sec-trans__line"></div>
+  <div class="sec-trans__lbl mono">↓ 02 <span class="dim">·</span> CEF &amp; MCMV <span class="dim">·</span> CONTINUE ROLANDO</div>
+</div>
+
+<!-- ============ SEÇÃO 03 · CEF / MCMV / PCI ============ -->
+<section class="sec" id="mcmv">
+  <div class="sec__head">
+    <div class="sec__eye">02 <span class="dim">·</span> CEF &amp; MCMV · PCI MEDIÇÕES</div>
+    <h2 class="sec__title">Medição CEF pronta.<br/>Sem planilha. Sem retrabalho.</h2>
+    <p class="sec__sub">PCI com 20 categorias e 64 sub-serviços cadastrados no padrão Minha Casa Minha Vida. Você marca o que foi executado, o sistema calcula o percentual e monta o relatório da Caixa.</p>
+  </div>
+
+  <div class="pci-sec__layout">
+    <ul class="pci-list" id="pciList">
+      <!-- 20 categorias injetadas via JS -->
+    </ul>
+
+    <aside class="cef-card">
+      <div class="cef-card__hdr">MEDIÇÃO DO PERÍODO <strong>· ATIVA</strong></div>
+      <div class="cef-kv cef-kv--big">
+        <span class="cef-kv__k">TOTAL MEDIDO</span>
+        <span class="cef-kv__v">R$ 390.400,00</span>
+      </div>
+      <div class="cef-kv cef-kv--sub">
+        <span class="cef-kv__k">ACUMULADO</span>
+        <span class="cef-kv__v">R$ 1.858.400,00</span>
+      </div>
+      <div class="cef-kv cef-kv--saldo">
+        <span class="cef-kv__k">SALDO A MEDIR</span>
+        <span class="cef-kv__v">R$ 941.600,00</span>
+      </div>
+      <div class="cef-kv">
+        <span class="cef-kv__k">CONTRATO</span>
+        <span class="cef-kv__v">#MCMV-2026-048</span>
+      </div>
+      <div class="cef-anx">
+        <span><strong>12</strong> FOTOS</span>
+        <span><strong>4</strong> PDFs</span>
+        <span><strong>1</strong> ART</span>
+      </div>
+    </aside>
+  </div>
+
+  <div class="sec__bignum reveal" data-reveal>
+    20 CATEGORIAS <span class="dim">·</span> 64 SUB-SERVIÇOS <span class="dim">·</span> 0 RETRABALHO
+  </div>
+</section>
+
+<!-- Transição 03→04 -->
+<div class="sec-trans" aria-hidden="true">
+  <div class="sec-trans__line"></div>
+  <div class="sec-trans__lbl mono">↓ 03 <span class="dim">·</span> P&amp;L &amp; FLUXO DE CAIXA <span class="dim">·</span> CONTINUE ROLANDO</div>
+</div>
+
+<!-- ============ SEÇÃO 04 · P&L + FLUXO ============ -->
+<section class="sec" id="pl">
+  <div class="sec__head">
+    <div class="sec__eye">03 <span class="dim">·</span> P&amp;L POR OBRA · FLUXO DE CAIXA</div>
+    <h2 class="sec__title">Lucro real de cada obra.<br/>Projeção de 6 meses. Tudo vivo.</h2>
+    <p class="sec__sub">Cada obra é um centro de custo. Você vê receita, custo e margem em tempo real — e a projeção de caixa pra planejar o próximo aporte da Caixa antes dele atrasar.</p>
+  </div>
+
+  <div class="pl-wrap reveal" data-reveal>
+    <div class="pl-hdr">
+      <span>OBRA</span><span>RECEITA</span><span>CUSTO</span><span>MARGEM</span>
+    </div>
+    <div class="pl-row pl-row--ok">
+      <div class="pl-row__name">RESIDENCIAL ALVORADA</div>
+      <div>R$ 420.000</div>
+      <div class="pl-row__cost">R$ 268.800</div>
+      <div class="pl-row__marg">36,0%</div>
+    </div>
+    <div class="pl-row pl-row--ok">
+      <div class="pl-row__name">RESIDENCIAL BELA VISTA</div>
+      <div>R$ 560.000</div>
+      <div class="pl-row__cost">R$ 400.400</div>
+      <div class="pl-row__marg">28,5%</div>
+    </div>
+    <div class="pl-row pl-row--warn">
+      <div class="pl-row__name">RESIDENCIAL JEQUITIBÁ</div>
+      <div>R$ 310.000</div>
+      <div class="pl-row__cost">R$ 235.600</div>
+      <div class="pl-row__marg">24,0%</div>
+    </div>
+    <div class="pl-row pl-row--bad">
+      <div class="pl-row__name">RESIDENCIAL TAMARINDO</div>
+      <div>R$ 380.000</div>
+      <div class="pl-row__cost">R$ 319.200</div>
+      <div class="pl-row__marg">16,0%</div>
+    </div>
+    <div class="pl-total">
+      <div class="pl-total__lbl">MARGEM CONSOLIDADA</div>
+      <div></div>
+      <div></div>
+      <div class="pl-total__val">26,7%</div>
+    </div>
+  </div>
+
+  <div class="cash reveal" data-reveal>
+    <div class="cash__hdr">
+      <div class="cash__ttl">Fluxo de caixa · próximos 6 meses</div>
+      <div class="cash__leg">
+        <span><i class="leg-in"></i>ENTRADAS</span>
+        <span><i class="leg-out"></i>SAÍDAS</span>
+        <span><i class="leg-proj"></i>PROJETADO</span>
+      </div>
+    </div>
+    <svg class="cash__svg" id="cashSvg" viewBox="0 0 780 320" preserveAspectRatio="none" aria-hidden="true">
+      <!-- grid -->
+      <g>
+        <line class="grid-ln" x1="40" y1="40"  x2="760" y2="40"/>
+        <line class="grid-ln" x1="40" y1="100" x2="760" y2="100"/>
+        <line class="grid-ln" x1="40" y1="160" x2="760" y2="160"/>
+        <line class="grid-ln" x1="40" y1="220" x2="760" y2="220"/>
+        <line class="grid-ln" x1="40" y1="280" x2="760" y2="280"/>
+      </g>
+      <!-- Y labels -->
+      <g>
+        <text class="axis-y" x="0"  y="44">R$ 900k</text>
+        <text class="axis-y" x="0"  y="104">R$ 700k</text>
+        <text class="axis-y" x="0"  y="164">R$ 500k</text>
+        <text class="axis-y" x="0"  y="224">R$ 300k</text>
+        <text class="axis-y" x="0"  y="284">R$ 100k</text>
+      </g>
+      <!-- X labels -->
+      <g>
+        <text class="axis" x="100" y="308">ABR</text>
+        <text class="axis" x="220" y="308">MAI</text>
+        <text class="axis" x="340" y="308">JUN</text>
+        <text class="axis" x="460" y="308">JUL *</text>
+        <text class="axis" x="580" y="308">AGO *</text>
+        <text class="axis" x="700" y="308">SET *</text>
+      </g>
+      <!-- Entradas (real + projected) -->
+      <path class="line-in"  d="M 100,150 L 220,110 L 340,90"/>
+      <path class="line-in proj"  d="M 340,90 L 460,130 L 580,70 L 700,100"/>
+      <!-- Saídas -->
+      <path class="line-out" d="M 100,210 L 220,180 L 340,200"/>
+      <path class="line-out proj" d="M 340,200 L 460,170 L 580,190 L 700,160"/>
+      <!-- Dots -->
+      <g>
+        <circle class="dot" cx="100" cy="150" r="4" fill="#16a34a"/>
+        <circle class="dot" cx="220" cy="110" r="4" fill="#16a34a"/>
+        <circle class="dot" cx="340" cy="90"  r="4" fill="#16a34a"/>
+        <circle class="dot" cx="460" cy="130" r="3" fill="#16a34a" opacity=".6"/>
+        <circle class="dot" cx="580" cy="70"  r="3" fill="#16a34a" opacity=".6"/>
+        <circle class="dot" cx="700" cy="100" r="3" fill="#16a34a" opacity=".6"/>
+        <circle class="dot" cx="100" cy="210" r="4" fill="#ea580c"/>
+        <circle class="dot" cx="220" cy="180" r="4" fill="#ea580c"/>
+        <circle class="dot" cx="340" cy="200" r="4" fill="#ea580c"/>
+        <circle class="dot" cx="460" cy="170" r="3" fill="#ea580c" opacity=".6"/>
+        <circle class="dot" cx="580" cy="190" r="3" fill="#ea580c" opacity=".6"/>
+        <circle class="dot" cx="700" cy="160" r="3" fill="#ea580c" opacity=".6"/>
+      </g>
+    </svg>
+  </div>
+
+  <div class="sec__bignum reveal" data-reveal>
+    R$ 446.000,00 <span class="dim">DE LUCRO ·</span> 4 OBRAS <span class="dim">·</span> 1 TELA
+  </div>
+</section>
+
+<!-- Transição 04→05 -->
+<div class="sec-trans" aria-hidden="true">
+  <div class="sec-trans__line"></div>
+  <div class="sec-trans__lbl mono">↓ 04 <span class="dim">·</span> CRONOGRAMA GANTT <span class="dim">·</span> CONTINUE ROLANDO</div>
+</div>
+
+<!-- ============ SEÇÃO 05 · GANTT ============ -->
+<section class="sec" id="gantt">
+  <div class="sec__head">
+    <div class="sec__eye">04 <span class="dim">·</span> CRONOGRAMA · DEPENDÊNCIAS</div>
+    <h2 class="sec__title">Cronograma que enxerga dependência.<br/>Atrasa uma, o sistema avisa as outras.</h2>
+    <p class="sec__sub">Não é um Gantt burro. Se a laje atrasa 4 dias, a cobertura, o revestimento e a pintura se deslocam automaticamente — e você vê o impacto na entrega antes do cliente da Caixa ver.</p>
+  </div>
+
+  <div class="gantt-wrap">
+    <div class="gantt">
+      <div class="gantt__hdr">
+        <span>OBRA · RESIDENCIAL ALVORADA</span>
+        <span>NOV 2025 → JUN 2026</span>
+      </div>
+      <div class="gantt__scale">
+        <span></span><span>NOV</span><span>DEZ</span><span>JAN</span><span>FEV</span><span>MAR</span><span>ABR</span>
+      </div>
+      <div class="gantt__svg-wrap">
+        <ul class="gantt__list" id="ganttList">
+          <li class="gantt__row reveal" data-reveal>
+            <div class="gantt__lbl"><b>Fundação</b><span>100% · fase 1</span></div>
+            <div class="gantt__bar-wrap"><div class="gantt__bar gantt__bar--done" style="left:0%; width:16%;">100%</div></div>
+          </li>
+          <li class="gantt__row reveal" data-reveal>
+            <div class="gantt__lbl"><b>Alvenaria</b><span>100% · fase 2</span></div>
+            <div class="gantt__bar-wrap"><div class="gantt__bar gantt__bar--done" style="left:14%; width:22%;">100%</div></div>
+          </li>
+          <li class="gantt__row reveal" data-reveal>
+            <div class="gantt__lbl"><b>Laje</b><span>72% · <em style="color:var(--orange-l);font-style:normal;">atrasou 4d</em></span></div>
+            <div class="gantt__bar-wrap"><div class="gantt__bar gantt__bar--wip" style="left:32%; width:22%;">72% · atraso</div></div>
+          </li>
+          <li class="gantt__row reveal" data-reveal>
+            <div class="gantt__lbl"><b>Cobertura</b><span>0% · 28/abr (realoc.)</span></div>
+            <div class="gantt__bar-wrap"><div class="gantt__bar gantt__bar--wait" style="left:52%; width:18%;">0%</div></div>
+          </li>
+          <li class="gantt__row reveal" data-reveal>
+            <div class="gantt__lbl"><b>Revestimento</b><span>0% · mai/jun</span></div>
+            <div class="gantt__bar-wrap"><div class="gantt__bar gantt__bar--wait" style="left:66%; width:22%;">0%</div></div>
+          </li>
+          <li class="gantt__row reveal" data-reveal>
+            <div class="gantt__lbl"><b>Pintura</b><span>0% · 15/jun (realoc.)</span></div>
+            <div class="gantt__bar-wrap"><div class="gantt__bar gantt__bar--wait" style="left:84%; width:14%;">0%</div></div>
+          </li>
+        </ul>
+        <svg class="gantt__arrows" id="ganttArrows" viewBox="0 0 600 320" preserveAspectRatio="none" aria-hidden="true">
+          <path d="M 96 22 L 96 50 L 86 50"/>
+          <path d="M 216 62 L 216 90 L 192 90"/>
+          <path d="M 324 102 L 324 130 L 312 130"/>
+          <path d="M 420 142 L 420 170 L 396 170"/>
+          <path d="M 528 182 L 528 210 L 504 210"/>
+        </svg>
+      </div>
+    </div>
+
+    <aside class="gantt__alert">
+      <div class="gantt__alert-tag">ALERTA AUTOMÁTICO</div>
+      <div class="gantt__alert-ttl">Laje atrasou 4 dias.<br/>Isso empurrou 2 etapas.</div>
+      <div class="gantt__alert-body">
+        › <strong>Cobertura</strong> desloca pra <em>28/abr</em><br/>
+        › <strong>Pintura</strong> desloca pra <em>15/jun</em><br/>
+        › <strong>Entrega CEF</strong> mantém <em>08/jul</em> (folga de 12d consumida)
+      </div>
+    </aside>
+  </div>
+
+  <div class="sec__bignum reveal" data-reveal>
+    DEPENDÊNCIAS VISUAIS <span class="dim">·</span> ALERTAS AUTOMÁTICOS
+  </div>
+</section>
+
+<!-- Transição 05→06 -->
+<div class="sec-trans" aria-hidden="true">
+  <div class="sec-trans__line"></div>
+  <div class="sec-trans__lbl mono">↓ 05 <span class="dim">·</span> OPERAÇÃO DIÁRIA <span class="dim">·</span> CONTINUE ROLANDO</div>
+</div>
+
+<!-- ============ SEÇÃO 06 · OPERAÇÃO DIÁRIA ============ -->
+<section class="sec" id="op">
+  <div class="sec__head">
+    <div class="sec__eye">05 <span class="dim">·</span> DIÁRIO · ESTOQUE · NOTAS</div>
+    <h2 class="sec__title">O dia da obra cabe numa tela.</h2>
+    <p class="sec__sub">Três rotinas que antes eram três sistemas diferentes (ou três cadernos). Aqui viraram a mesma tela, no mesmo banco, no mesmo centro de custo.</p>
+  </div>
+
+  <div class="op-grid">
+    <div class="op-card reveal" data-reveal>
+      <div class="op-card__tag"><b>01</b> · DIÁRIO DE OBRA</div>
+      <h3 class="op-card__ttl">Foto do WhatsApp<br/>vira registro datado.</h3>
+      <div class="op-card__media"><div class="op-photo"></div></div>
+      <p class="op-card__body">O mestre tira a foto e manda. O app identifica a obra pela equipe, carimba data e coordenada, e cria o registro no diário — pronto pra anexar à medição CEF.</p>
+      <div class="op-card__foot">14/abr · equipe 03 · reboco externo · 3 fotos</div>
+    </div>
+
+    <div class="op-card reveal" data-reveal>
+      <div class="op-card__tag"><b>02</b> · ESTOQUE</div>
+      <h3 class="op-card__ttl">Entrada, saída, ajuste.<br/>Por obra.</h3>
+      <ul class="op-mini">
+        <li>
+          <span class="op-mini__name">Cimento CP-II</span>
+          <span class="op-mini__qty">240 sc</span>
+          <span class="op-mini__obra op-mini__obra--c">TAMAR</span>
+        </li>
+        <li>
+          <span class="op-mini__name">Vergalhão 10mm</span>
+          <span class="op-mini__qty">1.200 m</span>
+          <span class="op-mini__obra op-mini__obra--a">BELA</span>
+        </li>
+        <li>
+          <span class="op-mini__name">Bloco cerâmico</span>
+          <span class="op-mini__qty">8.400 un</span>
+          <span class="op-mini__obra op-mini__obra--b">JEQUI</span>
+        </li>
+        <li>
+          <span class="op-mini__name">Areia média</span>
+          <span class="op-mini__qty">22 m³</span>
+          <span class="op-mini__obra op-mini__obra--c">TAMAR</span>
+        </li>
+      </ul>
+      <p class="op-card__body">Cada saída abate na obra certa. Fim do mês, o custo de material já tá lançado no P&amp;L.</p>
+      <div class="op-card__foot">48 materiais · 4 almoxarifados · 1 relatório</div>
+    </div>
+
+    <div class="op-card reveal" data-reveal>
+      <div class="op-card__tag"><b>03</b> · NOTAS FISCAIS</div>
+      <h3 class="op-card__ttl">Upload XML →<br/>custo na obra certa.</h3>
+      <ul class="op-mini">
+        <li>
+          <span class="op-mini__name">NF-e #48291</span>
+          <span class="op-mini__qty">R$ 12.400</span>
+          <span class="op-mini__obra op-mini__obra--a">BELA</span>
+        </li>
+        <li>
+          <span class="op-mini__name">NF-e #48292</span>
+          <span class="op-mini__qty">R$ 3.860</span>
+          <span class="op-mini__obra op-mini__obra--c">TAMAR</span>
+        </li>
+        <li>
+          <span class="op-mini__name">NF-e #48293</span>
+          <span class="op-mini__qty">R$ 27.100</span>
+          <span class="op-mini__obra op-mini__obra--b">JEQUI</span>
+        </li>
+        <li>
+          <span class="op-mini__name">NF-e #48294</span>
+          <span class="op-mini__qty">R$ 8.920</span>
+          <span class="op-mini__obra op-mini__obra--a">ALVOR</span>
+        </li>
+      </ul>
+      <p class="op-card__body">Solta o XML, o sistema lê fornecedor, itens, impostos. Você só confirma o rateio por obra.</p>
+      <div class="op-card__foot">134 NF-e importadas este mês · 0 digitação</div>
+    </div>
+  </div>
+</section>
+
+<!-- Transição 06→07 -->
+<div class="sec-trans" aria-hidden="true">
+  <div class="sec-trans__line"></div>
+  <div class="sec-trans__lbl mono">↓ 06 <span class="dim">·</span> QUEM FEZ <span class="dim">·</span> CONTINUE ROLANDO</div>
+</div>
+
+<!-- ============ SEÇÃO 07 · DEPOIMENTO ============ -->
+<section class="sec" id="quem">
+  <div class="sec__head">
+    <div class="sec__eye">06 <span class="dim">·</span> ORIGEM</div>
+    <h2 class="sec__title">Feito dentro da obra.<br/>Não dentro de um escritório de software.</h2>
+  </div>
+
+  <figure class="quote reveal" data-reveal>
+    <p class="quote__txt">Nascemos dentro de uma construtora de MCMV. Todo mês a gente <em>usa em obra real</em>, todo mês melhora. Nenhuma construtora vai achar planilha igual à planilha dela — por isso o sistema é flexível de verdade.</p>
+    <figcaption class="quote__attr">
+      <strong>EDR SYSTEM</strong>
+      <span class="sep">/</span>
+      DESDE 2024
+      <span class="sep">/</span>
+      JUPI — PERNAMBUCO
+    </figcaption>
+  </figure>
+</section>
+
+<!-- Transição 07→08 -->
+<div class="sec-trans" aria-hidden="true">
+  <div class="sec-trans__line"></div>
+  <div class="sec-trans__lbl mono">↓ 07 <span class="dim">·</span> PLANOS <span class="dim">·</span> CONTINUE ROLANDO</div>
+</div>
+
+<!-- ============ SEÇÃO 08 · PLANOS ============ -->
+<section class="sec" id="planos">
+  <div class="sec__head">
+    <div class="sec__eye">07 <span class="dim">·</span> PLANOS &amp; PREÇOS</div>
+    <h2 class="sec__title">Um preço por obra ativa.<br/>Sem pegadinha.</h2>
+    <p class="sec__sub">Você paga pelo que usa. Começa com 2 obras no Essencial, migra pro Pro quando fizer sentido. Primeira obra é por nossa conta.</p>
+  </div>
+
+  <div class="plans">
+    <div class="plan">
+      <div class="plan__tag">ESSENCIAL</div>
+      <div class="plan__price">R$ 297<small>/mês · por obra</small></div>
+      <p class="plan__sub">pra quem tá começando · até 2 obras ativas</p>
+      <ul class="plan__list">
+        <li>Painel · P&amp;L · Fluxo de caixa</li>
+        <li>Diário de obra · Estoque · Notas (XML)</li>
+        <li>Diárias com IA</li>
+        <li>Até 2 obras ativas</li>
+        <li>Suporte no WhatsApp</li>
+      </ul>
+      <a href="#wa-final" class="plan__cta">Falar no WhatsApp →</a>
+    </div>
+
+    <div class="plan plan--hi">
+      <div class="plan__tag">PRO</div>
+      <div class="plan__price">R$ 497<small>/mês · por obra</small></div>
+      <p class="plan__sub">pra construtora MCMV · obras ilimitadas</p>
+      <ul class="plan__list">
+        <li>Tudo do Essencial</li>
+        <li>CEF · MCMV · PCI 20 categorias</li>
+        <li>Cronograma Gantt com dependências</li>
+        <li>Folha quinzenal com PDF automático</li>
+        <li>CRM de leads (kanban)</li>
+        <li>Garantias NBR 15575</li>
+        <li>Obras ilimitadas</li>
+      </ul>
+      <a href="#wa-final" class="plan__cta">Falar no WhatsApp →</a>
+    </div>
+
+    <div class="plan">
+      <div class="plan__tag">ENTERPRISE</div>
+      <div class="plan__price plan__price--sm">Fale com a gente</div>
+      <p class="plan__sub">pra grupo · multi-CNPJ · integrações</p>
+      <ul class="plan__list">
+        <li>Tudo do Pro</li>
+        <li>Integrações custom (ERP, BI, contabilidade)</li>
+        <li>Multi-CNPJ · consolidação</li>
+        <li>Suporte dedicado</li>
+        <li>Onboarding presencial</li>
+        <li>SLA 99,9%</li>
+      </ul>
+      <a href="#wa-final" class="plan__cta">Falar no WhatsApp →</a>
+    </div>
+  </div>
+  <p class="plans__note">SEM FIDELIDADE <span class="dim">·</span> CANCELA QUANDO QUISER <span class="dim">·</span> PRIMEIRA OBRA POR NOSSA CONTA</p>
+</section>
+
+<!-- Transição 08→09 -->
+<div class="sec-trans" aria-hidden="true">
+  <div class="sec-trans__line"></div>
+  <div class="sec-trans__lbl mono">↓ 08 <span class="dim">·</span> PERGUNTAS FREQUENTES <span class="dim">·</span> CONTINUE ROLANDO</div>
+</div>
+
+<!-- ============ SEÇÃO 09 · FAQ ============ -->
+<section class="sec" id="faq">
+  <div class="sec__head">
+    <div class="sec__eye">08 <span class="dim">·</span> FAQ</div>
+    <h2 class="sec__title">O que a gente mais escuta<br/>antes da primeira obra.</h2>
+  </div>
+
+  <div class="faq">
+    <details>
+      <summary><span class="faq__num mono">01</span><span class="faq__q">Funciona pra construtora que NÃO faz MCMV?</span></summary>
+      <div class="faq__a">Sim. A parte de CEF / PCI / MCMV é opcional — desliga e pronto. Todo o resto (P&amp;L por obra, diárias com IA, fluxo de caixa, diário, estoque, notas) funciona igual em obra privada, pública ou consórcio.</div>
+    </details>
+    <details>
+      <summary><span class="faq__num mono">02</span><span class="faq__q">Preciso instalar alguma coisa?</span></summary>
+      <div class="faq__a">Não. É 100% web. Celular do mestre na obra, notebook do engenheiro no canteiro, desktop do escritório — mesmo login, mesmo dado, em tempo real. Suporte nativo a light e dark mode.</div>
+    </details>
+    <details>
+      <summary><span class="faq__num mono">03</span><span class="faq__q">Meus dados ficam onde?</span></summary>
+      <div class="faq__a">Servidor no Brasil (LGPD-compliant). Backup diário com retenção de 30 dias. Você exporta tudo em XLSX ou PDF quando quiser — é teu dado, não nosso.</div>
+    </details>
+    <details>
+      <summary><span class="faq__num mono">04</span><span class="faq__q">Quanto tempo leva pra subir minha primeira obra?</span></summary>
+      <div class="faq__a">Cerca de 30 minutos. A gente importa a sua planilha atual de custo, cadastra sua equipe pelo CPF, e você já lança a primeira diária hoje à noite. Onboarding guiado vídeo-a-vídeo pelo WhatsApp.</div>
+    </details>
+    <details>
+      <summary><span class="faq__num mono">05</span><span class="faq__q">E se eu quiser parar?</span></summary>
+      <div class="faq__a">Cancela no WhatsApp. Sem multa, sem fidelidade, sem aviso prévio de 30 dias. A gente gera o export completo dos teus dados em XLSX + PDF e fim. Teu dado é teu.</div>
+    </details>
+  </div>
+</section>
+
+<!-- ============ SEÇÃO 10 · CTA FINAL ============ -->
+<section class="cta" id="wa-final">
+  <h2 class="cta__ttl">Sua próxima quinzena pode<br/>fechar em 15 minutos.</h2>
+  <p class="cta__sub">Cadastra 1 obra. Lança 1 diária. Vê se faz sentido.</p>
+  <a href="https://wa.me/5581999999999" class="cta__btn">
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M17.5 14.4c-.3-.1-1.7-.8-1.9-.9-.3-.1-.5-.1-.7.1-.2.3-.8.9-1 1.1-.2.2-.4.2-.6.1-.3-.1-1.2-.4-2.3-1.4-.8-.7-1.4-1.6-1.5-1.9-.2-.3 0-.4.1-.6l.4-.5c.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5-.1-.1-.7-1.5-.9-2.1-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4s-1 1-1 2.4.9 2.8 1.1 3c.1.2 2 3.1 4.8 4.3.7.3 1.2.5 1.6.6.7.2 1.3.2 1.8.1.5-.1 1.7-.7 1.9-1.3.2-.7.2-1.2.2-1.3-.1-.2-.3-.3-.6-.4zM12 2.2c-5.4 0-9.8 4.4-9.8 9.8 0 1.7.5 3.4 1.3 4.8L2 22l5.3-1.4c1.4.8 3 1.2 4.7 1.2 5.4 0 9.8-4.4 9.8-9.8S17.4 2.2 12 2.2z"/></svg>
+    FALAR NO WHATSAPP →
+  </a>
+  <a href="#" class="cta__link">ou agende uma demo de 20 min →</a>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer class="foot2">
+  <div class="foot2__grid">
+    <div class="foot2__col">
+      <div class="foot2__brand">
+        <span class="foot2__brand-txt">EDR System</span> <span class="tag">v2</span>
+      </div>
+      <p>ERP especializado em gestão de obras MCMV.<br/>© 2026 EDR System.</p>
+    </div>
+    <div class="foot2__col">
+      <h4>CONTATO</h4>
+      <ul>
+        <li>Pernambuco · Brasil</li>
+        <li>contato@edrsystem.com.br</li>
+      </ul>
+    </div>
+    <div class="foot2__col">
+      <h4>CANAIS</h4>
+      <ul>
+        <li><a href="https://wa.me/5581999999999">WhatsApp →</a></li>
+        <li><a href="#">Instagram @edrsystem →</a></li>
+        <li><a href="#">contato@edrsystem.com.br →</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="foot2__end">
+    <span>FEITO DENTRO DA OBRA, NÃO DENTRO DO ESCRITÓRIO.</span>
+    <span>BRASIL · 2026</span>
+  </div>
+</footer>
+
+<!-- Custom cursor -->
+<div class="crosshair" id="crosshair" aria-hidden="true">
+  <svg viewBox="0 0 40 40" width="40" height="40">
+    <circle cx="20" cy="20" r="14" fill="none" stroke="currentColor" stroke-width="1"/>
+    <circle cx="20" cy="20" r="1.5" fill="currentColor"/>
+    <path d="M20 2v10M20 28v10M2 20h10M28 20h10" stroke="currentColor" stroke-width="1"/>
+  </svg>
+</div>
+
+<script src="app.js" defer></script>
+</body>
+</html>
