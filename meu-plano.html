@@ -177,13 +177,13 @@ function abrirConfirmMP({tag='Confirmação',titulo='Tem certeza?',texto='',okLa
 }
 
 async function sair(){
-  try{await fetch(`${SUPABASE_URL}/auth/v1/logout`,{method:'POST',headers:{apikey:SUPABASE_ANON_KEY,Authorization:'Bearer '+(localStorage.getItem('edr_token')||SUPABASE_ANON_KEY)}});}catch(_){}
-  localStorage.removeItem('edr_token');localStorage.removeItem('edr_refresh');localStorage.removeItem('edr_user');
+  try{await fetch(`${SUPABASE_URL}/auth/v1/logout`,{method:'POST',headers:{apikey:SUPABASE_ANON_KEY,Authorization:'Bearer '+((JSON.parse(localStorage.getItem('edr_auth')||'{}').access_token||'')||SUPABASE_ANON_KEY)}});}catch(_){}
+  localStorage.removeItem('edr_auth');
   window.location.href='index.html';
 }
 
 async function init(){
-  const token = localStorage.getItem('edr_token');
+  const token = (JSON.parse(localStorage.getItem('edr_auth')||'{}').access_token||'');
   if (!token){ document.getElementById('nao-logado').style.display='block'; return; }
 
   // busca user via JWT
@@ -277,7 +277,7 @@ function pedirCpfCnpj(){
 }
 
 async function salvarCnpjCompany(novo){
-  const token = localStorage.getItem('edr_token');
+  const token = (JSON.parse(localStorage.getItem('edr_auth')||'{}').access_token||'');
   const res = await fetch(`${SUPABASE_URL}/rest/v1/companies?id=eq.${COMPANY.id}`,{
     method:'PATCH',
     headers:{apikey:SUPABASE_ANON_KEY,Authorization:'Bearer '+token,'content-type':'application/json',Prefer:'return=minimal'},
@@ -310,7 +310,7 @@ async function assinar(planoId, valor){
   if (!ok) return;
   document.getElementById('loading').classList.add('open');
   try{
-    const token = localStorage.getItem('edr_token');
+    const token = (JSON.parse(localStorage.getItem('edr_auth')||'{}').access_token||'');
     const res = await fetch(`${SUPABASE_URL}/functions/v1/asaas-criar-assinatura`,{
       method:'POST',
       headers:{'authorization':`Bearer ${token}`,'content-type':'application/json','apikey':SUPABASE_ANON_KEY},
