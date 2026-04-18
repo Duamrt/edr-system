@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EDR System — Minha Assinatura</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="js/edr-v2-infra.js?v=04181700"></script>
+<script src="js/edr-v2-auth.js?v=04181700"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;-webkit-font-smoothing:antialiased;}
+body{font-family:'Inter',sans-serif;background:#F7F8F7;min-height:100vh;color:#1F2937;}
+.topbar{background:#1B4332;padding:14px 28px;display:flex;align-items:center;justify-content:space-between;gap:16px;}
+.logo{font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:1.3rem;color:#fff;letter-spacing:-.5px;display:flex;align-items:center;gap:10px;}
+.logo span{background:rgba(255,255,255,.15);color:rgba(255,255,255,.9);font-size:.62rem;font-weight:700;padding:3px 9px;border-radius:6px;letter-spacing:1.5px;text-transform:uppercase;}
+.topbar-actions{display:flex;gap:8px;}
+.btn{padding:9px 18px;background:#fff;border:1px solid rgba(255,255,255,.2);border-radius:6px;font-size:.82rem;font-weight:600;color:#1B4332;cursor:pointer;text-decoration:none;font-family:inherit;}
+.btn.ghost{background:transparent;color:#fff;border-color:rgba(255,255,255,.25);}
+.btn.primary{background:#2D6A4F;color:#fff;border:none;}
+.btn:hover{opacity:.9;}
+
+.wrap{max-width:1100px;margin:0 auto;padding:32px 24px;}
+.title{font-family:'Plus Jakarta Sans',sans-serif;font-size:1.8rem;font-weight:800;color:#1B4332;margin-bottom:4px;}
+.subtitle{font-size:.95rem;color:#6B7280;margin-bottom:28px;}
+
+.banner{padding:20px 24px;border-radius:10px;border:1px solid #E5E7EB;background:#fff;margin-bottom:22px;display:flex;gap:14px;align-items:center;}
+.banner.trial{background:#EFF6FF;border-color:#3B82F6;}
+.banner.ativo{background:#ECFDF5;border-color:#10B981;}
+.banner.atrasado{background:#FFFBEB;border-color:#F59E0B;}
+.banner.bloqueado,.banner.cancelado{background:#FEF2F2;border-color:#EF4444;}
+.banner-ic{font-size:28px;}
+.banner-tit{font-size:17px;font-weight:700;color:#111827;}
+.banner-sub{font-size:13px;color:#4B5563;margin-top:3px;}
+
+.sec{background:#fff;border:1px solid #E5E7EB;border-radius:10px;padding:22px 24px;margin-bottom:16px;}
+.sec-tit{font-family:'Plus Jakarta Sans',sans-serif;font-size:.78rem;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:14px;}
+.det-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;}
+.det-lab{font-size:.7rem;color:#9CA3AF;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;}
+.det-val{font-size:.95rem;color:#111827;font-weight:600;}
+
+.planos-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+@media(max-width:860px){.planos-grid{grid-template-columns:1fr;}}
+.plano-card{background:#fff;border:1px solid #E5E7EB;border-radius:10px;padding:26px 24px;display:flex;flex-direction:column;gap:10px;transition:all .15s;}
+.plano-card:hover{border-color:#1B4332;}
+.plano-card.atual{border-color:#2D6A4F;background:#F0FDF4;}
+.plano-card.destaque{border-color:#1B4332;box-shadow:0 6px 20px rgba(27,67,50,.08);}
+.plano-badge{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;padding:3px 9px;border-radius:4px;background:#D1FAE5;color:#065F46;align-self:flex-start;}
+.plano-nome{font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:800;color:#1B4332;}
+.plano-valor{display:flex;align-items:baseline;gap:4px;margin:4px 0 6px;}
+.plano-valor-n{font-family:'Plus Jakarta Sans',sans-serif;font-size:36px;font-weight:800;color:#1B4332;letter-spacing:-1px;}
+.plano-valor-c{font-size:13px;color:#6B7280;}
+.plano-desc{font-size:13px;color:#4B5563;line-height:1.5;}
+.plano-feat{list-style:none;margin:8px 0;display:flex;flex-direction:column;gap:6px;}
+.plano-feat li{font-size:13px;color:#1F2937;padding-left:22px;position:relative;}
+.plano-feat li::before{content:"✓";color:#10B981;font-weight:700;position:absolute;left:0;}
+.plano-btn{padding:12px;background:#1B4332;border:none;border-radius:8px;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#fff;cursor:pointer;margin-top:auto;font-family:'Plus Jakarta Sans',sans-serif;}
+.plano-btn:hover{background:#2D6A4F;}
+.plano-btn:disabled{opacity:.45;cursor:not-allowed;}
+.plano-btn.ghost{background:#fff;border:1px solid #D1D5DB;color:#111827;}
+
+/* modal */
+.mp-mod-ov{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:10001;padding:20px;}
+.mp-mod-ov.open{display:flex;}
+.mp-mod-box{background:#fff;border-radius:10px;max-width:440px;width:100%;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.2);}
+.mp-mod-head{background:#1B4332;color:#fff;padding:14px 24px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:2px;font-family:'Plus Jakarta Sans',sans-serif;}
+.mp-mod-body{padding:26px 24px 10px;}
+.mp-mod-tit{font-family:'Plus Jakarta Sans',sans-serif;font-size:20px;font-weight:800;color:#111827;margin-bottom:12px;}
+.mp-mod-txt{font-size:14px;color:#4B5563;line-height:1.6;}
+.mp-mod-txt strong{color:#111827;}
+.mp-mod-foot{display:flex;gap:10px;padding:16px 24px 22px;justify-content:flex-end;}
+.mp-btn{padding:10px 20px;border:none;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;text-transform:uppercase;letter-spacing:.5px;}
+.mp-btn.cancel{background:#fff;border:1px solid #D1D5DB;color:#4B5563;}
+.mp-btn.confirm{background:#1B4332;color:#fff;}
+.mp-btn.danger{background:#EF4444;color:#fff;}
+
+#loading{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.55);z-index:10002;}
+#loading.open{display:flex;}
+.spin{width:32px;height:32px;border:3px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:sp .8s linear infinite;}
+@keyframes sp{to{transform:rotate(360deg);}}
+
+#nao-logado{text-align:center;padding:60px 20px;}
+#nao-logado h1{font-family:'Plus Jakarta Sans',sans-serif;color:#1B4332;margin-bottom:8px;}
+#nao-logado a{color:#1B4332;font-weight:600;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">EDR <span>SYSTEM</span></div>
+  <div class="topbar-actions">
+    <a class="btn ghost" href="index.html">← Voltar ao sistema</a>
+    <button class="btn" onclick="sair()">Sair</button>
+  </div>
+</div>
+
+<div class="wrap" id="wrap" style="display:none;">
+  <h1 class="title">Minha assinatura</h1>
+  <div class="subtitle" id="subempresa">—</div>
+  <div id="body"></div>
+</div>
+
+<div id="nao-logado" style="display:none;">
+  <h1>Você precisa estar logado</h1>
+  <p><a href="index.html">Ir para o login →</a></p>
+</div>
+
+<!-- modal -->
+<div class="mp-mod-ov" id="mp-mod-ov" onclick="if(event.target===this)fecharModalMP()">
+  <div class="mp-mod-box">
+    <div class="mp-mod-head" id="mp-mod-tag">Confirmação</div>
+    <div class="mp-mod-body">
+      <div class="mp-mod-tit" id="mp-mod-tit">—</div>
+      <div class="mp-mod-txt" id="mp-mod-txt">—</div>
+    </div>
+    <div class="mp-mod-foot">
+      <button class="mp-btn cancel" id="mp-btn-cancel" onclick="fecharModalMP()">Cancelar</button>
+      <button class="mp-btn confirm" id="mp-btn-ok" onclick="_mpRes(true)">Confirmar</button>
+    </div>
+  </div>
+</div>
+<div id="loading"><div class="spin"></div></div>
+
+<script>
+const APP_VERSION = 'v04181700';
+const PLANOS = [
+  { id:'essencial', nome:'Essencial', valor:397.00,
+    desc:'Pra quem está estruturando o controle. 3 obras simultâneas.',
+    features:['3 obras simultâneas','Dashboard + lançamentos por etapa','Folha quinzenal com PDF','Fluxo de caixa','Importação NF-e XML','Estoque de materiais','Relatório de lucro básico','3 usuários inclusos'] },
+  { id:'profissional', nome:'Profissional', valor:697.00, destaque:true,
+    desc:'Até 5 obras + PCI/MCMV, diárias integradas e XML.',
+    features:['Até 5 obras simultâneas','Tudo do Essencial','PCI/MCMV completo (20 cat.)','Diárias de obra automáticas','Orçamento paramétrico','CRM de leads','Garantias NBR 15575','Termo de entrega PDF','Relatório P&L completo','Até 8 usuários','Suporte WhatsApp'] },
+  { id:'construtora', nome:'Construtora', valor:997.00,
+    desc:'Obras ilimitadas + usuários ilimitados + suporte prioritário.',
+    features:['Obras ilimitadas','Tudo do Profissional','Usuários ilimitados','Suporte prioritário (2h)','Onboarding personalizado','Treinamento da equipe','Configurações por obra','Relatórios sob demanda'] },
+];
+
+let COMPANY=null, COMPANY_USER=null, ASSINATURA=null;
+
+function esc(s){return s?String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'):'';}
+function fmt(v){return Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});}
+function fmtD(d){if(!d)return '—';const dt=new Date(d+'T00:00:00');return dt.toLocaleDateString('pt-BR');}
+
+let _mpCb=null;
+function _mpRes(r){if(_mpCb)_mpCb(r);fecharModalMP();}
+function fecharModalMP(){document.getElementById('mp-mod-ov').classList.remove('open');_mpCb=null;}
+function abrirConfirmMP({tag='Confirmação',titulo='Tem certeza?',texto='',okLabel='Confirmar',cancelLabel='Cancelar',danger=false}){
+  document.getElementById('mp-mod-tag').textContent=tag;
+  document.getElementById('mp-mod-tit').textContent=titulo;
+  document.getElementById('mp-mod-txt').innerHTML=texto;
+  const b=document.getElementById('mp-btn-ok');b.textContent=okLabel;b.className='mp-btn '+(danger?'danger':'confirm');
+  document.getElementById('mp-btn-cancel').textContent=cancelLabel;
+  document.getElementById('mp-mod-ov').classList.add('open');
+  return new Promise(r=>{_mpCb=r;});
+}
+
+async function sair(){
+  try{await fetch(`${SUPABASE_URL}/auth/v1/logout`,{method:'POST',headers:{apikey:SUPABASE_ANON_KEY,Authorization:'Bearer '+(localStorage.getItem('edr_token')||SUPABASE_ANON_KEY)}});}catch(_){}
+  localStorage.removeItem('edr_token');localStorage.removeItem('edr_refresh');localStorage.removeItem('edr_user');
+  window.location.href='index.html';
+}
+
+async function init(){
+  const token = localStorage.getItem('edr_token');
+  if (!token){ document.getElementById('nao-logado').style.display='block'; return; }
+
+  // busca user via JWT
+  const ur = await fetch(`${SUPABASE_URL}/auth/v1/user`,{headers:{apikey:SUPABASE_ANON_KEY,Authorization:'Bearer '+token}});
+  if (!ur.ok){ document.getElementById('nao-logado').style.display='block'; return; }
+  const user = await ur.json();
+
+  // busca company_user (primeira company ativa)
+  const cr = await fetch(`${SUPABASE_URL}/rest/v1/company_users?user_id=eq.${user.id}&active=eq.true&select=*,companies(*)`,{headers:{apikey:SUPABASE_ANON_KEY,Authorization:'Bearer '+token}});
+  const arr = await cr.json();
+  if (!arr?.length){ document.getElementById('nao-logado').style.display='block'; return; }
+  COMPANY_USER = arr[0];
+  COMPANY = arr[0].companies;
+
+  // busca assinatura
+  const ar = await fetch(`${SUPABASE_URL}/rest/v1/assinaturas?company_id=eq.${COMPANY.id}&status=in.(ativa,atrasada,suspensa)&order=created_at.desc&limit=1`,{headers:{apikey:SUPABASE_ANON_KEY,Authorization:'Bearer '+token}});
+  const ass = await ar.json();
+  ASSINATURA = ass?.[0] || null;
+
+  document.getElementById('subempresa').textContent = COMPANY.name;
+  document.getElementById('wrap').style.display='block';
+  render();
+}
+
+function renderBanner(){
+  const st=COMPANY.status_pagamento||'trial';
+  const dias=COMPANY.dias_atraso||0;
+  const trialEnd=COMPANY.trial_ends_at;
+  const nd=ASSINATURA?.proximo_vencimento;
+  let ic='',t='',s='';
+  if(st==='trial'){ic='🎁';t='Você está em período de teste';s=trialEnd?`Teste grátis até ${fmtD(String(trialEnd).slice(0,10))}. Escolha um plano abaixo.`:'Escolha um plano abaixo.';}
+  else if(st==='ativo'){ic='✅';t='Assinatura ativa';s=nd?`Próxima cobrança: ${fmtD(nd)} — ${fmt(ASSINATURA?.valor)}`:'Tudo certo.';}
+  else if(st==='atrasado'){ic='⚠️';t='Pagamento em atraso';s=`${dias} dia(s). Bloqueio em ${Math.max(0,7-dias)} dia(s).`;}
+  else if(st==='bloqueado'){ic='🚫';t='Acesso bloqueado';s='Regularize o pagamento.';}
+  else if(st==='cancelado'){ic='❌';t='Assinatura cancelada';s='Reative escolhendo um plano.';}
+  return `<div class="banner ${st}"><div class="banner-ic">${ic}</div><div><div class="banner-tit">${t}</div><div class="banner-sub">${esc(s)}</div></div></div>`;
+}
+
+function renderDetalhes(){
+  if (!ASSINATURA) return '';
+  const forma=({CREDIT_CARD:'Cartão de crédito',PIX:'PIX',BOLETO:'Boleto',UNDEFINED:'A definir'})[ASSINATURA.forma_pagamento]||ASSINATURA.forma_pagamento;
+  const cart=ASSINATURA.cartao_ultimos_digitos?`${ASSINATURA.cartao_bandeira||''} •••• ${ASSINATURA.cartao_ultimos_digitos}`:'—';
+  return `<div class="sec"><div class="sec-tit">Detalhes da assinatura</div><div class="det-grid">
+    <div><div class="det-lab">Plano</div><div class="det-val">${esc(ASSINATURA.plano)}</div></div>
+    <div><div class="det-lab">Valor</div><div class="det-val">${fmt(ASSINATURA.valor)}</div></div>
+    <div><div class="det-lab">Ciclo</div><div class="det-val">${ASSINATURA.ciclo==='YEARLY'?'Anual':'Mensal'}</div></div>
+    <div><div class="det-lab">Forma de pagamento</div><div class="det-val">${esc(forma)}</div></div>
+    <div><div class="det-lab">Cartão</div><div class="det-val">${esc(cart)}</div></div>
+    <div><div class="det-lab">Próximo vencimento</div><div class="det-val">${fmtD(ASSINATURA.proximo_vencimento)}</div></div>
+    <div><div class="det-lab">Último pagamento</div><div class="det-val">${ASSINATURA.ultimo_pagamento_em?new Date(ASSINATURA.ultimo_pagamento_em).toLocaleDateString('pt-BR'):'—'}</div></div>
+    <div><div class="det-lab">Status</div><div class="det-val">${esc(ASSINATURA.status)}</div></div>
+  </div></div>`;
+}
+
+function renderPlanos(){
+  const planoAtual = ASSINATURA?.plano || COMPANY?.plan;
+  const ehDono = ['dono','admin'].includes(COMPANY_USER?.role);
+  const cards = PLANOS.map(p=>{
+    const atual = p.id === planoAtual && ASSINATURA;
+    const lbl = atual ? 'Plano atual' : (ASSINATURA ? 'Mudar para este' : 'Assinar');
+    return `<div class="plano-card ${atual?'atual':''} ${p.destaque?'destaque':''}">
+      ${atual?'<span class="plano-badge">SEU PLANO</span>':(p.destaque?'<span class="plano-badge">MAIS ESCOLHIDO</span>':'')}
+      <div class="plano-nome">${esc(p.nome)}</div>
+      <div class="plano-valor"><span class="plano-valor-n">${fmt(p.valor).replace('R$','R$ ')}</span><span class="plano-valor-c">/mês</span></div>
+      <div class="plano-desc">${esc(p.desc)}</div>
+      <ul class="plano-feat">${p.features.map(f=>`<li>${esc(f)}</li>`).join('')}</ul>
+      <button class="plano-btn ${atual?'ghost':''}" ${atual||!ehDono?'disabled':''} onclick="assinar('${p.id}',${p.valor})">${lbl}</button>
+    </div>`;
+  }).join('');
+  return `<div class="sec"><div class="sec-tit">Planos disponíveis</div><div class="planos-grid">${cards}</div>${!ehDono?'<div style="text-align:center;color:#6B7280;font-size:12px;margin-top:14px;">Apenas dono/admin podem alterar o plano.</div>':''}</div>`;
+}
+
+function render(){ document.getElementById('body').innerHTML = renderBanner() + renderDetalhes() + renderPlanos(); }
+
+async function assinar(planoId, valor){
+  const ehDono = ['dono','admin'].includes(COMPANY_USER?.role);
+  if (!ehDono){ alert('Apenas dono/admin podem assinar'); return; }
+  const nomePlano = PLANOS.find(p=>p.id===planoId)?.nome || planoId;
+  const ok = await abrirConfirmMP({
+    tag:'Confirmar assinatura',
+    titulo:`${nomePlano} — ${fmt(valor)}/mês`,
+    texto:`Você vai ativar a assinatura <strong>${nomePlano}</strong> por <strong>${fmt(valor)}/mês</strong> e será redirecionado pro pagamento (cartão ou PIX).<br><br>Sem fidelidade. Cancele quando quiser.`,
+    okLabel:'Continuar para o pagamento',
+  });
+  if (!ok) return;
+  document.getElementById('loading').classList.add('open');
+  try{
+    const token = localStorage.getItem('edr_token');
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/asaas-criar-assinatura`,{
+      method:'POST',
+      headers:{'authorization':`Bearer ${token}`,'content-type':'application/json','apikey':SUPABASE_ANON_KEY},
+      body: JSON.stringify({company_id:COMPANY.id,plano:planoId,valor,ciclo:'MONTHLY',forma_pagamento:'UNDEFINED'}),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || data.error || 'Erro ao criar assinatura');
+    if (data.invoice_url) window.open(data.invoice_url,'_blank');
+    await init();
+  }catch(e){console.error(e);alert('Erro: '+e.message);}
+  finally{document.getElementById('loading').classList.remove('open');}
+}
+
+console.log(`%c🌲 EDR System — Minha Assinatura ${APP_VERSION}`,'color:#1B4332;font-weight:bold;');
+init();
+</script>
+<div style="position:fixed;bottom:6px;right:10px;font-size:10px;color:#9CA3AF;z-index:100;letter-spacing:.5px;">EDR System v04181700</div>
+</body>
+</html>
