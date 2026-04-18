@@ -26,7 +26,7 @@ Deno.serve(async(req)=>{
       case "PAYMENT_CONFIRMED":case "PAYMENT_RECEIVED":case "PAYMENT_RECEIVED_IN_CASH":{
         const cc=pay.creditCard??{};
         await sb.from("assinaturas").update({status:"ativa",forma_pagamento:pay.billingType??a.forma_pagamento,ultimo_pagamento_em:new Date().toISOString(),proximo_vencimento:pay.nextDueDate??a.proximo_vencimento,cartao_ultimos_digitos:cc.creditCardNumber??a.cartao_ultimos_digitos,cartao_bandeira:cc.creditCardBrand??a.cartao_bandeira}).eq("id",a.id);
-        await sb.from("companies").update({status_pagamento:"ativo",dias_atraso:0,bloqueado_em:null}).eq("id",coid);
+        await sb.from("companies").update({status_pagamento:"ativo",plan:a.plano,trial_ends_at:null,dias_atraso:0,bloqueado_em:null}).eq("id",coid);
         break;
       }
       case "PAYMENT_OVERDUE":{

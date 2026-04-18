@@ -146,7 +146,7 @@ body{font-family:'Inter',sans-serif;background:#F7F8F7;min-height:100vh;color:#1
 <div id="loading"><div class="spin"></div></div>
 
 <script>
-const APP_VERSION = 'v04181140';
+const APP_VERSION = 'v04181200';
 const ASAAS_PLANOS = [
   { id:'essencial', nome:'Essencial', valor:197.00,
     desc:'Pra quem está saindo da planilha. 2 obras simultâneas.',
@@ -258,7 +258,53 @@ function renderDetalhes(){
     <div><div class="det-lab">Próximo vencimento</div><div class="det-val">${fmtD(ASSINATURA.proximo_vencimento)}</div></div>
     <div><div class="det-lab">Último pagamento</div><div class="det-val">${ASSINATURA.ultimo_pagamento_em?new Date(ASSINATURA.ultimo_pagamento_em).toLocaleDateString('pt-BR'):'—'}</div></div>
     <div><div class="det-lab">Status</div><div class="det-val">${esc(ASSINATURA.status)}</div></div>
+  </div>
+  <div style="display:flex;gap:10px;margin-top:18px;flex-wrap:wrap;">
+    <button class="plano-btn" style="flex:1;min-width:160px;" onclick="trocarCartao()">💳 Trocar cartão / forma de pagamento</button>
+    <button class="plano-btn" style="flex:1;min-width:160px;background:#fff;border:1px solid #EF4444;color:#EF4444;" onclick="cancelarAssinatura()">Cancelar assinatura</button>
   </div></div>`;
+}
+
+async function chamarGerenciar(action){
+  const token = await getValidToken();
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/asaas-gerenciar-assinatura`,{
+    method:'POST',
+    headers:{'authorization':`Bearer ${token}`,'content-type':'application/json','apikey':SUPABASE_ANON_KEY},
+    body: JSON.stringify({ action, assinatura_id: ASSINATURA.id }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || data.error || 'Erro');
+  return data;
+}
+
+async function trocarCartao(){
+  if (!ASSINATURA) return;
+  document.getElementById('loading').classList.add('open');
+  try {
+    const data = await chamarGerenciar('proxima_cobranca');
+    if (data.invoice_url) window.open(data.invoice_url,'_blank');
+    else alert('Não há cobrança pendente pra trocar forma de pagamento agora.');
+  } catch(e){ alert('Erro: '+e.message); }
+  finally { document.getElementById('loading').classList.remove('open'); }
+}
+
+async function cancelarAssinatura(){
+  if (!ASSINATURA) return;
+  const ok = await abrirConfirmMP({
+    tag:'Cancelar assinatura',
+    titulo:'Deseja mesmo cancelar?',
+    texto:'Sua assinatura será encerrada <strong>imediatamente</strong>. Você pode reativar escolhendo um plano depois.',
+    okLabel:'Sim, cancelar',
+    cancelLabel:'Manter assinatura',
+    danger:true,
+  });
+  if (!ok) return;
+  document.getElementById('loading').classList.add('open');
+  try {
+    await chamarGerenciar('cancelar');
+    await init();
+  } catch(e){ alert('Erro: '+e.message); }
+  finally { document.getElementById('loading').classList.remove('open'); }
 }
 
 function renderPlanos(){
@@ -351,6 +397,6 @@ async function assinar(planoId, valor){
 console.log(`%c🌲 EDR System — Minha Assinatura ${APP_VERSION}`,'color:#1B4332;font-weight:bold;');
 init();
 </script>
-<div style="position:fixed;bottom:6px;right:10px;font-size:10px;color:#9CA3AF;z-index:100;letter-spacing:.5px;">EDR System v04181140</div>
+<div style="position:fixed;bottom:6px;right:10px;font-size:10px;color:#9CA3AF;z-index:100;letter-spacing:.5px;">EDR System v04181200</div>
 </body>
 </html>
