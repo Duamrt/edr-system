@@ -2,7 +2,7 @@
   "name": "EDR System — Gestão de Obras",
   "short_name": "EDR System",
   "description": "Sistema integrado de gestão de obras da EDR Engenharia.",
-  "start_url": "/index.html",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "background_color": "#0f172a",
