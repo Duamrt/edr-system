@@ -66,6 +66,11 @@ async function initDiarias() {
 
   if (usuarioAtual?.perfil === 'mestre') _diarPopularFormManual();
   aplicarPerfil();
+
+  if (usuarioAtual?.perfil === 'mestre') {
+    const btnNova = document.getElementById('btn-diar-nova-quinzena');
+    if (btnNova) btnNova.style.display = 'none';
+  }
 }
 
 
@@ -1162,7 +1167,10 @@ function _diarRenderRegistros() {
 
   container.innerHTML = dias.map(dia => {
     const items = porDia[dia];
-    const df = new Date(dia + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' }).toUpperCase();
+    const diaDate = new Date(dia + 'T12:00:00');
+    const diaDow = diaDate.getDay();
+    const diaFds = diaDow === 0 || diaDow === 6;
+    const df = diaDate.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' }).toUpperCase();
     const rows = items.map(r => {
       const periodos = typeof r.periodos === 'string' ? JSON.parse(r.periodos || '[]') : (r.periodos || []);
       const obrasTexto = periodos.map(p => {
@@ -1186,13 +1194,17 @@ function _diarRenderRegistros() {
          </div>` : '';
 
     const isFirst = dia === dias[0];
+    const badgeDia = diaFds
+      ? `<span class="edr-badge" style="background:rgba(59,130,246,0.12);color:#3b82f6;">${items.length} extra(s)</span>`
+      : (faltas.length ? `<span class="edr-badge edr-badge-error">${faltas.length} falta(s)</span>` : '');
+
     return `<div class="diar-registro-dia">
       <div class="diar-registro-header" onclick="diarToggleDia(this)">
         <div style="display:flex;align-items:center;gap:8px">
           <span class="material-symbols-outlined diar-chevron" style="font-size:16px;transition:transform .2s;${isFirst ? 'transform:rotate(90deg)' : ''}">${isFirst ? 'expand_more' : 'chevron_right'}</span>
           <span class="diar-registro-data">${df}</span>
-          <span class="diar-registro-count">${items.length} func.</span>
-          ${faltas.length ? `<span class="edr-badge edr-badge-error">${faltas.length} falta(s)</span>` : ''}
+          ${!diaFds ? `<span class="diar-registro-count">${items.length} func.</span>` : ''}
+          ${badgeDia}
         </div>
         <div style="display:flex;gap:4px;">
           ${isAdmin ? `<button class="edr-btn-sm edr-btn-success-outline" onclick="event.stopPropagation();diarAdicionarNoDia('${dia}')">+ ADD</button>` : ''}
@@ -1451,6 +1463,8 @@ async function diarDeletarDia(data) {
 // FALTAS
 // ══════════════════════════════════════════════════════════════════
 function _diarGetFaltasDia(dia, regs) {
+  const dow = new Date(dia + 'T12:00:00').getDay();
+  if (dow === 0 || dow === 6) return []; // fds: presença voluntária, não conta falta
   regs = regs.map(r => ({ ...r, periodos: typeof r.periodos === 'string' ? JSON.parse(r.periodos || '[]') : (r.periodos || []) }));
   const presentes = new Set(regs.map(r => r.funcionario));
   return DiariasModule.team.filter(n => !presentes.has(n));
@@ -1462,6 +1476,8 @@ function _diarGetFaltasQuinzena() {
   const faltas = {};
   DiariasModule.team.forEach(n => { faltas[n] = 0; });
   diasLancados.forEach(dia => {
+    const dow = new Date(dia + 'T12:00:00').getDay();
+    if (dow === 0 || dow === 6) return; // fds: não conta falta
     const presentes = new Set(regs.filter(r => r.data === dia).map(r => r.funcionario));
     DiariasModule.team.forEach(n => { if (!presentes.has(n)) faltas[n]++; });
   });
