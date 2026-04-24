@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agenda Iannaline — EDR Engenharia</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet"/>
+<style>
+/* ── V2 DESIGN SYSTEM ── */
+:root {
+  --primary: #2D6A4F;
+  --primary-hover: #1B4332;
+  --primary-light: #D1FAE5;
+  --primary-surface: #ECFDF5;
+  --bg: #FAFAFA;
+  --card: #FFFFFF;
+  --border: #E5E7EB;
+  --border-light: #F3F4F6;
+  --text: #111827;
+  --text-sec: #374151;
+  --text-muted: #6B7280;
+  --text-obs: #9CA3AF;
+  --input-bg: #FFFFFF;
+  --shadow: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+  --shadow-md: 0 4px 6px rgba(0,0,0,.05), 0 2px 4px rgba(0,0,0,.04);
+  --accent: var(--primary);
+  --accent-light: rgba(45,106,79,.1);
+  --hoje-bg: #ECFDF5;
+  --hoje-border: #2D6A4F;
+  --sel-bg: #F0FDF4;
+  --done-text: #9CA3AF;
+  --radius: 12px;
+  --radius-sm: 8px;
+}
+[data-theme="dark"] {
+  --bg: #0F1117;
+  --card: #1A1D23;
+  --border: #2D3139;
+  --border-light: #232830;
+  --text: #F3F4F6;
+  --text-sec: #D1D5DB;
+  --text-muted: #9CA3AF;
+  --text-obs: #6B7280;
+  --input-bg: #232830;
+  --shadow: 0 1px 3px rgba(0,0,0,.3);
+  --shadow-md: 0 4px 6px rgba(0,0,0,.3);
+  --accent: #34D399;
+  --accent-light: rgba(52,211,153,.12);
+  --hoje-bg: #0D2818;
+  --hoje-border: #34D399;
+  --sel-bg: #122620;
+  --primary-surface: #0D2818;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-font-smoothing: antialiased; }
+body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; transition: background .3s, color .3s; overflow-x: hidden; }
+
+/* ── HEADER ── */
+.header {
+  background: #1A1D23;
+  color: #F3F4F6;
+  padding: 0 24px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+.header-left { display: flex; align-items: center; gap: 14px; }
+.header-logo { height: 34px; width: auto; }
+.header-title h1 { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1rem; font-weight: 700; color: #F3F4F6; line-height: 1.2; }
+.header-title .sub { font-size: .7rem; color: #9CA3AF; letter-spacing: .8px; text-transform: uppercase; }
+.header-right { display: flex; align-items: center; gap: 6px; }
+.hbtn {
+  background: rgba(255,255,255,.07);
+  border: 1px solid rgba(255,255,255,.12);
+  color: #D1D5DB;
+  padding: 0 14px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: .82rem;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: background .2s, color .2s;
+  white-space: nowrap;
+}
+.hbtn:hover { background: rgba(255,255,255,.13); color: #fff; }
+.hbtn .material-symbols-outlined { font-size: 18px; }
+.contadores { display: flex; gap: 20px; }
+.contador { text-align: center; }
+.contador .num { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.1rem; font-weight: 700; color: #34D399; line-height: 1; }
+.contador .lbl { font-size: .65rem; color: #6B7280; text-transform: uppercase; letter-spacing: .5px; margin-top: 2px; }
+
+/* ── DESKTOP LAYOUT ── */
+.desktop-view {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 20px;
+  padding: 20px 24px;
+  max-width: 1440px;
+  margin: 0 auto;
+  height: calc(100vh - 60px);
+}
+
+/* ── CALENDARIO ── */
+.calendario {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+}
+.mes-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.mes-nav h2 {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text);
+  text-transform: capitalize;
+}
+.mes-nav button {
+  background: var(--border-light);
+  border: 1px solid var(--border);
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all .2s;
+  font-size: .8rem;
+}
+.mes-nav button:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+.dias-semana {
+  display: grid;
+  grid-template-columns: repeat(7,1fr);
+  gap: 3px;
+  font-size: .72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+.dias-semana span { text-align: center; padding: 4px 2px; }
+.grid-dias { display: grid; grid-template-columns: repeat(7,1fr); gap: 3px; flex: 1; }
+.dia {
+  border-radius: var(--radius-sm);
+  padding: 6px 5px;
+  min-height: 74px;
+  cursor: pointer;
+  transition: all .15s;
+  border: 2px solid transparent;
+  text-align: center;
+  overflow: hidden;
+  min-width: 0;
+  background: var(--border-light);
+}
+.dia:hover { background: var(--accent-light); border-color: var(--accent); }
+.dia.hoje { background: var(--hoje-bg); border-color: var(--hoje-border); }
+.dia.sel { background: var(--sel-bg); border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light); }
+.dia.out { opacity: .2; cursor: default; }
+.dia.out:hover { background: var(--border-light); border-color: transparent; }
+.dia .num {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: .78rem;
+  font-weight: 600;
+  color: var(--text-sec);
+  margin-bottom: 3px;
+}
+.dia.hoje .num {
+  background: var(--accent);
+  color: #fff;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .72rem;
+  margin: 0 auto 3px;
+}
+.dia .evs { display: flex; flex-direction: column; gap: 2px; min-width: 0; overflow: hidden; }
+.ev-mini {
+  font-size: .65rem;
+  padding: 2px 4px;
+  border-radius: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 600;
+  text-align: left;
+  max-width: 100%;
+  display: block;
+}
+.ev-mini.done { opacity: .35; text-decoration: line-through; }
+.ev-mini.pessoal  { background: #DBEAFE; color: #1E40AF; }
+.ev-mini.trabalho { background: #FEF3C7; color: #92400E; }
+.ev-mini.compra   { background: #FCE7F3; color: #9D174D; }
+.ev-mini.lembrete { background: #E0E7FF; color: #3730A3; }
+[data-theme="dark"] .ev-mini.pessoal  { background: #1E3A5F; color: #93C5FD; }
+[data-theme="dark"] .ev-mini.trabalho { background: #422006; color: #FCD34D; }
+[data-theme="dark"] .ev-mini.compra   { background: #500724; color: #F9A8D4; }
+[data-theme="dark"] .ev-mini.lembrete { background: #312E81; color: #A5B4FC; }
+.ev-mini.p-alta  { border-left: 2px solid #EF4444; }
+.ev-mini.p-media { border-left: 2px solid #F59E0B; }
+.dia .mais { font-size: .65rem; color: var(--accent); font-weight: 700; margin-top: 1px; }
+
+/* ── PAINEL LATERAL ── */
+.painel-lat { display: flex; flex-direction: column; gap: 14px; overflow-y: auto; }
+.card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 18px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+}
+.card h3 {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: .88rem;
+  font-weight: 700;
+  color: var(--text-sec);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: .3px;
+  text-transform: uppercase;
+}
+.card h3 .material-symbols-outlined { font-size: 18px; color: var(--accent); }
+
+/* ── MOBILE VIEW ── */
+.mobile-view { display: none; padding: 0; min-height: calc(100vh - 60px); }
+.mob-tabs {
+  display: flex;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 60px;
+  z-index: 10;
+}
+.mob-tab {
+  flex: 1;
+  padding: 14px 8px;
+  text-align: center;
+  font-size: .88rem;
+  font-weight: 600;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all .2s;
+}
+.mob-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.mob-daynav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+}
+.mob-daynav button {
+  background: var(--border-light);
+  border: 1px solid var(--border);
+  color: var(--accent);
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: .85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all .2s;
+}
+.mob-daynav button:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+.mob-daynav .dia-label { text-align: center; }
+.mob-daynav .dia-label .dia-nome {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.mob-daynav .dia-label .dia-data { font-size: .8rem; color: var(--text-muted); }
+.mob-lista { padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; padding-bottom: 90px; }
+.mob-vazio { text-align: center; color: var(--text-muted); padding: 40px 20px; font-size: .9rem; }
+
+/* ── EVENTO ITEM ── */
+.ev-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  background: var(--border-light);
+  border: 1px solid var(--border);
+  transition: all .2s;
+}
+.ev-item:hover { box-shadow: var(--shadow-md); border-color: var(--accent); }
+.ev-item.done { opacity: .5; }
+.ev-item.done .ev-titulo { text-decoration: line-through; color: var(--done-text); }
+.ev-item.p-alta  { border-left: 3px solid #EF4444; }
+.ev-item.p-media { border-left: 3px solid #F59E0B; }
+.ev-check {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  border: 2px solid var(--border);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all .2s;
+  position: relative;
+  margin-top: 2px;
+  background: var(--card);
+}
+.ev-check:checked { background: var(--accent); border-color: var(--accent); }
+.ev-check:checked::after {
+  content: '✓';
+  color: #fff;
+  font-size: .65rem;
+  font-weight: 700;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+.ev-hora { font-size: .78rem; font-weight: 600; color: var(--accent); min-width: 40px; padding-top: 3px; }
+.ev-info { flex: 1; }
+.ev-titulo { font-size: .88rem; font-weight: 500; color: var(--text); }
+.ev-obs { font-size: .78rem; color: var(--text-obs); margin-top: 2px; }
+.ev-meta { display: flex; align-items: center; gap: 5px; margin-top: 5px; flex-wrap: wrap; }
+.ev-cat {
+  font-size: .7rem;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-weight: 600;
+}
+.ev-cat.pessoal  { background: #DBEAFE; color: #1E40AF; }
+.ev-cat.trabalho { background: #FEF3C7; color: #92400E; }
+.ev-cat.compra   { background: #FCE7F3; color: #9D174D; }
+.ev-cat.lembrete { background: #E0E7FF; color: #3730A3; }
+[data-theme="dark"] .ev-cat.pessoal  { background: #1E3A5F; color: #93C5FD; }
+[data-theme="dark"] .ev-cat.trabalho { background: #422006; color: #FCD34D; }
+[data-theme="dark"] .ev-cat.compra   { background: #500724; color: #F9A8D4; }
+[data-theme="dark"] .ev-cat.lembrete { background: #312E81; color: #A5B4FC; }
+.ev-prio {
+  font-size: .68rem;
+  padding: 2px 7px;
+  border-radius: 20px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .3px;
+}
+.ev-prio.alta  { background: #FEF2F2; color: #DC2626; }
+.ev-prio.media { background: #FFFBEB; color: #D97706; }
+[data-theme="dark"] .ev-prio.alta  { background: #450A0A; color: #FCA5A5; }
+[data-theme="dark"] .ev-prio.media { background: #451A03; color: #FCD34D; }
+.ev-actions { display: flex; flex-direction: column; gap: 2px; align-items: center; }
+.ev-edit, .ev-del {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 5px;
+  min-width: 30px;
+  min-height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  transition: all .2s;
+  color: var(--text-muted);
+}
+.ev-edit:hover { color: var(--accent); background: var(--accent-light); }
+.ev-del:hover  { color: #EF4444; background: #FEF2F2; }
+.ev-edit .material-symbols-outlined,
+.ev-del .material-symbols-outlined { font-size: 16px; }
+
+/* ── FORM NOVO ── */
+.form-novo { display: flex; flex-direction: column; gap: 8px; }
+.form-novo input,
+.form-novo select,
+.form-novo textarea {
+  padding: 10px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: .9rem;
+  font-family: 'Inter', sans-serif;
+  outline: none;
+  background: var(--input-bg);
+  color: var(--text);
+  transition: border-color .2s, box-shadow .2s;
+}
+.form-novo input:focus,
+.form-novo select:focus,
+.form-novo textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-light);
+}
+.form-novo textarea { resize: none; height: 60px; }
+.form-row   { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.form-row-3 { display: grid; grid-template-columns: auto 1fr 1fr; gap: 8px; }
+.btn-add {
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  padding: 11px 16px;
+  border-radius: var(--radius-sm);
+  font-size: .88rem;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 700;
+  letter-spacing: .3px;
+  cursor: pointer;
+  transition: background .2s;
+  min-height: 44px;
+}
+.btn-add:hover { background: var(--primary-hover); }
+
+/* ── FAB ── */
+.fab {
+  display: none;
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  font-size: 1.6rem;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(45,106,79,.4);
+  z-index: 50;
+  align-items: center;
+  justify-content: center;
+  transition: transform .2s, background .2s;
+  font-family: 'Inter', sans-serif;
+}
+.fab:hover { background: var(--primary-hover); }
+.fab:active { transform: scale(.92); }
+
+/* ── MODAL MOBILE ── */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  z-index: 100;
+  align-items: flex-end;
+  justify-content: center;
+  backdrop-filter: blur(2px);
+}
+.modal-overlay.show { display: flex; }
+.modal-content {
+  background: var(--card);
+  border-radius: 20px 20px 0 0;
+  padding: 22px 20px;
+  width: 100%;
+  max-width: 500px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.modal-header h3 {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.modal-close {
+  background: var(--border-light);
+  border: 1px solid var(--border);
+  font-size: .9rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all .2s;
+}
+.modal-close:hover { color: var(--text); background: var(--border); }
+
+/* ── PRÓXIMOS ── */
+.prox-lista { display: flex; flex-direction: column; gap: 4px; }
+.prox-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--border-light);
+  border: 1px solid transparent;
+  font-size: .8rem;
+  cursor: pointer;
+  transition: all .2s;
+}
+.prox-item:hover { background: var(--accent-light); border-color: var(--accent); }
+.prox-data { font-weight: 600; color: var(--accent); min-width: 38px; font-size: .76rem; }
+.prox-texto { color: var(--text-sec); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ── VAZIO ── */
+.vazio { text-align: center; color: var(--text-muted); font-size: .85rem; padding: 20px 0; }
+
+/* ── SINCRONIZAÇÃO / OFFLINE ── */
+.saving-ind {
+  position: fixed;
+  top: 72px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--primary);
+  color: #fff;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: .76rem;
+  font-weight: 600;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  opacity: 0;
+  transition: opacity .3s;
+  z-index: 999;
+  pointer-events: none;
+}
+.saving-ind.vis { opacity: 1; }
+.saving-dot { width: 7px; height: 7px; background: #fff; border-radius: 50%; animation: pulse 1s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+.offline-bar {
+  display: none;
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #DC2626;
+  color: #fff;
+  padding: 8px 20px;
+  border-radius: 20px;
+  font-size: .8rem;
+  font-weight: 600;
+  z-index: 999;
+  box-shadow: 0 4px 12px rgba(0,0,0,.3);
+}
+.offline-bar.vis { display: block; }
+.load-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  gap: 14px;
+  transition: opacity .3s;
+}
+.load-overlay.gone { opacity: 0; pointer-events: none; }
+.load-spin {
+  width: 30px;
+  height: 30px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin .8s linear infinite;
+}
+@keyframes spin { to{transform:rotate(360deg)} }
+.load-overlay p { font-size: .85rem; color: var(--text-muted); }
+
+/* ── FILTRO DROPDOWN ── */
+.filtro-wrap { position: relative; }
+.filtro-dd {
+  display: none;
+  position: absolute;
+  top: 44px;
+  right: 0;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px;
+  min-width: 190px;
+  box-shadow: var(--shadow-md);
+  z-index: 100;
+}
+.filtro-dd.show { display: block; }
+.filtro-dd label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  border-radius: var(--radius-sm);
+  font-size: .82rem;
+  color: var(--text-sec);
+  cursor: pointer;
+  transition: background .15s;
+}
+.filtro-dd label:hover { background: var(--border-light); }
+.filtro-dd input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px; }
+.filtro-sec { font-size: .7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; padding: 8px 8px 2px; font-weight: 600; }
+.filtro-div { height: 1px; background: var(--border); margin: 4px 0; }
+
+/* ── RESPONSIVE ── */
+@media(max-width: 768px){
+  .desktop-view { display: none !important; }
+  .mobile-view  { display: flex !important; flex-direction: column; }
+  .fab          { display: flex !important; }
+  .header       { padding: 0 14px; height: 56px; }
+  .header-logo  { height: 28px; }
+  .header-title h1 { font-size: .9rem; }
+  .header-title .sub { display: none; }
+  .contadores   { gap: 14px; }
+  .filtro-dd    { right: -10px; }
+  .mob-tabs     { top: 56px; }
+}
+</style>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1a5c2a">
+</head>
+<body>
+
+<div class="load-overlay" id="loadO"><div class="load-spin"></div><p>Carregando agenda...</p></div>
+<div class="saving-ind" id="saveInd"><div class="saving-dot"></div>sincronizando</div>
+<div class="offline-bar" id="offBar">Sem internet — modo offline</div>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <svg class="header-logo" viewBox="0 0 12500 12500" xmlns="http://www.w3.org/2000/svg" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2"><g transform="matrix(17.2764,0,0,17.2764,-17.0066,-10.9962)"><g><path d="M265.547,223.821C163.627,223.821 163.642,223.819 163.546,223.84C161.626,224.261 161.66,224.664 161.642,226.641C161.408,252.651 161.618,336.502 161.642,346.056C161.652,350.39 163.509,349.419 167.84,349.419C351.09,349.419 351.088,349.424 351.324,349.381C353.361,349.005 353.035,348.124 353.035,334.116C353.035,211.907 353.012,211.892 353.229,211.316C353.727,209.993 354.212,210.205 368.683,210.205C448.09,210.205 448.092,210.169 453.357,210.495C464.991,211.216 467.108,210.898 473.898,212.864C474.234,212.962 492.592,216.398 509.427,233.531C524.399,248.768 527.637,263.351 529.42,268.956C530.989,273.89 532.859,293.349 529.02,305.783C527.503,310.696 527.827,310.79 525.827,315.544C524.445,318.831 521.607,326.603 511.524,338.021C509.77,340.007 502.857,345.976 501.856,346.655C494.169,351.87 489.741,354.815 472.8,359.815C468.43,361.105 466.313,360.879 465.868,362.115C465.447,363.286 466.714,365.152 467.068,365.812C467.227,366.106 488.138,406.141 490.919,411.416C492.423,414.269 504.615,437.396 509.567,447.153C510.677,449.34 510.852,449.221 511.831,451.44C512.354,452.624 527.853,481.864 530.897,488.053C531.205,488.68 533.212,492.76 535.044,495.738C537.927,500.423 533.576,499.485 530.444,499.482C526.01,499.478 523.771,499.842 522.719,498.132C521.766,496.58 519.354,491.596 518.166,489.552C517.771,488.873 513.791,481.133 512.549,478.769C502.631,459.899 483.525,423.074 472.702,402.623C467.586,392.956 467.794,392.877 462.661,383.235C452.148,363.491 452.366,363.101 451.054,362.679C450.19,362.401 450.169,362.444 370.855,362.443C367.705,362.443 366.633,362.271 366.613,365.6C366.548,376.124 366.754,497.065 366.496,498.043C366.148,499.366 364.589,499.467 364.385,499.48C362.111,499.627 356.338,499.5 355.639,499.485C352.359,499.413 353.039,498.076 353.035,494.791C353.031,491.626 353.046,364.664 353.027,364.546C352.588,361.832 350.094,362.441 348.056,362.441C159.713,362.409 159.693,362.549 158.08,362.263C156.571,361.995 152.393,361.539 149.753,356.714C148.497,354.418 148.658,354.274 148.658,324.345C148.658,84.392 148.641,84.41 148.794,83.408C149.445,79.137 153.384,75.059 156.893,74.317C159.408,73.785 159.425,73.845 228.636,73.845C295.709,73.845 295.714,73.839 295.884,73.895C297.644,74.475 297.529,75.202 297.472,83.341C297.452,86.239 296.677,86.315 293.773,86.316C232.571,86.329 163.892,86.276 163.455,86.357C161.303,86.76 161.642,87.658 161.642,101.788C161.642,209.078 161.637,209.08 161.677,209.215C162.228,211.103 162.621,211.016 164.59,211.03C178.518,211.129 268.8,210.805 269.987,211.222C271.501,211.754 271.181,214.427 271.178,219.038C271.178,219.369 271.176,222.581 270.707,223.152C269.966,224.054 266.667,223.818 265.547,223.821ZM519.102,287.442C518.817,283.253 518.638,260.148 500.893,242.07C481.704,222.521 460.209,223.473 453.364,223.473C367.326,223.473 367.29,223.443 366.7,223.743C365.491,224.356 365.744,226.369 365.744,233.151C365.744,348.06 365.741,348.061 365.774,348.18C366.155,349.586 366.212,349.757 367.642,349.983C369.352,350.253 453.498,350.022 460.963,350.001C462.31,349.997 469.156,349.979 477.408,346.429C488.368,341.715 493.664,337.219 497.016,334.394C498.63,333.034 507.352,325.685 513.185,313.548C519.232,300.967 519.094,287.577 519.102,287.442Z" style="fill:white"/><path d="M318.744,72.968C321.166,73.052 321.166,73.044 427.308,73.044C557.274,73.044 557.31,73.002 558.722,73.383C568.326,75.976 569.278,83.629 569.647,86.576C569.806,87.838 569.789,87.846 569.789,505.647C569.789,508.099 571.501,523.031 559.794,524.411C558.151,524.604 159.871,524.517 159.125,524.456C151.655,523.849 149.175,516.992 148.828,515.314C148.667,514.537 148.685,514.536 148.685,425.31C148.685,402.139 148.595,401.977 149.259,401.304C149.828,400.727 150.001,400.648 160.237,400.694C160.708,400.696 163.037,400.345 163.358,402.533C163.442,403.104 163.356,506.896 163.405,507.826C163.492,509.521 164.25,510.001 165.654,510.136C166.073,510.176 519.239,510.152 549.986,510.149C551.972,510.149 554.567,510.807 554.937,507.792C554.982,507.429 554.879,126.278 554.87,93.103C554.869,89.529 555.729,88.007 552.15,87.932C552.032,87.93 331.828,87.931 331.776,87.932C329.813,87.954 329.399,87.941 329.044,89.887C329.018,90.033 329.046,221.817 329.029,222.317C328.931,225.102 328.049,224.934 325.257,224.933C314.068,224.931 312.979,225.052 312.308,224.386C311.64,223.723 311.746,220.467 311.757,220.123L311.757,110.473C311.757,74.27 311.689,74.122 312.246,73.577C313.08,72.761 316.2,72.97 318.744,72.968Z" style="fill:#2dd44b"/></g></g></svg>
+    <div class="header-title"><h1>Agenda da Iannaline</h1><span class="sub">EDR Engenharia</span></div>
+  </div>
+  <div class="contadores">
+    <div class="contador"><div class="num" id="cHoje">0</div><div class="lbl">Hoje</div></div>
+    <div class="contador"><div class="num" id="cSem">0</div><div class="lbl">Semana</div></div>
+    <div class="contador"><div class="num" id="cMes">0</div><div class="lbl">Mês</div></div>
+  </div>
+  <div class="header-right">
+    <div class="filtro-wrap">
+      <button class="hbtn" onclick="toggleFiltro()" aria-label="Filtros">
+        <span class="material-symbols-outlined">filter_list</span> Filtros
+      </button>
+      <div class="filtro-dd" id="filtroDD">
+        <div class="filtro-sec">Mostrar</div>
+        <label><input type="checkbox" checked onchange="refresh()" data-f="pend"> Pendentes</label>
+        <label><input type="checkbox" checked onchange="refresh()" data-f="done"> Concluídos</label>
+        <div class="filtro-div"></div>
+        <div class="filtro-sec">Prioridade</div>
+        <label><input type="checkbox" checked onchange="refresh()" data-f="alta"> Alta</label>
+        <label><input type="checkbox" checked onchange="refresh()" data-f="media"> Média</label>
+        <label><input type="checkbox" checked onchange="refresh()" data-f="baixa"> Normal</label>
+        <div class="filtro-div"></div>
+        <div class="filtro-sec">Categoria</div>
+        <label><input type="checkbox" checked onchange="refresh()" data-f="trabalho"> Trabalho</label>
+        <label><input type="checkbox" checked onchange="refresh()" data-f="pessoal"> Pessoal</label>
+        <label><input type="checkbox" checked onchange="refresh()" data-f="compra"> Compra</label>
+        <label><input type="checkbox" checked onchange="refresh()" data-f="lembrete"> Lembrete</label>
+      </div>
+    </div>
+    <button class="hbtn" onclick="irHoje()" aria-label="Ir para hoje">
+      <span class="material-symbols-outlined">today</span> Hoje
+    </button>
+    <button class="hbtn" onclick="toggleTema()" id="temaBtn" aria-label="Alternar tema">
+      <span class="material-symbols-outlined" id="temaIcon">dark_mode</span>
+    </button>
+  </div>
+</div>
+
+<!-- ══════ DESKTOP VIEW ══════ -->
+<div class="desktop-view" id="deskView">
+  <div class="calendario">
+    <div class="mes-nav">
+      <button onclick="mudarMes(-1)" aria-label="Mês anterior">&#9664;</button>
+      <h2 id="tituloMes"></h2>
+      <button onclick="mudarMes(1)" aria-label="Próximo mês">&#9654;</button>
+    </div>
+    <div class="dias-semana"><span>Dom</span><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span></div>
+    <div class="grid-dias" id="gridDias"></div>
+  </div>
+  <div class="painel-lat">
+    <div class="card">
+      <h3><span class="material-symbols-outlined">event_note</span> <span id="tituloDia">Selecione um dia</span></h3>
+      <div id="eventosDia"><div class="vazio">Clique em um dia do calendário</div></div>
+    </div>
+    <div class="card">
+      <h3><span class="material-symbols-outlined">add_circle</span> Novo compromisso</h3>
+      <div class="form-novo" id="formDesk">
+        <input type="text" id="dTit" placeholder="O que precisa fazer?" aria-label="Titulo">
+        <div class="form-row-3">
+          <input type="time" id="dHora" value="08:00" aria-label="Horário">
+          <select id="dCat" aria-label="Categoria">
+            <option value="trabalho">Trabalho</option>
+            <option value="pessoal">Pessoal</option>
+            <option value="compra">Compra</option>
+            <option value="lembrete">Lembrete</option>
+          </select>
+          <select id="dPrio" aria-label="Prioridade">
+            <option value="baixa">Normal</option>
+            <option value="media">Média</option>
+            <option value="alta">Alta</option>
+          </select>
+        </div>
+        <textarea id="dObs" placeholder="Observações (opcional)" aria-label="Observações"></textarea>
+        <button class="btn-add" onclick="addEvento('d')">Adicionar</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3><span class="material-symbols-outlined">schedule</span> Próximos</h3>
+      <div class="prox-lista" id="proxLista"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ MOBILE VIEW ══════ -->
+<div class="mobile-view" id="mobView">
+  <div class="mob-tabs">
+    <div class="mob-tab active" onclick="setMobTab('hoje')">Hoje</div>
+    <div class="mob-tab" onclick="setMobTab('amanha')">Amanhã</div>
+    <div class="mob-tab" onclick="setMobTab('semana')">Semana</div>
+  </div>
+  <div class="mob-daynav" id="mobDayNav" style="display:none">
+    <button onclick="mobDia(-1)" aria-label="Dia anterior">&#9664;</button>
+    <div class="dia-label">
+      <div class="dia-nome" id="mobDiaNome"></div>
+      <div class="dia-data" id="mobDiaData"></div>
+    </div>
+    <button onclick="mobDia(1)" aria-label="Próximo dia">&#9654;</button>
+  </div>
+  <div class="mob-lista" id="mobLista"></div>
+</div>
+
+<button class="fab" onclick="abrirModal()" aria-label="Novo compromisso">+</button>
+
+<!-- Modal mobile -->
+<div class="modal-overlay" id="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="modalTitulo">Novo compromisso</h3>
+      <button class="modal-close" onclick="fecharModal();resetModal()" aria-label="Fechar">✕</button>
+    </div>
+    <div class="form-novo">
+      <input type="text" id="mTit" placeholder="O que precisa fazer?" aria-label="Titulo">
+      <input type="date" id="mData" aria-label="Data" style="display:none">
+      <div class="form-row">
+        <input type="time" id="mHora" value="08:00" aria-label="Horário">
+        <select id="mCat" aria-label="Categoria">
+          <option value="trabalho">Trabalho</option>
+          <option value="pessoal">Pessoal</option>
+          <option value="compra">Compra</option>
+          <option value="lembrete">Lembrete</option>
+        </select>
+      </div>
+      <select id="mPrio" aria-label="Prioridade">
+        <option value="baixa">Normal</option>
+        <option value="media">Média</option>
+        <option value="alta">Alta</option>
+      </select>
+      <textarea id="mObs" placeholder="Observações (opcional)" aria-label="Observações"></textarea>
+      <button class="btn-add" id="modalBtnAdd" onclick="addEvento('m')">Adicionar</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// ── Supabase + cache offline ──
+const SU='https://mepzoxoahpwcvvlymlfh.supabase.co';
+const SK='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1lcHpveG9haHB3Y3Z2bHltbGZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyNzAyMDUsImV4cCI6MjA4Nzg0NjIwNX0.2_4hqT2vzM5Dw3iesOF_5V7esxkZafDnMFpDkCSBVlE';
+let db;try{db=window.supabase.createClient(SU,SK)}catch(e){db=null}
+const LEGACY_SYNC='iannaline-agenda-v1',LEGACY_CACHE='iannaline_agenda_cache';
+let SYNC=LEGACY_SYNC,CACHE=LEGACY_CACHE;
+let state=[],mesAt=new Date().getMonth(),anoAt=new Date().getFullYear(),diaSel=null,mobTab='hoje',mobDate=new Date();
+let isOff=!navigator.onLine;
+window.addEventListener('online',()=>{isOff=false;document.getElementById('offBar').classList.remove('vis');save(state)});
+window.addEventListener('offline',()=>{isOff=true;document.getElementById('offBar').classList.add('vis')});
+
+function cache(ev){try{localStorage.setItem(CACHE,JSON.stringify(ev))}catch(e){}}
+function fromCache(){try{return JSON.parse(localStorage.getItem(CACHE))||[]}catch{return[]}}
+
+async function save(ev){
+  state=ev;cache(ev);
+  if(!db||isOff)return;
+  const i=document.getElementById('saveInd');i.classList.add('vis');
+  try{await db.from('tracker_sync').upsert({key:SYNC,data:{eventos:ev},updated_at:new Date().toISOString()})}catch(e){}
+  setTimeout(()=>i.classList.remove('vis'),1200);
+}
+
+async function load(){
+  if(db&&!isOff){
+    try{const{data}=await db.from('tracker_sync').select('data').eq('key',SYNC).single();
+    if(data?.data?.eventos){state=data.data.eventos;cache(state);return true}}catch(e){}
+    // migração: se a chave é por usuário e não achou dados, tenta herdar do legado
+    if(SYNC!==LEGACY_SYNC){
+      try{const{data}=await db.from('tracker_sync').select('data').eq('key',LEGACY_SYNC).single();
+      if(data?.data?.eventos){state=data.data.eventos;cache(state);await save(state);return true}}catch(e){}
+    }
+  }
+  const c=fromCache();if(c.length){state=c;if(isOff)document.getElementById('offBar').classList.add('vis');return true}
+  return false;
+}
+
+// ── Helpers ──
+function fmt(y,m,d){return`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`}
+function fmtHoje(){const h=new Date();return fmt(h.getFullYear(),h.getMonth(),h.getDate())}
+function esc(t){const d=document.createElement('div');d.textContent=t;return d.innerHTML}
+function catNome(c){return{pessoal:'Pessoal',trabalho:'Trabalho',compra:'Compra',lembrete:'Lembrete'}[c]||c}
+const DIAS=['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+const MESES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+function getFiltros(){const f={};document.querySelectorAll('#filtroDD input[type=checkbox]').forEach(c=>f[c.dataset.f]=c.checked);return f}
+function filtrar(evs){const f=getFiltros();return evs.filter(e=>{
+  if(e.concluido&&!f.done)return false;if(!e.concluido&&!f.pend)return false;
+  if(!f[e.prioridade||'baixa'])return false;if(!f[e.categoria])return false;return true})}
+function ordenar(evs){return[...evs].sort((a,b)=>{
+  if(a.concluido!==b.concluido)return a.concluido?1:-1;
+  const ha=(a.hora||'99:99'),hb=(b.hora||'99:99');
+  if(ha!==hb)return ha.localeCompare(hb);
+  const p={alta:0,media:1,baixa:2};return(p[a.prioridade||'baixa']||2)-(p[b.prioridade||'baixa']||2)})}
+
+// ── Render evento HTML (compartilhado) ──
+function renderEv(ev){
+  const pr=ev.prioridade||'baixa';const pl={alta:'URGENTE',media:'Média',baixa:''};
+  return`<div class="ev-item ${ev.concluido?'done':''} p-${pr}">
+    <input type="checkbox" class="ev-check" ${ev.concluido?'checked':''} onchange="toggle(${ev.id})" aria-label="Marcar como ${ev.concluido?'pendente':'concluído'}">
+    <div class="ev-hora">${ev.hora||'--:--'}</div>
+    <div class="ev-info">
+      <div class="ev-titulo">${esc(ev.titulo)}</div>
+      ${ev.obs?`<div class="ev-obs">${esc(ev.obs)}</div>`:''}
+      <div class="ev-meta">
+        <span class="ev-cat ${ev.categoria}">${catNome(ev.categoria)}</span>
+        ${pr!=='baixa'?`<span class="ev-prio ${pr}">${pl[pr]}</span>`:''}
+      </div>
+    </div>
+    <div class="ev-actions">
+      <button class="ev-edit" onclick="editEv(${ev.id})" aria-label="Editar"><span class="material-symbols-outlined">edit</span></button>
+      <button class="ev-del" onclick="del(${ev.id})" aria-label="Remover"><span class="material-symbols-outlined">delete</span></button>
+    </div>
+  </div>`}
+
+// ── Desktop: calendario ──
+function renderCal(){
+  const g=document.getElementById('gridDias');g.innerHTML='';
+  document.getElementById('tituloMes').textContent=`${MESES[mesAt]} ${anoAt}`;
+  const p1=new Date(anoAt,mesAt,1).getDay(),ult=new Date(anoAt,mesAt+1,0).getDate();
+  const hoje=new Date(),evs=filtrar(state);
+  const prev=new Date(anoAt,mesAt,0).getDate();
+  for(let i=p1-1;i>=0;i--)g.appendChild(mkDia(prev-i,true));
+  for(let d=1;d<=ult;d++){
+    const ds=fmt(anoAt,mesAt,d),de=evs.filter(e=>e.data===ds);
+    const eh=hoje.getDate()===d&&hoje.getMonth()===mesAt&&hoje.getFullYear()===anoAt;
+    g.appendChild(mkDia(d,false,eh,diaSel===ds,de,ds))}
+  const tot=p1+ult,rest=tot%7===0?0:7-tot%7;
+  for(let d=1;d<=rest;d++)g.appendChild(mkDia(d,true));
+  updContadores();renderProx()}
+
+function mkDia(n,out,hoje,sel,evs,ds){
+  const d=document.createElement('div');d.className='dia';
+  if(out)d.classList.add('out');if(hoje)d.classList.add('hoje');if(sel)d.classList.add('sel');
+  const nm=document.createElement('div');nm.className='num';nm.textContent=n;d.appendChild(nm);
+  if(evs&&evs.length){const ev=document.createElement('div');ev.className='evs';
+    const sorted=ordenar(evs);sorted.slice(0,3).forEach(e=>{
+      const s=document.createElement('div');s.className=`ev-mini ${e.categoria} p-${e.prioridade||'baixa'}`;
+      if(e.concluido)s.classList.add('done');s.textContent=e.hora?`${e.hora} ${e.titulo}`:e.titulo;ev.appendChild(s)});
+    if(evs.length>3){const m=document.createElement('div');m.className='mais';m.textContent=`+${evs.length-3}`;ev.appendChild(m)}
+    d.appendChild(ev)}
+  if(ds)d.onclick=()=>{diaSel=ds;renderCal();renderDia()};return d}
+
+function renderDia(){
+  const c=document.getElementById('eventosDia'),t=document.getElementById('tituloDia');
+  if(!diaSel){c.innerHTML='<div class="vazio">Clique em um dia do calendário</div>';t.textContent='Selecione um dia';return}
+  const[a,m,d]=diaSel.split('-');const dt=new Date(+a,+m-1,+d);
+  t.textContent=`${DIAS[dt.getDay()]}, ${d}/${m}`;
+  let evs=ordenar(filtrar(state.filter(e=>e.data===diaSel)));
+  c.innerHTML=evs.length?evs.map(renderEv).join(''):'<div class="vazio">Nenhum compromisso</div>'}
+
+function renderProx(){
+  const c=document.getElementById('proxLista'),h=fmtHoje();
+  const prox=state.filter(e=>e.data>=h&&!e.concluido).sort((a,b)=>a.data.localeCompare(b.data)||(a.hora||'').localeCompare(b.hora||'')).slice(0,8);
+  if(!prox.length){c.innerHTML='<div class="vazio">Tudo em dia!</div>';return}
+  c.innerHTML=prox.map(e=>{const[a,m,d]=e.data.split('-');return`<div class="prox-item p-${e.prioridade||'baixa'}" onclick="diaSel='${e.data}';renderCal();renderDia()">
+    <div class="prox-data">${d}/${m}</div><div class="prox-texto">${e.hora?e.hora+' — ':''}${esc(e.titulo)}</div>
+    <span class="ev-cat ${e.categoria}" style="font-size:.68rem">${catNome(e.categoria)}</span></div>`}).join('')}
+
+// ── Mobile: lista ──
+function setMobTab(tab){
+  mobTab=tab;document.querySelectorAll('.mob-tab').forEach((t,i)=>{t.classList.toggle('active',['hoje','amanha','semana'][i]===tab)});
+  document.getElementById('mobDayNav').style.display='none';
+  if(tab==='hoje')mobDate=new Date();
+  else if(tab==='amanha'){mobDate=new Date();mobDate.setDate(mobDate.getDate()+1)}
+  renderMob()}
+
+function mobDia(delta){mobDate.setDate(mobDate.getDate()+delta);renderMob()}
+
+function renderMob(){
+  const c=document.getElementById('mobLista'),nav=document.getElementById('mobDayNav');
+  const h=fmtHoje();let evs;
+  if(mobTab==='semana'){
+    nav.style.display='none';
+    const d7=new Date();d7.setDate(d7.getDate()+7);const s7=fmt(d7.getFullYear(),d7.getMonth(),d7.getDate());
+    evs=state.filter(e=>e.data>=h&&e.data<=s7);
+    evs=ordenar(filtrar(evs)).sort((a,b)=>a.data.localeCompare(b.data)||(a.hora||'').localeCompare(b.hora||''));
+    if(!evs.length){c.innerHTML='<div class="mob-vazio">Semana livre!</div>';return}
+    let html='',lastDate='';
+    evs.forEach(e=>{if(e.data!==lastDate){lastDate=e.data;const[a,m,d]=e.data.split('-');const dt=new Date(+a,+m-1,+d);
+      html+=`<div style="font-size:.8rem;font-weight:700;font-family:'Plus Jakarta Sans',sans-serif;color:var(--accent);padding:10px 0 5px">${DIAS[dt.getDay()]} ${d}/${m}</div>`}
+      html+=renderEv(e)});c.innerHTML=html;
+  } else {
+    nav.style.display='flex';
+    const ds=fmt(mobDate.getFullYear(),mobDate.getMonth(),mobDate.getDate());
+    document.getElementById('mobDiaNome').textContent=DIAS[mobDate.getDay()];
+    const dd=String(mobDate.getDate()).padStart(2,'0'),mm=String(mobDate.getMonth()+1).padStart(2,'0');
+    document.getElementById('mobDiaData').textContent=`${dd}/${mm}/${mobDate.getFullYear()}`;
+    const isHoje=ds===h;
+    if(isHoje)document.getElementById('mobDiaNome').textContent='Hoje';
+    evs=ordenar(filtrar(state.filter(e=>e.data===ds)));
+    c.innerHTML=evs.length?evs.map(renderEv).join(''):`<div class="mob-vazio">${isHoje?'Nada pra hoje! 🎉':'Dia livre'}</div>`;
+    diaSel=ds;
+  }
+}
+
+// ── Ações ──
+async function toggle(id){const ev=state.find(e=>e.id===id);if(ev)ev.concluido=!ev.concluido;refresh();await save(state)}
+async function del(id){if(!confirm('Remover compromisso?'))return;state=state.filter(e=>e.id!==id);refresh();await save(state)}
+
+let editandoId=null;
+function editEv(id){
+  const ev=state.find(e=>e.id===id);if(!ev)return;
+  editandoId=id;
+  document.getElementById('mTit').value=ev.titulo;
+  document.getElementById('mHora').value=ev.hora||'08:00';
+  document.getElementById('mCat').value=ev.categoria;
+  document.getElementById('mPrio').value=ev.prioridade||'baixa';
+  document.getElementById('mObs').value=ev.obs||'';
+  const mData=document.getElementById('mData');
+  mData.value=ev.data;mData.style.display='block';
+  document.getElementById('modalTitulo').textContent='Editar compromisso';
+  document.getElementById('modalBtnAdd').textContent='Salvar';
+  document.getElementById('modalBtnAdd').onclick=()=>salvarEdicao();
+  document.getElementById('modal').classList.add('show');
+}
+
+async function salvarEdicao(){
+  const ev=state.find(e=>e.id===editandoId);if(!ev)return;
+  const t=document.getElementById('mTit').value.trim();if(!t){document.getElementById('mTit').focus();return}
+  ev.titulo=t;
+  ev.hora=document.getElementById('mHora').value;
+  ev.categoria=document.getElementById('mCat').value;
+  ev.prioridade=document.getElementById('mPrio').value;
+  ev.obs=document.getElementById('mObs').value.trim();
+  const novaData=document.getElementById('mData').value;
+  if(novaData)ev.data=novaData;
+  editandoId=null;
+  fecharModal();resetModal();
+  refresh();await save(state);
+}
+
+function resetModal(){
+  document.getElementById('mTit').value='';document.getElementById('mObs').value='';
+  document.getElementById('mHora').value='08:00';document.getElementById('mCat').value='trabalho';
+  document.getElementById('mPrio').value='baixa';document.getElementById('mData').style.display='none';document.getElementById('mData').value='';
+  document.getElementById('modalTitulo').textContent='Novo compromisso';
+  document.getElementById('modalBtnAdd').textContent='Adicionar';
+  document.getElementById('modalBtnAdd').onclick=()=>addEvento('m');
+  editandoId=null;
+}
+
+async function addEvento(src){
+  const t=document.getElementById(src+'Tit'),h=document.getElementById(src+'Hora'),
+    cat=document.getElementById(src+'Cat'),pr=document.getElementById(src+'Prio'),
+    obs=document.getElementById(src+'Obs');
+  if(!t.value.trim()){t.focus();return}
+  let data;
+  if(src==='m'){data=fmt(mobDate.getFullYear(),mobDate.getMonth(),mobDate.getDate())}
+  else{if(!diaSel){alert('Selecione um dia no calendário!');return}data=diaSel}
+  state.push({id:Date.now(),data,titulo:t.value.trim(),hora:h.value,categoria:cat.value,prioridade:pr.value,obs:obs.value.trim(),concluido:false});
+  t.value='';obs.value='';
+  if(src==='m')fecharModal();
+  refresh();await save(state)}
+
+function refresh(){renderCal();renderDia();renderMob();updContadores()}
+
+function updContadores(){
+  const h=fmtHoje(),p=state.filter(e=>!e.concluido);
+  document.getElementById('cHoje').textContent=p.filter(e=>e.data===h).length;
+  const d7=new Date();d7.setDate(d7.getDate()+7);const s7=fmt(d7.getFullYear(),d7.getMonth(),d7.getDate());
+  document.getElementById('cSem').textContent=p.filter(e=>e.data>=h&&e.data<=s7).length;
+  document.getElementById('cMes').textContent=p.filter(e=>{const[a,m]=e.data.split('-');return+a===anoAt&&+m===mesAt+1}).length}
+
+// ── Navegação ──
+function mudarMes(d){mesAt+=d;if(mesAt>11){mesAt=0;anoAt++}if(mesAt<0){mesAt=11;anoAt--}renderCal()}
+function irHoje(){const h=new Date();mesAt=h.getMonth();anoAt=h.getFullYear();diaSel=fmtHoje();mobDate=new Date();mobTab='hoje';
+  document.querySelectorAll('.mob-tab').forEach((t,i)=>t.classList.toggle('active',i===0));refresh();renderDia()}
+
+// ── Modal mobile ──
+function abrirModal(){document.getElementById('modal').classList.add('show')}
+function fecharModal(){document.getElementById('modal').classList.remove('show')}
+document.getElementById('modal').addEventListener('click',e=>{if(e.target.classList.contains('modal-overlay')){fecharModal();resetModal()}});
+
+// ── Tema ──
+function toggleTema(){
+  const a=document.documentElement.getAttribute('data-theme'),n=a==='dark'?'light':'dark';
+  document.documentElement.setAttribute('data-theme',n);
+  localStorage.setItem('iannaline_tema',n);
+  document.getElementById('temaIcon').textContent=n==='dark'?'light_mode':'dark_mode';
+}
+function loadTema(){
+  const s=localStorage.getItem('iannaline_tema')||'light';
+  document.documentElement.setAttribute('data-theme',s);
+  document.getElementById('temaIcon').textContent=s==='dark'?'light_mode':'dark_mode';
+}
+
+// ── Filtro ──
+function toggleFiltro(){document.getElementById('filtroDD').classList.toggle('show')}
+document.addEventListener('click',e=>{if(!e.target.closest('.filtro-wrap'))document.getElementById('filtroDD').classList.remove('show')});
+
+// ── Seed ──
+// ── Keyboard ──
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='dTit')addEvento('d');if(e.key==='Enter'&&e.target.id==='mTit')addEvento('m')});
+
+// ── Init ──
+async function init(){
+  loadTema();
+  await load();
+  diaSel=fmtHoje();irHoje();
+  const o=document.getElementById('loadO');o.classList.add('gone');setTimeout(()=>o.remove(),300)}
+init();
+console.log('%c Agenda Iannaline v04170627 ', 'background:#2D6A4F;color:#fff;font-weight:bold;padding:2px 8px;border-radius:3px');
+</script>
+</body>
+</html>
