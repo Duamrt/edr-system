@@ -2000,6 +2000,10 @@ function _mostrarCampoPrecoSaida(desc) {
 }
 
 async function salvarSaidaMaterial() {
+  if (window._saidaEmAndamento) return;
+  window._saidaEmAndamento = true;
+  const btnSaida = document.querySelector('#modal-saida .btn-primary, #modal-saida button[onclick*="salvar"]');
+  if (btnSaida) { btnSaida.disabled = true; btnSaida.textContent = 'Salvando...'; }
   const desc = (document.getElementById('saida-desc').value||'').toUpperCase().trim();
   const qtd = parseFloat(document.getElementById('saida-qtd').value)||0;
   const unidade = document.getElementById('saida-unidade').value||'UN';
@@ -2057,6 +2061,10 @@ async function salvarSaidaMaterial() {
     renderEstoque();
     if (typeof renderDashboard === 'function') renderDashboard();
   } catch(e) { console.error(e); showToast('❌ Não foi possível registrar a saída.'); }
+  finally {
+    window._saidaEmAndamento = false;
+    if (btnSaida) { btnSaida.disabled = false; btnSaida.textContent = 'CONFIRMAR SAÍDA'; }
+  }
 }
 
 

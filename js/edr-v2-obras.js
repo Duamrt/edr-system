@@ -706,6 +706,7 @@ function renderObrasMateriais() {
               <span>${d.data || '—'}</span>
               <span class="mat-badge ${isDist ? 'mat-badge-dist' : 'mat-badge-manual'}">${isDist ? 'DISTRIBUICAO' : 'SAIDA MANUAL'}</span>
               ${d.etapa ? `<span style="font-size:11px;color:var(--text-tertiary);">${esc(etapaLabel(d.etapa))}</span>` : ''}
+              ${d.criado_por ? `<span style="font-size:10px;color:var(--text-tertiary);">por ${esc(d.criado_por)}</span>` : ''}
               ${!obraId && d.obra_nome ? `<span style="font-size:10px;color:var(--primary);background:var(--primary-surface);border:1px solid var(--primary-light);border-radius:4px;padding:1px 6px;">${esc(d.obra_nome)}</span>` : ''}
             </div>
             <div style="display:flex;gap:12px;align-items:center;">

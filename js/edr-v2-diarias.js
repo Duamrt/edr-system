@@ -336,8 +336,7 @@ async function _diarCarregarQuinzenas() {
   }
 
   if (!DiariasModule.quinzenas.length) {
-    if (usuarioAtual?.perfil === 'admin') await _diarCriarQuinzenaAuto();
-    else showToast('Nenhuma quinzena encontrada. Peca ao admin para criar.');
+    showToast('Nenhuma quinzena encontrada. Crie uma clicando em +.');
     return;
   }
 
@@ -1100,8 +1099,7 @@ async function diarConfirmarLancamento() {
     _diarRenderRegistros();
     _diarRenderFolha();
     showToast('Diarias salvas!');
-    // Lançamento automático no P&L (silencioso, não bloqueia)
-    _diarAutoLancarPL(novos).catch(() => {});
+    // _diarAutoLancarPL desativado — criava duplicatas de custo. Usar botão "Lançar FP" na folha.
   } catch (e) { showToast('Erro: ' + (e.message || JSON.stringify(e))); }
   if (btn) { btn.disabled = false; btn.textContent = 'CONFIRMAR E SALVAR'; }
 }
