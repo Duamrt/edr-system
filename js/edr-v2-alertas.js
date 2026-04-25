@@ -67,9 +67,9 @@ const AlertasModule = {
     this._renderPanel(panel);
     panel.style.display = 'block';
     this._panelAberto = true;
-    // fechar ao clicar fora
+    // fechar ao clicar fora — listener persistente removido só no _fecharPanel
     setTimeout(() => {
-      document.addEventListener('mousedown', AlertasModule._clickFora, { once: true });
+      document.addEventListener('mousedown', AlertasModule._clickFora);
     }, 0);
   },
 
@@ -77,12 +77,13 @@ const AlertasModule = {
     const panel = document.getElementById('notif-panel');
     if (panel) panel.style.display = 'none';
     this._panelAberto = false;
+    document.removeEventListener('mousedown', AlertasModule._clickFora);
   },
 
   _clickFora(e) {
     const panel = document.getElementById('notif-panel');
     const btn   = document.getElementById('btn-notifications');
-    if (panel && !panel.contains(e.target) && !btn.contains(e.target)) {
+    if (panel && !panel.contains(e.target) && btn && !btn.contains(e.target)) {
       AlertasModule._fecharPanel();
     }
   },

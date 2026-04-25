@@ -30,6 +30,7 @@ obras · estoque · notas · diarias · leads · caixa · garantias · catalogo 
 - **DOM:** NUNCA appendChild/reparent de elemento existente — só inserir novos
 - **Deploy:** SEMPRE via ./deploy.sh — push manual não faz cache busting
 - **Autocomplete:** listas grandes SEMPRE usar autocomplete, nunca select com scroll
+- **Diárias mão de obra:** NUNCA reativar `_diarAutoLancarPL` — cria duplicatas. Lançamento 28_mao SÓ via botão "Lançar FP". Banco tem índice único (obra_id, obs) WHERE etapa='28_mao' que rejeita duplicata.
 
 ## Clientes ativos
 - EDR Engenharia (construtora, plano ilimitado)
