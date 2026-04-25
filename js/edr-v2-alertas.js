@@ -67,8 +67,9 @@ const AlertasModule = {
     this._renderPanel(panel);
     panel.style.display = 'block';
     this._panelAberto = true;
-    // fechar ao clicar fora — listener persistente removido só no _fecharPanel
+    // fechar ao clicar fora — remove primeiro pra nunca duplicar listener
     setTimeout(() => {
+      document.removeEventListener('mousedown', AlertasModule._clickFora);
       document.addEventListener('mousedown', AlertasModule._clickFora);
     }, 0);
   },

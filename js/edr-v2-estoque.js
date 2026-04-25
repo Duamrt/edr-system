@@ -2001,9 +2001,8 @@ function _mostrarCampoPrecoSaida(desc) {
 
 async function salvarSaidaMaterial() {
   if (window._saidaEmAndamento) return;
-  window._saidaEmAndamento = true;
-  const btnSaida = document.querySelector('#modal-saida .btn-primary, #modal-saida button[onclick*="salvar"]');
-  if (btnSaida) { btnSaida.disabled = true; btnSaida.textContent = 'Salvando...'; }
+
+  // Validações ANTES de travar — early return não pode deixar flag preso
   const desc = (document.getElementById('saida-desc').value||'').toUpperCase().trim();
   const qtd = parseFloat(document.getElementById('saida-qtd').value)||0;
   const unidade = document.getElementById('saida-unidade').value||'UN';
@@ -2035,6 +2034,11 @@ async function salvarSaidaMaterial() {
       return;
     }
   }
+
+  // Só trava após todas as validações passarem
+  window._saidaEmAndamento = true;
+  const btnSaida = document.getElementById('btn-confirmar-saida');
+  if (btnSaida) { btnSaida.disabled = true; btnSaida.textContent = 'Salvando...'; }
 
   try {
     const valor = qtd * valorUnit;
