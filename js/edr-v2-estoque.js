@@ -153,6 +153,7 @@ function consolidarEstoque(obraId) {
         lotes: [],         // { nota_id, data, qtd, qtd_disponivel, valor_un }
         _ediretas: [],     // { qtd, date } — entradas diretas com data para filtro pós-contagem
         _saidas: [],       // { qtd, date } — saídas com data para filtro pós-contagem
+        _ajustes: [],      // { qtd, date } — ajustes (não-contagem) com data para filtro pós-contagem
         _ultimaContagem: undefined,      // valor absoluto da última contagem física
         _ultimaContagemData: undefined,  // data da última contagem (Date object)
         temNF: false,
@@ -219,22 +220,26 @@ function consolidarEstoque(obraId) {
     for (const a of ajFiltrados) {
       const chave = getChave(a.item_desc, a.codigo_catalogo);
       const item = garantir(chave, a.item_desc, a.codigo_catalogo, a.unidade);
+      const dataAj = a.data ? new Date(a.data) : (a.criado_em ? new Date(a.criado_em) : null);
       if (a.tipo === 'contagem') {
         // Extrair valor absoluto do motivo: "sistema X, real Y, dif Z"
         const mReal = (a.motivo || '').match(/real\s+([\d.,]+)/i);
         const realAbs = mReal ? parseFloat(mReal[1].replace(',', '.')) : null;
         if (realAbs !== null) {
-          const dataA = a.data ? new Date(a.data) : null;
-          if (item._ultimaContagem === undefined || (dataA && (!item._ultimaContagemData || dataA >= item._ultimaContagemData))) {
+          if (item._ultimaContagem === undefined || (dataAj && (!item._ultimaContagemData || dataAj >= item._ultimaContagemData))) {
             item._ultimaContagem = realAbs;
-            item._ultimaContagemData = dataA;
+            item._ultimaContagemData = dataAj;
           }
         } else {
           // Motivo sem valor real legível → tratar como delta (backward compat)
-          item.ajustes += parseFloat(a.qtd) || 0;
+          const q = parseFloat(a.qtd) || 0;
+          item.ajustes += q;
+          item._ajustes.push({ qtd: q, date: dataAj });
         }
       } else {
-        item.ajustes += parseFloat(a.qtd) || 0;
+        const q = parseFloat(a.qtd) || 0;
+        item.ajustes += q;
+        item._ajustes.push({ qtd: q, date: dataAj });
       }
     }
   }
@@ -284,12 +289,19 @@ function consolidarEstoque(obraId) {
       const postS = cd
         ? it._saidas.filter(s => !s.date || new Date(s.date) > cd).reduce((s, x) => s + x.qtd, 0)
         : it.saidas;
-      saldo = it._ultimaContagem + postNF + postED + it.ajustes - postS;
+      // Ajustes posteriores (inventário/correção). Anteriores à contagem já estão refletidos no saldo absoluto.
+      const postAj = cd
+        ? it._ajustes.filter(a => !a.date || a.date > cd).reduce((s, x) => s + x.qtd, 0)
+        : it.ajustes;
+      saldo = it._ultimaContagem + postNF + postED + postAj - postS;
     } else {
       saldo = it.entradas + it.entradasDiretas + it.ajustes - it.saidas;
     }
-    const totalEntradas = it.entradas + it.entradasDiretas + it.ajustes;
-    const valorMedio = totalEntradas > 0 ? it.valorTotal / totalEntradas : 0;
+    // valorMedio só considera entradas com custo (NF + entrada direta).
+    // Ajustes (inventário inicial, correção) entram na quantidade mas não têm custo associado,
+    // então não devem diluir o preço médio do estoque que tem custo conhecido.
+    const totalComCusto = it.entradas + it.entradasDiretas;
+    const valorMedio = totalComCusto > 0 ? it.valorTotal / totalComCusto : 0;
 
     resultado.push({
       chave,
