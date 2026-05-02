@@ -38,6 +38,13 @@ async function fazerLogin() {
     usuarioAtual.email = data.user.email || u;
     usuarioAtual.perfil = meta.perfil || 'operacional';
 
+    if (window.posthog) {
+      posthog.identify(data.user.id, {
+        email: data.user.email || u,
+        name: usuarioAtual.nome || null
+      });
+    }
+
     // Persistir sessão
     try {
       localStorage.setItem('edr_auth', JSON.stringify({
