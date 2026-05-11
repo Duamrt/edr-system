@@ -646,7 +646,11 @@ const CronogramaModule = {
         try { this._gantt.destroy(); } catch(_) {}
         this._gantt = null;
       }
-      wrap.innerHTML = '<div id="cron-gantt-syncfusion" style="height:600px;"></div>';
+      wrap.innerHTML = '<button id="cron-gantt-fullscreen-btn" onclick="CronogramaModule._toggleFullscreen()" style="position:absolute;top:8px;right:8px;z-index:100;background:var(--primary);color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:4px;box-shadow:0 2px 8px rgba(0,0,0,.25);">'
+        + '<span class="material-symbols-outlined" style="font-size:14px;" id="cron-gantt-fs-icon">fullscreen</span>'
+        + '<span id="cron-gantt-fullscreen-label">EXPANDIR</span>'
+        + '</button>'
+        + '<div id="cron-gantt-syncfusion" style="height:600px;"></div>';
 
       const ganttData = this._buildGanttData();
       if (!ganttData.length || ganttData.every(c => !c.subtasks.length)) {
