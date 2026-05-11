@@ -13,6 +13,7 @@ const DiarioModule = {
   filtroData: '',
   _carregado: false,
   _salvando: false,
+  _editandoId: null,
 
   // ── Render principal ──
   async render(container) {
@@ -198,6 +199,9 @@ const DiarioModule = {
             '</div>' +
             '<div style="display:flex;align-items:center;gap:8px;">' +
               '<span style="font-size:18px;" title="' + (r.clima || '') + '">' + climaIcon + '</span>' +
+              '<button onclick="DiarioModule.editar(\'' + r.id.replace(/'/g,"&#39;") + '\')" style="background:none;border:none;cursor:pointer;color:var(--text-tertiary);padding:2px;" title="Editar">' +
+                '<span class="material-symbols-outlined" style="font-size:16px;">edit</span>' +
+              '</button>' +
               '<button onclick="DiarioModule.excluir(\'' + r.id.replace(/'/g,"&#39;") + '\')" style="background:none;border:none;cursor:pointer;color:var(--text-tertiary);padding:2px;" title="Excluir">' +
                 '<span class="material-symbols-outlined" style="font-size:16px;">delete</span>' +
               '</button>' +
@@ -297,7 +301,7 @@ const DiarioModule = {
     // Botão fechar form
     const btnFechar = container.querySelector('#diario-btn-fechar-form');
     if (btnFechar && formWrapper) {
-      btnFechar.addEventListener('click', () => { formWrapper.style.display = 'none'; });
+      btnFechar.addEventListener('click', () => { formWrapper.style.display = 'none'; DiarioModule._editandoId = null; });
     }
 
     // Clima buttons
@@ -404,15 +408,21 @@ const DiarioModule = {
     if (btn) { btn.textContent = 'SALVANDO...'; btn.disabled = true; }
     DiarioModule._salvando = true;
 
+    const foiEdicao = !!DiarioModule._editandoId;
     try {
-      await sbPost('diario_registros', {
-        obra_id: obraId,
-        data,
-        relato,
-        clima,
-        fotos,
-        criado_por: (typeof usuarioAtual !== 'undefined' && usuarioAtual?.nome) || ''
-      });
+      if (DiarioModule._editandoId) {
+        await sbPatch('diario_registros', '?id=eq.' + DiarioModule._editandoId, { obra_id: obraId, data, relato, clima, fotos });
+        DiarioModule._editandoId = null;
+      } else {
+        await sbPost('diario_registros', {
+          obra_id: obraId,
+          data,
+          relato,
+          clima,
+          fotos,
+          criado_por: (typeof usuarioAtual !== 'undefined' && usuarioAtual?.nome) || ''
+        });
+      }
 
       DiarioModule._salvando = false;
       DiarioModule._fotosBase64 = [];
@@ -422,7 +432,7 @@ const DiarioModule = {
         container.innerHTML = DiarioModule._html();
         DiarioModule._bind(container);
       });
-      showToast('Registro salvo!');
+      showToast(foiEdicao ? 'Registro atualizado!' : 'Registro salvo!');
     } catch (e) {
       console.error('DiarioModule._salvar:', e);
       showToast('Erro ao salvar registro');
@@ -447,6 +457,63 @@ const DiarioModule = {
     } catch (e) {
       showToast('Erro ao excluir');
     }
+  },
+
+  // ── Editar registro ──
+  editar(id) {
+    const r = DiarioModule.registros.find(x => x.id === id);
+    if (!r) return;
+    DiarioModule._editandoId = id;
+    const container = document.getElementById('view-diario');
+    if (!container) return;
+    const form = container.querySelector('#diario-form-wrapper');
+    if (!form) return;
+
+    const selObra = container.querySelector('#diario-form-obra');
+    if (selObra) selObra.value = r.obra_id || '';
+    const inputData = container.querySelector('#diario-form-data');
+    if (inputData) inputData.value = r.data || '';
+    const textarea = container.querySelector('#diario-form-relato');
+    if (textarea) textarea.value = r.relato || '';
+
+    // Pré-selecionar clima
+    if (r.clima) {
+      const climaBtn = container.querySelector('.diario-clima-btn[data-valor="' + r.clima + '"]');
+      if (climaBtn) climaBtn.click();
+    }
+
+    // Pré-carregar fotos existentes
+    DiarioModule._fotosBase64 = Array.isArray(r.fotos) ? [...r.fotos] : [];
+    const preview = container.querySelector('#diario-fotos-preview');
+    if (preview) {
+      preview.innerHTML = '';
+      DiarioModule._fotosBase64.forEach((b64) => {
+        const wrap = document.createElement('div');
+        wrap.style.cssText = 'position:relative;';
+        const img = document.createElement('img');
+        img.src = b64;
+        img.style.cssText = 'height:70px;width:70px;object-fit:cover;border-radius:6px;border:1px solid var(--border);';
+        const del = document.createElement('button');
+        del.innerHTML = '✕';
+        del.style.cssText = 'position:absolute;top:-4px;right:-4px;background:#ef4444;color:#fff;border:none;border-radius:50%;width:16px;height:16px;font-size:10px;cursor:pointer;padding:0;line-height:1;';
+        del.addEventListener('click', () => {
+          const i = DiarioModule._fotosBase64.indexOf(b64);
+          if (i >= 0) DiarioModule._fotosBase64.splice(i, 1);
+          wrap.remove();
+        });
+        wrap.appendChild(img); wrap.appendChild(del);
+        preview.appendChild(wrap);
+      });
+    }
+
+    // Atualizar título e botão do form
+    const tituloDiv = form.querySelector('div[style*="font-size:13px;font-weight:700"]');
+    if (tituloDiv) tituloDiv.innerHTML = '<span class="material-symbols-outlined" style="font-size:16px;color:var(--primary);">edit</span>Editar Registro';
+    const btnSalvar = container.querySelector('#diario-btn-salvar');
+    if (btnSalvar) btnSalvar.textContent = 'SALVAR ALTERAÇÕES';
+
+    form.style.display = 'block';
+    form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   },
 
   // ── Ver foto ampliada ──
