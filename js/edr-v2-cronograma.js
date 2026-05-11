@@ -1023,59 +1023,66 @@ const CronogramaModule = {
     let dataAtual = new Date(tInicio);
     let anteriorId = null;
     let criadas = 0;
+    const rollbackIds = [];
     const etapas = typeof PciModule !== 'undefined'
       ? (PciModule.categorias && PciModule.categorias.length ? PciModule.categorias : PciModule._CATS)
       : [];
 
-    for (let i = 0; i < 20; i++) {
-      const peso = pesos[i] || 0;
-      if (!peso) continue;
-      const fase = etapas[i] || { nome: 'Fase ' + (i + 1) };
-      const dias = Math.max(1, Math.round((peso / totalPeso) * totalDias));
-      const dInicio = dataAtual.toISOString().split('T')[0];
-      dataAtual.setDate(dataAtual.getDate() + dias);
-      if (dataAtual > tFim) dataAtual = new Date(tFim);
-      const dFim = dataAtual.toISOString().split('T')[0];
+    try {
+      for (let i = 0; i < 20; i++) {
+        const peso = pesos[i] || 0;
+        if (!peso) continue;
+        const fase = etapas[i] || { nome: 'Fase ' + (i + 1) };
+        const dias = Math.max(1, Math.round((peso / totalPeso) * totalDias));
+        const dInicio = dataAtual.toISOString().split('T')[0];
+        dataAtual.setDate(dataAtual.getDate() + dias);
+        if (dataAtual > tFim) dataAtual = new Date(tFim);
+        const dFim = dataAtual.toISOString().split('T')[0];
 
-      // Progresso real da PCI
-      var progresso = 0;
-      if (medicaoId && fase.nome) {
-        progresso = PciModule._calcCatExec(medicaoId, fase.nome).pct || 0;
-      }
-
-      // Subitens: itens reais da medição → fallback template
-      var subitens = [];
-      if (medicaoId && fase.nome) {
-        var itensCat = PciModule.itens.filter(function(it) {
-          return it.medicao_id === medicaoId && it.categoria_nome === fase.nome && !it.nao_aplicavel;
-        });
-        if (itensCat.length) {
-          subitens = itensCat.map(function(it) { return { nome: it.sub_servico_descricao || it.descricao || '', feito: !!it.executado }; });
+        // Progresso real da PCI
+        var progresso = 0;
+        if (medicaoId && fase.nome) {
+          progresso = PciModule._calcCatExec(medicaoId, fase.nome).pct || 0;
         }
-      }
-      if (!subitens.length && typeof PciModule !== 'undefined' && PciModule.templatePadrao && PciModule.templatePadrao.length) {
-        var nomeLowerFase = (fase.nome || '').toLowerCase().trim();
-        var tplFase = PciModule.templatePadrao.filter(function(t) {
-          return (t.categoria_nome || '').toLowerCase().trim() === nomeLowerFase && !t.nao_aplicavel;
-        });
-        if (tplFase.length) {
-          subitens = tplFase.map(function(t) { return { nome: t.sub_servico_descricao || '', feito: false }; });
-        }
-      }
-      if (!subitens.length && typeof PciModule !== 'undefined' && fase.id) {
-        var subsFonte = (PciModule.subServicos && PciModule.subServicos.length) ? PciModule.subServicos : (PciModule._SUBS || []);
-        subitens = subsFonte.filter(function(s) { return s.categoria_id === fase.id; })
-          .map(function(s) { return { nome: s.descricao, feito: false }; });
-      }
 
-      try {
+        // Subitens: itens reais da medição → fallback template
+        var subitens = [];
+        if (medicaoId && fase.nome) {
+          var itensCat = PciModule.itens.filter(function(it) {
+            return it.medicao_id === medicaoId && it.categoria_nome === fase.nome && !it.nao_aplicavel;
+          });
+          if (itensCat.length) {
+            subitens = itensCat.map(function(it) { return { nome: it.sub_servico_descricao || it.descricao || '', feito: !!it.executado }; });
+          }
+        }
+        if (!subitens.length && typeof PciModule !== 'undefined' && PciModule.templatePadrao && PciModule.templatePadrao.length) {
+          var nomeLowerFase = (fase.nome || '').toLowerCase().trim();
+          var tplFase = PciModule.templatePadrao.filter(function(t) {
+            return (t.categoria_nome || '').toLowerCase().trim() === nomeLowerFase && !t.nao_aplicavel;
+          });
+          if (tplFase.length) {
+            subitens = tplFase.map(function(t) { return { nome: t.sub_servico_descricao || '', feito: false }; });
+          }
+        }
+        if (!subitens.length && typeof PciModule !== 'undefined' && fase.id) {
+          var subsFonte = (PciModule.subServicos && PciModule.subServicos.length) ? PciModule.subServicos : (PciModule._SUBS || []);
+          subitens = subsFonte.filter(function(s) { return s.categoria_id === fase.id; })
+            .map(function(s) { return { nome: s.descricao, feito: false }; });
+        }
+
         const r = await sbPost('cronograma_tarefas', {
           obra_id: obraId, nome: fase.nome, data_inicio: dInicio, data_fim: dFim,
           progresso: progresso, dependencia: anteriorId, ordem: i, subitens: subitens
         });
-        if (r && r.id) anteriorId = r.id;
+        if (r && r.id) { anteriorId = r.id; rollbackIds.push(r.id); }
         criadas++;
-      } catch (e) { console.error('Erro etapa', fase.nome, e); }
+      }
+    } catch (e) {
+      if (rollbackIds.length) {
+        try { await sbDelete('cronograma_tarefas', '?id=in.(' + rollbackIds.join(',') + ')'); } catch (_) {}
+      }
+      showToast('Falha ao gerar cronograma — alterações revertidas. Tente novamente.');
+      throw e;
     }
 
     // Sincronizar pesos reais da planilha com PCI Medições
