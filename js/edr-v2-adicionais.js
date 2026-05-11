@@ -22,7 +22,8 @@ const AdicionaisModule = {
     pendente:      { label: 'Pendente',       cor: '#B7791F', icon: 'schedule' },
     aprovado:      { label: 'Aprovado',       cor: '#2563eb', icon: 'check_circle' },
     em_andamento:  { label: 'Em andamento',   cor: '#ea580c', icon: 'engineering' },
-    concluido:     { label: 'Concluido',      cor: '#2D6A4F', icon: 'task_alt' }
+    concluido:     { label: 'Concluido',      cor: '#2D6A4F', icon: 'task_alt' },
+    cancelado:     { label: 'Cancelado',      cor: '#6b7280', icon: 'cancel' }
   },
 
   // ══════════════════════════════════════════════════════════
@@ -30,8 +31,8 @@ const AdicionaisModule = {
   // ══════════════════════════════════════════════════════════
 
   getAdicionaisObra(obraId) {
-    // Pendentes não inflam receita — só conta a partir de aprovado
-    const lista = this.adicionais.filter(a => a.obra_id === obraId && a.status !== 'pendente');
+    // Pendentes e cancelados não inflam receita — só conta a partir de aprovado
+    const lista = this.adicionais.filter(a => a.obra_id === obraId && a.status !== 'pendente' && a.status !== 'cancelado');
     const valorTotal = lista.reduce((s, a) => s + Number(a.valor || 0), 0);
     const pgtos = this.pagamentos.filter(p => lista.some(a => a.id === p.adicional_id));
     const totalRecebido = pgtos.reduce((s, p) => s + Number(p.valor || 0), 0);
@@ -161,6 +162,9 @@ const AdicionaisModule = {
                   </button>` : ''}
                   ${a.status !== 'concluido' ? `<button onclick="AdicionaisModule.mudarStatus('${a.id}','concluido');this.closest('.dropdown-menu').classList.add('hidden')" class="dropdown-item">
                     <span class="material-symbols-outlined" style="font-size:14px;">task_alt</span> Concluir
+                  </button>` : ''}
+                  ${a.status !== 'cancelado' ? `<button onclick="AdicionaisModule.mudarStatus('${a.id}','cancelado');this.closest('.dropdown-menu').classList.add('hidden')" class="dropdown-item" style="color:var(--text-tertiary);">
+                    <span class="material-symbols-outlined" style="font-size:14px;">cancel</span> Cancelar
                   </button>` : ''}
                   <button onclick="AdicionaisModule.abrirPgto('${a.id}');this.closest('.dropdown-menu').classList.add('hidden')" class="dropdown-item">
                     <span class="material-symbols-outlined" style="font-size:14px;">payments</span> Registrar Pgto

@@ -53,7 +53,10 @@ const PdfModule = {
   _gerarPdf(docDef, nomeArquivo) {
     try {
       if (typeof pdfMake === 'undefined') {
-        showToast('Biblioteca PDF indisponivel. Verifique sua conexao.');
+        const offline = (typeof navigator !== 'undefined' && navigator.onLine === false);
+        showToast(offline
+          ? 'Biblioteca PDF indisponivel — voce esta offline.'
+          : 'Biblioteca PDF nao carregou. Recarregue a pagina (F5).');
         return;
       }
       pdfMake.createPdf({
@@ -65,7 +68,9 @@ const PdfModule = {
       showToast('PDF gerado com sucesso');
     } catch (e) {
       console.error('PdfModule erro:', e);
-      showToast('Erro ao gerar PDF. Verifique sua conexao.');
+      // Mensagem honesta — geralmente erro de dados, não de rede
+      const msg = (e && e.message) ? `Erro ao gerar PDF: ${e.message}` : 'Erro ao gerar PDF. Veja o console (F12) para detalhes.';
+      showToast(msg);
     }
   },
 
@@ -74,9 +79,12 @@ const PdfModule = {
   // ══════════════════════════════════════════════════════════
 
   gerarRelatorio() {
+    // Mês atual em horário LOCAL (não UTC). toISOString() em 31/X 22h → 1/(X+1) 01h UTC → mês errado.
+    const _hoje = new Date();
+    const _ymLocal = `${_hoje.getFullYear()}-${String(_hoje.getMonth() + 1).padStart(2, '0')}`;
     const ym = typeof RelatorioModule !== 'undefined' && RelatorioModule.mesAtual
       ? RelatorioModule.mesAtual
-      : new Date().toISOString().slice(0, 7);
+      : _ymLocal;
     const [anoStr, mesStr] = ym.split('-');
     const mesLabel = (typeof MESES_FULL !== 'undefined' ? MESES_FULL[parseInt(mesStr) - 1] : mesStr) + ' ' + anoStr;
 

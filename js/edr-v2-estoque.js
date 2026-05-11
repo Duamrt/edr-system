@@ -1636,15 +1636,30 @@ function importarPrecosEstoque() {
       // Linha 5 = cabeçalho, dados a partir de linha 6
       // Col B = codigo, Col C = material, Col K = preco corrigido
       const atualizacoes = [];
+      const descartadas = []; // { linha, motivo }
       ws.eachRow((row, rowNum) => {
         if (rowNum <= 5) return;
         const codigo = (row.getCell(2).value || '').toString().trim();
         const nome   = (row.getCell(3).value || '').toString().trim();
-        const preco  = parseFloat(row.getCell(11).value) || 0;
-        if (preco > 0 && (codigo || nome)) {
+        // parseNumBR pra não cair em parseFloat("1.500")=1.5 quando vier texto formatado pt-BR
+        const preco  = parseNumBR(row.getCell(11).value);
+        const temIdent = codigo || nome;
+        if (!temIdent && !row.getCell(11).value) return; // linha vazia, ignora silenciosamente
+        if (preco > 0 && temIdent) {
           atualizacoes.push({ codigo, nome, preco });
+        } else if (!temIdent) {
+          descartadas.push({ linha: rowNum, motivo: 'sem código nem nome' });
+        } else if (preco <= 0) {
+          descartadas.push({ linha: rowNum, motivo: `preço inválido (${row.getCell(11).value})` });
         }
       });
+
+      if (descartadas.length) {
+        const exemplos = descartadas.slice(0, 5).map(d => `linha ${d.linha}: ${d.motivo}`).join('\n');
+        const extra = descartadas.length > 5 ? `\n...e mais ${descartadas.length - 5}` : '';
+        console.warn('[importarPrecosEstoque] descartadas:', descartadas);
+        showToast(`⚠ ${descartadas.length} linha(s) descartada(s):\n${exemplos}${extra}`, 'info');
+      }
 
       if (!atualizacoes.length) {
         return showToast('Nenhum preço corrigido encontrado na coluna K', 'info');

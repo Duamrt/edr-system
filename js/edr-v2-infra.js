@@ -241,8 +241,8 @@ async function checarLimiteUsuarios() {
 
 // ── ADICIONAIS (helpers compartilhados) ──
 function getAdicionaisObra(obraId) {
-  // Pendentes não inflam receita — só conta a partir de aprovado
-  const lista = obrasAdicionais.filter(a => a.obra_id === obraId && a.status !== 'pendente');
+  // Pendentes e cancelados não inflam receita — só conta a partir de aprovado
+  const lista = obrasAdicionais.filter(a => a.obra_id === obraId && a.status !== 'pendente' && a.status !== 'cancelado');
   const valorTotal = lista.reduce((s, a) => s + Number(a.valor || 0), 0);
   const pgtos = adicionaisPgtos.filter(p => lista.some(a => a.id === p.adicional_id));
   const totalRecebido = pgtos.reduce((s, p) => s + Number(p.valor || 0), 0);
@@ -251,7 +251,7 @@ function getAdicionaisObra(obraId) {
 }
 function getAdicionaisGeral(obraIds) {
   const set = obraIds instanceof Set ? obraIds : new Set(obraIds);
-  const lista = obrasAdicionais.filter(a => set.has(a.obra_id) && a.status !== 'pendente');
+  const lista = obrasAdicionais.filter(a => set.has(a.obra_id) && a.status !== 'pendente' && a.status !== 'cancelado');
   const valorTotal = lista.reduce((s, a) => s + Number(a.valor || 0), 0);
   const pgtos = adicionaisPgtos.filter(p => lista.some(a => a.id === p.adicional_id));
   const totalRecebido = pgtos.reduce((s, p) => s + Number(p.valor || 0), 0);

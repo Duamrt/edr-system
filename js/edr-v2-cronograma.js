@@ -439,13 +439,6 @@ const CronogramaModule = {
     }
   },
 
-  _setGanttMode(mode) {
-    this.viewMode = mode;
-    if (this._gantt) {
-      try { this._gantt.change_view_mode(mode); } catch (e) {}
-    }
-  },
-
   _filtrarObra() {
     this.obraFiltro = document.getElementById('cron-filtro-obra')?.value || '';
     var btnLimpar = document.getElementById('cron-btn-limpar');
@@ -470,16 +463,6 @@ const CronogramaModule = {
         showToast('Erro ao limpar cronograma');
       }
     });
-  },
-
-  _scrollHoje() {
-    const wrap = document.getElementById('cron-gantt-wrap');
-    if (!wrap) return;
-    const highlight = wrap.querySelector('.today-highlight');
-    if (highlight) {
-      const x = Number(highlight.getAttribute('x')) || 0;
-      wrap.scrollTo({ left: Math.max(x - 100, 0), behavior: 'smooth' });
-    }
   },
 
   _toggleExpand(id) {
@@ -923,7 +906,7 @@ const CronogramaModule = {
       for (var i = startRow; i < startRow + 20; i++) {
         if (i >= data.length) { arr.push(0); continue; }
         var val = data[i][col];
-        var num = typeof val === 'number' ? val : parseFloat(String(val).replace(',', '.'));
+        var num = parseNumBR(val);
         arr.push(isNaN(num) ? 0 : num);
       }
       var soma = arr.reduce(function(a, b) { return a + b; }, 0);
@@ -1354,18 +1337,6 @@ const CronogramaModule = {
     showToast(criadas + ' etapas criadas');
     fecharModal('cron-etapas');
     await this._carregarTarefas();
-  },
-
-  // ══════════════════════════════════════════════════════════
-  // PDF — delega pro PdfModule centralizado
-  // ══════════════════════════════════════════════════════════
-
-  gerarPDF() {
-    if (typeof PdfModule !== 'undefined' && PdfModule.gerarCronograma) {
-      PdfModule.gerarCronograma(this.tarefas, this.obraFiltro);
-    } else {
-      showToast('Modulo PDF indisponivel');
-    }
   }
 };
 

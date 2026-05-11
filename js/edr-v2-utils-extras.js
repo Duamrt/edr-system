@@ -36,6 +36,40 @@ function fmtN(n) {
   return Number(n).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+// Parse robusto de número em formato pt-BR vindo de planilha/CSV/texto.
+// Trata: "1.500" → 1500 (não 1.5), "1.500,50" → 1500.50, "1500.50" → 1500.50, "1,5" → 1.5
+// Aceita também ExcelJS rich text/formula objects.
+function parseNumBR(val) {
+  if (val === null || val === undefined || val === '') return 0;
+  if (typeof val === 'number') return val;
+  // ExcelJS: {result: 123} (formula) ou {richText: [...]}
+  if (typeof val === 'object') {
+    if ('result' in val) return parseNumBR(val.result);
+    if ('text' in val) return parseNumBR(val.text);
+    if (Array.isArray(val.richText)) return parseNumBR(val.richText.map(p => p.text || '').join(''));
+    return 0;
+  }
+  let s = String(val).trim().replace(/[R$\s]/g, '');
+  if (!s) return 0;
+  const temVirgula = s.includes(',');
+  const temPonto = s.includes('.');
+  if (temVirgula) {
+    // Formato br: vírgula é decimal. Pontos são milhares.
+    s = s.replace(/\./g, '').replace(',', '.');
+  } else if (temPonto) {
+    // Só ponto: pode ser milhar ("1.500") OU decimal ("1.5", "1.50").
+    // Heurística: se for "<digits>.<exatamente 3 digitos>" (e nada mais), trata como milhar.
+    // Se houver múltiplos pontos, todos são milhares ("1.500.000").
+    const partes = s.split('.');
+    const ultima = partes[partes.length - 1];
+    if (partes.length > 2 || (partes.length === 2 && ultima.length === 3)) {
+      s = partes.join('');
+    }
+  }
+  const n = parseFloat(s);
+  return isNaN(n) ? 0 : n;
+}
+
 // Mascara CNPJ
 function maskCNPJ(el) { let v = el.value.replace(/\D/g,'').slice(0,14); if(v.length>12)v=v.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2}).*/,'$1.$2.$3/$4-$5'); else if(v.length>8)v=v.replace(/^(\d{2})(\d{3})(\d{3})(\d*)/,'$1.$2.$3/$4'); else if(v.length>5)v=v.replace(/^(\d{2})(\d{3})(\d*)/,'$1.$2.$3'); else if(v.length>2)v=v.replace(/^(\d{2})(\d*)/,'$1.$2'); el.value = v; }
 

@@ -136,6 +136,15 @@ const AlertasModule = {
   },
 
   async atualizar() {
+    // Recarrega os arrays globais que as alert functions consomem em memória.
+    // Sem isso, "Atualizar" só re-renderizava o cache (conta marcada como paga continuava listada).
+    try {
+      await Promise.all([
+        typeof loadLancamentos === 'function' ? loadLancamentos() : null,
+        typeof loadRepassesCef === 'function' ? loadRepassesCef() : null,
+        typeof loadAdicionais === 'function' ? loadAdicionais() : null,
+      ].filter(Boolean));
+    } catch(e) { console.warn('[ALERTAS] reload erro:', e); }
     await this.calcular();
     const panel = document.getElementById('notif-panel');
     if (panel && this._panelAberto) this._renderPanel(panel);

@@ -1104,9 +1104,10 @@ async function diarConfirmarLancamento() {
   if (btn) { btn.disabled = false; btn.textContent = 'CONFIRMAR E SALVAR'; }
 }
 
-// Lançamento automático na tabela lancamentos após confirmar diárias
-// IMPORTANTE: usa upsert por obra_id+data+obs para evitar duplicatas quando Anderson salva parcialmente
-async function _diarAutoLancarPL(novos) {
+// _diarAutoLancarPL REMOVIDA 2026-05-11 — criava duplicatas de custo. Mão de obra só via botão "Lançar FP".
+// (gotcha do CLAUDE.md: "NUNCA reativar _diarAutoLancarPL")
+
+/* corpo da função _diarAutoLancarPL removido em 2026-05-11
   const obrasMap = await _diarBuscarObras();
   if (!obrasMap) return;
   const porObra = {};
@@ -1119,7 +1120,7 @@ async function _diarAutoLancarPL(novos) {
     });
   });
   const data = novos[0]?.data || hojeISO();
-  const obs = 'Diaria · ' + data + ' · ' + (DiariasModule.quinzenaAtiva?.label || 'Quinzena');
+  const obs = 'Diaria· ' + data + ' · ' + (DiariasModule.quinzenaAtiva?.label || 'Quinzena');
   for (const [chave, { valor }] of Object.entries(porObra)) {
     const obraId = obrasMap[chave];
     if (!obraId || valor <= 0) continue;
@@ -1141,6 +1142,7 @@ async function _diarAutoLancarPL(novos) {
     } catch(e) { console.warn('[DIAR] auto-lancar PL:', e); }
   }
 }
+*/
 
 function _diarNormStr(s) {
   return (s || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();

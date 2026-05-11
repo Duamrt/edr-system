@@ -561,10 +561,21 @@ function _leadsBindAutocomplete() {
 async function _leadsCriar() {
   const nome = (document.getElementById('lead-new-nome')?.value || '').trim();
   if (!nome) { showToast('Informe o nome do lead.'); return; }
+  if (nome.length < 2) { showToast('Nome muito curto.'); return; }
+
+  const telefoneRaw = (document.getElementById('lead-new-telefone')?.value || '').trim();
+  if (telefoneRaw) {
+    // Aceita só dígitos, parênteses, traços, espaços, +
+    const digitos = telefoneRaw.replace(/\D/g, '');
+    if (digitos.length < 10 || digitos.length > 13) {
+      showToast('Telefone inválido (precisa de DDD + número, 10 a 13 dígitos).');
+      return;
+    }
+  }
 
   const payload = {
     nome,
-    telefone: (document.getElementById('lead-new-telefone')?.value || '').trim() || null,
+    telefone: telefoneRaw || null,
     faixa: document.getElementById('lead-new-faixa')?.value || null,
     renda: parseFloat(document.getElementById('lead-new-renda')?.value) || null,
     modelo_escolhido: (document.getElementById('lead-new-modelo')?.value || '').trim() || null,

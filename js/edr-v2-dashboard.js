@@ -501,15 +501,21 @@ function _dashBuildSaudeObras(porObra) {
       <span style="width:6px;height:6px;border-radius:50%;background:#2D6A4F;"></span> Obras
     </div>
     ${porObra.map(o => {
-    const pctReceb = o.vv > 0 ? Math.min((o.receb / o.vv * 100), 100) : 0;
+    // pctReceb pode vir null (modo mensal) — esconde a barra nesse caso
+    const pctReceb = (o.pctReceb === null || o.pctReceb === undefined)
+      ? null
+      : Math.min(o.pctReceb, 100);
     const corM = o.margem >= 15 ? '#2D6A4F' : o.margem >= 0 ? 'var(--warning)' : 'var(--danger)';
+    const barra = pctReceb === null
+      ? `<div style="width:80px;font-size:9px;color:var(--text-tertiary);text-align:center;font-family:'Space Grotesk',monospace;">—</div>`
+      : `<div style="width:80px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;flex-shrink:0;">
+          <div style="width:${pctReceb}%;height:100%;background:#2D6A4F;border-radius:2px;"></div>
+        </div>`;
     return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer;" onclick="setView('custos');setTimeout(()=>custosAbrirDetalhe('${esc(o.id)}'),100)">
         <div style="flex:1;min-width:0;">
           <div style="font-size:12px;color:var(--text-primary);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:Inter,sans-serif;">${esc(o.nome)}</div>
         </div>
-        <div style="width:80px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;flex-shrink:0;">
-          <div style="width:${pctReceb}%;height:100%;background:#2D6A4F;border-radius:2px;"></div>
-        </div>
+        ${barra}
         <span style="font-size:10px;font-weight:700;color:${corM};min-width:40px;text-align:right;font-family:'Space Grotesk',monospace;">${o.vv > 0 ? o.margem.toFixed(0) + '%' : '—'}</span>
       </div>`;
   }).join('')}
@@ -687,7 +693,8 @@ function _dashFinCalcObra(o, filtroMes) {
   const receita = vv + (adds?.valorTotal || 0);
   const faltaReceber = filtroMes ? 0 : (receita - entradas);
   const saldo = entradas - custo;
-  const pctReceb = receita > 0 ? (entradas / receita * 100) : 0;
+  // pctReceb não faz sentido no modo mensal (entradas do mês / receita total da obra) — vira null pra UI esconder
+  const pctReceb = filtroMes ? null : (receita > 0 ? (entradas / receita * 100) : 0);
   return { ...o, nome: o.nome, id: o.id, vv, custo, receb, entradas, receita, faltaReceber, saldo, mao, pctReceb, adds };
 }
 

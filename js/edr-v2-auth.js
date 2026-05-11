@@ -303,30 +303,32 @@ async function renderPermissoes(container) {
   if (usuarios.length === 0) {
     usersHTML = '<div style="color:var(--text-tertiary);font-size:13px;padding:8px 0;">Nenhum usuário encontrado.</div>';
   } else {
+    // Sanitização: nome/email vêm do banco, podem conter <script> ou aspas. Escape em atributo (esc) + escape em string JS.
+    const _jsStr = s => String(s || '').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/</g,'\\x3c').replace(/>/g,'\\x3e');
     usersHTML = usuarios.map(u => {
       const perfilAtual = u.role || 'operacional';
       const perfilCor = (_PERFIS.find(p => p.id === perfilAtual) || {}).cor || '#6b7280';
-      const nomeEsc = (u.nome||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-      const emailEsc = (u.email||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-      const nomeLabel = (u.nome||u.email||'este usuário').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+      const nomeJs = _jsStr(u.nome);
+      const emailJs = _jsStr(u.email);
+      const nomeLabelJs = _jsStr(u.nome || u.email || 'este usuário');
       const editBtn = isAdmin
         ? `<div style="display:flex;gap:6px;align-items:center;">
-            <button onclick="abrirModalEditarUsuario('${u.id}','${u.user_id||''}','${nomeEsc}','${emailEsc}','${perfilAtual}')"
+            <button onclick="abrirModalEditarUsuario('${esc(u.id)}','${esc(u.user_id||'')}','${nomeJs}','${emailJs}','${esc(perfilAtual)}')"
               style="background:none;border:1px solid var(--border);border-radius:6px;padding:4px 8px;cursor:pointer;color:var(--text-secondary);display:flex;align-items:center;gap:3px;font-size:11px;font-weight:700;">
               <span class="material-symbols-outlined" style="font-size:14px;">edit</span>EDITAR
             </button>
-            <button onclick="excluirUsuario('${u.id}','${nomeLabel}')"
+            <button onclick="excluirUsuario('${esc(u.id)}','${nomeLabelJs}')"
               style="background:none;border:1px solid #fca5a5;border-radius:6px;padding:4px 8px;cursor:pointer;color:#dc2626;display:flex;align-items:center;gap:3px;font-size:11px;font-weight:700;">
               <span class="material-symbols-outlined" style="font-size:14px;">delete</span>
             </button>
           </div>`
-        : `<span style="font-size:12px;font-weight:700;color:${perfilCor};">${perfilAtual.toUpperCase()}</span>`;
+        : `<span style="font-size:12px;font-weight:700;color:${perfilCor};">${esc(perfilAtual.toUpperCase())}</span>`;
 
       return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;margin-bottom:8px;border:1px solid var(--border);border-radius:8px;background:var(--card);">
         <div>
-          <div style="font-size:13px;font-weight:700;color:var(--text-primary);">${u.nome || '—'}</div>
-          <div style="font-size:11px;color:var(--text-tertiary);">${u.email || ''}</div>
-          <div style="font-size:11px;font-weight:700;color:${perfilCor};margin-top:2px;">${perfilAtual.toUpperCase()}</div>
+          <div style="font-size:13px;font-weight:700;color:var(--text-primary);">${u.nome ? esc(u.nome) : '—'}</div>
+          <div style="font-size:11px;color:var(--text-tertiary);">${esc(u.email || '')}</div>
+          <div style="font-size:11px;font-weight:700;color:${perfilCor};margin-top:2px;">${esc(perfilAtual.toUpperCase())}</div>
         </div>
         ${editBtn}
       </div>`;
