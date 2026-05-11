@@ -838,11 +838,18 @@ const CronogramaModule = {
         treeColumnIndex: 0,
 
         taskbarEdited: function(args) {
-          self._saveSyncfusionEdit(args.data);
+          // args.modifiedRecords contem TODAS as tarefas que mudaram em cascata
+          const recs = args.modifiedRecords && args.modifiedRecords.length
+            ? args.modifiedRecords
+            : (args.data ? [args.data] : []);
+          self._saveSyncfusionBatch(recs);
         },
         actionComplete: function(args) {
-          if (args.requestType === 'save' && args.data) {
-            self._saveSyncfusionEdit(args.data);
+          if (args.requestType === 'save') {
+            const recs = args.modifiedRecords && args.modifiedRecords.length
+              ? args.modifiedRecords
+              : (args.data ? (Array.isArray(args.data) ? args.data : [args.data]) : []);
+            self._saveSyncfusionBatch(recs);
           }
         },
         queryTaskbarInfo: function(args) {
@@ -922,7 +929,66 @@ const CronogramaModule = {
     }
   },
 
-  // Salva edições do Syncfusion no Supabase
+  // Salva edições do Syncfusion (incluindo cascata) no Supabase em paralelo
+  async _saveSyncfusionBatch(records) {
+    if (!records || !records.length) return;
+
+    // Dedup por uuid (cascata pode trazer mesmo registro multiplas vezes)
+    const seen = new Set();
+    const itens = [];
+    for (const rec of records) {
+      const td = (rec && rec.taskData) || rec;
+      if (!td || !td._uuid) continue;
+      if (seen.has(td._uuid)) continue;
+      seen.add(td._uuid);
+
+      const start = td.StartDate instanceof Date ? td.StartDate : new Date(td.StartDate);
+      if (!start || isNaN(start.getTime())) continue;
+      const duration = Math.max(1, Number(td.Duration) || 1);
+      const fim = new Date(start);
+      fim.setDate(fim.getDate() + duration);
+
+      itens.push({
+        uuid: td._uuid,
+        payload: {
+          data_inicio: start.toISOString().split('T')[0],
+          data_fim: fim.toISOString().split('T')[0],
+          duracao_dias: duration,
+          progresso: Math.round(Number(td.Progress) || 0),
+          predecessor: td.Predecessor || ''
+        }
+      });
+    }
+
+    if (!itens.length) return;
+
+    // Feedback visual
+    const btn = document.getElementById('cron-gantt-fullscreen-btn');
+    const oldLabel = btn ? btn.innerHTML : null;
+    if (btn) btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:14px;">sync</span> SALVANDO ' + itens.length + '...';
+
+    try {
+      // Paralelo: todas as PATCHs ao mesmo tempo
+      await Promise.all(itens.map(it =>
+        sbPatch('cronograma_tarefas', '?id=eq.' + it.uuid, it.payload)
+      ));
+
+      // Atualiza estado local
+      for (const it of itens) {
+        const t = this.tarefas.find(x => x.id === it.uuid);
+        if (t) Object.assign(t, it.payload);
+      }
+
+      if (btn && oldLabel) btn.innerHTML = oldLabel;
+      showToast(itens.length === 1 ? 'Tarefa atualizada' : itens.length + ' tarefas reajustadas em cascata');
+    } catch (e) {
+      console.error('[GANTT-SAVE-BATCH]', e);
+      if (btn && oldLabel) btn.innerHTML = oldLabel;
+      showToast('Erro ao salvar — recarregue a pagina');
+    }
+  },
+
+  // (deprecado, mantido por compat) Salva 1 ediço — usar _saveSyncfusionBatch
   async _saveSyncfusionEdit(data) {
     if (!data) return;
     const td = data.taskData || data;
@@ -945,7 +1011,6 @@ const CronogramaModule = {
 
       await sbPatch('cronograma_tarefas', '?id=eq.' + uuid, payload);
 
-      // Atualiza estado local
       const t = this.tarefas.find(x => x.id === uuid);
       if (t) Object.assign(t, payload);
 
