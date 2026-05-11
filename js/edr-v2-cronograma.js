@@ -811,16 +811,18 @@ const CronogramaModule = {
         columns: [
           { field: 'TaskID',    isPrimaryKey: true, visible: false },
           { field: 'TaskName',  headerText: 'Etapa',       width: 280 },
-          { field: 'StartDate', headerText: 'Início',      width: 110, format: 'dd/MM/yyyy' },
-          { field: 'Duration',  headerText: 'Dias',        width: 70  },
-          { field: 'Progress',  headerText: '%',           width: 70  },
+          { field: 'StartDate', headerText: 'Início',      width: 110, format: 'dd/MM/yyyy', editType: 'datepickeredit' },
+          { field: 'Duration',  headerText: 'Dias',        width: 70, editType: 'numericedit', edit: { params: { min: 1, format: 'n0', showSpinButton: false } } },
+          { field: 'Progress',  headerText: '%',           width: 70, editType: 'numericedit', edit: { params: { min: 0, max: 100, format: 'n0', showSpinButton: false } } },
           { field: 'Predecessor', headerText: 'Depende de', width: 130 }
         ],
         editSettings: {
           allowEditing: true,
           allowTaskbarEditing: true,
           allowAdding: false,
-          allowDeleting: false
+          allowDeleting: false,
+          mode: 'Auto',
+          showDeleteConfirmDialog: false
         },
         toolbar: ['ExpandAll','CollapseAll','CriticalPath','ZoomIn','ZoomOut','ZoomToFit'],
         allowSelection: true,
