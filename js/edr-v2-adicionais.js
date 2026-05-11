@@ -30,7 +30,8 @@ const AdicionaisModule = {
   // ══════════════════════════════════════════════════════════
 
   getAdicionaisObra(obraId) {
-    const lista = this.adicionais.filter(a => a.obra_id === obraId);
+    // Pendentes não inflam receita — só conta a partir de aprovado
+    const lista = this.adicionais.filter(a => a.obra_id === obraId && a.status !== 'pendente');
     const valorTotal = lista.reduce((s, a) => s + Number(a.valor || 0), 0);
     const pgtos = this.pagamentos.filter(p => lista.some(a => a.id === p.adicional_id));
     const totalRecebido = pgtos.reduce((s, p) => s + Number(p.valor || 0), 0);

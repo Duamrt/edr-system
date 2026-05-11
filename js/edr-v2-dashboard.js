@@ -624,8 +624,9 @@ function _dashBuildResumoFinanceiro(porObra) {
         <div style="font-size:20px;font-weight:800;color:var(--warning);font-family:'Space Grotesk',monospace;">${_dashFmtR(valEstoque)}</div>
       </div>
       <div style="flex:1;min-width:150px;">
-        <div style="font-size:10px;color:var(--text-tertiary);font-weight:700;letter-spacing:1px;margin-bottom:4px;font-family:'Space Grotesk',monospace;display:flex;align-items:center;gap:4px;"><span class="material-symbols-outlined" style="font-size:14px;">diamond</span> CAIXA TOTAL</div>
+        <div style="font-size:10px;color:var(--text-tertiary);font-weight:700;letter-spacing:1px;margin-bottom:4px;font-family:'Space Grotesk',monospace;display:flex;align-items:center;gap:4px;" title="Disponível em caixa + valor do estoque físico"><span class="material-symbols-outlined" style="font-size:14px;">diamond</span> PATRIMONIO LIQUIDO</div>
         <div style="font-size:20px;font-weight:800;color:${saldoReal >= 0 ? 'var(--success)' : 'var(--danger)'};font-family:'Space Grotesk',monospace;">${_dashFmtR(saldoReal)}</div>
+        <div style="font-size:9px;color:var(--text-tertiary);margin-top:2px;font-family:'Space Grotesk',monospace;">caixa + estoque</div>
       </div>
     </div>`;
   }

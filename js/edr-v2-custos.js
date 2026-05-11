@@ -207,13 +207,14 @@ function _custosRenderResumoFinanceiro(obraId) {
   const totalEntrada = repassesObra.filter(r => (r.tipo || 'pls') === 'entrada').reduce((s, r) => s + Number(r.valor || 0), 0);
   const totalTerreno = repassesObra.filter(r => (r.tipo || 'pls') === 'terreno').reduce((s, r) => s + Number(r.valor || 0), 0);
   const totalRecebido = totalPls + totalEntrada + totalTerreno;
-  const saldoReceber = valorVenda - totalRecebido;
 
   const custoTotal = (typeof lancamentos !== 'undefined' && Array.isArray(lancamentos))
     ? lancamentos.filter(l => l.obra_id === obraId).reduce((s, l) => s + Number(l.total || 0), 0) : 0;
 
-  const adds = typeof getAdicionaisObra === 'function' ? getAdicionaisObra(obraId) : { qtd: 0, valorTotal: 0 };
+  const adds = typeof getAdicionaisObra === 'function' ? getAdicionaisObra(obraId) : { qtd: 0, valorTotal: 0, totalRecebido: 0 };
   const receitaObra = valorVenda + adds.valorTotal;
+  // Saldo a receber = receita TOTAL (venda + adicionais aprovados) - tudo que já entrou (repasses + pagamentos de adicionais)
+  const saldoReceber = receitaObra - (totalRecebido + (adds.totalRecebido || 0));
   const lucro = receitaObra - custoTotal;
   const margem = receitaObra > 0 ? (lucro / receitaObra * 100) : 0;
   const pctRecebido = receitaObra > 0 ? Math.min((totalRecebido / receitaObra * 100), 100) : 0;
