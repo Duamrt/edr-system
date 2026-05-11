@@ -240,7 +240,12 @@ const CronogramaModule = {
           + '<div style="font-size:14px;margin:12px 0 6px;">Nenhuma tarefa no cronograma</div>'
           + '<div style="font-size:12px;">Clique em <strong>+ TAREFA</strong> para adicionar ou <strong>Gerar Padrao</strong> para criar etapas automaticamente</div>'
         + '</div>'
-        + '<div id="cron-gantt-wrap" style="overflow-x:auto;display:none;margin-top:8px;border-radius:10px;border:1px solid var(--borda);"></div>'
+        + '<div id="cron-gantt-wrap" style="overflow-x:auto;display:none;margin-top:8px;border-radius:10px;border:1px solid var(--borda);position:relative;">'
+          + '<button id="cron-gantt-fullscreen-btn" onclick="CronogramaModule._toggleFullscreen()" style="position:absolute;top:8px;right:8px;z-index:100;background:var(--primary);color:#fff;border:none;border-radius:6px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:4px;box-shadow:0 2px 8px rgba(0,0,0,.15);">'
+            + '<span class="material-symbols-outlined" style="font-size:14px;">fullscreen</span>'
+            + '<span id="cron-gantt-fullscreen-label">EXPANDIR</span>'
+          + '</button>'
+        + '</div>'
         + '<div id="cron-lista" style="margin-top:8px;"></div>';
 
       // Autocomplete pra filtro de obra
@@ -735,6 +740,57 @@ const CronogramaModule = {
       if (wrap) wrap.style.display = 'none';
       if (lista) lista.style.display = '';
       this._renderLista();
+    }
+  },
+
+  // Toggle modo tela cheia (esconde sidebar + header)
+  _toggleFullscreen() {
+    const wrap = document.getElementById('cron-gantt-wrap');
+    if (!wrap) return;
+
+    const isFull = wrap.classList.contains('cron-gantt-fullscreen');
+    const label = document.getElementById('cron-gantt-fullscreen-label');
+    const icon = wrap.querySelector('#cron-gantt-fullscreen-btn .material-symbols-outlined');
+
+    if (!isFull) {
+      // Injeta CSS uma vez
+      if (!document.getElementById('cron-gantt-fs-css')) {
+        const style = document.createElement('style');
+        style.id = 'cron-gantt-fs-css';
+        style.textContent = '.cron-gantt-fullscreen{position:fixed!important;inset:0!important;z-index:9999!important;background:var(--bg)!important;border-radius:0!important;border:none!important;margin:0!important;padding:0!important;overflow:auto!important;}'
+          + '.cron-gantt-fullscreen #cron-gantt-syncfusion{height:calc(100vh - 0px)!important;}'
+          + 'body.cron-fs-active{overflow:hidden!important;}';
+        document.head.appendChild(style);
+      }
+      wrap.classList.add('cron-gantt-fullscreen');
+      document.body.classList.add('cron-fs-active');
+      if (label) label.textContent = 'SAIR';
+      if (icon) icon.textContent = 'close_fullscreen';
+      // Reforça altura do Gantt
+      setTimeout(() => {
+        const ganttDiv = document.getElementById('cron-gantt-syncfusion');
+        if (ganttDiv) ganttDiv.style.height = (window.innerHeight - 4) + 'px';
+        if (this._gantt && typeof this._gantt.refresh === 'function') {
+          try { this._gantt.refresh(); } catch(_) {}
+        }
+      }, 50);
+      // ESC pra sair
+      this._fsKeyHandler = (e) => { if (e.key === 'Escape') this._toggleFullscreen(); };
+      document.addEventListener('keydown', this._fsKeyHandler);
+    } else {
+      wrap.classList.remove('cron-gantt-fullscreen');
+      document.body.classList.remove('cron-fs-active');
+      if (label) label.textContent = 'EXPANDIR';
+      if (icon) icon.textContent = 'fullscreen';
+      const ganttDiv = document.getElementById('cron-gantt-syncfusion');
+      if (ganttDiv) ganttDiv.style.height = '600px';
+      if (this._gantt && typeof this._gantt.refresh === 'function') {
+        try { this._gantt.refresh(); } catch(_) {}
+      }
+      if (this._fsKeyHandler) {
+        document.removeEventListener('keydown', this._fsKeyHandler);
+        this._fsKeyHandler = null;
+      }
     }
   },
 
