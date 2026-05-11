@@ -840,6 +840,32 @@ const CronogramaModule = {
         splitterSettings: { columnIndex: 3 },
         treeColumnIndex: 0,
 
+        dataBound: function() {
+          // Single-click pra entrar em edit nas colunas editáveis
+          try {
+            const tg = self._gantt && self._gantt.treeGrid;
+            if (!tg || !tg.element || tg.element.__singleClickEditWired) return;
+            tg.element.__singleClickEditWired = true;
+            tg.element.addEventListener('mouseup', function(e) {
+              const cell = e.target.closest && e.target.closest('.e-rowcell');
+              if (!cell) return;
+              // descobre qual coluna foi clicada via aria-colindex (1-based)
+              const colIdxAttr = cell.getAttribute('aria-colindex') || cell.getAttribute('data-colindex');
+              const colIdx = parseInt(colIdxAttr, 10);
+              // Cols visiveis: 1=TaskName, 2=StartDate, 3=Duration, 4=Progress, 5=Predecessor
+              // Editaveis em single click: 3, 4, 5 (Duration, Progress, Predecessor)
+              if (![3, 4, 5].includes(colIdx)) return;
+              setTimeout(function() {
+                try {
+                  if (tg.isEdit) tg.endEdit();
+                  const rowIdx = parseInt(cell.parentElement.getAttribute('aria-rowindex'), 10) - 1;
+                  if (!isNaN(rowIdx) && rowIdx >= 0) tg.selectRow(rowIdx);
+                  tg.startEdit();
+                } catch(_) {}
+              }, 10);
+            });
+          } catch(e) { console.warn('[GANTT-SINGLECLICK]', e); }
+        },
         taskbarEdited: function(args) {
           // args.modifiedRecords contem TODAS as tarefas que mudaram em cascata
           const recs = args.modifiedRecords && args.modifiedRecords.length
