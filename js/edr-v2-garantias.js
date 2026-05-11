@@ -197,7 +197,7 @@ function _garantiasCardChamado(c, obraMap) {
           <span style="font-size:10px;padding:2px 8px;border-radius:6px;background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.25);color:#a78bfa;font-weight:700;display:inline-flex;align-items:center;gap:3px;">
             <span class="material-symbols-outlined" style="font-size:12px;">${cat.icon}</span> ${esc(cat.lb)}
           </span>
-          <span style="font-size:10px;color:var(--texto-sec);">Prazo: ${esc(cat.prazo)}</span>
+          ${_garantiaSLATag(c)}
         </div>
         <div style="font-size:12px;color:var(--texto-sec);margin-bottom:4px;">${esc(c.descricao_problema)}</div>
         ${c.solucao ? `<div style="font-size:11px;color:#22c55e;margin-bottom:4px;display:flex;align-items:flex-start;gap:4px;">
@@ -317,10 +317,20 @@ function _garantiasAbrirModal(chamadoId) {
         </div>
       </div>
 
+      <!-- Fotos -->
+      <div style="margin-bottom:16px;">
+        <label style="font-size:10px;font-weight:700;color:var(--texto-sec);display:block;margin-bottom:6px;">FOTOS DO PROBLEMA</label>
+        <div id="gar-fotos-preview" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;"></div>
+        <label style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:8px;border:1px dashed var(--borda);cursor:pointer;font-size:11px;color:var(--texto-sec);">
+          <span class="material-symbols-outlined" style="font-size:16px;">add_photo_alternate</span> Adicionar foto
+          <input id="gar-fotos-input" type="file" accept="image/*" multiple style="display:none;">
+        </label>
+      </div>
+
       <!-- Botoes -->
       <div style="display:flex;gap:8px;justify-content:flex-end;">
         <button onclick="document.getElementById('modal-garantia-v2').remove()" style="padding:8px 16px;border-radius:8px;border:1px solid var(--borda);background:transparent;color:var(--texto-sec);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">Cancelar</button>
-        <button onclick="_garantiasSalvar()" style="padding:8px 16px;border-radius:8px;border:1px solid rgba(45,106,79,0.4);background:rgba(45,106,79,0.1);color:#2D6A4F;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px;">
+        <button id="gar-btn-salvar" onclick="_garantiasSalvar()" style="padding:8px 16px;border-radius:8px;border:1px solid rgba(45,106,79,0.4);background:rgba(45,106,79,0.1);color:#2D6A4F;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px;">
           <span class="material-symbols-outlined" style="font-size:14px;">save</span> Salvar
         </button>
       </div>
@@ -331,6 +341,7 @@ function _garantiasAbrirModal(chamadoId) {
 
   // Autocomplete de obra
   _garantiasSetupObraAC(c);
+  _garantiasBindFotos(c);
 
   // ESC fecha
   const escH = e => { if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', escH); } };
@@ -395,7 +406,16 @@ async function _garantiasSalvar() {
   if (!obra_id) { showToast('Selecione a obra.'); return; }
   if (!descricao_problema) { showToast('Descreva o problema.'); return; }
 
-  const payload = { obra_id, categoria, descricao_problema, solucao, status, data_visita, cliente_nome, cliente_telefone, atualizado_em: new Date().toISOString() };
+  // Upload fotos
+  const btn = document.getElementById('gar-btn-salvar');
+  if (btn) btn.textContent = 'ENVIANDO...';
+  const fotosFinais = [];
+  for (const f of _garFotosBase64) {
+    if (f.startsWith('http')) { fotosFinais.push(f); continue; }
+    try { fotosFinais.push(await _garantiasUploadFoto(f)); } catch { fotosFinais.push(f); }
+  }
+
+  const payload = { obra_id, categoria, descricao_problema, solucao, status, data_visita, cliente_nome, cliente_telefone, fotos: fotosFinais, atualizado_em: new Date().toISOString() };
 
   try {
     if (id) {
@@ -439,6 +459,101 @@ async function _garantiasExcluir(chamadoId) {
   } catch (e) {
     showToast('Erro ao excluir chamado.');
   }
+}
+
+// ── SLA real ─────────────────────────────────────────────────
+
+function _garantiasSLA(chamado) {
+  const todas = [...(typeof obras !== 'undefined' ? obras : []), ...(typeof obrasArquivadas !== 'undefined' ? obrasArquivadas : [])];
+  const obra = todas.find(o => o.id === chamado.obra_id);
+  if (!obra?.data_entrega) return null;
+  const cat = GARANTIA_CATEGORIAS.find(g => g.key === chamado.categoria);
+  const anos = parseInt(cat?.prazo || '1') || 1;
+  const [y, m, d] = obra.data_entrega.split('-').map(Number);
+  const expiry = new Date(y + anos, m - 1, d);
+  const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+  const dias = Math.round((expiry - hoje) / 86400000);
+  return { dias, vencida: dias < 0, expiry };
+}
+
+function _garantiaSLATag(chamado) {
+  const sla = _garantiasSLA(chamado);
+  if (!sla) {
+    const cat = GARANTIA_CATEGORIAS.find(g => g.key === chamado.categoria);
+    return `<span style="font-size:10px;color:var(--texto-sec);">Prazo: ${esc(cat?.prazo || '—')}</span>`;
+  }
+  if (sla.vencida) {
+    return `<span style="font-size:10px;padding:2px 8px;border-radius:6px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:#ef4444;font-weight:700;">⚠ Garantia vencida</span>`;
+  }
+  const label = sla.dias > 365 ? Math.round(sla.dias / 365) + ' ano(s)' : sla.dias + ' dias';
+  const cor = sla.dias < 90 ? '#f59e0b' : '#22c55e';
+  const bg  = sla.dias < 90 ? 'rgba(245,158,11,0.08)' : 'rgba(34,197,94,0.08)';
+  return `<span style="font-size:10px;padding:2px 8px;border-radius:6px;background:${bg};border:1px solid ${cor}44;color:${cor};font-weight:700;">Garantia: ${label}</span>`;
+}
+
+// ── Upload foto garantia ──────────────────────────────────────
+
+async function _garantiasUploadFoto(base64) {
+  const match = base64.match(/^data:([^;]+);base64,(.+)$/);
+  if (!match) throw new Error('base64 invalido');
+  const mime = match[1];
+  const raw = atob(match[2]);
+  const ab = new ArrayBuffer(raw.length);
+  const ia = new Uint8Array(ab);
+  for (let i = 0; i < raw.length; i++) ia[i] = raw.charCodeAt(i);
+  const blob = new Blob([ab], { type: mime });
+  const ext = mime === 'image/png' ? 'png' : 'jpg';
+  const nome = (typeof _companyId !== 'undefined' && _companyId ? _companyId + '/' : '') + Date.now() + '-' + Math.random().toString(36).slice(2) + '.' + ext;
+  const res = await fetch(SUPABASE_URL + '/storage/v1/object/garantia-fotos/' + nome, {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + (_supabaseToken || SUPABASE_KEY), 'Content-Type': mime, 'x-upsert': 'true' },
+    body: blob
+  });
+  if (!res.ok) throw new Error('Upload falhou: ' + res.status);
+  return SUPABASE_URL + '/storage/v1/object/public/garantia-fotos/' + nome;
+}
+
+let _garFotosBase64 = [];
+
+function _garantiasBindFotos(chamado) {
+  _garFotosBase64 = Array.isArray(chamado?.fotos) ? [...chamado.fotos] : [];
+  const input = document.getElementById('gar-fotos-input');
+  const preview = document.getElementById('gar-fotos-preview');
+  if (!input || !preview) return;
+  _garantiasRenderFotosPreview(preview);
+  input.addEventListener('change', () => {
+    const files = Array.from(input.files).slice(0, 4 - _garFotosBase64.length);
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = e => {
+        const img = new Image();
+        img.onload = () => {
+          const MAX = 800; let w = img.width, h = img.height;
+          if (w > MAX || h > MAX) { if (w > h) { h = Math.round(h * MAX / w); w = MAX; } else { w = Math.round(w * MAX / h); h = MAX; } }
+          const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          const b64 = canvas.toDataURL('image/jpeg', 0.7);
+          _garFotosBase64.push(b64);
+          _garantiasRenderFotosPreview(preview);
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+    input.value = '';
+  });
+}
+
+function _garantiasRenderFotosPreview(preview) {
+  preview.innerHTML = '';
+  _garFotosBase64.forEach((f, i) => {
+    const wrap = document.createElement('div'); wrap.style.cssText = 'position:relative;';
+    const img = document.createElement('img'); img.src = f; img.style.cssText = 'height:70px;width:70px;object-fit:cover;border-radius:6px;border:1px solid var(--borda);';
+    const del = document.createElement('button'); del.innerHTML = '✕';
+    del.style.cssText = 'position:absolute;top:-4px;right:-4px;background:#ef4444;color:#fff;border:none;border-radius:50%;width:16px;height:16px;font-size:10px;cursor:pointer;padding:0;line-height:1;';
+    del.onclick = () => { _garFotosBase64.splice(i, 1); _garantiasRenderFotosPreview(preview); };
+    wrap.appendChild(img); wrap.appendChild(del); preview.appendChild(wrap);
+  });
 }
 
 // ── Registry ─────────────────────────────────────────────────
