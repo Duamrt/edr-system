@@ -191,6 +191,11 @@ const CronogramaModule = {
   },
 
   _calcProgresso(t) {
+    if (t.tipo === 'categoria') {
+      const children = this.tarefas.filter(x => x.parent_id === t.id);
+      if (!children.length) return Number(t.progresso) || 0;
+      return Math.round(children.reduce((a, c) => a + this._calcProgresso(c), 0) / children.length);
+    }
     const subs = t.subitens || [];
     if (subs.length === 0) return Number(t.progresso) || 0;
     return Math.round(subs.filter(s => s.feito).length / subs.length * 100);
@@ -205,6 +210,27 @@ const CronogramaModule = {
     if (!lista) return;
     if (this.tarefas.length === 0) { lista.innerHTML = ''; return; }
 
+    // ── Modo categorias (import PCI com subitens como tarefas) ──
+    const hasCategorias = this.tarefas.some(t => t.tipo === 'categoria');
+    if (hasCategorias) {
+      const categorias = this.tarefas.filter(t => t.tipo === 'categoria').sort((a,b) => (a.ordem||0)-(b.ordem||0));
+      const allFilhas = this.tarefas.filter(t => t.tipo === 'tarefa' && t.parent_id);
+      const progGeral = allFilhas.length > 0 ? Math.round(allFilhas.reduce((a,t) => a + this._calcProgresso(t), 0) / allFilhas.length) : 0;
+      const corPG = progGeral >= 100 ? '#2D6A4F' : progGeral >= 50 ? '#B7791F' : progGeral > 0 ? '#E85D04' : '#dc2626';
+      lista.innerHTML = '<div style="background:var(--bg2);border:1px solid var(--borda);border-radius:10px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:12px;">'
+        + '<div style="flex:1;">'
+          + '<div style="font-size:10px;color:var(--texto3);margin-bottom:4px;letter-spacing:1px;font-weight:700;">' + allFilhas.length + ' ETAPAS · ' + categorias.length + ' CATEGORIAS</div>'
+          + '<div style="height:6px;background:var(--borda);border-radius:3px;">'
+            + '<div style="height:6px;background:' + corPG + ';border-radius:3px;width:' + progGeral + '%;transition:width 0.3s;"></div>'
+          + '</div>'
+        + '</div>'
+        + '<span style="font-size:20px;font-weight:800;color:' + corPG + ';">' + progGeral + '%</span>'
+      + '</div>'
+      + categorias.map(cat => this._renderCategoriaRow(cat)).join('');
+      return;
+    }
+
+    // ── Modo plano (tarefas manuais / legado) ───────────────────
     const obrasLista = typeof obras !== 'undefined' ? obras : [];
     const totalGeral = this.tarefas.reduce((a, t) => a + (t.subitens || []).length, 0);
     const feitosGeral = this.tarefas.reduce((a, t) => a + (t.subitens || []).filter(s => s.feito).length, 0);
@@ -328,6 +354,104 @@ const CronogramaModule = {
       + '</div>';
   },
 
+  // ── Render categoria (header expansível com filhas) ─────────
+
+  _renderCategoriaRow(cat) {
+    const prog = this._calcProgresso(cat);
+    const children = this.tarefas.filter(t => t.parent_id === cat.id).sort((a,b) => (a.ordem||0)-(b.ordem||0));
+    const aberto = this.expandido.has(cat.id);
+    const corIdx = this._obraCores[cat.obra_id] || 0;
+    const corObra = this._CORES[corIdx] || this._CORES[0];
+    const corProg = prog >= 100 ? '#2D6A4F' : prog >= 50 ? '#B7791F' : prog > 0 ? '#E85D04' : '#dc2626';
+    const feitosN = children.filter(c => this._calcProgresso(c) >= 100).length;
+
+    const childrenHtml = aberto && children.length
+      ? '<div style="padding:0 12px 10px 12px;display:flex;flex-direction:column;gap:6px;">'
+          + children.map(c => this._renderTarefaFilha(c)).join('')
+        + '</div>'
+      : '';
+
+    return '<div style="background:var(--bg2);border:1px solid var(--borda);border-left:3px solid ' + corObra.bar + ';border-radius:10px;margin-bottom:8px;overflow:hidden;">'
+      + '<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;cursor:pointer;" onclick="CronogramaModule._toggleExpand(\'' + cat.id + '\')">'
+        + '<span class="material-symbols-outlined" style="font-size:18px;color:var(--texto3);transition:transform 0.2s;transform:rotate(' + (aberto ? '90' : '0') + 'deg);">chevron_right</span>'
+        + '<div style="flex:1;min-width:0;">'
+          + '<div style="font-size:13px;font-weight:700;color:var(--texto);">' + esc(cat.nome) + '</div>'
+          + '<div style="display:flex;align-items:center;gap:8px;margin-top:4px;">'
+            + '<div style="width:100px;height:4px;background:var(--borda);border-radius:2px;">'
+              + '<div style="height:4px;background:' + corProg + ';border-radius:2px;width:' + prog + '%;transition:width 0.3s;"></div>'
+            + '</div>'
+            + '<span style="font-size:11px;font-weight:700;color:' + corProg + ';">' + prog + '%</span>'
+            + '<span style="font-size:10px;color:var(--texto3);">' + feitosN + '/' + children.length + ' etapas</span>'
+          + '</div>'
+        + '</div>'
+        + '<div onclick="event.stopPropagation()" style="display:flex;gap:4px;">'
+          + '<button onclick="CronogramaModule._abrirModal(\'' + cat.id + '\')" style="padding:4px 8px;border-radius:6px;border:1px solid var(--borda);background:transparent;color:var(--texto3);font-size:11px;cursor:pointer;display:inline-flex;align-items:center;">'
+            + '<span class="material-symbols-outlined" style="font-size:13px;">edit</span>'
+          + '</button>'
+        + '</div>'
+      + '</div>'
+      + childrenHtml
+    + '</div>';
+  },
+
+  _renderTarefaFilha(t) {
+    const prog = this._calcProgresso(t);
+    const feita = prog >= 100;
+    const ini = t.data_inicio ? new Date(t.data_inicio + 'T00:00:00').toLocaleDateString('pt-BR') : '';
+    const fim = t.data_fim ? new Date(t.data_fim + 'T00:00:00').toLocaleDateString('pt-BR') : '';
+    const hoje = new Date().toISOString().split('T')[0];
+    const atrasado = t.data_fim && t.data_fim < hoje && !feita;
+
+    return '<div style="background:var(--bg);border:1px solid var(--borda);border-radius:8px;padding:8px 10px;display:flex;align-items:center;gap:10px;' + (feita ? 'opacity:0.55;' : '') + '">'
+      + '<button onclick="CronogramaModule._marcarTarefaFilha(\'' + t.id + '\',' + (!feita) + ')" '
+        + 'style="min-width:18px;height:18px;border-radius:4px;border:2px solid ' + (feita ? '#2D6A4F' : 'var(--borda)') + ';background:' + (feita ? '#2D6A4F' : 'transparent') + ';cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0;">'
+        + (feita ? '<span class="material-symbols-outlined" style="font-size:12px;color:#fff;">check</span>' : '')
+      + '</button>'
+      + '<div style="flex:1;min-width:0;">'
+        + '<div style="font-size:12px;font-weight:600;color:var(--texto);">' + esc(t.nome) + '</div>'
+        + '<div style="font-size:10px;color:var(--texto3);margin-top:1px;">'
+          + (ini ? ini + ' → ' + fim : '')
+          + (atrasado ? ' <span style="color:#dc2626;font-weight:700;">ATRASADO</span>' : '')
+        + '</div>'
+      + '</div>'
+      + '<button onclick="CronogramaModule._abrirModal(\'' + t.id + '\')" style="padding:3px 7px;border-radius:6px;border:1px solid var(--borda);background:transparent;color:var(--texto3);font-size:11px;cursor:pointer;display:inline-flex;align-items:center;">'
+        + '<span class="material-symbols-outlined" style="font-size:13px;">edit</span>'
+      + '</button>'
+    + '</div>';
+  },
+
+  async _marcarTarefaFilha(id, feita) {
+    const t = this.tarefas.find(x => x.id === id);
+    if (!t) return;
+
+    if (feita && t.dependencia) {
+      const dep = this.tarefas.find(x => x.id === t.dependencia);
+      if (dep) {
+        const depProg = this._calcProgresso(dep);
+        if (depProg < 100) {
+          const ok = await confirmar('A etapa anterior "' + dep.nome + '" está ' + depProg + '% concluída. Concluir esta mesmo assim?');
+          if (!ok) return;
+        }
+      }
+    }
+
+    t.progresso = feita ? 100 : 0;
+    try {
+      await sbPatch('cronograma_tarefas', '?id=eq.' + id, { progresso: t.progresso });
+    } catch(e) { showToast('Erro ao salvar'); return; }
+
+    if (t.parent_id) {
+      const cat = this.tarefas.find(x => x.id === t.parent_id);
+      if (cat) {
+        cat.progresso = this._calcProgresso(cat);
+        try { await sbPatch('cronograma_tarefas', '?id=eq.' + cat.id, { progresso: cat.progresso }); } catch {}
+      }
+    }
+
+    if (this._view === 'gantt') this._renderGantt();
+    else this._renderLista();
+  },
+
   // ══════════════════════════════════════════════════════════
   // VIEW: GANTT (Frappe Gantt com try/catch)
   // ══════════════════════════════════════════════════════════
@@ -358,7 +482,7 @@ const CronogramaModule = {
       wrap.innerHTML = '';
 
       const tasks = this.tarefas
-        .filter(t => t.data_inicio && t.data_fim && t.data_inicio <= t.data_fim)
+        .filter(t => t.tipo !== 'categoria' && t.data_inicio && t.data_fim && t.data_inicio <= t.data_fim)
         .map(t => ({
           id: t.id,
           name: t.nome,
@@ -683,7 +807,7 @@ const CronogramaModule = {
     const obrasOpts = obrasLista.map(o => '<option value="' + o.id + '" ' + (t && t.obra_id === o.id ? 'selected' : '') + '>' + esc(o.nome) + '</option>').join('');
 
     const depOpts = this.tarefas
-      .filter(x => x.id !== editId)
+      .filter(x => x.id !== editId && x.tipo !== 'categoria')
       .map(x => {
         const oNome = obrasLista.find(o => o.id === x.obra_id)?.nome || '';
         return '<option value="' + x.id + '" ' + (t && t.dependencia === x.id ? 'selected' : '') + '>' + (oNome ? esc(oNome) + ' \u2014 ' : '') + esc(x.nome) + '</option>';
@@ -1045,10 +1169,9 @@ const CronogramaModule = {
       medicaoId = med ? med.id : null;
     }
 
-    // Criar tarefas do cronograma
+    // Criar categorias + tarefas filhas (subitens como linhas individuais)
     let dataAtual = new Date(tInicio);
-    let anteriorId = null;
-    let criadas = 0;
+    let anteriorCatId = null;
     const rollbackIds = [];
     const etapas = typeof PciModule !== 'undefined'
       ? (PciModule.categorias && PciModule.categorias.length ? PciModule.categorias : PciModule._CATS)
@@ -1059,19 +1182,20 @@ const CronogramaModule = {
         const peso = pesos[i] || 0;
         if (!peso) continue;
         const fase = etapas[i] || { nome: 'Fase ' + (i + 1) };
-        const dias = Math.max(1, Math.round((peso / totalPeso) * totalDias));
-        const dInicio = dataAtual.toISOString().split('T')[0];
-        dataAtual.setDate(dataAtual.getDate() + dias);
-        if (dataAtual > tFim) dataAtual = new Date(tFim);
-        const dFim = dataAtual.toISOString().split('T')[0];
+        const diasCat = Math.max(1, Math.round((peso / totalPeso) * totalDias));
+        const dCatInicio = dataAtual.toISOString().split('T')[0];
+        const dCatFimDate = new Date(dataAtual);
+        dCatFimDate.setDate(dCatFimDate.getDate() + diasCat);
+        if (dCatFimDate > tFim) dCatFimDate.setTime(tFim.getTime());
+        const dCatFim = dCatFimDate.toISOString().split('T')[0];
 
-        // Progresso real da PCI
-        var progresso = 0;
+        // Progresso real da PCI para a categoria
+        var progCat = 0;
         if (medicaoId && fase.nome) {
-          progresso = PciModule._calcCatExec(medicaoId, fase.nome).pct || 0;
+          progCat = PciModule._calcCatExec(medicaoId, fase.nome).pct || 0;
         }
 
-        // Subitens: itens reais da medição → fallback template
+        // Subitens: itens reais da medição → template → fallback _SUBS
         var subitens = [];
         if (medicaoId && fase.nome) {
           var itensCat = PciModule.itens.filter(function(it) {
@@ -1083,12 +1207,10 @@ const CronogramaModule = {
         }
         if (!subitens.length && typeof PciModule !== 'undefined' && PciModule.templatePadrao && PciModule.templatePadrao.length) {
           var nomeLowerFase = (fase.nome || '').toLowerCase().trim();
-          var tplFase = PciModule.templatePadrao.filter(function(t) {
-            return (t.categoria_nome || '').toLowerCase().trim() === nomeLowerFase && !t.nao_aplicavel;
+          var tplFase = PciModule.templatePadrao.filter(function(tp) {
+            return (tp.categoria_nome || '').toLowerCase().trim() === nomeLowerFase && !tp.nao_aplicavel;
           });
-          if (tplFase.length) {
-            subitens = tplFase.map(function(t) { return { nome: t.sub_servico_descricao || '', feito: false }; });
-          }
+          if (tplFase.length) subitens = tplFase.map(function(tp) { return { nome: tp.sub_servico_descricao || '', feito: false }; });
         }
         if (!subitens.length && typeof PciModule !== 'undefined' && fase.id) {
           var subsFonte = (PciModule.subServicos && PciModule.subServicos.length) ? PciModule.subServicos : (PciModule._SUBS || []);
@@ -1096,12 +1218,40 @@ const CronogramaModule = {
             .map(function(s) { return { nome: s.descricao, feito: false }; });
         }
 
-        const r = await sbPost('cronograma_tarefas', {
-          obra_id: obraId, nome: fase.nome, data_inicio: dInicio, data_fim: dFim,
-          progresso: progresso, dependencia: anteriorId, ordem: i, subitens: subitens
+        // Criar linha CATEGORIA (header)
+        const catRow = await sbPost('cronograma_tarefas', {
+          obra_id: obraId, nome: fase.nome, data_inicio: dCatInicio, data_fim: dCatFim,
+          progresso: progCat, dependencia: anteriorCatId, ordem: i, subitens: [], tipo: 'categoria'
         });
-        if (r && r.id) { anteriorId = r.id; rollbackIds.push(r.id); }
-        criadas++;
+        if (catRow && catRow.id) rollbackIds.push(catRow.id);
+
+        // Criar linhas TAREFA filha — uma por subitem
+        if (subitens.length > 0 && catRow && catRow.id) {
+          const diasSub = Math.max(1, Math.floor(diasCat / subitens.length));
+          let subData = new Date(dCatInicio + 'T00:00:00');
+          let prevSubId = null;
+
+          for (let j = 0; j < subitens.length; j++) {
+            const sub = subitens[j];
+            if (!sub.nome) continue;
+            const dSubIni = subData.toISOString().split('T')[0];
+            subData.setDate(subData.getDate() + diasSub);
+            if (subData > dCatFimDate) subData.setTime(dCatFimDate.getTime());
+            const dSubFim = subData.toISOString().split('T')[0];
+            const depId = j === 0 ? anteriorCatId : prevSubId;
+
+            const subRow = await sbPost('cronograma_tarefas', {
+              obra_id: obraId, nome: sub.nome,
+              data_inicio: dSubIni, data_fim: dSubFim || dCatFim,
+              progresso: sub.feito ? 100 : 0, dependencia: depId,
+              ordem: j, parent_id: catRow.id, tipo: 'tarefa', subitens: []
+            });
+            if (subRow && subRow.id) { prevSubId = subRow.id; rollbackIds.push(subRow.id); }
+          }
+        }
+
+        anteriorCatId = catRow ? catRow.id : anteriorCatId;
+        dataAtual.setTime(dCatFimDate.getTime());
       }
     } catch (e) {
       if (rollbackIds.length) {
