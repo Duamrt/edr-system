@@ -864,6 +864,29 @@ const CronogramaModule = {
             args.progressBarBgColor = '#991b1b';
           }
         },
+        queryCellInfo: function(args) {
+          if (!args || !args.column || !args.cell) return;
+          // Tooltip na coluna "Depende de" mostrando nomes das tarefas referenciadas
+          if (args.column.field === 'Predecessor' && args.data && args.data.taskData && args.data.taskData.Predecessor) {
+            const pred = args.data.taskData.Predecessor;
+            // pred pode ser "6FS,7SS+2d" — parse cada parte
+            const partes = pred.split(',').map(p => p.trim()).filter(Boolean);
+            const nomes = partes.map(p => {
+              const m = p.match(/^(\d+)([A-Z]{2})?([+\-]\d+\s*\w*)?/);
+              if (!m) return p;
+              const taskId = parseInt(m[1], 10);
+              const tipo = m[2] || 'FS';
+              const offset = m[3] || '';
+              const tipoTxt = { FS: 'apos', SS: 'inicia com', FF: 'termina com', SF: 'inicia ao fim de' }[tipo] || tipo;
+              // procura no dataSource
+              const alvo = self.tarefas.find(t => t.gantt_id === taskId);
+              const nomeAlvo = alvo ? alvo.nome : ('Tarefa ' + taskId);
+              return '#' + taskId + ' ' + tipoTxt + ' "' + nomeAlvo + '"' + (offset ? ' ' + offset : '');
+            });
+            args.cell.setAttribute('title', nomes.join('\n'));
+            args.cell.style.cursor = 'help';
+          }
+        },
         recordDoubleClick: function(args) {
           if (args.rowData && args.rowData.taskData && args.rowData.taskData._uuid) {
             CronogramaModule._abrirModal(args.rowData.taskData._uuid);
