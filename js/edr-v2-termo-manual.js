@@ -64,13 +64,36 @@ const TermoModule = {
     'Proprietario ciente dos prazos de garantia por servico'
   ],
 
-  /**
-   * Gera o Termo de Entrega via PdfModule
-   * @param {Object} dados — { proprietario, cpf, rua, bairro, numero, cidade, dataEntrega, modelo }
-   */
-  gerar(dados) {
+  _autoFill(obraId) {
+    const lista = typeof obras !== 'undefined' ? obras : [];
+    const o = lista.find(x => x.id === obraId);
+    if (!o) return;
+    const prop = document.getElementById('termo-prop'); if (prop) prop.value = o.contratante || o.proprietario || '';
+    const cpf  = document.getElementById('termo-cpf');  if (cpf)  cpf.value  = o.cpf_contratante || '';
+    const rua  = document.getElementById('termo-rua');  if (rua)  rua.value  = o.endereco_rua || '';
+    const num  = document.getElementById('termo-num');  if (num)  num.value  = o.endereco_numero || '';
+    const bair = document.getElementById('termo-bairro');if (bair) bair.value = o.endereco_bairro || '';
+    const cid  = document.getElementById('termo-cidade');if (cid)  cid.value  = o.cidade || '';
+    const val  = document.getElementById('termo-valor'); if (val)  val.value  = Number(o.valor_venda || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+  },
+
+  async gerar(dados) {
     const empresaNome = (typeof _companyPlan !== 'undefined' && _companyPlan?.name) ? _companyPlan.name : 'EDR ENGENHARIA';
     localStorage.setItem('edr-termo-dados', JSON.stringify({ ...dados, empresaNome }));
+    try {
+      const obraId = (document.getElementById('termo-obra')?.value) || null;
+      const obra = (typeof obras !== 'undefined' ? obras : []).find(o => o.id === obraId);
+      await sbPost('termos_entrega', {
+        obra_id: obraId || null,
+        proprietario: dados.proprietario,
+        cpf: dados.cpf || null,
+        endereco: [dados.rua, dados.numero, dados.bairro, dados.cidade].filter(Boolean).join(', '),
+        valor_obra: obra ? Number(obra.valor_venda || 0) : null,
+        data_entrega: dados.dataEntrega || null,
+        modelo: dados.modelo || 'casa',
+        emitido_por: (typeof usuarioAtual !== 'undefined' && usuarioAtual?.nome) || ''
+      });
+    } catch(e) { console.warn('[termos_entrega]', e); }
     window.open('termo-entrega.html', '_blank');
   },
 
@@ -142,11 +165,20 @@ const TermoModule = {
   },
 
   render(container) {
+    const obrasLista = typeof obras !== 'undefined' ? obras : [];
+    const obrasOpts = obrasLista.map(o => `<option value="${o.id}">${esc(o.nome)}</option>`).join('');
     container.innerHTML = `
       <div style="max-width:700px;margin:0 auto;padding:24px;">
         <h2 style="font-size:20px;font-weight:700;margin-bottom:16px;color:var(--text-primary);">Gerar Termo de Entrega</h2>
-        <p style="color:var(--text-secondary);margin-bottom:24px;font-size:13px;">Preencha os dados do proprietário para gerar o PDF do Termo de Entrega + Manual do Proprietário.</p>
+        <p style="color:var(--text-secondary);margin-bottom:24px;font-size:13px;">Selecione a obra para preencher automaticamente, ou preencha manualmente.</p>
         <div style="display:grid;gap:14px;">
+          <div>
+            <label style="font-size:12px;color:var(--text-secondary);display:block;margin-bottom:4px;">Obra (preenchimento automático)</label>
+            <select id="termo-obra" class="input" style="width:100%;" onchange="TermoModule._autoFill(this.value)">
+              <option value="">— selecione para preencher —</option>
+              ${obrasOpts}
+            </select>
+          </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
             <div><label style="font-size:12px;color:var(--text-secondary);display:block;margin-bottom:4px;">Proprietário</label><input id="termo-prop" class="input" placeholder="Nome completo" style="width:100%;"></div>
             <div><label style="font-size:12px;color:var(--text-secondary);display:block;margin-bottom:4px;">CPF</label><input id="termo-cpf" class="input" placeholder="000.000.000-00" style="width:100%;"></div>
@@ -156,8 +188,9 @@ const TermoModule = {
             <div><label style="font-size:12px;color:var(--text-secondary);display:block;margin-bottom:4px;">Nº</label><input id="termo-num" class="input" placeholder="Nº" style="width:100%;"></div>
             <div><label style="font-size:12px;color:var(--text-secondary);display:block;margin-bottom:4px;">Bairro</label><input id="termo-bairro" class="input" placeholder="Bairro" style="width:100%;"></div>
           </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:14px;">
             <div><label style="font-size:12px;color:var(--text-secondary);display:block;margin-bottom:4px;">Cidade</label><input id="termo-cidade" class="input" placeholder="Cidade-UF" style="width:100%;"></div>
+            <div><label style="font-size:12px;color:var(--text-secondary);display:block;margin-bottom:4px;">Valor da obra</label><input id="termo-valor" class="input" readonly style="width:100%;background:var(--bg-secondary);color:var(--text-secondary);" placeholder="—"></div>
             <div><label style="font-size:12px;color:var(--text-secondary);display:block;margin-bottom:4px;">Data Entrega</label><input id="termo-data" type="date" class="input" style="width:100%;"></div>
             <div><label style="font-size:12px;color:var(--text-secondary);display:block;margin-bottom:4px;">Modelo</label><select id="termo-modelo" class="input" style="width:100%;"><option value="casa">Casa</option><option value="apartamento">Apartamento</option><option value="reforma">Reforma</option></select></div>
           </div>

@@ -373,6 +373,27 @@ const DiarioModule = {
     }
   },
 
+  // ── Upload foto para Supabase Storage ──
+  async _uploadFoto(base64) {
+    const match = base64.match(/^data:([^;]+);base64,(.+)$/);
+    if (!match) throw new Error('base64 invalido');
+    const mime = match[1];
+    const raw = atob(match[2]);
+    const ab = new ArrayBuffer(raw.length);
+    const ia = new Uint8Array(ab);
+    for (let i = 0; i < raw.length; i++) ia[i] = raw.charCodeAt(i);
+    const blob = new Blob([ab], { type: mime });
+    const ext = mime === 'image/png' ? 'png' : 'jpg';
+    const nome = (typeof _companyId !== 'undefined' && _companyId ? _companyId + '/' : '') + Date.now() + '-' + Math.random().toString(36).slice(2) + '.' + ext;
+    const res = await fetch(SUPABASE_URL + '/storage/v1/object/diario-fotos/' + nome, {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + (_supabaseToken || SUPABASE_KEY), 'Content-Type': mime, 'x-upsert': 'true' },
+      body: blob
+    });
+    if (!res.ok) throw new Error('Upload falhou: ' + res.status);
+    return SUPABASE_URL + '/storage/v1/object/public/diario-fotos/' + nome;
+  },
+
   // ── Comprimir foto (canvas resize) ──
   _comprimirFoto(dataUrl, callback) {
     const img = new Image();
@@ -405,13 +426,22 @@ const DiarioModule = {
     if (!relato && fotos.length === 0) { showToast('Adicione um relato ou pelo menos uma foto'); return; }
 
     const btn = container.querySelector('#diario-btn-salvar');
-    if (btn) { btn.textContent = 'SALVANDO...'; btn.disabled = true; }
+    if (btn) { btn.textContent = 'ENVIANDO FOTOS...'; btn.disabled = true; }
     DiarioModule._salvando = true;
 
+    // Upload fotos para Storage (base64 → URL); fallback silencioso mantém base64
+    const fotosFinais = [];
+    for (const f of fotos) {
+      if (f.startsWith('http')) { fotosFinais.push(f); continue; }
+      try { fotosFinais.push(await DiarioModule._uploadFoto(f)); }
+      catch(e) { console.warn('[diario foto upload]', e); fotosFinais.push(f); }
+    }
+
+    if (btn) btn.textContent = 'SALVANDO...';
     const foiEdicao = !!DiarioModule._editandoId;
     try {
       if (DiarioModule._editandoId) {
-        await sbPatch('diario_registros', '?id=eq.' + DiarioModule._editandoId, { obra_id: obraId, data, relato, clima, fotos });
+        await sbPatch('diario_registros', '?id=eq.' + DiarioModule._editandoId, { obra_id: obraId, data, relato, clima, fotos: fotosFinais });
         DiarioModule._editandoId = null;
       } else {
         await sbPost('diario_registros', {
@@ -419,7 +449,7 @@ const DiarioModule = {
           data,
           relato,
           clima,
-          fotos,
+          fotos: fotosFinais,
           criado_por: (typeof usuarioAtual !== 'undefined' && usuarioAtual?.nome) || ''
         });
       }

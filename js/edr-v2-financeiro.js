@@ -200,10 +200,24 @@ async function salvarConta() {
 
 async function marcarComoPago(contaId) {
   if (!confirm('Confirma pagamento desta conta?')) return;
+  const conta = contasPagar.find(c => c.id === contaId);
   try {
     const atualizada = await sbPatch('contas_pagar', `?id=eq.${contaId}`, { status: 'pago', data_pagamento: hojeISO() });
     const idx = contasPagar.findIndex(c => c.id === contaId);
     if (idx >= 0 && atualizada) contasPagar[idx] = { ...contasPagar[idx], ...atualizada };
+    if (conta && conta.obra_id) {
+      try {
+        await sbPostMinimal('lancamentos', {
+          obra_id: conta.obra_id,
+          descricao: conta.descricao || 'Conta paga',
+          qtd: 1, preco: Number(conta.valor || 0), total: Number(conta.valor || 0),
+          data: hojeISO(), etapa: 'conta_pagar',
+          obs: 'contas_pagar:' + contaId,
+          criado_por: (typeof usuarioAtual !== 'undefined' && usuarioAtual?.nome) || ''
+        });
+        if (typeof loadLancamentos === 'function') await loadLancamentos();
+      } catch(e) { console.warn('[lancamento conta_pagar]', e); }
+    }
     showToast('Conta marcada como paga');
     renderContasPagar();
     if (typeof renderDashboard === 'function') renderDashboard();
