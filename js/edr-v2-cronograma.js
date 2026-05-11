@@ -550,14 +550,68 @@ const CronogramaModule = {
   // VIEW: GANTT (Frappe Gantt com try/catch)
   // ══════════════════════════════════════════════════════════
 
+  // Feriados nacionais 2026 (configurável depois)
+  _FERIADOS_BR_2026: [
+    { from: '2026-01-01', to: '2026-01-01', label: 'Ano Novo' },
+    { from: '2026-02-16', to: '2026-02-17', label: 'Carnaval' },
+    { from: '2026-04-03', to: '2026-04-03', label: 'Sexta-feira Santa' },
+    { from: '2026-04-21', to: '2026-04-21', label: 'Tiradentes' },
+    { from: '2026-05-01', to: '2026-05-01', label: 'Dia do Trabalho' },
+    { from: '2026-06-04', to: '2026-06-04', label: 'Corpus Christi' },
+    { from: '2026-09-07', to: '2026-09-07', label: 'Independência' },
+    { from: '2026-10-12', to: '2026-10-12', label: 'Nossa Senhora Aparecida' },
+    { from: '2026-11-02', to: '2026-11-02', label: 'Finados' },
+    { from: '2026-11-15', to: '2026-11-15', label: 'Proclamação da República' },
+    { from: '2026-12-25', to: '2026-12-25', label: 'Natal' }
+  ],
+
+  // Converte UUID dependencia → predecessor string usando gantt_ids
+  _buildPredecessor(t) {
+    if (t.predecessor) return t.predecessor; // já tem formato Syncfusion
+    if (!t.dependencia) return '';
+    const parent = this.tarefas.find(x => x.id === t.dependencia);
+    return parent && parent.gantt_id ? parent.gantt_id + 'FS' : '';
+  },
+
+  // Constrói árvore hierárquica (categoria → tarefas filhas) para Syncfusion
+  _buildGanttData() {
+    const cats = this.tarefas.filter(t => t.tipo === 'categoria' && t.gantt_id)
+      .sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
+    const tarefas = this.tarefas.filter(t => t.tipo !== 'categoria' && t.gantt_id);
+
+    return cats.map(cat => {
+      const filhas = tarefas
+        .filter(f => f.parent_id === cat.id && f.data_inicio)
+        .sort((a, b) => (a.ordem || 0) - (b.ordem || 0))
+        .map(f => ({
+          TaskID: f.gantt_id,
+          _uuid: f.id,
+          TaskName: f.nome || '',
+          StartDate: f.data_inicio ? new Date(f.data_inicio + 'T00:00:00') : null,
+          Duration: f.duracao_dias || Math.max(1, Math.round(((new Date(f.data_fim) - new Date(f.data_inicio)) / 86400000) || 1)),
+          Progress: this._calcProgresso(f),
+          Predecessor: this._buildPredecessor(f)
+        }));
+
+      return {
+        TaskID: cat.gantt_id,
+        _uuid: cat.id,
+        TaskName: cat.nome || '',
+        StartDate: cat.data_inicio ? new Date(cat.data_inicio + 'T00:00:00') : null,
+        Progress: this._calcProgresso(cat),
+        subtasks: filhas
+      };
+    });
+  },
+
   _renderGantt() {
     const wrap = document.getElementById('cron-gantt-wrap');
     const lista = document.getElementById('cron-lista');
     if (!wrap) return;
 
     try {
-      if (typeof Gantt === 'undefined') {
-        showToast('Biblioteca Gantt indisponivel. Verifique sua conexao.');
+      if (typeof ej === 'undefined' || !ej.gantt) {
+        showToast('Biblioteca Syncfusion Gantt indisponivel. Verifique sua conexao.');
         this._view = 'lista';
         this._updateViewBtns();
         if (wrap) wrap.style.display = 'none';
@@ -573,21 +627,16 @@ const CronogramaModule = {
 
       wrap.style.display = '';
       if (lista) lista.style.display = 'none';
-      wrap.innerHTML = '';
 
-      const tasks = this.tarefas
-        .filter(t => t.tipo !== 'categoria' && t.data_inicio && t.data_fim && t.data_inicio <= t.data_fim)
-        .map(t => ({
-          id: t.id,
-          name: t.nome,
-          start: t.data_inicio,
-          end: t.data_fim,
-          progress: this._calcProgresso(t),
-          dependencies: t.dependencia || '',
-          custom_class: 'cron-bar-' + (this._obraCores[t.obra_id] || 0)
-        }));
+      // Destruir instância anterior se existir
+      if (this._gantt && typeof this._gantt.destroy === 'function') {
+        try { this._gantt.destroy(); } catch(_) {}
+        this._gantt = null;
+      }
+      wrap.innerHTML = '<div id="cron-gantt-syncfusion" style="height:600px;"></div>';
 
-      if (tasks.length === 0) {
+      const ganttData = this._buildGanttData();
+      if (!ganttData.length || ganttData.every(c => !c.subtasks.length)) {
         wrap.innerHTML = '<div style="padding:40px;text-align:center;color:var(--texto3);">'
           + '<span class="material-symbols-outlined" style="font-size:40px;color:var(--texto4);">date_range</span>'
           + '<div style="font-size:13px;margin-top:8px;">Nenhuma tarefa com datas validas para o Gantt.</div>'
@@ -596,18 +645,79 @@ const CronogramaModule = {
         return;
       }
 
-      this._gantt = new Gantt(wrap, tasks, {
-        view_mode: this.viewMode,
-        on_click: function(task) {
-          CronogramaModule._abrirModal(task.id);
+      // Injeta módulos
+      try {
+        if (ej.gantt.CriticalPath) ej.gantt.Gantt.Inject(ej.gantt.CriticalPath);
+        if (ej.gantt.Selection)    ej.gantt.Gantt.Inject(ej.gantt.Selection);
+        if (ej.gantt.Toolbar)      ej.gantt.Gantt.Inject(ej.gantt.Toolbar);
+        if (ej.gantt.Edit)         ej.gantt.Gantt.Inject(ej.gantt.Edit);
+        if (ej.gantt.DayMarkers)   ej.gantt.Gantt.Inject(ej.gantt.DayMarkers);
+      } catch(_) {}
+
+      const self = this;
+      this._gantt = new ej.gantt.Gantt({
+        dataSource: ganttData,
+        height: '600px',
+        taskFields: {
+          id: 'TaskID',
+          name: 'TaskName',
+          startDate: 'StartDate',
+          duration: 'Duration',
+          progress: 'Progress',
+          dependency: 'Predecessor',
+          child: 'subtasks'
         },
-        on_date_change: function(task, start, end) {
-          CronogramaModule._atualizarDatas(task.id, start, end);
+        columns: [
+          { field: 'TaskName',  headerText: 'Etapa',     width: 280 },
+          { field: 'StartDate', headerText: 'Inicio',    width: 110, format: 'dd/MM/yyyy' },
+          { field: 'Duration',  headerText: 'Dias',      width: 70  },
+          { field: 'Progress',  headerText: '%',         width: 70  },
+          { field: 'Predecessor', headerText: 'Dep.',    width: 110 }
+        ],
+        editSettings: {
+          allowEditing: true,
+          allowTaskbarEditing: true,
+          allowAdding: false,
+          allowDeleting: false
         },
-        on_progress_change: function(task, progress) {
-          CronogramaModule._atualizarProgresso(task.id, progress);
+        toolbar: ['ExpandAll','CollapseAll','CriticalPath','ZoomIn','ZoomOut','ZoomToFit'],
+        allowSelection: true,
+        gridLines: 'Both',
+        enableCriticalPath: false,
+        workWeek: ['Monday','Tuesday','Wednesday','Thursday','Friday'],
+        includeWeekend: false,
+        dayWorkingTime: [{ from: 7, to: 11.5 }, { from: 13, to: 17 }],
+        holidays: this._FERIADOS_BR_2026,
+        timelineSettings: {
+          topTier:    { unit: 'Month', format: 'MMM yyyy' },
+          bottomTier: { unit: 'Week',  format: 'dd MMM' }
+        },
+        labelSettings: { rightLabel: 'TaskName' },
+        splitterSettings: { columnIndex: 3 },
+        treeColumnIndex: 0,
+
+        taskbarEdited: function(args) {
+          self._saveSyncfusionEdit(args.data);
+        },
+        actionComplete: function(args) {
+          if (args.requestType === 'save' && args.data) {
+            self._saveSyncfusionEdit(args.data);
+          }
+        },
+        queryTaskbarInfo: function(args) {
+          if (args.data && args.data.ganttProperties && args.data.ganttProperties.isCritical) {
+            args.taskbarBgColor = '#dc2626';
+            args.progressBarBgColor = '#991b1b';
+          }
+        },
+        recordDoubleClick: function(args) {
+          if (args.rowData && args.rowData.taskData && args.rowData.taskData._uuid) {
+            CronogramaModule._abrirModal(args.rowData.taskData._uuid);
+          }
         }
       });
+
+      this._gantt.appendTo('#cron-gantt-syncfusion');
 
     } catch (e) {
       console.error('CronogramaModule Gantt erro:', e);
@@ -617,6 +727,40 @@ const CronogramaModule = {
       if (wrap) wrap.style.display = 'none';
       if (lista) lista.style.display = '';
       this._renderLista();
+    }
+  },
+
+  // Salva edições do Syncfusion no Supabase
+  async _saveSyncfusionEdit(data) {
+    if (!data) return;
+    const td = data.taskData || data;
+    const uuid = td._uuid;
+    if (!uuid) return;
+
+    try {
+      const start = td.StartDate instanceof Date ? td.StartDate : new Date(td.StartDate);
+      const duration = Math.max(1, Number(td.Duration) || 1);
+      const fim = new Date(start);
+      fim.setDate(fim.getDate() + duration);
+
+      const payload = {
+        data_inicio: start.toISOString().split('T')[0],
+        data_fim: fim.toISOString().split('T')[0],
+        duracao_dias: duration,
+        progresso: Math.round(Number(td.Progress) || 0),
+        predecessor: td.Predecessor || ''
+      };
+
+      await sbPatch('cronograma_tarefas', '?id=eq.' + uuid, payload);
+
+      // Atualiza estado local
+      const t = this.tarefas.find(x => x.id === uuid);
+      if (t) Object.assign(t, payload);
+
+      showToast('Tarefa atualizada');
+    } catch (e) {
+      console.error('[GANTT-SAVE]', e);
+      showToast('Erro ao salvar alteracao do Gantt');
     }
   },
 
@@ -1323,7 +1467,8 @@ const CronogramaModule = {
         // Criar linha CATEGORIA (header)
         const catRow = await sbPost('cronograma_tarefas', {
           obra_id: obraId, nome: fase.nome, data_inicio: dCatInicio, data_fim: dCatFim,
-          progresso: progCat, dependencia: anteriorCatId, ordem: i, subitens: [], tipo: 'categoria'
+          progresso: progCat, dependencia: anteriorCatId, ordem: i, subitens: [], tipo: 'categoria',
+          duracao_dias: diasCat
         });
         if (catRow && catRow.id) rollbackIds.push(catRow.id);
 
@@ -1332,6 +1477,7 @@ const CronogramaModule = {
           const diasSub = Math.max(1, Math.floor(diasCat / subitens.length));
           let subData = new Date(dCatInicio + 'T00:00:00');
           let prevSubId = null;
+          let prevSubGanttId = null;
 
           for (let j = 0; j < subitens.length; j++) {
             const sub = subitens[j];
@@ -1341,14 +1487,21 @@ const CronogramaModule = {
             if (subData > dCatFimDate) subData.setTime(dCatFimDate.getTime());
             const dSubFim = subData.toISOString().split('T')[0];
             const depId = j === 0 ? anteriorCatId : prevSubId;
+            // Predecessor formato Syncfusion: usa gantt_id da anterior
+            const predStr = prevSubGanttId ? (prevSubGanttId + 'FS') : '';
 
             const subRow = await sbPost('cronograma_tarefas', {
               obra_id: obraId, nome: sub.nome,
               data_inicio: dSubIni, data_fim: dSubFim || dCatFim,
               progresso: sub.feito ? 100 : 0, dependencia: depId,
-              ordem: j, parent_id: catRow.id, tipo: 'tarefa', subitens: []
+              ordem: j, parent_id: catRow.id, tipo: 'tarefa', subitens: [],
+              duracao_dias: diasSub, predecessor: predStr
             });
-            if (subRow && subRow.id) { prevSubId = subRow.id; rollbackIds.push(subRow.id); }
+            if (subRow && subRow.id) {
+              prevSubId = subRow.id;
+              prevSubGanttId = subRow.gantt_id || null;
+              rollbackIds.push(subRow.id);
+            }
           }
         }
 
