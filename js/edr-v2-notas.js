@@ -897,8 +897,8 @@ async function salvarNota(notaData) {
         showToast('Nota fiscal lancada!');
       }
     } else {
-      // NF direta pra obra: criar lancamentos + distribuicoes automaticamente (rastreabilidade total)
-      if (destino !== COMPANY_DEFAULTS.escritorio) {
+      // NF direta pra obra (inclusive escritorio): criar lancamentos + distribuicoes automaticamente
+      {
         const obraDestino = [...obras, ...obrasArquivadas].find(o => o.nome === destino);
         if (obraDestino) {
           const dataLanc = recebimento || emissao;

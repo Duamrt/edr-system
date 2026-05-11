@@ -265,7 +265,7 @@ async function loadCompanyId() {
 }
 const COMPANY_DEFAULTS = {
   estoqueGeral: 'EDR',
-  escritorio: 'EDR_ESCRITORIO',
+  escritorio: 'EDR - ESCRITORIO',
   estoqueLabel: 'EDR ENGENHARIA',
   escritorioLabel: 'EDR ESCRITÓRIO'
 };
