@@ -558,6 +558,22 @@ const CronogramaModule = {
 
     t.subitens[subIdx].feito = !t.subitens[subIdx].feito;
     const prog = this._calcProgresso(t);
+
+    if (prog >= 100 && t.dependencia) {
+      const dep = this.tarefas.find(x => x.id === t.dependencia);
+      if (dep) {
+        const depProg = this._calcProgresso(dep);
+        if (depProg < 100) {
+          const ok = await confirmar('A etapa anterior "' + dep.nome + '" está ' + depProg + '% concluída. Marcar esta como 100% mesmo assim?');
+          if (!ok) {
+            t.subitens[subIdx].feito = !t.subitens[subIdx].feito;
+            this._renderLista();
+            return;
+          }
+        }
+      }
+    }
+
     t.progresso = prog;
 
     try {
@@ -644,9 +660,19 @@ const CronogramaModule = {
   },
 
   async _atualizarProgresso(id, progress) {
+    const t = this.tarefas.find(x => x.id === id);
+    if (t && t.dependencia && Math.round(progress) >= 100) {
+      const dep = this.tarefas.find(x => x.id === t.dependencia);
+      if (dep) {
+        const depProg = this._calcProgresso(dep);
+        if (depProg < 100) {
+          const ok = await confirmar('A etapa anterior "' + dep.nome + '" está ' + depProg + '% concluída. Marcar esta como 100% mesmo assim?');
+          if (!ok) { this._renderGantt(); return; }
+        }
+      }
+    }
     try {
       await sbPatch('cronograma_tarefas', '?id=eq.' + id, { progresso: Math.round(progress) });
-      const t = this.tarefas.find(x => x.id === id);
       if (t) t.progresso = Math.round(progress);
     } catch (e) { showToast('Erro ao salvar progresso'); }
   },
