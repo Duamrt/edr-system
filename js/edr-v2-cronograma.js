@@ -809,6 +809,7 @@ const CronogramaModule = {
           child: 'subtasks'
         },
         columns: [
+          { field: 'TaskID',    isPrimaryKey: true, visible: false },
           { field: 'TaskName',  headerText: 'Etapa',       width: 280 },
           { field: 'StartDate', headerText: 'Início',      width: 110, format: 'dd/MM/yyyy' },
           { field: 'Duration',  headerText: 'Dias',        width: 70  },
