@@ -742,7 +742,31 @@ async function confirmarDistribuicaoItem(chave, obraDestino, etapa, quantidade, 
     valorProporcional += restante * item.valorMedio;
   }
 
-  // Salvar distribuicao no Supabase
+  // FIX: lançamento PRIMEIRO (com campos corretos: qtd/preco/total, não valor/tipo)
+  // depois distribuição vinculada ao lançamento E à nota_id do lote principal
+
+  const descLanc = item.codigo
+    ? `${item.codigo} · ${item.desc} (distribuicao estoque)`
+    : `${item.desc} (distribuicao estoque)`;
+
+  // nota_id dominante = lote com maior valor consumido (FIFO pode cruzar notas)
+  const lotePrincipal = lotesConcumidos.length
+    ? lotesConcumidos.reduce((a, b) => (b.qtd * b.valor_un > a.qtd * a.valor_un ? b : a))
+    : null;
+
+  const precoMedio = qtd > 0 ? (valorProporcional / qtd) : 0;
+  const lanc = await sbPost('lancamentos', {
+    obra_id: obraDestino,
+    descricao: descLanc,
+    qtd,
+    preco: precoMedio,
+    total: valorProporcional,
+    etapa,
+    data: dataSaida || hojeISO(),
+    origem: 'distribuicao_estoque',
+    nota_id: lotePrincipal?.nota_id || null,
+  });
+
   const payload = {
     item_desc: item.desc,
     item_idx: 0,
@@ -753,31 +777,12 @@ async function confirmarDistribuicaoItem(chave, obraDestino, etapa, quantidade, 
     qtd,
     valor: valorProporcional,
     data: dataSaida || hojeISO(),
+    nota_id: lotePrincipal?.nota_id || null,
+    lancamento_id: lanc?.id || null,
   };
 
   const resp = await sbPost('distribuicoes', payload);
   if (!resp) return showToast('Erro ao salvar distribuicao', 'error');
-
-  // Criar lancamento automatico na obra destino
-  const descLanc = item.codigo
-    ? `${item.codigo} · ${item.desc} (distribuicao estoque)`
-    : `${item.desc} (distribuicao estoque)`;
-
-  // nota_id dominante = lote com maior valor consumido (FIFO pode cruzar notas)
-  const lotePrincipal = lotesConcumidos.length
-    ? lotesConcumidos.reduce((a, b) => (b.qtd * b.valor_un > a.qtd * a.valor_un ? b : a))
-    : null;
-
-  await sbPost('lancamentos', {
-    obra_id: obraDestino,
-    descricao: descLanc,
-    valor: valorProporcional,
-    etapa,
-    tipo: 'material',
-    data: dataSaida || hojeISO(),
-    origem: 'distribuicao_estoque',
-    nota_id: lotePrincipal?.nota_id || null,
-  });
 
   showToast(`${fmt(qtd)} ${item.unidade} distribuido(s) com sucesso`, 'success');
   closeModal('dist-modal');
@@ -1914,8 +1919,17 @@ async function salvarEntradaDireta() {
       const codMat = cats.find(m => norm(m.nome) === norm(desc));
       const descLanc = codMat ? `${codMat.codigo} · ${desc}` : desc;
       const obsLanc = [fornecedor, obs || 'ENTRADA DIRETA SEM NF'].filter(Boolean).join(' · ');
-      const lanc = await sbPost('lancamentos', { obra_id: obraId, descricao: descLanc, qtd, preco, total: valor, data, obs: obsLanc, etapa, nota_id: null });
+      // FIX: criar lançamento + distribuição linkada (rastreabilidade compra direta)
+      const lanc = await sbPost('lancamentos', { obra_id: obraId, descricao: descLanc, qtd, preco, total: valor, data, obs: obsLanc, etapa, nota_id: null, origem: 'compra_direta' });
       if (lanc) lancamentos.unshift(lanc);
+      const dist = await sbPost('distribuicoes', {
+        item_desc: desc, item_idx: 0, obra_id: obraId,
+        obra_nome: obraObj.nome,
+        qtd, valor, etapa, data,
+        lancamento_id: lanc?.id || null,
+        codigo_catalogo: materialNoCatalogo?.codigo || null
+      });
+      if (dist) distribuicoes.unshift(dist);
       showToast(`✅ ${qtd} ${unidade} de ${desc} → ${obraObj.nome}!`);
     } else {
       const nova = await sbPost('entradas_diretas', { item_desc: desc, unidade, qtd, preco, fornecedor, data, obs, obra: 'EDR' });
@@ -2042,13 +2056,8 @@ async function salvarSaidaMaterial() {
 
   try {
     const valor = qtd * valorUnit;
-    const nova = await sbPost('distribuicoes', {
-      item_desc: desc, item_idx: 0, obra_id: obraId,
-      obra_nome: obraObj?.nome || '',
-      qtd, valor, etapa, data
-    });
-    if (!nova) { showToast('❌ Erro ao salvar saída. Verifique o console.'); return; }
-    distribuicoes.unshift(nova);
+    // FIX: criar lançamento PRIMEIRO, depois distribuição vinculada (rastreabilidade total)
+    let lancamentoId = null;
     if (valor > 0) {
       const cats = EstoqueModule.catalogoMateriais.length ? EstoqueModule.catalogoMateriais : (typeof catalogoMateriais !== 'undefined' ? catalogoMateriais : []);
       const codSaida = cats.find(m => norm(m.nome) === norm(desc));
@@ -2056,10 +2065,22 @@ async function salvarSaidaMaterial() {
       const lanc = await sbPost('lancamentos', {
         obra_id: obraId, descricao: descSaida,
         qtd, preco: valorUnit, total: valor, data,
-        obs: obs || 'SAÍDA MANUAL DE ESTOQUE', etapa
+        obs: obs || 'SAÍDA MANUAL DE ESTOQUE', etapa,
+        origem: 'saida_manual'
       });
-      if (lanc) lancamentos.unshift(lanc);
+      if (lanc) {
+        lancamentos.unshift(lanc);
+        lancamentoId = lanc.id;
+      }
     }
+    const nova = await sbPost('distribuicoes', {
+      item_desc: desc, item_idx: 0, obra_id: obraId,
+      obra_nome: obraObj?.nome || '',
+      qtd, valor, etapa, data,
+      lancamento_id: lancamentoId
+    });
+    if (!nova) { showToast('❌ Erro ao salvar saída. Verifique o console.'); return; }
+    distribuicoes.unshift(nova);
     showToast(`✅ Baixa de ${qtd} ${unidade} de ${desc} registrada!`);
     fecharModal('saida');
     renderEstoque();
