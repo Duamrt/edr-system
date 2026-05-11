@@ -621,6 +621,128 @@ const CronogramaModule = {
         }
       } catch(_) {}
 
+      // Carrega traducao pt-BR da toolbar/labels do Gantt
+      try {
+        if (ej && ej.base && ej.base.L10n && !this._l10nLoaded) {
+          ej.base.L10n.load({
+            'pt-BR': {
+              'gantt': {
+                'emptyRecord': 'Nenhuma tarefa para exibir',
+                'id': 'ID',
+                'name': 'Nome',
+                'startDate': 'Inicio',
+                'endDate': 'Fim',
+                'duration': 'Duracao',
+                'progress': 'Progresso',
+                'dependency': 'Dependencia',
+                'notes': 'Notas',
+                'baselineStartDate': 'Linha Base Inicio',
+                'baselineEndDate': 'Linha Base Fim',
+                'taskMode': 'Modo da Tarefa',
+                'changeScheduleMode': 'Mudar modo de agendamento',
+                'subTasksStartDate': 'Inicio das Subtarefas',
+                'subTasksEndDate': 'Fim das Subtarefas',
+                'scheduleStartDate': 'Inicio Programado',
+                'scheduleEndDate': 'Fim Programado',
+                'auto': 'Automatico',
+                'manual': 'Manual',
+                'type': 'Tipo',
+                'offset': 'Offset',
+                'resourceName': 'Recurso',
+                'resourceID': 'ID Recurso',
+                'day': 'dia',
+                'hour': 'hora',
+                'minute': 'minuto',
+                'days': 'dias',
+                'hours': 'horas',
+                'minutes': 'minutos',
+                'generalTab': 'Geral',
+                'customTab': 'Colunas Personalizadas',
+                'writeNotes': 'Adicionar nota',
+                'addDialogTitle': 'Nova Tarefa',
+                'editDialogTitle': 'Detalhes da Tarefa',
+                'saveButton': 'Salvar',
+                'taskBeforePredecessor_FS': 'Tarefa antecede predecessor',
+                'taskAfterPredecessor_FS': 'Tarefa sucede predecessor',
+                'taskBeforePredecessor_SS': 'Tarefa inicia antes do predecessor',
+                'taskAfterPredecessor_SS': 'Tarefa inicia depois do predecessor',
+                'taskBeforePredecessor_FF': 'Tarefa termina antes do predecessor',
+                'taskAfterPredecessor_FF': 'Tarefa termina depois do predecessor',
+                'taskBeforePredecessor_SF': 'Tarefa inicia antes do predecessor',
+                'taskAfterPredecessor_SF': 'Tarefa inicia depois do predecessor',
+                'taskInformation': 'Informacoes da Tarefa',
+                'deleteTask': 'Excluir Tarefa',
+                'deleteDependency': 'Excluir Dependencia',
+                'convert': 'Converter',
+                'save': 'Salvar',
+                'above': 'Acima',
+                'below': 'Abaixo',
+                'child': 'Filha',
+                'milestone': 'Marco',
+                'toTask': 'Para Tarefa',
+                'toMilestone': 'Para Marco',
+                'eventMarkers': 'Marcadores',
+                'leftTaskLabel': 'Rotulo Esquerda',
+                'rightTaskLabel': 'Rotulo Direita',
+                'timelineCell': 'Celula',
+                'confirmDelete': 'Tem certeza que deseja excluir?',
+                'from': 'De',
+                'to': 'Para',
+                'taskLink': 'Vinculo',
+                'lag': 'Lag',
+                'start': 'Inicio',
+                'finish': 'Fim',
+                'enterValue': 'Insira o valor',
+                'taskschedulingMode': 'Modo de Agendamento',
+                'OK': 'OK',
+                'cancel': 'Cancelar',
+                'yes': 'Sim',
+                'no': 'Nao',
+                'y': 'S',
+                'n': 'N',
+                'searchPlaceholder': 'Buscar',
+                'addPredecessor': 'Adicionar Predecessor',
+                'removePredecessor': 'Remover Predecessor',
+                'edit': 'Editar',
+                'update': 'Atualizar',
+                'delete': 'Excluir',
+                'add': 'Adicionar',
+                'expandAll': 'Expandir tudo',
+                'collapseAll': 'Recolher tudo',
+                'criticalPath': 'Caminho critico',
+                'zoomIn': 'Aproximar',
+                'zoomOut': 'Afastar',
+                'zoomToFit': 'Ajustar a tela',
+                'excelExport': 'Exportar Excel',
+                'csvExport': 'Exportar CSV',
+                'pdfExport': 'Exportar PDF',
+                'expand': 'Expandir',
+                'collapse': 'Recolher',
+                'nextTimeSpan': 'Proximo periodo',
+                'prevTimeSpan': 'Periodo anterior',
+                'okText': 'OK',
+                'cancelText': 'Cancelar',
+                'fyLabel': 'AF',
+                'work': 'Trabalho',
+                'taskType': 'Tipo de Tarefa',
+                'unit': 'Unidade',
+                'plannedStartDate': 'Inicio Planejado',
+                'plannedEndDate': 'Fim Planejado',
+                'plannedDuration': 'Duracao Planejada',
+                'plannedWork': 'Trabalho Planejado',
+                'completed': 'Concluida',
+                'inProgress': 'Em Andamento',
+                'notStarted': 'Nao iniciada',
+                'noData': 'Sem dados',
+                'overdue': 'Atrasada',
+                'segments': 'Segmentos'
+              }
+            }
+          });
+          this._l10nLoaded = true;
+        }
+      } catch(_) {}
+
       if (typeof ej === 'undefined' || !ej.gantt) {
         showToast('Biblioteca Syncfusion Gantt indisponivel. Verifique sua conexao.');
         this._view = 'lista';
@@ -670,8 +792,12 @@ const CronogramaModule = {
       } catch(_) {}
 
       const self = this;
+      const MESES_PT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+      const fmtMesAno = (d) => MESES_PT[d.getMonth()] + ' ' + d.getFullYear();
+      const fmtDia = (d) => String(d.getDate()).padStart(2,'0') + '/' + MESES_PT[d.getMonth()];
       this._gantt = new ej.gantt.Gantt({
         dataSource: ganttData,
+        locale: 'pt-BR',
         height: '600px',
         taskFields: {
           id: 'TaskID',
@@ -683,11 +809,11 @@ const CronogramaModule = {
           child: 'subtasks'
         },
         columns: [
-          { field: 'TaskName',  headerText: 'Etapa',     width: 280 },
-          { field: 'StartDate', headerText: 'Inicio',    width: 110, format: 'dd/MM/yyyy' },
-          { field: 'Duration',  headerText: 'Dias',      width: 70  },
-          { field: 'Progress',  headerText: '%',         width: 70  },
-          { field: 'Predecessor', headerText: 'Dep.',    width: 110 }
+          { field: 'TaskName',  headerText: 'Etapa',       width: 280 },
+          { field: 'StartDate', headerText: 'Início',      width: 110, format: 'dd/MM/yyyy' },
+          { field: 'Duration',  headerText: 'Dias',        width: 70  },
+          { field: 'Progress',  headerText: '%',           width: 70  },
+          { field: 'Predecessor', headerText: 'Depende de', width: 130 }
         ],
         editSettings: {
           allowEditing: true,
@@ -704,8 +830,8 @@ const CronogramaModule = {
         dayWorkingTime: [{ from: 7, to: 11.5 }, { from: 13, to: 17 }],
         holidays: this._FERIADOS_BR_2026,
         timelineSettings: {
-          topTier:    { unit: 'Month', format: 'MMM yyyy' },
-          bottomTier: { unit: 'Week',  format: 'dd MMM' }
+          topTier:    { unit: 'Month', format: 'MMM yyyy', formatter: fmtMesAno },
+          bottomTier: { unit: 'Week',  format: 'dd MMM',   formatter: fmtDia }
         },
         labelSettings: { rightLabel: 'TaskName' },
         splitterSettings: { columnIndex: 3 },
