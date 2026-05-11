@@ -2135,7 +2135,22 @@ async function diarConfirmarLancamentosEDR() {
     } catch (e) { statusEl.innerHTML += `<div style="color:var(--error)"><span class="material-symbols-outlined" style="font-size:14px">error</span> ${obra}: ${e.message}</div>`; erro++; }
   }
   btn.textContent = ok > 0 ? ok + ' lancado(s)' + (erro > 0 ? ' / ' + erro + ' erro(s)' : '') : 'Falhou';
-  if (ok > 0) { DiariasModule._obrasCache = null; showToast(ok + ' lancamento(s) enviado(s)!'); }
+  if (ok > 0) {
+    DiariasModule._obrasCache = null;
+    showToast(ok + ' lancamento(s) enviado(s)!');
+    // Fechar quinzena automaticamente após folha lançada com sucesso (elimina falso alerta "quinzena pendente")
+    const qz = DiariasModule.quinzenaAtiva;
+    if (qz && qz.id && !qz.fechada) {
+      try {
+        await sbPatch('diarias_quinzenas', '?id=eq.' + qz.id, { fechada: true });
+        qz.fechada = true;
+        _diarAtualizarSelectQuinzena();
+        statusEl.innerHTML += '<div style="color:var(--success)"><span class="material-symbols-outlined" style="font-size:14px">lock</span> Quinzena marcada como fechada</div>';
+      } catch (e) {
+        statusEl.innerHTML += '<div style="color:var(--warning)"><span class="material-symbols-outlined" style="font-size:14px">warning</span> Folha lancada mas nao foi possivel marcar quinzena como fechada: ' + e.message + '</div>';
+      }
+    }
+  }
 }
 
 function diarFecharModalEDR() {
