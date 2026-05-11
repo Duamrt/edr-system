@@ -821,7 +821,7 @@ const CronogramaModule = {
           allowTaskbarEditing: true,
           allowAdding: false,
           allowDeleting: false,
-          mode: 'Auto',
+          mode: 'Cell',
           showDeleteConfirmDialog: false
         },
         toolbar: ['ExpandAll','CollapseAll','CriticalPath','ZoomIn','ZoomOut','ZoomToFit'],
