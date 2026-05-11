@@ -871,12 +871,7 @@ async function salvarNota(notaData) {
           const hoje = hojeISO();
           for (const it of itensEscritorio) {
             const itemIdx = itens.indexOf(it);
-            const dist = await sbPost('distribuicoes', {
-              nota_id: saved.id, item_desc: it.desc, item_idx: itemIdx,
-              obra_id: obraEsc.id, obra_nome: obraEsc.nome,
-              qtd: it.qtd, valor: it.total, data: hoje
-            });
-            if (dist) distribuicoes.push({ ...dist, obra_nome: obraEsc.nome });
+            // FIX: lancamento primeiro, distribuicao depois com lancamento_id (rastreabilidade total)
             const descLanc = it.codigo ? `${it.codigo} \u00b7 ${it.desc}` : it.desc;
             const lanc = await sbPost('lancamentos', {
               obra_id: obraEsc.id, descricao: descLanc,
@@ -885,6 +880,14 @@ async function salvarNota(notaData) {
               nota_id: saved.id,
             });
             if (lanc) lancamentos.unshift(lanc);
+            const dist = await sbPost('distribuicoes', {
+              nota_id: saved.id, item_desc: it.desc, item_idx: itemIdx,
+              codigo_catalogo: it.codigo || null,
+              obra_id: obraEsc.id, obra_nome: obraEsc.nome,
+              qtd: it.qtd, valor: it.total, data: hoje,
+              lancamento_id: lanc?.id || null
+            });
+            if (dist) distribuicoes.push({ ...dist, obra_nome: obraEsc.nome });
           }
           showToast(`NF lancada! ${itensEscritorio.length} item(ns) baixado(s) → ${obraEsc.nome}`);
         } else {
@@ -894,12 +897,13 @@ async function salvarNota(notaData) {
         showToast('Nota fiscal lancada!');
       }
     } else {
-      // NF direta pra obra: criar lancamentos automaticamente
+      // NF direta pra obra: criar lancamentos + distribuicoes automaticamente (rastreabilidade total)
       if (destino !== COMPANY_DEFAULTS.escritorio) {
         const obraDestino = [...obras, ...obrasArquivadas].find(o => o.nome === destino);
         if (obraDestino) {
           const dataLanc = recebimento || emissao;
-          for (const it of itens) {
+          for (let idx = 0; idx < itens.length; idx++) {
+            const it = itens[idx];
             const descLanc = it.codigo ? `${it.codigo} \u00b7 ${it.desc}` : it.desc;
             const lanc = await sbPost('lancamentos', {
               obra_id: obraDestino.id, descricao: descLanc,
@@ -908,6 +912,19 @@ async function salvarNota(notaData) {
               nota_id: saved.id,
             });
             if (lanc) lancamentos.unshift(lanc);
+            const dist = await sbPost('distribuicoes', {
+              nota_id: saved.id,
+              item_desc: it.desc,
+              item_idx: idx,
+              codigo_catalogo: it.codigo || null,
+              obra_id: obraDestino.id,
+              obra_nome: obraDestino.nome,
+              qtd: it.qtd,
+              valor: it.total,
+              data: dataLanc,
+              lancamento_id: lanc?.id || null
+            });
+            if (dist) distribuicoes.push({ ...dist, obra_nome: obraDestino.nome });
           }
         }
       }
