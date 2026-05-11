@@ -610,6 +610,14 @@ const CronogramaModule = {
     if (!wrap) return;
 
     try {
+      // Registra Syncfusion Community License (trial 30 dias até validação Community)
+      try {
+        if (ej && ej.base && ej.base.registerLicense && !this._licenseRegistered) {
+          ej.base.registerLicense('Ngo9BigBOggjHTQxAR8/V1JHaF1cXmhPYVJ2WmFZfVhgdV9HaVZUR2Y/P1ZhSXxVdkBiWH5dcnZURGJfUEd9XEE=');
+          this._licenseRegistered = true;
+        }
+      } catch(_) {}
+
       if (typeof ej === 'undefined' || !ej.gantt) {
         showToast('Biblioteca Syncfusion Gantt indisponivel. Verifique sua conexao.');
         this._view = 'lista';
