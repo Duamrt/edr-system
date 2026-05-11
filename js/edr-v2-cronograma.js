@@ -42,6 +42,100 @@ const CronogramaModule = {
     { bar: '#606C38', prog: '#283618', label: '#DDA15E' }
   ],
 
+  // ── Mapeamento Duam: 62 etapas por categoria PCI ──────────────
+  _DUAM_SUBS: {
+    'servicos preliminares e gerais': [
+      'Limpeza do Terreno',
+      'Gabarito',
+      'Locação'
+    ],
+    'infraestrutura': [
+      'Escavação das Sapatas e Arranques',
+      'Concretagem de Sapatas e Arranques',
+      'Escavação do Baldrame',
+      'Embasamento',
+      'Montagem das Ferragens do Baldrame',
+      'Forma + Esgoto',
+      'Concretagem das Vigas Baldrame',
+      'Remoção das Formas',
+      'Regularização do Piso'
+    ],
+    'supra estrutura': [
+      'Amarração dos Pilares nos Arranques',
+      '03 Fiadas de Alvenaria Impermeabilizada',
+      'Alvenaria até 8 Fiadas',
+      'Passagem de Tubos e Eletrodutos nos Pilares',
+      'Concretagem 1º Lance de Pilar',
+      'Vergas e Contravergas',
+      'Conferir Nível Antes da Última Fiada',
+      'Concretagem 2º Lance de Pilar até Fundo de Viga',
+      'Montagem das Ferragens das Vigas Superiores',
+      'Forma das Vigas Superiores',
+      'Passagens nas Vigas para Eletrodutos',
+      'Concretagem das Vigas Superiores',
+      'Montagem da Laje',
+      'Escoramento da Laje',
+      'Concretagem da Laje'
+    ],
+    'paredes e paineis': [
+      'Corte das Alvenarias para Elétrica e Hidráulica',
+      'Chumbamento dos Eletrodutos nas Paredes',
+      'Chapisco até Fundo de Viga',
+      'Mestrar para Ajustar Ambiente Fora de Esquadro',
+      'Reboco Interno',
+      'Instalação das Caixas 4x2',
+      'Reboco Externo',
+      'Enquadramento das Janelas (Capeaços)'
+    ],
+    'coberturas': [
+      'Alvenaria Platibanda',
+      'Alvenaria Base da Caixa D\'água',
+      'Laje Caixa D\'água',
+      'Escoramento das Telhas em Alvenaria',
+      'Instalação da Calha',
+      'Instalação da Caixa D\'água + Ligação Água',
+      'Instalação das Telhas de Fibrocimento',
+      'Aplicação dos Rufos',
+      'Reboco Externo da Platibanda'
+    ],
+    'forros': [
+      'Retirada das Escoras da Laje',
+      'Audalio — Tubulações do Teto',
+      'Renato — Gesso / Drywall'
+    ],
+    'revestimentos internos': [
+      'Piso — Paginação e Aplicação',
+      'Revestimento Paredes Banheiro',
+      'Revestimento Paredes Cozinha',
+      'Revestimento Área de Serviço'
+    ],
+    'pisos': [
+      'Piso em Concreto',
+      'Granito das Janelas',
+      'Granito Cozinha e Banheiros'
+    ],
+    'esquadrias': [
+      'Instalação das Grades de Portas',
+      'Janelas e Portas de Vidro',
+      'Porta Social e Portão de Garagem'
+    ],
+    'inst. eletricas e telefonicas': [
+      'Audalio — Elétrica Completa'
+    ],
+    'instalacoes hidraulicas': [
+      'Instalações Hidráulicas'
+    ],
+    'loucas e metais': [
+      'Instalação de Louças e Metais'
+    ],
+    'pintura': [
+      'Vagner — Pintura'
+    ],
+    'acabamentos': [
+      'Limpeza Final da Obra'
+    ]
+  },
+
   // ── Etapas padrao construtivas (separadas de ETAPAS financeiras) ──
   _ETAPAS_PADRAO: [
     { nome: 'Servicos Preliminares', dias: 15, subs: [
@@ -1195,9 +1289,17 @@ const CronogramaModule = {
           progCat = PciModule._calcCatExec(medicaoId, fase.nome).pct || 0;
         }
 
-        // Subitens: itens reais da medição → template → fallback _SUBS
+        // Subitens: mapeamento Duam → itens reais da medição → template → fallback _SUBS
         var subitens = [];
-        if (medicaoId && fase.nome) {
+        var nomeKeyDuam = (fase.nome || '').toLowerCase().trim().replace(/\s+/g, ' ');
+        if (CronogramaModule._DUAM_SUBS[nomeKeyDuam] && CronogramaModule._DUAM_SUBS[nomeKeyDuam].length) {
+          // Pegar status real da PCI para marcar feito
+          var progRealPct = progCat;
+          subitens = CronogramaModule._DUAM_SUBS[nomeKeyDuam].map(function(nome) {
+            return { nome: nome, feito: progRealPct >= 100 };
+          });
+        }
+        if (!subitens.length && medicaoId && fase.nome) {
           var itensCat = PciModule.itens.filter(function(it) {
             return it.medicao_id === medicaoId && it.categoria_nome === fase.nome && !it.nao_aplicavel;
           });
