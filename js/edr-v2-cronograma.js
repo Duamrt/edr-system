@@ -809,13 +809,16 @@ const CronogramaModule = {
           child: 'subtasks'
         },
         columns: [
-          { field: 'TaskID',    isPrimaryKey: true, visible: false },
-          { field: 'TaskName',  headerText: 'Etapa',       width: 280 },
+          { field: 'TaskID',    headerText: '#',           width: 50, isPrimaryKey: true, textAlign: 'Center', allowEditing: false },
+          { field: 'TaskName',  headerText: 'Etapa',       width: 260 },
           { field: 'StartDate', headerText: 'Início',      width: 110, format: 'dd/MM/yyyy', editType: 'datepickeredit' },
-          { field: 'Duration',  headerText: 'Dias',        width: 70, editType: 'numericedit', edit: { params: { min: 1, format: 'n0', showSpinButton: false } } },
-          { field: 'Progress',  headerText: '%',           width: 70, editType: 'numericedit', edit: { params: { min: 0, max: 100, format: 'n0', showSpinButton: false } } },
+          { field: 'Duration',  headerText: 'Dias',        width: 80, textAlign: 'Center',
+            template: '<input type="number" min="1" value="${Duration}" data-uuid="${_uuid}" data-taskid="${TaskID}" class="cron-dias-input" onclick="this.select()" onfocus="this.select()" onblur="CronogramaModule._inlineUpdateDuration(this)" onkeydown="if(event.key===\'Enter\'){event.preventDefault();this.blur();}else if(event.key===\'Escape\'){this.value=this.defaultValue;this.blur();}" style="width:55px;background:transparent;border:1px solid var(--borda);border-radius:4px;padding:3px 6px;color:inherit;text-align:center;font:inherit;">'
+          },
+          { field: 'Progress',  headerText: '%',           width: 70, textAlign: 'Center', editType: 'numericedit', edit: { params: { min: 0, max: 100, format: 'n0', showSpinButton: false } } },
           { field: 'Predecessor', headerText: 'Depende de', width: 130 }
         ],
+        durationUnit: 'day',
         editSettings: {
           allowEditing: true,
           allowTaskbarEditing: true,
@@ -929,6 +932,28 @@ const CronogramaModule = {
         document.removeEventListener('keydown', this._fsKeyHandler);
         this._fsKeyHandler = null;
       }
+    }
+  },
+
+  // Inline update da coluna Dias via input HTML embutido no template
+  _inlineUpdateDuration(inputEl) {
+    if (!inputEl) return;
+    const uuid = inputEl.dataset.uuid;
+    const taskId = parseInt(inputEl.dataset.taskid, 10);
+    const novosDias = Math.max(1, parseInt(inputEl.value, 10) || 1);
+    const original = parseInt(inputEl.defaultValue, 10);
+
+    if (novosDias === original) return; // nada mudou
+    if (!uuid || !taskId || !this._gantt) return;
+
+    // updateRecordByID dispara o auto-scheduling (cascata) E o actionComplete que salva tudo
+    try {
+      this._gantt.updateRecordByID({ TaskID: taskId, Duration: novosDias });
+      inputEl.defaultValue = novosDias; // reseta o "original" pro proximo edit
+    } catch (e) {
+      console.error('[INLINE-DURATION]', e);
+      inputEl.value = original; // rollback visual
+      showToast('Erro ao atualizar duracao');
     }
   },
 
