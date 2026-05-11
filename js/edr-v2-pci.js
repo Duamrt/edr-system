@@ -346,6 +346,38 @@ const PciModule = {
     '</div>';
   },
 
+  _fmtDataBR(iso) {
+    if (!iso) return '';
+    return iso.split('-').reverse().join('/');
+  },
+
+  _htmlContratoCard(medicao) {
+    const dc = medicao.data_contratacao;
+    const di = medicao.data_inicio_obra;
+    const dt = medicao.data_termino_previsto;
+    const hr = medicao.houve_repactuacao;
+
+    const linha = (label, valor) => {
+      const vazio = !valor;
+      const cor = vazio ? '#dc2626' : 'var(--texto)';
+      const txt = vazio ? 'Preencher' : valor;
+      return '<div style="display:flex;flex-direction:column;gap:2px;min-width:140px;">'
+        + '<span style="font-size:10px;font-weight:700;color:var(--texto3);letter-spacing:.08em;">' + label + '</span>'
+        + '<span style="font-size:13px;font-weight:600;color:' + cor + ';">' + txt + '</span>'
+        + '</div>';
+    };
+
+    return '<div style="background:var(--bg2);border:1px solid var(--borda);border-radius:10px;padding:14px 16px;margin:16px 0;display:flex;align-items:center;gap:20px;flex-wrap:wrap;">'
+      + '<span class="material-symbols-outlined" style="font-size:20px;color:#2D6A4F;">description</span>'
+      + linha('CONTRATAÇÃO', PciModule._fmtDataBR(dc))
+      + linha('INÍCIO DA OBRA', PciModule._fmtDataBR(di))
+      + linha('TÉRMINO PREVISTO', PciModule._fmtDataBR(dt))
+      + linha('REPACTUAÇÃO', hr === true ? 'Sim' : hr === false ? 'Não' : '')
+      + '<button class="pci-edit-contrato-btn" data-med="' + medicao.id + '" style="margin-left:auto;background:rgba(45,106,79,0.1);border:1px solid rgba(45,106,79,0.3);color:#2D6A4F;padding:8px 14px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;">'
+      + '<span class="material-symbols-outlined" style="font-size:15px;">edit</span> Editar</button>'
+      + '</div>';
+  },
+
   _htmlMedicaoBody(medicao, obra) {
     const exec = PciModule._calcExec(medicao.id);
     const corExec = PciModule._corProg(exec);
@@ -355,7 +387,7 @@ const PciModule = {
     const somaPesos = PciModule._calcSomaPesos(medicao);
     const somaDiff = Math.abs(somaPesos - 100) > 0.1;
 
-    let html = '';
+    let html = PciModule._htmlContratoCard(medicao);
 
     // Stats
     html += '<div style="display:flex;gap:12px;margin:16px 0;flex-wrap:wrap;">';
@@ -524,7 +556,69 @@ const PciModule = {
   },
 
   // ── Bind ──
+  async _abrirModalContrato(medicaoId) {
+    const med = PciModule.medicoes.find(m => m.id === medicaoId);
+    if (!med) return;
+    const obra = (typeof obras !== 'undefined' ? obras : []).find(o => o.id === med.obra_id);
+    const nomeObra = obra?.nome || '';
+
+    const id = 'pci-modal-contrato';
+    document.getElementById(id)?.remove();
+    const html = '<div id="' + id + '" class="modal-overlay active" style="position:fixed;inset:0;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;z-index:10000;">'
+      + '<div class="modal-box" style="background:var(--bg);border:1px solid var(--borda);border-radius:12px;padding:24px;max-width:480px;width:92vw;">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">'
+      + '<div style="font-size:14px;font-weight:700;letter-spacing:.05em;">DADOS CONTRATUAIS — ' + (nomeObra || 'OBRA') + '</div>'
+      + '<button onclick="document.getElementById(\'' + id + '\')?.remove()" style="background:none;border:none;color:var(--texto3);cursor:pointer;font-size:20px;">×</button>'
+      + '</div>'
+      + '<div style="display:flex;flex-direction:column;gap:14px;">'
+      + '<label style="display:flex;flex-direction:column;gap:4px;font-size:11px;font-weight:700;color:var(--texto3);letter-spacing:.05em;">CONTRATAÇÃO'
+      +   '<input type="date" id="pci-c-contratacao" value="' + (med.data_contratacao || '') + '" style="background:var(--bg2);border:1px solid var(--borda);border-radius:8px;padding:10px 12px;color:var(--texto);font-size:13px;font-family:inherit;"></label>'
+      + '<label style="display:flex;flex-direction:column;gap:4px;font-size:11px;font-weight:700;color:var(--texto3);letter-spacing:.05em;">INÍCIO DA OBRA'
+      +   '<input type="date" id="pci-c-inicio" value="' + (med.data_inicio_obra || '') + '" style="background:var(--bg2);border:1px solid var(--borda);border-radius:8px;padding:10px 12px;color:var(--texto);font-size:13px;font-family:inherit;"></label>'
+      + '<label style="display:flex;flex-direction:column;gap:4px;font-size:11px;font-weight:700;color:var(--texto3);letter-spacing:.05em;">TÉRMINO PREVISTO'
+      +   '<input type="date" id="pci-c-termino" value="' + (med.data_termino_previsto || '') + '" style="background:var(--bg2);border:1px solid var(--borda);border-radius:8px;padding:10px 12px;color:var(--texto);font-size:13px;font-family:inherit;"></label>'
+      + '<label style="display:flex;align-items:center;gap:10px;font-size:13px;cursor:pointer;padding:10px 12px;background:var(--bg2);border:1px solid var(--borda);border-radius:8px;">'
+      +   '<input type="checkbox" id="pci-c-repact" ' + (med.houve_repactuacao ? 'checked' : '') + ' style="width:18px;height:18px;cursor:pointer;">'
+      +   '<span>Houve repactuação contratual</span></label>'
+      + '</div>'
+      + '<div style="display:flex;gap:8px;margin-top:24px;justify-content:flex-end;">'
+      + '<button onclick="document.getElementById(\'' + id + '\')?.remove()" style="background:none;border:1px solid var(--borda);color:var(--texto);padding:10px 18px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:13px;">Cancelar</button>'
+      + '<button id="pci-salvar-contrato-btn" data-med="' + medicaoId + '" style="background:#2D6A4F;border:none;color:#fff;padding:10px 22px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600;">Salvar</button>'
+      + '</div></div></div>';
+    document.body.insertAdjacentHTML('beforeend', html);
+
+    document.getElementById('pci-salvar-contrato-btn').addEventListener('click', async () => {
+      const btn = document.getElementById('pci-salvar-contrato-btn');
+      btn.disabled = true; btn.textContent = 'Salvando...';
+      const dados = {
+        data_contratacao: document.getElementById('pci-c-contratacao').value || null,
+        data_inicio_obra: document.getElementById('pci-c-inicio').value || null,
+        data_termino_previsto: document.getElementById('pci-c-termino').value || null,
+        houve_repactuacao: document.getElementById('pci-c-repact').checked,
+      };
+      try {
+        await sbPatch('pci_medicao?id=eq.' + medicaoId, dados);
+        Object.assign(med, dados);
+        document.getElementById(id)?.remove();
+        showToast('Dados contratuais salvos.', 'success');
+        PciModule._rerender();
+      } catch (e) {
+        console.error(e);
+        showToast('Erro ao salvar.', 'error');
+        btn.disabled = false; btn.textContent = 'Salvar';
+      }
+    });
+  },
+
   _bind(container) {
+    // Editar dados contratuais
+    container.querySelectorAll('.pci-edit-contrato-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        PciModule._abrirModalContrato(btn.dataset.med);
+      });
+    });
+
     // Toggle obra
     container.querySelectorAll('.pci-obra-header').forEach(h => {
       h.addEventListener('click', () => {
