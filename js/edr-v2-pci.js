@@ -187,11 +187,12 @@ const PciModule = {
     }
     // Misturado: com peso declarado + sem peso dividem o restante
     const somaDeclarada = comPeso.reduce((a, i) => a + parseFloat(i.item_peso), 0);
+    const fator = Math.max(somaDeclarada, 100); // normaliza se soma > 100
     const restante = Math.max(0, 100 - somaDeclarada);
-    const wSemPeso = semPeso.length ? restante / semPeso.length / 100 : 0;
+    const wSemPeso = semPeso.length ? restante / semPeso.length / fator : 0;
     return aplicaveis.map(i => ({
       id: i.id,
-      w: i.item_peso > 0 ? parseFloat(i.item_peso) / 100 : wSemPeso
+      w: i.item_peso > 0 ? parseFloat(i.item_peso) / fator : wSemPeso
     }));
   },
 

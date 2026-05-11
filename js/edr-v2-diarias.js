@@ -2065,7 +2065,7 @@ async function _diarBuscarObras() {
 async function diarAbrirModalEDR() {
   const custoPorObra = _diarCalcCustoObra();
   if (!Object.keys(custoPorObra).length) { showToast('Nenhum dado na quinzena atual.'); return; }
-  const obs = 'Folha quinzenal · ' + (DiariasModule.quinzenaAtiva?.label || 'Quinzena');
+  const obs = 'Folha quinzenal · ' + (DiariasModule.quinzenaAtiva?.id || DiariasModule.quinzenaAtiva?.label || 'Quinzena');
   const modal = document.getElementById('diar-modalEDR');
   modal.style.display = 'flex';
   document.getElementById('diar-modalEDRBody').innerHTML =

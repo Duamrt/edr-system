@@ -573,6 +573,22 @@ async function _leadsCriar() {
     }
   }
 
+  // Check de duplicata em memória antes de inserir
+  const dupl = LeadsModule.data.find(l => {
+    if ((l.nome || '').trim().toLowerCase() === nome.toLowerCase()) return true;
+    if (telefoneRaw && l.telefone) {
+      const dA = telefoneRaw.replace(/\D/g, '');
+      const dB = l.telefone.replace(/\D/g, '');
+      if (dA && dB && dA === dB) return true;
+    }
+    return false;
+  });
+  if (dupl) {
+    const motivo = dupl.nome.trim().toLowerCase() === nome.toLowerCase() ? 'mesmo nome' : 'mesmo telefone';
+    const ok = await confirmar(`Já existe um lead com ${motivo}: "${dupl.nome}". Criar mesmo assim?`);
+    if (!ok) return;
+  }
+
   const payload = {
     nome,
     telefone: telefoneRaw || null,
