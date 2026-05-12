@@ -560,7 +560,7 @@ const CronogramaModule = {
     const end = new Date(fim);
     while (d <= end) {
       if (d.getDay() === 0 || d.getDay() === 6) {
-        const iso = d.toISOString().split('T')[0];
+        const iso = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
         result.push({ from: iso, to: iso, label: '', cssClass: 'cron-fds' });
       }
       d.setDate(d.getDate() + 1);
