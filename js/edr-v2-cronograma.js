@@ -843,7 +843,7 @@ const CronogramaModule = {
         },
         labelSettings: { rightLabel: 'TaskName' },
         splitterSettings: { columnIndex: 4 },
-        treeColumnIndex: 0,
+        treeColumnIndex: 1,
 
         taskbarEdited: function(args) {
           // args.modifiedRecords contem TODAS as tarefas que mudaram em cascata
