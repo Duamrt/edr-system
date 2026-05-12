@@ -1251,7 +1251,7 @@ const CronogramaModule = {
         duracao_dias: dias,
         data_inicio:  ref.data_fim || ref.data_inicio,
         data_fim:     ref.data_fim || ref.data_inicio,
-        ordem:        afterOrdem + 0.5,
+        ordem:        afterOrdem + 1,
         progresso:    0,
         subitens:     [],
         predecessor:  '',
