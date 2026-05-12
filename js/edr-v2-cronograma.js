@@ -838,19 +838,19 @@ const CronogramaModule = {
           child: 'subtasks'
         },
         columns: [
-          { field: 'TaskID',    headerText: '#',           width: 50, isPrimaryKey: true, textAlign: 'Center', allowEditing: false },
-          { headerText: '↕', width: 56, allowEditing: false, allowSorting: false, textAlign: 'Center',
+          { field: 'TaskID',    headerText: '#',           width: 40, isPrimaryKey: true, textAlign: 'Center', allowEditing: false },
+          { headerText: '↕', width: 48, allowEditing: false, allowSorting: false, textAlign: 'Center',
             template: '<button onclick="CronogramaModule._moverLinha(this.dataset.uuid,-1)" data-uuid="${_uuid}" title="Mover para cima" style="background:none;border:none;cursor:pointer;color:var(--texto3);font-size:11px;padding:0 3px;" onmouseover="this.style.color=\'var(--primary)\'" onmouseout="this.style.color=\'var(--texto3)\'">▲</button>'
               + '<button onclick="CronogramaModule._moverLinha(this.dataset.uuid,1)" data-uuid="${_uuid}" title="Mover para baixo" style="background:none;border:none;cursor:pointer;color:var(--texto3);font-size:11px;padding:0 3px;" onmouseover="this.style.color=\'var(--primary)\'" onmouseout="this.style.color=\'var(--texto3)\'">▼</button>'
           },
-          { field: 'TaskName',  headerText: 'Etapa',       width: 260 },
-          { field: 'StartDate', headerText: 'Início',      width: 110, format: 'dd/MM/yyyy', editType: 'datepickeredit' },
-          { field: 'EndDate',   headerText: 'Fim',         width: 110, format: 'dd/MM/yyyy', editType: 'datepickeredit' },
-          { field: 'Duration',  headerText: 'Dias',        width: 80, textAlign: 'Center',
-            template: '<input type="number" min="1" value="${Duration}" data-uuid="${_uuid}" data-taskid="${TaskID}" class="cron-dias-input" onclick="this.select()" onfocus="this.select()" onblur="CronogramaModule._inlineUpdateDuration(this)" onkeydown="if(event.key===\'Enter\'){event.preventDefault();this.blur();}else if(event.key===\'Escape\'){this.value=this.defaultValue;this.blur();}" style="width:55px;background:transparent;border:1px solid var(--borda);border-radius:4px;padding:3px 6px;color:inherit;text-align:center;font:inherit;">'
+          { field: 'TaskName',  headerText: 'Etapa',       width: 200 },
+          { field: 'StartDate', headerText: 'Início',      width: 88, format: 'dd/MM/yyyy', editType: 'datepickeredit' },
+          { field: 'EndDate',   headerText: 'Fim',         width: 88, format: 'dd/MM/yyyy', editType: 'datepickeredit' },
+          { field: 'Duration',  headerText: 'Dias',        width: 65, textAlign: 'Center',
+            template: '<input type="number" min="1" value="${Duration}" data-uuid="${_uuid}" data-taskid="${TaskID}" class="cron-dias-input" onclick="this.select()" onfocus="this.select()" onblur="CronogramaModule._inlineUpdateDuration(this)" onkeydown="if(event.key===\'Enter\'){event.preventDefault();this.blur();}else if(event.key===\'Escape\'){this.value=this.defaultValue;this.blur();}" style="width:45px;background:transparent;border:1px solid var(--borda);border-radius:4px;padding:3px 4px;color:inherit;text-align:center;font:inherit;">'
           },
-          { field: 'Progress',  headerText: '%',           width: 70, textAlign: 'Center', editType: 'numericedit', edit: { params: { min: 0, max: 100, format: 'n0', showSpinButton: false } } },
-          { field: 'Predecessor', headerText: 'Depende de', width: 130 }
+          { field: 'Progress',  headerText: '%',           width: 55, textAlign: 'Center', editType: 'numericedit', edit: { params: { min: 0, max: 100, format: 'n0', showSpinButton: false } } },
+          { field: 'Predecessor', headerText: 'Pred.', width: 75 }
         ],
         durationUnit: 'day',
         editSettings: {
@@ -874,7 +874,7 @@ const CronogramaModule = {
           bottomTier: { unit: 'Week',  format: 'dd MMM',   formatter: fmtDia }
         },
         labelSettings: { rightLabel: 'TaskName' },
-        splitterSettings: { columnIndex: 5 },
+        splitterSettings: { position: '38%' },
         treeColumnIndex: 2,
 
         taskbarEdited: function(args) {
