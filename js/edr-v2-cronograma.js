@@ -840,8 +840,8 @@ const CronogramaModule = {
         columns: [
           { field: 'TaskID',    headerText: '#',           width: 40, isPrimaryKey: true, textAlign: 'Center', allowEditing: false },
           { headerText: '↕', width: 48, allowEditing: false, allowSorting: false, textAlign: 'Center',
-            template: '<button onclick="CronogramaModule._moverLinha(this.dataset.uuid,-1)" data-uuid="${_uuid}" title="Mover para cima" style="background:none;border:none;cursor:pointer;color:var(--texto3);font-size:11px;padding:0 3px;" onmouseover="this.style.color=\'var(--primary)\'" onmouseout="this.style.color=\'var(--texto3)\'">▲</button>'
-              + '<button onclick="CronogramaModule._moverLinha(this.dataset.uuid,1)" data-uuid="${_uuid}" title="Mover para baixo" style="background:none;border:none;cursor:pointer;color:var(--texto3);font-size:11px;padding:0 3px;" onmouseover="this.style.color=\'var(--primary)\'" onmouseout="this.style.color=\'var(--texto3)\'">▼</button>'
+            template: '<button onclick="CronogramaModule._moverLinha(this.dataset.uuid,-1)" data-uuid="${_uuid}" title="Mover para cima" class="cron-mv-btn">▲</button>'
+              + '<button onclick="CronogramaModule._moverLinha(this.dataset.uuid,1)" data-uuid="${_uuid}" title="Mover para baixo" class="cron-mv-btn">▼</button>'
           },
           { field: 'TaskName',  headerText: 'Etapa',       width: 200 },
           { field: 'StartDate', headerText: 'Início',      width: 88, format: 'dd/MM/yyyy', editType: 'datepickeredit' },
@@ -932,7 +932,9 @@ const CronogramaModule = {
             const s = document.createElement('style');
             s.id = 'cron-weekend-css';
             s.textContent =
-              '#cron-gantt-syncfusion .e-weekend { background: rgba(255,255,255,0.045) !important; }';
+              '#cron-gantt-syncfusion .e-weekend { background: rgba(255,255,255,0.045) !important; }'
+              + '.cron-mv-btn{background:none;border:none;cursor:pointer;color:var(--texto3);font-size:11px;padding:0 3px;}'
+              + '.cron-mv-btn:hover{color:var(--primary);}';
             document.head.appendChild(s);
           }
           // Garante scroll até o início real das tarefas após render
