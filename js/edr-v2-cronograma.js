@@ -814,6 +814,7 @@ const CronogramaModule = {
         if (ej.gantt.Toolbar)      ej.gantt.Gantt.Inject(ej.gantt.Toolbar);
         if (ej.gantt.Edit)         ej.gantt.Gantt.Inject(ej.gantt.Edit);
         if (ej.gantt.DayMarkers)   ej.gantt.Gantt.Inject(ej.gantt.DayMarkers);
+        if (ej.gantt.RowDD)        ej.gantt.Gantt.Inject(ej.gantt.RowDD);
       } catch(_) {}
 
       const self = this;
@@ -858,6 +859,7 @@ const CronogramaModule = {
         },
         toolbar: ['ExpandAll','CollapseAll','CriticalPath','ZoomIn','ZoomOut','ZoomToFit'],
         allowSelection: true,
+        allowRowDragAndDrop: true,
         gridLines: 'Both',
         enableCriticalPath: false,
         workWeek: ['Monday','Tuesday','Wednesday','Thursday','Friday'],
@@ -921,7 +923,37 @@ const CronogramaModule = {
             CronogramaModule._abrirModal(args.rowData.taskData._uuid);
           }
         },
+        rowDrop: async function(args) {
+          // Salva nova ordem no banco após arrastar linha
+          try {
+            const ds = self._gantt.treeGrid && self._gantt.treeGrid.dataSource;
+            if (!ds || !ds.length) return;
+            const updates = [];
+            let ord = 0;
+            const flatten = (items) => {
+              for (const item of (items || [])) {
+                if (item._uuid) updates.push(sbPatch('cronograma_tarefas', '?id=eq.' + item._uuid, { ordem: ord++ }));
+                if (item.subtasks && item.subtasks.length) flatten(item.subtasks);
+              }
+            };
+            flatten(ds);
+            if (!updates.length) return;
+            await Promise.all(updates);
+            showToast('Ordem atualizada');
+          } catch(e) {
+            console.error('[REORDER]', e);
+            showToast('Erro ao salvar ordem');
+          }
+        },
         created: function() {
+          // CSS para destacar fins de semana com tom levemente diferente
+          if (!document.getElementById('cron-weekend-css')) {
+            const s = document.createElement('style');
+            s.id = 'cron-weekend-css';
+            s.textContent =
+              '#cron-gantt-syncfusion .e-weekend { background: rgba(255,255,255,0.045) !important; }';
+            document.head.appendChild(s);
+          }
           // Garante scroll até o início real das tarefas após render
           if (projectStart && self._gantt && typeof self._gantt.scrollToDate === 'function') {
             try {
