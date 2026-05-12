@@ -854,9 +854,10 @@ const CronogramaModule = {
         },
         columns: [
           { field: 'TaskID',    headerText: '#',           width: 40, isPrimaryKey: true, textAlign: 'Center', allowEditing: false },
-          { headerText: '↕', width: 48, allowEditing: false, allowSorting: false, textAlign: 'Center',
+          { headerText: '↕+', width: 72, allowEditing: false, allowSorting: false, textAlign: 'Center',
             template: '<button onclick="event.stopPropagation();CronogramaModule._moverLinhaById(${TaskID},-1)" title="Mover para cima" class="cron-mv-btn">▲</button>'
               + '<button onclick="event.stopPropagation();CronogramaModule._moverLinhaById(${TaskID},1)" title="Mover para baixo" class="cron-mv-btn">▼</button>'
+              + '<button onclick="event.stopPropagation();CronogramaModule._adicionarSubetapa(${TaskID})" title="Adicionar sub-etapa abaixo" class="cron-mv-btn cron-add-btn">+</button>'
           },
           { field: 'TaskName',  headerText: 'Etapa',       width: 200 },
           { field: 'StartDate', headerText: 'Início',      width: 88, format: 'dd/MM/yyyy', editType: 'datepickeredit' },
@@ -951,7 +952,8 @@ const CronogramaModule = {
               '.cron-fds.e-span-holidays { background: rgba(255,255,255,0.07) !important; border-left: 1px solid rgba(255,255,255,0.12) !important; border-right: 1px solid rgba(255,255,255,0.12) !important; }'
               + '.cron-fds .e-holiday-label { display:none !important; }'
               + '.cron-mv-btn{background:none;border:none;cursor:pointer;color:var(--texto3);font-size:11px;padding:0 3px;}'
-              + '.cron-mv-btn:hover{color:var(--primary);}';
+              + '.cron-mv-btn:hover{color:var(--primary);}'
+              + '.cron-add-btn{color:var(--primary)!important;font-size:14px!important;font-weight:700;}';
             document.head.appendChild(s);
           }
           // Garante scroll até o início real das tarefas após render
@@ -1153,7 +1155,8 @@ const CronogramaModule = {
   // ══════════════════════════════════════════════════════════
 
   _moverLinhaById(ganttId, delta) {
-    const tarefa = this.tarefas.find(t => t.gantt_id == ganttId);
+    const obra = this.obraFiltro;
+    const tarefa = this.tarefas.find(t => t.gantt_id == ganttId && (!obra || t.obra_id === obra));
     if (tarefa) this._moverLinha(tarefa.id, delta);
   },
 
@@ -1185,6 +1188,117 @@ const CronogramaModule = {
       console.error('[MOVER-LINHA]', e);
       showToast('Erro ao reordenar');
     }
+  },
+
+  // ══════════════════════════════════════════════════════════
+  // ADICIONAR SUB-ETAPA
+  // ══════════════════════════════════════════════════════════
+
+  _adicionarSubetapa(ganttId) {
+    const obra = this.obraFiltro;
+    const ref = this.tarefas.find(t => t.gantt_id == ganttId && (!obra || t.obra_id === obra));
+    if (!ref) return;
+
+    const label = ref.tipo === 'categoria'
+      ? 'última sub-etapa de: ' + ref.nome
+      : 'após: ' + ref.nome;
+
+    document.getElementById('cron-add-sub-modal')?.remove();
+    const modal = document.createElement('div');
+    modal.id = 'cron-add-sub-modal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:10000;display:flex;align-items:center;justify-content:center;';
+    modal.innerHTML = '<div style="background:var(--bg2);border-radius:12px;padding:24px;width:340px;border:1px solid var(--borda);">'
+      + '<div style="font-size:13px;font-weight:700;color:var(--texto1);margin-bottom:4px;">Nova sub-etapa</div>'
+      + '<div style="font-size:11px;color:var(--texto3);margin-bottom:16px;">Inserir ' + label + '</div>'
+      + '<label style="font-size:11px;color:var(--texto3);display:block;margin-bottom:4px;">Nome</label>'
+      + '<input id="cron-sub-nome" type="text" placeholder="Ex: Montagem das Formas" autocomplete="off" style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:6px;border:1px solid var(--borda);background:var(--bg);color:var(--texto1);font-size:13px;margin-bottom:12px;">'
+      + '<label style="font-size:11px;color:var(--texto3);display:block;margin-bottom:4px;">Dias úteis</label>'
+      + '<input id="cron-sub-dias" type="number" min="1" value="1" style="width:90px;padding:8px 10px;border-radius:6px;border:1px solid var(--borda);background:var(--bg);color:var(--texto1);font-size:13px;margin-bottom:20px;">'
+      + '<div style="display:flex;gap:8px;justify-content:flex-end;">'
+      + '<button onclick="document.getElementById(\'cron-add-sub-modal\').remove()" style="padding:7px 14px;border-radius:6px;border:1px solid var(--borda);background:var(--bg);color:var(--texto2);font-size:12px;cursor:pointer;">Cancelar</button>'
+      + '<button onclick="CronogramaModule._salvarNovaSubetapa(' + ganttId + ')" style="padding:7px 14px;border-radius:6px;border:none;background:var(--primary);color:#fff;font-size:12px;font-weight:700;cursor:pointer;">Adicionar</button>'
+      + '</div></div>';
+    document.body.appendChild(modal);
+    setTimeout(() => document.getElementById('cron-sub-nome')?.focus(), 60);
+  },
+
+  async _salvarNovaSubetapa(ganttId) {
+    const nome = document.getElementById('cron-sub-nome')?.value?.trim();
+    const dias = Math.max(1, parseInt(document.getElementById('cron-sub-dias')?.value) || 1);
+    if (!nome) { showToast('Informe o nome'); return; }
+
+    const obra = this.obraFiltro;
+    const ref = this.tarefas.find(t => t.gantt_id == ganttId && (!obra || t.obra_id === obra));
+    if (!ref) return;
+
+    document.getElementById('cron-add-sub-modal')?.remove();
+
+    // Se clicou numa categoria, insere no final dela; se numa tarefa, insere logo após
+    const parentId  = ref.tipo === 'categoria' ? ref.id : ref.parent_id;
+    const afterOrdem = ref.tipo === 'categoria'
+      ? Math.max(-1, ...this.tarefas.filter(t => t.parent_id === ref.id).map(t => t.ordem ?? 0))
+      : (ref.ordem ?? 0);
+
+    try {
+      await sbPost('cronograma_tarefas', {
+        obra_id:      ref.obra_id,
+        parent_id:    parentId,
+        tipo:         'tarefa',
+        nome,
+        duracao_dias: dias,
+        data_inicio:  ref.data_fim || ref.data_inicio,
+        data_fim:     ref.data_fim || ref.data_inicio,
+        ordem:        afterOrdem + 0.5,
+        progresso:    0
+      });
+      await this._renumerarTarefas(ref.obra_id);
+    } catch(e) {
+      console.error('[ADD-SUBETAPA]', e);
+      showToast('Erro ao adicionar sub-etapa');
+    }
+  },
+
+  async _renumerarTarefas(obraId) {
+    // Recarrega do banco
+    const todas = await sbGet('cronograma_tarefas', '?obra_id=eq.' + obraId + '&order=ordem.asc');
+    if (!Array.isArray(todas)) return;
+
+    // Ordena: categorias por ordem, depois cada categoria com suas filhas por ordem
+    const cats   = todas.filter(t => t.tipo === 'categoria').sort((a,b) => (a.ordem??0)-(b.ordem??0));
+    const lista  = [];
+    for (const cat of cats) {
+      lista.push(cat);
+      todas.filter(t => t.tipo !== 'categoria' && t.parent_id === cat.id)
+           .sort((a,b) => (a.ordem??0)-(b.ordem??0))
+           .forEach(t => lista.push(t));
+    }
+
+    // Mapa old gantt_id → novo gantt_id (posição 1-based na lista)
+    const mapa = {};
+    lista.forEach((t, i) => { if (t.gantt_id) mapa[t.gantt_id] = i + 1; });
+
+    // Atualiza predecessores trocando números antigos pelos novos
+    const atualizarPred = pred => !pred ? pred :
+      pred.replace(/(\d+)(FS|SS|FF|SF)([+-]\d+\w*)?/gi, (m, id, tipo, lag) => {
+        const novo = mapa[parseInt(id)]; return novo ? novo + tipo + (lag || '') : m;
+      });
+
+    // Batch update: novo gantt_id, ordem normalizada e predecessor corrigido
+    let ordemCat = 0;
+    const ordemPorParent = {};
+    await Promise.all(lista.map((t, i) => {
+      let novaOrdem;
+      if (t.tipo === 'categoria') { novaOrdem = ordemCat++; }
+      else { ordemPorParent[t.parent_id] = (ordemPorParent[t.parent_id] ?? -1) + 1; novaOrdem = ordemPorParent[t.parent_id]; }
+      return sbPatch('cronograma_tarefas', '?id=eq.' + t.id, {
+        gantt_id:    i + 1,
+        ordem:       novaOrdem,
+        predecessor: atualizarPred(t.predecessor)
+      });
+    }));
+
+    await this._carregarTarefas();
+    showToast('Sub-etapa adicionada');
   },
 
   // ══════════════════════════════════════════════════════════
