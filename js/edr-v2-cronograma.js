@@ -803,6 +803,7 @@ const CronogramaModule = {
           id: 'TaskID',
           name: 'TaskName',
           startDate: 'StartDate',
+          endDate: 'EndDate',
           duration: 'Duration',
           progress: 'Progress',
           dependency: 'Predecessor',
@@ -812,6 +813,7 @@ const CronogramaModule = {
           { field: 'TaskID',    headerText: '#',           width: 50, isPrimaryKey: true, textAlign: 'Center', allowEditing: false },
           { field: 'TaskName',  headerText: 'Etapa',       width: 260 },
           { field: 'StartDate', headerText: 'Início',      width: 110, format: 'dd/MM/yyyy', editType: 'datepickeredit' },
+          { field: 'EndDate',   headerText: 'Fim',         width: 110, format: 'dd/MM/yyyy', editType: 'datepickeredit' },
           { field: 'Duration',  headerText: 'Dias',        width: 80, textAlign: 'Center',
             template: '<input type="number" min="1" value="${Duration}" data-uuid="${_uuid}" data-taskid="${TaskID}" class="cron-dias-input" onclick="this.select()" onfocus="this.select()" onblur="CronogramaModule._inlineUpdateDuration(this)" onkeydown="if(event.key===\'Enter\'){event.preventDefault();this.blur();}else if(event.key===\'Escape\'){this.value=this.defaultValue;this.blur();}" style="width:55px;background:transparent;border:1px solid var(--borda);border-radius:4px;padding:3px 6px;color:inherit;text-align:center;font:inherit;">'
           },
@@ -840,7 +842,7 @@ const CronogramaModule = {
           bottomTier: { unit: 'Week',  format: 'dd MMM',   formatter: fmtDia }
         },
         labelSettings: { rightLabel: 'TaskName' },
-        splitterSettings: { columnIndex: 3 },
+        splitterSettings: { columnIndex: 4 },
         treeColumnIndex: 0,
 
         taskbarEdited: function(args) {
@@ -996,8 +998,15 @@ const CronogramaModule = {
       const start = td.StartDate instanceof Date ? td.StartDate : new Date(td.StartDate);
       if (!start || isNaN(start.getTime())) continue;
       const duration = Math.max(1, Number(td.Duration) || 1);
-      const fim = new Date(start);
-      fim.setDate(fim.getDate() + duration);
+      // Usar EndDate calculado pelo Syncfusion (já exclui fins de semana)
+      // Fallback manual caso não venha mapeado
+      const fim = (td.EndDate instanceof Date && !isNaN(td.EndDate.getTime()))
+        ? td.EndDate
+        : (() => {
+            const d = new Date(start); let r = duration;
+            while (r > 0) { d.setDate(d.getDate() + 1); if (d.getDay() !== 0 && d.getDay() !== 6) r--; }
+            return d;
+          })();
 
       itens.push({
         uuid: td._uuid,

@@ -38,6 +38,12 @@ sed -i -E "s/const CACHE_NAME = 'edr-system-v[0-9]+';/const CACHE_NAME = 'edr-sy
 echo "[3/4] Commitando..."
 MSG="${1:-deploy: cache busting v$SHORT_V}"
 git add -A
+
+# Pre-deploy check — varre diff staged contra secrets/SQL destrutivo/RLS aberta
+if [ "${SKIP_CHECK:-0}" -ne 1 ] && [ -f "$HOME/.claude/scripts/pre-deploy-check.sh" ]; then
+  bash "$HOME/.claude/scripts/pre-deploy-check.sh" || exit 1
+fi
+
 git commit -m "$MSG" || echo "Nada pra comitar"
 
 # 4. Push dev + sync main
