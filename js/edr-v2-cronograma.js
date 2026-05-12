@@ -839,6 +839,10 @@ const CronogramaModule = {
         },
         columns: [
           { field: 'TaskID',    headerText: '#',           width: 50, isPrimaryKey: true, textAlign: 'Center', allowEditing: false },
+          { headerText: '↕', width: 56, allowEditing: false, allowSorting: false, textAlign: 'Center',
+            template: '<button onclick="CronogramaModule._moverLinha(this.dataset.uuid,-1)" data-uuid="${_uuid}" title="Mover para cima" style="background:none;border:none;cursor:pointer;color:var(--texto3);font-size:11px;padding:0 3px;" onmouseover="this.style.color=\'var(--primary)\'" onmouseout="this.style.color=\'var(--texto3)\'">▲</button>'
+              + '<button onclick="CronogramaModule._moverLinha(this.dataset.uuid,1)" data-uuid="${_uuid}" title="Mover para baixo" style="background:none;border:none;cursor:pointer;color:var(--texto3);font-size:11px;padding:0 3px;" onmouseover="this.style.color=\'var(--primary)\'" onmouseout="this.style.color=\'var(--texto3)\'">▼</button>'
+          },
           { field: 'TaskName',  headerText: 'Etapa',       width: 260 },
           { field: 'StartDate', headerText: 'Início',      width: 110, format: 'dd/MM/yyyy', editType: 'datepickeredit' },
           { field: 'EndDate',   headerText: 'Fim',         width: 110, format: 'dd/MM/yyyy', editType: 'datepickeredit' },
@@ -859,7 +863,6 @@ const CronogramaModule = {
         },
         toolbar: ['ExpandAll','CollapseAll','CriticalPath','ZoomIn','ZoomOut','ZoomToFit'],
         allowSelection: true,
-        allowRowDragAndDrop: true,
         gridLines: 'Both',
         enableCriticalPath: false,
         workWeek: ['Monday','Tuesday','Wednesday','Thursday','Friday'],
@@ -871,7 +874,7 @@ const CronogramaModule = {
           bottomTier: { unit: 'Week',  format: 'dd MMM',   formatter: fmtDia }
         },
         labelSettings: { rightLabel: 'TaskName' },
-        splitterSettings: { columnIndex: 4 },
+        splitterSettings: { columnIndex: 5 },
         treeColumnIndex: 1,
 
         taskbarEdited: function(args) {
@@ -921,28 +924,6 @@ const CronogramaModule = {
         recordDoubleClick: function(args) {
           if (args.rowData && args.rowData.taskData && args.rowData.taskData._uuid) {
             CronogramaModule._abrirModal(args.rowData.taskData._uuid);
-          }
-        },
-        rowDrop: async function(args) {
-          // Salva nova ordem no banco após arrastar linha
-          try {
-            const ds = self._gantt.treeGrid && self._gantt.treeGrid.dataSource;
-            if (!ds || !ds.length) return;
-            const updates = [];
-            let ord = 0;
-            const flatten = (items) => {
-              for (const item of (items || [])) {
-                if (item._uuid) updates.push(sbPatch('cronograma_tarefas', '?id=eq.' + item._uuid, { ordem: ord++ }));
-                if (item.subtasks && item.subtasks.length) flatten(item.subtasks);
-              }
-            };
-            flatten(ds);
-            if (!updates.length) return;
-            await Promise.all(updates);
-            showToast('Ordem atualizada');
-          } catch(e) {
-            console.error('[REORDER]', e);
-            showToast('Erro ao salvar ordem');
           }
         },
         created: function() {
@@ -1146,6 +1127,40 @@ const CronogramaModule = {
     } catch (e) {
       console.error('[GANTT-SAVE]', e);
       showToast('Erro ao salvar alteracao do Gantt');
+    }
+  },
+
+  // ══════════════════════════════════════════════════════════
+  // REORDENAR LINHAS (botões ▲▼ na coluna ↕)
+  // ══════════════════════════════════════════════════════════
+
+  async _moverLinha(uuid, delta) {
+    if (!uuid) return;
+    const tarefa = this.tarefas.find(t => t.id === uuid);
+    if (!tarefa) return;
+
+    // Pega irmãos (mesma obra + mesmo parent_id + mesmo tipo)
+    const irmaos = this.tarefas
+      .filter(t => t.obra_id === tarefa.obra_id && t.parent_id === tarefa.parent_id && t.tipo === tarefa.tipo)
+      .sort((a, b) => (a.ordem ?? 999) - (b.ordem ?? 999));
+
+    const idx = irmaos.findIndex(t => t.id === uuid);
+    const novoIdx = idx + Number(delta);
+    if (novoIdx < 0 || novoIdx >= irmaos.length) return;
+
+    // Faz a troca no array e normaliza ordens (0, 1, 2…)
+    [irmaos[idx], irmaos[novoIdx]] = [irmaos[novoIdx], irmaos[idx]];
+
+    try {
+      await Promise.all(
+        irmaos.map((t, i) => sbPatch('cronograma_tarefas', '?id=eq.' + t.id, { ordem: i }))
+      );
+      irmaos.forEach((t, i) => { t.ordem = i; });
+      showToast('Posição atualizada');
+      this._renderGantt();
+    } catch(e) {
+      console.error('[MOVER-LINHA]', e);
+      showToast('Erro ao reordenar');
     }
   },
 
