@@ -557,11 +557,12 @@ const CronogramaModule = {
   _gerarWeekendHolidays(inicio, fim) {
     const result = [];
     const d = new Date(inicio); d.setHours(0, 0, 0, 0);
-    const end = new Date(fim);
+    const end = new Date(fim); end.setHours(23, 59, 59, 0);
     while (d <= end) {
       if (d.getDay() === 0 || d.getDay() === 6) {
-        const iso = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
-        result.push({ from: iso, to: iso, label: '', cssClass: 'cron-fds' });
+        // Date object ao meio-dia local evita que EJ2 interprete como UTC e desloque para o dia anterior
+        const dt = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12, 0, 0);
+        result.push({ from: dt, to: dt, label: '', cssClass: 'cron-fds' });
       }
       d.setDate(d.getDate() + 1);
     }
