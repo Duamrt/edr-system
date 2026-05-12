@@ -1243,7 +1243,7 @@ const CronogramaModule = {
       : (ref.ordem ?? 0);
 
     try {
-      await sbPost('cronograma_tarefas', {
+      const novo = await sbPost('cronograma_tarefas', {
         obra_id:      ref.obra_id,
         parent_id:    parentId,
         tipo:         'tarefa',
@@ -1252,8 +1252,12 @@ const CronogramaModule = {
         data_inicio:  ref.data_fim || ref.data_inicio,
         data_fim:     ref.data_fim || ref.data_inicio,
         ordem:        afterOrdem + 0.5,
-        progresso:    0
+        progresso:    0,
+        subitens:     [],
+        predecessor:  '',
+        dependencia:  null
       });
+      if (!novo) { showToast('Erro ao salvar sub-etapa'); return; }
       await this._renumerarTarefas(ref.obra_id);
     } catch(e) {
       console.error('[ADD-SUBETAPA]', e);
