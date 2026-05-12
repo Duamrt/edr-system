@@ -782,19 +782,28 @@ const CronogramaModule = {
         return;
       }
 
-      // Calcula projectStartDate/EndDate a partir das tarefas reais (evita lacuna no início)
-      const datasValidas = this.tarefas.filter(t => t.data_inicio);
+      // Calcula projectStartDate/EndDate a partir do ganttData real (já filtrado e com datas válidas)
       let projectStart = null, projectEnd = null;
-      if (datasValidas.length) {
-        const starts = datasValidas.map(t => new Date(t.data_inicio + 'T00:00:00')).filter(d => !isNaN(d));
-        const ends   = datasValidas.filter(t => t.data_fim).map(t => new Date(t.data_fim + 'T00:00:00')).filter(d => !isNaN(d));
+      {
+        const allNodes = ganttData.flatMap(cat => [cat, ...(cat.subtasks || [])]);
+        const starts = allNodes.map(n => n.StartDate).filter(d => d instanceof Date && !isNaN(d));
+        const ends   = allNodes.map(n => n.EndDate).filter(d => d instanceof Date && !isNaN(d));
+        // EndDate pode não existir ainda nos dados; fallback: StartDate + Duration
+        const endsCalc = allNodes.map(n => {
+          if (n.EndDate instanceof Date && !isNaN(n.EndDate)) return n.EndDate;
+          if (n.StartDate instanceof Date && n.Duration) {
+            const d = new Date(n.StartDate); d.setDate(d.getDate() + (n.Duration || 1)); return d;
+          }
+          return null;
+        }).filter(Boolean);
         if (starts.length) {
-          projectStart = new Date(Math.min(...starts));
-          projectStart.setDate(projectStart.getDate() - 3); // margem de 3 dias antes
+          projectStart = new Date(Math.min(...starts.map(d => d.getTime())));
+          projectStart.setDate(projectStart.getDate() - 3);
         }
-        if (ends.length) {
-          projectEnd = new Date(Math.max(...ends));
-          projectEnd.setDate(projectEnd.getDate() + 7); // margem de 7 dias depois
+        const allEnds = [...ends, ...endsCalc];
+        if (allEnds.length) {
+          projectEnd = new Date(Math.max(...allEnds.map(d => d.getTime())));
+          projectEnd.setDate(projectEnd.getDate() + 14);
         }
       }
 
@@ -910,6 +919,15 @@ const CronogramaModule = {
         recordDoubleClick: function(args) {
           if (args.rowData && args.rowData.taskData && args.rowData.taskData._uuid) {
             CronogramaModule._abrirModal(args.rowData.taskData._uuid);
+          }
+        },
+        created: function() {
+          // Garante scroll até o início real das tarefas após render
+          if (projectStart && self._gantt && typeof self._gantt.scrollToDate === 'function') {
+            try {
+              const iso = projectStart.toISOString().split('T')[0];
+              setTimeout(() => { try { self._gantt.scrollToDate(iso); } catch(_) {} }, 100);
+            } catch(_) {}
           }
         }
       });
