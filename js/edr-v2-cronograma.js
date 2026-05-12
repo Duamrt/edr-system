@@ -854,10 +854,11 @@ const CronogramaModule = {
         },
         columns: [
           { field: 'TaskID',    headerText: '#',           width: 40, isPrimaryKey: true, textAlign: 'Center', allowEditing: false },
-          { headerText: '↕+', width: 72, allowEditing: false, allowSorting: false, textAlign: 'Center',
+          { headerText: '⚙', width: 88, allowEditing: false, allowSorting: false, textAlign: 'Center',
             template: '<button onclick="event.stopPropagation();CronogramaModule._moverLinhaById(${TaskID},-1)" title="Mover para cima" class="cron-mv-btn">▲</button>'
               + '<button onclick="event.stopPropagation();CronogramaModule._moverLinhaById(${TaskID},1)" title="Mover para baixo" class="cron-mv-btn">▼</button>'
               + '<button onclick="event.stopPropagation();CronogramaModule._adicionarSubetapa(${TaskID})" title="Adicionar sub-etapa abaixo" class="cron-mv-btn cron-add-btn">+</button>'
+              + '<button onclick="event.stopPropagation();CronogramaModule._excluirTarefa(${TaskID})" title="Excluir" class="cron-mv-btn cron-del-btn">✕</button>'
           },
           { field: 'TaskName',  headerText: 'Etapa',       width: 200 },
           { field: 'StartDate', headerText: 'Início',      width: 88, format: 'dd/MM/yyyy', editType: 'datepickeredit' },
@@ -953,7 +954,9 @@ const CronogramaModule = {
               + '.cron-fds .e-holiday-label { display:none !important; }'
               + '.cron-mv-btn{background:none;border:none;cursor:pointer;color:var(--texto3);font-size:11px;padding:0 3px;}'
               + '.cron-mv-btn:hover{color:var(--primary);}'
-              + '.cron-add-btn{color:var(--primary)!important;font-size:14px!important;font-weight:700;}';
+              + '.cron-add-btn{color:var(--primary)!important;font-size:14px!important;font-weight:700;}'
+              + '.cron-del-btn{color:var(--texto4)!important;font-size:11px!important;}'
+              + '.cron-del-btn:hover{color:#dc2626!important;}';
             document.head.appendChild(s);
           }
           // Garante scroll até o início real das tarefas após render
@@ -1077,16 +1080,15 @@ const CronogramaModule = {
             return d;
           })();
 
-      itens.push({
-        uuid: td._uuid,
-        payload: {
-          data_inicio: start.toISOString().split('T')[0],
-          data_fim: fim.toISOString().split('T')[0],
-          duracao_dias: duration,
-          progresso: Math.round(Number(td.Progress) || 0),
-          predecessor: td.Predecessor || ''
-        }
-      });
+      const payload = {
+        data_inicio: start.toISOString().split('T')[0],
+        data_fim: fim.toISOString().split('T')[0],
+        duracao_dias: duration,
+        progresso: Math.round(Number(td.Progress) || 0),
+        predecessor: td.Predecessor || ''
+      };
+      if (td.TaskName) payload.nome = td.TaskName;
+      itens.push({ uuid: td._uuid, payload });
     }
 
     if (!itens.length) return;
@@ -1299,6 +1301,29 @@ const CronogramaModule = {
 
     await this._carregarTarefas();
     showToast('Sub-etapa adicionada');
+  },
+
+  _excluirTarefa(ganttId) {
+    const obra = this.obraFiltro;
+    const tarefa = this.tarefas.find(t => t.gantt_id == ganttId && (!obra || t.obra_id === obra));
+    if (!tarefa) return;
+    const filhos = tarefa.tipo === 'categoria' ? this.tarefas.filter(t => t.parent_id === tarefa.id) : [];
+    const msg = filhos.length > 0
+      ? `Excluir "${tarefa.nome}" e mais ${filhos.length} sub-etapa(s) vinculada(s)?`
+      : `Excluir "${tarefa.nome}"?`;
+    if (!confirm(msg)) return;
+    this._confirmarExclusao(ganttId);
+  },
+
+  async _confirmarExclusao(ganttId) {
+    const obra = this.obraFiltro;
+    const tarefa = this.tarefas.find(t => t.gantt_id == ganttId && (!obra || t.obra_id === obra));
+    if (!tarefa) return;
+    const filhos = tarefa.tipo === 'categoria' ? this.tarefas.filter(t => t.parent_id === tarefa.id) : [];
+    const idsParaExcluir = [tarefa.id, ...filhos.map(f => f.id)];
+    await Promise.all(idsParaExcluir.map(id => sbDelete('cronograma_tarefas', '?id=eq.' + id)));
+    await this._renumerarTarefas(tarefa.obra_id);
+    showToast('Excluído');
   },
 
   // ══════════════════════════════════════════════════════════
