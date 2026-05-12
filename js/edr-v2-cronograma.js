@@ -782,6 +782,22 @@ const CronogramaModule = {
         return;
       }
 
+      // Calcula projectStartDate/EndDate a partir das tarefas reais (evita lacuna no início)
+      const datasValidas = this.tarefas.filter(t => t.data_inicio);
+      let projectStart = null, projectEnd = null;
+      if (datasValidas.length) {
+        const starts = datasValidas.map(t => new Date(t.data_inicio + 'T00:00:00')).filter(d => !isNaN(d));
+        const ends   = datasValidas.filter(t => t.data_fim).map(t => new Date(t.data_fim + 'T00:00:00')).filter(d => !isNaN(d));
+        if (starts.length) {
+          projectStart = new Date(Math.min(...starts));
+          projectStart.setDate(projectStart.getDate() - 3); // margem de 3 dias antes
+        }
+        if (ends.length) {
+          projectEnd = new Date(Math.max(...ends));
+          projectEnd.setDate(projectEnd.getDate() + 7); // margem de 7 dias depois
+        }
+      }
+
       // Injeta módulos
       try {
         if (ej.gantt.CriticalPath) ej.gantt.Gantt.Inject(ej.gantt.CriticalPath);
@@ -799,6 +815,8 @@ const CronogramaModule = {
         dataSource: ganttData,
         locale: 'pt-BR',
         height: '600px',
+        ...(projectStart && { projectStartDate: projectStart }),
+        ...(projectEnd   && { projectEndDate:   projectEnd   }),
         taskFields: {
           id: 'TaskID',
           name: 'TaskName',
