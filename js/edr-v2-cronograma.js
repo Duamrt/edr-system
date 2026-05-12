@@ -840,14 +840,14 @@ const CronogramaModule = {
         columns: [
           { field: 'TaskID',    headerText: '#',           width: 40, isPrimaryKey: true, textAlign: 'Center', allowEditing: false },
           { headerText: '↕', width: 48, allowEditing: false, allowSorting: false, textAlign: 'Center',
-            template: '<button onclick="CronogramaModule._moverLinha(this.dataset.uuid,-1)" data-uuid="${_uuid}" title="Mover para cima" class="cron-mv-btn">▲</button>'
-              + '<button onclick="CronogramaModule._moverLinha(this.dataset.uuid,1)" data-uuid="${_uuid}" title="Mover para baixo" class="cron-mv-btn">▼</button>'
+            template: '<button onclick="event.stopPropagation();CronogramaModule._moverLinhaById(${TaskID},-1)" title="Mover para cima" class="cron-mv-btn">▲</button>'
+              + '<button onclick="event.stopPropagation();CronogramaModule._moverLinhaById(${TaskID},1)" title="Mover para baixo" class="cron-mv-btn">▼</button>'
           },
           { field: 'TaskName',  headerText: 'Etapa',       width: 200 },
           { field: 'StartDate', headerText: 'Início',      width: 88, format: 'dd/MM/yyyy', editType: 'datepickeredit' },
           { field: 'EndDate',   headerText: 'Fim',         width: 88, format: 'dd/MM/yyyy', editType: 'datepickeredit' },
           { field: 'Duration',  headerText: 'Dias',        width: 65, textAlign: 'Center',
-            template: '<input type="number" min="1" value="${Duration}" data-uuid="${_uuid}" data-taskid="${TaskID}" class="cron-dias-input" onclick="this.select()" onfocus="this.select()" onblur="CronogramaModule._inlineUpdateDuration(this)" onkeydown="if(event.key===\'Enter\'){event.preventDefault();this.blur();}else if(event.key===\'Escape\'){this.value=this.defaultValue;this.blur();}" style="width:45px;background:transparent;border:1px solid var(--borda);border-radius:4px;padding:3px 4px;color:inherit;text-align:center;font:inherit;">'
+            template: '<input type="number" min="1" value="${Duration}" data-taskid="${TaskID}" class="cron-dias-input" onclick="event.stopPropagation();this.select()" onfocus="this.select()" onblur="CronogramaModule._inlineUpdateDuration(this)" onkeydown="if(event.key===\'Enter\'){event.preventDefault();this.blur();}else if(event.key===\'Escape\'){this.value=this.defaultValue;this.blur();}" style="width:45px;background:transparent;border:1px solid var(--borda);border-radius:4px;padding:3px 4px;color:inherit;text-align:center;font:inherit;">'
           },
           { field: 'Progress',  headerText: '%',           width: 55, textAlign: 'Center', editType: 'numericedit', edit: { params: { min: 0, max: 100, format: 'n0', showSpinButton: false } } },
           { field: 'Predecessor', headerText: 'Pred.', width: 75 }
@@ -1014,13 +1014,12 @@ const CronogramaModule = {
   // Inline update da coluna Dias via input HTML embutido no template
   _inlineUpdateDuration(inputEl) {
     if (!inputEl) return;
-    const uuid = inputEl.dataset.uuid;
     const taskId = parseInt(inputEl.dataset.taskid, 10);
     const novosDias = Math.max(1, parseInt(inputEl.value, 10) || 1);
     const original = parseInt(inputEl.defaultValue, 10);
 
     if (novosDias === original) return; // nada mudou
-    if (!uuid || !taskId || !this._gantt) return;
+    if (!taskId || !this._gantt) return;
 
     // updateRecordByID dispara o auto-scheduling (cascata) E o actionComplete que salva tudo
     try {
@@ -1135,6 +1134,11 @@ const CronogramaModule = {
   // ══════════════════════════════════════════════════════════
   // REORDENAR LINHAS (botões ▲▼ na coluna ↕)
   // ══════════════════════════════════════════════════════════
+
+  _moverLinhaById(ganttId, delta) {
+    const tarefa = this.tarefas.find(t => t.gantt_id == ganttId);
+    if (tarefa) this._moverLinha(tarefa.id, delta);
+  },
 
   async _moverLinha(uuid, delta) {
     if (!uuid) return;
