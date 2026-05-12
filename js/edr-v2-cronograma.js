@@ -553,6 +553,21 @@ const CronogramaModule = {
   // VIEW: GANTT (Frappe Gantt com try/catch)
   // ══════════════════════════════════════════════════════════
 
+  // Gera fins de semana no intervalo como entradas de "holiday" para highlight no Gantt
+  _gerarWeekendHolidays(inicio, fim) {
+    const result = [];
+    const d = new Date(inicio); d.setHours(0, 0, 0, 0);
+    const end = new Date(fim);
+    while (d <= end) {
+      if (d.getDay() === 0 || d.getDay() === 6) {
+        const iso = d.toISOString().split('T')[0];
+        result.push({ from: iso, to: iso, label: '', cssClass: 'cron-fds' });
+      }
+      d.setDate(d.getDate() + 1);
+    }
+    return result;
+  },
+
   // Feriados nacionais 2026 (configurável depois)
   _FERIADOS_BR_2026: [
     { from: '2026-01-01', to: '2026-01-01', label: 'Ano Novo' },
@@ -868,7 +883,7 @@ const CronogramaModule = {
         workWeek: ['Monday','Tuesday','Wednesday','Thursday','Friday'],
         includeWeekend: false,
         dayWorkingTime: [{ from: 7, to: 11.5 }, { from: 13, to: 17 }],
-        holidays: this._FERIADOS_BR_2026,
+        holidays: [...this._FERIADOS_BR_2026, ...(projectStart && projectEnd ? this._gerarWeekendHolidays(projectStart, projectEnd) : [])],
         timelineSettings: {
           topTier:    { unit: 'Month', format: 'MMM yyyy', formatter: fmtMesAno },
           bottomTier: { unit: 'Week',  format: 'dd MMM',   formatter: fmtDia }
@@ -932,7 +947,9 @@ const CronogramaModule = {
             const s = document.createElement('style');
             s.id = 'cron-weekend-css';
             s.textContent =
-              '#cron-gantt-syncfusion .e-weekend { background: rgba(255,255,255,0.045) !important; }'
+              /* fins de semana: faixa sutil mas visível, sem label */
+              '.cron-fds.e-span-holidays { background: rgba(255,255,255,0.07) !important; border-left: 1px solid rgba(255,255,255,0.12) !important; border-right: 1px solid rgba(255,255,255,0.12) !important; }'
+              + '.cron-fds .e-holiday-label { display:none !important; }'
               + '.cron-mv-btn{background:none;border:none;cursor:pointer;color:var(--texto3);font-size:11px;padding:0 3px;}'
               + '.cron-mv-btn:hover{color:var(--primary);}';
             document.head.appendChild(s);
