@@ -1,6 +1,6 @@
 // EDR System — Service Worker (network-first para HTML/JS/CSS, cache-first para imagens)
 // DEPLOY_VERSION é atualizado automaticamente pelo deploy.sh
-const CACHE_NAME = 'edr-system-v20260512092515';
+const CACHE_NAME = 'edr-system-v20260512092659';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -26,6 +26,9 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   const url = e.request.url;
+
+  // Ignora schemes não-http (chrome-extension://, data:, etc.)
+  if (!url.startsWith('http://') && !url.startsWith('https://')) return;
 
   // Supabase sempre vai pra rede
   if (url.includes('supabase.co') || url.includes('/rest/') || url.includes('/auth/')) {
