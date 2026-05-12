@@ -1234,8 +1234,6 @@ const CronogramaModule = {
     const ref = this.tarefas.find(t => t.gantt_id == ganttId && (!obra || t.obra_id === obra));
     if (!ref) return;
 
-    document.getElementById('cron-add-sub-modal')?.remove();
-
     // Se clicou numa categoria, insere no final dela; se numa tarefa, insere logo após
     const parentId  = ref.tipo === 'categoria' ? ref.id : ref.parent_id;
     const afterOrdem = ref.tipo === 'categoria'
@@ -1258,7 +1256,9 @@ const CronogramaModule = {
         dependencia:  null
       });
       if (!novo) { showToast('Erro ao salvar sub-etapa'); return; }
+      document.getElementById('cron-add-sub-modal')?.remove();
       await this._renumerarTarefas(ref.obra_id);
+      showToast('Sub-etapa adicionada');
     } catch(e) {
       console.error('[ADD-SUBETAPA]', e);
       showToast('Erro ao adicionar sub-etapa');
@@ -1293,19 +1293,24 @@ const CronogramaModule = {
     // Batch update: novo gantt_id, ordem normalizada e predecessor corrigido
     let ordemCat = 0;
     const ordemPorParent = {};
-    await Promise.all(lista.map((t, i) => {
-      let novaOrdem;
-      if (t.tipo === 'categoria') { novaOrdem = ordemCat++; }
-      else { ordemPorParent[t.parent_id] = (ordemPorParent[t.parent_id] ?? -1) + 1; novaOrdem = ordemPorParent[t.parent_id]; }
-      return sbPatch('cronograma_tarefas', '?id=eq.' + t.id, {
-        gantt_id:    i + 1,
-        ordem:       novaOrdem,
-        predecessor: atualizarPred(t.predecessor)
-      });
-    }));
+    try {
+      await Promise.all(lista.map((t, i) => {
+        let novaOrdem;
+        if (t.tipo === 'categoria') { novaOrdem = ordemCat++; }
+        else { ordemPorParent[t.parent_id] = (ordemPorParent[t.parent_id] ?? -1) + 1; novaOrdem = ordemPorParent[t.parent_id]; }
+        return sbPatch('cronograma_tarefas', '?id=eq.' + t.id, {
+          gantt_id:    i + 1,
+          ordem:       novaOrdem,
+          predecessor: atualizarPred(t.predecessor)
+        });
+      }));
+    } catch(e) {
+      console.error('[RENUMERAR]', e);
+      showToast('Erro ao renumerar — recarregue a página');
+      return;
+    }
 
     await this._carregarTarefas();
-    showToast('Sub-etapa adicionada');
   },
 
   _excluirTarefa(ganttId) {
@@ -1316,8 +1321,7 @@ const CronogramaModule = {
     const msg = filhos.length > 0
       ? `Excluir "${tarefa.nome}" e mais ${filhos.length} sub-etapa(s) vinculada(s)?`
       : `Excluir "${tarefa.nome}"?`;
-    if (!confirm(msg)) return;
-    this._confirmarExclusao(ganttId);
+    confirmar(msg, () => this._confirmarExclusao(ganttId));
   },
 
   async _confirmarExclusao(ganttId) {
