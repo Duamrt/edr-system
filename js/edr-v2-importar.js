@@ -15,6 +15,7 @@ const ImportModule = {
   _catCacheVer: 0,
   _catCache: null,
   _cadastroIdx: null,
+  _deParaCache: null, // {key: codigo} do banco — de-para compartilhado/permanente (Fase 4)
 
   // ══════════════════════════════════════════════════════════
   // PARSER: interpreta texto colado (5 formatos)
@@ -271,6 +272,7 @@ const ImportModule = {
 
   abrir() {
     this.itensPreview = [];
+    this._carregarDePara(); // carrega o de-para do banco pro cache (compartilhado/permanente)
 
     // Gera modal via JS (nao depende de HTML externo)
     let modal = document.getElementById('modal-import-v2');
@@ -715,14 +717,44 @@ const ImportModule = {
     return `edr_dp_${c}:${p}`;
   },
 
+  // Carrega o de-para do banco (compartilhado/permanente) pro cache em memoria
+  async _carregarDePara() {
+    try {
+      const rows = (typeof sbGet === 'function') ? await sbGet('material_depara', '?select=cnpj,cprod,codigo_catalogo') : null;
+      if (Array.isArray(rows)) {
+        const cache = {};
+        for (const r of rows) cache[this._deParaKey(r.cnpj, r.cprod)] = r.codigo_catalogo;
+        this._deParaCache = cache;
+      }
+    } catch (e) { /* mantem fallback localStorage */ }
+  },
+
   _deParaGet(cnpj, cProd) {
     if (!cProd) return null;
-    try { return localStorage.getItem(this._deParaKey(cnpj, cProd)) || null; } catch(e) { return null; }
+    const key = this._deParaKey(cnpj, cProd);
+    if (this._deParaCache && this._deParaCache[key]) return this._deParaCache[key];
+    try { return localStorage.getItem(key) || null; } catch(e) { return null; }
   },
 
   _deParaSet(cnpj, cProd, codigoCat) {
     if (!cProd || !codigoCat) return;
-    try { localStorage.setItem(this._deParaKey(cnpj, cProd), codigoCat); } catch(e) { }
+    const c = (cnpj || '').replace(/\D/g, '');
+    const p = (cProd || '').trim().toUpperCase();
+    const key = this._deParaKey(cnpj, cProd);
+    const jaEra = this._deParaCache ? this._deParaCache[key] : undefined;
+    if (!this._deParaCache) this._deParaCache = {};
+    this._deParaCache[key] = codigoCat;
+    try { localStorage.setItem(key, codigoCat); } catch(e) {}
+    if (jaEra === codigoCat) return; // nada mudou
+    const corpo = { cnpj: c, cprod: p, codigo_catalogo: codigoCat };
+    if (typeof _companyId !== 'undefined' && _companyId) corpo.company_id = _companyId;
+    try {
+      if (jaEra === undefined && typeof sbPost === 'function') {
+        sbPost('material_depara', corpo); // novo vinculo
+      } else if (typeof sbPatch === 'function') {
+        sbPatch('material_depara', `?cnpj=eq.${encodeURIComponent(c)}&cprod=eq.${encodeURIComponent(p)}`, { codigo_catalogo: codigoCat }); // mudou o vinculo
+      }
+    } catch(e) {}
   },
 
   // ══════════════════════════════════════════════════════════
