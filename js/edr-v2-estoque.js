@@ -1927,8 +1927,8 @@ async function salvarEntradaDireta() {
   const cats = EstoqueModule.catalogoMateriais.length ? EstoqueModule.catalogoMateriais : (typeof catalogoMateriais !== 'undefined' ? catalogoMateriais : []);
   const descSemFornecedor = desc.split('·')[0].trim();
   const materialNoCatalogo = cats.find(m => norm(m.nome) === norm(descSemFornecedor));
-  if (!materialNoCatalogo && usuarioAtual?.perfil !== 'admin') {
-    showToast('Material não encontrado no catálogo. Selecione um item da lista.');
+  if (!materialNoCatalogo) {
+    showToast('Material não está no catálogo. Selecione da lista ou use "+ Cadastrar" no campo.');
     document.getElementById('entrada-desc').focus();
     return;
   }
