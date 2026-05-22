@@ -1902,6 +1902,16 @@ function onEntradaDescInput() {
   list.classList.remove('hidden');
 }
 
+// Data suspeita: ano muito diferente do atual ou futuro além de 7 dias (aviso, não bloqueia)
+function _dataSuspeita(dataStr) {
+  if (!dataStr || dataStr.length < 10) return false;
+  const ano = parseInt(dataStr.slice(0, 4), 10);
+  const anoAtual = new Date().getFullYear();
+  if (ano < anoAtual - 1 || ano > anoAtual) return true;
+  const lim = new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString().slice(0, 10);
+  return dataStr > lim;
+}
+
 async function salvarEntradaDireta() {
   const desc = (document.getElementById('entrada-desc').value||'').toUpperCase().trim();
   const qtd = parseFloat(document.getElementById('entrada-qtd').value)||0;
@@ -1923,10 +1933,12 @@ async function salvarEntradaDireta() {
     return;
   }
   if (qtd <= 0) { showToast('Informe a quantidade.'); return; }
-  if (destinoObra && (!preco || preco <= 0)) { showToast('Valor unitário obrigatório para lançamento em obra.'); document.getElementById('entrada-preco').focus(); return; }
+  if (!preco || preco <= 0) { showToast('Informe o custo unitário (não pode ficar zerado).'); document.getElementById('entrada-preco').focus(); return; }
   if (destinoObra && !obraId) { showToast('Selecione a obra.'); return; }
   const etapaVal = document.getElementById('entrada-etapa')?.value || '';
   if (destinoObra && !etapaVal) { showToast('Selecione o centro de custo (etapa).'); document.getElementById('entrada-etapa')?.focus(); return; }
+  if (!data) { showToast('Informe a data.'); document.getElementById('entrada-data').focus(); return; }
+  if (_dataSuspeita(data) && !confirm(`A data ${data} parece fora do normal. Confirmar mesmo assim?`)) { document.getElementById('entrada-data').focus(); return; }
   try {
     if (destinoObra && obraObj) {
       const valor = qtd * preco;
@@ -2045,6 +2057,8 @@ async function salvarSaidaMaterial() {
   if (qtd <= 0) { showToast('Informe a quantidade.'); return; }
   if (!obraId) { showToast('Selecione a obra destino.'); return; }
   if (!etapa) { showToast('Selecione o centro de custo.'); document.getElementById('saida-etapa').focus(); return; }
+  if (!data) { showToast('Informe a data.'); document.getElementById('saida-data').focus(); return; }
+  if (_dataSuspeita(data) && !confirm(`A data ${data} parece fora do normal. Confirmar mesmo assim?`)) { document.getElementById('saida-data').focus(); return; }
 
   if (!EstoqueModule._consolidado.length) consolidarEstoque();
   const estoqueItem = EstoqueModule._consolidado.find(m => norm(m.desc) === norm(desc));
