@@ -288,7 +288,7 @@ function consolidarEstoque(obraId) {
     } else {
       saldo = it.entradas + it.entradasDiretas + it.ajustes - it.saidas;
     }
-    const totalEntradas = it.entradas + it.entradasDiretas + it.ajustes;
+    const totalEntradas = it.entradas + it.entradasDiretas; // custo médio sai só das compras — ajustes (inventário/correção) mudam o saldo, não o custo
     const valorMedio = totalEntradas > 0 ? it.valorTotal / totalEntradas : 0;
 
     resultado.push({
