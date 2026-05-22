@@ -805,6 +805,11 @@ async function salvarNota(notaData) {
   // Validacoes
   if (!fornecedor || !emissao || !numero) { showToast('Preencha fornecedor, numero da nota e data.'); return false; }
   if (!itens.length) { showToast('Adicione pelo menos um item.'); return false; }
+  // Aviso de data de emissao fora do normal (so no preenchimento manual)
+  if (!(notaData && typeof notaData === 'object') && typeof _dataSuspeita === 'function' && _dataSuspeita(emissao)) {
+    const _okData = await confirmar(`A data de emissão ${emissao} parece fora do normal. Salvar mesmo assim?`);
+    if (!_okData) { document.getElementById('f-emissao')?.focus(); return false; }
+  }
 
   // Trava de fornecedor duplicado — usa cadastro existente silenciosamente
   const _fornDup = _detectarFornDuplicado(fornecedor, cnpjVal);
