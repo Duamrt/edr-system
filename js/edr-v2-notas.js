@@ -592,6 +592,19 @@ function adicionarItem(itemData) {
   if (!preco || preco <= 0) { showToast('Valor unitario obrigatorio.'); document.getElementById('i-preco')?.focus(); return false; }
   if (credito === null) { showToast('Classifique o item antes de adicionar.'); document.getElementById('i-desc')?.focus(); return false; }
 
+  // Fase 4: aviso (nao trava) quando o material nao esta no catalogo — serviço/mão de obra passam confirmando
+  if (!itemData && !codigo) {
+    const _catsNF = (typeof catalogoMateriais !== 'undefined') ? catalogoMateriais : [];
+    const _normNF = s => (s || '').toUpperCase().trim();
+    const _achadoNF = _catsNF.find(m => _normNF(m.nome) === _normNF(desc));
+    if (_achadoNF) {
+      codigo = _achadoNF.codigo; // bate por nome exato no catalogo → casa sem avisar
+    } else if (typeof confirm === 'function' && !confirm(`"${desc}" não está no catálogo e pode virar material solto.\n\nUse "+ Cadastrar" se for material; confirme se for serviço/mão de obra.\n\nAdicionar mesmo assim?`)) {
+      document.getElementById('i-desc')?.focus();
+      return false;
+    }
+  }
+
   NotasModule.itens.push({ desc, qtd, unidade, preco, total, imposto, credito, cat, codigo });
   renderItensForm();
 
