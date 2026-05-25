@@ -63,6 +63,11 @@ echo "Versao: $SHORT_V"
 echo "Cache SW: edr-system-v$VERSION"
 echo "Todos os usuarios vao atualizar automaticamente."
 
+# DM Stack tracking DESABILITADO — projeto DM STACK deletado em 2026-05-25 (corte de custos).
+# As etapas abaixo (dms-resolve + registro de deploy) apontam pro host do DM STACK, que nao
+# existe mais (getaddrinfo ENOTFOUND). exit 0 encerra o deploy limpo e pula o codigo morto.
+exit 0
+
 # Fechar itens no DM Stack — extrai keyword do commit message (NUNCA usar $2 como keyword,
 # pois $2 é o sistema e não uma keyword específica — isso fecharia TODOS os bugs do sistema)
 DMS_SHORTID=$(echo "$MSG" | grep -oE '#[0-9a-fA-F]{8}' | head -1)
