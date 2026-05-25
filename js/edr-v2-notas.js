@@ -327,6 +327,7 @@ function salvarRascunhoNF() {
         obra: document.getElementById('f-obra')?.value || '',
         natureza: document.getElementById('f-natureza')?.value || '',
         frete: document.getElementById('f-frete')?.value || '',
+        outras: document.getElementById('f-outras')?.value || '',
         obs: document.getElementById('f-obs')?.value || '',
         itens: NotasModule.itens || [],
         salvo_em: Date.now()
@@ -363,6 +364,7 @@ function restaurarRascunhoNF() {
     if (r.obra) document.getElementById('f-obra').value = r.obra;
     if (r.natureza) document.getElementById('f-natureza').value = r.natureza;
     if (r.frete) document.getElementById('f-frete').value = r.frete;
+    if (r.outras) document.getElementById('f-outras').value = r.outras;
     if (r.obs) document.getElementById('f-obs').value = r.obs;
     if (r.itens && r.itens.length) {
       NotasModule.itens = r.itens;
@@ -379,7 +381,7 @@ function limparRascunhoNF() {
 
 // Listeners de rascunho nos campos do form NF
 document.addEventListener('DOMContentLoaded', () => {
-  ['f-fornecedor', 'f-cnpj', 'f-numero', 'f-emissao', 'f-recebimento', 'f-obra', 'f-natureza', 'f-frete', 'f-obs'].forEach(id => {
+  ['f-fornecedor', 'f-cnpj', 'f-numero', 'f-emissao', 'f-recebimento', 'f-obra', 'f-natureza', 'f-frete', 'f-outras', 'f-obs'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.addEventListener('input', salvarRascunhoNF);
   });
@@ -406,14 +408,32 @@ function _onCnpjBlur() {
 // FORM NF: CABECALHO
 // ══════════════════════════════════════════════════════════════════
 function atualizarTotalComFrete() {
+  const itens = NotasModule.itens || [];
+  const subtotal = itens.reduce((s, i) => s + (i.total || 0), 0);
   const frete = parseFloat(document.getElementById('f-frete')?.value) || 0;
+  const outras = parseFloat(document.getElementById('f-outras')?.value) || 0;
+
   const frRow = document.getElementById('frete-total-row');
-  if (!frRow) return;
-  if (frete > 0) {
-    document.getElementById('frete-total-val').textContent = fmtR(frete);
-    frRow.classList.remove('hidden');
-  } else {
-    frRow.classList.add('hidden');
+  if (frRow) {
+    if (frete > 0) {
+      document.getElementById('frete-total-val').textContent = fmtR(frete);
+      frRow.classList.remove('hidden');
+    } else { frRow.classList.add('hidden'); }
+  }
+
+  const ouRow = document.getElementById('outras-total-row');
+  if (ouRow) {
+    if (outras > 0) {
+      document.getElementById('outras-total-val').textContent = fmtR(outras);
+      ouRow.classList.remove('hidden');
+    } else { ouRow.classList.add('hidden'); }
+  }
+
+  const tnRow = document.getElementById('total-nf-row');
+  if (tnRow) {
+    const tnVal = document.getElementById('total-nf-val');
+    if (tnVal) tnVal.textContent = fmtR(subtotal + frete + outras);
+    tnRow.classList.toggle('hidden', itens.length === 0);
   }
 }
 
@@ -678,6 +698,7 @@ function renderItensForm() {
   if (!NotasModule.itens.length) {
     lista.innerHTML = '';
     if (totalRow) totalRow.classList.add('hidden');
+    if (typeof atualizarTotalComFrete === 'function') atualizarTotalComFrete();
     return;
   }
 
@@ -707,6 +728,7 @@ function renderItensForm() {
       </div>
     </div>
   `).join('');
+  if (typeof atualizarTotalComFrete === 'function') atualizarTotalComFrete();
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -821,7 +843,7 @@ async function _alertarFornDuplicado(existente, novoNome, novoCnpj) {
 
 // salvarNota aceita JSON (desacoplado do HTML pra futuro XML import)
 async function salvarNota(notaData) {
-  let numero, fornecedor, emissao, recebimento, cnpjVal, destino, natureza, frete, obs, itens;
+  let numero, fornecedor, emissao, recebimento, cnpjVal, destino, natureza, frete, outras, obs, itens;
 
   if (notaData && typeof notaData === 'object') {
     // Chamada programatica (JSON) — futuro: import XML
@@ -833,6 +855,7 @@ async function salvarNota(notaData) {
     destino = notaData.obra || COMPANY_DEFAULTS.estoqueGeral;
     natureza = notaData.natureza || '';
     frete = parseFloat(notaData.frete) || 0;
+    outras = parseFloat(notaData.outras) || 0;
     obs = (notaData.obs || '').toUpperCase();
     itens = notaData.itens || [];
   } else {
@@ -845,6 +868,7 @@ async function salvarNota(notaData) {
     destino = document.getElementById('f-obra')?.value || COMPANY_DEFAULTS.estoqueGeral;
     natureza = document.getElementById('f-natureza')?.value || '';
     frete = parseFloat(document.getElementById('f-frete')?.value) || 0;
+    outras = parseFloat(document.getElementById('f-outras')?.value) || 0;
     obs = (document.getElementById('f-obs')?.value || '').toUpperCase();
     itens = NotasModule.itens;
   }
@@ -889,22 +913,22 @@ async function salvarNota(notaData) {
   if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
 
   const subtotal = itens.reduce((s, i) => s + i.total, 0);
-  const totalBruto = subtotal + frete;
+  const totalBruto = subtotal + frete + outras;
   const totalImposto = itens.reduce((s, i) => s + (i.imposto || 0), 0);
-  const temCredito = itens.some(i => i.credito) || frete > 0;
-  const csSimples = itens.length === 0 ? 'misto' : itens.every(i => i.credito) ? 'sim' : itens.some(i => i.credito) || frete > 0 ? 'misto' : 'nao';
+  const temCredito = itens.some(i => i.credito) || frete > 0 || outras > 0;
+  const csSimples = itens.length === 0 ? 'misto' : itens.every(i => i.credito) ? 'sim' : itens.some(i => i.credito) || frete > 0 || outras > 0 ? 'misto' : 'nao';
 
   try {
     const payload = {
       data: emissao, data_recebimento: recebimento, natureza,
       numero_nf: numero.toUpperCase(), fornecedor, cnpj: cnpjVal,
-      obra: destino, valor_bruto: totalBruto, frete, imposto: totalImposto,
+      obra: destino, valor_bruto: totalBruto, frete, outras_despesas: outras, imposto: totalImposto,
       gera_credito: temCredito, credito_status: csSimples,
       itens: JSON.stringify(itens), obs
     };
     const saved = await sbPost('notas_fiscais', payload);
     if (!saved) { showToast('Erro ao salvar nota fiscal. Tente novamente.'); return false; }
-    const notaSalva = { ...saved, valor_bruto: totalBruto, frete };
+    const notaSalva = { ...saved, valor_bruto: totalBruto, frete, outras_despesas: outras };
     notas.unshift(notaSalva);
 
     // Auto-cadastrar materiais novos no catalogo
@@ -1095,7 +1119,7 @@ function resetForm() {
   NotasModule.currentCredito = null;
   NotasModule.currentCodigo = null;
   renderItensForm();
-  ['f-numero', 'f-fornecedor', 'f-cnpj', 'f-obs', 'f-frete'].forEach(id => {
+  ['f-numero', 'f-fornecedor', 'f-cnpj', 'f-obs', 'f-frete', 'f-outras'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
@@ -1103,6 +1127,8 @@ function resetForm() {
   if (selObra) selObra.value = COMPANY_DEFAULTS.estoqueGeral;
   const frRow = document.getElementById('frete-total-row');
   if (frRow) frRow.classList.add('hidden');
+  document.getElementById('outras-total-row')?.classList.add('hidden');
+  document.getElementById('total-nf-row')?.classList.add('hidden');
   if (typeof setToday === 'function') setToday();
 }
 

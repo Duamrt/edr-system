@@ -822,6 +822,8 @@ const ImportModule = {
     const frete = total ? parseFloat(getVal(total, 'vFrete')) || 0 : 0;
     // vNF = total real da nota (já inclui IPI, frete e demais impostos)
     const vNF = total ? parseFloat(getVal(total, 'vNF')) || 0 : 0;
+    // vOutro = outras despesas acessórias (taxas de marketplace, etc) — não estão nos itens
+    const outras = total ? parseFloat(getVal(total, 'vOutro')) || 0 : 0;
 
     const dets = getAllTag(xml, 'det');
     if (!dets.length) return null;
@@ -852,7 +854,7 @@ const ImportModule = {
     let dataFormatada = '';
     if (dataEmissao) dataFormatada = dataEmissao.substring(0, 10);
 
-    return { fornecedor, cnpj, numero, serie, natureza, dataEmissao: dataFormatada, valorBruto, frete, vNF, itens };
+    return { fornecedor, cnpj, numero, serie, natureza, dataEmissao: dataFormatada, valorBruto, frete, outras, vNF, itens };
   },
 
   _preencherFormComXML(nfe) {
@@ -881,6 +883,8 @@ const ImportModule = {
     const recebEl = document.getElementById('f-recebimento');
     if (recebEl) recebEl.value = new Date().toISOString().split('T')[0];
     if (nfe.frete > 0) setVal('f-frete', nfe.frete);
+    if (nfe.outras > 0) setVal('f-outras', nfe.outras);
+    if (typeof atualizarTotalComFrete === 'function') atualizarTotalComFrete();
 
     const natEl = document.getElementById('f-natureza');
     if (natEl && nfe.natureza) {
