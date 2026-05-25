@@ -45,6 +45,7 @@ function renderNotas() {
   const ff = document.getElementById('filtro-fornecedor')?.value || '';
   const fc = document.getElementById('filtro-credito')?.value || '';
   const fn = (document.getElementById('filtro-numero-nf')?.value || '').trim().toLowerCase();
+  const fm = document.getElementById('filtro-mes')?.value || '';  // YYYY-MM (filtro por mês de emissão)
 
   // Popular select de fornecedores (uma vez por render)
   const selForn = document.getElementById('filtro-fornecedor');
@@ -66,6 +67,10 @@ function renderNotas() {
   if (fc === 'estoque') lista = lista.filter(n => n.obra === COMPANY_DEFAULTS.estoqueGeral);
   if (fc === 'escritorio') lista = lista.filter(n => n.obra === COMPANY_DEFAULTS.escritorio);
   if (fn) lista = lista.filter(n => (n.numero_nf || '').toLowerCase().includes(fn));
+  if (fm) lista = lista.filter(n => _mesNota(n.data) === fm);
+
+  // Resumo do que está filtrado (total de débito / quanto de NF) — admin only
+  _renderNotasResumo(lista, fm);
 
   const el = document.getElementById('notas-lista');
   if (!el) return;
@@ -126,6 +131,35 @@ function renderNotas() {
   }).join('');
 
   aplicarPerfil();
+}
+
+// ── HELPERS: filtro por mês + resumo de total ───────────────────
+// Extrai 'YYYY-MM' da data da nota (lida ISO 'YYYY-MM-DD' e BR 'DD/MM/YYYY')
+function _mesNota(data) {
+  if (!data) return '';
+  const s = String(data);
+  if (/^\d{4}-\d{2}/.test(s)) return s.slice(0, 7);
+  const m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+  if (m) return `${m[3]}-${m[2]}`;
+  return '';
+}
+
+// Mostra "N notas lançadas [em Mês/Ano] · R$ total" — só pra admin (valor)
+function _renderNotasResumo(lista, fm) {
+  const el = document.getElementById('notas-resumo');
+  if (!el) return;
+  const isAdmin = usuarioAtual?.perfil === 'admin';
+  if (!isAdmin || (!lista.length && !fm)) { el.classList.add('hidden'); return; }
+  const total = lista.reduce((s, n) => s + (Number(n.valor_bruto) || 0), 0);
+  const MESES = ['', 'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+  let periodo = '';
+  if (fm) {
+    const [y, mm] = fm.split('-');
+    periodo = ` em ${MESES[parseInt(mm, 10)] || mm}/${y}`;
+  }
+  const n = lista.length;
+  el.innerHTML = `<span>${n} nota${n !== 1 ? 's' : ''} lançada${n !== 1 ? 's' : ''}${periodo}</span><strong style="font-size:15px;color:var(--text);">${fmtR(total)}</strong>`;
+  el.classList.remove('hidden');
 }
 
 // ══════════════════════════════════════════════════════════════════
