@@ -10,6 +10,7 @@
 
 let contasPagar = [];
 let _contasFiltro = '';
+let _contasMes = '';  // 'YYYY-MM' — filtro por mês (vazio = todos)
 
 const CONTA_STATUS = {
   pendente:  { lb: 'PENDENTE',  cor: '#f59e0b', bg: 'rgba(245,158,11,0.08)' },
@@ -31,6 +32,20 @@ function _getStatusConta(c) {
   return c.status || 'pendente';
 }
 
+// Mês 'relevante' da conta p/ o filtro: paga -> data de pagamento; senão -> vencimento. Retorna 'YYYY-MM'.
+function _mesConta(c) {
+  const isPaga = c._status === 'pago' || c._status === 'cancelado';
+  const d = (isPaga ? (c.data_pagamento || c.data_vencimento) : c.data_vencimento) || '';
+  return String(d).slice(0, 7);
+}
+
+// 'YYYY-MM' -> 'Abr/2026'
+function _labelMes(ym) {
+  const M = ['', 'Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+  const [y, m] = String(ym || '').split('-');
+  return m ? `${M[parseInt(m, 10)] || m}/${y}` : '';
+}
+
 function getContasVencidas() {
   const hoje = hojeISO();
   return contasPagar.filter(c => c.status === 'pendente' && c.data_vencimento < hoje);
@@ -40,11 +55,13 @@ function renderContasPagar() {
   const hoje = hojeISO();
   const mesAtual = hoje.slice(0, 7);
   const lista = contasPagar.map(c => ({ ...c, _status: _getStatusConta(c) }));
-  const filtrada = _contasFiltro ? lista.filter(c => c._status === _contasFiltro) : lista;
+  let filtrada = _contasFiltro ? lista.filter(c => c._status === _contasFiltro) : lista;
+  if (_contasMes) filtrada = filtrada.filter(c => _mesConta(c) === _contasMes);
 
+  const mesResumo = _contasMes || mesAtual;  // card "pagas" reflete o mês escolhido (ou o atual)
   const totalPendente = lista.filter(c => c._status === 'pendente').reduce((s, c) => s + Number(c.valor || 0), 0);
   const totalVencido  = lista.filter(c => c._status === 'vencido').reduce((s, c) => s + Number(c.valor || 0), 0);
-  const pagasMes = lista.filter(c => c._status === 'pago' && (c.data_pagamento || '').startsWith(mesAtual)).reduce((s, c) => s + Number(c.valor || 0), 0);
+  const pagasMes = lista.filter(c => c._status === 'pago' && (c.data_pagamento || '').startsWith(mesResumo)).reduce((s, c) => s + Number(c.valor || 0), 0);
   const qtdPendente = lista.filter(c => c._status === 'pendente').length;
   const qtdVencido  = lista.filter(c => c._status === 'vencido').length;
   const qtdPago     = lista.filter(c => c._status === 'pago').length;
@@ -57,6 +74,7 @@ function renderContasPagar() {
         <button onclick="_contasFiltro='pendente';renderContasPagar()" style="padding:5px 12px;border-radius:20px;border:1px solid ${_contasFiltro==='pendente' ? '#f59e0b' : 'var(--border)'};background:${_contasFiltro==='pendente' ? 'rgba(245,158,11,0.1)' : 'transparent'};color:${_contasFiltro==='pendente' ? '#f59e0b' : 'var(--text-tertiary)'};font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">Pendentes (${qtdPendente})</button>
         <button onclick="_contasFiltro='vencido';renderContasPagar()" style="padding:5px 12px;border-radius:20px;border:1px solid ${_contasFiltro==='vencido' ? '#ef4444' : 'var(--border)'};background:${_contasFiltro==='vencido' ? 'rgba(239,68,68,0.1)' : 'transparent'};color:${_contasFiltro==='vencido' ? '#ef4444' : 'var(--text-tertiary)'};font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">Vencidas (${qtdVencido})</button>
         <button onclick="_contasFiltro='pago';renderContasPagar()" style="padding:5px 12px;border-radius:20px;border:1px solid ${_contasFiltro==='pago' ? '#22c55e' : 'var(--border)'};background:${_contasFiltro==='pago' ? 'rgba(34,197,94,0.1)' : 'transparent'};color:${_contasFiltro==='pago' ? '#22c55e' : 'var(--text-tertiary)'};font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">Pagas (${qtdPago})</button>
+        <input type="month" value="${_contasMes}" onchange="_contasMes=this.value;renderContasPagar()" title="Filtrar por mês (limpe o campo para ver todos)" style="padding:4px 10px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text-secondary);font-size:11px;font-family:inherit;">
         <div style="flex:1;"></div>
         <button onclick="abrirModalConta(null)" class="admin-only" style="padding:6px 14px;border-radius:10px;border:1px solid rgba(45,106,79,0.3);background:rgba(45,106,79,0.08);color:var(--primary);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.5px;">+ NOVA CONTA</button>
       </div>
@@ -70,7 +88,7 @@ function renderContasPagar() {
           <div style="font-size:16px;font-weight:800;color:#ef4444;font-family:'Space Grotesk',monospace;">${fmt(totalVencido)}</div>
         </div>
         <div style="background:var(--card);border:1px solid var(--border);border-top:2px solid #22c55e;border-radius:10px;padding:12px;text-align:center;">
-          <div style="font-size:9px;color:var(--text-tertiary);font-weight:700;letter-spacing:1px;">PAGAS NO MES</div>
+          <div style="font-size:9px;color:var(--text-tertiary);font-weight:700;letter-spacing:1px;">${_contasMes ? 'PAGO EM ' + _labelMes(_contasMes).toUpperCase() : 'PAGAS NO MES'}</div>
           <div style="font-size:16px;font-weight:800;color:#22c55e;font-family:'Space Grotesk',monospace;">${fmt(pagasMes)}</div>
         </div>
       </div>`;
