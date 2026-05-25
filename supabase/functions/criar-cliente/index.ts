@@ -18,7 +18,8 @@ serve(async (req) => {
 
     // 1. Receber dados e verificar senha de admin
     const { empresa, nome, email, password, adminSecret, plan } = await req.json()
-    const ADMIN_SECRET = Deno.env.get('EDR_ADMIN_SECRET') ?? 'edr@admin2026'
+    const ADMIN_SECRET = Deno.env.get('EDR_ADMIN_SECRET')
+    if (!ADMIN_SECRET) return json({ error: 'EDR_ADMIN_SECRET não configurado no servidor' }, 500)
     if (adminSecret !== ADMIN_SECRET) return json({ error: 'Não autorizado' }, 401)
     if (!empresa || !email || !password || password.length < 6) {
       return json({ error: 'Dados inválidos. Empresa, email e senha (mín. 6 chars) obrigatórios.' }, 400)
