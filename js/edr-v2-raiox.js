@@ -1,15 +1,14 @@
 // ══════════════════════════════════════════════════════════════════
 // EDR System V2 — Modulo: RAIO-X DE OBRAS
-// Painel consolidado por obra (carteira ao vivo): contrato, custo,
-// recebido CEF, quanto falta receber, margem prevista.
-// Lê dados JÁ carregados em memória — nao faz query nova.
-// Depende: infra.js (obras, obrasArquivadas, lancamentos, distribuicoes,
-//          getAdicionaisObra, fmt, esc), custos.js (CustosModule.repassesCef)
+// Painel consolidado por obra (carteira ao vivo). Foco: quanto SAIU (custo),
+// quanto ENTROU (recebido) e quanto ENTROU A MAIS (serviços extras).
+// Contrato da obra = VALOR DE VENDA (campo vivo do sistema). Receita = contrato + extras.
+// Custo = tudo lancado (ja inclui a execucao dos extras). Lucro = receita - custo.
+// Le dados JA carregados em memoria. Depende: infra.js (obras/obrasArquivadas/
+// lancamentos/distribuicoes/getAdicionaisObra/fmt/esc), custos.js (CustosModule.repassesCef)
 // ══════════════════════════════════════════════════════════════════
 
-const RaioxModule = {
-  filtro: 'todas',   // todas | andamento | concluida
-};
+const RaioxModule = { filtro: 'todas' };
 
 // ── HELPERS ────────────────────────────────────────────────────
 function _rxRepasses() {
@@ -27,22 +26,25 @@ function _rxStatus(o) {
   return 'andamento';
 }
 
-// Cálculo por obra — mesma lógica financeira do resto do sistema
+// Cálculo por obra. Contrato = valor_venda. Extras = adicionais aprovados (getAdicionaisObra
+// já exclui pendentes/cancelados). Custo = soma lancamentos (inclui execução dos extras).
 function _rxCalc(o) {
   const reps = _rxRepasses();
   const ls = (typeof lancamentos !== 'undefined' ? lancamentos : []).filter(l => l.obra_id === o.id);
   const custo = ls.reduce((s, l) => s + Number(l.total || 0), 0);
   const material = (typeof distribuicoes !== 'undefined' ? distribuicoes : []).filter(d => d.obra_id === o.id).reduce((s, d) => s + Number(d.valor || 0), 0);
   const receb = reps.filter(r => r.obra_id === o.id).reduce((s, r) => s + Number(r.valor || 0), 0);
-  const contrato = Number(o.contrato_valor_edr || 0);
+  const contrato = Number(o.valor_venda || 0);
   const adic = (typeof getAdicionaisObra === 'function') ? getAdicionaisObra(o.id) : { valorTotal: 0, totalRecebido: 0, saldo: 0, qtd: 0 };
+  const extras = Number(adic.valorTotal || 0);
+  const extrasReceber = Math.max(0, extras - Number(adic.totalRecebido || 0));
+  const receita = contrato + extras;
+  const lucro = receita - custo;
+  const margem = receita > 0 ? (lucro / receita * 100) : 0;
   const aReceberContrato = contrato > 0 ? Math.max(0, contrato - receb) : 0;
-  const aReceberAdic = Math.max(0, (adic.valorTotal || 0) - (adic.totalRecebido || 0));
-  const aReceber = aReceberContrato + aReceberAdic;
-  const sobra = (contrato > 0 ? contrato : receb) - custo;
-  const pctGasto = contrato > 0 ? Math.round(custo / contrato * 100) : null;
+  const aReceber = aReceberContrato + extrasReceber;
   const pctReceb = contrato > 0 ? Math.min(100, Math.round(receb / contrato * 100)) : null;
-  return { o, status: _rxStatus(o), custo, material, receb, contrato, adic, aReceber, aReceberContrato, aReceberAdic, sobra, pctGasto, pctReceb, qtd: ls.length };
+  return { o, status: _rxStatus(o), contrato, extras, extrasReceber, receita, custo, material, receb, lucro, margem, aReceber, aReceberContrato, pctReceb, qtd: ls.length, adicQtd: Number(adic.qtd || 0) };
 }
 
 function _rxTodas() {
@@ -54,19 +56,21 @@ function _rxTodas() {
 // ── KPIs CONSOLIDADOS ──────────────────────────────────────────
 function _rxKpisHtml(linhas) {
   const reais = linhas.filter(x => x.status !== 'estrutura');
-  const contratado = reais.reduce((s, x) => s + (x.contrato > 0 ? x.contrato : 0), 0);
+  const contratos = reais.reduce((s, x) => s + x.contrato, 0);
+  const extras = reais.reduce((s, x) => s + x.extras, 0);
   const recebido = reais.reduce((s, x) => s + x.receb, 0);
-  const aReceber = reais.reduce((s, x) => s + x.aReceber, 0);
   const custo = reais.reduce((s, x) => s + x.custo, 0);
-  const margem = contratado - custo;
+  const lucro = (contratos + extras) - custo;
+  const aReceber = reais.reduce((s, x) => s + x.aReceber, 0);
   const estrut = linhas.filter(x => x.status === 'estrutura').reduce((s, x) => s + x.custo, 0);
 
   const cards = [
-    { lab: 'Contratado', val: _rxK(contratado), sub: reais.filter(x => x.contrato > 0).length + ' contratos', cor: 'var(--text-primary)' },
-    { lab: 'Recebido (CEF)', val: _rxK(recebido), sub: 'entradas · terreno · PLS', cor: 'var(--text-primary)' },
-    { lab: 'A receber', val: _rxK(aReceber), sub: 'contrato + adicionais', cor: '#2563eb', destaque: true },
-    { lab: 'Custo realizado', val: _rxK(custo), sub: 'tudo lançado' + (estrut > 0 ? ' · +' + _rxK(estrut) + ' estrutura' : ''), cor: 'var(--text-primary)' },
-    { lab: 'Margem prevista', val: _rxK(margem), sub: 'contrato − custo', cor: margem >= 0 ? '#16a34a' : '#dc2626' },
+    { lab: 'Contratos', val: _rxK(contratos), sub: reais.length + ' obras · valor de venda', cor: 'var(--text-primary)' },
+    { lab: 'Serviços extras', val: _rxK(extras), sub: 'entrou a mais (adicionais)', cor: '#2563eb', destaque: true },
+    { lab: 'Recebido', val: _rxK(recebido), sub: 'entrou no caixa', cor: '#16a34a' },
+    { lab: 'Custo realizado', val: _rxK(custo), sub: 'saiu' + (estrut > 0 ? ' · +' + _rxK(estrut) + ' estrutura' : ''), cor: '#b45309' },
+    { lab: 'Lucro previsto', val: _rxK(lucro), sub: '(contrato + extras) − custo', cor: lucro >= 0 ? '#16a34a' : '#dc2626' },
+    { lab: 'Falta receber', val: _rxK(aReceber), sub: 'contrato + extras', cor: 'var(--text-primary)' },
   ];
   return cards.map(c => `
     <div style="background:var(--surface);border:1px solid ${c.destaque ? '#bfdbfe' : 'var(--border)'};border-radius:14px;padding:14px 16px;${c.destaque ? 'box-shadow:0 0 0 1px #bfdbfe inset;' : ''}">
@@ -105,14 +109,24 @@ function _rxMetric(lab, val, cor, sub) {
 function _rxCardObra(x) {
   const o = x.o;
   const isEstrut = x.status === 'estrutura';
-  const temContrato = x.contrato > 0;
-  const aReceberVal = isEstrut ? '—' : (temContrato ? (x.aReceber < 10 ? 'quitado' : _rxK(x.aReceber)) : 'cadastrar contrato');
-  const aReceberSub = isEstrut ? '' : (temContrato ? (x.aReceber < 10 ? 'recebido integral' : (x.aReceberAdic > 0 ? '+adic ' + _rxK(x.aReceberAdic) : 'do contrato')) : 'sem valor');
-  const aReceberCor = isEstrut ? 'var(--text-tertiary)' : (temContrato ? '#2563eb' : 'var(--text-tertiary)');
 
-  // barra de recebimento (só com contrato)
+  let metricas;
+  if (isEstrut) {
+    metricas = `${_rxMetric('Custo acumulado', _rxFmt(x.custo), '#b45309')}${_rxMetric('Material', _rxFmt(x.material))}${_rxMetric('Lançamentos', x.qtd + '')}`;
+  } else {
+    const arSub = x.aReceber < 10 ? 'quitado' : (x.extrasReceber > 0 ? ('contrato ' + _rxK(x.aReceberContrato) + ' + extras ' + _rxK(x.extrasReceber)) : 'do contrato');
+    metricas =
+      _rxMetric('Contrato (venda)', _rxFmt(x.contrato)) +
+      _rxMetric('Serviços extras', x.extras > 0 ? _rxFmt(x.extras) : '—', x.extras > 0 ? '#2563eb' : 'var(--text-tertiary)', x.adicQtd > 0 ? (x.adicQtd + ' item' + (x.adicQtd > 1 ? 's' : '')) : '') +
+      _rxMetric('Custo (saiu)', _rxFmt(x.custo), '#b45309') +
+      _rxMetric('Lucro previsto', _rxFmt(x.lucro), x.lucro >= 0 ? '#16a34a' : '#dc2626', x.receita > 0 ? ('margem ' + x.margem.toFixed(0) + '%') : '') +
+      _rxMetric('Recebido', _rxFmt(x.receb), '#16a34a') +
+      _rxMetric('Falta receber', x.aReceber < 10 ? 'quitado' : _rxFmt(x.aReceber), '#2563eb', arSub);
+  }
+
+  // barra de recebimento
   let barra = '';
-  if (temContrato && x.pctReceb != null) {
+  if (!isEstrut && x.contrato > 0 && x.pctReceb != null) {
     barra = `<div style="margin-top:12px;">
       <div style="display:flex;justify-content:space-between;font-family:'Space Grotesk',monospace;font-size:11px;color:var(--text-tertiary);margin-bottom:4px;">
         <span>Recebido do contrato</span><span><b style="color:var(--text-secondary);">${x.pctReceb}%</b> · ${x.aReceber > 10 ? 'falta ' + _rxK(x.aReceber) : 'quitado'}</span>
@@ -123,13 +137,6 @@ function _rxCardObra(x) {
     </div>`;
   }
 
-  const linha2 = isEstrut
-    ? `${_rxMetric('Custo acumulado', _rxFmt(x.custo), 'var(--primary)')}${_rxMetric('Material', _rxFmt(x.material))}${_rxMetric('Lançamentos', x.qtd + '')}`
-    : `${_rxMetric(temContrato ? 'Contrato EDR' : 'Recebido', _rxFmt(temContrato ? x.contrato : x.receb))}
-       ${_rxMetric('Custo realizado', _rxFmt(x.custo), 'var(--primary)')}
-       ${_rxMetric('A receber', aReceberVal, aReceberCor, aReceberSub)}
-       ${_rxMetric('Recebido CEF', _rxFmt(x.receb))}`;
-
   return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px 18px;margin-bottom:12px;">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
@@ -138,7 +145,7 @@ function _rxCardObra(x) {
       </div>
       <span style="font-size:11.5px;color:var(--text-tertiary);font-family:Inter,sans-serif;">${_rxEsc(o.cidade || '')}${o.area_m2 && Number(o.area_m2) > 0 ? ' · ' + o.area_m2 + ' m²' : ''}</span>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:14px;">${linha2}</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:14px;">${metricas}</div>
     ${barra}
   </div>`;
 }
@@ -176,7 +183,7 @@ function renderRaiox(container) {
   cont.innerHTML = `
     <div style="margin-bottom:16px;">
       <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:800;color:var(--text-primary);">Raio-X de Obras</div>
-      <div style="font-size:13px;color:var(--text-tertiary);font-family:Inter,sans-serif;margin-top:2px;">Carteira ao vivo — contrato, custo e quanto falta receber por obra</div>
+      <div style="font-size:13px;color:var(--text-tertiary);font-family:Inter,sans-serif;margin-top:2px;">Carteira ao vivo — quanto saiu, quanto entrou e o que entrou a mais (extras)</div>
     </div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px;">${_rxKpisHtml(linhas)}</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px;">${_rxFiltrosHtml(f)}</div>
