@@ -222,6 +222,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 // ── PERMISSÕES POR PERFIL ────────────────────────────────────
 const _MODULOS_PERMISSAO = [
   { id: 'dashboard',    label: 'Dashboard' },
+  { id: 'raiox',        label: 'Raio-X de Obras' },
   { id: 'relatorio',    label: 'Relatório P&L' },
   { id: 'caixa',        label: 'Fluxo de Caixa' },
   { id: 'obras',        label: 'Obras' },
