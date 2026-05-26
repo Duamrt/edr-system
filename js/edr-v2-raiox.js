@@ -181,9 +181,12 @@ function renderRaiox(container) {
   });
 
   cont.innerHTML = `
-    <div style="margin-bottom:16px;">
-      <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:800;color:var(--text-primary);">Raio-X de Obras</div>
-      <div style="font-size:13px;color:var(--text-tertiary);font-family:Inter,sans-serif;margin-top:2px;">Carteira ao vivo — quanto saiu, quanto entrou e o que entrou a mais (extras)</div>
+    <div style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
+      <div>
+        <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:800;color:var(--text-primary);">Raio-X de Obras</div>
+        <div style="font-size:13px;color:var(--text-tertiary);font-family:Inter,sans-serif;margin-top:2px;">Carteira ao vivo — quanto saiu, quanto entrou e o que entrou a mais (extras)</div>
+      </div>
+      <button onclick="rxEmitirRelatorio()" style="display:flex;align-items:center;gap:7px;background:var(--primary);color:#fff;border:none;border-radius:10px;padding:10px 16px;font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap;"><span class="material-symbols-outlined" style="font-size:18px;">description</span> Emitir relatório</button>
     </div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px;">${_rxKpisHtml(linhas)}</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px;">${_rxFiltrosHtml(f)}</div>
@@ -195,9 +198,155 @@ function rxSetFiltro(f) {
   renderRaiox();
 }
 
+// ══════════════════════════════════════════════════════════════════
+// EMITIR RELATÓRIO COMPLETO — documento ao vivo, imprimível (abre nova aba)
+// ══════════════════════════════════════════════════════════════════
+function _rxDt(s) { return s ? String(s).slice(0, 10).split('-').reverse().join('/') : '—'; }
+
+function _rxEtapasObra(id) {
+  const ls = (typeof lancamentos !== 'undefined' ? lancamentos : []).filter(l => l.obra_id === id);
+  const g = {};
+  ls.forEach(l => { const k = (typeof etapaLabel === 'function') ? etapaLabel(l.etapa || '36_outros') : (l.etapa || 'Outros'); g[k] = (g[k] || 0) + Number(l.total || 0); });
+  return Object.entries(g).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
+}
+function _rxCefObra(id) {
+  return _rxRepasses().filter(r => r.obra_id === id).slice().sort((a, b) => String(a.data_credito || '').localeCompare(String(b.data_credito || '')));
+}
+function _rxAdicObra(id) {
+  const ad = (typeof obrasAdicionais !== 'undefined' ? obrasAdicionais : []).filter(a => a.obra_id === id);
+  const pg = (typeof adicionaisPgtos !== 'undefined' ? adicionaisPgtos : []);
+  return ad.map(a => ({ desc: a.descricao || '—', valor: Number(a.valor || 0), status: a.status || '', pago: pg.filter(p => p.adicional_id === a.id).reduce((s, p) => s + Number(p.valor || 0), 0) }));
+}
+
+function _rxDocCss() {
+  return `<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#f4f2ee;color:#1c1a17;font-family:'Inter',system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.5;padding:0}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 24px 60px}
+  .doc-head{border-bottom:2px solid #1c1a17;padding:30px 0 18px;display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:14px}
+  .doc-head .eyebrow{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#c2410c;font-weight:600}
+  .doc-head h1{font-size:28px;font-weight:700;letter-spacing:-.02em;margin-top:5px}
+  .doc-head .sub{color:#5c574f;font-size:13px;margin-top:3px}
+  .doc-head .stamp{font-family:'JetBrains Mono',monospace;font-size:12px;color:#5c574f;text-align:right;line-height:1.7}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:#e4ddd3;border:1px solid #e4ddd3;border-radius:10px;overflow:hidden;margin:22px 0}
+  .kpi{background:#fff;padding:14px 16px}
+  .kpi .l{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#a8a098;font-weight:600}
+  .kpi .v{font-family:'JetBrains Mono',monospace;font-size:19px;font-weight:600;margin-top:4px}
+  .kpi .s{font-size:11px;color:#5c574f;margin-top:2px}
+  h2.sec{font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;margin:26px 0 10px;color:#1c1a17}
+  h2.sec span{color:#a8a098;font-weight:500}
+  .card{background:#fff;border:1px solid #e4ddd3;border-radius:12px;margin-bottom:14px;overflow:hidden}
+  .card-h{padding:15px 18px;border-bottom:1px solid #e4ddd3;display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px}
+  .card-h .nm{font-size:18px;font-weight:700}
+  .card-h .meta{font-family:'JetBrains Mono',monospace;font-size:11px;color:#a8a098}
+  .badge{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;padding:3px 8px;border-radius:5px;margin-left:8px}
+  .b-and{background:#e8f0eb;color:#2d6a4f}.b-con{background:#e8eef6;color:#1d4e89}.b-est{background:#eee9e2;color:#5c574f}
+  .mrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:1px;background:#f0ece5}
+  .m{background:#fff;padding:12px 16px}
+  .m .l{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:#a8a098;font-weight:600}
+  .m .v{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:600;margin-top:3px}
+  .pos{color:#15803d}.neg{color:#b91c1c}.acc{color:#c2410c}.az{color:#1d4e89}
+  .sub-sec{padding:12px 18px;border-top:1px solid #f0ece5}
+  .sub-sec h3{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#5c574f;font-weight:700;margin-bottom:7px}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;color:#a8a098;text-align:left;font-weight:600;padding:5px 8px;border-bottom:1px solid #e4ddd3}
+  td{padding:6px 8px;border-bottom:1px solid #faf8f4}
+  td.n{font-family:'JetBrains Mono',monospace;text-align:right;white-space:nowrap}
+  tr:last-child td{border-bottom:none}
+  .toolbar{position:sticky;top:0;background:#f4f2ee;padding:12px 0;display:flex;gap:10px;justify-content:flex-end;border-bottom:1px solid #e4ddd3;z-index:5}
+  .pbtn{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;padding:8px 16px;border:1px solid #1c1a17;background:#1c1a17;color:#fff;border-radius:8px;cursor:pointer}
+  footer{border-top:1px solid #e4ddd3;margin-top:30px;padding:18px 0;font-family:'JetBrains Mono',monospace;font-size:11px;color:#a8a098;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+  @media print{.toolbar{display:none}body{background:#fff}.card{break-inside:avoid;border:1px solid #ccc}}
+  </style><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">`;
+}
+
+function _rxDocObra(x) {
+  const o = x.o;
+  const isEstrut = x.status === 'estrutura';
+  const badge = { andamento: ['Em obra', 'b-and'], concluida: ['Concluída', 'b-con'], estrutura: ['Estrutura', 'b-est'] }[x.status] || ['', 'b-est'];
+  const etapas = _rxEtapasObra(o.id);
+  const maxEt = etapas.length ? etapas[0][1] : 1;
+  const cef = isEstrut ? [] : _rxCefObra(o.id);
+  const adic = isEstrut ? [] : _rxAdicObra(o.id);
+
+  let mrow;
+  if (isEstrut) {
+    mrow = `<div class="m"><div class="l">Custo acumulado</div><div class="v acc">${_rxFmt(x.custo)}</div></div>
+      <div class="m"><div class="l">Material</div><div class="v">${_rxFmt(x.material)}</div></div>
+      <div class="m"><div class="l">Lançamentos</div><div class="v">${x.qtd}</div></div>`;
+  } else {
+    const arTxt = x.aReceber < 10 ? 'quitado' : _rxFmt(x.aReceber);
+    mrow = `<div class="m"><div class="l">Contrato (venda)</div><div class="v">${_rxFmt(x.contrato)}</div></div>
+      <div class="m"><div class="l">Serviços extras</div><div class="v az">${x.extras > 0 ? _rxFmt(x.extras) : '—'}</div></div>
+      <div class="m"><div class="l">Recebido</div><div class="v pos">${_rxFmt(x.receb)}</div></div>
+      <div class="m"><div class="l">Custo (saiu)</div><div class="v acc">${_rxFmt(x.custo)}</div></div>
+      <div class="m"><div class="l">Lucro previsto</div><div class="v ${x.lucro >= 0 ? 'pos' : 'neg'}">${_rxFmt(x.lucro)}</div></div>
+      <div class="m"><div class="l">Falta receber</div><div class="v az">${arTxt}</div></div>`;
+  }
+
+  const tabEtapas = etapas.length ? `<div class="sub-sec"><h3>Custo por etapa</h3><table><tbody>${etapas.map(([n, v]) => `<tr><td>${_rxEsc(n)}</td><td class="n">${_rxFmt(v)}</td></tr>`).join('')}</tbody></table></div>` : '';
+  const tabCef = cef.length ? `<div class="sub-sec"><h3>Repasses CEF · ${_rxK(x.receb)}</h3><table><thead><tr><th>Data</th><th>Tipo</th><th>Obs</th><th style="text-align:right">Valor</th></tr></thead><tbody>${cef.map(r => `<tr><td>${_rxDt(r.data_credito)}</td><td>${_rxEsc((r.tipo || 'pls').toUpperCase())}</td><td>${_rxEsc(r.observacao || '—')}</td><td class="n">${_rxFmt(r.valor)}</td></tr>`).join('')}</tbody></table></div>` : '';
+  const tabAdic = adic.length ? `<div class="sub-sec"><h3>Serviços extras · ${_rxK(x.extras)}</h3><table><thead><tr><th>Descrição</th><th>Status</th><th style="text-align:right">Valor</th><th style="text-align:right">Pago</th></tr></thead><tbody>${adic.map(a => `<tr><td>${_rxEsc(a.desc)}</td><td>${_rxEsc(a.status)}</td><td class="n">${_rxFmt(a.valor)}</td><td class="n">${a.pago > 0 ? _rxFmt(a.pago) : '—'}</td></tr>`).join('')}</tbody></table></div>` : '';
+
+  return `<div class="card">
+    <div class="card-h"><div class="nm">${_rxEsc(o.nome)}<span class="badge ${badge[1]}">${badge[0]}</span></div>
+      <div class="meta">${_rxEsc(o.cidade || '')}${o.area_m2 && Number(o.area_m2) > 0 ? ' · ' + o.area_m2 + ' m²' : ''}</div></div>
+    <div class="mrow">${mrow}</div>${tabEtapas}${tabCef}${tabAdic}
+  </div>`;
+}
+
+function rxEmitirRelatorio() {
+  const linhas = _rxTodas().map(_rxCalc).filter(x => x.qtd > 0 || x.contrato > 0 || x.receb > 0);
+  if (!linhas.length) { if (typeof showToast === 'function') showToast('Sem obras para emitir.'); return; }
+
+  const reais = linhas.filter(x => x.status !== 'estrutura');
+  const contratos = reais.reduce((s, x) => s + x.contrato, 0);
+  const extras = reais.reduce((s, x) => s + x.extras, 0);
+  const recebido = reais.reduce((s, x) => s + x.receb, 0);
+  const custo = reais.reduce((s, x) => s + x.custo, 0);
+  const lucro = (contratos + extras) - custo;
+  const aReceber = reais.reduce((s, x) => s + x.aReceber, 0);
+  const kpis = [
+    ['Contratos', _rxK(contratos), reais.length + ' obras'],
+    ['Serviços extras', _rxK(extras), 'entrou a mais', 'az'],
+    ['Recebido', _rxK(recebido), 'entrou', 'pos'],
+    ['Custo', _rxK(custo), 'saiu', 'acc'],
+    ['Lucro previsto', _rxK(lucro), '(contrato+extras)−custo', lucro >= 0 ? 'pos' : 'neg'],
+    ['Falta receber', _rxK(aReceber), 'contrato + extras', 'az'],
+  ];
+  const kpiHtml = kpis.map(k => `<div class="kpi"><div class="l">${k[0]}</div><div class="v ${k[3] || ''}">${k[1]}</div><div class="s">${k[2]}</div></div>`).join('');
+
+  const grupos = [['andamento', 'Em andamento'], ['concluida', 'Concluídas'], ['estrutura', 'Estrutura / Almoxarifado']];
+  let obrasHtml = '';
+  grupos.forEach(([st, tit]) => {
+    const itens = linhas.filter(x => x.status === st).sort((a, b) => b.aReceber - a.aReceber || b.custo - a.custo);
+    if (!itens.length) return;
+    obrasHtml += `<h2 class="sec">${tit} <span>· ${itens.length}</span></h2>` + itens.map(_rxDocObra).join('');
+  });
+
+  const hoje = new Date().toLocaleDateString('pt-BR');
+  const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>EDR — Raio-X de Obras ${hoje}</title>${_rxDocCss()}</head><body>
+    <div class="toolbar"><div class="wrap" style="width:100%;display:flex;justify-content:flex-end;padding-top:0;padding-bottom:0;"><button class="pbtn" onclick="window.print()">Imprimir / Salvar PDF</button></div></div>
+    <div class="wrap">
+      <div class="doc-head">
+        <div><div class="eyebrow">EDR Engenharia · Gestão de Obras</div><h1>Raio-X de Obras</h1><div class="sub">Carteira ao vivo — quanto saiu, quanto entrou e o que entrou a mais</div></div>
+        <div class="stamp">Emitido em <b>${hoje}</b><br>Fonte: EDR System (ao vivo)</div>
+      </div>
+      <div class="kpis">${kpiHtml}</div>
+      ${obrasHtml}
+      <footer><span>EDR Engenharia — CNPJ 49.909.440/0001-55 · Jupi-PE</span><span>Raio-X de Obras · emitido pelo EDR System</span></footer>
+    </div>
+  </body></html>`;
+
+  const w = window.open('', '_blank');
+  if (!w) { if (typeof showToast === 'function') showToast('Libere o pop-up pra emitir o relatório.'); return; }
+  w.document.open(); w.document.write(html); w.document.close();
+}
+
 // ── Registro no viewRegistry ──
 if (typeof viewRegistry !== 'undefined') {
   viewRegistry.register('raiox', (container) => renderRaiox(container));
 }
 window.rxSetFiltro = rxSetFiltro;
 window.renderRaiox = renderRaiox;
+window.rxEmitirRelatorio = rxEmitirRelatorio;
