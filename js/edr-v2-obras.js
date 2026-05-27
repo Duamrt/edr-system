@@ -988,6 +988,10 @@ async function editarEtapaLanc(lancId) {
   const lanc = lancamentos.find(l => l.id === lancId);
   if (!lanc) return showToast('Lancamento nao encontrado');
 
+  // Remove modal anterior — evita acumular #modal-editar-etapa / #sel-nova-etapa duplicados
+  // (com IDs duplicados o salvar pegava o select errado e nao alterava o centro de custo)
+  document.getElementById('modal-editar-etapa')?.remove();
+
   const etapaAtual = typeof resolveEtapaKey === 'function' ? resolveEtapaKey(lanc.etapa || '') : (lanc.etapa || '');
 
   const modal = document.createElement('div');
