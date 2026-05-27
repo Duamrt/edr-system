@@ -882,9 +882,22 @@ const ImportModule = {
     setVal('f-emissao', nfe.dataEmissao);
     const recebEl = document.getElementById('f-recebimento');
     if (recebEl) recebEl.value = new Date().toISOString().split('T')[0];
-    if (nfe.frete > 0) setVal('f-frete', nfe.frete);
-    if (nfe.outras > 0) setVal('f-outras', nfe.outras);
+    // Frete e outras SEMPRE refletem o XML — zera residuo de rascunho/importacao anterior.
+    // (Bug: XML sem vFrete/vOutro deixava valores fantasma de outra nota e o total nunca batia.)
+    const _freteEl = document.getElementById('f-frete');
+    if (_freteEl) _freteEl.value = nfe.frete > 0 ? nfe.frete : '';
+    const _outrasEl = document.getElementById('f-outras');
+    if (_outrasEl) _outrasEl.value = nfe.outras > 0 ? nfe.outras : '';
     if (typeof atualizarTotalComFrete === 'function') atualizarTotalComFrete();
+
+    // Confere se itens + frete + outras batem com o total oficial da NF (vNF do XML).
+    if (nfe.vNF > 0) {
+      const _somaXml = (nfe.itens || []).reduce((s, i) => s + (i.total || 0), 0) + (nfe.frete || 0) + (nfe.outras || 0);
+      if (Math.abs(_somaXml - nfe.vNF) > 0.05) {
+        const _fmt = typeof fmtR === 'function' ? fmtR : (v => 'R$ ' + Number(v).toFixed(2));
+        showToast(`Atencao: total dos itens (${_fmt(_somaXml)}) difere do total da NF no XML (${_fmt(nfe.vNF)}). Confira itens/frete antes de salvar.`);
+      }
+    }
 
     const natEl = document.getElementById('f-natureza');
     if (natEl && nfe.natureza) {
