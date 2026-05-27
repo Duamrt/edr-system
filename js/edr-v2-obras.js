@@ -148,6 +148,7 @@ function obrasCatToggle(key) {
   else ObrasModule.catsFiltro.add(key);
   _obrasCatAtualizarLabel();
   filtrarLanc();
+  if (ObrasModule.tab === 'mat') renderObrasMateriais();
 }
 
 function obrasCatSelecionarTodos() {
@@ -155,6 +156,7 @@ function obrasCatSelecionarTodos() {
   document.querySelectorAll('#obras-filtro-cat-lista input[type=checkbox]').forEach(cb => cb.checked = true);
   _obrasCatAtualizarLabel();
   filtrarLanc();
+  if (ObrasModule.tab === 'mat') renderObrasMateriais();
 }
 
 function obrasCatLimpar() {
@@ -162,6 +164,7 @@ function obrasCatLimpar() {
   document.querySelectorAll('#obras-filtro-cat-lista input[type=checkbox]').forEach(cb => cb.checked = false);
   _obrasCatAtualizarLabel();
   filtrarLanc();
+  if (ObrasModule.tab === 'mat') renderObrasMateriais();
 }
 
 function _obrasCatAtualizarLabel() {
@@ -670,6 +673,10 @@ function renderObrasMateriais() {
     if (busca && !(d.item_desc || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes(busca)) return false;
     if (dataDE && (d.data || '') < dataDE) return false;
     if (dataATE && (d.data || '') > dataATE) return false;
+    if (ObrasModule.catsFiltro.size > 0) {
+      const rk = typeof resolveEtapaKey === 'function' ? resolveEtapaKey(d.etapa || '36_outros') : (d.etapa || '36_outros');
+      if (!ObrasModule.catsFiltro.has(rk)) return false;
+    }
     return true;
   });
 
