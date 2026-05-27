@@ -8,7 +8,21 @@
 // lancamentos/distribuicoes/getAdicionaisObra/fmt/esc), custos.js (CustosModule.repassesCef)
 // ══════════════════════════════════════════════════════════════════
 
-const RaioxModule = { filtro: 'todas' };
+const RaioxModule = { filtro: 'andamento', _crono: [], _cronoLoaded: false };
+
+// Carrega progresso do cronograma (lazy, 1x) — não vem nos dados globais do boot
+async function _rxLoadCrono() {
+  try {
+    const r = await sbGet('cronograma_tarefas', '?tipo=eq.tarefa&select=obra_id,progresso');
+    RaioxModule._crono = Array.isArray(r) ? r : [];
+  } catch (e) { RaioxModule._crono = []; }
+  RaioxModule._cronoLoaded = true;
+}
+function _rxProgObra(id) {
+  const ts = (RaioxModule._crono || []).filter(t => t.obra_id === id);
+  if (!ts.length) return null;
+  return Math.round(ts.reduce((s, t) => s + Number(t.progresso || 0), 0) / ts.length);
+}
 
 // ── HELPERS ────────────────────────────────────────────────────
 function _rxRepasses() {
@@ -44,7 +58,9 @@ function _rxCalc(o) {
   const aReceberContrato = contrato > 0 ? Math.max(0, contrato - receb) : 0;
   const aReceber = aReceberContrato + extrasReceber;
   const pctReceb = contrato > 0 ? Math.min(100, Math.round(receb / contrato * 100)) : null;
-  return { o, status: _rxStatus(o), contrato, extras, extrasReceber, receita, custo, material, receb, lucro, margem, aReceber, aReceberContrato, pctReceb, qtd: ls.length, adicQtd: Number(adic.qtd || 0) };
+  const prog = _rxProgObra(o.id);
+  const pctGasto = contrato > 0 ? Math.round(custo / contrato * 100) : null;
+  return { o, status: _rxStatus(o), contrato, extras, extrasReceber, receita, custo, material, receb, lucro, margem, aReceber, aReceberContrato, pctReceb, prog, pctGasto, qtd: ls.length, adicQtd: Number(adic.qtd || 0) };
 }
 
 function _rxTodas() {
@@ -136,6 +152,17 @@ function _rxCardObra(x) {
       </div>
     </div>`;
   }
+  if (!isEstrut && x.prog != null) {
+    const alerta = x.pctGasto != null && x.pctGasto > x.prog + 10;
+    barra += `<div style="margin-top:10px;">
+      <div style="display:flex;justify-content:space-between;font-family:'Space Grotesk',monospace;font-size:11px;color:var(--text-tertiary);margin-bottom:4px;">
+        <span>Avanço da obra</span><span><b style="color:var(--text-secondary);">${x.prog}% construído</b>${x.pctGasto != null ? ' · ' + x.pctGasto + '% gasto' : ''}${alerta ? ' · ritmo de gasto alto' : ''}</span>
+      </div>
+      <div style="height:8px;background:var(--surface-alt);border-radius:5px;overflow:hidden;">
+        <div style="height:100%;width:${x.prog}%;background:${alerta ? '#b45309' : '#1d4e89'};border-radius:5px;"></div>
+      </div>
+    </div>`;
+  }
 
   return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px 18px;margin-bottom:12px;">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
@@ -154,6 +181,7 @@ function _rxCardObra(x) {
 function renderRaiox(container) {
   const cont = container || document.getElementById('view-raiox');
   if (!cont) return;
+  if (!RaioxModule._cronoLoaded) { _rxLoadCrono().then(() => renderRaiox()); }
 
   const linhas = _rxTodas().map(_rxCalc).filter(x => x.qtd > 0 || x.contrato > 0 || x.receb > 0);
 
@@ -163,6 +191,8 @@ function renderRaiox(container) {
   }
 
   const f = RaioxModule.filtro;
+  const linhasKpi = (f === 'todas') ? linhas : linhas.filter(x => x.status === f);
+  const escopo = f === 'andamento' ? 'obras em andamento' : (f === 'concluida' ? 'obras concluídas' : 'todas as obras');
   const grupos = [
     ['andamento', 'Em andamento', 'construction'],
     ['concluida', 'Concluídas', 'task_alt'],
@@ -188,7 +218,8 @@ function renderRaiox(container) {
       </div>
       <button onclick="rxEmitirRelatorio()" style="display:flex;align-items:center;gap:7px;background:var(--primary);color:#fff;border:none;border-radius:10px;padding:10px 16px;font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap;"><span class="material-symbols-outlined" style="font-size:18px;">description</span> Emitir relatório</button>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px;">${_rxKpisHtml(linhas)}</div>
+    <div style="font-size:11px;color:var(--text-tertiary);font-family:'Space Grotesk',monospace;margin-bottom:8px;">Números de: <b style="color:var(--text-secondary);">${escopo}</b> — use os filtros abaixo pra mudar</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px;">${_rxKpisHtml(linhasKpi)}</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px;">${_rxFiltrosHtml(f)}</div>
     ${corpo}`;
 }
@@ -281,7 +312,8 @@ function _rxDocObra(x) {
       <div class="m"><div class="l">Recebido</div><div class="v pos">${_rxFmt(x.receb)}</div></div>
       <div class="m"><div class="l">Custo (saiu)</div><div class="v acc">${_rxFmt(x.custo)}</div></div>
       <div class="m"><div class="l">Lucro previsto</div><div class="v ${x.lucro >= 0 ? 'pos' : 'neg'}">${_rxFmt(x.lucro)}</div></div>
-      <div class="m"><div class="l">Falta receber</div><div class="v az">${arTxt}</div></div>`;
+      <div class="m"><div class="l">Falta receber</div><div class="v az">${arTxt}</div></div>
+      ${x.prog != null ? `<div class="m"><div class="l">Avanço da obra</div><div class="v">${x.prog}%${x.pctGasto != null ? ' · ' + x.pctGasto + '% gasto' : ''}</div></div>` : ''}`;
   }
 
   const tabEtapas = etapas.length ? `<div class="sub-sec"><h3>Custo por etapa</h3><table><tbody>${etapas.map(([n, v]) => `<tr><td>${_rxEsc(n)}</td><td class="n">${_rxFmt(v)}</td></tr>`).join('')}</tbody></table></div>` : '';
