@@ -250,8 +250,8 @@ const CronogramaModule = {
       const filtroWrap = document.getElementById('cron-filtro-wrap');
       if (filtroWrap && obrasLista.length > 0) {
         filtroWrap.innerHTML = '<select id="cron-filtro-obra" onchange="CronogramaModule._filtrarObra()" style="width:100%;padding:10px 14px;background:var(--bg2);border:1px solid var(--borda);border-radius:10px;color:var(--texto);font-size:13px;outline:none;font-family:inherit;">'
-          + '<option value="">Todas as obras</option>'
-          + obrasLista.map(o => '<option value="' + o.id + '">' + esc(o.nome) + '</option>').join('')
+          + '<option value=""' + (this.obraFiltro ? '' : ' selected') + '>Todas as obras</option>'
+          + obrasLista.map(o => '<option value="' + o.id + '"' + (o.id === this.obraFiltro ? ' selected' : '') + '>' + esc(o.nome) + '</option>').join('')
           + '</select>';
       }
 
@@ -314,8 +314,10 @@ const CronogramaModule = {
       const allFilhas = this.tarefas.filter(t => t.tipo === 'tarefa' && t.parent_id);
       const progGeral = allFilhas.length > 0 ? Math.round(allFilhas.reduce((a,t) => a + this._calcProgresso(t), 0) / allFilhas.length) : 0;
       const corPG = progGeral >= 100 ? '#2D6A4F' : progGeral >= 50 ? '#B7791F' : progGeral > 0 ? '#E85D04' : '#dc2626';
+      const _obraHdrCat = this.obraFiltro ? ((typeof obras !== 'undefined' ? obras : []).find(o => o.id === this.obraFiltro)?.nome || 'Obra') : 'Todas as obras';
       lista.innerHTML = '<div style="background:var(--bg2);border:1px solid var(--borda);border-radius:10px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:12px;">'
         + '<div style="flex:1;">'
+          + '<div style="font-size:15px;font-weight:800;color:var(--texto);font-family:\'Plus Jakarta Sans\',sans-serif;margin-bottom:3px;">' + esc(_obraHdrCat) + '</div>'
           + '<div style="font-size:10px;color:var(--texto3);margin-bottom:4px;letter-spacing:1px;font-weight:700;">' + allFilhas.length + ' ETAPAS · ' + categorias.length + ' CATEGORIAS</div>'
           + '<div style="height:6px;background:var(--borda);border-radius:3px;">'
             + '<div style="height:6px;background:' + corPG + ';border-radius:3px;width:' + progGeral + '%;transition:width 0.3s;"></div>'
@@ -436,8 +438,9 @@ const CronogramaModule = {
       return '<div style="display:flex;align-items:center;gap:4px;font-size:11px;color:' + cor.label + ';"><div style="width:10px;height:10px;border-radius:3px;background:' + cor.bar + ';"></div>' + esc(nome) + '</div>';
     }).join('');
 
+    const _obraNomeHdr = this.obraFiltro ? ((typeof obras !== 'undefined' ? obras : []).find(o => o.id === this.obraFiltro)?.nome || 'Obra') : 'Todas as obras';
     lista.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding-top:8px;">'
-      + '<div style="font-size:10px;color:var(--texto3);letter-spacing:2px;font-weight:700;font-family:\'Space Grotesk\',sans-serif;">ETAPAS (' + this.tarefas.length + ')</div>'
+      + '<div><div style="font-size:15px;font-weight:800;color:var(--texto);font-family:\'Plus Jakarta Sans\',sans-serif;">' + esc(_obraNomeHdr) + '</div><div style="font-size:10px;color:var(--texto3);letter-spacing:2px;font-weight:700;font-family:\'Space Grotesk\',sans-serif;">' + this.tarefas.length + ' ETAPAS</div></div>'
       + (totalGeral > 0 ? '<div style="display:flex;align-items:center;gap:6px;">'
         + '<div style="width:80px;background:var(--bg3);border-radius:4px;height:6px;overflow:hidden;">'
           + '<div style="width:' + progGeral + '%;height:100%;background:var(--primary);border-radius:4px;"></div>'

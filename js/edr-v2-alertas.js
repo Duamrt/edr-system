@@ -109,7 +109,7 @@ const AlertasModule = {
     }
 
     const items = alertas.map(a => `
-      <div onclick="AlertasModule._clickAlerta('${a.view || ''}')"
+      <div onclick="AlertasModule._clickAlerta('${a.view || ''}', '${a.obraId || ''}')"
            style="padding:12px 16px;border-radius:10px;background:${bgCor[a.tipo] || bgCor.info};cursor:${a.view ? 'pointer' : 'default'};display:flex;gap:12px;align-items:flex-start;">
         <span class="material-symbols-outlined" style="font-size:20px;color:${iconeCor[a.tipo]};flex-shrink:0;margin-top:1px;">${a.icone}</span>
         <div style="flex:1;min-width:0;">
@@ -130,7 +130,8 @@ const AlertasModule = {
       <div style="padding:10px;display:flex;flex-direction:column;gap:6px;max-height:380px;overflow-y:auto;">${items}</div>`;
   },
 
-  _clickAlerta(view) {
+  _clickAlerta(view, obraId) {
+    if (obraId && view === 'cronograma' && typeof CronogramaModule !== 'undefined') CronogramaModule.obraFiltro = obraId;
     if (view && typeof setView === 'function') setView(view);
     this._fecharPanel();
   },
@@ -279,13 +280,15 @@ async function _alertCronogramaAtrasado(alertas, hoje) {
     // Agrupar por obra
     const obraMap = {};
     (Array.isArray(obras) ? obras : []).forEach(o => { obraMap[o.id] = o.nome; });
-    const obrasAtrasadas = [...new Set(r.map(t => t.obra_id))].length;
+    const obrasIds = [...new Set(r.map(t => t.obra_id))];
+    const detalhe = r.slice(0, 2).map(t => `${obraMap[t.obra_id] || 'Obra'}: ${t.nome}`).join(' · ');
     alertas.push({
       tipo: 'danger',
       icone: 'event_busy',
       titulo: `${r.length} etapa${r.length > 1 ? 's' : ''} do cronograma atrasada${r.length > 1 ? 's' : ''}`,
-      msg: `Em ${obrasAtrasadas} obra${obrasAtrasadas > 1 ? 's' : ''}: ${r.slice(0, 2).map(t => t.nome).join(', ')}${r.length > 2 ? ` e mais ${r.length - 2}` : ''}`,
-      view: 'cronograma'
+      msg: `${detalhe}${r.length > 2 ? ` · e mais ${r.length - 2}` : ''}`,
+      view: 'cronograma',
+      obraId: obrasIds.length === 1 ? obrasIds[0] : ''
     });
   } catch(e) { console.warn('[ALERTAS] _alertCronogramaAtrasado:', e); }
 }
