@@ -4,7 +4,7 @@
 //          adicionais.js, auth.js, menu.js, dashboard.js
 // ══════════════════════════════════════════════════════════════════
 
-// ── ETAPAS: 36 centros de custo (fonte unica do sistema) ────────
+// ── ETAPAS: 37 centros de custo (fonte unica do sistema) ────────
 // cor: cor padrao pro design system V2
 // aliases: keys legadas/antigas que resolvem pra essa etapa
 const ETAPAS = [
@@ -27,6 +27,7 @@ const ETAPAS = [
   { key:'17_fund',       lb:'Fundacao',                   cor:'#455a64', aliases:['fundacao','05_fund'] },
   { key:'18_generico',   lb:'Generico',                   cor:'#7f8c8d', aliases:['generico'] },
   { key:'19_gesso',      lb:'Gesso',                      cor:'#ecf0f1', aliases:['gesso','13b_gesso'] },
+  { key:'37_glp',        lb:'GLP / Gas',                  cor:'#ff6f00', aliases:['glp','gas','gas glp'] },
   { key:'20_granito',    lb:'Granito / Pedra',            cor:'#95a5a6', aliases:['granito','13d_granito'] },
   { key:'21_hidro',      lb:'Hidraulica',                 cor:'#2980b9', aliases:['hidraulica','10_hidro'] },
   { key:'22_imobilizado',lb:'Imobilizado',                cor:'#64748b', aliases:['imobilizado'] },

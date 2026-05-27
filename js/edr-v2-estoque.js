@@ -2307,6 +2307,8 @@ async function salvarMaterial() {
   const unidade = document.getElementById('mat-unidade').value;
   const categoria = document.getElementById('mat-categoria').value;
   if (!nome) { showToast('Informe o nome do material.'); return; }
+  // Centro de custo obrigatorio — impede material novo nascer "Nao classificado" e acumular
+  if (!categoria) { showToast('Selecione o centro de custo do material.'); document.getElementById('mat-categoria')?.focus(); return; }
   const btn = document.getElementById('btn-salvar-mat');
   const cats = EstoqueModule.catalogoMateriais.length ? EstoqueModule.catalogoMateriais : (typeof catalogoMateriais !== 'undefined' ? catalogoMateriais : []);
 
