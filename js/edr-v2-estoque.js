@@ -1702,6 +1702,102 @@ function importarPrecosEstoque() {
   input.click();
 }
 
+// ══════════════════════════════════════════════════════════════════
+// IMPORTAR CONTAGEM / INVENTÁRIO (reimport da planilha com col I preenchida)
+// Aplica a "Contagem Real" como ajuste tipo 'contagem' → o saldo passa a valer
+// o que foi contado (zera negativos/órfãos de estoque anterior ao sistema).
+// ══════════════════════════════════════════════════════════════════
+
+// Calcula o ajuste de contagem de UM item (puro, sem persistir — testável).
+// Retorna o payload do ajuste (tipo 'contagem') ou null se a contagem já bate com o saldo.
+function _calcAjusteContagemItem(codigo, nome, unidade, contagem, cons) {
+  const m = (cons || []).find(i => (codigo && i.codigo === codigo) || (nome && norm(i.desc) === norm(nome)));
+  const saldoAtual = m ? Number(m.saldo) || 0 : 0;
+  const diff = contagem - saldoAtual;
+  if (diff === 0) return null;
+  return {
+    item_desc: (((m && m.desc) || nome || codigo) || '').toUpperCase(),
+    unidade: (m && m.unidade) || unidade || 'UN',
+    qtd: diff,
+    tipo: 'contagem',
+    motivo: `sistema ${saldoAtual}, real ${contagem}, dif ${diff > 0 ? '+' : ''}${diff} · INVENTARIO PLANILHA`,
+  };
+}
+
+function importarContagemEstoque() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.xlsx';
+  input.onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    try {
+      if (typeof ExcelJS === 'undefined') {
+        showToast('Carregando leitor de planilha...', 'info');
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js';
+          script.onload = resolve; script.onerror = reject;
+          document.head.appendChild(script);
+        });
+      }
+      const buffer = await file.arrayBuffer();
+      const wb = new ExcelJS.Workbook();
+      await wb.xlsx.load(buffer);
+      const ws = wb.worksheets[0];
+
+      // Garante o consolidado pra saber o saldo atual de cada material
+      if (!EstoqueModule._consolidado || !EstoqueModule._consolidado.length) consolidarEstoque();
+      const cons = EstoqueModule._consolidado || [];
+
+      // Linha 5 = cabeçalho. Col B=codigo, C=material, D=unidade, I(9)=contagem real
+      const ajustes = [];      // payloads de ajuste (tipo 'contagem')
+      const descartadas = [];
+      ws.eachRow((row, rowNum) => {
+        if (rowNum <= 5) return;
+        const codigo = (row.getCell(2).value || '').toString().trim();
+        const nome   = (row.getCell(3).value || '').toString().trim();
+        const unidade = (row.getCell(4).value || 'UN').toString().trim().toUpperCase();
+        const contagemRaw = row.getCell(9).value; // coluna I — Contagem Real
+        // célula vazia = não contou essa linha → ignora silenciosamente
+        if (contagemRaw === null || contagemRaw === undefined || contagemRaw === '') return;
+        if (!(codigo || nome)) { descartadas.push({ linha: rowNum, motivo: 'sem código nem nome' }); return; }
+        const contagem = parseNumBR(contagemRaw);
+        if (!(contagem >= 0)) { descartadas.push({ linha: rowNum, motivo: `contagem inválida (${contagemRaw})` }); return; }
+        const aj = _calcAjusteContagemItem(codigo, nome, unidade, contagem, cons);
+        if (aj) ajustes.push(aj); // null = contagem já bate com o saldo, nada a ajustar
+      });
+
+      if (descartadas.length) {
+        const exemplos = descartadas.slice(0, 5).map(d => `linha ${d.linha}: ${d.motivo}`).join('\n');
+        const extra = descartadas.length > 5 ? `\n...e mais ${descartadas.length - 5}` : '';
+        showToast(`⚠ ${descartadas.length} linha(s) ignorada(s):\n${exemplos}${extra}`, 'info');
+      }
+      if (!ajustes.length) {
+        return showToast('Nenhuma contagem nova na coluna "Contagem Real" (col I).', 'info');
+      }
+
+      const ok = await confirmar(`Aplicar inventário de ${ajustes.length} item(ns)?\n\nO saldo de cada um passa a valer exatamente o que você contou na planilha. Isso acerta a régua do estoque (zera os negativos de material anterior ao sistema).`);
+      if (!ok) return;
+
+      showToast(`Aplicando inventário de ${ajustes.length} itens...`, 'info');
+      let okc = 0, erros = 0;
+      for (const payload of ajustes) {
+        const novo = await sbPost('ajustes_estoque', payload);
+        if (novo) { if (typeof ajustesEstoque !== 'undefined') ajustesEstoque.unshift(novo); okc++; } else erros++;
+      }
+
+      showToast(`Inventário aplicado: ${okc} item(ns)${erros ? ` (${erros} falharam)` : ''}`, erros ? 'info' : 'success');
+      if (typeof loadAjustesEstoque === 'function') await loadAjustesEstoque();
+      renderEstoque();
+    } catch (err) {
+      console.error('Erro ao importar contagem:', err);
+      showToast('Erro ao ler planilha de inventário', 'error');
+    }
+  };
+  input.click();
+}
+
 
 // ══════════════════════════════════════════════════════════════════
 // FILTROS E BUSCAS (conecta aos elementos do preview)
