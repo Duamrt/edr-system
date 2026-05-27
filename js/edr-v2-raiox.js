@@ -54,13 +54,14 @@ function _rxCalc(o) {
   const extrasReceber = Math.max(0, extras - Number(adic.totalRecebido || 0));
   const receita = contrato + extras;
   const lucro = receita - custo;
+  const caixa = receb - custo;
   const margem = receita > 0 ? (lucro / receita * 100) : 0;
   const aReceberContrato = contrato > 0 ? Math.max(0, contrato - receb) : 0;
   const aReceber = aReceberContrato + extrasReceber;
   const pctReceb = contrato > 0 ? Math.min(100, Math.round(receb / contrato * 100)) : null;
   const prog = _rxProgObra(o.id);
   const pctGasto = contrato > 0 ? Math.round(custo / contrato * 100) : null;
-  return { o, status: _rxStatus(o), contrato, extras, extrasReceber, receita, custo, material, receb, lucro, margem, aReceber, aReceberContrato, pctReceb, prog, pctGasto, qtd: ls.length, adicQtd: Number(adic.qtd || 0) };
+  return { o, status: _rxStatus(o), contrato, extras, extrasReceber, receita, custo, material, receb, lucro, caixa, margem, aReceber, aReceberContrato, pctReceb, prog, pctGasto, qtd: ls.length, adicQtd: Number(adic.qtd || 0) };
 }
 
 function _rxTodas() {
@@ -77,6 +78,7 @@ function _rxKpisHtml(linhas) {
   const recebido = reais.reduce((s, x) => s + x.receb, 0);
   const custo = reais.reduce((s, x) => s + x.custo, 0);
   const lucro = (contratos + extras) - custo;
+  const caixa = recebido - custo;
   const aReceber = reais.reduce((s, x) => s + x.aReceber, 0);
   const estrut = linhas.filter(x => x.status === 'estrutura').reduce((s, x) => s + x.custo, 0);
 
@@ -85,7 +87,8 @@ function _rxKpisHtml(linhas) {
     { lab: 'Serviços extras', val: _rxK(extras), sub: 'entrou a mais (adicionais)', cor: '#2563eb', destaque: true },
     { lab: 'Recebido', val: _rxK(recebido), sub: 'entrou no caixa', cor: '#16a34a' },
     { lab: 'Custo realizado', val: _rxK(custo), sub: 'saiu' + (estrut > 0 ? ' · +' + _rxK(estrut) + ' estrutura' : ''), cor: '#b45309' },
-    { lab: 'Lucro previsto', val: _rxK(lucro), sub: '(contrato + extras) − custo', cor: lucro >= 0 ? '#16a34a' : '#dc2626' },
+    { lab: 'Caixa (hoje)', val: _rxK(caixa), sub: 'entrou − saiu', cor: caixa >= 0 ? '#16a34a' : '#dc2626' },
+    { lab: 'Lucro previsto', val: _rxK(lucro), sub: '(contrato + extras) − custo · quando fechar', cor: lucro >= 0 ? '#16a34a' : '#dc2626' },
     { lab: 'Falta receber', val: _rxK(aReceber), sub: 'contrato + extras', cor: 'var(--text-primary)' },
   ];
   return cards.map(c => `
@@ -137,6 +140,7 @@ function _rxCardObra(x) {
       _rxMetric('Custo (saiu)', _rxFmt(x.custo), '#b45309') +
       _rxMetric('Lucro previsto', _rxFmt(x.lucro), x.lucro >= 0 ? '#16a34a' : '#dc2626', x.receita > 0 ? ('margem ' + x.margem.toFixed(0) + '%') : '') +
       _rxMetric('Recebido', _rxFmt(x.receb), '#16a34a') +
+      _rxMetric('Caixa hoje', _rxFmt(x.caixa), x.caixa >= 0 ? '#16a34a' : '#dc2626', 'entrou − saiu') +
       _rxMetric('Falta receber', x.aReceber < 10 ? 'quitado' : _rxFmt(x.aReceber), '#2563eb', arSub);
   }
 
@@ -311,6 +315,7 @@ function _rxDocObra(x) {
       <div class="m"><div class="l">Serviços extras</div><div class="v az">${x.extras > 0 ? _rxFmt(x.extras) : '—'}</div></div>
       <div class="m"><div class="l">Recebido</div><div class="v pos">${_rxFmt(x.receb)}</div></div>
       <div class="m"><div class="l">Custo (saiu)</div><div class="v acc">${_rxFmt(x.custo)}</div></div>
+      <div class="m"><div class="l">Caixa hoje</div><div class="v ${x.caixa >= 0 ? 'pos' : 'neg'}">${_rxFmt(x.caixa)}</div></div>
       <div class="m"><div class="l">Lucro previsto</div><div class="v ${x.lucro >= 0 ? 'pos' : 'neg'}">${_rxFmt(x.lucro)}</div></div>
       <div class="m"><div class="l">Falta receber</div><div class="v az">${arTxt}</div></div>
       ${x.prog != null ? `<div class="m"><div class="l">Avanço da obra</div><div class="v">${x.prog}%${x.pctGasto != null ? ' · ' + x.pctGasto + '% gasto' : ''}</div></div>` : ''}`;
@@ -337,13 +342,15 @@ function rxEmitirRelatorio() {
   const recebido = reais.reduce((s, x) => s + x.receb, 0);
   const custo = reais.reduce((s, x) => s + x.custo, 0);
   const lucro = (contratos + extras) - custo;
+  const caixa = recebido - custo;
   const aReceber = reais.reduce((s, x) => s + x.aReceber, 0);
   const kpis = [
     ['Contratos', _rxK(contratos), reais.length + ' obras'],
     ['Serviços extras', _rxK(extras), 'entrou a mais', 'az'],
     ['Recebido', _rxK(recebido), 'entrou', 'pos'],
     ['Custo', _rxK(custo), 'saiu', 'acc'],
-    ['Lucro previsto', _rxK(lucro), '(contrato+extras)−custo', lucro >= 0 ? 'pos' : 'neg'],
+    ['Caixa (hoje)', _rxK(caixa), 'entrou − saiu', caixa >= 0 ? 'pos' : 'neg'],
+    ['Lucro previsto', _rxK(lucro), '(contrato+extras)−custo · quando fechar', lucro >= 0 ? 'pos' : 'neg'],
     ['Falta receber', _rxK(aReceber), 'contrato + extras', 'az'],
   ];
   const kpiHtml = kpis.map(k => `<div class="kpi"><div class="l">${k[0]}</div><div class="v ${k[3] || ''}">${k[1]}</div><div class="s">${k[2]}</div></div>`).join('');
