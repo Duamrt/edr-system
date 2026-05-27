@@ -1916,6 +1916,7 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
       <div style="display:flex;align-items:center;justify-content:space-between;">
         <div id="catalogo-stats" style="font-size:11px;color:var(--text-tertiary);"></div>
         <div style="display:flex;gap:6px;" id="catalogo-admin-btns">
+          <button class="btn-verde-outline admin-only" style="font-size:11px;padding:6px 12px;" onclick="abrirCentrosCusto()"><span class="material-symbols-outlined icon-sm icon-inline">category</span> Centros de Custo</button>
           <button class="btn-verde-outline admin-only" style="font-size:11px;padding:6px 12px;" onclick="recalcularCategorias()"><span class="material-symbols-outlined icon-sm icon-inline">refresh</span> Recalcular</button>
           <button class="btn-verde-outline admin-only" style="font-size:11px;padding:6px 12px;border-color:rgba(251,191,36,0.4);color:#fbbf24;" onclick="abrirReconciliacao()"><span class="material-symbols-outlined icon-sm icon-inline">link</span> Reconciliar Órfãos</button>
         </div>
@@ -2332,7 +2333,7 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
 <div class="toast-container" id="toast-container"></div>
 
 <!-- ═══════ JAVASCRIPT ═══════ -->
-<script src="js/posthog.js?v=05271153"></script>
+<script src="js/posthog.js?v=05271257"></script>
 <script>
 // ══════════════════════════════════════════
 // EDR SYSTEM V2 — NAVEGACAO + SHELL
@@ -2880,43 +2881,43 @@ function updateShellUser(nome, perfil) {
 
 <!-- ═══════ MODULOS V2 (ordem de dependência) ═══════ -->
 <!-- 0. Infraestrutura: sbGet/sbPost/sbPatch/sbDelete, confirmar(), showModal, usuarioAtual -->
-<script src="js/edr-v2-infra.js?v=05271153"></script>
+<script src="js/edr-v2-infra.js?v=05271257"></script>
 <!-- 1. Utilitários globais (valorPorExtenso, fmtN) -->
-<script src="js/edr-v2-utils-extras.js?v=05271153"></script>
+<script src="js/edr-v2-utils-extras.js?v=05271257"></script>
 <!-- 2. Obras PRIMEIRO (ETAPAS, resolveEtapaKey, etapaCor, etapaLabel — vários módulos dependem) -->
-<script src="js/edr-v2-obras.js?v=05271153"></script>
+<script src="js/edr-v2-obras.js?v=05271257"></script>
 <!-- 3. PDF engine (pdfMake CDN + PdfModule) -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js?v=05271153"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js?v=05271153"></script>
-<script src="js/edr-v2-pdf.js?v=05271153"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js?v=05271257"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js?v=05271257"></script>
+<script src="js/edr-v2-pdf.js?v=05271257"></script>
 <!-- 4. Módulos core de negócio -->
 <script src="js/edr-v2-notas.js?v=20260407-EDR-DEL"></script>
 <script src="js/edr-v2-importar.js?v=20260407-XML-IPI"></script>
-<script src="js/edr-v2-estoque.js?v=05271153"></script>
-<script src="js/edr-v2-custos.js?v=05271153"></script>
+<script src="js/edr-v2-estoque.js?v=05271257"></script>
+<script src="js/edr-v2-custos.js?v=05271257"></script>
 <!-- 5. Equipe e operacional -->
-<script src="js/edr-v2-diarias.js?v=05271153"></script>
-<script src="js/edr-v2-diario.js?v=05271153"></script>
+<script src="js/edr-v2-diarias.js?v=05271257"></script>
+<script src="js/edr-v2-diario.js?v=05271257"></script>
 <!-- 6. Relatórios e dashboard (dependem de obras.js pra etapaCor) -->
-<script src="js/edr-v2-relatorio.js?v=05271153"></script>
-<script src="js/edr-v2-dashboard.js?v=05271153"></script>
-<script src="js/edr-v2-raiox.js?v=05271153"></script>
+<script src="js/edr-v2-relatorio.js?v=05271257"></script>
+<script src="js/edr-v2-dashboard.js?v=05271257"></script>
+<script src="js/edr-v2-raiox.js?v=05271257"></script>
 <!-- 7. Módulos complementares -->
-<script src="js/edr-v2-leads.js?v=05271153"></script>
-<script src="js/edr-v2-garantias.js?v=05271153"></script>
-<script src="js/edr-v2-adicionais.js?v=05271153"></script>
+<script src="js/edr-v2-leads.js?v=05271257"></script>
+<script src="js/edr-v2-garantias.js?v=05271257"></script>
+<script src="js/edr-v2-adicionais.js?v=05271257"></script>
 <!-- Syncfusion EJ2 Gantt (substituiu Frappe Gantt em 2026-05-11) -->
-<link rel="stylesheet" href="https://cdn.syncfusion.com/ej2/33.2.3/tailwind3-dark.css?v=05271153"/>
-<script src="https://cdn.syncfusion.com/ej2/33.2.3/dist/ej2.min.js?v=05271153"></script>
-<script src="js/edr-v2-cronograma.js?v=05271153"></script>
-<script src="js/edr-v2-orcamento.js?v=05271153"></script>
+<link rel="stylesheet" href="https://cdn.syncfusion.com/ej2/33.2.3/tailwind3-dark.css?v=05271257"/>
+<script src="https://cdn.syncfusion.com/ej2/33.2.3/dist/ej2.min.js?v=05271257"></script>
+<script src="js/edr-v2-cronograma.js?v=05271257"></script>
+<script src="js/edr-v2-orcamento.js?v=05271257"></script>
 <!-- 8. Documentação e medições -->
-<script src="js/edr-v2-termo-manual.js?v=05271153"></script>
-<script src="js/edr-v2-pci.js?v=05271153"></script>
+<script src="js/edr-v2-termo-manual.js?v=05271257"></script>
+<script src="js/edr-v2-pci.js?v=05271257"></script>
 <!-- 9. Auth (login, sessão, refresh — ÚLTIMO) -->
-<script src="js/edr-v2-alertas.js?v=05271153"></script>
-<script src="js/edr-v2-auth.js?v=05271153"></script>
-<script src="js/edr-v2-financeiro.js?v=05271153"></script>
+<script src="js/edr-v2-alertas.js?v=05271257"></script>
+<script src="js/edr-v2-auth.js?v=05271257"></script>
+<script src="js/edr-v2-financeiro.js?v=05271257"></script>
 
 <!-- ═══════════════════════════════════════════════════════════════ -->
 <!-- MODAIS (Fase 0 — containers para módulos que precisam)        -->
@@ -3208,6 +3209,30 @@ function updateShellUser(nome, perfil) {
       <button class="btn-secondary" onclick="fecharModal('material')">Cancelar</button>
       <button class="btn-save" style="padding:10px 24px;" id="btn-salvar-mat" onclick="salvarMaterial()"><span class="material-symbols-outlined">save</span> SALVAR</button>
     </div>
+  </div>
+</div>
+
+<!-- MODAL GERENCIAR CENTROS DE CUSTO -->
+<div id="modal-centros-custo" class="modal-overlay" onclick="closeModalOutside(event,'centros-custo')">
+  <div class="modal-box" style="max-width:520px;width:92vw;max-height:88vh;overflow-y:auto;">
+    <div class="modal-title-v2"><h3><span class="material-symbols-outlined">category</span> CENTROS DE CUSTO</h3><button class="modal-close" onclick="fecharModal('centros-custo')"><span class="material-symbols-outlined">close</span></button></div>
+    <div style="font-size:12px;color:var(--text-tertiary);margin-bottom:14px;">Crie seus próprios centros de custo. Eles passam a aparecer em materiais, lançamentos e relatórios.</div>
+    <div id="cc-aviso" class="alert-box-v2 alert-warning" style="display:none;margin-bottom:10px;"></div>
+    <div class="field"><label>NOME *</label>
+      <input type="text" id="cc-nome" placeholder="EX: GLP / GAS" autocomplete="off" oninput="this.value=this.value.toUpperCase()">
+    </div>
+    <div class="field-row" style="align-items:flex-end;">
+      <div class="field" style="flex:1"><label>COR</label>
+        <input type="color" id="cc-cor" value="#546e7a" style="width:100%;height:42px;padding:2px;cursor:pointer;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg);">
+      </div>
+      <div class="field" style="flex:2">
+        <button class="btn-save" style="width:100%;padding:11px;" id="cc-btn-salvar" onclick="salvarCentroCusto()"><span class="material-symbols-outlined">add</span> <span id="cc-btn-label">ADICIONAR</span></button>
+      </div>
+    </div>
+    <div id="cc-edit-cancel" style="display:none;margin-bottom:8px;"><button class="btn-secondary" style="font-size:11px;padding:5px 10px;" onclick="ccCancelarEdicao()">Cancelar edição</button></div>
+    <div style="border-top:1px solid var(--border);margin:14px 0 10px;"></div>
+    <div style="font-size:11px;color:var(--text-tertiary);margin-bottom:8px;font-weight:700;letter-spacing:0.5px;">SEUS CENTROS DE CUSTO</div>
+    <div id="cc-lista"></div>
   </div>
 </div>
 

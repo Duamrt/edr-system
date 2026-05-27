@@ -24,7 +24,7 @@ function _sbHeaders(preferOverride) {
 // ── MULTI-TENANT ─────────────────────────────────────────────
 const _TABELAS_SEM_TENANT = ['companies', 'company_users', 'usuarios', 'tracker_sync'];
 // Tabelas que pertencem a um tenant — leituras filtradas por company_id
-const _TABELAS_TENANT = new Set(['lancamentos','notas_fiscais','distribuicoes','entradas_diretas','repasses_cef','obra_adicionais','adicional_pagamentos','diarias','obras','projecoes_caixa','ajustes_estoque','garantia_chamados','diarias_funcionarios','diarias_quinzenas','diarias_extras','leads','lead_historico','pci_template_padrao','pci_medicao','pci_itens','pci_historico']);
+const _TABELAS_TENANT = new Set(['lancamentos','notas_fiscais','distribuicoes','entradas_diretas','repasses_cef','obra_adicionais','adicional_pagamentos','diarias','obras','projecoes_caixa','ajustes_estoque','garantia_chamados','diarias_funcionarios','diarias_quinzenas','diarias_extras','leads','lead_historico','pci_template_padrao','pci_medicao','pci_itens','pci_historico','centros_custo']);
 
 function _addCompanyToBody(tabela, body) {
   if (_TABELAS_SEM_TENANT.includes(tabela) || !_companyId) return body;
@@ -301,6 +301,10 @@ async function loadLancamentos() { try { lancamentos = await sbGetAll('lancament
 async function loadDistribuicoes() { try { const r = await sbGetAll('distribuicoes', '?order=criado_em.desc,id'); distribuicoes = Array.isArray(r) ? r : []; } catch(e) { distribuicoes = []; } }
 async function loadEntradasDiretas() { try { const r = await sbGet('entradas_diretas', '?order=criado_em.desc'); entradasDiretas = Array.isArray(r) ? r : []; } catch(e) { entradasDiretas = []; } }
 async function loadMateriais() { try { const r = await sbGet('materiais', '?order=codigo&limit=1000'); catalogoMateriais = Array.isArray(r) ? r : []; } catch(e) { catalogoMateriais = []; } }
+// Centros de custo customizados (criados pelo usuario) — mesclados na lista ETAPAS.
+// Falha silenciosa: ETAPAS cai na base do codigo (rede de seguranca, nunca fica sem).
+let centrosCustoCustom = [];
+async function loadCentrosCusto() { try { const r = await sbGet('centros_custo', '?order=label'); centrosCustoCustom = Array.isArray(r) ? r : []; if (typeof aplicarCentrosCustoExtras === 'function') aplicarCentrosCustoExtras(centrosCustoCustom); } catch(e) { centrosCustoCustom = []; } }
 async function loadRepassesCef() { try { repassesCef = await sbGet('repasses_cef', '?order=data_credito.desc'); if (!Array.isArray(repassesCef)) repassesCef = []; } catch(e) { repassesCef = []; } }
 async function loadAjustesEstoque() { try { const r = await sbGet('ajustes_estoque', '?order=criado_em.desc'); ajustesEstoque = Array.isArray(r) ? r : []; } catch(e) { ajustesEstoque = []; } }
 async function loadAdicionais() {
@@ -473,6 +477,7 @@ async function iniciarApp() {
     loadDistribuicoes().catch(e => console.warn('loadDistribuicoes:', e)),
     loadEntradasDiretas().catch(e => console.warn('loadEntradasDiretas:', e)),
     loadMateriais().catch(e => console.warn('loadMateriais:', e)),
+    loadCentrosCusto().catch(e => console.warn('loadCentrosCusto:', e)),
     loadRepassesCef().catch(e => console.warn('loadRepassesCef:', e)),
     loadAjustesEstoque().catch(e => console.warn('loadAjustesEstoque:', e)),
     loadAdicionais().catch(e => console.warn('loadAdicionais:', e)),

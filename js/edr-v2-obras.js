@@ -4,10 +4,11 @@
 //          adicionais.js, auth.js, menu.js, dashboard.js
 // ══════════════════════════════════════════════════════════════════
 
-// ── ETAPAS: 37 centros de custo (fonte unica do sistema) ────────
+// ── ETAPAS: centros de custo. _ETAPAS_BASE = base fixa no codigo (rede de seguranca);
+// os customizados (criados pelo usuario) vem do banco e sao mesclados em runtime.
 // cor: cor padrao pro design system V2
 // aliases: keys legadas/antigas que resolvem pra essa etapa
-const ETAPAS = [
+const _ETAPAS_BASE = [
   { key:'01_acab',       lb:'Acabamento Final',          cor:'#ff7043', aliases:['14_acab'] },
   { key:'02_aco',        lb:'Aco / Ferro',               cor:'#7f8c8d', aliases:['aco','ferro'] },
   { key:'03_alimentacao',lb:'Alimentacao',                cor:'#e67e22', aliases:['alimentacao'] },
@@ -47,9 +48,28 @@ const ETAPAS = [
   { key:'36_outros',     lb:'Nao classificado',           cor:'#546e7a', aliases:['outros','generico','00_outros'] },
 ];
 
-// Mapa reverso de aliases → key oficial (gerado uma vez)
-const _ETAPA_ALIAS_MAP = {};
-ETAPAS.forEach(e => { (e.aliases || []).forEach(a => { _ETAPA_ALIAS_MAP[a] = e.key; }); });
+// ETAPAS = base (codigo) + centros de custo customizados (banco). Mutavel em runtime.
+let ETAPAS = _ETAPAS_BASE.slice();
+let _ETAPA_ALIAS_MAP = {};
+function _rebuildEtapaAlias() {
+  _ETAPA_ALIAS_MAP = {};
+  ETAPAS.forEach(e => { (e.aliases || []).forEach(a => { _ETAPA_ALIAS_MAP[a] = e.key; }); });
+}
+_rebuildEtapaAlias();
+
+// Mescla os centros de custo criados pelo usuario (vindos do banco) na lista oficial.
+// "Nao classificado" (36_outros) fica sempre por ultimo. Demais em ordem alfabetica.
+// Fallback: sem extras, ETAPAS continua = base (sistema nunca fica sem centros de custo).
+function aplicarCentrosCustoExtras(extras) {
+  const outros = _ETAPAS_BASE.find(e => e.key === '36_outros');
+  const base = _ETAPAS_BASE.filter(e => e.key !== '36_outros');
+  const exs = (Array.isArray(extras) ? extras : [])
+    .filter(c => c && c.key && c.label)
+    .map(c => ({ key: c.key, lb: c.label, cor: c.cor || '#546e7a', aliases: [] }));
+  ETAPAS = base.concat(exs).sort((a, b) => (a.lb || '').localeCompare(b.lb || '', 'pt-BR'));
+  if (outros) ETAPAS.push(outros);
+  _rebuildEtapaAlias();
+}
 
 // Resolve qualquer key legada pra key oficial
 function resolveEtapaKey(key) { return _ETAPA_ALIAS_MAP[key] || key; }

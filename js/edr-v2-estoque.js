@@ -2355,6 +2355,99 @@ async function salvarMaterial() {
 }
 
 
+// ── GESTÃO DE CENTROS DE CUSTO (criar / renomear — sem excluir) ──
+let _ccEditandoId = null;
+
+function abrirCentrosCusto() {
+  _ccResetFormCC();
+  renderCentrosCustoLista();
+  openModal('modal-centros-custo');
+  setTimeout(() => document.getElementById('cc-nome')?.focus(), 100);
+}
+
+function _ccResetFormCC() {
+  _ccEditandoId = null;
+  const n = document.getElementById('cc-nome'); if (n) n.value = '';
+  const c = document.getElementById('cc-cor'); if (c) c.value = '#546e7a';
+  const av = document.getElementById('cc-aviso'); if (av) av.style.display = 'none';
+  const lbl = document.getElementById('cc-btn-label'); if (lbl) lbl.textContent = 'ADICIONAR';
+  const cancel = document.getElementById('cc-edit-cancel'); if (cancel) cancel.style.display = 'none';
+}
+
+function ccCancelarEdicao() { _ccResetFormCC(); }
+
+function _ccAviso(msg) {
+  const av = document.getElementById('cc-aviso');
+  if (av) { av.textContent = msg; av.style.display = 'block'; }
+}
+
+function _ccNorm(s) { return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim(); }
+
+function _ccGerarKey(nome) {
+  const slug = _ccNorm(nome).replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 24) || 'novo';
+  const usadas = new Set([
+    ...((typeof ETAPAS !== 'undefined' ? ETAPAS : []).map(e => e.key)),
+    ...((typeof centrosCustoCustom !== 'undefined' ? centrosCustoCustom : []).map(c => c.key))
+  ]);
+  let base = 'cc_' + slug, k = base, i = 2;
+  while (usadas.has(k)) { k = base + '_' + i; i++; }
+  return k;
+}
+
+function renderCentrosCustoLista() {
+  const el = document.getElementById('cc-lista');
+  if (!el) return;
+  const lista = (typeof centrosCustoCustom !== 'undefined' ? centrosCustoCustom : []).slice()
+    .sort((a, b) => (a.label || '').localeCompare(b.label || '', 'pt-BR'));
+  if (!lista.length) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--text-tertiary);padding:10px 0;">Você ainda não criou nenhum. Os centros de custo padrão do sistema continuam disponíveis normalmente.</div>';
+    return;
+  }
+  el.innerHTML = lista.map(c => `
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">
+      <span style="width:14px;height:14px;border-radius:4px;flex-shrink:0;background:${esc(c.cor || '#546e7a')};"></span>
+      <span style="flex:1;font-size:13px;color:var(--text-primary);">${esc(c.label)}</span>
+      <button class="lanc-action-btn" title="Renomear / cor" onclick="editarCentroCusto('${esc(c.id)}')"><span class="material-symbols-outlined" style="font-size:16px;">edit</span></button>
+    </div>`).join('');
+}
+
+function editarCentroCusto(id) {
+  const c = (typeof centrosCustoCustom !== 'undefined' ? centrosCustoCustom : []).find(x => x.id === id);
+  if (!c) return;
+  _ccEditandoId = id;
+  document.getElementById('cc-nome').value = c.label || '';
+  document.getElementById('cc-cor').value = c.cor || '#546e7a';
+  document.getElementById('cc-btn-label').textContent = 'SALVAR';
+  document.getElementById('cc-edit-cancel').style.display = 'block';
+  document.getElementById('cc-aviso').style.display = 'none';
+}
+
+async function salvarCentroCusto() {
+  const nome = (document.getElementById('cc-nome').value || '').trim().toUpperCase();
+  const cor = document.getElementById('cc-cor').value || '#546e7a';
+  if (!nome) { _ccAviso('Informe o nome do centro de custo.'); return; }
+  const base = (typeof _ETAPAS_BASE !== 'undefined' ? _ETAPAS_BASE : []);
+  const custom = (typeof centrosCustoCustom !== 'undefined' ? centrosCustoCustom : []);
+  if (base.find(e => _ccNorm(e.lb) === _ccNorm(nome))) { _ccAviso('Já existe um centro de custo padrão com esse nome.'); return; }
+  if (custom.find(c => _ccNorm(c.label) === _ccNorm(nome) && c.id !== _ccEditandoId)) { _ccAviso('Você já criou um centro de custo com esse nome.'); return; }
+  const btn = document.getElementById('cc-btn-salvar'); btn.disabled = true;
+  try {
+    if (_ccEditandoId) {
+      await sbPatch('centros_custo', _ccEditandoId, { label: nome, cor });
+    } else {
+      await sbPost('centros_custo', { key: _ccGerarKey(nome), label: nome, cor, ordem: 500 });
+    }
+    const editava = !!_ccEditandoId;
+    if (typeof loadCentrosCusto === 'function') await loadCentrosCusto();
+    _ccResetFormCC();
+    renderCentrosCustoLista();
+    if (typeof renderCatalogo === 'function') renderCatalogo();
+    showToast(editava ? 'Centro de custo atualizado!' : `Centro de custo "${nome}" criado!`);
+  } catch (e) { _ccAviso('Erro ao salvar: ' + (e.message || e)); }
+  btn.disabled = false;
+}
+
+
 // ── BANCO / CONFIGURAÇÃO ────────────────────────────────────
 function renderBanco() {
   const obrasEl = document.getElementById('banco-obras-lista');
