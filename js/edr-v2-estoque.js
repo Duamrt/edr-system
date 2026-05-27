@@ -246,6 +246,15 @@ function consolidarEstoque(obraId) {
       : distribuicoes;
 
     for (const d of distFiltradas) {
+      // Estoque geral: NÃO descontar baixas de material que entrou DIRETO na obra
+      // (nota com destino != 'EDR'). Simetria com as entradas via NF, que só contam
+      // notas destino 'EDR'. Sem isso, material que nunca passou pelo almoxarifado
+      // ficava negativo (entrada não soma, mas saída descontava). Na visão da obra
+      // (obraId definido) a baixa continua contando normalmente.
+      if (!obraId && d.nota_id) {
+        const _notaOrigem = notas.find(n => n.id === d.nota_id);
+        if (_notaOrigem && _notaOrigem.obra && _notaOrigem.obra !== 'EDR') continue;
+      }
       const chave = getChave(d.item_desc, d.codigo_catalogo);
       const item = garantir(chave, d.item_desc, d.codigo_catalogo, d.unidade);
       const qtd = parseFloat(d.qtd) || 0;
