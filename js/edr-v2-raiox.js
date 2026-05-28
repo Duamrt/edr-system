@@ -82,14 +82,15 @@ function _rxKpisHtml(linhas) {
   const aReceber = reais.reduce((s, x) => s + x.aReceber, 0);
   const estrut = linhas.filter(x => x.status === 'estrutura').reduce((s, x) => s + x.custo, 0);
 
+  // [LOCK 2026-05-28] destaque azul (cor #2563eb + destaque:true) do card "Falta receber" é proposital — Duam pediu pra fixar. NÃO mover/remover sem pedido explícito.
   const cards = [
     { lab: 'Contratos', val: _rxK(contratos), sub: reais.length + ' obras · valor de venda', cor: 'var(--text-primary)' },
-    { lab: 'Serviços extras', val: _rxK(extras), sub: 'entrou a mais (adicionais)', cor: '#2563eb', destaque: true },
+    { lab: 'Serviços extras', val: _rxK(extras), sub: 'entrou a mais (adicionais)', cor: '#2563eb' },
     { lab: 'Recebido', val: _rxK(recebido), sub: 'entrou no caixa', cor: '#16a34a' },
     { lab: 'Custo realizado', val: _rxK(custo), sub: 'saiu' + (estrut > 0 ? ' · +' + _rxK(estrut) + ' estrutura' : ''), cor: '#b45309' },
     { lab: 'Caixa (hoje)', val: _rxK(caixa), sub: 'entrou − saiu', cor: caixa >= 0 ? '#16a34a' : '#dc2626' },
     { lab: 'Lucro previsto', val: _rxK(lucro), sub: '(contrato + extras) − custo · quando fechar', cor: lucro >= 0 ? '#16a34a' : '#dc2626' },
-    { lab: 'Falta receber', val: _rxK(aReceber), sub: 'contrato + extras', cor: 'var(--text-primary)' },
+    { lab: 'Falta receber', val: _rxK(aReceber), sub: 'contrato + extras', cor: '#2563eb', destaque: true },
   ];
   return cards.map(c => `
     <div style="background:var(--surface);border:1px solid ${c.destaque ? '#bfdbfe' : 'var(--border)'};border-radius:14px;padding:14px 16px;${c.destaque ? 'box-shadow:0 0 0 1px #bfdbfe inset;' : ''}">
