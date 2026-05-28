@@ -492,8 +492,9 @@ function filtrarLanc() {
       <div class="lanc-item-right">
         ${isAdmin ? `<span class="lanc-item-value">${fmtR(l.total)}</span>` : ''}
         ${isAdmin ? `<div class="lanc-item-actions">
-          ${semCodigo ? `<button class="lanc-action-btn" title="Vincular catalogo" onclick="event.stopPropagation();editarDescLanc('${esc(l.id)}')"><span class="material-symbols-outlined" style="font-size:16px;">edit</span></button>` : ''}
-          <button class="lanc-action-btn" title="Alterar etapa" onclick="event.stopPropagation();editarEtapaLanc('${esc(l.id)}')"><span class="material-symbols-outlined" style="font-size:16px;">folder</span></button>
+          <button class="lanc-action-btn" title="Editar lancamento" onclick="event.stopPropagation();editarLancamento('${esc(l.id)}')"><span class="material-symbols-outlined" style="font-size:16px;">edit</span></button>
+          ${semCodigo ? `<button class="lanc-action-btn" title="Vincular ao catalogo" onclick="event.stopPropagation();editarDescLanc('${esc(l.id)}')"><span class="material-symbols-outlined" style="font-size:16px;">link</span></button>` : ''}
+          <button class="lanc-action-btn" title="Centro de custo" onclick="event.stopPropagation();editarEtapaLanc('${esc(l.id)}')"><span class="material-symbols-outlined" style="font-size:16px;">folder</span></button>
           <button class="lanc-action-btn" title="Excluir" onclick="event.stopPropagation();excluirLanc('${esc(l.id)}')"><span class="material-symbols-outlined" style="font-size:16px;">delete</span></button>
         </div>` : ''}
       </div>
@@ -1004,6 +1005,63 @@ async function reativarObra(obraId) {
   } catch (e) { showToast('Nao foi possivel reativar a obra.'); }
 }
 
+// ── EDITAR LANCAMENTO (descricao, qtd, valor, data) ─────────────
+function editarLancamento(lancId) {
+  const lanc = lancamentos.find(l => l.id === lancId);
+  if (!lanc) return showToast('Lancamento nao encontrado');
+  document.getElementById('modal-editar-lanc')?.remove();
+  const inp = 'width:100%;padding:10px 12px;border-radius:var(--radius-sm);background:var(--bg);color:var(--text-primary);border:1px solid var(--border);font-size:14px;box-sizing:border-box;';
+  const lb = 'font-size:11px;font-weight:700;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;display:block;';
+  const modal = document.createElement('div');
+  modal.id = 'modal-editar-lanc';
+  modal.className = 'modal-overlay active';
+  modal.style.zIndex = '9999';
+  modal.innerHTML = `<div class="modal-box" style="max-width:440px;padding:24px;">
+    <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:16px;font-weight:700;margin-bottom:16px;">Editar lancamento</div>
+    <div style="margin-bottom:12px;"><label style="${lb}">Descricao</label><input id="el-desc" type="text" value="${esc(lanc.descricao || '')}" style="${inp}"></div>
+    <div style="display:flex;gap:10px;margin-bottom:12px;">
+      <div style="flex:1;"><label style="${lb}">Quantidade</label><input id="el-qtd" type="number" step="0.001" value="${lanc.qtd != null ? lanc.qtd : ''}" style="${inp}" oninput="_elRecalc()"></div>
+      <div style="flex:1;"><label style="${lb}">Valor unit. (R$)</label><input id="el-preco" type="number" step="0.01" value="${lanc.preco != null ? lanc.preco : ''}" style="${inp}" oninput="_elRecalc()"></div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:flex-end;">
+      <div style="flex:1;"><label style="${lb}">Data</label><input id="el-data" type="date" value="${lanc.data || ''}" style="${inp}"></div>
+      <div style="flex:1;text-align:right;"><label style="${lb}">Total</label><div id="el-total" style="font-family:'Space Grotesk',monospace;font-weight:800;font-size:18px;color:var(--primary);">${fmtR(lanc.total || 0)}</div></div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:18px;">
+      <button onclick="document.getElementById('modal-editar-lanc')?.remove()" style="padding:10px 20px;border-radius:var(--radius-sm);background:var(--bg);color:var(--text-secondary);border:1px solid var(--border);cursor:pointer;font-size:13px;">Cancelar</button>
+      <button class="btn-primary" onclick="salvarLancamentoEdit('${esc(lancId)}')" style="padding:10px 20px;">Salvar</button>
+    </div>
+  </div>`;
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  document.body.appendChild(modal);
+  setTimeout(() => document.getElementById('el-desc')?.focus(), 80);
+}
+
+function _elRecalc() {
+  const q = parseFloat(document.getElementById('el-qtd')?.value) || 0;
+  const p = parseFloat(document.getElementById('el-preco')?.value) || 0;
+  const el = document.getElementById('el-total');
+  if (el) el.textContent = fmtR(q * p);
+}
+
+async function salvarLancamentoEdit(lancId) {
+  const desc = (document.getElementById('el-desc')?.value || '').trim();
+  const qtd = parseFloat(document.getElementById('el-qtd')?.value) || 0;
+  const preco = parseFloat(document.getElementById('el-preco')?.value) || 0;
+  const data = document.getElementById('el-data')?.value || null;
+  if (!desc) return showToast('Informe a descricao.');
+  const total = qtd * preco;
+  try {
+    await sbPatch('lancamentos', `?id=eq.${lancId}`, { descricao: desc, qtd, preco, total, data });
+    const lanc = lancamentos.find(l => l.id === lancId);
+    if (lanc) Object.assign(lanc, { descricao: desc, qtd, preco, total, data });
+    document.getElementById('modal-editar-lanc')?.remove();
+    showToast('Lancamento atualizado');
+    if (typeof filtrarLanc === 'function') filtrarLanc();
+    if (typeof renderRelatorio === 'function') renderRelatorio();
+  } catch (e) { showToast('Erro ao salvar: ' + (e.message || e)); }
+}
+
 // ── EDITAR ETAPA (centro de custo) ──────────────────────────────
 async function editarEtapaLanc(lancId) {
   const lanc = lancamentos.find(l => l.id === lancId);
@@ -1017,7 +1075,7 @@ async function editarEtapaLanc(lancId) {
 
   const modal = document.createElement('div');
   modal.id = 'modal-editar-etapa';
-  modal.className = 'modal-overlay';
+  modal.className = 'modal-overlay active';
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
   modal.innerHTML = `<div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius-md);padding:24px;max-width:440px;width:100%;">
     <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:16px;font-weight:700;margin-bottom:6px;">Alterar Centro de Custo</div>
