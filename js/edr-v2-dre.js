@@ -35,10 +35,16 @@
     if (e === ETAPA_MAO) return 'mao';
     return 'material';
   }
+  // Obras de teste (QA) e almoxarifado/escritório (estoque = ativo) NÃO entram no DRE.
+  // O custo do material só conta quando é distribuído para uma obra real.
+  function _ehEstrutural(nome) {
+    const n = String(nome || '').toUpperCase();
+    return /^OBRA QA/i.test(n) || n.includes('ESCRIT') || n.includes('ALMOX');
+  }
   function _todasObras() {
     const a = (typeof obras !== 'undefined' && Array.isArray(obras)) ? obras : [];
     const b = (typeof obrasArquivadas !== 'undefined' && Array.isArray(obrasArquivadas)) ? obrasArquivadas : [];
-    return a.concat(b).filter(o => o && o.id && !/^OBRA QA/i.test(o.nome || ''));
+    return a.concat(b).filter(o => o && o.id && !_ehEstrutural(o.nome));
   }
 
   // ── ENGINE: cálculo por obra ──
@@ -142,6 +148,9 @@
 .dre-obra .mg{text-align:right;font-family:'Space Grotesk',monospace;font-weight:800;font-size:13px}
 .dre-obra .mg.g{color:var(--success)} .dre-obra .mg.r{color:var(--error)} .dre-obra .mg.y{color:var(--warning,#d97706)}
 .dre-obra .mg small{display:block;font-size:9.5px;font-weight:600;opacity:.85}
+.dre-obra-head{cursor:default} .dre-obra-head:hover{background:var(--card)}
+.dre-obra-head .hl,.dre-obra-head .hr{font-size:10px;font-weight:700;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.5px}
+.dre-obra-head .hr{text-align:right}
 .dre-cas{display:grid;grid-template-columns:1fr 130px 58px;gap:9px;align-items:center;padding:9px 17px;border-bottom:1px solid var(--border);font-size:13px}
 .dre-cas:last-child{border-bottom:none}
 .dre-cas.sub{padding-left:34px;background:var(--bg);font-size:12px}
@@ -229,7 +238,8 @@
       .filter(x => x.d.recConstr > 0 || x.d.custoConstr > 0)
       .sort((a, b) => b.d.margemPct - a.d.margemPct);
     if (!linhas.length) return `<div class="dre-card"><div style="padding:40px;text-align:center;color:var(--text-tertiary);">Sem movimentação no período.</div></div>`;
-    let h = `<div class="dre-card"><div class="dre-ch"><h3>Margem por obra</h3><div class="cl">recebido · custo · margem</div></div>`;
+    let h = `<div class="dre-card"><div class="dre-ch"><h3>Margem por obra</h3></div>`;
+    h += `<div class="dre-obra dre-obra-head"><div class="hl">Obra</div><div class="hr">Recebido</div><div class="hr">Custo</div><div class="hr">Margem</div></div>`;
     h += linhas.map(({ o, d }) => {
       const cls = d.margem < 0 ? 'r' : d.margemPct >= 25 ? 'g' : 'y';
       const w = Math.max(2, Math.min(100, Math.abs(d.margemPct)));
