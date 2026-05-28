@@ -225,6 +225,7 @@ const _MODULOS_PERMISSAO = [
   { id: 'raiox',        label: 'Raio-X de Obras' },
   { id: 'relatorio',    label: 'Relatório P&L' },
   { id: 'caixa',        label: 'Fluxo de Caixa' },
+  { id: 'dre',          label: 'DRE Gerencial' },
   { id: 'obras',        label: 'Obras' },
   { id: 'custos',       label: 'Custos CEF' },
   { id: 'cronograma',   label: 'Cronograma' },
