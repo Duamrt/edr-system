@@ -151,8 +151,9 @@ function _rxCardObra(x) {
       <div style="display:flex;justify-content:space-between;font-family:'Space Grotesk',monospace;font-size:11px;color:var(--text-tertiary);margin-bottom:4px;">
         <span>Recebido do contrato</span><span><b style="color:var(--text-secondary);">${x.pctReceb}%</b> · ${x.aReceber > 10 ? 'falta ' + _rxK(x.aReceber) : 'quitado'}</span>
       </div>
-      <div style="height:8px;background:var(--surface-alt);border-radius:5px;overflow:hidden;">
-        <div style="height:100%;width:${x.pctReceb}%;background:#16a34a;border-radius:5px;"></div>
+      <div style="height:8px;background:var(--surface-alt);border-radius:5px;overflow:hidden;display:flex;">
+        <div style="height:100%;width:${x.pctReceb}%;background:#16a34a;"></div>
+        ${x.aReceber > 10 ? `<div style="height:100%;width:${100 - x.pctReceb}%;background:#2563eb;"></div>` : ''}
       </div>
     </div>`;
   }
