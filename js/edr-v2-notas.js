@@ -735,6 +735,65 @@ function renderItensForm() {
 // SALVAR NOTA FISCAL
 // ══════════════════════════════════════════════════════════════════
 
+// ── CENTRO DE CUSTO (Opcao A): herda do catalogo, pede o que faltar ──
+// Resolve a etapa de um item da nota: 1) material vinculado por codigo, 2) por nome no
+// catalogo. Vincula o codigo de quebra. Retorna '' quando nao classificado (vai pro modal).
+function _resolverEtapaItem(it) {
+  const cats = (typeof catalogoMateriais !== 'undefined') ? catalogoMateriais : [];
+  let mat = null;
+  if (it.codigo) mat = cats.find(m => m.codigo === it.codigo);
+  if (!mat) mat = cats.find(m => norm(m.nome) === norm(it.desc || ''));
+  if (mat) {
+    if (!it.codigo) it.codigo = mat.codigo;
+    if (mat.categoria) return (typeof resolveEtapaKey === 'function') ? resolveEtapaKey(mat.categoria) : mat.categoria;
+  }
+  return '';
+}
+
+// Modal obrigatorio: classifica os itens sem centro de custo antes de lancar.
+// Ao confirmar, grava a categoria no material do catalogo — o sistema aprende pra proxima nota.
+function _pedirClassificacaoNota(pendentes) {
+  return new Promise(resolve => {
+    const opts = (typeof etapaSelectOpts === 'function') ? etapaSelectOpts('', false) : '';
+    const linhas = pendentes.map((it, i) => `
+      <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);">
+        <div style="flex:1;min-width:0;font-size:13px;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(it.desc)}</div>
+        <select data-pend="${i}" style="width:180px;padding:8px;border-radius:8px;background:var(--bg);color:var(--text-primary);border:1px solid var(--border);font-size:13px;">
+          <option value="">— escolher —</option>${opts}
+        </select>
+      </div>`).join('');
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay active';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px;';
+    modal.innerHTML = `<div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius-md);padding:24px;max-width:540px;width:100%;max-height:82vh;overflow:auto;">
+      <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:16px;font-weight:700;margin-bottom:4px;">Defina o centro de custo</div>
+      <div style="font-size:12px;color:var(--text-tertiary);margin-bottom:14px;">${pendentes.length} item(ns) sem classificacao. Escolha o centro de custo de cada um para lancar.</div>
+      ${linhas}
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:18px;">
+        <button id="_pc-cancel" style="padding:10px 18px;border-radius:var(--radius-sm);background:var(--bg);color:var(--text-secondary);border:1px solid var(--border);cursor:pointer;font-size:13px;">Cancelar</button>
+        <button id="_pc-ok" class="btn-primary" style="padding:10px 18px;">Classificar e lancar</button>
+      </div>
+    </div>`;
+    document.body.appendChild(modal);
+    const fechar = (val) => { modal.remove(); resolve(val); };
+    modal.querySelector('#_pc-cancel').onclick = () => fechar(false);
+    modal.addEventListener('click', e => { if (e.target === modal) fechar(false); });
+    modal.querySelector('#_pc-ok').onclick = async () => {
+      const sels = [...modal.querySelectorAll('select[data-pend]')];
+      if (sels.some(s => !s.value)) { showToast('Classifique todos os itens.'); return; }
+      for (const s of sels) {
+        const it = pendentes[Number(s.dataset.pend)];
+        it._etapa = s.value;
+        if (it.codigo) {
+          const mat = catalogoMateriais.find(m => m.codigo === it.codigo);
+          if (mat && !mat.categoria) { mat.categoria = s.value; try { await sbPatch('materiais', `?id=eq.${mat.id}`, { categoria: s.value }); } catch(e){} }
+        }
+      }
+      fechar(true);
+    };
+  });
+}
+
 // Auto-cadastro de materiais novos no catalogo
 async function autocadastrarMateriais(itens) {
   // Recarregar catálogo do banco antes do loop para evitar código duplicado
@@ -744,15 +803,16 @@ async function autocadastrarMateriais(itens) {
     const nomeNorm = norm(it.desc);
     if (!nomeNorm) continue;
     const existe = catalogoMateriais.find(m => norm(m.nome) === nomeNorm);
-    if (existe) continue;
+    if (existe) { if (!it.codigo) it.codigo = existe.codigo; continue; }
     const codigo = typeof _proxCodigoCatalogo === 'function' ? _proxCodigoCatalogo() : '';
     // Verificar unicidade do codigo antes de inserir (evita duplicata por catalogo desatualizado)
     if (catalogoMateriais.find(m => m.codigo === codigo)) continue;
-    const categoria = typeof getCatEstoque === 'function' ? getCatEstoque(it.desc) : '';
+    const categoria = it._etapa || '';  // usa a etapa resolvida/escolhida (getCatEstoque foi removido do sistema)
     const unidade = it.unidade || 'UN';
     try {
       const saved = await sbPost('materiais', { codigo, nome: it.desc.toUpperCase().trim(), unidade, categoria, auto: true });
       if (saved) {
+        if (!it.codigo) it.codigo = saved.codigo;
         catalogoMateriais.push(saved);
         catalogoMateriais.sort((a, b) => a.codigo.localeCompare(b.codigo));
         novos.push(saved.nome);
@@ -919,12 +979,19 @@ async function salvarNota(notaData) {
   const csSimples = itens.length === 0 ? 'misto' : itens.every(i => i.credito) ? 'sim' : itens.some(i => i.credito) || frete > 0 || outras > 0 ? 'misto' : 'nao';
 
   try {
+    // [centro de custo] Opcao A: herda do catalogo + pede o que faltar ANTES de lancar
+    for (const it of itens) it._etapa = _resolverEtapaItem(it);
+    const _semEtapa = itens.filter(it => !it._etapa);
+    if (_semEtapa.length) {
+      const _ok = await _pedirClassificacaoNota(_semEtapa);
+      if (!_ok) { showToast('Lancamento cancelado. Classifique os itens.'); return false; }
+    }
     const payload = {
       data: emissao, data_recebimento: recebimento, natureza,
       numero_nf: numero.toUpperCase(), fornecedor, cnpj: cnpjVal,
       obra: destino, valor_bruto: totalBruto, frete, outras_despesas: outras, imposto: totalImposto,
       gera_credito: temCredito, credito_status: csSimples,
-      itens: JSON.stringify(itens), obs
+      itens: JSON.stringify(itens, (k, v) => k === '_etapa' ? undefined : v), obs
     };
     const saved = await sbPost('notas_fiscais', payload);
     if (!saved) { showToast('Erro ao salvar nota fiscal. Tente novamente.'); return false; }
@@ -953,7 +1020,7 @@ async function salvarNota(notaData) {
               obra_id: obraEsc.id, descricao: descLanc,
               qtd: it.qtd, preco: it.preco, total: it.total,
               data: hoje, obs: `NF ${numero} \u00b7 ${fornecedor} \u00b7 Baixa automatica`,
-              nota_id: saved.id,
+              nota_id: saved.id, etapa: it._etapa || '',
             });
             if (lanc) lancamentos.unshift(lanc);
             const dist = await sbPost('distribuicoes', {
@@ -985,7 +1052,7 @@ async function salvarNota(notaData) {
               obra_id: obraDestino.id, descricao: descLanc,
               qtd: it.qtd, preco: it.preco, total: it.total,
               data: dataLanc, obs: `NF ${numero} \u00b7 ${fornecedor}`,
-              nota_id: saved.id,
+              nota_id: saved.id, etapa: it._etapa || '',
             });
             if (lanc) lancamentos.unshift(lanc);
             const dist = await sbPost('distribuicoes', {
