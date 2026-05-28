@@ -1224,7 +1224,9 @@ function renderCatalogo() {
   // Filtrar por categoria
   const catFiltro = filtroEl?.value || '';
   if (catFiltro) {
-    itens = itens.filter(m => (m.categoria || '') === catFiltro);
+    // "36_outros" (Nao classificado) tambem pega materiais com categoria vazia
+    if (catFiltro === '36_outros') itens = itens.filter(m => !m.categoria || m.categoria === '36_outros');
+    else itens = itens.filter(m => (m.categoria || '') === catFiltro);
   }
 
   // Filtrar busca
@@ -1254,6 +1256,8 @@ function renderCatalogo() {
 
   if (!visiveis.length) {
     el.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:48px;color:var(--text-tertiary);">Nenhum material encontrado.</td></tr>`;
+    const _lm = document.getElementById('cat-load-more');
+    if (_lm) _lm.style.display = 'none';  // evita "Carregar mais" fantasma do estado anterior
     return;
   }
 
