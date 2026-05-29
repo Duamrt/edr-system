@@ -2362,12 +2362,12 @@ async function salvarAjusteModal() {
 
 // Retorna o menor código numérico disponível (preenche gaps de exclusões)
 function obterProximoCodigoDisponivel(cats) {
-  const usados = new Set(
-    cats.map(m => parseInt(m.codigo)).filter(c => !isNaN(c) && c > 0)
-  );
-  let prox = 1;
-  while (usados.has(prox)) prox++;
-  return String(prox).padStart(6, '0');
+  // Sempre ACIMA do maior codigo ja usado — NUNCA reutiliza codigo liberado.
+  // Reutilizar buraco (ex: material deletado/duplicado) colidia com lancamentos historicos
+  // que ainda referenciam o codigo antigo. Caso real: DAS pegou 000001 do ADITIVO VEDACIT removido.
+  const usados = cats.map(m => parseInt(m.codigo)).filter(c => !isNaN(c) && c > 0);
+  const max = usados.length ? Math.max(...usados) : 0;
+  return String(max + 1).padStart(6, '0');
 }
 
 let _editandoMaterialId = null;
