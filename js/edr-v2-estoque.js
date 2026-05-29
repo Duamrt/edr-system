@@ -2046,6 +2046,12 @@ async function salvarEntradaDireta() {
   if (destinoObra && !obraId) { showToast('Selecione a obra.'); return; }
   const etapaVal = document.getElementById('entrada-etapa')?.value || '';
   if (destinoObra && !etapaVal) { showToast('Selecione o centro de custo (etapa).'); document.getElementById('entrada-etapa')?.focus(); return; }
+  // Imposto/despesa NAO vai pro almoxarifado (estoque) — so como custo numa obra (ex: Escritorio).
+  const ETAPAS_SEM_ESTOQUE = ['24_imposto', '03_alimentacao', '07_combustivel', '14_expediente', '25_limpeza', '34_tecnologia'];
+  if (!destinoObra && ETAPAS_SEM_ESTOQUE.includes(materialNoCatalogo.categoria)) {
+    showToast('Imposto/despesa nao entra no estoque. Use "Enviar para obra" e selecione a obra.');
+    return;
+  }
   if (!data) { showToast('Informe a data.'); document.getElementById('entrada-data').focus(); return; }
   if (_dataSuspeita(data) && !confirm(`A data ${data} parece fora do normal. Confirmar mesmo assim?`)) { document.getElementById('entrada-data').focus(); return; }
   try {
@@ -2056,8 +2062,7 @@ async function salvarEntradaDireta() {
       const descLanc = codMat ? `${codMat.codigo} · ${desc}` : desc;
       const obsLanc = [fornecedor, obs || 'ENTRADA DIRETA SEM NF'].filter(Boolean).join(' · ');
       // Despesa (imposto/encargos, consumo de escritorio) NAO move estoque — so o lancamento de custo.
-      // Material de obra cria a distribuicao (movimento de estoque) normalmente.
-      const ETAPAS_SEM_ESTOQUE = ['24_imposto', '03_alimentacao', '07_combustivel', '14_expediente', '25_limpeza', '34_tecnologia'];
+      // Material de obra cria a distribuicao (movimento de estoque) normalmente. (ETAPAS_SEM_ESTOQUE no escopo da funcao)
       const ehDespesa = ETAPAS_SEM_ESTOQUE.includes(etapa);
       const lanc = await sbPost('lancamentos', { obra_id: obraId, descricao: descLanc, qtd, preco, total: valor, data, obs: obsLanc, etapa, nota_id: null, origem: ehDespesa ? 'manual' : 'compra_direta' });
       if (lanc) lancamentos.unshift(lanc);
