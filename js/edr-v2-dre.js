@@ -10,10 +10,14 @@
   'use strict';
 
   // ── Parâmetros estimados (configurável na Onda 2) ──
-  const DAS_ALIQUOTA = 0.06;           // 6% — Simples Anexo IV/V (ESTIMADO)
+  const DAS_ALIQUOTA = 0.06;           // 6% — Simples Anexo IV/V (ESTIMADO, fallback)
   const BENCH_BRUTA = [25, 40];        // benchmark construção MCMV
   const ETAPA_TERRENO = '35_terreno';
   const ETAPA_MAO = '28_mao';
+  const ETAPA_IMPOSTO = '24_imposto';
+  // Despesas operacionais (overhead) — não são custo de obra nem material.
+  const ETAPAS_OPER = ['03_alimentacao', '07_combustivel', '14_expediente', '25_limpeza', '34_tecnologia'];
+  const ETAPAS_DESPESA = [ETAPA_IMPOSTO].concat(ETAPAS_OPER);
 
   // ── Estado ──
   let _modo = 'obra';        // 'obra' | 'cons'
@@ -33,8 +37,10 @@
     const e = String(l.etapa || '').trim();
     if (e === ETAPA_TERRENO) return 'terreno';
     if (e === ETAPA_MAO) return 'mao';
+    if (ETAPAS_DESPESA.indexOf(e) !== -1) return 'despesa';
     return 'material';
   }
+  function _ehQA(nome) { return /^OBRA QA/i.test(String(nome || '')); }
   // Obras de teste (QA) e almoxarifado/escritório (estoque = ativo) NÃO entram no DRE.
   // O custo do material só conta quando é distribuído para uma obra real.
   function _ehEstrutural(nome) {
@@ -49,7 +55,7 @@
 
   // ── ENGINE: cálculo por obra ──
   function _calcObra(obraId, per) {
-    let recMed = 0, recAdic = 0, recTerr = 0, cMao = 0, cMat = 0, cTerr = 0;
+    let recMed = 0, recAdic = 0, recTerr = 0, cMao = 0, cMat = 0, cTerr = 0, cDesp = 0;
     const reps = (typeof repassesCef !== 'undefined' && Array.isArray(repassesCef)) ? repassesCef : [];
     reps.forEach(r => {
       if (r.obra_id !== obraId || !_inPer(r.data_credito, per)) return;
@@ -67,14 +73,17 @@
     lancs.forEach(l => {
       if (l.obra_id !== obraId || !_inPer(l.data, per)) return;
       const v = _n(l.total), c = _classif(l);
-      if (c === 'terreno') cTerr += v; else if (c === 'mao') cMao += v; else cMat += v;
+      if (c === 'terreno') cTerr += v;
+      else if (c === 'mao') cMao += v;
+      else if (c === 'despesa') cDesp += v;   // imposto/overhead → operacional, fora do custo da obra
+      else cMat += v;
     });
     const recConstr = recMed + recAdic;
-    const custoConstr = cMao + cMat;
+    const custoConstr = cMao + cMat;          // só material + mão de obra (margem de contribuição)
     const margem = recConstr - custoConstr;
     return {
       recMed, recAdic, recTerr, recConstr,
-      cMao, cMat, cTerr, custoConstr,
+      cMao, cMat, cTerr, cDesp, custoConstr,
       margem, margemPct: _pct(margem, recConstr),
       resTerreno: recTerr - cTerr
     };
@@ -90,15 +99,35 @@
       if (d.recConstr > 0 || d.custoConstr > 0) area += _n(o.area_m2);
     });
     const recBruta = recMed + recAdic;
-    const das = recBruta * DAS_ALIQUOTA;
-    const recLiq = recBruta - das;
+
+    // Impostos e despesas operacionais REAIS — varre TODAS as obras (inclui ESCRITÓRIO,
+    // exclui só as de teste QA), porque o overhead da empresa fica lançado no escritório.
+    const obrasAll = ((typeof obras !== 'undefined' && Array.isArray(obras)) ? obras : [])
+      .concat((typeof obrasArquivadas !== 'undefined' && Array.isArray(obrasArquivadas)) ? obrasArquivadas : []);
+    const qaIds = new Set(obrasAll.filter(o => o && _ehQA(o.nome)).map(o => o.id));
+    const lancs = (typeof lancamentos !== 'undefined' && Array.isArray(lancamentos)) ? lancamentos : [];
+    let impostoReal = 0, despOperReal = 0;
+    lancs.forEach(l => {
+      if (!_inPer(l.data, per) || qaIds.has(l.obra_id)) return;
+      const e = String(l.etapa || '').trim();
+      if (e === ETAPA_IMPOSTO) impostoReal += _n(l.total);
+      else if (ETAPAS_OPER.indexOf(e) !== -1) despOperReal += _n(l.total);
+    });
+
+    const dasEstimado = recBruta * DAS_ALIQUOTA;
+    const impostoEst = impostoReal <= 0;                 // sem imposto lançado → usa estimativa
+    const imposto = impostoEst ? dasEstimado : impostoReal;
+    const recLiq = recBruta - imposto;
     const custoObras = cMao + cMat;
     const lucroBruto = recLiq - custoObras;
     const despAdmin = _contasAdmin.filter(c => _inPer(c.data_pagamento, per)).reduce((s, c) => s + _n(c.valor), 0);
-    const resultado = lucroBruto - despAdmin;
+    const despOper = despOperReal + despAdmin;
+    const resultado = lucroBruto - despOper;
     return {
-      recBruta, recMed, recAdic, recTerr, das, recLiq,
-      custoObras, cMao, cMat, cTerr, lucroBruto, despAdmin, resultado, area,
+      recBruta, recMed, recAdic, recTerr,
+      imposto, impostoReal, impostoEst, dasEstimado, recLiq,
+      custoObras, cMao, cMat, cTerr, lucroBruto,
+      despOper, despOperReal, despAdmin, resultado, area,
       mBruta: _pct(lucroBruto, recLiq), mLiq: _pct(resultado, recLiq),
       custoM2: area ? custoObras / area : 0
     };
@@ -222,7 +251,7 @@
     <div class="dre-kpis">
       <div class="dre-kpi"><div class="lb">Receita Bruta</div><div class="vl">${_money(c.recBruta)}</div><div class="sub">medições + adicionais</div></div>
       <div class="dre-kpi"><div class="lb">Custo das Obras</div><div class="vl">${_money(c.custoObras)}</div><div class="sub">mão de obra + material</div></div>
-      <div class="dre-kpi ${c.resultado >= 0 ? 'g' : 'r'}"><div class="lb">Resultado</div><div class="vl ${c.resultado >= 0 ? 'g' : 'r'}">${_money(c.resultado)}</div><div class="sub">após DAS e admin (est.)</div></div>
+      <div class="dre-kpi ${c.resultado >= 0 ? 'g' : 'r'}"><div class="lb">Resultado</div><div class="vl ${c.resultado >= 0 ? 'g' : 'r'}">${_money(c.resultado)}</div><div class="sub">após impostos + despesas${c.impostoEst ? ' (est.)' : ''}</div></div>
       <div class="dre-kpi y"><div class="lb">Margem Bruta</div><div class="vl">${_fpct(c.lucroBruto, c.recLiq)}</div><div class="sub">benchmark ${BENCH_BRUTA[0]}–${BENCH_BRUTA[1]}%</div></div>
     </div>
     <div class="dre-grid">
@@ -263,13 +292,13 @@
     <div class="dre-cas plus"><div><span class="op">+</span>Receita Bruta de Obras</div><div class="cv">${_money(c.recBruta)}</div><div class="cp">—</div></div>
     <div class="dre-cas sub"><div><span class="op">·</span>Medições + entrada</div><div class="cv">${_money(c.recMed)}</div><div class="cp">${_fpct(c.recMed, c.recBruta)}</div></div>
     <div class="dre-cas sub"><div><span class="op">·</span>Adicionais</div><div class="cv">${_money(c.recAdic)}</div><div class="cp">${_fpct(c.recAdic, c.recBruta)}</div></div>
-    <div class="dre-cas minus"><div><span class="op">−</span>DAS Simples<span class="dre-est">EST</span></div><div class="cv minus">${_money(c.das)}</div><div class="cp">${rl(c.das)}</div></div>
+    <div class="dre-cas minus"><div><span class="op">−</span>Impostos e Encargos${c.impostoEst ? '<span class="dre-est">EST 6%</span>' : ''}</div><div class="cv minus">${_money(c.imposto)}</div><div class="cp">${rl(c.imposto)}</div></div>
     <div class="dre-cas tot"><div><span class="op">=</span>Receita Líquida</div><div class="cv">${_money(c.recLiq)}</div><div class="cp">100%</div></div>
     <div class="dre-cas minus"><div><span class="op">−</span>Custo das Obras</div><div class="cv minus">${_money(c.custoObras)}</div><div class="cp">${rl(c.custoObras)}</div></div>
     <div class="dre-cas sub"><div><span class="op">·</span>Mão de obra</div><div class="cv">${_money(c.cMao)}</div><div class="cp">${rl(c.cMao)}</div></div>
     <div class="dre-cas sub"><div><span class="op">·</span>Material e serviços</div><div class="cv">${_money(c.cMat)}</div><div class="cp">${rl(c.cMat)}</div></div>
     <div class="dre-cas tot"><div><span class="op">=</span>Lucro Bruto</div><div class="cv">${_money(c.lucroBruto)}</div><div class="cp">${rl(c.lucroBruto)}</div></div>
-    <div class="dre-cas minus"><div><span class="op">−</span>Despesas Administrativas${c.despAdmin ? '' : '<span class="dre-est">CONFIG</span>'}</div><div class="cv minus">${_money(c.despAdmin)}</div><div class="cp">${rl(c.despAdmin)}</div></div>
+    <div class="dre-cas minus"><div><span class="op">−</span>Despesas Operacionais</div><div class="cv minus">${_money(c.despOper)}</div><div class="cp">${rl(c.despOper)}</div></div>
     <div class="dre-cas grand"><div><span class="op">=</span>RESULTADO LÍQUIDO</div><div class="cv">${_money(c.resultado)}</div><div class="cp">${rl(c.resultado)}</div></div>`;
     h += `</div>`;
     if (c.recTerr || c.cTerr) {
@@ -286,7 +315,7 @@
     const mbCls = c.mBruta >= BENCH_BRUTA[0] ? 'g' : c.mBruta >= 15 ? 'y' : 'r';
     let h = `<div class="dre-sc"><h4><span class="material-symbols-outlined">percent</span>Margens</h4>
       <div class="dre-mr"><div><div class="ml">Margem Bruta</div><div class="mb">benchmark ${BENCH_BRUTA[0]}–${BENCH_BRUTA[1]}%</div></div><div class="mv ${mbCls}">${_fpct(c.lucroBruto, c.recLiq)}</div></div>
-      <div class="dre-mr"><div><div class="ml">Margem Líquida</div><div class="mb">após DAS + admin (est.)</div></div><div class="mv ${c.resultado >= 0 ? 'g' : 'r'}">${_fpct(c.resultado, c.recLiq)}</div></div>
+      <div class="dre-mr"><div><div class="ml">Margem Líquida</div><div class="mb">após impostos + despesas${c.impostoEst ? ' (est.)' : ''}</div></div><div class="mv ${c.resultado >= 0 ? 'g' : 'r'}">${_fpct(c.resultado, c.recLiq)}</div></div>
       <div class="dre-mr"><div><div class="ml">Custo médio / m²</div><div class="mb">MCMV típico 1.400–2.200</div></div><div class="mv y">${c.custoM2 ? _money(c.custoM2) : '—'}</div></div>
     </div>`;
 
@@ -300,7 +329,12 @@
     if (positivas) h += `<div class="dre-ins ok"><span class="material-symbols-outlined">check_circle</span><span><b>${positivas} obra(s) acima de 25%</b> de margem.</span></div>`;
     const mbOk = c.mBruta >= BENCH_BRUTA[0];
     h += `<div class="dre-ins ${mbOk ? 'ok' : 'wn'}"><span class="material-symbols-outlined">${mbOk ? 'check_circle' : 'trending_down'}</span><span><b>Margem bruta ${_fpct(c.lucroBruto, c.recLiq)}</b> ${mbOk ? '— dentro do saudável' : '— abaixo do benchmark'} (${BENCH_BRUTA[0]}–${BENCH_BRUTA[1]}%).</span></div>`;
-    h += `<div class="dre-ins wn"><span class="material-symbols-outlined">info</span><span><b>DAS e despesas admin estimados.</b> Afinar com contador.</span></div>`;
+    if (c.impostoEst) {
+      h += `<div class="dre-ins wn"><span class="material-symbols-outlined">info</span><span><b>Impostos estimados (6% da receita).</b> Lance o DAS/encargos reais para o DRE refletir o pago.</span></div>`;
+    } else {
+      const baixo = c.imposto < c.dasEstimado * 0.7;   // real bem abaixo da estimativa → pode faltar lançar
+      h += `<div class="dre-ins ${baixo ? 'wn' : 'ok'}"><span class="material-symbols-outlined">${baixo ? 'warning' : 'receipt_long'}</span><span><b>Impostos reais lançados: ${_money(c.imposto)}.</b> ${baixo ? `Estimativa 6% seria ${_money(c.dasEstimado)} — confira se faltam impostos a lançar no período.` : `Próximo da estimativa (${_money(c.dasEstimado)}).`}</span></div>`;
+    }
     h += `</div>`;
     return h;
   }
@@ -374,13 +408,13 @@ td .neg{color:#c0392b} .pct{color:#8a9890;font-size:9px;text-align:right}
 <tr><td><b>Receita Bruta de Obras</b></td><td class="r">${_money(c.recBruta)}</td><td class="pct">—</td></tr>
 <tr class="sub"><td>Medições + entrada</td><td class="r">${_money(c.recMed)}</td><td class="pct">${_fpct(c.recMed, c.recBruta)}</td></tr>
 <tr class="sub"><td>Adicionais</td><td class="r">${_money(c.recAdic)}</td><td class="pct">${_fpct(c.recAdic, c.recBruta)}</td></tr>
-<tr><td>(−) DAS Simples Nacional<span class="est">EST</span></td><td class="r"><span class="neg">${_money(c.das)}</span></td><td class="pct">${rl(c.das)}</td></tr>
+<tr><td>(−) Impostos e Encargos${c.impostoEst ? '<span class="est">EST 6%</span>' : ''}</td><td class="r"><span class="neg">${_money(c.imposto)}</span></td><td class="pct">${rl(c.imposto)}</td></tr>
 <tr class="tot"><td>= Receita Líquida</td><td class="r">${_money(c.recLiq)}</td><td class="pct">100,0%</td></tr>
 <tr><td>(−) Custo das Obras</td><td class="r"><span class="neg">${_money(c.custoObras)}</span></td><td class="pct">${rl(c.custoObras)}</td></tr>
 <tr class="sub"><td>Mão de obra</td><td class="r">${_money(c.cMao)}</td><td class="pct">${rl(c.cMao)}</td></tr>
 <tr class="sub"><td>Material e serviços</td><td class="r">${_money(c.cMat)}</td><td class="pct">${rl(c.cMat)}</td></tr>
 <tr class="tot"><td>= Lucro Bruto</td><td class="r">${_money(c.lucroBruto)}</td><td class="pct">${rl(c.lucroBruto)}</td></tr>
-<tr><td>(−) Despesas Administrativas${c.despAdmin ? '<span class="est">EST</span>' : '<span class="est">CONFIG</span>'}</td><td class="r"><span class="neg">${_money(c.despAdmin)}</span></td><td class="pct">${rl(c.despAdmin)}</td></tr>
+<tr><td>(−) Despesas Operacionais</td><td class="r"><span class="neg">${_money(c.despOper)}</span></td><td class="pct">${rl(c.despOper)}</td></tr>
 <tr class="grand"><td><span class="gl">= RESULTADO LÍQUIDO DO PERÍODO</span></td><td class="r"><span class="gl">${_money(c.resultado)}</span></td><td class="pct" style="color:#74c69d">${rl(c.resultado)}</td></tr>
 </tbody></table>
 <div class="mg-row">
@@ -395,10 +429,10 @@ ${linhasObra}
 <div class="ln">${c.resultado >= 0 ? '✓' : '⚠'} Resultado do período: ${_money(c.resultado)} (estimado, antes de afinar tributos).</div>
 ${vermelhas.length ? `<div class="ln">⚠ ${vermelhas.length} obra(s) com margem negativa: ${vermelhas.map(x => _esc(x.o.nome)).join(', ')} — custo já supera o recebido.</div>` : ''}
 ${insTerr}
-<div class="ln">⚠ DAS e despesas administrativas estimados — confirme alíquotas reais com o contador.</div></div>
+${c.impostoEst ? '<div class="ln">⚠ Impostos estimados em 6% da receita — lance o DAS/encargos reais para refletir o pago.</div>' : `<div class="ln">▸ Impostos e encargos reais lançados: ${_money(c.imposto)} · despesas operacionais ${_money(c.despOper)} (estimativa 6% seria ${_money(c.dasEstimado)}).</div>`}</div>
 <div class="ft"><div class="fl">⚙ PROCESSADO VIA EDR SYSTEM · ENGINE v1.0<br>${_esc(empresa)} · <b>sistema.edreng.com.br</b></div>
 <img src="https://api.qrserver.com/v1/create-qr-code/?size=108x108&data=https://sistema.edreng.com.br&bgcolor=ffffff&color=16241d&margin=2" alt="QR"></div>
-<div class="disc">Documento gerencial — EDR é Simples Nacional, imposto via DAS (estimado, incluído nas deduções). Despesas administrativas = contas a pagar sem obra vinculada. Terreno (modelo aquisição+construção) tratado em apartado (ganho de capital PF). Não substitui a contabilidade fiscal.</div>
+<div class="disc">Documento gerencial — EDR é Simples Nacional. Impostos e Encargos = lançamentos reais de imposto (DAS/DARF/INSS/etc.) quando informados; senão estimativa de 6% sobre a receita. Despesas Operacionais = overhead lançado no escritório (combustível, expediente, limpeza, tecnologia, alimentação) + contas a pagar sem obra. Terreno (modelo aquisição+construção) tratado em apartado (ganho de capital PF). Não substitui a contabilidade fiscal.</div>
 </body></html>`;
 
     const win = window.open('', '_blank', 'width=900,height=700');

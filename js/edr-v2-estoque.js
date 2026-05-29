@@ -2055,18 +2055,23 @@ async function salvarEntradaDireta() {
       const codMat = cats.find(m => norm(m.nome) === norm(desc));
       const descLanc = codMat ? `${codMat.codigo} · ${desc}` : desc;
       const obsLanc = [fornecedor, obs || 'ENTRADA DIRETA SEM NF'].filter(Boolean).join(' · ');
-      // FIX: criar lançamento + distribuição linkada (rastreabilidade compra direta)
-      const lanc = await sbPost('lancamentos', { obra_id: obraId, descricao: descLanc, qtd, preco, total: valor, data, obs: obsLanc, etapa, nota_id: null, origem: 'compra_direta' });
+      // Despesa (imposto/encargos, consumo de escritorio) NAO move estoque — so o lancamento de custo.
+      // Material de obra cria a distribuicao (movimento de estoque) normalmente.
+      const ETAPAS_SEM_ESTOQUE = ['24_imposto', '03_alimentacao', '07_combustivel', '14_expediente', '25_limpeza', '34_tecnologia'];
+      const ehDespesa = ETAPAS_SEM_ESTOQUE.includes(etapa);
+      const lanc = await sbPost('lancamentos', { obra_id: obraId, descricao: descLanc, qtd, preco, total: valor, data, obs: obsLanc, etapa, nota_id: null, origem: ehDespesa ? 'manual' : 'compra_direta' });
       if (lanc) lancamentos.unshift(lanc);
-      const dist = await sbPost('distribuicoes', {
-        item_desc: desc, item_idx: 0, obra_id: obraId,
-        obra_nome: obraObj.nome,
-        qtd, valor, etapa, data,
-        lancamento_id: lanc?.id || null,
-        codigo_catalogo: materialNoCatalogo?.codigo || null
-      });
-      if (dist) distribuicoes.unshift(dist);
-      showToast(`✅ ${qtd} ${unidade} de ${desc} → ${obraObj.nome}!`);
+      if (!ehDespesa) {
+        const dist = await sbPost('distribuicoes', {
+          item_desc: desc, item_idx: 0, obra_id: obraId,
+          obra_nome: obraObj.nome,
+          qtd, valor, etapa, data,
+          lancamento_id: lanc?.id || null,
+          codigo_catalogo: materialNoCatalogo?.codigo || null
+        });
+        if (dist) distribuicoes.unshift(dist);
+      }
+      showToast(ehDespesa ? `✅ Despesa lancada → ${obraObj.nome}` : `✅ ${qtd} ${unidade} de ${desc} → ${obraObj.nome}!`);
     } else {
       const nova = await sbPost('entradas_diretas', { item_desc: desc, unidade, qtd, preco, fornecedor, data, obs, obra: 'EDR' });
       if (nova) entradasDiretas.unshift(nova);
