@@ -1004,7 +1004,22 @@ async function salvarNota(notaData) {
       console.log(`[EDR] Auto-cadastrado(s) no catalogo: ${novosMatsCat.join(', ')}`);
     }
 
-    // Baixa automatica pra escritorio (limpeza/alimentacao/expediente)
+    // Consumo de escritorio (5 categorias) vira DESPESA (conta paga), nao estoque/obra. O DRE le como despesa.
+    const ETAPAS_DESPESA = ['03_alimentacao', '07_combustivel', '14_expediente', '25_limpeza', '34_tecnologia'];
+    const _itensDespesa = itens.filter(it => ETAPAS_DESPESA.includes(it._etapa));
+    if (_itensDespesa.length) {
+      const _hojeDesp = hojeISO();
+      for (const _itD of _itensDespesa) {
+        await sbPost('contas_pagar', {
+          fornecedor: fornecedor || 'Fornecedor',
+          descricao: _itD.desc,
+          valor: _itD.total, data_vencimento: _hojeDesp,
+          status: 'pago', data_pagamento: _hojeDesp, nota_ref: String(numero)
+        });
+      }
+    }
+
+    // Baixa automatica legada (estoque geral) — getCatEstoque morto, fica inerte; mantida so pra nao quebrar fluxo
     if (destino === COMPANY_DEFAULTS.estoqueGeral) {
       const CATS_ESCRITORIO = ['limpeza', 'alimentacao', 'expediente'];
       const itensEscritorio = itens.filter(it => typeof getCatEstoque === 'function' && CATS_ESCRITORIO.includes(getCatEstoque(it.desc)));
@@ -1047,6 +1062,7 @@ async function salvarNota(notaData) {
           const dataLanc = recebimento || emissao;
           for (let idx = 0; idx < itens.length; idx++) {
             const it = itens[idx];
+            if (ETAPAS_DESPESA.includes(it._etapa)) continue; // ja virou despesa (conta paga) acima — nao lancar na obra
             const descLanc = it.codigo ? `${it.codigo} \u00b7 ${it.desc}` : it.desc;
             const lanc = await sbPost('lancamentos', {
               obra_id: obraDestino.id, descricao: descLanc,
