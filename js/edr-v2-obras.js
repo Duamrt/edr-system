@@ -45,6 +45,7 @@ const _ETAPAS_BASE = [
   { key:'33_revestc',    lb:'Revestimento Ceramico',      cor:'#c0392b', aliases:['rev_cer','12_revestc'] },
   { key:'34_tecnologia', lb:'Tecnologia / Assinaturas',   cor:'#6366f1', aliases:['tecnologia'] },
   { key:'35_terreno',    lb:'Terreno',                    cor:'#6d4c41', aliases:['terreno','01_terreno'] },
+  { key:'38_frete',      lb:'Frete / Logistica',          cor:'#0ea5e9', aliases:['frete','logistica'] },
   { key:'36_outros',     lb:'Nao classificado',           cor:'#546e7a', aliases:['outros','generico','00_outros'] },
 ];
 

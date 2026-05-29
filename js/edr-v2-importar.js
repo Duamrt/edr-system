@@ -807,6 +807,30 @@ const ImportModule = {
       return els;
     };
 
+    // ── CT-e (nota de frete, modelo 57) — estrutura diferente da NF-e (sem <det>/<prod>) ──
+    if (getTag(xml, 'infCte')) {
+      const emitC = getTag(xml, 'emit');
+      const ideC = getTag(xml, 'ide');
+      const vPrest = getTag(xml, 'vPrest');
+      const valorFrete = vPrest ? (parseFloat(getVal(vPrest, 'vTPrest')) || parseFloat(getVal(vPrest, 'vRec')) || 0) : 0;
+      const transportadora = emitC ? getVal(emitC, 'xNome') : '';
+      const cnpjC = emitC ? getVal(emitC, 'CNPJ') : '';
+      const nCT = ideC ? getVal(ideC, 'nCT') : '';
+      const serieC = ideC ? getVal(ideC, 'serie') : '';
+      const natC = ideC ? (getVal(ideC, 'natOp') || 'Frete') : 'Frete';
+      const dhC = ideC ? getVal(ideC, 'dhEmi') : '';
+      const infDoc = getTag(xml, 'infDoc');
+      const chaveNFe = infDoc ? getVal(infDoc, 'chave') : '';  // NF-e que o frete transporta (rateio futuro)
+      if (!valorFrete) return null;
+      return {
+        fornecedor: transportadora, cnpj: cnpjC, numero: nCT, serie: serieC,
+        natureza: natC, dataEmissao: dhC ? dhC.substring(0, 10) : '',
+        valorBruto: valorFrete, frete: 0, outras: 0, vNF: valorFrete,
+        itens: [{ descOriginal: ('FRETE - ' + transportadora).toUpperCase().trim(), qtd: 1, preco: valorFrete, unidade: 'UN', total: valorFrete, cProd: '' }],
+        _tipoDoc: 'CTE', _chaveNFe: chaveNFe
+      };
+    }
+
     const emit = getTag(xml, 'emit');
     const fornecedor = emit ? getVal(emit, 'xNome') : '';
     const cnpj = emit ? getVal(emit, 'CNPJ') : '';
