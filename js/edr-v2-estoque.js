@@ -170,13 +170,20 @@ function consolidarEstoque(obraId) {
 
   for (const n of notasFiltradas) {
     const itens = parseItens(n);
+    // Frete de CT-e embutido nesta compra: rateia proporcional ao valor de cada item.
+    // fatorFrete = 1 quando nao ha frete embutido (frete_rateado = 0) → custo inalterado.
+    const freteNota = parseFloat(n.frete_rateado) || 0;
+    const totalValorItens = freteNota > 0
+      ? itens.reduce((s, x) => s + (parseFloat(x.quantidade || x.qtd) || 0) * (parseFloat(x.preco_unitario || x.preco) || 0), 0)
+      : 0;
+    const fatorFrete = (freteNota > 0 && totalValorItens > 0) ? (1 + freteNota / totalValorItens) : 1;
     for (const it of itens) {
       const desc = it.descricao || it.desc || '';
       const codCat = it.codigo_catalogo || it.cod || null;
       const chave = getChave(desc, codCat);
       const item = garantir(chave, desc, codCat, it.unidade);
       const qtd = parseFloat(it.quantidade || it.qtd) || 0;
-      const valorUn = parseFloat(it.preco_unitario || it.preco) || 0;
+      const valorUn = (parseFloat(it.preco_unitario || it.preco) || 0) * fatorFrete;  // frete embutido
       item.entradas += qtd;
       item.valorTotal += qtd * valorUn;
       item.temNF = true;

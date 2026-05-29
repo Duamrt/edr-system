@@ -780,6 +780,8 @@ const ImportModule = {
         if (xml.querySelector('parsererror')) { showToast('XML invalido. Verifique o arquivo.'); return; }
         const nfe = this._extrairDadosNFe(xml);
         if (!nfe) { showToast('Nao foi possivel ler a NF-e. Verifique se e um XML de nota fiscal.'); return; }
+        // CT-e (frete): oferece embutir o frete no custo de uma compra (rateio proporcional na saida)
+        if (nfe._tipoDoc === 'CTE') { this._abrirVinculoFrete(nfe); return; }
         this._preencherFormComXML(nfe);
       } catch (err) {
         console.error('ImportModule XML erro:', err);
@@ -973,6 +975,94 @@ const ImportModule = {
     showToast(`XML importado: ${nfe.itens.length} itens - ${nfe.fornecedor} - NF ${nfe.numero}`);
 
     // Fornecedor já resolvido acima via CNPJ antes de preencher o form
+  },
+
+  // ══════════════════════════════════════════════════════════
+  // CT-e (FRETE): embutir no custo de uma compra → rateio proporcional na saida
+  // ══════════════════════════════════════════════════════════
+  _abrirVinculoFrete(nfe) {
+    const valorFrete = parseFloat(nfe.vNF || nfe.valorBruto) || 0;
+    const transp = (nfe.fornecedor || 'TRANSPORTADORA').toUpperCase();
+    this._vincFreteCtx = { valorFrete, transp, nfe };
+    const fmtv = typeof fmtR === 'function' ? fmtR : (v => 'R$ ' + Number(v).toFixed(2));
+    document.getElementById('modal-vinc-frete')?.remove();
+    const modal = document.createElement('div');
+    modal.id = 'modal-vinc-frete';
+    modal.className = 'modal-overlay active';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+    modal.innerHTML = `<div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius-md);padding:24px;width:min(520px,95vw);max-height:90vh;overflow:auto;">
+      <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:16px;font-weight:700;margin-bottom:4px;">Frete (CT-e) — ${esc(transp)}</div>
+      <div style="font-size:22px;font-weight:800;color:var(--primary);margin-bottom:10px;">${fmtv(valorFrete)}</div>
+      <div style="font-size:13px;color:var(--text-secondary);line-height:1.5;margin-bottom:14px;">Embutir este frete no custo de qual compra? O valor entra no custo do material e e rateado automaticamente conforme voce distribui pras obras.</div>
+      <input id="vinc-frete-busca" type="text" placeholder="Buscar compra (fornecedor ou nº da nota)..." oninput="ImportModule._filtrarVincFrete(this.value)" style="width:100%;padding:10px 12px;border-radius:var(--radius-sm);background:var(--bg);color:var(--text-primary);border:1px solid var(--border);font-size:14px;box-sizing:border-box;margin-bottom:10px;">
+      <div id="vinc-frete-lista" style="max-height:300px;overflow:auto;border:1px solid var(--border);border-radius:var(--radius-sm);"></div>
+      <div style="display:flex;gap:8px;margin-top:16px;justify-content:space-between;align-items:center;">
+        <button onclick="ImportModule._lancarFreteAvulso()" style="background:transparent;border:none;color:var(--text-tertiary);font-size:12px;cursor:pointer;text-decoration:underline;font-family:inherit;">Nao e de uma compra — lancar avulso</button>
+        <button onclick="document.getElementById('modal-vinc-frete')?.remove()" style="padding:9px 16px;border-radius:var(--radius-sm);background:var(--bg);border:1px solid var(--border);color:var(--text-secondary);font-weight:600;cursor:pointer;font-family:inherit;">Cancelar</button>
+      </div>
+    </div>`;
+    modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+    document.body.appendChild(modal);
+    this._filtrarVincFrete('');
+    setTimeout(() => document.getElementById('vinc-frete-busca')?.focus(), 80);
+  },
+
+  _filtrarVincFrete(termo) {
+    const lista = document.getElementById('vinc-frete-lista');
+    if (!lista) return;
+    const t = (termo || '').toUpperCase().trim();
+    const todas = (typeof notas !== 'undefined' && Array.isArray(notas)) ? notas : [];
+    const fmtv = typeof fmtR === 'function' ? fmtR : (v => 'R$ ' + Number(v).toFixed(2));
+    const cand = todas
+      .filter(n => {
+        const its = (typeof parseItens === 'function') ? parseItens(n) : [];
+        const soFrete = its.length === 1 && /^FRETE\b/i.test(its[0].descricao || its[0].desc || '');
+        return !soFrete;
+      })
+      .filter(n => !t || String(n.fornecedor || '').toUpperCase().includes(t) || String(n.numero_nf || '').toUpperCase().includes(t))
+      .sort((a, b) => String(b.data || b.criado_em || '').localeCompare(String(a.data || a.criado_em || '')))
+      .slice(0, 20);
+    if (!cand.length) { lista.innerHTML = `<div style="padding:16px;text-align:center;color:var(--text-tertiary);font-size:13px;">Nenhuma compra encontrada.</div>`; return; }
+    lista.innerHTML = cand.map(n => {
+      const its = (typeof parseItens === 'function') ? parseItens(n) : [];
+      const tot = its.reduce((s, it) => s + (parseFloat(it.total) || (parseFloat(it.quantidade || it.qtd) || 0) * (parseFloat(it.preco_unitario || it.preco) || 0)), 0);
+      const jaFrete = parseFloat(n.frete_rateado) > 0 ? ` · <span style="color:var(--warning,#d97706);">ja tem frete ${fmtv(n.frete_rateado)}</span>` : '';
+      return `<div onclick="ImportModule._confirmarVincFrete('${n.id}')" style="padding:11px 13px;border-bottom:1px solid var(--border);cursor:pointer;" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
+        <div style="font-weight:700;font-size:13px;">${esc(n.fornecedor || '(sem fornecedor)')} <span style="color:var(--text-tertiary);font-weight:500;">NF ${esc(n.numero_nf || '?')}</span></div>
+        <div style="font-size:11px;color:var(--text-tertiary);margin-top:2px;">${esc(n.data || '')} · ${its.length} item(ns) · ${fmtv(tot)}${jaFrete}</div>
+      </div>`;
+    }).join('');
+  },
+
+  async _confirmarVincFrete(notaId) {
+    const ctx = this._vincFreteCtx;
+    if (!ctx) return;
+    const nota = ((typeof notas !== 'undefined' && Array.isArray(notas)) ? notas : []).find(n => n.id === notaId);
+    if (!nota) return showToast('Nota nao encontrada');
+    const fmtv = typeof fmtR === 'function' ? fmtR : (v => 'R$ ' + Number(v).toFixed(2));
+    let aviso = '';
+    if (typeof distribuicoes !== 'undefined' && Array.isArray(distribuicoes)) {
+      const its = (typeof parseItens === 'function') ? parseItens(nota) : [];
+      const cods = new Set(its.map(it => it.codigo_catalogo || it.cod).filter(Boolean));
+      const jaSaiu = distribuicoes.some(d => d.nota_id === notaId || (d.codigo_catalogo && cods.has(d.codigo_catalogo)));
+      if (jaSaiu) aviso = ' ATENCAO: parte dessa compra ja foi distribuida; o frete so entra nas saidas a partir de agora (o que ja saiu nao recebe frete retroativo).';
+    }
+    const ok = await (typeof confirmar === 'function' ? confirmar(`Embutir ${fmtv(ctx.valorFrete)} de frete na compra de ${nota.fornecedor} (NF ${nota.numero_nf})?${aviso}`) : Promise.resolve(window.confirm(`Embutir ${fmtv(ctx.valorFrete)} de frete?`)));
+    if (!ok) return;
+    const novoFrete = (parseFloat(nota.frete_rateado) || 0) + ctx.valorFrete;
+    const r = await sbPatch('notas_fiscais', notaId, { frete_rateado: novoFrete });
+    if (r === null) return showToast('Erro ao vincular o frete.');
+    nota.frete_rateado = novoFrete;
+    document.getElementById('modal-vinc-frete')?.remove();
+    showToast(`Frete de ${fmtv(ctx.valorFrete)} embutido em ${nota.fornecedor}. Sera rateado nas saidas pras obras.`);
+    if (typeof renderEstoque === 'function') renderEstoque();
+    if (typeof renderDashboard === 'function') renderDashboard();
+  },
+
+  _lancarFreteAvulso() {
+    const ctx = this._vincFreteCtx;
+    document.getElementById('modal-vinc-frete')?.remove();
+    if (ctx && ctx.nfe) this._preencherFormComXML(ctx.nfe);
   }
 };
 
