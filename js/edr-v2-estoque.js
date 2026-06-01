@@ -15,6 +15,7 @@ const EstoqueModule = {
   filtroObra: '',            // obra selecionada ('' = almoxarifado geral)
   filtroBusca: '',           // texto de busca
   filtroCategoria: null,     // etapa selecionada na sidebar
+  filtroEtapa: '',           // etapa selecionada no dropdown do header
   filtroNegativos: false,    // chip negativos ativo
   filtroSemCodigo: false,    // chip sem codigo ativo
   page: 0,                  // paginacao (0-indexed)
@@ -392,15 +393,26 @@ function _categoriaPorEtapas(desc) {
 // ══════════════════════════════════════════════════════════════════
 
 function renderEstoque() {
+  // Esconder spinner de carregamento
+  document.getElementById('estoque-loading')?.classList.add('hidden');
+
   // Consolidar
   const obraId = EstoqueModule.filtroObra || null;
   consolidarEstoque(obraId);
 
+  // Popular filtro de etapas dinamicamente
+  _popularFiltroEtapas();
+
   let itens = [...EstoqueModule._consolidado];
 
-  // Filtrar por categoria
+  // Filtrar por categoria (etapa)
   if (EstoqueModule.filtroCategoria) {
     itens = itens.filter(i => norm(i.categoria) === norm(EstoqueModule.filtroCategoria));
+  }
+
+  // Filtrar por etapa (centro de custo) — seletor dedicado
+  if (EstoqueModule.filtroEtapa) {
+    itens = itens.filter(i => norm(i.categoria) === norm(EstoqueModule.filtroEtapa));
   }
 
   // Filtrar negativos
@@ -1827,6 +1839,20 @@ function estoqueFiltrarObra(valor) {
   EstoqueModule.filtroObra = valor;
   EstoqueModule.page = 0;
   renderEstoque();
+}
+
+function estoqueFiltrarEtapa(valor) {
+  EstoqueModule.filtroEtapa = valor;
+  EstoqueModule.page = 0;
+  renderEstoque();
+}
+
+function _popularFiltroEtapas() {
+  const sel = document.getElementById('estoque-filtro-etapa');
+  if (!sel) return;
+  const atual = sel.value;
+  const cats = [...new Set(EstoqueModule._consolidado.map(i => i.categoria).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  sel.innerHTML = '<option value="">TODAS ETAPAS</option>' + cats.map(c => `<option value="${esc(c)}"${atual === c ? ' selected' : ''}>${esc(c)}</option>`).join('');
 }
 
 function estoqueToggleNegativos() {
