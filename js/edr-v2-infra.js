@@ -306,7 +306,7 @@ async function loadMateriais() { try { const r = await sbGetAll('materiais', '?o
 let centrosCustoCustom = [];
 async function loadCentrosCusto() { try { const r = await sbGet('centros_custo', '?order=label'); centrosCustoCustom = Array.isArray(r) ? r : []; if (typeof aplicarCentrosCustoExtras === 'function') aplicarCentrosCustoExtras(centrosCustoCustom); } catch(e) { centrosCustoCustom = []; } }
 async function loadRepassesCef() { try { repassesCef = await sbGet('repasses_cef', '?order=data_credito.desc'); if (!Array.isArray(repassesCef)) repassesCef = []; } catch(e) { repassesCef = []; } }
-async function loadAjustesEstoque() { try { const r = await sbGet('ajustes_estoque', '?order=criado_em.desc'); ajustesEstoque = Array.isArray(r) ? r : []; } catch(e) { ajustesEstoque = []; } }
+async function loadAjustesEstoque() { try { const r = await sbGetAll('ajustes_estoque', '?order=criado_em.desc,id'); ajustesEstoque = Array.isArray(r) ? r : []; } catch(e) { ajustesEstoque = []; } }
 async function loadAdicionais() {
   try { const r = await sbGet('obra_adicionais', '?order=criado_em.desc'); obrasAdicionais = Array.isArray(r) ? r : []; } catch(e) { obrasAdicionais = []; }
   try { const r = await sbGet('adicional_pagamentos', '?order=data.desc'); adicionaisPgtos = Array.isArray(r) ? r : []; } catch(e) { adicionaisPgtos = []; }

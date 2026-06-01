@@ -2355,11 +2355,14 @@ async function salvarAjusteModal() {
   // Para contagem: usar motivo com valor real embutido (para reset point no consolidarEstoque)
   const motivoFinal = window._motivoContagemOverride || `${label}${motivo ? ' · ' + motivo : ''}`;
   window._motivoContagemOverride = null;
+  const _cats = (EstoqueModule.catalogoMateriais?.length ? EstoqueModule.catalogoMateriais : (typeof catalogoMateriais !== 'undefined' ? catalogoMateriais : []));
+  const _matAjuste = _cats.find(m => norm(m.nome) === norm(desc));
   try {
     const novo = await sbPost('ajustes_estoque', {
       item_desc: desc, unidade, qtd,
       tipo: ajusteTipoAtual,
-      motivo: motivoFinal
+      motivo: motivoFinal,
+      codigo_catalogo: _matAjuste?.codigo || null
     });
     if (!novo) { showToast('❌ Erro ao salvar ajuste.'); return; }
     ajustesEstoque.unshift(novo);
