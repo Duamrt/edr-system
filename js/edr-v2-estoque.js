@@ -804,10 +804,7 @@ async function confirmarDistribuicaoItem(chave, obraDestino, etapa, quantidade, 
   closeModal('dist-modal');
 
   // Recarregar dados
-  if (typeof distribuicoes !== 'undefined') {
-    const novasDist = await sbGet('distribuicoes');
-    if (novasDist) window.distribuicoes = novasDist;
-  }
+  if (typeof loadDistribuicoes === 'function') await loadDistribuicoes();
 
   renderEstoque();
   if (typeof renderDashboard === 'function') renderDashboard();
@@ -996,10 +993,7 @@ async function abrirAjusteEstoque(chave) {
 
   if (diferenca !== 0) showToast(`Estoque ajustado: ${diferenca > 0 ? '+' : ''}${fmt(diferenca)} ${item.unidade}`, 'success');
 
-  if (typeof ajustesEstoque !== 'undefined') {
-    const novos = await sbGet('ajustes_estoque');
-    if (novos) window.ajustesEstoque = novos;
-  }
+  if (typeof loadAjustesEstoque === 'function') await loadAjustesEstoque();
 
   renderEstoque();
 }
@@ -2085,7 +2079,7 @@ async function salvarEntradaDireta() {
       }
       showToast(ehDespesa ? `✅ Despesa lancada → ${obraObj.nome}` : `✅ ${qtd} ${unidade} de ${desc} → ${obraObj.nome}!`);
     } else {
-      const nova = await sbPost('entradas_diretas', { item_desc: desc, unidade, qtd, preco, fornecedor, data, obs, obra: 'EDR' });
+      const nova = await sbPost('entradas_diretas', { item_desc: desc, unidade, qtd, preco, fornecedor, data, obs, obra: 'EDR', codigo_catalogo: materialNoCatalogo?.codigo || null });
       if (nova) entradasDiretas.unshift(nova);
       showToast(`✅ ${qtd} ${unidade} de ${desc} no estoque!`);
     }
@@ -2232,7 +2226,8 @@ async function salvarSaidaMaterial() {
       item_desc: desc, item_idx: 0, obra_id: obraId,
       obra_nome: obraObj?.nome || '',
       qtd, valor, etapa, data,
-      lancamento_id: lancamentoId
+      lancamento_id: lancamentoId,
+      codigo_catalogo: codSaida?.codigo || null
     });
     if (!nova) { showToast('❌ Erro ao salvar saída. Verifique o console.'); return; }
     distribuicoes.unshift(nova);
@@ -2366,6 +2361,7 @@ async function salvarAjusteModal() {
       tipo: ajusteTipoAtual,
       motivo: motivoFinal
     });
+    if (!novo) { showToast('❌ Erro ao salvar ajuste.'); return; }
     ajustesEstoque.unshift(novo);
     showToast(`Ajuste registrado: ${qtd > 0 ? '+' : ''}${qtd} ${unidade} de ${desc}`);
     fecharModal('ajuste');
