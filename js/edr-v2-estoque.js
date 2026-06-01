@@ -2207,9 +2207,9 @@ async function salvarSaidaMaterial() {
     const valor = qtd * valorUnit;
     // FIX: criar lançamento PRIMEIRO, depois distribuição vinculada (rastreabilidade total)
     let lancamentoId = null;
+    const _catsSaida = EstoqueModule.catalogoMateriais?.length ? EstoqueModule.catalogoMateriais : (typeof catalogoMateriais !== 'undefined' ? catalogoMateriais : []);
+    const codSaida = _catsSaida.find(m => norm(m.nome) === norm(desc));
     if (valor > 0) {
-      const cats = EstoqueModule.catalogoMateriais.length ? EstoqueModule.catalogoMateriais : (typeof catalogoMateriais !== 'undefined' ? catalogoMateriais : []);
-      const codSaida = cats.find(m => norm(m.nome) === norm(desc));
       const descSaida = codSaida ? `${codSaida.codigo} · ${desc}` : desc;
       const lanc = await sbPost('lancamentos', {
         obra_id: obraId, descricao: descSaida,
