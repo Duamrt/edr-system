@@ -18,6 +18,7 @@ const PciModule = {
   expanded: new Set(),
   expandedCats: new Set(),
   _container: null,
+  _fechando: false,
 
   // ── Chaves legadas (NUNCA trocar) ──
   SYNC_KEY: 'pci-medicoes-v3',
@@ -979,10 +980,12 @@ const PciModule = {
     msg += '\nData: ' + dataFmt;
 
     confirmar(msg, async () => {
-      await sbPatch('pci_medicao?id=eq.' + medicaoId, { data_levantamento: dataHoje });
-      med.data_levantamento = dataHoje;
-      // Salvar snapshot no histórico
+      if (PciModule._fechando) return;
+      PciModule._fechando = true;
       try {
+        await sbPatch('pci_medicao?id=eq.' + medicaoId, { data_levantamento: dataHoje });
+        med.data_levantamento = dataHoje;
+        // Salvar snapshot no histórico
         const snap = await sbPost('pci_historico', {
           obra_id: med.obra_id,
           medicao_id: medicaoId,
@@ -991,9 +994,18 @@ const PciModule = {
           exec_pct: parseFloat(exec.toFixed(2)),
           valor_executado: valorExec ? parseFloat(valorExec.toFixed(2)) : null
         });
-        if (snap && snap.id) PciModule.historico.push(snap);
-      } catch(e) { console.warn('[PCI-HISTORICO] erro ao salvar snapshot:', e); }
-      PciModule._rerender();
+        if (!snap || !snap.id) {
+          showToast('Medição fechada mas histórico não foi registrado. Tente fechar novamente.', 'error');
+          return;
+        }
+        PciModule.historico.push(snap);
+        PciModule._rerender();
+      } catch(e) {
+        console.error('[PCI-HISTORICO]', e);
+        showToast('Erro ao fechar medição. Tente novamente.', 'error');
+      } finally {
+        PciModule._fechando = false;
+      }
     });
   },
 
