@@ -223,7 +223,11 @@ async function marcarComoPago(contaId) {
     const atualizada = await sbPatch('contas_pagar', `?id=eq.${contaId}`, { status: 'pago', data_pagamento: hojeISO() });
     const idx = contasPagar.findIndex(c => c.id === contaId);
     if (idx >= 0 && atualizada) contasPagar[idx] = { ...contasPagar[idx], ...atualizada };
-    if (conta && conta.obra_id) {
+    // Só cria lançamento se a conta NÃO veio de uma NF.
+    // NF direta já gera lançamentos em notas.js; criar outro aqui duplicaria custo no DRE.
+    // Conta com nota_ref = financeiro registra pagamento em caixa, não novo custo da obra.
+    // Fix definitivo pendente: usar contas_pagar.nota_id quando existir (migration planejada).
+    if (conta && conta.obra_id && !conta.nota_ref) {
       try {
         await sbPostMinimal('lancamentos', {
           obra_id: conta.obra_id,

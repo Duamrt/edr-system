@@ -20,6 +20,17 @@ Sempre responda em português brasileiro.
 ## Módulos principais
 obras · estoque · notas · diarias · leads · caixa · garantias · catalogo · equipe · relatorio · fiscal
 
+## Contrato — Notas Fiscais / Estoque / Financeiro (2026-06-02)
+
+- `contas_pagar` é tabela tenant: sempre acessar via `sbGet/sbPost/sbPatch` — `company_id` injetado automaticamente.
+- `contas_pagar` NÃO entra em `_TABELAS_RASTREIO` enquanto não existir coluna `criado_por` na tabela.
+- Exclusão de NF nunca deve depender de `contasPagar[]` local; deve consultar o banco antes de excluir.
+- Exclusão de NF deve seguir ordem com guards: lançamentos → distribuições → nota. Se qualquer etapa falhar, parar e preservar a nota quando possível.
+- Itens como ART, taxa, imposto, frete, documentação e mão de obra não movimentam estoque — não criam `distribuicoes`.
+- `registro` isolado NÃO pode ser usado como palavra de bloqueio de estoque — existe registro hidráulico (REGISTRO SOLDAVEL, REGISTRO PVC etc.). Usar frases específicas: `registro de imovel`, `registro cartorio`.
+- **Pendência planejada:** criar `contas_pagar.nota_id` e preencher nos inserts de NF para eliminar colisão por número de NF entre fornecedores.
+- **Pendência planejada:** mover exclusão de NF para RPC/Edge Function transacional — única forma de garantir atomicidade real.
+
 ## Contrato de não regressão — Módulo Materiais/Estoque (2026-06-02)
 Antes de qualquer edição neste módulo, confirmar que estas regras continuam válidas:
 

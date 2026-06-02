@@ -115,12 +115,16 @@
     });
 
     const dasEstimado = recBruta * DAS_ALIQUOTA;
-    const impostoEst = impostoReal <= 0;                 // sem imposto lançado → usa estimativa
-    const imposto = impostoEst ? dasEstimado : impostoReal;
+    // DRE gerencial conservador: usa o MAIOR entre real e estimativa.
+    // Evita subcontar imposto quando só parte foi lançada (parcial derruba estimativa).
+    // Para aceitar real menor, criar flag "imposto conferido" (pendente).
+    const impostoEst = impostoReal < dasEstimado;        // true = estimativa foi usada ou complementada
+    const imposto = Math.max(impostoReal, dasEstimado);
     const recLiq = recBruta - imposto;
     const custoObras = cMao + cMat;
     const lucroBruto = recLiq - custoObras;
-    const despAdmin = _contasAdmin.filter(c => _inPer(c.data_pagamento, per)).reduce((s, c) => s + _n(c.valor), 0);
+    // Bug 3: fallback para data_vencimento quando data_pagamento está ausente
+    const despAdmin = _contasAdmin.filter(c => _inPer(c.data_pagamento || c.data_vencimento, per)).reduce((s, c) => s + _n(c.valor), 0);
     const despOper = despOperReal + despAdmin;
     const resultado = lucroBruto - despOper;
     return {
@@ -140,6 +144,11 @@
     add(typeof repassesCef !== 'undefined' ? repassesCef : [], 'data_credito');
     add(typeof lancamentos !== 'undefined' ? lancamentos : [], 'data');
     add(typeof adicionaisPgtos !== 'undefined' ? adicionaisPgtos : [], 'data');
+    // Bug 2: inclui meses com só despesa administrativa paga (sem obra)
+    (_contasAdmin || []).forEach(c => {
+      const d = String(c.data_pagamento || c.data_vencimento || '').slice(0, 7);
+      if (d.length === 7) set.add(d);
+    });
     return [...set].sort().reverse();
   }
   const MESES = ['', 'Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
@@ -268,7 +277,7 @@
       .sort((a, b) => b.d.margemPct - a.d.margemPct);
     if (!linhas.length) return `<div class="dre-card"><div style="padding:40px;text-align:center;color:var(--text-tertiary);">Sem movimentação no período.</div></div>`;
     let h = `<div class="dre-card"><div class="dre-ch"><h3>Margem por obra</h3></div>`;
-    h += `<div class="dre-obra dre-obra-head"><div class="hl">Obra</div><div class="hr">Recebido</div><div class="hr">Custo</div><div class="hr">Margem</div></div>`;
+    h += `<div class="dre-obra dre-obra-head"><div class="hl">Obra</div><div class="hr">Recebido</div><div class="hr">Custo</div><div class="hr">Margem contrib.</div></div>`;
     h += linhas.map(({ o, d }) => {
       const cls = d.margem < 0 ? 'r' : d.margemPct >= 25 ? 'g' : 'y';
       const w = Math.max(2, Math.min(100, Math.abs(d.margemPct)));
