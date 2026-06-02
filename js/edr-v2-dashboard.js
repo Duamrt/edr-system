@@ -325,7 +325,7 @@ function _dashRenderOperador() {
 
   const obraMap = {};
   obras.forEach(o => obraMap[o.id] = o.nome);
-  const ultimos = [...lancamentos].sort((a, b) => new Date(b.data || 0) - new Date(a.data || 0)).slice(0, 8);
+  const ultimos = [...lancamentos].sort((a, b) => (b.data || '') > (a.data || '') ? 1 : -1).slice(0, 8);
 
   el.innerHTML = `
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:18px 20px;margin-bottom:12px;">
@@ -401,9 +401,9 @@ function _dashBuildKPIs(m, porObra) {
 
   const kpis = [
     { num: fmt(m.receitaTotal), label: 'Receita Total', icon: 'account_balance_wallet', bg: 'linear-gradient(135deg,#1B4332,#2D6A4F)', action: "setView('relatorio')" },
-    { num: fmt(m.custoTotal), label: 'Custo Total', icon: 'trending_down', bg: 'linear-gradient(135deg,#92400e,#d97706)', action: "setView('custos')" },
+    { num: fmt(m.custoTotal), label: 'Custo nas Obras', icon: 'trending_down', bg: 'linear-gradient(135deg,#92400e,#d97706)', action: "setView('custos')" },
     { num: fmt(m.lucroGeral), label: 'Lucro', icon: m.lucroGeral >= 0 ? 'trending_up' : 'trending_down', bg: m.lucroGeral >= 0 ? 'linear-gradient(135deg,#14532d,#22c55e)' : 'linear-gradient(135deg,#7f1d1d,#ef4444)', action: "setView('relatorio')" },
-    { num: m.valorVendaTotal > 0 ? m.margemGeral.toFixed(1) + '%' : '—', label: 'Margem', icon: 'percent', bg: 'linear-gradient(135deg,#4c1d95,#7c3aed)', action: "setView('relatorio')" },
+    { num: m.valorVendaTotal > 0 ? m.margemGeral.toFixed(1) + '%' : '—', label: 'Margem Bruta', icon: 'percent', bg: 'linear-gradient(135deg,#4c1d95,#7c3aed)', action: "setView('relatorio')" },
     { num: porObra.length.toString(), label: 'Obras Ativas', icon: 'domain', bg: 'linear-gradient(135deg,#1B4332,#2D6A4F)', action: "setView('obras')" },
     { num: contasVenc.toString(), label: 'Contas Vencidas', icon: 'warning', bg: contasVenc > 0 ? 'linear-gradient(135deg,#7f1d1d,#ef4444)' : 'linear-gradient(135deg,#14532d,#22c55e)', action: "setView('contas-pagar')" },
     // NOVOS KPIs (GM)
@@ -585,7 +585,7 @@ function _dashBuildResumoFinanceiro(porObra) {
     </div>`;
 
   const subEntradas = filtroMes ? 'Repasses do mes' : 'PLs + Entrada + Terreno';
-  const subSaidas = 'Material: ' + _dashFmtR(totalSaidas - totalMao) + ' · Mao de obra: ' + _dashFmtR(totalMao);
+  const subSaidas = 'Material: ' + _dashFmtR(totalSaidas - totalMao) + ' · Mao de obra: ' + _dashFmtR(totalMao) + ' · s/ admin/impostos';
 
   let html = `<div style="margin-bottom:20px;">
     <div style="font-size:13px;font-weight:700;color:#2D6A4F;letter-spacing:2px;margin-bottom:14px;font-family:'Plus Jakarta Sans',sans-serif;display:flex;align-items:center;gap:8px;"><span class="material-symbols-outlined" style="font-size:20px;">bar_chart</span> RESUMO FINANCEIRO — ${periodoLabel}</div>
@@ -616,7 +616,7 @@ function _dashBuildResumoFinanceiro(porObra) {
 
     html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
       ${cardG('account_balance', 'DISPONIVEL', saldoGeral, saldoGeral >= 0 ? 'var(--success)' : 'var(--danger)', 'Recebido que ainda nao foi aplicado')}
-      ${cardG('trending_up', 'LUCRO PROJETADO', lucroProjetado, lucroProjetado >= 0 ? 'var(--warning)' : 'var(--danger)', 'Receita - Gasto · Margem: ' + margemProj.toFixed(0) + '%')}
+      ${cardG('trending_up', 'LUCRO PROJETADO', lucroProjetado, lucroProjetado >= 0 ? 'var(--warning)' : 'var(--danger)', 'Margem bruta de obra: ' + margemProj.toFixed(0) + '% · s/ admin/impostos')}
     </div>`;
   }
 
