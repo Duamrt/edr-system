@@ -138,8 +138,8 @@ function consolidarEstoque(obraId) {
         catItem = EstoqueModule.catalogoMateriais.find(m => norm(m.nome) === nDesc);
       }
 
-      // Categoria via ETAPAS (fonte unica — CATS_ESTOQUE eliminado)
-      const categoria = catItem?.categoria || _categoriaPorEtapas(desc) || 'Outros';
+      // Categoria resolvida para key oficial (nunca label/string legada)
+      const categoria = _resolverCategoriaEstoque(catItem?.categoria || _categoriaPorEtapas(desc) || '36_outros');
 
       mapa[chave] = {
         desc: catItem?.nome || desc,
@@ -340,48 +340,95 @@ function consolidarEstoque(obraId) {
 // CATEGORIA VIA ETAPAS (fonte unica — CATS_ESTOQUE eliminado)
 // ══════════════════════════════════════════════════════════════════
 
+// Resolve qualquer string de categoria (legada, label, key) para a key oficial de ETAPAS.
+// Garante que consolidarEstoque sempre produz keys canônicas, nunca labels ou strings legadas.
+function _resolverCategoriaEstoque(cat) {
+  if (!cat) return '36_outros';
+  const s = String(cat);
+  // 1. Já é uma key oficial
+  if (typeof ETAPAS !== 'undefined' && ETAPAS.find(e => e.key === s)) return s;
+  // 2. Alias map (ex: 'aco', 'ferro', 'hidraulica' → key)
+  if (typeof resolveEtapaKey === 'function') {
+    const r = resolveEtapaKey(s);
+    if (r !== s && typeof ETAPAS !== 'undefined' && ETAPAS.find(e => e.key === r)) return r;
+  }
+  // 3. Match normalizado sem pontuação contra labels (ex: 'Aco/ferro' → norm → 'acoferro' === norm('Aço / Ferro'))
+  if (typeof ETAPAS !== 'undefined') {
+    const nStrip = norm(s).replace(/[\s\/\-]+/g, '');
+    const byLabel = ETAPAS.find(e => norm(e.lb).replace(/[\s\/\-]+/g, '') === nStrip);
+    if (byLabel) return byLabel.key;
+    // Match contra base da key sem prefixo numérico (ex: 'impermeab' → '23_impermeab')
+    const byKeyBase = ETAPAS.find(e => norm(e.key.replace(/^\d+_/, '')) === norm(s).replace(/[\s\/]+/g, ''));
+    if (byKeyBase) return byKeyBase.key;
+  }
+  // 4. Mapa de strings legadas específicas do banco antigo
+  const LEGADO = {
+    'aco/ferro':              '02_aco',
+    'forma/madeira':          '16_forma',
+    'loucas/metais':          '27_loucas',
+    'granito/pedra':          '20_granito',
+    'glp/gas':                '37_glp',
+    'revestimento argamassa': '32_revarg',
+    'revestimento ceramico':  '33_revestc',
+    'servicos preliminares':  '31_prelim',
+    'outros':                 '36_outros',
+    'nao classificado':       '36_outros',
+    'generico':               '18_generico',
+    'impermeabilizacao':      '23_impermeab',
+    'hidraulica':             '21_hidro',
+    'eletrica':               '09_elet',
+    'fundacao':               '17_fund',
+    'locacao':                '26_locacao',
+    'alvenaria':              '04_alven',
+    'estrutura':              '13_estrut',
+    'cobertura':              '06_cobr',
+    'esquadrias':             '11_esquad',
+    'esgoto':                 '12_esgoto',
+    'pintura':                '30_pintura',
+    'ferramentas':            '15_ferramenta',
+    'epi':                    '10_epi',
+    'limpeza':                '25_limpeza',
+    'alimentacao':            '03_alimentacao',
+  };
+  const n = norm(s);
+  if (LEGADO[n]) return LEGADO[n];
+  return '36_outros';
+}
+
+// Infere categoria por palavras-chave no nome do material.
+// Retorna KEY oficial (ex: '02_aco'), nunca label de display.
 function _categoriaPorEtapas(desc) {
-  if (!desc || typeof ETAPAS === 'undefined') return null;
+  if (!desc) return null;
   const n = norm(desc);
 
-  // Mapeamento simples: palavras-chave → etapa
-  // Usa o array ETAPAS do obras.js como fonte unica
+  // Mapa: key oficial → palavras-chave no nome do material
   const mapa = {
-    'servicos preliminares': ['lona', 'tapume', 'placa obra', 'locacao', 'sondagem'],
-    'fundacao': ['estaca', 'broca', 'sapata', 'radier', 'baldrame'],
-    'estrutura': ['cimento', 'concreto', 'areia', 'brita', 'pedra', 'laje', 'vigota', 'tavela', 'pre-moldado'],
-    'aco/ferro': ['ferro', 'vergalhao', 'tela soldada', 'arame recozido', 'malha pop', 'aco ca', 'barra aco'],
-    'forma/madeira': ['madeira', 'caibro', 'viga', 'ripa', 'sarrafo', 'compensado', 'pontalete', 'forma', 'desmoldante'],
-    'alvenaria': ['tijolo', 'bloco', 'argamassa', 'cal ', 'chapisco', 'emboco', 'reboco'],
-    'eletrica': ['fio', 'cabo eletrico', 'eletroduto', 'conduite', 'disjuntor', 'tomada', 'interruptor', 'qd', 'luminaria', 'led', 'lampada'],
-    'impermeabilizacao': ['impermeabilizante', 'manta asfaltica', 'bianco', 'aditivo', 'veda calha', 'vedante', 'selante', 'silicone'],
-    'hidraulica': ['tubo pvc', 'joelho', 'tee', 'luva', 'registro', 'caixa dagua', 'sifao', 'adaptador', 'flange', 'cola pvc'],
-    'loucas/metais': ['vaso sanitario', 'pia', 'lavatorio', 'cuba', 'torneira', 'chuveiro', 'ducha', 'acabamento'],
-    'esgoto': ['tubo esgoto', 'caixa de gordura', 'caixa sifonada', 'ralo'],
-    'cobertura': ['telha', 'cumeeira', 'rufo', 'calha', 'parafuso telha'],
-    'esquadrias': ['porta', 'janela', 'batente', 'marco', 'caixilho', 'esquadria', 'fechadura', 'macaneta', 'trinco', 'puxador'],
-    'revestimento argamassa': ['massa corrida', 'massa acrilica', 'gesso', 'forro gesso'],
-    'revestimento ceramico': ['piso', 'ceramica', 'porcelanato', 'revestimento', 'azulejo', 'rejunte', 'argamassa colante'],
-    'granito/pedra': ['granito', 'marmore', 'pedra', 'soleira', 'peitoril'],
-    'pintura': ['tinta', 'selador', 'primer', 'textura', 'rolo', 'pincel', 'lixa', 'massa pva'],
-    'ferramentas': ['disco', 'serra', 'broca', 'trena', 'nivel', 'espatula', 'desempenadeira', 'colher pedreiro'],
-    'epi': ['capacete', 'luva', 'bota', 'oculos', 'protetor auricular', 'cinto seguranca', 'mascara'],
-    'limpeza': ['vassoura', 'pa', 'saco lixo', 'detergente', 'acido muriatico'],
-    'alimentacao': ['agua mineral', 'cafe', 'acucar', 'copo descartavel'],
+    '31_prelim':     ['lona', 'tapume', 'placa obra', 'sondagem'],
+    '17_fund':       ['estaca', 'broca', 'sapata', 'radier', 'baldrame'],
+    '13_estrut':     ['cimento', 'concreto', 'areia', 'brita', 'laje', 'vigota', 'tavela', 'pre-moldado'],
+    '02_aco':        ['vergalhao', 'tela soldada', 'arame recozido', 'malha pop', 'aco ca', 'barra aco'],
+    '16_forma':      ['madeira', 'caibro', 'viga', 'ripa', 'sarrafo', 'compensado', 'pontalete', 'desmoldante'],
+    '04_alven':      ['tijolo', 'bloco', 'cal ', 'chapisco', 'emboco', 'reboco'],
+    '09_elet':       ['fio ', 'cabo eletrico', 'eletroduto', 'conduite', 'disjuntor', 'tomada', 'interruptor', 'luminaria', 'lampada'],
+    '23_impermeab':  ['impermeabilizante', 'manta asfaltica', 'bianco', 'veda calha', 'vedante', 'selante', 'silicone'],
+    '21_hidro':      ['tubo pvc', 'joelho', 'tee ', 'luva pvc', 'registro', 'caixa dagua', 'sifao', 'flange', 'cola pvc'],
+    '27_loucas':     ['vaso sanitario', 'lavatorio', 'cuba', 'torneira', 'chuveiro', 'ducha'],
+    '12_esgoto':     ['tubo esgoto', 'caixa de gordura', 'caixa sifonada', 'ralo'],
+    '06_cobr':       ['telha', 'cumeeira', 'rufo', 'calha', 'parafuso telha'],
+    '11_esquad':     ['porta ', 'janela', 'batente', 'marco ', 'caixilho', 'fechadura', 'macaneta', 'trinco', 'puxador'],
+    '32_revarg':     ['massa corrida', 'massa acrilica', 'gesso', 'forro gesso'],
+    '33_revestc':    ['porcelanato', 'ceramica', 'azulejo', 'rejunte', 'argamassa colante'],
+    '20_granito':    ['granito', 'marmore', 'soleira', 'peitoril'],
+    '30_pintura':    ['tinta', 'selador', 'primer', 'textura', 'rolo ', 'pincel', 'massa pva'],
+    '15_ferramenta': ['disco ', 'serra ', 'trena', 'nivel ', 'espatula', 'desempenadeira', 'colher pedreiro'],
+    '10_epi':        ['capacete', 'protetor auricular', 'cinto seguranca', 'mascara epi'],
+    '25_limpeza':    ['vassoura', 'saco lixo', 'detergente', 'acido muriatico'],
+    '03_alimentacao':['agua mineral', 'cafe ', 'acucar', 'copo descartavel'],
   };
 
-  for (const etapa in mapa) {
-    for (const palavra of mapa[etapa]) {
-      if (n.includes(palavra)) {
-        // Retornar o nome da etapa formatado como no ETAPAS
-        // Buscar correspondencia no array ETAPAS
-        if (Array.isArray(ETAPAS)) {
-          const match = ETAPAS.find(e => norm(e.nome || e).includes(etapa));
-          if (match) return match.nome || match;
-        }
-        // Fallback: capitalizar
-        return etapa.charAt(0).toUpperCase() + etapa.slice(1);
-      }
+  for (const key in mapa) {
+    for (const palavra of mapa[key]) {
+      if (n.includes(norm(palavra))) return key;
     }
   }
   return null;
@@ -410,9 +457,9 @@ function renderEstoque() {
     itens = itens.filter(i => norm(i.categoria) === norm(EstoqueModule.filtroCategoria));
   }
 
-  // Filtrar por etapa (centro de custo) — seletor dedicado
+  // Filtrar por etapa (centro de custo) — seletor dedicado; ambos já são keys canônicas
   if (EstoqueModule.filtroEtapa) {
-    itens = itens.filter(i => norm(i.categoria) === norm(EstoqueModule.filtroEtapa));
+    itens = itens.filter(i => i.categoria === EstoqueModule.filtroEtapa);
   }
 
   // Filtrar negativos
