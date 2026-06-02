@@ -2096,7 +2096,7 @@ async function diarConfirmarLancamentosEDR() {
   btn.disabled = true; btn.textContent = 'Lancando...';
   const statusEl = document.getElementById('diar-edrStatus');
   const obs = document.getElementById('diar-modalEDR').dataset.obs || 'Folha quinzenal';
-  const hoje = hojeISO();
+  const hoje = DiariasModule.quinzenaAtiva?.data_fim || hojeISO(); // competência da obra, não data de pagamento
   const rows = document.querySelectorAll('#diar-modalEDRBody tbody tr');
   let ok = 0, erro = 0;
   for (const row of rows) {
