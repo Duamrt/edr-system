@@ -493,10 +493,13 @@ function filtrarLanc() {
       <div class="lanc-item-right">
         ${isAdmin ? `<span class="lanc-item-value">${fmtR(l.total)}</span>` : ''}
         ${isAdmin ? `<div class="lanc-item-actions">
-          <button class="lanc-action-btn" title="Editar lancamento" onclick="event.stopPropagation();editarLancamento('${esc(l.id)}')"><span class="material-symbols-outlined" style="font-size:16px;">edit</span></button>
+          ${l.nota_id
+            ? `<span title="Custo de NF — alterar pela Nota Fiscal" style="display:inline-flex;align-items:center;gap:3px;font-size:10px;color:var(--text-tertiary);padding:2px 6px;"><span class="material-symbols-outlined" style="font-size:13px;">lock</span>NF</span>`
+            : `<button class="lanc-action-btn" title="Editar lancamento" onclick="event.stopPropagation();editarLancamento('${esc(l.id)}')"><span class="material-symbols-outlined" style="font-size:16px;">edit</span></button>
           ${semCodigo ? `<button class="lanc-action-btn" title="Vincular ao catalogo" onclick="event.stopPropagation();editarDescLanc('${esc(l.id)}')"><span class="material-symbols-outlined" style="font-size:16px;">link</span></button>` : ''}
+          <button class="lanc-action-btn" title="Excluir" onclick="event.stopPropagation();excluirLanc('${esc(l.id)}')"><span class="material-symbols-outlined" style="font-size:16px;">delete</span></button>`
+          }
           <button class="lanc-action-btn" title="Centro de custo" onclick="event.stopPropagation();editarEtapaLanc('${esc(l.id)}')"><span class="material-symbols-outlined" style="font-size:16px;">folder</span></button>
-          <button class="lanc-action-btn" title="Excluir" onclick="event.stopPropagation();excluirLanc('${esc(l.id)}')"><span class="material-symbols-outlined" style="font-size:16px;">delete</span></button>
         </div>` : ''}
       </div>
     </div>`;
@@ -762,20 +765,26 @@ function renderObrasMateriais() {
 }
 
 async function excluirDistribuicao(id) {
-  if (!confirm('Excluir esta movimentação de material?')) return;
+  const d = distribuicoes.find(x => x.id === id);
+  const msg = d?.lancamento_id
+    ? 'Excluir esta movimentacao de material?\nIsso tambem removera o custo vinculado da obra.'
+    : 'Excluir esta movimentacao de material?';
+  if (!confirm(msg)) return;
   try {
-    const d = distribuicoes.find(x => x.id === id);
-    await sbDelete('distribuicoes', `?id=eq.${id}`);
-    // Se tiver lancamento vinculado, excluir também
+    const okDist = await sbDelete('distribuicoes', `?id=eq.${id}`);
+    if (!okDist) { showToast('Erro ao excluir movimentacao.'); return; }
     if (d?.lancamento_id) {
-      await sbDelete('lancamentos', `?id=eq.${d.lancamento_id}`);
-      const li = lancamentos.findIndex(l => l.id === d.lancamento_id);
-      if (li !== -1) lancamentos.splice(li, 1);
+      const okLanc = await sbDelete('lancamentos', `?id=eq.${d.lancamento_id}`);
+      if (!okLanc) { showToast('Movimentacao excluida, mas custo nao removido do banco.'); }
+      else {
+        const li = lancamentos.findIndex(l => l.id === d.lancamento_id);
+        if (li !== -1) lancamentos.splice(li, 1);
+      }
     }
     const idx = distribuicoes.findIndex(x => x.id === id);
     if (idx !== -1) distribuicoes.splice(idx, 1);
     renderObrasMateriais();
-    showToast('Movimentação excluída.');
+    showToast('Movimentacao excluida.');
   } catch(e) { showToast('Erro ao excluir: ' + e.message); }
 }
 
@@ -1054,6 +1063,12 @@ async function salvarLancamentoEdit(lancId) {
   const total = qtd * preco;
   try {
     await sbPatch('lancamentos', `?id=eq.${lancId}`, { descricao: desc, qtd, preco, total, data });
+    // Sincronizar distribuição vinculada (qtd/valor/data)
+    const dist = (typeof distribuicoes !== 'undefined' ? distribuicoes : []).find(d => d.lancamento_id === lancId);
+    if (dist) {
+      await sbPatch('distribuicoes', `?id=eq.${dist.id}`, { qtd, valor_un: preco, valor_total: total, data });
+      Object.assign(dist, { qtd, valor_un: preco, valor_total: total, data });
+    }
     const lanc = lancamentos.find(l => l.id === lancId);
     if (lanc) Object.assign(lanc, { descricao: desc, qtd, preco, total, data });
     document.getElementById('modal-editar-lanc')?.remove();
@@ -1099,6 +1114,12 @@ async function salvarEtapaLanc(lancId) {
   const novaEtapa = sel.value || '36_outros';
   try {
     await sbPatch('lancamentos', `?id=eq.${lancId}`, { etapa: novaEtapa });
+    // Sincronizar etapa na distribuição vinculada
+    const dist = (typeof distribuicoes !== 'undefined' ? distribuicoes : []).find(d => d.lancamento_id === lancId);
+    if (dist) {
+      await sbPatch('distribuicoes', `?id=eq.${dist.id}`, { etapa: novaEtapa });
+      dist.etapa = novaEtapa;
+    }
     const lanc = lancamentos.find(l => l.id === lancId);
     if (lanc) lanc.etapa = novaEtapa;
     document.getElementById('modal-editar-etapa')?.remove();
@@ -1216,6 +1237,13 @@ async function confirmarEditDesc() {
   try {
     const novaDesc = codigo + ' \u00b7 ' + nome;
     await sbPatch('lancamentos', `?id=eq.${lancId}`, { descricao: novaDesc });
+    // Sincronizar codigo_catalogo e item_desc na distribui\u00e7\u00e3o vinculada
+    const dist = (typeof distribuicoes !== 'undefined' ? distribuicoes : []).find(d => d.lancamento_id === lancId);
+    if (dist) {
+      await sbPatch('distribuicoes', `?id=eq.${dist.id}`, { codigo_catalogo: codigo, item_desc: nome });
+      dist.codigo_catalogo = codigo;
+      dist.item_desc = nome;
+    }
     lanc.descricao = novaDesc;
     showToast(novaDesc);
     modal.style.display = 'none';
@@ -1263,30 +1291,35 @@ function abrirNotaDoLancamento(lancId) {
 
 // ── EXCLUIR LANCAMENTO ──────────────────────────────────────────
 async function excluirLanc(id) {
-  if (!await confirmar('Excluir este lancamento? Esta acao nao pode ser desfeita.')) return;
   const lanc = lancamentos.find(l => l.id === id);
+  // Lançamento de NF não pode ser excluído manualmente
+  if (lanc?.nota_id) { showToast('Custo de NF — exclua pela Nota Fiscal.'); return; }
+  if (!await confirmar('Excluir este lancamento? Esta acao nao pode ser desfeita.')) return;
   if (lanc) {
-    const distVinculadas = distribuicoes.filter(d =>
-      d.obra_id === lanc.obra_id &&
-      norm(d.item_desc) === norm(lanc.descricao?.replace(/ · .*/, '') || '') &&
-      d.data === lanc.data
-    );
+    // Busca por lancamento_id (fonte de verdade)
+    let distVinculadas = distribuicoes.filter(d => d.lancamento_id === id);
+    // Fallback legado: texto + data (para lançamentos antigos sem lancamento_id na distribuição)
+    if (!distVinculadas.length) {
+      const descBase = norm(lanc.descricao?.replace(/^\d{4,6}\s*[·\-]\s*/, '') || '');
+      distVinculadas = distribuicoes.filter(d =>
+        d.obra_id === lanc.obra_id &&
+        norm(d.item_desc) === descBase &&
+        d.data === lanc.data
+      );
+    }
     for (const d of distVinculadas) {
-      await sbDelete('distribuicoes', `?id=eq.${d.id}`);
+      const ok = await sbDelete('distribuicoes', `?id=eq.${d.id}`);
+      if (!ok) { showToast('Erro ao reverter movimentacao de estoque. Operacao abortada.'); return; }
       distribuicoes = distribuicoes.filter(x => x.id !== d.id);
     }
-    if (distVinculadas.length > 0) {
-      showToast(`Lancamento e ${distVinculadas.length} distribuicao(oes) revertidas.`);
-    }
   }
-  await sbDelete('lancamentos', `?id=eq.${id}`);
+  const okLanc = await sbDelete('lancamentos', `?id=eq.${id}`);
+  if (!okLanc) { showToast('Erro ao excluir lancamento no banco.'); return; }
   lancamentos = lancamentos.filter(l => l.id !== id);
   filtrarLanc();
   renderDashboard();
   if (typeof renderEstoque === 'function') renderEstoque();
-  if (!lanc || !distribuicoes.some(d => d.obra_id === lanc?.obra_id)) {
-    showToast('Lancamento excluido.');
-  }
+  showToast('Lancamento excluido.');
 }
 
 // ── NAVEGACAO ENTRE MODULOS ─────────────────────────────────────

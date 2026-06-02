@@ -71,6 +71,26 @@ Após editar, verificar com `rg`:
 - **Pendência de dados:** distribuição histórica `id=f7c4cc4e...` com `item_desc='SIFÃO SANFONADO'` vinculada ao código 000564 (FRETE). Anomalia — código errado ou matching antigo incorreto. NÃO corrigir automaticamente. Auditar origem em nota/lançamento antes de alterar código ou deletar distribuição.
 - **Saneamento pendente:** 13 distribuições históricas de itens `movimenta_estoque=false` ainda existem no banco. Invisíveis no Estoque pelo filtro, mas são distribuições indevidas históricas. Saneamento separado com auditoria de `lancamento_id` antes de deletar.
 
+## Pendência planejada — Botão CUSTO no Estoque (2026-06-02)
+
+**Contexto:** serviços de fornecedores locais (gesso, esquadria, instalação, pintura) não têm NF.
+Hoje o usuário usa "Entrada" no Estoque para registrar esses custos → contamina o estoque físico com itens não-materiais → gera saldos negativos e inconsistências.
+
+**Solução acordada:** adicionar 4º botão "CUSTO" na faixa ENTRADA / SAÍDA / AJUSTE do Estoque.
+
+**Comportamento do botão:**
+- Abre modal com: Obra · Serviço/Taxa (autocomplete `movimenta_estoque=false`) · Etapa · Valor R$ · Data
+- Cria apenas um `lancamentos` — sem `distribuicoes`, sem `ajustes_estoque`
+- Custo aparece no P&L da obra normalmente
+- Items disponíveis: catálogo filtrado por `movimenta_estoque=false` + campo livre para fornecedor não cadastrado
+
+**O que resolve:**
+- Serviços somem do estoque físico de vez
+- Cimento para de ter saldo negativo por "INSTALAÇÃO DE PORTA" lançada errada
+- Cada botão tem responsabilidade clara
+
+**Pendência aberta:** definir nome final ("CUSTO" vs "SERVIÇO") e se permite digitar item livre.
+
 ## Clientes ativos
 - EDR Engenharia (construtora, plano ilimitado)
 - Jackson Alcantara (essencial, 3 obras)
