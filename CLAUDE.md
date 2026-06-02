@@ -61,6 +61,16 @@ Após editar, verificar com `rg`:
 - **Autocomplete:** listas grandes SEMPRE usar autocomplete, nunca select com scroll
 - **Diárias mão de obra:** NUNCA reativar `_diarAutoLancarPL` — cria duplicatas. Lançamento 28_mao SÓ via botão "Lançar FP". Banco tem índice único (obra_id, obs) WHERE etapa='28_mao' que rejeita duplicata.
 
+## Contrato — Catálogo / material vs serviço (2026-06-02)
+
+- `materiais.tipo_item` (text, default 'material') + `materiais.movimenta_estoque` (boolean, default true) — campos adicionados 2026-06-02.
+- `movimenta_estoque=false` é a fonte de verdade. Regex em `itemMovimentaEstoque()` é apenas fallback para itens sem catálogo.
+- `buildConsolidado` filtra `movimenta_estoque=false` — serviço/taxa/doc/frete nunca aparece no Estoque.
+- NF com `movimenta_estoque=false` gera custo/lançamento, mas NÃO cria `distribuicoes`.
+- Seed inicial: 17 itens marcados (5 serviços, 1 mão obra, 5 taxas, 5 documentos, 1 frete).
+- **Pendência de dados:** distribuição histórica `id=f7c4cc4e...` com `item_desc='SIFÃO SANFONADO'` vinculada ao código 000564 (FRETE). Anomalia — código errado ou matching antigo incorreto. NÃO corrigir automaticamente. Auditar origem em nota/lançamento antes de alterar código ou deletar distribuição.
+- **Saneamento pendente:** 13 distribuições históricas de itens `movimenta_estoque=false` ainda existem no banco. Invisíveis no Estoque pelo filtro, mas são distribuições indevidas históricas. Saneamento separado com auditoria de `lancamento_id` antes de deletar.
+
 ## Clientes ativos
 - EDR Engenharia (construtora, plano ilimitado)
 - Jackson Alcantara (essencial, 3 obras)
