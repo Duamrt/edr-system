@@ -476,7 +476,8 @@ function renderEstoque() {
                        it.semCodigo ? 'border-left:3px solid var(--warning);' : '';
     const opacidade = it.saldo === 0 ? 'opacity:.7;' : '';
 
-    let tags = `<span class="mat-tag mat-tag-cat">${esc(it.categoria)}</span>`;
+    const _catLabel = (typeof etapaLabel === 'function' && it.categoria) ? etapaLabel(it.categoria) : (it.categoria || '');
+    let tags = `<span class="mat-tag mat-tag-cat">${esc(_catLabel)}</span>`;
     if (it.semCodigo) tags += '<span class="mat-tag mat-tag-sem-codigo">SEM CODIGO</span>';
     if (it.nfPendente) tags += '<span class="mat-tag mat-tag-nf-pend">NF PENDENTE</span>';
     if (it.saldo < 0) tags += '<span class="mat-tag mat-tag-sem-codigo">SALDO NEGATIVO</span>';
@@ -1852,7 +1853,10 @@ function _popularFiltroEtapas() {
   if (!sel) return;
   const atual = sel.value;
   const cats = [...new Set(EstoqueModule._consolidado.map(i => i.categoria).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
-  sel.innerHTML = '<option value="">TODAS ETAPAS</option>' + cats.map(c => `<option value="${esc(c)}"${atual === c ? ' selected' : ''}>${esc(c)}</option>`).join('');
+  sel.innerHTML = '<option value="">TODAS ETAPAS</option>' + cats.map(c => {
+    const lbl = typeof etapaLabel === 'function' ? etapaLabel(c) : c;
+    return `<option value="${esc(c)}"${atual === c ? ' selected' : ''}>${esc(lbl)}</option>`;
+  }).join('');
 }
 
 function estoqueToggleNegativos() {
