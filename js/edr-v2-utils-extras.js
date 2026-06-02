@@ -18,6 +18,22 @@ function parseItens(n) { try { return JSON.parse(n.itens||'[]'); } catch(e) { co
 // Formata valor como moeda BRL: 1234.5 → "R$ 1.234,50"
 function fmt(v) { return Number(v||0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
 
+// Retorna true se o item (da NF ou lançamento) deve movimentar estoque físico.
+// Serviços, taxas, documentação, impostos e despesas operacionais NÃO movimentam estoque.
+// Usar antes de criar registro em `distribuicoes`.
+const _ETAPAS_NAO_ESTOQUE = new Set([
+  '08_doc','24_imposto','28_mao','38_frete',
+  '03_alimentacao','07_combustivel','14_expediente','25_limpeza','34_tecnologia'
+]);
+function itemMovimentaEstoque(it) {
+  if (!it) return false;
+  const etapa = it._etapa || it.etapa || '';
+  if (_ETAPAS_NAO_ESTOQUE.has(etapa)) return false;
+  const d = norm(it.desc || it.item_desc || '');
+  if (/\bart\b|taxa|licenca|licenca|alvara|projeto arq|projeto est|documentac|registro|cartorio|habite|averbac|desmembr|itbi|iptu|inss|fgts|engenharia/.test(d)) return false;
+  return true;
+}
+
 // Formata quantidade (sem R$): 262 → "262" | 262.5 → "262,5"
 function fmtQtd(v) { const n = Number(v||0); return n % 1 === 0 ? n.toLocaleString('pt-BR') : n.toLocaleString('pt-BR', { maximumFractionDigits: 2 }); }
 

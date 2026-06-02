@@ -1071,19 +1071,23 @@ async function salvarNota(notaData) {
               nota_id: saved.id, etapa: it._etapa || '',
             });
             if (lanc) lancamentos.unshift(lanc);
-            const dist = await sbPost('distribuicoes', {
-              nota_id: saved.id,
-              item_desc: it.desc,
-              item_idx: idx,
-              codigo_catalogo: it.codigo || null,
-              obra_id: obraDestino.id,
-              obra_nome: obraDestino.nome,
-              qtd: it.qtd,
-              valor: it.total,
-              data: dataLanc,
-              lancamento_id: lanc?.id || null
-            });
-            if (dist) distribuicoes.push({ ...dist, obra_nome: obraDestino.nome });
+            // Só movimenta estoque se for material físico (não taxa/serviço/doc)
+            if (typeof itemMovimentaEstoque === 'function' && itemMovimentaEstoque(it)) {
+              const dist = await sbPost('distribuicoes', {
+                nota_id: saved.id,
+                item_desc: it.desc,
+                item_idx: idx,
+                codigo_catalogo: it.codigo || null,
+                obra_id: obraDestino.id,
+                obra_nome: obraDestino.nome,
+                qtd: it.qtd,
+                valor: it.total,
+                etapa: it._etapa || '',
+                data: dataLanc,
+                lancamento_id: lanc?.id || null
+              });
+              if (dist) distribuicoes.push({ ...dist, obra_nome: obraDestino.nome });
+            }
           }
         }
       }
