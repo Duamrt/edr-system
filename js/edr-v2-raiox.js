@@ -35,7 +35,7 @@ function _rxEsc(s) { return (typeof esc === 'function') ? esc(s) : String(s == n
 
 function _rxStatus(o) {
   const nome = (o.nome || '').toUpperCase();
-  if (nome.includes('ESCRIT')) return 'estrutura';
+  if (nome.includes('ESCRIT') || nome.includes('ALMOX')) return 'estrutura';
   if (o.arquivada) return 'concluida';
   return 'andamento';
 }
@@ -47,21 +47,23 @@ function _rxCalc(o) {
   const ls = (typeof lancamentos !== 'undefined' ? lancamentos : []).filter(l => l.obra_id === o.id);
   const custo = ls.reduce((s, l) => s + Number(l.total || 0), 0);
   const material = (typeof distribuicoes !== 'undefined' ? distribuicoes : []).filter(d => d.obra_id === o.id).reduce((s, d) => s + Number(d.valor || 0), 0);
-  const receb = reps.filter(r => r.obra_id === o.id).reduce((s, r) => s + Number(r.valor || 0), 0);
+  const recebContrato = reps.filter(r => r.obra_id === o.id).reduce((s, r) => s + Number(r.valor || 0), 0);
   const contrato = Number(o.valor_venda || 0);
   const adic = (typeof getAdicionaisObra === 'function') ? getAdicionaisObra(o.id) : { valorTotal: 0, totalRecebido: 0, saldo: 0, qtd: 0 };
   const extras = Number(adic.valorTotal || 0);
-  const extrasReceber = Math.max(0, extras - Number(adic.totalRecebido || 0));
+  const recebExtras = Number(adic.totalRecebido || 0);
+  const receb = recebContrato + recebExtras;           // total financeiro recebido
+  const extrasReceber = Math.max(0, extras - recebExtras);
   const receita = contrato + extras;
   const lucro = receita - custo;
   const caixa = receb - custo;
   const margem = receita > 0 ? (lucro / receita * 100) : 0;
-  const aReceberContrato = contrato > 0 ? Math.max(0, contrato - receb) : 0;
+  const aReceberContrato = contrato > 0 ? Math.max(0, contrato - recebContrato) : 0;  // baseado só em repasses
   const aReceber = aReceberContrato + extrasReceber;
-  const pctReceb = contrato > 0 ? Math.min(100, Math.round(receb / contrato * 100)) : null;
+  const pctReceb = contrato > 0 ? Math.min(100, Math.round(recebContrato / contrato * 100)) : null;  // barra do contrato
   const prog = _rxProgObra(o.id);
   const pctGasto = contrato > 0 ? Math.round(custo / contrato * 100) : null;
-  return { o, status: _rxStatus(o), contrato, extras, extrasReceber, receita, custo, material, receb, lucro, caixa, margem, aReceber, aReceberContrato, pctReceb, prog, pctGasto, qtd: ls.length, adicQtd: Number(adic.qtd || 0) };
+  return { o, status: _rxStatus(o), contrato, extras, extrasReceber, receita, custo, material, receb, recebContrato, recebExtras, lucro, caixa, margem, aReceber, aReceberContrato, pctReceb, prog, pctGasto, qtd: ls.length, adicQtd: Number(adic.qtd || 0) };
 }
 
 function _rxTodas() {
@@ -222,7 +224,7 @@ function renderRaiox(container) {
         <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:800;color:var(--text-primary);">Raio-X de Obras</div>
         <div style="font-size:13px;color:var(--text-tertiary);font-family:Inter,sans-serif;margin-top:2px;">Carteira ao vivo — quanto saiu, quanto entrou e o que entrou a mais (extras)</div>
       </div>
-      <button onclick="rxEmitirRelatorio()" style="display:flex;align-items:center;gap:7px;background:var(--primary);color:#fff;border:none;border-radius:10px;padding:10px 16px;font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap;"><span class="material-symbols-outlined" style="font-size:18px;">description</span> Emitir relatório</button>
+      <button onclick="rxEmitirRelatorio()" style="display:flex;align-items:center;gap:7px;background:var(--primary);color:#fff;border:none;border-radius:10px;padding:10px 16px;font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap;"><span class="material-symbols-outlined" style="font-size:18px;">description</span> Relatório completo</button>
     </div>
     <div style="font-size:11px;color:var(--text-tertiary);font-family:'Space Grotesk',monospace;margin-bottom:8px;">Números de: <b style="color:var(--text-secondary);">${escopo}</b> — use os filtros abaixo pra mudar</div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px;">${_rxKpisHtml(linhasKpi)}</div>
@@ -250,7 +252,9 @@ function _rxCefObra(id) {
   return _rxRepasses().filter(r => r.obra_id === id).slice().sort((a, b) => String(a.data_credito || '').localeCompare(String(b.data_credito || '')));
 }
 function _rxAdicObra(id) {
-  const ad = (typeof obrasAdicionais !== 'undefined' ? obrasAdicionais : []).filter(a => a.obra_id === id);
+  // Mesmo filtro de _rxCalc: pendentes e cancelados não entram no relatório impresso
+  const ad = (typeof obrasAdicionais !== 'undefined' ? obrasAdicionais : [])
+    .filter(a => a.obra_id === id && a.status !== 'pendente' && a.status !== 'cancelado');
   const pg = (typeof adicionaisPgtos !== 'undefined' ? adicionaisPgtos : []);
   return ad.map(a => ({ desc: a.descricao || '—', valor: Number(a.valor || 0), status: a.status || '', pago: pg.filter(p => p.adicional_id === a.id).reduce((s, p) => s + Number(p.valor || 0), 0) }));
 }
