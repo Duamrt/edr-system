@@ -254,7 +254,7 @@ function _alertObrasSemLancamento(alertas, ha30) {
     const lancs = Array.isArray(lancamentos) ? lancamentos : [];
     const semMovimento = obrasAtivas.filter(o => {
       const ll = lancs.filter(l => l.obra_id === o.id);
-      if (!ll.length) return true; // nunca teve lançamento
+      if (!ll.length) return (o.criado_em || '') < ha30; // obra nova sem lançamento: só alerta se criada há >30 dias
       const ultimo = ll.reduce((max, l) => (l.data || '') > (max.data || '') ? l : max, ll[0]);
       return (ultimo.data || '') < ha30;
     });
