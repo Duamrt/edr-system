@@ -1254,13 +1254,14 @@ async function confirmarExclusaoNota(id) {
   const nota = notas.find(n => n.id === id || n.id === Number(id));
   if (!nota) { showToast('Nota nao encontrada.', 'error'); return; }
 
-  // Trava: nota paga no financeiro
-  if (typeof contasPagar !== 'undefined' && Array.isArray(contasPagar)) {
-    const nfNum = (nota.numero_nf || '').toUpperCase().trim();
-    const contaPaga = contasPagar.find(c =>
-      c.status === 'pago' && (c.nota_ref || '').toUpperCase().trim() === nfNum
-    );
-    if (contaPaga) {
+  // Trava: nota paga no financeiro — consulta direto no banco, não depende de array local.
+  // ATENÇÃO: usa nota_ref (número da NF) como chave de busca.
+  // Não resolve colisão se dois fornecedores tiverem NF com mesmo número.
+  // Corrigir definitivamente quando contas_pagar.nota_id existir (migration pendente).
+  const nfNumTrava = (nota.numero_nf || '').trim();
+  if (nfNumTrava) {
+    const contasPagas = await sbGet('contas_pagar', `?nota_ref=ilike.${encodeURIComponent(nfNumTrava)}&status=eq.pago`);
+    if (Array.isArray(contasPagas) && contasPagas.length > 0) {
       showToast(`NF ${nota.numero_nf} ja esta PAGA no financeiro. Cancele o pagamento antes de excluir.`, 'error');
       return;
     }
@@ -1310,49 +1311,62 @@ async function processarExclusaoNota(id, lancsPremapeados) {
   if (!nota) { showToast('Nota nao encontrada.', 'error'); return; }
 
   const lancsDaNota = lancsPremapeados || _mapearLancamentosNota(nota);
-  const erros = [];
 
   try {
     // Passo A: Excluir lancamentos vinculados (FK nota_id + fallback texto obs)
+    // Falha aqui = nada apagado ainda → abortar com segurança.
     if (lancsDaNota.length) {
-      // Delete em bloco por nota_id (FK)
-      try {
-        await sbDelete('lancamentos', `?nota_id=eq.${nota.id}`);
-      } catch(e) {
-        erros.push('lancamentos FK: ' + (e.message || e));
-        console.error('[EDR] Erro ao excluir lancamentos por nota_id', nota.id, e);
+      const okLancFK = await sbDelete('lancamentos', `?nota_id=eq.${nota.id}`);
+      if (!okLancFK) {
+        showToast('Erro ao estornar lancamentos. Exclusao cancelada.', 'error');
+        console.error('[EDR] Erro ao excluir lancamentos por nota_id', nota.id);
+        return;
       }
-      // Delete individual para os legados encontrados por texto (sem nota_id)
+      // Delete individual para legados encontrados por texto (sem nota_id)
       const legacy = lancsDaNota.filter(l => !l.nota_id);
+      const idsLegacyFalhos = new Set();
       for (const l of legacy) {
-        try {
-          await sbDelete('lancamentos', `?id=eq.${l.id}`);
-        } catch(e) {
-          erros.push(`lancamento legacy ${l.id}: ` + (e.message || e));
-          console.error('[EDR] Erro ao excluir lancamento legacy', l.id, e);
+        const okLeg = await sbDelete('lancamentos', `?id=eq.${l.id}`);
+        if (!okLeg) {
+          console.error('[EDR] Erro ao excluir lancamento legacy', l.id);
+          idsLegacyFalhos.add(l.id);
         }
       }
-      const idsRemovidos = new Set(lancsDaNota.map(l => l.id));
-      lancamentos = lancamentos.filter(l => !idsRemovidos.has(l.id));
+      // Atualiza cache local: FK ok = todos removidos; legacy = só os confirmados
+      const idsRemovidos = new Set(
+        lancsDaNota.filter(l => l.nota_id ? true : !idsLegacyFalhos.has(l.id)).map(l => l.id)
+      );
+      if (idsRemovidos.size) lancamentos = lancamentos.filter(l => !idsRemovidos.has(l.id));
+      // Legado com falha = abortar antes de apagar distribuicoes e nota
+      if (idsLegacyFalhos.size > 0) {
+        showToast(`Erro ao estornar ${idsLegacyFalhos.size} lancamento(s) legado(s). Nota preservada.`, 'error');
+        console.error('[EDR] Lancamentos legados nao removidos:', [...idsLegacyFalhos]);
+        return;
+      }
     }
 
     // Passo B: Excluir distribuicoes vinculadas
-    try {
-      await sbDelete('distribuicoes', `?nota_id=eq.${nota.id}`);
-      if (typeof distribuicoes !== 'undefined' && Array.isArray(distribuicoes)) {
-        distribuicoes = distribuicoes.filter(d => d.nota_id !== nota.id);
-      }
-    } catch(e) {
-      erros.push('distribuicoes: ' + (e.message || e));
-      console.error('[EDR] Erro ao excluir distribuicoes da NF', nota.id, e);
+    // Falha aqui = lancamentos já removidos mas nota preservada.
+    const okDist = await sbDelete('distribuicoes', `?nota_id=eq.${nota.id}`);
+    if (!okDist) {
+      showToast('Erro ao estornar distribuicoes. Nota mantida (lancamentos ja removidos — avise suporte).', 'error');
+      console.error('[EDR] Erro ao excluir distribuicoes da NF', nota.id);
+      renderNotas();
+      if (typeof renderEstoque === 'function') renderEstoque();
+      return;
+    }
+    if (typeof distribuicoes !== 'undefined' && Array.isArray(distribuicoes)) {
+      distribuicoes = distribuicoes.filter(d => d.nota_id !== nota.id);
     }
 
-    // Passo C: Excluir a nota principal
-    try {
-      await sbDelete('notas_fiscais', `?id=eq.${nota.id}`);
-    } catch(e) {
-      erros.push('nota_principal: ' + (e.message || e));
-      console.error('[EDR] Erro ao excluir nota principal', nota.id, e);
+    // Passo C: Excluir a nota principal — só chega aqui se A e B foram OK
+    const okNota = await sbDelete('notas_fiscais', `?id=eq.${nota.id}`);
+    if (!okNota) {
+      showToast('Erro ao excluir nota. Lancamentos e distribuicoes ja removidos — avise suporte.', 'error');
+      console.error('[EDR] Erro ao excluir nota principal', nota.id);
+      renderNotas();
+      if (typeof renderEstoque === 'function') renderEstoque();
+      return;
     }
     notas = notas.filter(n => n.id !== nota.id);
 
@@ -1360,12 +1374,8 @@ async function processarExclusaoNota(id, lancsPremapeados) {
     renderNotas();
     if (typeof renderEstoque === 'function') renderEstoque();
     if (typeof renderDashboard === 'function') renderDashboard();
+    showToast(`NF ${nota.numero_nf || ''} excluida. Estorno completo.`, 'success');
 
-    if (erros.length) {
-      showToast(`Nota excluida com avisos: ${erros.join('; ')}`, 'warning');
-    } else {
-      showToast(`NF ${nota.numero_nf || ''} excluida. Estorno completo.`, 'success');
-    }
   } catch(e) {
     console.error('[EDR] Erro critico ao excluir nota', id, e);
     showToast('Erro ao excluir: ' + (e.message || 'verifique o console.'), 'error');

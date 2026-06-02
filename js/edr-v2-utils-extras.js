@@ -30,7 +30,9 @@ function itemMovimentaEstoque(it) {
   const etapa = it._etapa || it.etapa || '';
   if (_ETAPAS_NAO_ESTOQUE.has(etapa)) return false;
   const d = norm(it.desc || it.item_desc || '');
-  if (/\bart\b|taxa|licenca|licenca|alvara|projeto arq|projeto est|documentac|registro|cartorio|habite|averbac|desmembr|itbi|iptu|inss|fgts|engenharia/.test(d)) return false;
+  // Nota: `registro` genérico foi removido — pegava REGISTRO SOLDAVEL, REGISTRO PVC etc.
+  // Documentos de cartório usam frases específicas abaixo.
+  if (/\bart\b|taxa|licenca|licenca|alvara|projeto arq|projeto est|documentac|registro de imovel|registro cartorio|cartorio|habite|averbac|desmembr|itbi|iptu|inss|fgts|engenharia/.test(d)) return false;
   return true;
 }
 
