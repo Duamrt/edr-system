@@ -20,6 +20,24 @@ Sempre responda em português brasileiro.
 ## Módulos principais
 obras · estoque · notas · diarias · leads · caixa · garantias · catalogo · equipe · relatorio · fiscal
 
+## Contrato de não regressão — Módulo Materiais/Estoque (2026-06-02)
+Antes de qualquer edição neste módulo, confirmar que estas regras continuam válidas:
+
+1. `materiais` está em `_TABELAS_TENANT` em `infra.js` — não remover
+2. `loadMateriais()` usa `sbGetAll` sem `limit=1000` — não regredir para `sbGet`
+3. Recarregar distribuições/ajustes via `loadDistribuicoes()` / `loadAjustesEstoque()` — nunca `window.distribuicoes = ...`
+4. `if (!novo) return` antes de `ajustesEstoque.unshift(novo)` — null check obrigatório
+5. `codigo_catalogo` presente nas inserções de entrada direta, saída manual, ajuste e distribuição de NF
+6. Banco usa key técnica (`08_doc`, `23_impermeab`); UI usa `etapaLabel(key)` — nunca salvar label bonito no banco
+7. Filtro de etapas: `value` = key oficial, texto = `etapaLabel(key)`, categorias legadas resolvidas via `_resolverCategoriaEstoque()`
+8. `itemMovimentaEstoque()` — serviço/taxa/doc/ART/imposto/frete cria lançamento mas NÃO cria `distribuicoes`
+
+Após editar, verificar com `rg`:
+- `window\.distribuicoes\s*=` → deve retornar vazio
+- `window\.ajustesEstoque\s*=` → deve retornar vazio
+- `loadMateriais` → deve conter `sbGetAll`
+- `ajustesEstoque\.unshift` → deve ter `if (!novo)` antes
+
 ## Gotchas CRÍTICOS
 - **populateSelects() APAGA valores de select:** NUNCA setar `obras-filtro-obra.value` ANTES de chamar `populateSelects()` — ela reconstrói o innerHTML e zera qualquer valor setado. Em `obrasAbrirDetalhe()` o `populateSelects()` DEVE vir primeiro, só depois setar o `.value`. Já quebrou e foi corrigido — não reverter.
 - **Modal V2:** SEMPRE `classList.remove('hidden'); classList.add('active')` pra abrir — NUNCA só um dos dois
