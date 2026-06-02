@@ -1070,10 +1070,12 @@ async function salvarLancamentoEdit(lancId) {
       const savedDist = await sbPatch('distribuicoes', `?id=eq.${dist.id}`, { qtd, valor: total, data });
       if (!savedDist) {
         showToast('Lancamento salvo, mas estoque divergiu. Recarregue a pagina.');
-        if (typeof loadDistribuicoes === 'function') loadDistribuicoes();
-      } else {
-        Object.assign(dist, { qtd, valor: total, data });
+        if (typeof loadLancamentos === 'function') await loadLancamentos();
+        if (typeof loadDistribuicoes === 'function') await loadDistribuicoes();
+        if (typeof filtrarLanc === 'function') filtrarLanc();
+        return; // não mostrar sucesso quando distribuição ficou divergente
       }
+      Object.assign(dist, { qtd, valor: total, data });
     }
     const lanc = lancamentos.find(l => l.id === lancId);
     if (lanc) Object.assign(lanc, { descricao: desc, qtd, preco, total, data });
