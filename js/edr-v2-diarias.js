@@ -511,6 +511,17 @@ async function _diarConfirmarExcDefinitivo(id, modalId) {
     return;
   }
   try {
+    // Verificar se existe lançamento de folha para esta quinzena
+    const obsQ = encodeURIComponent('Folha quinzenal · ' + id);
+    const lancsFolha = await sbGet('lancamentos', `?etapa=eq.28_mao&obs=eq.${obsQ}&select=id`);
+    if (Array.isArray(lancsFolha) && lancsFolha.length > 0) {
+      const conf = await confirmar(
+        'Esta quinzena tem ' + lancsFolha.length + ' lancamento(s) de mao de obra no financeiro.\n' +
+        'Excluir a quinzena NAO remove esses custos automaticamente.\n\n' +
+        'Deseja continuar mesmo assim?'
+      );
+      if (!conf) return;
+    }
     await sbDelete('diarias', `?quinzena_id=eq.${id}`);
     await sbDelete('diarias_extras', `?quinzena_id=eq.${id}`);
     await sbDelete('diarias_quinzenas', `?id=eq.${id}`);
@@ -1107,42 +1118,7 @@ async function diarConfirmarLancamento() {
 // _diarAutoLancarPL REMOVIDA 2026-05-11 — criava duplicatas de custo. Mão de obra só via botão "Lançar FP".
 // (gotcha do CLAUDE.md: "NUNCA reativar _diarAutoLancarPL")
 
-/* corpo da função _diarAutoLancarPL removido em 2026-05-11
-  const obrasMap = await _diarBuscarObras();
-  if (!obrasMap) return;
-  const porObra = {};
-  novos.forEach(r => {
-    const periodos = Array.isArray(r.periodos) ? r.periodos : [];
-    periodos.forEach(p => {
-      const chave = _diarNormStr(p.obra || '');
-      if (!porObra[chave]) porObra[chave] = { valor: 0, nome: p.obra };
-      porObra[chave].valor += r.diaria_base * (p.fracao || 0);
-    });
-  });
-  const data = novos[0]?.data || hojeISO();
-  const obs = 'Diaria· ' + data + ' · ' + (DiariasModule.quinzenaAtiva?.label || 'Quinzena');
-  for (const [chave, { valor }] of Object.entries(porObra)) {
-    const obraId = obrasMap[chave];
-    if (!obraId || valor <= 0) continue;
-    try {
-      // Verificar se já existe lançamento de diária para essa obra/data/quinzena
-      const existente = await sbGet('lancamentos',
-        `?obra_id=eq.${obraId}&data=eq.${data}&obs=eq.${encodeURIComponent(obs)}&etapa=eq.28_mao&select=id`);
-      if (Array.isArray(existente) && existente.length > 0) {
-        // Atualizar valor existente em vez de criar duplicata
-        await sbPatch('lancamentos',
-          `?id=eq.${existente[0].id}`,
-          { preco: valor, total: valor, descricao: '000460 \u00b7 MAO DE OBRA' });
-      } else {
-        await sbPostMinimal('lancamentos', {
-          obra_id: obraId, descricao: '000460 \u00b7 MAO DE OBRA', qtd: 1,
-          preco: valor, total: valor, data, obs, etapa: '28_mao'
-        });
-      }
-    } catch(e) { console.warn('[DIAR] auto-lancar PL:', e); }
-  }
-}
-*/
+// corpo removido — NUNCA recriar esta função. Ver gotcha CLAUDE.md.
 
 function _diarNormStr(s) {
   return (s || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
@@ -1305,6 +1281,7 @@ function diarEditAddPeriodo() {
 }
 
 async function diarSalvarEdicao(regId) {
+  if (DiariasModule.quinzenaAtiva?.fechada) { showToast('Quinzena fechada. Reabra antes de editar.'); return; }
   const modal = document.getElementById('diar-modalEdit');
   if (!modal) return;
   const reg = DiariasModule.registros.find(r => r.id === regId);
@@ -1400,6 +1377,7 @@ function diarAddPeriodoModal() {
 }
 
 async function diarConfirmarAdd(data) {
+  if (DiariasModule.quinzenaAtiva?.fechada) { showToast('Quinzena fechada. Reabra antes de adicionar.'); return; }
   const modal = document.getElementById('diar-modalAdd');
   if (!modal) return;
   const sel = modal.querySelector('#add-func');
@@ -1436,6 +1414,7 @@ async function diarConfirmarAdd(data) {
 }
 
 async function diarExcluirRegistro(regId) {
+  if (DiariasModule.quinzenaAtiva?.fechada) { showToast('Quinzena fechada. Reabra antes de excluir.'); return; }
   const ok = await confirmar('Excluir este registro de diaria?');
   if (!ok) return;
   try {
@@ -1448,6 +1427,7 @@ async function diarExcluirRegistro(regId) {
 }
 
 async function diarDeletarDia(data) {
+  if (DiariasModule.quinzenaAtiva?.fechada) { showToast('Quinzena fechada. Reabra antes de excluir.'); return; }
   const ok = await confirmar('Remover todos os registros de ' + data + '?');
   if (!ok) return;
   try {
@@ -2127,10 +2107,12 @@ async function diarConfirmarLancamentosEDR() {
       const existente = await sbGet('lancamentos',
         `?obra_id=eq.${obraId}&obs=eq.${encodeURIComponent(obs)}&etapa=eq.28_mao&select=id`);
       if (Array.isArray(existente) && existente.length > 0) {
-        await sbPatch('lancamentos', `?id=eq.${existente[0].id}`, { preco: valor, total: valor, descricao: '000460 \u00b7 MAO DE OBRA' });
+        const saved = await sbPatch('lancamentos', `?id=eq.${existente[0].id}`, { preco: valor, total: valor, descricao: '000460 \u00b7 MAO DE OBRA' });
+        if (!saved) { statusEl.innerHTML += `<div style="color:var(--error)"><span class="material-symbols-outlined" style="font-size:14px">error</span> ${obra}: falha ao atualizar</div>`; erro++; continue; }
         statusEl.innerHTML += `<div style="color:var(--warning)"><span class="material-symbols-outlined" style="font-size:14px">update</span> ${obra}: atualizado (ja existia)</div>`;
       } else {
-        await sbPostMinimal('lancamentos', { obra_id: obraId, descricao: '000460 \u00b7 MAO DE OBRA', qtd: 1, preco: valor, total: valor, data: hoje, obs, etapa: '28_mao' });
+        const saved = await sbPostMinimal('lancamentos', { obra_id: obraId, descricao: '000460 \u00b7 MAO DE OBRA', qtd: 1, preco: valor, total: valor, data: hoje, obs, etapa: '28_mao' });
+        if (!saved) { statusEl.innerHTML += `<div style="color:var(--error)"><span class="material-symbols-outlined" style="font-size:14px">error</span> ${obra}: falha ao inserir</div>`; erro++; continue; }
         statusEl.innerHTML += `<div style="color:var(--success)"><span class="material-symbols-outlined" style="font-size:14px">check_circle</span> ${obra}: R$ ${valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} lancado</div>`;
       }
       ok++;
@@ -2139,18 +2121,20 @@ async function diarConfirmarLancamentosEDR() {
   btn.textContent = ok > 0 ? ok + ' lancado(s)' + (erro > 0 ? ' / ' + erro + ' erro(s)' : '') : 'Falhou';
   if (ok > 0) {
     DiariasModule._obrasCache = null;
-    showToast(ok + ' lancamento(s) enviado(s)!');
-    // Fechar quinzena automaticamente após folha lançada com sucesso (elimina falso alerta "quinzena pendente")
+    showToast(ok + ' lancamento(s) enviado(s)!' + (erro > 0 ? ' ' + erro + ' com erro.' : ''));
+    // Fechar quinzena só se TODOS lançamentos tiveram sucesso
     const qz = DiariasModule.quinzenaAtiva;
-    if (qz && qz.id && !qz.fechada) {
-      try {
-        await sbPatch('diarias_quinzenas', '?id=eq.' + qz.id, { fechada: true });
+    if (qz && qz.id && !qz.fechada && erro === 0) {
+      const savedQz = await sbPatch('diarias_quinzenas', '?id=eq.' + qz.id, { fechada: true });
+      if (savedQz) {
         qz.fechada = true;
         _diarAtualizarSelectQuinzena();
         statusEl.innerHTML += '<div style="color:var(--success)"><span class="material-symbols-outlined" style="font-size:14px">lock</span> Quinzena marcada como fechada</div>';
-      } catch (e) {
-        statusEl.innerHTML += '<div style="color:var(--warning)"><span class="material-symbols-outlined" style="font-size:14px">warning</span> Folha lancada mas nao foi possivel marcar quinzena como fechada: ' + e.message + '</div>';
+      } else {
+        statusEl.innerHTML += '<div style="color:var(--warning)"><span class="material-symbols-outlined" style="font-size:14px">warning</span> Folha lancada mas nao foi possivel marcar quinzena como fechada.</div>';
       }
+    } else if (erro > 0) {
+      statusEl.innerHTML += '<div style="color:var(--warning)"><span class="material-symbols-outlined" style="font-size:14px">warning</span> Quinzena NAO fechada — corrija os erros e relance.</div>';
     }
   }
 }
