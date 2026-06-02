@@ -144,6 +144,45 @@ function _relMsgVazio() {
 
 function _relGetObrasIdsAtivas() { return new Set(obras.filter(o => !o.arquivada).map(o => o.id)); }
 
+// Helper: entradas/saídas/mão de obra de um mês, respeitando filtro de obras ativas
+function _relCalcMes(ym, mostrar, idsAtivas) {
+  const _adics = typeof adicionais !== 'undefined' ? adicionais : [];
+  const lancMes = lancamentos.filter(l => {
+    if (!l.data || !l.data.startsWith(ym)) return false;
+    return mostrar || !l.obra_id || idsAtivas.has(l.obra_id);
+  });
+  const saidas = lancMes.reduce((s, l) => s + Number(l.total || 0), 0);
+  const maoObra = lancMes.filter(l => getCatFromLanc(l) === '28_mao').reduce((s, l) => s + Number(l.total || 0), 0);
+  const entAdic = _relGetAdicionaisPgtos().filter(p => {
+    if (!p.data || !p.data.startsWith(ym)) return false;
+    if (!mostrar) {
+      const adic = _adics.find(a => a.id === p.adicional_id);
+      return !adic || !adic.obra_id || idsAtivas.has(adic.obra_id);
+    }
+    return true;
+  }).reduce((s, p) => s + Number(p.valor || 0), 0);
+  const entRep = _relGetRepassesCef().filter(r => {
+    if (!r.data_credito || !r.data_credito.startsWith(ym)) return false;
+    return mostrar || !r.obra_id || idsAtivas.has(r.obra_id);
+  }).reduce((s, r) => s + Number(r.valor || 0), 0);
+  const entradas = entAdic + entRep;
+  return { entradas, saidas, maoObra, saldo: entradas - saidas };
+}
+
+// Helper: agrega todos os meses de um ano com o mesmo escopo
+function _relCalcAno(ano, mostrar) {
+  const idsAtivas = _relGetObrasIdsAtivas();
+  let entradas = 0, saidas = 0, maoObra = 0;
+  for (let m = 1; m <= 12; m++) {
+    const ym = ano + '-' + String(m).padStart(2, '0');
+    const d = _relCalcMes(ym, mostrar, idsAtivas);
+    entradas += d.entradas;
+    saidas += d.saidas;
+    maoObra += d.maoObra;
+  }
+  return { entradas, saidas, maoObra, saldo: entradas - saidas };
+}
+
 function relToggleObrasConcluidas() {
   RelatorioModule.mostrarConcluidas = !RelatorioModule.mostrarConcluidas;
   renderRelatorio();
@@ -283,6 +322,8 @@ function _relBuildPainelFinanceiro() {
     </div>`;
   }
 
+  // Acumulado anual — 4 cards acima do gráfico
+  html += _relBuildAcumuladoAnual(anoStr, mostrar);
   // Grafico barras 6 meses
   html += _relBuildGraficoMensal(ym, mostrar, idsAtivas);
   // Detalhamento por obra
@@ -387,6 +428,32 @@ function _relRenderDetalhe(el) {
   </div>`;
 }
 
+// ── ACUMULADO ANUAL ───────────────────────────────────────────
+
+function _relBuildAcumuladoAnual(ano, mostrar) {
+  const d = _relCalcAno(ano, mostrar);
+  const corSaldo = d.saldo >= 0 ? 'var(--success)' : 'var(--danger)';
+  const pctMao = d.saidas > 0 ? (d.maoObra / d.saidas * 100).toFixed(0) + '% das saídas' : '—';
+  const cards = [
+    { icon: 'trending_up',    label: 'ENTRADAS ' + ano,   val: d.entradas, cor: 'var(--success)', sub: '' },
+    { icon: 'trending_down',  label: 'SAÍDAS ' + ano,     val: d.saidas,   cor: 'var(--danger)',  sub: '' },
+    { icon: 'account_balance',label: 'SALDO ' + ano,      val: d.saldo,    cor: corSaldo,         sub: d.saldo >= 0 ? 'positivo' : 'negativo' },
+    { icon: 'engineering',    label: 'MÃO DE OBRA ' + ano, val: d.maoObra, cor: 'var(--warning)', sub: pctMao },
+  ];
+  const cardsHtml = cards.map(c => `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;">
+      <div style="font-size:9px;letter-spacing:1px;color:var(--text-tertiary);font-weight:700;font-family:'Space Grotesk',monospace;margin-bottom:4px;">${c.label}</div>
+      <div style="font-size:17px;font-weight:800;color:${c.cor};font-family:'Space Grotesk',monospace;line-height:1.2;">${_relFmtR(c.val)}</div>
+      ${c.sub ? `<div style="font-size:10px;color:var(--text-tertiary);margin-top:3px;font-family:Inter,sans-serif;">${c.sub}</div>` : ''}
+    </div>`).join('');
+  return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px 20px;margin-bottom:16px;">
+    <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;color:var(--text-primary);margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+      <span class="material-symbols-outlined" style="font-size:18px;color:#2D6A4F;">calendar_month</span> ACUMULADO ${ano}
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;">${cardsHtml}</div>
+  </div>`;
+}
+
 // ── GRAFICO BARRAS 6 MESES ───────────────────────────────────
 
 function _relBuildGraficoMensal(ymBase, mostrar, idsAtivas) {
@@ -398,33 +465,8 @@ function _relBuildGraficoMensal(ymBase, mostrar, idsAtivas) {
     mesesArr.push(a + '-' + String(m).padStart(2, '0'));
   }
 
-  const saidasPorMes = {}, entAdicPorMes = {}, entRepPorMes = {};
-  mesesArr.forEach(ym => { saidasPorMes[ym] = 0; entAdicPorMes[ym] = 0; entRepPorMes[ym] = 0; });
-  const mesesSet = new Set(mesesArr);
-  // Respeitar filtro de obras ativas, igual aos cards do painel financeiro
-  const _grafAdics = typeof adicionais !== 'undefined' ? adicionais : [];
-  lancamentos.forEach(l => {
-    const ym = l.data?.substring(0, 7);
-    if (ym && mesesSet.has(ym) && (mostrar || !l.obra_id || idsAtivas.has(l.obra_id)))
-      saidasPorMes[ym] += Number(l.total || 0);
-  });
-  _relGetAdicionaisPgtos().forEach(p => {
-    const ym = p.data?.substring(0, 7);
-    if (ym && mesesSet.has(ym)) {
-      if (!mostrar) {
-        const adic = _grafAdics.find(a => a.id === p.adicional_id);
-        if (adic && adic.obra_id && !idsAtivas.has(adic.obra_id)) return;
-      }
-      entAdicPorMes[ym] += Number(p.valor || 0);
-    }
-  });
-  _relGetRepassesCef().forEach(r => {
-    const ym = r.data_credito?.substring(0, 7);
-    if (ym && mesesSet.has(ym) && (mostrar || !r.obra_id || idsAtivas.has(r.obra_id)))
-      entRepPorMes[ym] += Number(r.valor || 0);
-  });
-
-  const dados = mesesArr.map(ym => ({ ym, entradas: entAdicPorMes[ym] + entRepPorMes[ym], saidas: saidasPorMes[ym] }));
+  // Usa _relCalcMes para consistência com o painel e o acumulado anual
+  const dados = mesesArr.map(ym => ({ ym, ..._relCalcMes(ym, mostrar, idsAtivas) }));
   const maxVal = Math.max(...dados.map(d => Math.max(d.entradas, d.saidas)), 1);
 
   const colunas = dados.map(d => {
@@ -433,7 +475,9 @@ function _relBuildGraficoMensal(ymBase, mostrar, idsAtivas) {
     const hSai = Math.max((d.saidas / maxVal * 100), d.saidas > 0 ? 4 : 0);
     const isAtual = d.ym === ymBase;
     const bordaAtual = isAtual ? 'border:2px solid rgba(45,106,79,0.4);border-radius:10px;padding:4px;' : '';
-    return `<div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;min-width:55px;${bordaAtual}">
+    const corSaldo = d.saldo >= 0 ? '#16a34a' : '#dc2626';
+    const temDados = d.entradas > 0 || d.saidas > 0;
+    return `<div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex:1;min-width:60px;${bordaAtual}">
       <div style="display:flex;gap:3px;align-items:flex-end;height:90px;width:100%;">
         <div style="flex:1;display:flex;align-items:flex-end;height:100%;">
           <div style="width:100%;height:${hEnt}%;background:linear-gradient(0deg,#1B5E3B,#2D6A4F);border-radius:4px 4px 0 0;transition:height .5s;min-height:${d.entradas > 0 ? '4px' : '0'};" title="Entradas: ${_relFmtR(d.entradas)}"></div>
@@ -442,7 +486,10 @@ function _relBuildGraficoMensal(ymBase, mostrar, idsAtivas) {
           <div style="width:100%;height:${hSai}%;background:linear-gradient(0deg,#c0392b,#e74c3c);border-radius:4px 4px 0 0;transition:height .5s;min-height:${d.saidas > 0 ? '4px' : '0'};" title="Saidas: ${_relFmtR(d.saidas)}"></div>
         </div>
       </div>
-      <div style="font-size:10px;color:${isAtual ? '#2D6A4F' : 'var(--text-tertiary)'};font-weight:${isAtual ? '700' : '400'};text-align:center;font-family:Inter,sans-serif;">${MESES[parseInt(m) - 1]}</div>
+      <div style="font-size:10px;color:${isAtual ? '#2D6A4F' : 'var(--text-tertiary)'};font-weight:${isAtual ? '700' : '400'};text-align:center;font-family:Inter,sans-serif;margin-top:2px;">${MESES[parseInt(m) - 1]}</div>
+      ${d.entradas > 0 ? `<div style="font-size:8.5px;color:#2D6A4F;font-family:'Space Grotesk',monospace;text-align:center;white-space:nowrap;">${_relFmtR(d.entradas, true)}</div>` : ''}
+      ${d.saidas > 0 ? `<div style="font-size:8.5px;color:#e74c3c;font-family:'Space Grotesk',monospace;text-align:center;white-space:nowrap;">${_relFmtR(d.saidas, true)}</div>` : ''}
+      ${temDados ? `<div style="font-size:8.5px;color:${corSaldo};font-weight:700;font-family:'Space Grotesk',monospace;text-align:center;white-space:nowrap;">${d.saldo >= 0 ? '+' : ''}${_relFmtR(d.saldo, true)}</div>` : ''}
     </div>`;
   }).join('');
 
