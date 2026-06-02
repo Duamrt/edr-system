@@ -1899,7 +1899,8 @@ function _popularFiltroEtapas() {
   const sel = document.getElementById('estoque-filtro-etapa');
   if (!sel) return;
   const atual = sel.value;
-  const cats = [...new Set(EstoqueModule._consolidado.map(i => i.categoria).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  const _lbl = c => (typeof etapaLabel === 'function' ? etapaLabel(c) : c);
+  const cats = [...new Set(EstoqueModule._consolidado.map(i => i.categoria).filter(Boolean))].sort((a, b) => _lbl(a).localeCompare(_lbl(b), 'pt-BR'));
   sel.innerHTML = '<option value="">TODAS ETAPAS</option>' + cats.map(c => {
     const lbl = typeof etapaLabel === 'function' ? etapaLabel(c) : c;
     return `<option value="${esc(c)}"${atual === c ? ' selected' : ''}>${esc(lbl)}</option>`;
