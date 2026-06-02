@@ -1062,12 +1062,18 @@ async function salvarLancamentoEdit(lancId) {
   if (!desc) return showToast('Informe a descricao.');
   const total = qtd * preco;
   try {
-    await sbPatch('lancamentos', `?id=eq.${lancId}`, { descricao: desc, qtd, preco, total, data });
-    // Sincronizar distribuição vinculada (qtd/valor/data)
+    const savedLanc = await sbPatch('lancamentos', `?id=eq.${lancId}`, { descricao: desc, qtd, preco, total, data });
+    if (!savedLanc) { showToast('Erro ao salvar no banco. Tente novamente.'); return; }
+    // Sincronizar distribuição vinculada (qtd/valor/data) — campo operacional é 'valor'
     const dist = (typeof distribuicoes !== 'undefined' ? distribuicoes : []).find(d => d.lancamento_id === lancId);
     if (dist) {
-      await sbPatch('distribuicoes', `?id=eq.${dist.id}`, { qtd, valor_un: preco, valor_total: total, data });
-      Object.assign(dist, { qtd, valor_un: preco, valor_total: total, data });
+      const savedDist = await sbPatch('distribuicoes', `?id=eq.${dist.id}`, { qtd, valor: total, data });
+      if (!savedDist) {
+        showToast('Lancamento salvo, mas estoque divergiu. Recarregue a pagina.');
+        if (typeof loadDistribuicoes === 'function') loadDistribuicoes();
+      } else {
+        Object.assign(dist, { qtd, valor: total, data });
+      }
     }
     const lanc = lancamentos.find(l => l.id === lancId);
     if (lanc) Object.assign(lanc, { descricao: desc, qtd, preco, total, data });
