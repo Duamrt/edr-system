@@ -639,10 +639,14 @@ function relVerCategoriaEmObras(cat) {
 // ── SECAO COMPARATIVO ────────────────────────────────────────
 
 function _relBuildSecaoComparativo() {
-  if (obras.length < 2) return '';
-  const dados = obras.map(o => {
+  const mostrar = RelatorioModule.mostrarConcluidas;
+  const todasObras = mostrar
+    ? [...obras, ...(typeof obrasArquivadas !== 'undefined' ? obrasArquivadas : [])]
+    : obras.filter(o => !o.arquivada);
+  if (todasObras.length < 2) return '';
+  const dados = todasObras.map(o => {
     const total = lancamentos.filter(l => l.obra_id === o.id).reduce((s, l) => s + Number(l.total || 0), 0);
-    return { nome: o.nome, total };
+    return { nome: o.nome, total, arquivada: o.arquivada };
   }).filter(d => d.total > 0).sort((a, b) => b.total - a.total);
 
   if (!dados.length) return '';
@@ -652,9 +656,10 @@ function _relBuildSecaoComparativo() {
   const linhas = dados.map((d, i) => {
     const pct = maxVal > 0 ? (d.total / maxVal * 100).toFixed(1) : 0;
     const cor = coresRanking[i % coresRanking.length];
+    const badge = d.arquivada ? '<span style="font-size:8px;background:rgba(45,106,79,0.15);color:#2D6A4F;padding:2px 6px;border-radius:4px;margin-left:6px;font-weight:700;font-family:Inter,sans-serif;">CONCLUIDA</span>' : '';
     return `<div style="margin-bottom:12px;">
       <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px;">
-        <span style="color:var(--text-primary);font-weight:600;max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:Inter,sans-serif;">${esc(d.nome)}</span>
+        <span style="color:var(--text-primary);font-weight:600;max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:Inter,sans-serif;">${esc(d.nome)}${badge}</span>
         <span style="color:var(--text-secondary);font-family:'Space Grotesk',monospace;">${_relFmtR(d.total)}</span>
       </div>
       <div style="height:10px;background:var(--border);border-radius:5px;overflow:hidden;">
@@ -663,10 +668,15 @@ function _relBuildSecaoComparativo() {
     </div>`;
   }).join('');
 
+  const subtitulo = mostrar
+    ? 'Custo acumulado total por obra — ativas e concluidas'
+    : 'Custo acumulado total por obra — apenas obras ativas';
+
   return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px;">
-    <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:700;color:var(--text-primary);margin-bottom:16px;display:flex;align-items:center;gap:8px;">
+    <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:700;color:var(--text-primary);margin-bottom:4px;display:flex;align-items:center;gap:8px;">
       <span class="material-symbols-outlined" style="font-size:20px;color:#2D6A4F;">compare_arrows</span> COMPARATIVO ENTRE OBRAS
     </div>
+    <div style="font-size:11px;color:var(--text-tertiary);margin-bottom:12px;font-family:Inter,sans-serif;">${subtitulo}</div>
     ${linhas}
   </div>`;
 }
