@@ -24,7 +24,7 @@ const MESES_FULL = ['Janeiro','Fevereiro','Marco','Abril','Maio','Junho','Julho'
 
 function _relGetRepassesCef() {
   if (typeof repassesCef !== 'undefined' && repassesCef.length) return repassesCef;
-  return typeof CustosModule !== 'undefined' && CustosModule.repassesCef.length ? CustosModule.repassesCef : [];
+  return typeof CustosModule !== 'undefined' && Array.isArray(CustosModule.repassesCef) && CustosModule.repassesCef.length ? CustosModule.repassesCef : [];
 }
 
 function _relGetAdicionaisPgtos() {
@@ -167,10 +167,20 @@ function _relBuildPainelFinanceiro() {
   RelatorioModule.lancSaidasMes = lancMes;
   RelatorioModule.lancMaoObraMes = lancMaoObra;
 
-  // Entradas do mes
-  const pgtosMes = _relGetAdicionaisPgtos().filter(p => p.data && p.data.startsWith(ym));
+  // Entradas do mes — respeitar o mesmo filtro de obras ativas das saidas
+  const _adics = typeof adicionais !== 'undefined' ? adicionais : [];
+  const pgtosMes = _relGetAdicionaisPgtos().filter(p => {
+    if (!p.data || !p.data.startsWith(ym)) return false;
+    if (!mostrar) {
+      const adic = _adics.find(a => a.id === p.adicional_id);
+      return !adic || !adic.obra_id || idsAtivas.has(adic.obra_id);
+    }
+    return true;
+  });
   const totalPgtosAdic = pgtosMes.reduce((s, p) => s + Number(p.valor || 0), 0);
-  const repassesMes = _relGetRepassesMes(ym);
+  const repassesMes = mostrar
+    ? _relGetRepassesMes(ym)
+    : _relGetRepassesMes(ym).filter(r => !r.obra_id || idsAtivas.has(r.obra_id));
   const totalRepasses = repassesMes.reduce((s, r) => s + Number(r.valor || 0), 0);
   const plsMes = repassesMes.filter(r => (r.tipo || 'pls') === 'pls').reduce((s, r) => s + Number(r.valor || 0), 0);
   const entradaMes = repassesMes.filter(r => r.tipo === 'entrada').reduce((s, r) => s + Number(r.valor || 0), 0);
@@ -274,7 +284,7 @@ function _relBuildPainelFinanceiro() {
   }
 
   // Grafico barras 6 meses
-  html += _relBuildGraficoMensal(ym);
+  html += _relBuildGraficoMensal(ym, mostrar, idsAtivas);
   // Detalhamento por obra
   html += _relBuildDetalheObras(ym);
   // Custo por m2
@@ -379,7 +389,7 @@ function _relRenderDetalhe(el) {
 
 // ── GRAFICO BARRAS 6 MESES ───────────────────────────────────
 
-function _relBuildGraficoMensal(ymBase) {
+function _relBuildGraficoMensal(ymBase, mostrar, idsAtivas) {
   const [anoBase, mesBase] = ymBase.split('-').map(Number);
   const mesesArr = [];
   for (let i = 5; i >= 0; i--) {
@@ -391,9 +401,28 @@ function _relBuildGraficoMensal(ymBase) {
   const saidasPorMes = {}, entAdicPorMes = {}, entRepPorMes = {};
   mesesArr.forEach(ym => { saidasPorMes[ym] = 0; entAdicPorMes[ym] = 0; entRepPorMes[ym] = 0; });
   const mesesSet = new Set(mesesArr);
-  lancamentos.forEach(l => { const ym = l.data?.substring(0, 7); if (ym && mesesSet.has(ym)) saidasPorMes[ym] += Number(l.total || 0); });
-  _relGetAdicionaisPgtos().forEach(p => { const ym = p.data?.substring(0, 7); if (ym && mesesSet.has(ym)) entAdicPorMes[ym] += Number(p.valor || 0); });
-  _relGetRepassesCef().forEach(r => { const ym = r.data_credito?.substring(0, 7); if (ym && mesesSet.has(ym)) entRepPorMes[ym] += Number(r.valor || 0); });
+  // Respeitar filtro de obras ativas, igual aos cards do painel financeiro
+  const _grafAdics = typeof adicionais !== 'undefined' ? adicionais : [];
+  lancamentos.forEach(l => {
+    const ym = l.data?.substring(0, 7);
+    if (ym && mesesSet.has(ym) && (mostrar || !l.obra_id || idsAtivas.has(l.obra_id)))
+      saidasPorMes[ym] += Number(l.total || 0);
+  });
+  _relGetAdicionaisPgtos().forEach(p => {
+    const ym = p.data?.substring(0, 7);
+    if (ym && mesesSet.has(ym)) {
+      if (!mostrar) {
+        const adic = _grafAdics.find(a => a.id === p.adicional_id);
+        if (adic && adic.obra_id && !idsAtivas.has(adic.obra_id)) return;
+      }
+      entAdicPorMes[ym] += Number(p.valor || 0);
+    }
+  });
+  _relGetRepassesCef().forEach(r => {
+    const ym = r.data_credito?.substring(0, 7);
+    if (ym && mesesSet.has(ym) && (mostrar || !r.obra_id || idsAtivas.has(r.obra_id)))
+      entRepPorMes[ym] += Number(r.valor || 0);
+  });
 
   const dados = mesesArr.map(ym => ({ ym, entradas: entAdicPorMes[ym] + entRepPorMes[ym], saidas: saidasPorMes[ym] }));
   const maxVal = Math.max(...dados.map(d => Math.max(d.entradas, d.saidas)), 1);
