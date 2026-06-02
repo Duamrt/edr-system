@@ -330,9 +330,18 @@ function consolidarEstoque(obraId) {
     if (saldo > 0) valorTotal += saldo * valorMedio;
   }
 
-  EstoqueModule._consolidado = resultado;
+  // Remover itens com movimenta_estoque=false (serviço, taxa, etc.)
+  const cat = typeof catalogoMateriais !== 'undefined' ? catalogoMateriais : [];
+  const resultadoFiltrado = resultado.filter(item => {
+    let catItem = null;
+    if (item.codigo) catItem = cat.find(m => m.codigo === item.codigo);
+    if (!catItem) catItem = cat.find(m => norm(m.nome) === norm(item.desc));
+    return !catItem || catItem.movimenta_estoque !== false;
+  });
+
+  EstoqueModule._consolidado = resultadoFiltrado;
   EstoqueModule._valorTotal = valorTotal;
-  return resultado;
+  return resultadoFiltrado;
 }
 
 
@@ -1340,8 +1349,11 @@ function renderCatalogo() {
     const isAuto = m.auto === true;
     const rowStyle = isAuto ? ' style="background:rgba(217,119,6,.03);"' : '';
 
+    const tipoLabels = { servico:'SERVIÇO', taxa:'TAXA', mao_obra:'MÃO OBRA', documento:'DOC', frete:'FRETE' };
+    const tipoLabel = tipoLabels[m.tipo_item];
     let statusCol = '';
     if (isAuto) statusCol = '<span class="cat-badge-auto">REVISAR</span>';
+    if (tipoLabel) statusCol += `<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;background:rgba(234,88,12,.12);color:#ea580c;font-family:'Space Grotesk',monospace;margin-left:4px;">${tipoLabel}</span>`;
 
     let acoesCol = '';
     if (isAdmin) {
@@ -1418,6 +1430,9 @@ async function editarMaterial(id) {
   document.getElementById('mat-nome').value = mat.nome || '';
   document.getElementById('mat-unidade').value = mat.unidade || 'UN';
   if (selCat) selCat.value = mat.categoria || '';
+  const selTipo = document.getElementById('mat-tipo-item');
+  if (selTipo) selTipo.value = mat.tipo_item || 'material';
+  onMatTipoChange();
   const aviso = document.getElementById('modal-material-aviso');
   if (aviso) aviso.style.display = 'none';
   document.getElementById('btn-salvar-mat').textContent = 'SALVAR ALTERAÇÕES';
@@ -2465,6 +2480,12 @@ function obterProximoCodigoDisponivel(cats) {
 
 let _editandoMaterialId = null;
 
+function onMatTipoChange() {
+  const tipo = document.getElementById('mat-tipo-item')?.value || 'material';
+  const aviso = document.getElementById('mat-aviso-servico');
+  if (aviso) aviso.style.display = tipo === 'material' ? 'none' : 'block';
+}
+
 function abrirModalNovoMaterial(nomeInicial) {
   _editandoMaterialId = null;
   document.getElementById('mat-nome').value = nomeInicial || '';
@@ -2474,6 +2495,10 @@ function abrirModalNovoMaterial(nomeInicial) {
     selCat.innerHTML = '<option value="">— Selecione —</option>' + ETAPAS.map(e => `<option value="${e.key}">${e.lb}</option>`).join('');
   }
   if (selCat) selCat.value = '';
+  const selTipo = document.getElementById('mat-tipo-item');
+  if (selTipo) selTipo.value = 'material';
+  const avisoServico = document.getElementById('mat-aviso-servico');
+  if (avisoServico) avisoServico.style.display = 'none';
   const aviso = document.getElementById('modal-material-aviso');
   if (aviso) aviso.style.display = 'none';
   document.getElementById('btn-salvar-mat').textContent = 'SALVAR MATERIAL';
@@ -2508,6 +2533,8 @@ async function salvarMaterial() {
   const nome = document.getElementById('mat-nome').value.trim().toUpperCase();
   const unidade = document.getElementById('mat-unidade').value;
   const categoria = document.getElementById('mat-categoria').value;
+  const tipo_item = document.getElementById('mat-tipo-item')?.value || 'material';
+  const movimenta_estoque = tipo_item === 'material';
   if (!nome) { showToast('Informe o nome do material.'); return; }
   // Centro de custo obrigatorio — impede material novo nascer "Nao classificado" e acumular
   if (!categoria) { showToast('Selecione o centro de custo do material.'); document.getElementById('mat-categoria')?.focus(); return; }
@@ -2521,8 +2548,9 @@ async function salvarMaterial() {
     if (duplicata) { showToast(`Material já existe: ${duplicata.codigo}`); return; }
     btn.disabled = true; btn.textContent = 'SALVANDO...';
     try {
-      await sbPatch('materiais', _editandoMaterialId, { nome, unidade, categoria, auto: false });
-      atual.nome = nome; atual.unidade = unidade; atual.categoria = categoria; atual.auto = false;
+      await sbPatch('materiais', _editandoMaterialId, { nome, unidade, categoria, tipo_item, movimenta_estoque, auto: false });
+      atual.nome = nome; atual.unidade = unidade; atual.categoria = categoria;
+      atual.tipo_item = tipo_item; atual.movimenta_estoque = movimenta_estoque; atual.auto = false;
       _editandoMaterialId = null;
       fecharModal('material');
       renderCatalogo();
@@ -2542,7 +2570,7 @@ async function salvarMaterial() {
   const codigo = obterProximoCodigoDisponivel(catsAtualizados);
   btn.disabled = true; btn.textContent = 'SALVANDO...';
   try {
-    const saved = await sbPost('materiais', { codigo, nome, unidade, categoria });
+    const saved = await sbPost('materiais', { codigo, nome, unidade, categoria, tipo_item, movimenta_estoque });
     if (saved) {
       catsAtualizados.push(saved);
       catsAtualizados.sort((a,b) => (a.codigo||'').localeCompare(b.codigo||''));

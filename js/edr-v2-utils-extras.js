@@ -27,11 +27,20 @@ const _ETAPAS_NAO_ESTOQUE = new Set([
 ]);
 function itemMovimentaEstoque(it) {
   if (!it) return false;
+  // 1. Consultar catálogo — campo movimenta_estoque é a fonte de verdade
+  const codigo = it.codigo || it.codigo_catalogo || null;
+  const descBruta = it.desc || it.item_desc || '';
+  const cat = typeof catalogoMateriais !== 'undefined' ? catalogoMateriais : [];
+  let catItem = null;
+  if (codigo) catItem = cat.find(m => m.codigo === codigo);
+  if (!catItem) catItem = cat.find(m => norm(m.nome) === norm(descBruta));
+  if (catItem && catItem.movimenta_estoque === false) return false;
+  if (catItem && catItem.movimenta_estoque === true) return true;
+  // 2. Fallback regex — para itens sem catálogo
   const etapa = it._etapa || it.etapa || '';
   if (_ETAPAS_NAO_ESTOQUE.has(etapa)) return false;
-  const d = norm(it.desc || it.item_desc || '');
+  const d = norm(descBruta);
   // Nota: `registro` genérico foi removido — pegava REGISTRO SOLDAVEL, REGISTRO PVC etc.
-  // Documentos de cartório usam frases específicas abaixo.
   if (/\bart\b|taxa|licenca|licenca|alvara|projeto arq|projeto est|documentac|registro de imovel|registro cartorio|cartorio|habite|averbac|desmembr|itbi|iptu|inss|fgts|engenharia/.test(d)) return false;
   return true;
 }
