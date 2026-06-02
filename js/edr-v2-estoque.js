@@ -1037,7 +1037,6 @@ async function abrirAjusteEstoque(chave) {
       qtd: diferenca,
       tipo: 'contagem',
       motivo: `Contagem fisica: sistema ${fmt(item.saldo)}, real ${fmt(realQtd)}, dif ${diferenca > 0 ? '+' : ''}${fmt(diferenca)}`,
-      data: hojeISO(),
     });
     if (!resp) return showToast('Erro ao salvar ajuste', 'error');
   }
