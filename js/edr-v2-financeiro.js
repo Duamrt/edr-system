@@ -61,7 +61,7 @@ function renderContasPagar() {
   const mesResumo = _contasMes || mesAtual;  // card "pagas" reflete o mês escolhido (ou o atual)
   const totalPendente = lista.filter(c => c._status === 'pendente').reduce((s, c) => s + Number(c.valor || 0), 0);
   const totalVencido  = lista.filter(c => c._status === 'vencido').reduce((s, c) => s + Number(c.valor || 0), 0);
-  const pagasMes = lista.filter(c => c._status === 'pago' && (c.data_pagamento || '').startsWith(mesResumo)).reduce((s, c) => s + Number(c.valor || 0), 0);
+  const pagasMes = lista.filter(c => c._status === 'pago' && (c.data_pagamento || c.data_vencimento || '').startsWith(mesResumo)).reduce((s, c) => s + Number(c.valor || 0), 0);
   const qtdPendente = lista.filter(c => c._status === 'pendente').length;
   const qtdVencido  = lista.filter(c => c._status === 'vencido').length;
   const qtdPago     = lista.filter(c => c._status === 'pago').length;
@@ -229,15 +229,21 @@ async function marcarComoPago(contaId) {
     // Fix definitivo pendente: usar contas_pagar.nota_id quando existir (migration planejada).
     if (conta && conta.obra_id && !conta.nota_ref) {
       try {
-        await sbPostMinimal('lancamentos', {
-          obra_id: conta.obra_id,
-          descricao: conta.descricao || 'Conta paga',
-          qtd: 1, preco: Number(conta.valor || 0), total: Number(conta.valor || 0),
-          data: hojeISO(), etapa: 'conta_pagar',
-          obs: 'contas_pagar:' + contaId,
-          criado_por: (typeof usuarioAtual !== 'undefined' && usuarioAtual?.nome) || ''
-        });
-        if (typeof loadLancamentos === 'function') await loadLancamentos();
+        // Idempotência: verificar no banco se já existe lançamento para essa conta.
+        // Protege contra duplo clique, retry, reload estranho e chamada manual.
+        const obsKey = 'contas_pagar:' + contaId;
+        const existente = await sbGet('lancamentos', `?obs=eq.${encodeURIComponent(obsKey)}&limit=1`);
+        if (!Array.isArray(existente) || existente.length === 0) {
+          await sbPostMinimal('lancamentos', {
+            obra_id: conta.obra_id,
+            descricao: conta.descricao || 'Conta paga',
+            qtd: 1, preco: Number(conta.valor || 0), total: Number(conta.valor || 0),
+            data: hojeISO(), etapa: 'conta_pagar',
+            obs: obsKey,
+            criado_por: (typeof usuarioAtual !== 'undefined' && usuarioAtual?.nome) || ''
+          });
+          if (typeof loadLancamentos === 'function') await loadLancamentos();
+        }
       } catch(e) { console.warn('[lancamento conta_pagar]', e); }
     }
     showToast('Conta marcada como paga');
@@ -251,16 +257,12 @@ async function marcarComoPago(contaId) {
 
 async function excluirConta(contaId) {
   if (!confirm('Excluir esta conta? Essa acao nao pode ser desfeita.')) return;
-  try {
-    await sbDelete('contas_pagar', `?id=eq.${contaId}`);
-    contasPagar = contasPagar.filter(c => c.id !== contaId);
-    showToast('Conta excluida');
-    renderContasPagar();
-    if (typeof renderDashboard === 'function') renderDashboard();
-  } catch(e) {
-    console.error(e);
-    showToast('Erro ao excluir conta.');
-  }
+  const ok = await sbDelete('contas_pagar', `?id=eq.${contaId}`);
+  if (!ok) { showToast('Erro ao excluir conta. Tente novamente.', 'error'); return; }
+  contasPagar = contasPagar.filter(c => c.id !== contaId);
+  showToast('Conta excluida');
+  renderContasPagar();
+  if (typeof renderDashboard === 'function') renderDashboard();
 }
 
 // Autocomplete fornecedor no modal
