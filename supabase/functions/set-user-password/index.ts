@@ -40,9 +40,9 @@ serve(async (req) => {
     const callerId = userData?.id
     if (!callerId) return json({ error: 'Usuário não identificado', step: 2 }, 401)
 
-    // 3. Checar role via company_users (usando service key pra bypassar RLS)
+    // 3. Checar role + company_id via company_users (usando service key pra bypassar RLS)
     const roleRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/company_users?user_id=eq.${callerId}&select=role&limit=1`,
+      `${SUPABASE_URL}/rest/v1/company_users?user_id=eq.${callerId}&select=role,company_id&limit=1`,
       {
         headers: {
           'apikey': SERVICE_KEY,
@@ -54,11 +54,30 @@ serve(async (req) => {
     if (!Array.isArray(roleRows) || roleRows[0]?.role !== 'admin') {
       return json({ error: 'Apenas admins podem redefinir senhas.', step: 3, role: roleRows[0]?.role ?? 'nenhum' }, 403)
     }
+    const callerCompanyId = roleRows[0]?.company_id
+    if (!callerCompanyId) {
+      return json({ error: 'Empresa do administrador não identificada.', step: 3 }, 403)
+    }
 
     // 4. Receber dados
     const { user_id, password } = await req.json()
     if (!user_id || !password || password.length < 6) {
       return json({ error: 'Dados inválidos. Mínimo 6 caracteres.', step: 4 }, 400)
+    }
+
+    // 4.5 Verificar que o usuário alvo pertence à mesma empresa do admin
+    const targetRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/company_users?user_id=eq.${user_id}&select=company_id&limit=1`,
+      {
+        headers: {
+          'apikey': SERVICE_KEY,
+          'Authorization': `Bearer ${SERVICE_KEY}`,
+        }
+      }
+    )
+    const targetRows = await targetRes.json()
+    if (!Array.isArray(targetRows) || targetRows[0]?.company_id !== callerCompanyId) {
+      return json({ error: 'Usuário alvo não pertence à sua empresa.', step: 4 }, 403)
     }
 
     // 5. Atualizar senha via Admin API

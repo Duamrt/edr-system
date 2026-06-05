@@ -2032,6 +2032,31 @@ function _diarGerarPDF(regs) {
 // ══════════════════════════════════════════════════════════════════
 // MODAL LANCAR NO EDR SYSTEM
 // ══════════════════════════════════════════════════════════════════
+function _diarLevenshtein(a, b) {
+  if (Math.abs(a.length - b.length) > 2) return 99;
+  const dp = Array.from({length: a.length + 1}, (_, i) => [i]);
+  for (let j = 0; j <= b.length; j++) dp[0][j] = j;
+  for (let i = 1; i <= a.length; i++)
+    for (let j = 1; j <= b.length; j++)
+      dp[i][j] = a[i-1] === b[j-1] ? dp[i-1][j-1] : 1 + Math.min(dp[i-1][j-1], dp[i-1][j], dp[i][j-1]);
+  return dp[a.length][b.length];
+}
+function _diarFuzzyObra(nome, obrasMap) {
+  const norm = _diarNormStr(nome);
+  let best = null, bestDist = Infinity;
+  for (const [key, id] of Object.entries(obrasMap)) {
+    const dist = _diarLevenshtein(norm, key);
+    if (dist < bestDist) { bestDist = dist; best = { key, id }; }
+  }
+  return best && bestDist > 0 && bestDist <= 2 ? best : null;
+}
+function _diarCorrigirObra(btn, novoId) {
+  const tr = btn.closest('tr');
+  tr.dataset.id = novoId;
+  tr.querySelector('.diar-edr-icon').textContent = 'check_circle';
+  tr.querySelector('.diar-edr-icon').style.color = 'var(--success)';
+  btn.closest('.diar-sug').remove();
+}
 async function _diarBuscarObras() {
   if (DiariasModule._obrasCache) return DiariasModule._obrasCache;
   try {
@@ -2060,11 +2085,13 @@ async function diarAbrirModalEDR() {
   }
   const linhas = Object.entries(custoPorObra).map(([obra, valor]) => {
     const id = obrasMap[_diarNormStr(obra)] || null;
+    const sug = id ? null : _diarFuzzyObra(obra, obrasMap);
     const statusIcon = id ? 'check_circle' : 'warning';
-    const statusColor = id ? 'var(--success)' : 'var(--warning)';
+    const statusColor = id ? 'var(--success)' : (sug ? 'var(--warning)' : 'var(--error)');
+    const sugChip = sug ? `<span class="diar-sug" style="margin-left:6px"><button onclick="_diarCorrigirObra(this,'${sug.id}')" style="font-size:10px;padding:1px 6px;cursor:pointer;border:1px solid var(--warning);border-radius:3px;background:transparent;color:var(--warning);font-weight:600">→ ${sug.key}?</button></span>` : '';
     return `<tr data-obra="${obra}" data-valor="${valor.toFixed(2)}" data-id="${id || ''}">
-      <td style="padding:7px 5px"><span class="material-symbols-outlined" style="font-size:16px;color:${statusColor}">${statusIcon}</span></td>
-      <td style="padding:7px 5px;font-weight:600">${obra}</td>
+      <td style="padding:7px 5px"><span class="material-symbols-outlined diar-edr-icon" style="font-size:16px;color:${statusColor}">${statusIcon}</span></td>
+      <td style="padding:7px 5px;font-weight:600">${obra}${sugChip}</td>
       <td style="padding:7px 5px;color:var(--success);font-family:'Space Grotesk',monospace;text-align:right">R$ ${valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
     </tr>`;
   }).join('');
