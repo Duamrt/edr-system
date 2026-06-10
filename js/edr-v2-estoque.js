@@ -15,7 +15,7 @@ const EstoqueModule = {
   filtroObra: '',            // obra selecionada ('' = almoxarifado geral)
   filtroBusca: '',           // texto de busca
   filtroCategoria: null,     // etapa selecionada na sidebar
-  filtroEtapa: '',           // etapa selecionada no dropdown do header
+  filtroEtapas: new Set(),   // etapas selecionadas no dropdown do header (multi)
   filtroNegativos: false,    // chip negativos ativo
   filtroSemCodigo: false,    // chip sem codigo ativo
   page: 0,                  // paginacao (0-indexed)
@@ -24,6 +24,7 @@ const EstoqueModule = {
   // Estado do catalogo
   catBusca: '',             // busca no catalogo
   catFiltroAuto: false,     // mostrar apenas AUTO pendentes
+  catFiltroCats: new Set(), // centros de custo selecionados no filtro (multi)
   catPage: 0,
 
   // Dados consolidados (cache local, invalidado a cada render)
@@ -466,9 +467,9 @@ function renderEstoque() {
     itens = itens.filter(i => norm(i.categoria) === norm(EstoqueModule.filtroCategoria));
   }
 
-  // Filtrar por etapa (centro de custo) — seletor dedicado; ambos já são keys canônicas
-  if (EstoqueModule.filtroEtapa) {
-    itens = itens.filter(i => i.categoria === EstoqueModule.filtroEtapa);
+  // Filtrar por etapas (centro de custo) — seletor multi; ambos já são keys canônicas
+  if (EstoqueModule.filtroEtapas.size > 0) {
+    itens = itens.filter(i => EstoqueModule.filtroEtapas.has(i.categoria));
   }
 
   // Filtrar negativos
@@ -1269,18 +1270,74 @@ async function _carregarCatalogo() {
   if (dados) EstoqueModule.catalogoMateriais = dados;
 }
 
+// ── FILTRO MULTI-SELECT DE CENTROS DE CUSTO DO CATÁLOGO ──
+function catalogoToggleCatMenu(e) {
+  if (e) e.stopPropagation();
+  const menu = document.getElementById('catalogo-cat-filtro-menu');
+  if (!menu) return;
+  menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+}
+
+function _catalogoCatFecharMenu() {
+  const menu = document.getElementById('catalogo-cat-filtro-menu');
+  if (menu) menu.style.display = 'none';
+}
+
+function _catalogoCatClickFora(e) {
+  const wrap = document.getElementById('catalogo-cat-filtro-wrap');
+  if (wrap && !wrap.contains(e.target)) _catalogoCatFecharMenu();
+}
+document.addEventListener('click', _catalogoCatClickFora, true);
+
+function catalogoCatToggle(key) {
+  if (EstoqueModule.catFiltroCats.has(key)) EstoqueModule.catFiltroCats.delete(key);
+  else EstoqueModule.catFiltroCats.add(key);
+  EstoqueModule.catPage = 0;
+  _catalogoCatAtualizarLabel();
+  renderCatalogo();
+}
+
+function catalogoCatSelecionarTodos() {
+  document.querySelectorAll('#catalogo-cat-filtro-lista input[type=checkbox]').forEach(cb => {
+    cb.checked = true;
+    EstoqueModule.catFiltroCats.add(cb.value);
+  });
+  EstoqueModule.catPage = 0;
+  _catalogoCatAtualizarLabel();
+  renderCatalogo();
+}
+
+function catalogoCatLimpar() {
+  EstoqueModule.catFiltroCats.clear();
+  document.querySelectorAll('#catalogo-cat-filtro-lista input[type=checkbox]').forEach(cb => cb.checked = false);
+  EstoqueModule.catPage = 0;
+  _catalogoCatAtualizarLabel();
+  renderCatalogo();
+}
+
+function _catalogoCatAtualizarLabel() {
+  const label = document.getElementById('catalogo-cat-filtro-label');
+  if (!label) return;
+  const n = EstoqueModule.catFiltroCats.size;
+  label.textContent = n === 0 ? 'Todos centros de custo' : `${n} selecionado${n > 1 ? 's' : ''}`;
+  const btn = document.getElementById('catalogo-cat-filtro-btn');
+  if (btn) btn.style.borderColor = n > 0 ? 'var(--primary)' : 'var(--border)';
+}
+
 function renderCatalogo() {
   // Sincronizar estado com o DOM
   const buscaInput = document.getElementById('catalogo-busca');
   if (buscaInput) EstoqueModule.catBusca = buscaInput.value;
 
-  // Popular filtro de categorias se ainda vazio
-  const filtroEl = document.getElementById('catalogo-cat-filtro');
-  if (filtroEl && filtroEl.options.length <= 1 && typeof ETAPAS !== 'undefined') {
-    const val = filtroEl.value;
-    filtroEl.innerHTML = '<option value="">Todos centros de custo</option>' +
-      ETAPAS.map(e => `<option value="${esc(e.key)}">${esc(e.lb)}</option>`).join('');
-    if (val) filtroEl.value = val;
+  // Popular filtro multi de centros de custo se ainda vazio
+  const filtroLista = document.getElementById('catalogo-cat-filtro-lista');
+  if (filtroLista && !filtroLista.childElementCount && typeof ETAPAS !== 'undefined') {
+    filtroLista.innerHTML = ETAPAS.map(e => `
+      <label style="display:flex;align-items:center;gap:8px;padding:6px 12px;cursor:pointer;font-size:12px;color:var(--text-primary);transition:background .1s;" onmouseenter="this.style.background='rgba(255,255,255,.04)'" onmouseleave="this.style.background=''">
+        <input type="checkbox" value="${esc(e.key)}"${EstoqueModule.catFiltroCats.has(e.key) ? ' checked' : ''} onchange="catalogoCatToggle(this.value)" style="accent-color:var(--primary);width:14px;height:14px;cursor:pointer;">
+        ${esc(e.lb)}
+      </label>`).join('');
+    _catalogoCatAtualizarLabel();
   }
 
   let itens = [...EstoqueModule.catalogoMateriais];
@@ -1290,12 +1347,10 @@ function renderCatalogo() {
     itens = itens.filter(m => m.auto === true);
   }
 
-  // Filtrar por categoria
-  const catFiltro = filtroEl?.value || '';
-  if (catFiltro) {
-    // "36_outros" (Nao classificado) tambem pega materiais com categoria vazia
-    if (catFiltro === '36_outros') itens = itens.filter(m => !m.categoria || m.categoria === '36_outros');
-    else itens = itens.filter(m => (m.categoria || '') === catFiltro);
+  // Filtrar por centros de custo selecionados (multi)
+  // categoria vazia conta como "36_outros" (Nao classificado) — mesma regra do filtro antigo
+  if (EstoqueModule.catFiltroCats.size > 0) {
+    itens = itens.filter(m => EstoqueModule.catFiltroCats.has(m.categoria || '36_outros'));
   }
 
   // Filtrar busca
@@ -1903,22 +1958,68 @@ function estoqueFiltrarObra(valor) {
   renderEstoque();
 }
 
-function estoqueFiltrarEtapa(valor) {
-  EstoqueModule.filtroEtapa = valor;
+// ── FILTRO MULTI-SELECT DE ETAPAS (mesmo padrão do filtro de centros de custo das Obras) ──
+function _popularFiltroEtapas() {
+  const lista = document.getElementById('estoque-filtro-etapa-lista');
+  if (!lista) return;
+  const _lbl = c => (typeof etapaLabel === 'function' ? etapaLabel(c) : c);
+  const cats = [...new Set(EstoqueModule._consolidado.map(i => i.categoria).filter(Boolean))].sort((a, b) => _lbl(a).localeCompare(_lbl(b), 'pt-BR'));
+  lista.innerHTML = cats.map(c => `
+    <label style="display:flex;align-items:center;gap:8px;padding:6px 12px;cursor:pointer;font-size:12px;color:var(--text-primary);transition:background .1s;" onmouseenter="this.style.background='rgba(255,255,255,.04)'" onmouseleave="this.style.background=''">
+      <input type="checkbox" value="${esc(c)}"${EstoqueModule.filtroEtapas.has(c) ? ' checked' : ''} onchange="estoqueEtapaToggle(this.value)" style="accent-color:var(--primary);width:14px;height:14px;cursor:pointer;">
+      ${esc(_lbl(c))}
+    </label>`).join('');
+  _estoqueEtapaAtualizarLabel();
+}
+
+function estoqueToggleEtapaMenu(e) {
+  if (e) e.stopPropagation();
+  const menu = document.getElementById('estoque-filtro-etapa-menu');
+  if (!menu) return;
+  menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+}
+
+function _estoqueEtapaFecharMenu() {
+  const menu = document.getElementById('estoque-filtro-etapa-menu');
+  if (menu) menu.style.display = 'none';
+}
+
+function _estoqueEtapaClickFora(e) {
+  const wrap = document.getElementById('estoque-filtro-etapa-wrap');
+  if (wrap && !wrap.contains(e.target)) _estoqueEtapaFecharMenu();
+}
+document.addEventListener('click', _estoqueEtapaClickFora, true);
+
+function estoqueEtapaToggle(key) {
+  if (EstoqueModule.filtroEtapas.has(key)) EstoqueModule.filtroEtapas.delete(key);
+  else EstoqueModule.filtroEtapas.add(key);
   EstoqueModule.page = 0;
   renderEstoque();
 }
 
-function _popularFiltroEtapas() {
-  const sel = document.getElementById('estoque-filtro-etapa');
-  if (!sel) return;
-  const atual = sel.value;
-  const _lbl = c => (typeof etapaLabel === 'function' ? etapaLabel(c) : c);
-  const cats = [...new Set(EstoqueModule._consolidado.map(i => i.categoria).filter(Boolean))].sort((a, b) => _lbl(a).localeCompare(_lbl(b), 'pt-BR'));
-  sel.innerHTML = '<option value="">TODAS ETAPAS</option>' + cats.map(c => {
-    const lbl = typeof etapaLabel === 'function' ? etapaLabel(c) : c;
-    return `<option value="${esc(c)}"${atual === c ? ' selected' : ''}>${esc(lbl)}</option>`;
-  }).join('');
+function estoqueEtapaSelecionarTodos() {
+  document.querySelectorAll('#estoque-filtro-etapa-lista input[type=checkbox]').forEach(cb => {
+    cb.checked = true;
+    EstoqueModule.filtroEtapas.add(cb.value);
+  });
+  EstoqueModule.page = 0;
+  renderEstoque();
+}
+
+function estoqueEtapaLimpar() {
+  EstoqueModule.filtroEtapas.clear();
+  document.querySelectorAll('#estoque-filtro-etapa-lista input[type=checkbox]').forEach(cb => cb.checked = false);
+  EstoqueModule.page = 0;
+  renderEstoque();
+}
+
+function _estoqueEtapaAtualizarLabel() {
+  const label = document.getElementById('estoque-filtro-etapa-label');
+  if (!label) return;
+  const n = EstoqueModule.filtroEtapas.size;
+  label.textContent = n === 0 ? 'TODAS ETAPAS' : `${n} ETAPA${n > 1 ? 'S' : ''}`;
+  const btn = document.getElementById('estoque-filtro-etapa-btn');
+  if (btn) btn.style.borderColor = n > 0 ? 'var(--primary)' : '';
 }
 
 function estoqueToggleNegativos() {
