@@ -96,7 +96,8 @@ Hoje o usuário usa "Entrada" no Estoque para registrar esses custos → contami
 - Jackson Alcantara (essencial, 3 obras)
 
 ## RLS
-- Policies usam `auth_oficina_id()` — NUNCA subquery em profiles
+- Policies usam `auth_company_id()` (helper alternativo: `get_my_company_id()`) — NUNCA subquery em profiles
+- ⚠️ `auth_oficina_id()` NÃO existe no EDR — é do RPM Pro (verificado no banco 2026-06-10)
 - Anon key: nunca expor service_role no frontend
 
 ## Permissões por perfil
