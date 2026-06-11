@@ -1,6 +1,6 @@
 // EDR System — Service Worker (network-first para HTML/JS/CSS, cache-first para imagens)
 // DEPLOY_VERSION é atualizado automaticamente pelo deploy.sh
-const CACHE_NAME = 'edr-system-v20260611154552';
+const CACHE_NAME = 'edr-system-v20260611155940';
 const STATIC_ASSETS = [
   '/',
   '/index.html',

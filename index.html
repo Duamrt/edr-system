@@ -2368,7 +2368,7 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
 <div class="toast-container" id="toast-container"></div>
 
 <!-- ═══════ JAVASCRIPT ═══════ -->
-<script src="js/posthog.js?v=06111545"></script>
+<script src="js/posthog.js?v=06111559"></script>
 <script>
 // ══════════════════════════════════════════
 // EDR SYSTEM V2 — NAVEGACAO + SHELL
@@ -2820,6 +2820,22 @@ function updateShellUser(nome, perfil) {
     dots();
   }
 
+  // Senha temporária aleatória forte (sem senha fixa no fonte). Garante 1 de cada classe + Fisher-Yates.
+  function gerarSenhaForte(len) {
+    len = Math.max(len || 14, 12);
+    const maius = 'ABCDEFGHJKLMNPQRSTUVWXYZ', minus = 'abcdefghijkmnpqrstuvwxyz', nums = '23456789', simb = '!@#$%&*?';
+    const all = maius + minus + nums + simb;
+    const r = new Uint32Array(len);
+    crypto.getRandomValues(r);
+    const chars = [maius[r[0] % maius.length], minus[r[1] % minus.length], nums[r[2] % nums.length], simb[r[3] % simb.length]];
+    for (let i = 4; i < len; i++) chars.push(all[r[i] % all.length]);
+    const s = new Uint32Array(chars.length);
+    crypto.getRandomValues(s);
+    for (let i = chars.length - 1; i > 0; i--) { const j = s[i] % (i + 1); const t = chars[i]; chars[i] = chars[j]; chars[j] = t; }
+    return chars.join('');
+  }
+  window.gerarSenhaForte = gerarSenhaForte;
+
   async function salvarPasso() {
     const btn = document.getElementById('ob-next-btn');
     if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
@@ -2855,12 +2871,17 @@ function updateShellUser(nome, perfil) {
         const email = document.getElementById('ob-user-email').value.trim();
         const perfil = document.getElementById('ob-user-perfil').value;
         if (!nome || !email) { alert('Informe nome e e-mail.'); return false; }
+        // Senha temporária aleatória (nunca fixa no fonte)
+        const senhaTemp = gerarSenhaForte(14);
         // Criar via Edge Function
-        await fetch('https://mepzoxoahpwcvvlymlfh.supabase.co/functions/v1/criar-usuario', {
+        const _r = await fetch('https://mepzoxoahpwcvvlymlfh.supabase.co/functions/v1/criar-usuario', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY },
-          body: JSON.stringify({ nome, email, perfil, company_id: _companyId, senha: 'Edr@2026' })
-        }).catch(() => {}); // erro não trava o wizard
+          body: JSON.stringify({ nome, email, perfil, company_id: _companyId, senha: senhaTemp })
+        }).catch(() => null); // erro não trava o wizard
+        if (_r && _r.ok) {
+          alert('Usuário ' + email + ' criado.\n\nSenha temporária: ' + senhaTemp + '\n\nCopie e envie ao usuário — ele deve trocá-la no primeiro acesso.');
+        }
 
       } else if (_step === 3) {
         // Lançar primeiro custo
@@ -2916,44 +2937,44 @@ function updateShellUser(nome, perfil) {
 
 <!-- ═══════ MODULOS V2 (ordem de dependência) ═══════ -->
 <!-- 0. Infraestrutura: sbGet/sbPost/sbPatch/sbDelete, confirmar(), showModal, usuarioAtual -->
-<script src="js/edr-v2-infra.js?v=06111545"></script>
+<script src="js/edr-v2-infra.js?v=06111559"></script>
 <!-- 1. Utilitários globais (valorPorExtenso, fmtN) -->
-<script src="js/edr-v2-utils-extras.js?v=06111545"></script>
+<script src="js/edr-v2-utils-extras.js?v=06111559"></script>
 <!-- 2. Obras PRIMEIRO (ETAPAS, resolveEtapaKey, etapaCor, etapaLabel — vários módulos dependem) -->
-<script src="js/edr-v2-obras.js?v=06111545"></script>
+<script src="js/edr-v2-obras.js?v=06111559"></script>
 <!-- 3. PDF engine (pdfMake CDN + PdfModule) -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js?v=06111545"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js?v=06111545"></script>
-<script src="js/edr-v2-pdf.js?v=06111545"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js?v=06111559"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js?v=06111559"></script>
+<script src="js/edr-v2-pdf.js?v=06111559"></script>
 <!-- 4. Módulos core de negócio -->
 <script src="js/edr-v2-notas.js?v=20260407-EDR-DEL"></script>
 <script src="js/edr-v2-importar.js?v=20260407-XML-IPI"></script>
-<script src="js/edr-v2-estoque.js?v=06111545"></script>
-<script src="js/edr-v2-custos.js?v=06111545"></script>
+<script src="js/edr-v2-estoque.js?v=06111559"></script>
+<script src="js/edr-v2-custos.js?v=06111559"></script>
 <!-- 5. Equipe e operacional -->
-<script src="js/edr-v2-diarias.js?v=06111545"></script>
-<script src="js/edr-v2-diario.js?v=06111545"></script>
+<script src="js/edr-v2-diarias.js?v=06111559"></script>
+<script src="js/edr-v2-diario.js?v=06111559"></script>
 <!-- 6. Relatórios e dashboard (dependem de obras.js pra etapaCor) -->
-<script src="js/edr-v2-relatorio.js?v=06111545"></script>
-<script src="js/edr-v2-dashboard.js?v=06111545"></script>
-<script src="js/edr-v2-raiox.js?v=06111545"></script>
+<script src="js/edr-v2-relatorio.js?v=06111559"></script>
+<script src="js/edr-v2-dashboard.js?v=06111559"></script>
+<script src="js/edr-v2-raiox.js?v=06111559"></script>
 <!-- 7. Módulos complementares -->
-<script src="js/edr-v2-leads.js?v=06111545"></script>
-<script src="js/edr-v2-garantias.js?v=06111545"></script>
-<script src="js/edr-v2-adicionais.js?v=06111545"></script>
+<script src="js/edr-v2-leads.js?v=06111559"></script>
+<script src="js/edr-v2-garantias.js?v=06111559"></script>
+<script src="js/edr-v2-adicionais.js?v=06111559"></script>
 <!-- Syncfusion EJ2 Gantt (substituiu Frappe Gantt em 2026-05-11) -->
-<link rel="stylesheet" href="https://cdn.syncfusion.com/ej2/33.2.3/tailwind3-dark.css?v=06111545"/>
-<script src="https://cdn.syncfusion.com/ej2/33.2.3/dist/ej2.min.js?v=06111545"></script>
-<script src="js/edr-v2-cronograma.js?v=06111545"></script>
-<script src="js/edr-v2-orcamento.js?v=06111545"></script>
+<link rel="stylesheet" href="https://cdn.syncfusion.com/ej2/33.2.3/tailwind3-dark.css?v=06111559"/>
+<script src="https://cdn.syncfusion.com/ej2/33.2.3/dist/ej2.min.js?v=06111559"></script>
+<script src="js/edr-v2-cronograma.js?v=06111559"></script>
+<script src="js/edr-v2-orcamento.js?v=06111559"></script>
 <!-- 8. Documentação e medições -->
-<script src="js/edr-v2-termo-manual.js?v=06111545"></script>
-<script src="js/edr-v2-pci.js?v=06111545"></script>
+<script src="js/edr-v2-termo-manual.js?v=06111559"></script>
+<script src="js/edr-v2-pci.js?v=06111559"></script>
 <!-- 9. Auth (login, sessão, refresh — ÚLTIMO) -->
-<script src="js/edr-v2-alertas.js?v=06111545"></script>
-<script src="js/edr-v2-auth.js?v=06111545"></script>
-<script src="js/edr-v2-financeiro.js?v=06111545"></script>
-<script src="js/edr-v2-dre.js?v=06111545"></script>
+<script src="js/edr-v2-alertas.js?v=06111559"></script>
+<script src="js/edr-v2-auth.js?v=06111559"></script>
+<script src="js/edr-v2-financeiro.js?v=06111559"></script>
+<script src="js/edr-v2-dre.js?v=06111559"></script>
 
 <!-- ═══════════════════════════════════════════════════════════════ -->
 <!-- MODAIS (Fase 0 — containers para módulos que precisam)        -->
@@ -3419,7 +3440,10 @@ function abrirNota(id) {
     </div>
     <div style="margin-bottom:16px;">
       <label style="font-size:11px;font-weight:700;color:var(--text-tertiary);letter-spacing:1px;display:block;margin-bottom:4px;">SENHA INICIAL *</label>
-      <input type="password" id="novo-usuario-senha" placeholder="Mínimo 6 caracteres" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;background:var(--bg);color:var(--text-primary);box-sizing:border-box;">
+      <div style="display:flex;gap:6px;">
+        <input type="text" id="novo-usuario-senha" placeholder="Mínimo 6 caracteres" style="flex:1;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;background:var(--bg);color:var(--text-primary);box-sizing:border-box;">
+        <button type="button" onclick="document.getElementById('novo-usuario-senha').value = (window.gerarSenhaForte ? gerarSenhaForte(14) : '')" title="Gerar senha forte" style="flex-shrink:0;padding:0 14px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12px;font-weight:700;color:var(--text-secondary);cursor:pointer;white-space:nowrap;">Gerar</button>
+      </div>
     </div>
     <div id="novo-usuario-erro" style="font-size:12px;color:var(--error);margin-bottom:10px;min-height:18px;"></div>
     <button id="novo-usuario-btn-salvar" onclick="salvarNovoUsuario()" style="width:100%;padding:12px;background:var(--primary);color:#fff;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:1px;">CRIAR USUÁRIO</button>
