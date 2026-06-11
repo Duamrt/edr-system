@@ -419,9 +419,9 @@ async function _garantiasSalvar() {
 
   try {
     if (id) {
-      const [atualizado] = await sbPatch('garantia_chamados', `?id=eq.${id}`, payload);
+      const atualizado = await sbPatch('garantia_chamados', `?id=eq.${id}`, payload);
       const idx = GarantiasModule.chamados.findIndex(c => c.id === id);
-      if (idx >= 0) GarantiasModule.chamados[idx] = { ...GarantiasModule.chamados[idx], ...atualizado };
+      if (idx >= 0) GarantiasModule.chamados[idx] = { ...GarantiasModule.chamados[idx], ...payload, ...(atualizado || {}) };
       showToast('Chamado atualizado.');
     } else {
       const novo = await sbPost('garantia_chamados', payload);
@@ -437,9 +437,10 @@ async function _garantiasSalvar() {
 
 async function _garantiasMudarStatus(chamadoId, novoStatus) {
   try {
-    const [atualizado] = await sbPatch('garantia_chamados', `?id=eq.${chamadoId}`, { status: novoStatus, atualizado_em: new Date().toISOString() });
+    const _upd = { status: novoStatus, atualizado_em: new Date().toISOString() };
+    const atualizado = await sbPatch('garantia_chamados', `?id=eq.${chamadoId}`, _upd);
     const idx = GarantiasModule.chamados.findIndex(c => c.id === chamadoId);
-    if (idx >= 0) GarantiasModule.chamados[idx] = { ...GarantiasModule.chamados[idx], ...atualizado };
+    if (idx >= 0) GarantiasModule.chamados[idx] = { ...GarantiasModule.chamados[idx], ..._upd, ...(atualizado || {}) };
     const lb = GARANTIA_STATUS[novoStatus]?.lb || novoStatus;
     showToast(`Status alterado para ${lb}.`);
     renderGarantias();
