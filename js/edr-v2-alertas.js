@@ -8,6 +8,11 @@ const AlertasModule = {
   _alertas: [],
   _panelAberto: false,
 
+  // Escape de HTML — titulo/msg carregam nome de lead/obra vindos do banco
+  _esc(s) { return (s == null ? '' : String(s)).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); },
+  // Sanitiza valor que vai dentro de atributo onclick (view = string fixa, obraId = UUID)
+  _attr(s) { return (s == null ? '' : String(s)).replace(/[^a-zA-Z0-9_-]/g, ''); },
+
   // ─────────────────────────────────────────────────────────────────
   // CALCULAR (chamado após iniciarApp)
   // ─────────────────────────────────────────────────────────────────
@@ -109,12 +114,12 @@ const AlertasModule = {
     }
 
     const items = alertas.map(a => `
-      <div onclick="AlertasModule._clickAlerta('${a.view || ''}', '${a.obraId || ''}')"
+      <div onclick="AlertasModule._clickAlerta('${AlertasModule._attr(a.view)}', '${AlertasModule._attr(a.obraId)}')"
            style="padding:12px 16px;border-radius:10px;background:${bgCor[a.tipo] || bgCor.info};cursor:${a.view ? 'pointer' : 'default'};display:flex;gap:12px;align-items:flex-start;">
-        <span class="material-symbols-outlined" style="font-size:20px;color:${iconeCor[a.tipo]};flex-shrink:0;margin-top:1px;">${a.icone}</span>
+        <span class="material-symbols-outlined" style="font-size:20px;color:${iconeCor[a.tipo]};flex-shrink:0;margin-top:1px;">${AlertasModule._esc(a.icone)}</span>
         <div style="flex:1;min-width:0;">
-          <div style="font-size:12px;font-weight:700;color:var(--text-primary);">${a.titulo}</div>
-          <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">${a.msg}</div>
+          <div style="font-size:12px;font-weight:700;color:var(--text-primary);">${AlertasModule._esc(a.titulo)}</div>
+          <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">${AlertasModule._esc(a.msg)}</div>
         </div>
         ${a.view ? `<span class="material-symbols-outlined" style="font-size:14px;color:var(--text-tertiary);flex-shrink:0;margin-top:3px;">chevron_right</span>` : ''}
       </div>`).join('');
