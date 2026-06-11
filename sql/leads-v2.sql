@@ -23,6 +23,13 @@ CREATE TABLE IF NOT EXISTS lead_historico (
 -- RLS
 ALTER TABLE lead_historico ENABLE ROW LEVEL SECURITY;
 
+-- ⛔ NEUTRALIZADO EM 2026-06-11 — NÃO REEXECUTAR ⛔
+-- "lead_hist_auth" FOR ALL com auth.role()='authenticated' é CROSS-TENANT
+-- (qualquer usuário logado de qualquer empresa lê/escreve o histórico de leads de todos).
+-- Estado seguro em produção: policies granulares lh_select/lh_insert/lh_update/lh_delete
+-- escopadas por company_id (auth_company_id()). NÃO recriar a policy abaixo.
+/*  ⛔ LEGADO INSEGURO (cross-tenant) — comentado para não ressuscitar
 CREATE POLICY "lead_hist_auth" ON lead_historico FOR ALL
   USING (auth.role() = 'authenticated')
   WITH CHECK (auth.role() = 'authenticated');
+*/

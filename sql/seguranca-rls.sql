@@ -1,7 +1,18 @@
 -- ══════════════════════════════════════════════════════════════
 -- EDR SYSTEM — SEGURANÇA: RLS + Policies
--- Executar no Supabase SQL Editor (https://supabase.com/dashboard)
+-- ⛔⛔⛔ ARQUIVO LEGADO INSEGURO — NÃO EXECUTAR (neutralizado 2026-06-11) ⛔⛔⛔
 -- ══════════════════════════════════════════════════════════════
+-- Este script cria policies "*_auth" FOR ALL com auth.role()='authenticated' em
+-- 16 tabelas — isso é CROSS-TENANT: qualquer usuário logado de QUALQUER empresa
+-- lê/escreve dados de TODAS. Foi a causa-raiz do vazamento entre tenants, removido
+-- em produção (migration drop_permissive_auth_role_policies, 02/06/2026 +
+-- consolidate_drop_legacy_company_and_crosstenant_policies, 11/06/2026).
+-- Também recria admin_create_auth_user/admin_update_auth_user em versões ANTIGAS
+-- (checam raw_user_meta_data->>'perfil', que é MANIPULÁVEL pelo próprio usuário) —
+-- a versão segura em produção usa raw_app_meta_data + checagem cross-tenant.
+-- Estado seguro = policies granulares por papel/company. NÃO REEXECUTE NADA ABAIXO.
+-- ══════════════════════════════════════════════════════════════
+/*  ⛔ TODO O CONTEÚDO ABAIXO ESTÁ NEUTRALIZADO (comentado) — histórico apenas
 
 -- 1. HABILITAR RLS EM TODAS AS TABELAS
 -- (tabelas que estavam com RLS desabilitado)
@@ -226,3 +237,5 @@ $$;
 -- Dar permissão de execução apenas para usuários autenticados
 GRANT EXECUTE ON FUNCTION admin_create_auth_user TO authenticated;
 GRANT EXECUTE ON FUNCTION admin_update_auth_user TO authenticated;
+
+*/  -- ⛔ FIM DO BLOCO NEUTRALIZADO (seguranca-rls.sql legado)

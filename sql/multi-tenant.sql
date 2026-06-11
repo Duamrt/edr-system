@@ -262,7 +262,18 @@ $$;
 
 -- 7. Reescrever RLS de TODAS as tabelas pra filtrar por company_id
 -- (dropar policies antigas e criar novas)
-
+--
+-- ⛔ BLOCO NEUTRALIZADO EM 2026-06-11 — NÃO REEXECUTAR ⛔
+-- Este bloco criava policies "*_company" FOR ALL (só company_id, SEM checagem de papel)
+-- e "leads_insert_anon" WITH CHECK(true) (escrita anônima irrestrita).
+-- Em produção essas policies foram REMOVIDAS porque:
+--   (a) as "*_company" conviviam com policies granulares por papel e, via OR, ANULAVAM
+--       o controle de role (qualquer membro da empresa apagava/editava financeiro);
+--   (b) "leads_insert_anon" permitia qualquer um na internet escrever em leads (vetor de XSS).
+-- Estado seguro vive nas migrations Supabase: consolidate_drop_legacy_company_and_crosstenant_policies
+-- e drop_leads_insert_anon_dead_policy (2026-06-11). As policies corretas são as granulares
+-- por papel (lanc_insert/lanc_update/... com auth_user_role()). NÃO recriar o abaixo.
+/*  ⛔ LEGADO INSEGURO — mantido só como histórico, comentado para não ressuscitar o buraco
 DO $$
 DECLARE
   tabelas text[] := ARRAY[
@@ -274,14 +285,9 @@ DECLARE
   t text;
 BEGIN
   FOREACH t IN ARRAY tabelas LOOP
-    -- Dropar policies antigas
     EXECUTE format('DROP POLICY IF EXISTS "%s_auth" ON %I', t, t);
     EXECUTE format('DROP POLICY IF EXISTS "%s_all" ON %I', t, t);
-
-    -- Habilitar RLS
     EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
-
-    -- Criar policy de isolamento por empresa
     EXECUTE format(
       'CREATE POLICY "%s_company" ON %I FOR ALL
         USING (company_id = get_my_company_id())
@@ -291,17 +297,16 @@ BEGIN
   END LOOP;
 END $$;
 
--- Materiais: ver os da empresa + os globais (sem company_id)
 DROP POLICY IF EXISTS "materiais_auth" ON materiais;
 ALTER TABLE materiais ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "materiais_company" ON materiais FOR ALL
   USING (company_id = get_my_company_id() OR company_id IS NULL)
   WITH CHECK (company_id = get_my_company_id());
 
--- Leads: permitir insert anon (chatbot do site) + leitura por empresa
 DROP POLICY IF EXISTS "leads_insert_anon" ON leads;
 CREATE POLICY "leads_insert_anon" ON leads FOR INSERT
   WITH CHECK (true);
+*/
 
 -- 8. Pronto! Verificar
 SELECT 'Migração multi-tenant concluída!' AS status,
