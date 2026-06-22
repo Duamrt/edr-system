@@ -117,7 +117,8 @@ function populateSelects() {
   const obrasFiltro = document.getElementById('obras-filtro-obra');
   if (obrasFiltro) obrasFiltro.innerHTML = `<option value="">Todas as obras</option>${opts}`;
   const estoqueFiltro = document.getElementById('estoque-filtro-obra');
-  if (estoqueFiltro) estoqueFiltro.innerHTML = `<option value="">ALMOXARIFADO</option>${optsNome}`;
+  // Estoque é só o almoxarifado. Obra não estoca, consome — consumo por obra fica em Obras/Custos.
+  if (estoqueFiltro) estoqueFiltro.innerHTML = `<option value="">ALMOXARIFADO</option>`;
 }
 
 // Variavel de controle de arquivadas

@@ -2265,12 +2265,14 @@ async function salvarEntradaDireta() {
       // Despesa (imposto/encargos, consumo de escritorio) NAO move estoque — so o lancamento de custo.
       // Material de obra cria a distribuicao (movimento de estoque) normalmente. (ETAPAS_SEM_ESTOQUE no escopo da funcao)
       const ehDespesa = ETAPAS_SEM_ESTOQUE.includes(etapa);
+      // Escritório = consumo direto/overhead: gera só custo, nunca estoque (igual despesa).
+      const ehEscritorio = !!(obraObj && obraObj.nome && obraObj.nome.toUpperCase().includes('ESCRIT'));
       // Serviço/taxa/doc/frete/MO (movimenta_estoque=false) gera SÓ custo (lançamento), nunca baixa de estoque.
       const movimentaEstoque = (typeof itemMovimentaEstoque !== 'function')
         || itemMovimentaEstoque({ codigo: materialNoCatalogo?.codigo, desc: descSemFornecedor, etapa });
       const lanc = await sbPost('lancamentos', { obra_id: obraId, descricao: descLanc, qtd, preco, total: valor, data, obs: obsLanc, etapa, nota_id: null, origem: ehDespesa ? 'manual' : 'compra_direta' });
       if (lanc) lancamentos.unshift(lanc);
-      if (!ehDespesa && movimentaEstoque) {
+      if (!ehDespesa && movimentaEstoque && !ehEscritorio) {
         const dist = await sbPost('distribuicoes', {
           item_desc: desc, item_idx: 0, obra_id: obraId,
           obra_nome: obraObj.nome,
@@ -2280,7 +2282,7 @@ async function salvarEntradaDireta() {
         });
         if (dist) distribuicoes.unshift(dist);
       }
-      showToast((ehDespesa || !movimentaEstoque) ? `✅ Custo lancado → ${obraObj.nome}` : `✅ ${qtd} ${unidade} de ${desc} → ${obraObj.nome}!`);
+      showToast((ehDespesa || !movimentaEstoque || ehEscritorio) ? `✅ Custo lancado → ${obraObj.nome}` : `✅ ${qtd} ${unidade} de ${desc} → ${obraObj.nome}!`);
     } else {
       const nova = await sbPost('entradas_diretas', { item_desc: desc, unidade, qtd, preco, fornecedor, data, obs, obra: 'EDR', codigo_catalogo: materialNoCatalogo?.codigo || null });
       if (nova) entradasDiretas.unshift(nova);

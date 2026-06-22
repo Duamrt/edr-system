@@ -1058,6 +1058,8 @@ async function salvarNota(notaData) {
       // NF direta pra obra (inclusive escritorio): criar lancamentos + distribuicoes automaticamente
       {
         const obraDestino = [...obras, ...obrasArquivadas].find(o => o.nome === destino);
+        // Escritório = consumo direto: cria só o custo (lançamento), nunca distribuição/estoque.
+        const _ehEscritorio = !!(obraDestino && obraDestino.nome && obraDestino.nome.toUpperCase().includes('ESCRIT'));
         if (obraDestino) {
           const dataLanc = recebimento || emissao;
           for (let idx = 0; idx < itens.length; idx++) {
@@ -1071,8 +1073,8 @@ async function salvarNota(notaData) {
               nota_id: saved.id, etapa: it._etapa || '',
             });
             if (lanc) lancamentos.unshift(lanc);
-            // Só movimenta estoque se for material físico (não taxa/serviço/doc)
-            if (typeof itemMovimentaEstoque === 'function' && itemMovimentaEstoque(it)) {
+            // Só movimenta estoque se for material físico (não taxa/serviço/doc) E não for o escritório (consumo direto)
+            if (!_ehEscritorio && typeof itemMovimentaEstoque === 'function' && itemMovimentaEstoque(it)) {
               const dist = await sbPost('distribuicoes', {
                 nota_id: saved.id,
                 item_desc: it.desc,
