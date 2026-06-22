@@ -24,7 +24,7 @@ function _sbHeaders(preferOverride) {
 // ── MULTI-TENANT ─────────────────────────────────────────────
 const _TABELAS_SEM_TENANT = ['companies', 'company_users', 'usuarios', 'tracker_sync'];
 // Tabelas que pertencem a um tenant — leituras filtradas por company_id
-const _TABELAS_TENANT = new Set(['lancamentos','notas_fiscais','distribuicoes','entradas_diretas','repasses_cef','obra_adicionais','adicional_pagamentos','diarias','obras','projecoes_caixa','ajustes_estoque','garantia_chamados','diarias_funcionarios','diarias_quinzenas','diarias_extras','leads','lead_historico','pci_template_padrao','pci_medicao','pci_itens','pci_historico','centros_custo','materiais','contas_pagar']);
+const _TABELAS_TENANT = new Set(['lancamentos','notas_fiscais','distribuicoes','entradas_diretas','repasses_cef','obra_adicionais','adicional_pagamentos','diarias','obras','projecoes_caixa','ajustes_estoque','garantia_chamados','diarias_funcionarios','diarias_quinzenas','diarias_extras','leads','lead_historico','pci_template_padrao','pci_medicao','pci_itens','pci_historico','centros_custo','materiais','contas_pagar','material_depara']);
 
 function _addCompanyToBody(tabela, body) {
   if (_TABELAS_SEM_TENANT.includes(tabela) || !_companyId) return body;
@@ -301,10 +301,10 @@ async function loadObras() {
     obras = Array.isArray(todas) ? todas.filter(o => !o.arquivada) : [];
   } catch(e) { obras = []; obrasArquivadas = []; }
 }
-async function loadNotas() { try { notas = await sbGet('notas_fiscais', '?order=criado_em.desc'); if (!Array.isArray(notas)) notas = []; } catch(e) { notas = []; } }
+async function loadNotas() { try { notas = await sbGetAll('notas_fiscais', '?order=criado_em.desc,id'); if (!Array.isArray(notas)) notas = []; } catch(e) { notas = []; } }
 async function loadLancamentos() { try { lancamentos = await sbGetAll('lancamentos', '?select=id,obra_id,descricao,qtd,preco,total,data,obs,etapa,criado_por,nota_id,origem&order=data.desc,id'); if (!Array.isArray(lancamentos)) lancamentos = []; } catch(e) { lancamentos = []; } }
 async function loadDistribuicoes() { try { const r = await sbGetAll('distribuicoes', '?order=criado_em.desc,id'); distribuicoes = Array.isArray(r) ? r : []; } catch(e) { distribuicoes = []; } }
-async function loadEntradasDiretas() { try { const r = await sbGet('entradas_diretas', '?order=criado_em.desc'); entradasDiretas = Array.isArray(r) ? r : []; } catch(e) { entradasDiretas = []; } }
+async function loadEntradasDiretas() { try { const r = await sbGetAll('entradas_diretas', '?order=criado_em.desc,id'); entradasDiretas = Array.isArray(r) ? r : []; } catch(e) { entradasDiretas = []; } }
 async function loadMateriais() { try { const r = await sbGetAll('materiais', '?order=codigo'); catalogoMateriais = Array.isArray(r) ? r : []; } catch(e) { catalogoMateriais = []; } }
 // Centros de custo customizados (criados pelo usuario) — mesclados na lista ETAPAS.
 // Falha silenciosa: ETAPAS cai na base do codigo (rede de seguranca, nunca fica sem).

@@ -753,7 +753,7 @@ const ImportModule = {
       if (jaEra === undefined && typeof sbPost === 'function') {
         sbPost('material_depara', corpo); // novo vinculo
       } else if (typeof sbPatch === 'function') {
-        sbPatch('material_depara', `?cnpj=eq.${encodeURIComponent(c)}&cprod=eq.${encodeURIComponent(p)}`, { codigo_catalogo: codigoCat }); // mudou o vinculo
+        sbPatch('material_depara', `?cnpj=eq.${encodeURIComponent(c)}&cprod=eq.${encodeURIComponent(p)}${(typeof _companyId !== 'undefined' && _companyId) ? '&company_id=eq.' + _companyId : ''}`, { codigo_catalogo: codigoCat }); // mudou o vinculo (filtrado por tenant)
       }
     } catch(e) {}
   },

@@ -1208,7 +1208,8 @@ async function _vincularSelecionado(chave) {
 
   // 4. notas_fiscais — atualiza JSON dos itens (norm para match case-insensitive)
   const nDesc = norm(desc);
-  const notasEDR = (typeof notas !== 'undefined' ? notas : []).filter(n => n.obra === 'EDR');
+  // Vincular cobre TODAS as NFs do tenant (notas já vem filtrado por company_id) — antes só pegava obra='EDR', deixando NF direta pra obra sem código
+  const notasEDR = (typeof notas !== 'undefined' ? notas : []);
   for (const n of notasEDR) {
     const itens = parseItens(n);
     let changed = false;
