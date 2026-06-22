@@ -264,6 +264,13 @@ function consolidarEstoque(obraId) {
         const _notaOrigem = notas.find(n => n.id === d.nota_id);
         if (_notaOrigem && _notaOrigem.obra && _notaOrigem.obra !== 'EDR') continue;
       }
+      // Estoque geral: também NÃO descontar baixas de COMPRA DIRETA (material aplicado
+      // direto na obra, sem passar pelo almoxarifado). Identificadas pelo lançamento
+      // vinculado com origem 'compra_direta'. Na visão da obra (obraId) a baixa continua contando.
+      if (!obraId && d.lancamento_id && typeof lancamentos !== 'undefined') {
+        const _lanc = lancamentos.find(l => l.id === d.lancamento_id);
+        if (_lanc && _lanc.origem === 'compra_direta') continue;
+      }
       const chave = getChave(d.item_desc, d.codigo_catalogo);
       const item = garantir(chave, d.item_desc, d.codigo_catalogo, d.unidade);
       const qtd = parseFloat(d.qtd) || 0;
@@ -283,7 +290,6 @@ function consolidarEstoque(obraId) {
 
   // Calcular saldo e montar resultado
   const resultado = [];
-  let valorTotal = 0;
 
   for (const chave in mapa) {
     const it = mapa[chave];
@@ -328,7 +334,6 @@ function consolidarEstoque(obraId) {
       nfPendente: it.nfPendente,
     });
 
-    if (saldo > 0) valorTotal += saldo * valorMedio;
   }
 
   // Remover itens com movimenta_estoque=false (serviço, taxa, etc.)
@@ -340,8 +345,10 @@ function consolidarEstoque(obraId) {
     return !catItem || catItem.movimenta_estoque !== false;
   });
 
+  // _valorTotal reflete só itens que movimentam estoque (recalculado APÓS o filtro,
+  // senão serviço/taxa com saldo positivo contaminava o valor total do estoque)
+  EstoqueModule._valorTotal = resultadoFiltrado.reduce((s, it) => s + (it.saldo > 0 ? it.saldo * it.valorMedio : 0), 0);
   EstoqueModule._consolidado = resultadoFiltrado;
-  EstoqueModule._valorTotal = valorTotal;
   return resultadoFiltrado;
 }
 
@@ -2258,9 +2265,12 @@ async function salvarEntradaDireta() {
       // Despesa (imposto/encargos, consumo de escritorio) NAO move estoque — so o lancamento de custo.
       // Material de obra cria a distribuicao (movimento de estoque) normalmente. (ETAPAS_SEM_ESTOQUE no escopo da funcao)
       const ehDespesa = ETAPAS_SEM_ESTOQUE.includes(etapa);
+      // Serviço/taxa/doc/frete/MO (movimenta_estoque=false) gera SÓ custo (lançamento), nunca baixa de estoque.
+      const movimentaEstoque = (typeof itemMovimentaEstoque !== 'function')
+        || itemMovimentaEstoque({ codigo: materialNoCatalogo?.codigo, desc: descSemFornecedor, etapa });
       const lanc = await sbPost('lancamentos', { obra_id: obraId, descricao: descLanc, qtd, preco, total: valor, data, obs: obsLanc, etapa, nota_id: null, origem: ehDespesa ? 'manual' : 'compra_direta' });
       if (lanc) lancamentos.unshift(lanc);
-      if (!ehDespesa) {
+      if (!ehDespesa && movimentaEstoque) {
         const dist = await sbPost('distribuicoes', {
           item_desc: desc, item_idx: 0, obra_id: obraId,
           obra_nome: obraObj.nome,
@@ -2270,7 +2280,7 @@ async function salvarEntradaDireta() {
         });
         if (dist) distribuicoes.unshift(dist);
       }
-      showToast(ehDespesa ? `✅ Despesa lancada → ${obraObj.nome}` : `✅ ${qtd} ${unidade} de ${desc} → ${obraObj.nome}!`);
+      showToast((ehDespesa || !movimentaEstoque) ? `✅ Custo lancado → ${obraObj.nome}` : `✅ ${qtd} ${unidade} de ${desc} → ${obraObj.nome}!`);
     } else {
       const nova = await sbPost('entradas_diretas', { item_desc: desc, unidade, qtd, preco, fornecedor, data, obs, obra: 'EDR', codigo_catalogo: materialNoCatalogo?.codigo || null });
       if (nova) entradasDiretas.unshift(nova);
