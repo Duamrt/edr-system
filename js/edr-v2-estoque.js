@@ -233,7 +233,7 @@ function consolidarEstoque(obraId) {
         const mReal = (a.motivo || '').match(/real\s+([\d.,]+)/i);
         const realAbs = mReal ? parseFloat(mReal[1].replace(',', '.')) : null;
         if (realAbs !== null) {
-          const dataA = a.data ? new Date(a.data) : null;
+          const dataA = (a.criado_em || a.data) ? new Date(a.criado_em || a.data) : null; // ajustes_estoque não tem coluna 'data' — usar criado_em como ponto de corte da contagem
           if (item._ultimaContagem === undefined || (dataA && (!item._ultimaContagemData || dataA >= item._ultimaContagemData))) {
             item._ultimaContagem = realAbs;
             item._ultimaContagemData = dataA;
@@ -1858,6 +1858,7 @@ function _calcAjusteContagemItem(codigo, nome, unidade, contagem, cons) {
   if (diff === 0) return null;
   return {
     item_desc: (((m && m.desc) || nome || codigo) || '').toUpperCase(),
+    codigo_catalogo: codigo || (m && m.codigo) || null,
     unidade: (m && m.unidade) || unidade || 'UN',
     qtd: diff,
     tipo: 'contagem',

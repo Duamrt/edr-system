@@ -608,6 +608,7 @@ const ImportModule = {
       const res = typeof classificarItemSync === 'function' ? classificarItemSync(item.descFinal) : null;
       const itemData = {
         desc: item.descFinal,
+        codigo: item.codigoCat || '',
         qtd: item.qtd,
         unidade: item.unidade,
         preco: item.preco,

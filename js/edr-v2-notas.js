@@ -810,7 +810,9 @@ async function autocadastrarMateriais(itens) {
     const categoria = it._etapa || '';  // usa a etapa resolvida/escolhida (getCatEstoque foi removido do sistema)
     const unidade = it.unidade || 'UN';
     try {
-      const saved = await sbPost('materiais', { codigo, nome: it.desc.toUpperCase().trim(), unidade, categoria, auto: true });
+      // Classificar material vs serviço ANTES do insert (banco defaulta material/true) — evita serviço virar estoque físico
+      const _movEst = (typeof itemMovimentaEstoque === 'function') ? itemMovimentaEstoque(it) : true;
+      const saved = await sbPost('materiais', { codigo, nome: it.desc.toUpperCase().trim(), unidade, categoria, auto: true, tipo_item: _movEst ? 'material' : 'servico', movimenta_estoque: _movEst });
       if (saved) {
         if (!it.codigo) it.codigo = saved.codigo;
         catalogoMateriais.push(saved);
@@ -1021,8 +1023,9 @@ async function salvarNota(notaData) {
 
     // Baixa automatica legada (estoque geral) — getCatEstoque morto, fica inerte; mantida so pra nao quebrar fluxo
     if (destino === COMPANY_DEFAULTS.estoqueGeral) {
-      const CATS_ESCRITORIO = ['limpeza', 'alimentacao', 'expediente'];
-      const itensEscritorio = itens.filter(it => typeof getCatEstoque === 'function' && CATS_ESCRITORIO.includes(getCatEstoque(it.desc)));
+      // Bloco legado de baixa automática de escritório NEUTRALIZADO (2026-06-22): escritório = custo, nunca estoque.
+      // Forçado vazio para não recriar distribuição mesmo se getCatEstoque voltar. NF p/ ESTOQUE GERAL só entra no almoxarifado.
+      const itensEscritorio = [];
       if (itensEscritorio.length > 0) {
         const obraEsc = obras.find(o => o.nome && o.nome.toUpperCase().includes('ESCRIT'));
         if (obraEsc) {

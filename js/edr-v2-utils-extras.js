@@ -247,7 +247,8 @@ async function salvarCadastroRapido() {
   try {
     const codigo = _proxCodigoCatalogo();
     if (catalogoMateriais.find(m => m.codigo === codigo)) { aviso.textContent = 'Erro de código duplicado — tente novamente.'; aviso.style.display='block'; btn.disabled=false; btn.textContent='CADASTRAR E USAR'; return; }
-    const saved = await sbPost('materiais', { codigo, nome, unidade, categoria });
+    const _movEst = (typeof itemMovimentaEstoque === 'function') ? itemMovimentaEstoque({ desc: nome, etapa: categoria }) : true;
+    const saved = await sbPost('materiais', { codigo, nome, unidade, categoria, tipo_item: _movEst ? 'material' : 'servico', movimenta_estoque: _movEst });
     if (saved) {
       catalogoMateriais.push(saved);
       catalogoMateriais.sort((a,b) => (a.codigo||'').localeCompare(b.codigo||''));
