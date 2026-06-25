@@ -155,6 +155,7 @@ function consolidarEstoque(obraId) {
         lotes: [],         // { nota_id, data, qtd, qtd_disponivel, valor_un }
         _ediretas: [],     // { qtd, date } — entradas diretas com data para filtro pós-contagem
         _saidas: [],       // { qtd, date } — saídas com data para filtro pós-contagem
+        _ajustes: [],      // { qtd, date } — ajustes delta com data para filtro pós-contagem
         _ultimaContagem: undefined,      // valor absoluto da última contagem física
         _ultimaContagemData: undefined,  // data da última contagem (Date object)
         temNF: false,
@@ -240,10 +241,14 @@ function consolidarEstoque(obraId) {
           }
         } else {
           // Motivo sem valor real legível → tratar como delta (backward compat)
-          item.ajustes += parseFloat(a.qtd) || 0;
+          const _dq = parseFloat(a.qtd) || 0;
+          item.ajustes += _dq;
+          item._ajustes.push({ qtd: _dq, date: a.criado_em || a.data || null });
         }
       } else {
-        item.ajustes += parseFloat(a.qtd) || 0;
+        const _dq = parseFloat(a.qtd) || 0;
+        item.ajustes += _dq;
+        item._ajustes.push({ qtd: _dq, date: a.criado_em || a.data || null });
       }
     }
   }
@@ -308,7 +313,12 @@ function consolidarEstoque(obraId) {
       const postS = cd
         ? it._saidas.filter(s => !s.date || new Date(s.date) > cd).reduce((s, x) => s + x.qtd, 0)
         : it.saidas;
-      saldo = it._ultimaContagem + postNF + postED + it.ajustes - postS;
+      // Ajustes delta posteriores à contagem (mesmo critério das entradas/saídas —
+      // não somar delta/zeragem anterior à última contagem absoluta sobre o valor contado)
+      const postAjustes = cd
+        ? it._ajustes.filter(a => !a.date || new Date(a.date) > cd).reduce((s, a) => s + a.qtd, 0)
+        : it.ajustes;
+      saldo = it._ultimaContagem + postNF + postED + postAjustes - postS;
     } else {
       saldo = it.entradas + it.entradasDiretas + it.ajustes - it.saidas;
     }
