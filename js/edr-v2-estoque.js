@@ -20,6 +20,7 @@ const EstoqueModule = {
   filtroSemCodigo: false,    // chip sem codigo ativo
   page: 0,                  // paginacao (0-indexed)
   pageSize: 50,             // itens por pagina
+  viewMode: 'cards',        // 'cards' | 'tabela' (Fase 1 — só apresentacao, ver edr-v2-estoque-tabela.js)
 
   // Estado do catalogo
   catBusca: '',             // busca no catalogo
@@ -529,6 +530,16 @@ function renderEstoque() {
   const end = (EstoqueModule.page + 1) * EstoqueModule.pageSize;
   const visiveis = itens.slice(start, end);
   const restantes = itens.length - end;
+
+  // ── MODO TABELA (Fase 1) — só apresentação; reaproveita 'itens' já filtrado/ordenado pelo
+  // mesmo pipeline. NÃO recalcula saldo (consolidarEstoque na linha 109 fica intocado). A tabela
+  // tem scroll próprio, então o load-more dos cards é escondido neste modo.
+  if (EstoqueModule.viewMode === 'tabela' && typeof EstoqueTabela !== 'undefined') {
+    EstoqueTabela.render(itens, EstoqueModule._consolidado);
+    const _lm = document.getElementById('est-load-more');
+    if (_lm) _lm.style.display = 'none';
+    return;
+  }
 
   // Render cards
   const el = document.getElementById('estoque-lista');
