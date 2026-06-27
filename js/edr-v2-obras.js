@@ -724,7 +724,34 @@ function renderObrasMateriais() {
 
   const isAdmin = usuarioAtual?.perfil === 'admin';
 
-  el.innerHTML = Object.values(porMat)
+  // ── Resumo por centro de custo (faixa no topo) — total do que está filtrado, por etapa + geral ──
+  const _porEtapa = {};
+  let _totQtd = 0, _totVal = 0;
+  dists.forEach(d => {
+    const rk = typeof resolveEtapaKey === 'function' ? resolveEtapaKey(d.etapa || '36_outros') : (d.etapa || '36_outros');
+    if (!_porEtapa[rk]) _porEtapa[rk] = { qtd: 0, val: 0 };
+    _porEtapa[rk].qtd += Number(d.qtd) || 0;
+    _porEtapa[rk].val += Number(d.valor) || 0;
+    _totQtd += Number(d.qtd) || 0;
+    _totVal += Number(d.valor) || 0;
+  });
+  const _chips = Object.entries(_porEtapa)
+    .sort((a, b) => b[1].val - a[1].val || b[1].qtd - a[1].qtd)
+    .map(([k, v]) => {
+      const cor = typeof etapaCor === 'function' ? etapaCor(k) : 'var(--primary)';
+      return `<span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:3px 10px;border-radius:6px;background:rgba(127,127,127,.08);border-left:3px solid ${cor};">
+        <strong>${esc(etapaLabel(k))}</strong>
+        <span style="color:var(--text-tertiary);">${v.qtd.toFixed(2)}</span>
+        ${isAdmin && v.val > 0 ? `<span style="color:var(--primary);font-weight:700;">${fmtR(v.val)}</span>` : ''}
+      </span>`;
+    }).join('');
+  const _resumoHtml = `<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 12px;margin-bottom:12px;border:1px solid rgba(127,127,127,.15);border-radius:8px;">
+    <span style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-tertiary);">Por centro de custo</span>
+    ${_chips}
+    <span style="margin-left:auto;font-size:13px;">Total${isAdmin ? `: <strong style="color:var(--primary);">${fmtR(_totVal)}</strong>` : ` ${_totQtd.toFixed(2)} un`}</span>
+  </div>`;
+
+  el.innerHTML = _resumoHtml + Object.values(porMat)
     .sort((a, b) => a.desc.localeCompare(b.desc))
     .map(m => {
       const totalQtd = m.registros.reduce((s, d) => s + Number(d.qtd), 0);
