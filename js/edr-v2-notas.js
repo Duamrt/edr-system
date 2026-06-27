@@ -927,7 +927,7 @@ async function salvarNota(notaData) {
     emissao = document.getElementById('f-emissao')?.value || '';
     recebimento = document.getElementById('f-recebimento')?.value || emissao;
     cnpjVal = (document.getElementById('f-cnpj').value || '').trim();
-    destino = document.getElementById('f-obra')?.value || COMPANY_DEFAULTS.estoqueGeral;
+    destino = document.getElementById('f-obra')?.value || '';
     natureza = document.getElementById('f-natureza')?.value || '';
     frete = parseFloat(document.getElementById('f-frete')?.value) || 0;
     outras = parseFloat(document.getElementById('f-outras')?.value) || 0;
@@ -938,6 +938,8 @@ async function salvarNota(notaData) {
   // Validacoes
   if (!fornecedor || !emissao || !numero) { showToast('Preencha fornecedor, numero da nota e data.'); return false; }
   if (!itens.length) { showToast('Adicione pelo menos um item.'); return false; }
+  // Trava: destino obrigatorio — NF só lança quando o destino (obra ou almoxarifado) for escolhido conscientemente (sem default p/ estoque)
+  if (!destino) { showToast('Selecione o destino da nota: uma obra ou o almoxarifado.'); document.getElementById('f-obra')?.focus(); return false; }
   // Aviso de data de emissao fora do normal (so no preenchimento manual)
   if (!(notaData && typeof notaData === 'object') && typeof _dataSuspeita === 'function' && _dataSuspeita(emissao)) {
     const _okData = await confirmar(`A data de emissão ${emissao} parece fora do normal. Salvar mesmo assim?`);
@@ -1216,7 +1218,7 @@ function resetForm() {
     if (el) el.value = '';
   });
   const selObra = document.getElementById('f-obra');
-  if (selObra) selObra.value = COMPANY_DEFAULTS.estoqueGeral;
+  if (selObra) selObra.value = '';
   const frRow = document.getElementById('frete-total-row');
   if (frRow) frRow.classList.add('hidden');
   document.getElementById('outras-total-row')?.classList.add('hidden');
