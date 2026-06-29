@@ -109,7 +109,7 @@
       return `<div class="estk-row" onclick="EstoqueTabela.open('${_esc(it.chave)}')">
         <div class="estk-cod">${it.codigo ? _esc(it.codigo) : '—'}</div>
         <div class="estk-mat" title="${_esc(it.desc)}">${_esc(it.desc)}</div>
-        <div class="estk-cat"><span class="estk-catb">${_esc(_lbl(it.categoria))}</span></div>
+        <div class="estk-cat">${isAdmin ? `<span class="estk-catb estk-cat-edit" onclick="event.stopPropagation();EstoqueTabela.editarCat('${_esc(it.chave)}',this.parentNode)" title="Trocar centro de custo">${_esc(_lbl(it.categoria))}</span>` : `<span class="estk-catb">${_esc(_lbl(it.categoria))}</span>`}</div>
         <div class="estk-saldo ${it.saldo < 0 ? 'neg' : it.saldo === 0 ? 'zero' : ''}">${_fmtQ(it.saldo)} <span class="estk-un">${_esc(it.unidade || 'UN')}</span></div>
         ${isAdmin ? `<div class="estk-vmed">${vu ? _fmtR(vu) + (man ? ' <span class="estk-manual">MANUAL</span>' : '') : '—'}</div>` : '<div class="estk-vmed">—</div>'}
         ${isAdmin ? `<div class="estk-total ${tcls}">${vt ? _fmtR(vt) : 'R$ 0'}</div>` : '<div class="estk-total zero">—</div>'}
@@ -137,6 +137,32 @@
   function kpi(id) {
     _kpi = (_kpi === id) ? null : id;
     if (typeof renderEstoque === 'function') renderEstoque();
+  }
+
+  // ── EDITAR CATEGORIA INLINE (só materiais.categoria; reusa ETAPAS + _updateCategoriaMaterial) ──
+  function editarCat(chave, cell) {
+    const it = (typeof EstoqueModule !== 'undefined' ? EstoqueModule._consolidado : []).find(i => i.chave === chave);
+    if (!it || !cell) return;
+    const etapas = (typeof ETAPAS !== 'undefined' && Array.isArray(ETAPAS)) ? ETAPAS.slice() : [];
+    if (!etapas.length) { (typeof showToast === 'function') && showToast('Lista de etapas indisponível.'); return; }
+    etapas.sort((a, b) => String(a.lb || a.key).localeCompare(String(b.lb || b.key), 'pt-BR'));
+    const opts = etapas.map(e => `<option value="${_esc(e.key)}" ${e.key === it.categoria ? 'selected' : ''}>${_esc(e.lb || e.key)}</option>`).join('');
+    cell.innerHTML = `<select class="estk-catsel" onclick="event.stopPropagation()" onchange="EstoqueTabela.salvarCat('${_esc(chave)}',this.value)" onkeydown="if(event.key==='Escape'){event.stopPropagation();typeof renderEstoque==='function'&&renderEstoque();}">${opts}</select>`;
+    const sel = cell.querySelector('select');
+    if (sel) setTimeout(() => sel.focus(), 0);
+  }
+  async function salvarCat(chave, novaCat) {
+    const it = (typeof EstoqueModule !== 'undefined' ? EstoqueModule._consolidado : []).find(i => i.chave === chave);
+    const rerender = () => { if (typeof renderEstoque === 'function') renderEstoque(); };
+    if (!it || novaCat === it.categoria) return rerender();
+    const cat = (typeof catalogoMateriais !== 'undefined' && Array.isArray(catalogoMateriais)) ? catalogoMateriais : [];
+    const mat = cat.find(m => m.codigo === it.codigo);
+    if (!mat || !mat.id) { (typeof showToast === 'function') && showToast('Material não está no catálogo (órfão) — reclassifique pelo Catálogo.'); return rerender(); }
+    try {
+      if (typeof _updateCategoriaMaterial === 'function') await _updateCategoriaMaterial(mat.id, novaCat); // reusa: PATCH só {categoria} + toast + update local
+      else { await sbPatch('materiais', mat.id, { categoria: novaCat }); mat.categoria = novaCat; }
+    } catch (e) { (typeof showToast === 'function') && showToast('Erro ao salvar categoria: ' + (e.message || e)); }
+    rerender();
   }
 
   // ── DRAWER ──
@@ -337,6 +363,10 @@
 .estk-cod{font:600 12px/1 'JetBrains Mono',ui-monospace,monospace;color:#93a0ad}
 .estk-mat{font-weight:600}
 .estk-catb{display:inline-block;font:600 10.5px/1 sans-serif;padding:3px 7px;border-radius:5px;background:rgba(21,128,61,.1);color:var(--primary,#15803d)}
+.estk-cat-edit{cursor:pointer}
+.estk-cat-edit:hover{box-shadow:0 0 0 1px var(--primary,#15803d) inset}
+.estk-cat-edit::after{content:'✎';font-size:9px;margin-left:4px;opacity:.4}
+.estk-catsel{width:100%;max-width:150px;height:27px;border:1px solid var(--primary,#15803d);border-radius:5px;background:#fff;font:600 11px/1 sans-serif;color:var(--text-primary,#16202b);padding:0 4px;cursor:pointer}
 .r,.estk-saldo,.estk-vmed,.estk-total{justify-self:end;text-align:right}
 .estk-saldo{font:600 13px/1 'JetBrains Mono',ui-monospace,monospace}
 .estk-saldo.neg{color:var(--error,#d4322a)} .estk-saldo.zero{color:#93a0ad}
@@ -416,5 +446,5 @@
     document.head.appendChild(s);
   }
 
-  window.EstoqueTabela = { render, kpi, open, close, setView, definir, useSug, fonteManual, fecharModal, salvar };
+  window.EstoqueTabela = { render, kpi, open, close, setView, definir, useSug, fonteManual, fecharModal, salvar, editarCat, salvarCat };
 })();
