@@ -446,6 +446,10 @@ function filtrarLanc() {
   const totalFiltrado = lista.reduce((s, l) => s + Number(l.total || 0), 0);
   const isAdmin = usuarioAtual?.perfil === 'admin';
 
+  // Mostrar a obra na linha SÓ quando "Todas as obras" + filtro SEM CÓDIGO ativo (ajuda a ver pra onde foi o custo; não repete se já filtrado por uma obra)
+  const mostrarObra = !obraId && ObrasModule.filtroSemCodigo;
+  const obraNomePorId = mostrarObra ? Object.fromEntries([...(obras || []), ...(obrasArquivadas || [])].map(o => [o.id, o.nome])) : {};
+
   // Summary
   if (summaryEl) {
     if (!lista.length) {
@@ -483,6 +487,7 @@ function filtrarLanc() {
       <div class="lanc-item-left">
         <div class="lanc-item-desc">${esc(l.descricao || '—')} ${nfBadge}</div>
         <div class="lanc-item-meta">
+          ${mostrarObra ? `<span style="display:inline-flex;align-items:center;gap:3px;background:rgba(37,99,235,.1);color:#2563eb;border:1px solid rgba(37,99,235,.28);border-radius:4px;font-size:9px;font-weight:700;padding:1px 6px;"><span class="material-symbols-outlined" style="font-size:11px;">apartment</span>${esc(obraNomePorId[l.obra_id] || '?')}</span>` : ''}
           <span class="etapa-chip" style="font-size:9px;padding:2px 6px;">${esc(etapaLabel(etapaKey))}</span>
           <span>${l.data ? fmtData(l.data) : '—'}</span>
           ${l.qtd ? `<span>${Number(l.qtd)} ${l.unidade || 'un'}</span>` : ''}
