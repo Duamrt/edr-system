@@ -227,11 +227,13 @@
         <div class="estk-comp">${comp}</div>
         ${acaoSec}
       </div>
+      ${isAdmin ? `<div class="estk-note estk-ajwarn">⚠ "Ajustar saldo" altera a quantidade física do almoxarifado. Use apenas após conferência.</div>` : ''}
       <div class="estk-dwf">
         <button class="estk-btn" onclick="EstoqueTabela.close();(typeof abrirHistoricoMaterial==='function')&&abrirHistoricoMaterial('${_esc(it.chave)}')">Ver histórico</button>
+        ${isAdmin ? `<button class="estk-btn" onclick="EstoqueTabela.close();(typeof abrirAjusteEstoque==='function')&&abrirAjusteEstoque('${_esc(it.chave)}')">Ajustar saldo</button>` : ''}
         ${(isAdmin && podePrecificar(it))
           ? `<button class="estk-btn estk-btn-warn" onclick="EstoqueTabela.definir('${_esc(it.chave)}')">${ref ? 'Editar valor' : 'Definir valor'}</button>`
-          : `<button class="estk-btn" disabled style="opacity:.5;cursor:not-allowed">Definir valor</button>`}
+          : ''}
       </div>`;
     dw.classList.add('show'); ov.classList.add('show');
   }
@@ -420,7 +422,9 @@
 .estk-refbox{border:1px solid rgba(124,58,237,.3);background:rgba(124,58,237,.05);border-radius:8px;padding:12px}
 .estk-refval{font:700 18px/1 'JetBrains Mono',ui-monospace,monospace;color:#7c3aed;margin-bottom:6px}
 .estk-note{font:500 11px/1.4 sans-serif;color:#93a0ad}
-.estk-dwf{padding:13px 18px;border-top:1px solid var(--border,#e0e4ea);display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.estk-dwf{padding:13px 18px;border-top:1px solid var(--border,#e0e4ea);display:flex;flex-wrap:wrap;gap:8px}
+.estk-dwf .estk-btn{flex:1 1 auto;min-width:118px}
+.estk-ajwarn{padding:0 18px 10px;color:var(--warning,#b45309);font-size:11.5px;line-height:1.4}
 .estk-btn{height:40px;border-radius:7px;border:1px solid var(--border,#e0e4ea);background:var(--card,#fff);font:600 13px/1 sans-serif;cursor:pointer;color:var(--text-primary,#16202b);display:flex;align-items:center;justify-content:center;gap:6px}
 .estk-btn:hover:not([disabled]){background:var(--bg-subtle,#f6f8fa)}
 .estk-btn-warn{background:#c2410c;color:#fff;border-color:#c2410c}
