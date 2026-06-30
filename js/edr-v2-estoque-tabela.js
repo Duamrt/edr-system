@@ -68,6 +68,7 @@
       case 'negativos': return it.saldo < 0;
       case 'alto': return valorTot(it) > ALTO;
       case 'legado': return isLegado(it);
+      case 'semcodigo': return it.semCodigo;
       default: return true;
     }
   }
@@ -82,6 +83,7 @@
       { id: 'negativos', cls: 'k-neg', lbl: 'Negativos', val: u.filter(i => i.saldo < 0).length },
       { id: 'alto', cls: 'k-alto', lbl: 'Alto valor (>5k)', val: u.filter(i => valorTot(i) > ALTO).length },
       { id: 'legado', cls: 'k-legado', lbl: 'Legado (informativo)', val: u.filter(isLegado).length },
+      { id: 'semcodigo', cls: 'k-semcod', lbl: 'Sem código', val: u.filter(i => i.semCodigo).length, tip: 'sem vínculo de catálogo' },
     ];
   }
 
@@ -340,7 +342,7 @@
     s.textContent = `
 .estk-diag{font:700 11px/1 sans-serif;text-transform:uppercase;letter-spacing:.04em;color:var(--text-secondary,#5b6776);margin:2px 0 8px;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
 .estk-diag span{font-weight:500;text-transform:none;letter-spacing:0;color:#93a0ad;font-size:11px}
-.estk-kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:12px}
+.estk-kpis{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-bottom:12px}
 @media(max-width:900px){.estk-kpis{grid-template-columns:repeat(3,1fr)}}
 .estk-kpi{background:var(--card,#fff);border:1px solid var(--border,#e0e4ea);border-radius:8px;padding:10px 11px;cursor:pointer;text-align:left;transition:.15s}
 .estk-kpi:hover{transform:translateY(-1px)}
@@ -354,6 +356,7 @@
 .estk-kpi.k-neg .estk-kn{color:var(--error,#d4322a)} .estk-kpi.k-neg .estk-dot{background:var(--error,#d4322a)}
 .estk-kpi.k-alto .estk-kn{color:#2563eb} .estk-kpi.k-alto .estk-dot{background:#2563eb}
 .estk-kpi.k-legado .estk-kn{color:#475569} .estk-kpi.k-legado .estk-dot{background:#475569}
+.estk-kpi.k-semcod .estk-kn{color:#b45309} .estk-kpi.k-semcod .estk-dot{background:#b45309}
 .estk-card{background:var(--card,#fff);border:1px solid var(--border,#e0e4ea);border-radius:8px;overflow:hidden}
 .estk-head,.estk-row{display:grid;grid-template-columns:70px 1fr 120px 110px 116px 116px 124px 112px;align-items:center}
 .estk-head{background:var(--bg-subtle,#f6f8fa);border-bottom:1px solid var(--border,#e0e4ea)}
