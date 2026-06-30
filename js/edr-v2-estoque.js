@@ -20,7 +20,7 @@ const EstoqueModule = {
   filtroSemCodigo: false,    // chip sem codigo ativo
   page: 0,                  // paginacao (0-indexed)
   pageSize: 50,             // itens por pagina
-  viewMode: 'cards',        // 'cards' | 'tabela' (Fase 1 — só apresentacao, ver edr-v2-estoque-tabela.js)
+  viewMode: 'tabela',       // 'cards' | 'tabela' — default TABELA (cards mantido como fallback). Fase 1, ver edr-v2-estoque-tabela.js
 
   // Estado do catalogo
   catBusca: '',             // busca no catalogo
