@@ -26,7 +26,9 @@ const EstoqueModule = {
   catBusca: '',             // busca no catalogo
   catFiltroAuto: false,     // mostrar apenas AUTO pendentes
   catFiltroCats: new Set(), // centros de custo selecionados no filtro (multi)
+  catFiltroTipo: 'todos',   // chip de tipo: todos|material|servico|mao_obra|taxa|frete|documento|movimenta|nao_movimenta|sem_preco|sem_categoria
   catPage: 0,
+  catPageSize: 250,         // lote do catalogo (separado do pageSize=50 do estoque; some com "carregar mais" 10x)
 
   // Dados consolidados (cache local, invalidado a cada render)
   _consolidado: [],          // resultado de consolidarEstoque()
@@ -1353,6 +1355,24 @@ function _catalogoCatAtualizarLabel() {
   if (btn) btn.style.borderColor = n > 0 ? 'var(--primary)' : 'var(--border)';
 }
 
+// Chip de tipo do catalogo (todos|material|servico|mao_obra|taxa|frete|documento|movimenta|nao_movimenta|sem_preco|sem_categoria)
+function catalogoFiltroTipo(tipo) {
+  EstoqueModule.catFiltroTipo = tipo || 'todos';
+  EstoqueModule.catPage = 0; // reset paginacao ao trocar de filtro
+  document.querySelectorAll('#catalogo-chips-tipo .cat-chip').forEach(b => {
+    b.classList.toggle('ativo', b.dataset.tipo === EstoqueModule.catFiltroTipo);
+  });
+  renderCatalogo();
+}
+
+// Atualiza os contadores dos chips (chamado pela renderCatalogo)
+function _catalogoAtualizarChips(cont) {
+  for (const k in cont) {
+    const el = document.getElementById('catchip-' + k);
+    if (el) el.textContent = cont[k];
+  }
+}
+
 function renderCatalogo() {
   // Sincronizar estado com o DOM
   const buscaInput = document.getElementById('catalogo-busca');
@@ -1388,8 +1408,49 @@ function renderCatalogo() {
     itens = itens.filter(m => norm(m.nome).includes(b) || (m.codigo && m.codigo.includes(b)));
   }
 
-  // Paginacao
-  const end = (EstoqueModule.catPage + 1) * EstoqueModule.pageSize;
+  // Mapa saldo/preco do consolidado (usado no filtro "sem preco" e nas linhas)
+  const saldoMap = {}, precoMap = {};
+  for (const c of EstoqueModule._consolidado) {
+    if (c.codigo) { saldoMap[c.codigo] = c.saldo; precoMap[c.codigo] = c.valorMedio || 0; }
+  }
+  // Classificacao por tipo: tipo_item vazio/'material' = material fisico
+  const _tipoDe = m => (m.tipo_item && m.tipo_item !== 'material') ? m.tipo_item : 'material';
+  const _movEst = m => m.movimenta_estoque !== false;
+
+  // Contadores dos chips (sobre a lista ja filtrada por busca/centro/auto, antes do filtro de tipo)
+  const catCont = {
+    todos: itens.length,
+    material: itens.filter(m => _tipoDe(m) === 'material').length,
+    servico: itens.filter(m => _tipoDe(m) === 'servico').length,
+    mao_obra: itens.filter(m => _tipoDe(m) === 'mao_obra').length,
+    taxa: itens.filter(m => _tipoDe(m) === 'taxa').length,
+    frete: itens.filter(m => _tipoDe(m) === 'frete').length,
+    documento: itens.filter(m => _tipoDe(m) === 'documento').length,
+    movimenta: itens.filter(m => _movEst(m)).length,
+    nao_movimenta: itens.filter(m => !_movEst(m)).length,
+    sem_preco: itens.filter(m => !(precoMap[m.codigo] > 0)).length,
+    sem_categoria: itens.filter(m => !m.categoria).length,
+  };
+  if (typeof _catalogoAtualizarChips === 'function') _catalogoAtualizarChips(catCont);
+
+  // Filtrar por tipo (chip)
+  const _ft = EstoqueModule.catFiltroTipo;
+  if (_ft && _ft !== 'todos') {
+    itens = itens.filter(m => {
+      switch (_ft) {
+        case 'material': case 'servico': case 'mao_obra': case 'taxa': case 'frete': case 'documento':
+          return _tipoDe(m) === _ft;
+        case 'movimenta': return _movEst(m);
+        case 'nao_movimenta': return !_movEst(m);
+        case 'sem_preco': return !(precoMap[m.codigo] > 0);
+        case 'sem_categoria': return !m.categoria;
+        default: return true;
+      }
+    });
+  }
+
+  // Paginacao (catPageSize proprio do catalogo — lote grande, sem clicar 10x)
+  const end = (EstoqueModule.catPage + 1) * EstoqueModule.catPageSize;
   const visiveis = itens.slice(0, end);
   const restantes = itens.length - end;
 
@@ -1416,11 +1477,7 @@ function renderCatalogo() {
 
   const isAdmin = usuarioAtual?.perfil === 'admin';
 
-  // Buscar saldo e valor medio de cada material no consolidado
-  const saldoMap = {}, precoMap = {};
-  for (const c of EstoqueModule._consolidado) {
-    if (c.codigo) { saldoMap[c.codigo] = c.saldo; precoMap[c.codigo] = c.valorMedio || 0; }
-  }
+  // saldoMap/precoMap ja computados acima (antes do filtro de tipo)
 
   // Etapas para select inline
   const etapasOpts = (typeof ETAPAS !== 'undefined' && Array.isArray(ETAPAS))
@@ -1433,11 +1490,14 @@ function renderCatalogo() {
     const isAuto = m.auto === true;
     const rowStyle = isAuto ? ' style="background:rgba(217,119,6,.03);"' : '';
 
-    const tipoLabels = { servico:'SERVIÇO', taxa:'TAXA', mao_obra:'MÃO OBRA', documento:'DOC', frete:'FRETE' };
-    const tipoLabel = tipoLabels[m.tipo_item];
+    const tipoLabels = { material:'MATERIAL', servico:'SERVIÇO', taxa:'TAXA', mao_obra:'MÃO OBRA', documento:'DOC', frete:'FRETE' };
+    const _ti = (m.tipo_item && m.tipo_item !== 'material') ? m.tipo_item : 'material';
+    const _naoMov = m.movimenta_estoque === false;
+    const _tipoCor = _ti === 'material' ? 'background:rgba(45,106,79,.12);color:#2D6A4F;' : 'background:rgba(234,88,12,.12);color:#ea580c;';
     let statusCol = '';
     if (isAuto) statusCol = '<span class="cat-badge-auto">REVISAR</span>';
-    if (tipoLabel) statusCol += `<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;background:rgba(234,88,12,.12);color:#ea580c;font-family:'Space Grotesk',monospace;margin-left:4px;">${tipoLabel}</span>`;
+    statusCol += `<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;${_tipoCor}font-family:'Space Grotesk',monospace;margin-left:4px;">${tipoLabels[_ti]}</span>`;
+    if (_naoMov) statusCol += `<span title="nao movimenta estoque" style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:5px;background:rgba(107,114,128,.14);color:#6b7280;margin-left:4px;">SEM ESTOQUE</span>`;
 
     let acoesCol = '';
     if (isAdmin) {
