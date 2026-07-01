@@ -1469,7 +1469,7 @@ function renderCatalogo() {
   if (!el) return;
 
   if (!visiveis.length) {
-    el.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:48px;color:var(--text-tertiary);">Nenhum material encontrado.</td></tr>`;
+    el.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:48px;color:var(--text-tertiary);">Nenhum material encontrado.</td></tr>`;
     const _lm = document.getElementById('cat-load-more');
     if (_lm) _lm.style.display = 'none';  // evita "Carregar mais" fantasma do estado anterior
     return;
@@ -1494,10 +1494,22 @@ function renderCatalogo() {
     const _ti = (m.tipo_item && m.tipo_item !== 'material') ? m.tipo_item : 'material';
     const _naoMov = m.movimenta_estoque === false;
     const _tipoCor = _ti === 'material' ? 'background:rgba(45,106,79,.12);color:#2D6A4F;' : 'background:rgba(234,88,12,.12);color:#ea580c;';
+    const preco = precoMap[m.codigo] || 0;
+
+    // Coluna TIPO (classificacao — sempre visivel pra TODOS os itens, nao so servico)
+    const tipoBadge = `<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:5px;${_tipoCor}font-family:'Space Grotesk',monospace;white-space:nowrap;">${tipoLabels[_ti]}</span>`;
+
+    // Coluna ESTOQUE (regra operacional: movimenta ou nao — separada da classificacao)
+    const estBadge = _naoMov
+      ? `<span title="nao movimenta estoque" style="font-size:11px;font-weight:600;color:#6b7280;white-space:nowrap;">○ Não</span>`
+      : `<span title="movimenta estoque" style="font-size:11px;font-weight:600;color:#2D6A4F;white-space:nowrap;">● Sim</span>`;
+
+    // Coluna STATUS (so operacional agora: revisar / sem preco / sem categoria)
     let statusCol = '';
-    if (isAuto) statusCol = '<span class="cat-badge-auto">REVISAR</span>';
-    statusCol += `<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;${_tipoCor}font-family:'Space Grotesk',monospace;margin-left:4px;">${tipoLabels[_ti]}</span>`;
-    if (_naoMov) statusCol += `<span title="nao movimenta estoque" style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:5px;background:rgba(107,114,128,.14);color:#6b7280;margin-left:4px;">SEM ESTOQUE</span>`;
+    if (isAuto) statusCol += '<span class="cat-badge-auto">REVISAR</span> ';
+    if (!(preco > 0)) statusCol += `<span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:5px;background:rgba(180,83,9,.12);color:#b45309;white-space:nowrap;">sem preço</span> `;
+    if (!m.categoria) statusCol += `<span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:5px;background:rgba(180,83,9,.12);color:#b45309;white-space:nowrap;">sem categoria</span>`;
+    if (!statusCol.trim()) statusCol = `<span style="font-size:11px;color:var(--success);">OK</span>`;
 
     let acoesCol = '';
     if (isAdmin) {
@@ -1519,15 +1531,15 @@ function renderCatalogo() {
       </select>`;
     }
 
-    const preco = precoMap[m.codigo] || 0;
-
     return `<tr${rowStyle}>
       <td class="code" ${isAuto ? 'style="color:var(--warning);"' : ''}>${esc(m.codigo || '---')}</td>
       <td>${esc(m.nome)} ${isAuto ? '<span class="cat-badge-auto">AUTO</span>' : ''}</td>
+      <td>${tipoBadge}</td>
       <td>${esc(m.unidade || '')}</td>
       <td>${catCol}</td>
       <td style="font-family:'Space Grotesk',monospace;font-size:12px;color:${preco > 0 ? 'var(--text-primary)' : 'var(--text-tertiary)'};">${preco > 0 ? fmtR(preco) : '—'}</td>
       <td><strong style="color:${saldoColor};">${Number(saldo).toLocaleString('pt-BR', { maximumFractionDigits: 3 })}</strong></td>
+      <td>${estBadge}</td>
       <td>${statusCol}</td>
       <td class="cat-actions">${acoesCol}</td>
     </tr>`;
