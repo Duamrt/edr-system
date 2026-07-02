@@ -1306,8 +1306,12 @@ async function _criarMaterialEVincular(chave, proximoCodigo) {
 // ══════════════════════════════════════════════════════════════════
 
 async function _carregarCatalogo() {
-  const dados = await sbGet('materiais?order=codigo.asc');
-  if (dados) EstoqueModule.catalogoMateriais = dados;
+  // C1: sbGetAll pagina além do teto de 1000 do PostgREST (sbGet cortava a lista silenciosamente).
+  // SEM heurística erro-vs-vazio: sbGetAll retorna [] tanto em erro quanto em catálogo vazio real, e o
+  // contrato não distingue os dois (só console.warn). Distinguir exige helper de infra com retorno null
+  // em erro — fica pro C2. Aqui só garantimos array + o teto de 1000. Flicker em erro segue pendente.
+  const dados = await sbGetAll('materiais', '?order=codigo.asc');
+  if (Array.isArray(dados)) EstoqueModule.catalogoMateriais = dados;
 }
 
 // ── FILTRO MULTI-SELECT DE CENTROS DE CUSTO DO CATÁLOGO ──
