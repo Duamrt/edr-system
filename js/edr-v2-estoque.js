@@ -2748,6 +2748,29 @@ function onMatNomeInput() {
   }
 }
 
+// B1: material tem histórico físico de estoque? (entrada por NF no almoxarifado, entrada direta,
+// ajuste ou distribuição/saída). Vínculo por codigo_catalogo; fallback nome normalizado p/ registros
+// antigos sem código. Usado só para bloquear conversão material→serviço que apagaria esse histórico
+// do consolidado sem baixa real. Todas as fontes são carregadas no boot (iniciarApp).
+function _materialTemHistoricoEstoque(mat) {
+  if (!mat) return false;
+  const cod = mat.codigo || null;
+  const nomeNorm = norm(mat.nome || '');
+  const bate = (regCod, regDesc) =>
+    (!!cod && regCod === cod) || (!!nomeNorm && norm(regDesc || '') === nomeNorm);
+  const arr = v => (typeof v !== 'undefined' && Array.isArray(v)) ? v : [];
+
+  if (arr(distribuicoes).some(d => bate(d.codigo_catalogo, d.item_desc))) return true;   // saídas
+  if (arr(entradasDiretas).some(e => bate(e.codigo_catalogo, e.item_desc))) return true; // entrada direta
+  if (arr(ajustesEstoque).some(a => bate(a.codigo_catalogo, a.item_desc))) return true;  // ajuste/contagem
+  // entrada por NF (almoxarifado): itens embutidos nas notas
+  for (const n of arr(notas)) {
+    const itens = (typeof parseItens === 'function') ? parseItens(n) : [];
+    if (itens.some(it => bate(it.codigo_catalogo || it.codigo || it.cod, it.descricao || it.desc))) return true;
+  }
+  return false;
+}
+
 async function salvarMaterial() {
   const nome = document.getElementById('mat-nome').value.trim().toUpperCase();
   const unidade = document.getElementById('mat-unidade').value;
@@ -2765,6 +2788,12 @@ async function salvarMaterial() {
     if (!atual) return;
     const duplicata = cats.find(m => m.id !== _editandoMaterialId && norm(m.nome) === norm(nome));
     if (duplicata) { showToast(`Material já existe: ${duplicata.codigo}`); return; }
+    // B1: bloquear conversão material→serviço/taxa quando o material tem histórico de estoque.
+    // Sem isso, movimenta_estoque=false esconde o saldo do consolidado sem nenhuma baixa real.
+    if (atual.movimenta_estoque !== false && movimenta_estoque === false && _materialTemHistoricoEstoque(atual)) {
+      showToast('Este material tem histórico de estoque. Não é seguro mudar para serviço/taxa. Zere ou saneie antes.');
+      return;
+    }
     btn.disabled = true; btn.textContent = 'SALVANDO...';
     try {
       await sbPatch('materiais', _editandoMaterialId, { nome, unidade, categoria, tipo_item, movimenta_estoque, auto: false });
