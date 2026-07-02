@@ -1618,6 +1618,8 @@ async function duplicarMaterial(id) {
     nome: mat.nome + ' (copia)',
     unidade: mat.unidade,
     categoria: mat.categoria,
+    tipo_item: mat.tipo_item || 'material',
+    movimenta_estoque: mat.movimenta_estoque ?? true,
     auto: false,
   });
 
