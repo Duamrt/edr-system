@@ -1127,8 +1127,15 @@ async function salvarNota(notaData) {
     _notasShowLista();
 
     // Pergunta sobre pagamento — fire and forget, NF já está salva
+    // [sub-lote 4] Evita dupla contagem: itens de despesa ja viraram contas_pagar individuais (pago) acima.
+    // O prompt cobre so a parte NAO-despesa (itens normais + frete + outras). Frete/outras seguem no prompt (nao viraram conta individual).
     const _obraId = [...obras, ...(obrasArquivadas||[])].find(o => o.nome === destino)?.id || null;
-    setTimeout(() => _notasPromptPagamento(saved.id, totalBruto, recebimento || emissao, _obraId, fornecedor, numero), 300);
+    const totalDespesaJaFinanceiro = _itensDespesa.reduce((s, it) => s + (Number(it.total) || 0), 0);
+    const valorPrompt = Math.max(0, totalBruto - totalDespesaJaFinanceiro);
+    // falhasDesp > 0: NF ficou inconsistente — NAO abrir prompt parcial confuso; o toast ja mandou verificar no Financeiro.
+    if (falhasDesp === 0 && valorPrompt > 0) {
+      setTimeout(() => _notasPromptPagamento(saved.id, valorPrompt, recebimento || emissao, _obraId, fornecedor, numero), 300);
+    }
 
     return true;
   } catch (e) {
