@@ -1104,6 +1104,17 @@ async function salvarNota(notaData) {
               if (dist) distribuicoes.push({ ...dist, obra_nome: obraDestino.nome });
             }
           }
+          // [sub-lote 3] Frete destacado da NF vira lancamento proprio na obra (etapa 38_frete), SEM distribuicao. So obra/escritorio (nao estoque geral).
+          if (frete > 0) {
+            const lancFrete = await sbPost('lancamentos', {
+              obra_id: obraDestino.id,
+              descricao: `Frete NF ${numero} · ${fornecedor}`,
+              qtd: 1, preco: frete, total: frete,
+              data: dataLanc, obs: `NF ${numero} · ${fornecedor} · Frete destacado`,
+              nota_id: saved.id, etapa: '38_frete',
+            });
+            if (lancFrete) lancamentos.unshift(lancFrete); else falhasLanc++;
+          }
         }
       }
       { const _f = falhasLanc + falhasDesp; showToast(_f > 0 ? `NF salva, mas ${_f} lancamento(s)/despesa(s) falharam. Verifique a conexao.` : 'Nota fiscal lancada!', _f > 0 ? 'error' : undefined); }
