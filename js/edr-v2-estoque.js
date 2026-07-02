@@ -1633,10 +1633,11 @@ async function excluirMaterial(id) {
   const mat = EstoqueModule.catalogoMateriais.find(m => m.id === id);
   if (!mat) return;
 
-  // Verificar saldo
-  const saldo = EstoqueModule._consolidado.find(c => c.codigo === mat.codigo);
-  if (saldo && saldo.saldo !== 0) {
-    return showToast(`Nao pode excluir: ${mat.nome} tem saldo ${fmt(saldo.saldo)}`, 'error');
+  // B1.5: bloquear exclusão de material com QUALQUER histórico de estoque (NF/entrada direta/ajuste/distribuição).
+  // Excluir liberaria o código/nome a virar órfão nos registros históricos. Guard conservador — mesmo helper do B1.
+  // (antes usava EstoqueModule._consolidado, que é filtrado por obra → saldo em outra obra escapava do guard)
+  if (_materialTemHistoricoEstoque(mat)) {
+    return showToast('Não pode excluir: este material tem histórico de estoque. Saneie antes.', 'error');
   }
 
   const ok = await confirmar(`Excluir "${mat.codigo} · ${mat.nome}" do catalogo?`);
