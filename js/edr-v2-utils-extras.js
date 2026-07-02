@@ -125,12 +125,13 @@ function populateSelects() {
 let mostandoArquivadas = false;
 
 // Proximo codigo livre no catalogo de materiais
+// [Onda A1] max+1 — NUNCA reutiliza codigo liberado (buraco colide com lancamentos historicos que referenciam o codigo antigo;
+// caso real: DAS pegou 000001 do ADITIVO VEDACIT removido). Delega pro gerador unico obterProximoCodigoDisponivel (estoque.js);
+// fallback max+1 inline se estoque.js ainda nao carregou.
 function _proxCodigoCatalogo() {
-  const usados = new Set(catalogoMateriais.map(m => parseInt(m.codigo) || 0));
-  for (let i = 1; i <= usados.size + 1; i++) {
-    if (!usados.has(i)) return String(i).padStart(6, '0');
-  }
-  return String(usados.size + 1).padStart(6, '0');
+  if (typeof obterProximoCodigoDisponivel === 'function') return obterProximoCodigoDisponivel(catalogoMateriais);
+  const usados = catalogoMateriais.map(m => parseInt(m.codigo)).filter(c => !isNaN(c) && c > 0);
+  return String((usados.length ? Math.max(...usados) : 0) + 1).padStart(6, '0');
 }
 
 // Cadastro rapido de material (modal compartilhado — NF, estoque, importar)
@@ -252,10 +253,13 @@ async function salvarCadastroRapido() {
     if (saved) {
       catalogoMateriais.push(saved);
       catalogoMateriais.sort((a,b) => (a.codigo||'').localeCompare(b.codigo||''));
+      fecharCadastroRapido();
+      if (typeof showToast === 'function') showToast(codigo + ' — ' + nome + ' cadastrado!');
+      crUsarExistente(nome, codigo);
+    } else {
+      // [Onda A1] sbPost retornou null (falha) — NAO fechar modal, NAO usar material inexistente, mostrar erro
+      aviso.textContent = 'Erro ao salvar no servidor. Tente novamente.'; aviso.style.display = 'block';
     }
-    fecharCadastroRapido();
-    if (typeof showToast === 'function') showToast(codigo + ' — ' + nome + ' cadastrado!');
-    crUsarExistente(nome, codigo);
   } catch(e) { aviso.textContent = 'Erro ao salvar. Tente novamente.'; aviso.style.display='block'; }
   btn.disabled = false; btn.textContent = 'CADASTRAR E USAR';
 }
