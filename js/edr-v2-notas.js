@@ -962,11 +962,24 @@ async function salvarNota(notaData) {
     if (!prosseguir) { document.getElementById('f-cnpj')?.focus(); return false; }
   }
 
-  // Verificacao de duplicidade
-  const nfDup = notas.find(n =>
-    n.numero_nf && n.numero_nf.toUpperCase() === numero.toUpperCase() &&
-    norm(n.fornecedor) === norm(fornecedor)
-  );
+  // Verificacao de duplicidade — [Onda2-1] fortalecida: numero + (mesmo CNPJ OU nome normalizado OU, faltando CNPJ, mesmo valor+data)
+  const _cnpjDigNovo = (cnpjVal || '').replace(/\D/g, '');
+  const _valorNovo = itens.reduce((s, i) => s + (Number(i.total) || 0), 0) + frete + outras;  // = totalBruto (calculado adiante)
+  const nfDup = notas.find(n => {
+    if (!n.numero_nf || n.numero_nf.toUpperCase() !== numero.toUpperCase()) return false;
+    const _cnpjDigExist = (n.cnpj || '').replace(/\D/g, '');
+    // (1) mesmo CNPJ (>=11 digitos) — pega fornecedor com grafia diferente (caso TREVO)
+    if (_cnpjDigNovo.length >= 11 && _cnpjDigNovo === _cnpjDigExist) return true;
+    // (2) mesmo fornecedor normalizado (comportamento original preservado)
+    if (norm(n.fornecedor) === norm(fornecedor)) return true;
+    // (3) fallback quando falta CNPJ em algum lado: mesmo valor + mesma data de emissao
+    if (_cnpjDigNovo.length < 11 || _cnpjDigExist.length < 11) {
+      const _mesmoValor = Math.abs((Number(n.valor_bruto) || 0) - _valorNovo) < 0.01;
+      const _mesmaData = n.data && emissao && String(n.data) === String(emissao);
+      if (_mesmoValor && _mesmaData) return true;
+    }
+    return false;
+  });
   if (nfDup) {
     const dataLanc = fmtData(nfDup.data);
     const confirmaDup = await confirmar(`NF ${numero} do fornecedor ${fornecedor} ja foi lancada em ${dataLanc}. Salvar causara duplicidade. Confirma?`);
