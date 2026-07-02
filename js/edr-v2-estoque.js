@@ -2360,6 +2360,14 @@ async function salvarEntradaDireta() {
     showToast('Imposto/despesa nao entra no estoque. Use "Enviar para obra" e selecione a obra.');
     return;
   }
+  // B2: serviço/taxa/documento/frete (movimenta_estoque=false) NÃO entra no estoque geral — só custo em obra.
+  // Fonte principal: campo do catálogo (já resolvido); rede de segurança: itemMovimentaEstoque (fallback regex) p/ legado sem o campo.
+  if (!destinoObra && (materialNoCatalogo.movimenta_estoque === false
+        || (typeof itemMovimentaEstoque === 'function'
+            && itemMovimentaEstoque({ codigo: materialNoCatalogo?.codigo, desc: descSemFornecedor, etapa: etapaVal }) === false))) {
+    showToast('Serviço/taxa/documento/frete não entra no estoque geral. Use "Enviar para obra" e selecione a obra.');
+    return;
+  }
   if (!data) { showToast('Informe a data.'); document.getElementById('entrada-data').focus(); return; }
   if (_dataSuspeita(data) && !confirm(`A data ${data} parece fora do normal. Confirmar mesmo assim?`)) { document.getElementById('entrada-data').focus(); return; }
   try {
