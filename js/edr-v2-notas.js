@@ -990,6 +990,12 @@ async function salvarNota(notaData) {
       const _ok = await _pedirClassificacaoNota(_semEtapa);
       if (!_ok) { showToast('Lancamento cancelado. Classifique os itens.'); return false; }
     }
+    // [sub-lote 1] Pre-valida destino ANTES de gravar: obra (nao-estoque) tem que resolver, senao a NF nasce orfa sem custo
+    let obraDestino = null, falhasLanc = 0, falhasDesp = 0;
+    if (destino !== COMPANY_DEFAULTS.estoqueGeral) {
+      obraDestino = [...obras, ...(obrasArquivadas || [])].find(o => o.nome === destino);
+      if (!obraDestino) { showToast(`Obra "${destino}" nao encontrada. Selecione um destino valido antes de salvar.`, 'error'); return false; }
+    }
     const payload = {
       data: emissao, data_recebimento: recebimento, natureza,
       numero_nf: numero.toUpperCase(), fornecedor, cnpj: cnpjVal,
@@ -1014,12 +1020,13 @@ async function salvarNota(notaData) {
     if (_itensDespesa.length) {
       const _hojeDesp = hojeISO();
       for (const _itD of _itensDespesa) {
-        await sbPost('contas_pagar', {
+        const _cp = await sbPost('contas_pagar', {
           fornecedor: fornecedor || 'Fornecedor',
           descricao: _itD.desc,
           valor: _itD.total, data_vencimento: _hojeDesp,
           status: 'pago', data_pagamento: _hojeDesp, nota_ref: String(numero)
         });
+        if (!_cp) falhasDesp++;  // [sub-lote 1] falha de despesa nao pode sumir em silencio
       }
     }
 
@@ -1057,12 +1064,12 @@ async function salvarNota(notaData) {
           showToast('NF lancada! Crie a obra Escritorio para baixa automatica.');
         }
       } else {
-        showToast('Nota fiscal lancada!');
+        showToast(falhasDesp > 0 ? `NF salva, mas ${falhasDesp} despesa(s) NAO registradas no financeiro. Verifique.` : 'Nota fiscal lancada!', falhasDesp > 0 ? 'error' : undefined);
       }
     } else {
       // NF direta pra obra (inclusive escritorio): criar lancamentos + distribuicoes automaticamente
       {
-        const obraDestino = [...obras, ...obrasArquivadas].find(o => o.nome === destino);
+        // [sub-lote 1] obraDestino ja foi resolvido e validado antes do sbPost (nao-null garantido aqui)
         // Escritório = consumo direto: cria só o custo (lançamento), nunca distribuição/estoque.
         const _ehEscritorio = !!(obraDestino && obraDestino.nome && obraDestino.nome.toUpperCase().includes('ESCRIT'));
         if (obraDestino) {
@@ -1077,7 +1084,8 @@ async function salvarNota(notaData) {
               data: dataLanc, obs: `NF ${numero} \u00b7 ${fornecedor}`,
               nota_id: saved.id, etapa: it._etapa || '',
             });
-            if (lanc) lancamentos.unshift(lanc);
+            if (!lanc) { falhasLanc++; continue; }  // [sub-lote 1] lancamento falhou: nao criar distribuicao orfa (lancamento_id null)
+            lancamentos.unshift(lanc);
             // Só movimenta estoque se for material físico (não taxa/serviço/doc) E não for o escritório (consumo direto)
             if (!_ehEscritorio && typeof itemMovimentaEstoque === 'function' && itemMovimentaEstoque(it)) {
               const dist = await sbPost('distribuicoes', {
@@ -1091,14 +1099,14 @@ async function salvarNota(notaData) {
                 valor: it.total,
                 etapa: it._etapa || '',
                 data: dataLanc,
-                lancamento_id: lanc?.id || null
+                lancamento_id: lanc.id
               });
               if (dist) distribuicoes.push({ ...dist, obra_nome: obraDestino.nome });
             }
           }
         }
       }
-      showToast('Nota fiscal lancada!');
+      { const _f = falhasLanc + falhasDesp; showToast(_f > 0 ? `NF salva, mas ${_f} lancamento(s)/despesa(s) falharam. Verifique a conexao.` : 'Nota fiscal lancada!', _f > 0 ? 'error' : undefined); }
     }
 
     resetForm();
@@ -1171,8 +1179,10 @@ async function _notasPromptPagamento(notaId, valor, dataRef, obraId, fornecedor,
           valor, data_vencimento: dataRef, obra_id: obraId,
           nota_ref: numero, status: 'pago', data_pagamento: dataRef
         });
-        if (nova && typeof contasPagar !== 'undefined') contasPagar.push(nova);
-        showToast('Saída registrada no financeiro ✓');
+        if (nova) {
+          if (typeof contasPagar !== 'undefined') contasPagar.push(nova);
+          showToast('Saída registrada no financeiro ✓');
+        } else { showToast('Erro ao registrar pagamento. Tente pela tela Financeiro.', 'error'); }
       } catch(e) { console.error('[EDR] prompt pagamento:', e); }
     };
 
@@ -1193,8 +1203,10 @@ async function _notasPromptPagamento(notaId, valor, dataRef, obraId, fornecedor,
             valor, data_vencimento: venc, obra_id: obraId,
             nota_ref: numero, status: 'pendente'
           });
-          if (nova && typeof contasPagar !== 'undefined') contasPagar.push(nova);
-          showToast('Conta a pagar criada ✓');
+          if (nova) {
+            if (typeof contasPagar !== 'undefined') contasPagar.push(nova);
+            showToast('Conta a pagar criada ✓');
+          } else { showToast('Erro ao criar conta a pagar. Tente pela tela Financeiro.', 'error'); }
         } catch(e) { console.error('[EDR] prompt pagamento:', e); }
       };
     };
