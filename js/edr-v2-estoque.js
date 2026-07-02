@@ -174,13 +174,20 @@ function consolidarEstoque(obraId) {
     ? notas.filter(n => n.obra === obraId)
     : notas.filter(n => n.obra === 'EDR');
 
+  // [sub-lote 2] valor liquido do item (desconto abatido). Prefere it.total; fallback qtd*preco-desconto p/ notas antigas.
+  const _liqItem = x => {
+    const q = parseFloat(x.quantidade || x.qtd) || 0;
+    const p = parseFloat(x.preco_unitario || x.preco) || 0;
+    return (x.total != null && x.total !== '') ? (parseFloat(x.total) || 0) : Math.max(0, q * p - (parseFloat(x.desconto) || 0));
+  };
+
   for (const n of notasFiltradas) {
     const itens = parseItens(n);
-    // Frete de CT-e embutido nesta compra: rateia proporcional ao valor de cada item.
+    // Frete de CT-e embutido nesta compra: rateia proporcional ao valor liquido de cada item.
     // fatorFrete = 1 quando nao ha frete embutido (frete_rateado = 0) → custo inalterado.
     const freteNota = parseFloat(n.frete_rateado) || 0;
     const totalValorItens = freteNota > 0
-      ? itens.reduce((s, x) => s + (parseFloat(x.quantidade || x.qtd) || 0) * (parseFloat(x.preco_unitario || x.preco) || 0), 0)
+      ? itens.reduce((s, x) => s + _liqItem(x), 0)
       : 0;
     const fatorFrete = (freteNota > 0 && totalValorItens > 0) ? (1 + freteNota / totalValorItens) : 1;
     for (const it of itens) {
@@ -189,7 +196,9 @@ function consolidarEstoque(obraId) {
       const chave = getChave(desc, codCat);
       const item = garantir(chave, desc, codCat, it.unidade);
       const qtd = parseFloat(it.quantidade || it.qtd) || 0;
-      const valorUn = (parseFloat(it.preco_unitario || it.preco) || 0) * fatorFrete;  // frete embutido
+      const _totLiq = _liqItem(it);  // liquido do item (desconto abatido); notas antigas ja tem total liquido salvo
+      const _precoLiqUn = qtd > 0 ? _totLiq / qtd : (parseFloat(it.preco_unitario || it.preco) || 0);
+      const valorUn = _precoLiqUn * fatorFrete;  // unitario liquido (desconto abatido) + frete embutido
       item.entradas += qtd;
       item.valorTotal += qtd * valorUn;
       item.temNF = true;

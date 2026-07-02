@@ -659,7 +659,7 @@ function adicionarItem(itemData) {
     }
   }
 
-  NotasModule.itens.push({ desc, qtd, unidade, preco, total, imposto, credito, cat, codigo });
+  NotasModule.itens.push({ desc, qtd, unidade, preco, desconto, total, imposto, credito, cat, codigo });
   renderItensForm();
 
   // Limpar form HTML (se chamada do form)
