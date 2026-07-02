@@ -1128,6 +1128,17 @@ async function salvarNota(notaData) {
             });
             if (lancFrete) lancamentos.unshift(lancFrete); else falhasLanc++;
           }
+          // [outras_despesas] Outras despesas acessorias da NF viram lancamento proprio na obra (etapa 36_outros "Nao classificado"), SEM distribuicao. So obra/escritorio (nao estoque geral).
+          if (outras > 0) {
+            const lancOutras = await sbPost('lancamentos', {
+              obra_id: obraDestino.id,
+              descricao: `Outras despesas NF ${numero} · ${fornecedor}`,
+              qtd: 1, preco: outras, total: outras,
+              data: dataLanc, obs: `NF ${numero} · ${fornecedor} · Outras despesas acessorias`,
+              nota_id: saved.id, etapa: '36_outros',
+            });
+            if (lancOutras) lancamentos.unshift(lancOutras); else falhasLanc++;
+          }
         }
       }
       { const _f = falhasLanc + falhasDesp; showToast(_f > 0 ? `NF salva, mas ${_f} lancamento(s)/despesa(s) falharam. Verifique a conexao.` : 'Nota fiscal lancada!', _f > 0 ? 'error' : undefined); }
