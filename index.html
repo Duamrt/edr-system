@@ -3402,7 +3402,7 @@ function abrirNota(id) {
     <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);">
       <div style="flex:1;">
         <div style="font-weight:600;font-size:13px;color:var(--text-primary);">${esc(it.desc)}</div>
-        <div style="font-size:11px;color:var(--text-secondary);margin-top:3px;">${(()=>{const q=Number(it.qtd);return q%1===0?q:q.toFixed(3);})()} ${it.unidade||'UN'} × ${fmtR(it.preco||0)}/UN${it.desconto>0?' · Desc: '+fmtR(it.desconto):''}</div>
+        <div style="font-size:11px;color:var(--text-secondary);margin-top:3px;">${(()=>{const q=Number(it.qtd);return q%1===0?q:q.toFixed(3);})()} ${esc(it.unidade||'UN')} × ${fmtR(it.preco||0)}/UN${it.desconto>0?' · Desc: '+fmtR(it.desconto):''}</div>
       </div>
       <div style="text-align:right;flex-shrink:0;">
         ${isAdmin ? '<div style="font-weight:700;color:var(--primary);">'+fmtR(it.total||0)+'</div>' : ''}
@@ -3419,13 +3419,13 @@ function abrirNota(id) {
         </div>
         <div style="text-align:right;">
           <div style="font-size:11px;color:var(--text-tertiary);">NF</div>
-          <div style="font-weight:800;font-size:18px;color:var(--primary);">${n.numero_nf||'—'}</div>
+          <div style="font-weight:800;font-size:18px;color:var(--primary);">${esc(n.numero_nf||'—')}</div>
         </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;font-size:12px;">
         <div><div style="color:var(--text-tertiary);font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">Emissão</div><div style="color:var(--text-primary);font-weight:600;">${n.data||'—'}</div></div>
         <div><div style="color:var(--text-tertiary);font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">Recebimento</div><div style="color:var(--text-primary);font-weight:600;">${n.data_recebimento||'—'}</div></div>
-        <div><div style="color:var(--text-tertiary);font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">Natureza</div><div style="color:var(--text-primary);font-weight:600;">${n.natureza||'—'}</div></div>
+        <div><div style="color:var(--text-tertiary);font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">Natureza</div><div style="color:var(--text-primary);font-weight:600;">${esc(n.natureza||'—')}</div></div>
         <div><div style="color:var(--text-tertiary);font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">Destino</div><div style="color:var(--text-primary);font-weight:600;">${n.obra==='EDR'?'Estoque':n.obra==='EDR_ESCRITORIO'?'Escritório':esc(n.obra)}</div></div>
         <div><div style="color:var(--text-tertiary);font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">Crédito</div><div style="font-weight:700;color:${n.credito_status==='sim'?'var(--primary)':n.credito_status==='misto'?'var(--warning)':'var(--error)'};">${n.credito_status==='sim'?'Sim':n.credito_status==='misto'?'Parcial':'Não'}</div></div>
         ${isAdmin ? '<div><div style="color:var(--text-tertiary);font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">Total</div><div style="font-weight:800;color:var(--primary);">'+fmtR(total)+'</div></div>' : ''}

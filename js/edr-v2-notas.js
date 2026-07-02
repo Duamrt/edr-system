@@ -121,7 +121,7 @@ function renderNotas() {
         ${n.frete > 0 ? `<span>&middot;</span><span>Frete: ${fmtR(n.frete)}</span>` : ''}
       </div>
       <div class="nf-card-tags">
-        <span class="nf-tag ${tagObraClass}">${tagObra}</span>
+        <span class="nf-tag ${tagObraClass}">${esc(tagObra)}</span>
         <span class="nf-tag nf-tag-nat">${esc(n.natureza || '')}</span>
         <span class="nf-tag ${tagClass}">${tagCredito}</span>
       </div>
