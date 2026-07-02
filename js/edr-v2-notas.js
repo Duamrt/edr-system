@@ -1363,8 +1363,10 @@ function _mapearLancamentosNota(nota) {
   if (typeof lancamentos === 'undefined' || !Array.isArray(lancamentos)) return [];
   const nfNum = (nota.numero_nf || '').toUpperCase().trim();
   const porFK    = lancamentos.filter(l => l.nota_id && (l.nota_id === nota.id || l.nota_id === String(nota.id)));
+  // [Onda2-4] fallback por texto (so legados sem nota_id): exige o numero seguido de ESPACO.
+  // obs sempre no formato "NF <numero> · <fornecedor>", entao 'NF 313 ' NAO casa 'NF 313121 ·...' (evita colisao por prefixo).
   const porTexto = nfNum
-    ? lancamentos.filter(l => !l.nota_id && l.obs && l.obs.toUpperCase().includes('NF ' + nfNum))
+    ? lancamentos.filter(l => !l.nota_id && l.obs && l.obs.toUpperCase().includes('NF ' + nfNum + ' '))
     : [];
   // União sem duplicatas
   const ids = new Set(porFK.map(l => l.id));
