@@ -799,6 +799,7 @@ async function autocadastrarMateriais(itens) {
   // Recarregar catálogo do banco antes do loop para evitar código duplicado
   if (typeof loadMateriais === 'function') await loadMateriais();
   const novos = [];
+  let falhas = 0;  // [Onda A2] conta insercoes que falharam (nao mais engolidas em silencio)
   for (const it of itens) {
     const nomeNorm = norm(it.desc);
     if (!nomeNorm) continue;
@@ -818,10 +819,18 @@ async function autocadastrarMateriais(itens) {
         catalogoMateriais.push(saved);
         catalogoMateriais.sort((a, b) => a.codigo.localeCompare(b.codigo));
         novos.push(saved.nome);
+      } else {
+        // [Onda A2] sbPost retornou null (falha sem excecao) — NAO fingir sucesso. Item fica sem codigo:
+        // a distribuicao nasce sem codigo_catalogo e entra na fila de saneamento (nao apagamos o item).
+        falhas++;
+        console.error(`[EDR] Falha ao auto-cadastrar material "${it.desc}" (codigo tentado ${codigo}) — sbPost retornou null`);
       }
-    } catch (e) { /* silencioso */ }
+    } catch (e) {
+      falhas++;
+      console.error(`[EDR] Erro ao auto-cadastrar material "${it.desc}" (codigo tentado ${codigo}):`, e);
+    }
   }
-  return novos;
+  return { novos, falhas };
 }
 
 // ── VERIFICAÇÃO DE FORNECEDOR DUPLICADO ─────────────────────────
@@ -1004,7 +1013,7 @@ async function salvarNota(notaData) {
       if (!_ok) { showToast('Lancamento cancelado. Classifique os itens.'); return false; }
     }
     // [sub-lote 1] Pre-valida destino ANTES de gravar: obra (nao-estoque) tem que resolver, senao a NF nasce orfa sem custo
-    let obraDestino = null, falhasLanc = 0, falhasDesp = 0;
+    let obraDestino = null, falhasLanc = 0, falhasDesp = 0, falhasCatalogo = 0;
     if (destino !== COMPANY_DEFAULTS.estoqueGeral) {
       obraDestino = [...obras, ...(obrasArquivadas || [])].find(o => o.nome === destino);
       if (!obraDestino) { showToast(`Obra "${destino}" nao encontrada. Selecione um destino valido antes de salvar.`, 'error'); return false; }
@@ -1022,10 +1031,12 @@ async function salvarNota(notaData) {
     notas.unshift(notaSalva);
 
     // Auto-cadastrar materiais novos no catalogo
-    const novosMatsCat = await autocadastrarMateriais(itens);
-    if (novosMatsCat.length > 0) {
-      console.log(`[EDR] Auto-cadastrado(s) no catalogo: ${novosMatsCat.join(', ')}`);
+    const _ac = await autocadastrarMateriais(itens);
+    if (_ac.novos.length > 0) {
+      console.log(`[EDR] Auto-cadastrado(s) no catalogo: ${_ac.novos.join(', ')}`);
     }
+    // [Onda A2] falha de auto-cadastro usa contador PROPRIO (NAO falhasDesp — este bloqueia o prompt de pagamento, e falha de catalogo != falha financeira).
+    if (_ac.falhas > 0) falhasCatalogo += _ac.falhas;
 
     // Consumo de escritorio (5 categorias) vira DESPESA (conta paga), nao estoque/obra. O DRE le como despesa.
     const ETAPAS_DESPESA = ['03_alimentacao', '07_combustivel', '14_expediente', '25_limpeza', '34_tecnologia'];
@@ -1077,7 +1088,7 @@ async function salvarNota(notaData) {
           showToast('NF lancada! Crie a obra Escritorio para baixa automatica.');
         }
       } else {
-        showToast(falhasDesp > 0 ? `NF salva, mas ${falhasDesp} despesa(s) NAO registradas no financeiro. Verifique.` : 'Nota fiscal lancada!', falhasDesp > 0 ? 'error' : undefined);
+        { const _av = []; if (falhasDesp > 0) _av.push(`${falhasDesp} despesa(s) NAO registradas no financeiro`); if (falhasCatalogo > 0) _av.push(`${falhasCatalogo} material(is) nao entraram no catalogo (revise itens sem codigo)`); showToast(_av.length ? `NF salva, mas ${_av.join('; ')}. Verifique.` : 'Nota fiscal lancada!', _av.length ? 'error' : undefined); }
       }
     } else {
       // NF direta pra obra (inclusive escritorio): criar lancamentos + distribuicoes automaticamente
@@ -1141,7 +1152,7 @@ async function salvarNota(notaData) {
           }
         }
       }
-      { const _f = falhasLanc + falhasDesp; showToast(_f > 0 ? `NF salva, mas ${_f} lancamento(s)/despesa(s) falharam. Verifique a conexao.` : 'Nota fiscal lancada!', _f > 0 ? 'error' : undefined); }
+      { const _av = []; if (falhasLanc + falhasDesp > 0) _av.push(`${falhasLanc + falhasDesp} lancamento(s)/despesa(s) falharam`); if (falhasCatalogo > 0) _av.push(`${falhasCatalogo} material(is) nao entraram no catalogo (revise itens sem codigo)`); showToast(_av.length ? `NF salva, mas ${_av.join('; ')}. Verifique a conexao.` : 'Nota fiscal lancada!', _av.length ? 'error' : undefined); }
     }
 
     resetForm();
