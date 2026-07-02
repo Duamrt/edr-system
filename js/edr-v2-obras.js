@@ -206,7 +206,7 @@ function _obrasPopularFiltroUsuario() {
       .map(l => l.criado_por).filter(Boolean)
   )].sort((a, b) => a.localeCompare(b, 'pt-BR'));
   sel.innerHTML = '<option value="">Todos usuários</option>' +
-    usuarios.map(u => `<option value="${u}">${u}</option>`).join('');
+    usuarios.map(u => `<option value="${esc(u)}">${esc(u)}</option>`).join('');
 }
 
 // ── OVERVIEW vs DETALHE ─────────────────────────────────────────
@@ -930,7 +930,7 @@ async function confirmarConclusaoObra() {
   const obra = [...obras, ...obrasArquivadas].find(o => o.id === obraId);
   const nome = obra?.nome || 'Obra';
 
-  if (!await confirmar(`Concluir "${nome}" e gerar o Termo de Entrega?`)) return;
+  if (!await confirmar(`Concluir "${esc(nome)}" e gerar o Termo de Entrega?`)) return;
 
   try {
     await sbPatch('obras', `?id=eq.${obraId}`, {
@@ -1036,7 +1036,7 @@ function reimprimirTermo(obraId) {
 async function reativarObra(obraId) {
   const obra = [...obras, ...obrasArquivadas].find(o => o.id === obraId);
   const nome = obra?.nome || 'esta obra';
-  if (!await confirmar(`Reativar "${nome}"?`)) return;
+  if (!await confirmar(`Reativar "${esc(nome)}"?`)) return;
   try {
     await sbPatch('obras', `?id=eq.${obraId}`, { arquivada: false });
     await loadObras();
@@ -1239,8 +1239,8 @@ function edDescAutocomplete(val) {
   if (!matches.length) { list.classList.add('hidden'); return; }
   list.innerHTML = matches.map((m, i) =>
     `<div class="autocomplete-item" data-ed-i="${i}" style="padding:8px 12px;cursor:pointer;display:flex;gap:8px;align-items:center;border-bottom:1px solid var(--border);">
-      <span style="font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:700;color:var(--primary);">${m.codigo}</span>
-      <span style="font-size:13px;color:var(--text-primary);">${m.nome}</span>
+      <span style="font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:700;color:var(--primary);">${esc(m.codigo)}</span>
+      <span style="font-size:13px;color:var(--text-primary);">${esc(m.nome)}</span>
     </div>`
   ).join('');
   list.querySelectorAll('.autocomplete-item').forEach((el, i) => {
