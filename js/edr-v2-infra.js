@@ -148,7 +148,7 @@ function confirmar(msg, onSim, onNao) {
           </button>
         </div>
         <div class="modal-body">
-          <p style="font-size:14px; color:var(--text-primary); line-height:1.6;">${msg}</p>
+          <p id="_conf-msg" style="font-size:14px; color:var(--text-primary); line-height:1.6;"></p>
         </div>
         <div class="modal-footer">
           <button class="btn" style="color:var(--text-secondary);" id="_conf-nao">Cancelar</button>
@@ -157,6 +157,8 @@ function confirmar(msg, onSim, onNao) {
       </div>
     `;
     document.body.appendChild(overlay);
+    // S2 (seguranca): mensagem dinamica via textContent — nunca innerHTML — para nao interpretar HTML/XSS.
+    overlay.querySelector('#_conf-msg').textContent = msg;
     const fechar = (val) => { overlay.remove(); resolve(val); if (val && onSim) onSim(); if (!val && onNao) onNao(); };
     overlay.querySelector('#_conf-sim').onclick = () => fechar(true);
     overlay.querySelector('#_conf-nao').onclick = () => fechar(false);
