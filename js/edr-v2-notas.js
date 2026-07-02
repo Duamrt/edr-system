@@ -1300,30 +1300,36 @@ function processarXMLNFe(input) {
 // ══════════════════════════════════════════════════════════════════
 // EXCLUSAO DE NOTA FISCAL COM ESTORNO
 // ══════════════════════════════════════════════════════════════════
+// [Onda2] Contas_pagar de um status que travam a exclusao da NF (mesma NF = mesmo fornecedor, ou sem fornecedor = conservador).
+// Cruza por fornecedor porque numero de NF nao e unico entre fornecedores. Colisao (fornecedor diferente) e ignorada e logada.
+// Consulta o banco (nao array local). Fix definitivo quando contas_pagar.nota_id existir (migration pendente).
+async function _contasQueTravam(nfNum, fornecedorNota, status) {
+  const num = (nfNum || '').trim();
+  if (!num) return [];
+  const contas = await sbGet('contas_pagar', `?nota_ref=ilike.${encodeURIComponent(num)}&status=eq.${status}`);
+  const lista = Array.isArray(contas) ? contas : [];
+  const fornNota = norm(fornecedorNota || '');
+  const daNota = lista.filter(c => !c.fornecedor ? true : norm(c.fornecedor) === fornNota);
+  const colisao = lista.length - daNota.length;
+  if (colisao > 0) console.warn(`[EDR] Exclusao NF ${num} (${status}): ${colisao} conta(s) com mesmo numero mas fornecedor diferente (colisao ignorada).`);
+  return daNota;
+}
+
 async function confirmarExclusaoNota(id) {
   const nota = notas.find(n => n.id === id || n.id === Number(id));
   if (!nota) { showToast('Nota nao encontrada.', 'error'); return; }
 
-  // Trava: nota paga no financeiro — consulta direto no banco, não depende de array local.
-  // Busca por nota_ref (número da NF) + status=pago e cruza por fornecedor — número não é único entre fornecedores.
-  // Colisao (mesmo número, fornecedor diferente) é ignorada e logada. Fix definitivo quando contas_pagar.nota_id existir (migration pendente).
-  const nfNumTrava = (nota.numero_nf || '').trim();
-  if (nfNumTrava) {
-    const contasPagas = await sbGet('contas_pagar', `?nota_ref=ilike.${encodeURIComponent(nfNumTrava)}&status=eq.pago`);
-    const _lista = Array.isArray(contasPagas) ? contasPagas : [];
-    // [Onda2-2] cruza por fornecedor: numero de NF nao e unico entre fornecedores (evita falso positivo por colisao).
-    // Conta sem fornecedor = conservador (bloqueia, nao da pra desambiguar). Fornecedor diferente = colisao (nao bloqueia, loga p/ auditoria).
-    const _fornNota = norm(nota.fornecedor || '');
-    const contasPagasMesmaNF = _lista.filter(c => {
-      if (!c.fornecedor) return true; // conservador
-      return norm(c.fornecedor) === _fornNota;
-    });
-    const _colisao = _lista.length - contasPagasMesmaNF.length;
-    if (_colisao > 0) console.warn(`[EDR] Exclusao NF ${nfNumTrava}: ${_colisao} conta(s) paga(s) com mesmo numero mas fornecedor diferente (colisao ignorada).`);
-    if (contasPagasMesmaNF.length > 0) {
-      showToast(`NF ${nota.numero_nf} ja esta PAGA no financeiro. Cancele o pagamento antes de excluir.`, 'error');
-      return;
-    }
+  // Trava financeira: nao excluir NF com conta PAGA ou PENDENTE relacionada (mesmo fornecedor).
+  const _contasPagas = await _contasQueTravam(nota.numero_nf, nota.fornecedor, 'pago');
+  if (_contasPagas.length > 0) {
+    showToast(`NF ${nota.numero_nf} ja esta PAGA no financeiro. Cancele o pagamento antes de excluir.`, 'error');
+    return;
+  }
+  // [Onda2-3] contas a pagar PENDENTES ficariam orfas apos excluir a NF — bloqueia e manda resolver no Financeiro.
+  const _contasPend = await _contasQueTravam(nota.numero_nf, nota.fornecedor, 'pendente');
+  if (_contasPend.length > 0) {
+    showToast(`NF ${nota.numero_nf} tem ${_contasPend.length} conta(s) a pagar pendente(s). Resolva no Financeiro antes de excluir.`, 'error');
+    return;
   }
 
   // Mapear lancamentos vinculados para mostrar no alerta
