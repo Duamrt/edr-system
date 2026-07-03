@@ -854,7 +854,11 @@ async function salvarNovaObra() {
     const payload = { nome, cidade, valor_venda: valorVenda, contratante, cpf_contratante, slug_entrega, area_m2 };
 
     if (editId) {
-      await sbPatch('obras', `?id=eq.${editId}`, payload);
+      const salva = await sbPatch('obras', `?id=eq.${editId}`, payload);
+      // 1c: só atualizar estado / fechar modal / renderizar se a edição gravou de fato.
+      // sbPatch (return=representation) devolve objeto em sucesso; null (erro HTTP/rede) ou
+      // undefined (0 linhas afetadas — RLS/id inexistente) em falha. Abortar antes do "atualizada!".
+      if (!salva) { showToast('Nao foi possivel salvar a obra. Tente novamente.'); return; }
       const obraAtual = [...obras, ...obrasArquivadas].find(o => o.id === editId);
       if (obraAtual?.clickup_list_id && obraAtual.nome !== nome && typeof clickupRenomearObra === 'function') {
         clickupRenomearObra(obraAtual.clickup_list_id, nome);
