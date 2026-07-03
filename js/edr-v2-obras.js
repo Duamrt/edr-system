@@ -1162,11 +1162,21 @@ async function salvarEtapaLanc(lancId) {
   if (!sel) return;
   const novaEtapa = sel.value || '36_outros';
   try {
-    await sbPatch('lancamentos', `?id=eq.${lancId}`, { etapa: novaEtapa });
-    // Sincronizar etapa na distribuição vinculada
+    // 1a: checar retorno dos patches antes de tocar estado local (espelha salvarLancamentoEdit).
+    // Lancamento primeiro (fonte do custo/etapa); se falha, aborta sem mentir.
+    const savedLanc = await sbPatch('lancamentos', `?id=eq.${lancId}`, { etapa: novaEtapa });
+    if (!savedLanc) { showToast('Erro ao salvar no banco. Tente novamente.'); return; }
+    // Sincronizar etapa na distribuição vinculada (se houver — lancamento sem material nao tem)
     const dist = (typeof distribuicoes !== 'undefined' ? distribuicoes : []).find(d => d.lancamento_id === lancId);
     if (dist) {
-      await sbPatch('distribuicoes', `?id=eq.${dist.id}`, { etapa: novaEtapa });
+      const savedDist = await sbPatch('distribuicoes', `?id=eq.${dist.id}`, { etapa: novaEtapa });
+      if (!savedDist) {
+        showToast('Etapa do lancamento salva, mas o estoque divergiu. Recarregue a pagina.');
+        if (typeof loadLancamentos === 'function') await loadLancamentos();
+        if (typeof loadDistribuicoes === 'function') await loadDistribuicoes();
+        if (typeof filtrarLanc === 'function') filtrarLanc();
+        return; // nao mostrar sucesso quando a distribuicao ficou divergente
+      }
       dist.etapa = novaEtapa;
     }
     const lanc = lancamentos.find(l => l.id === lancId);
