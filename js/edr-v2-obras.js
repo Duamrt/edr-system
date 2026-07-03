@@ -933,12 +933,17 @@ async function confirmarConclusaoObra() {
   if (!await confirmar(`Concluir "${esc(nome)}" e gerar o Termo de Entrega?`)) return;
 
   try {
-    await sbPatch('obras', `?id=eq.${obraId}`, {
+    const salva = await sbPatch('obras', `?id=eq.${obraId}`, {
       arquivada: true,
       proprietario, contratante: proprietario, cpf_contratante: cpf,
       endereco_rua: rua, endereco_numero: numero, endereco_bairro: bairro,
       cidade, endereco_cep: cep, slug_entrega
     });
+    // 1d: só emitir o Termo / atualizar estado se a conclusão foi REALMENTE gravada no banco.
+    // sbPatch (return=representation) devolve o objeto em sucesso; null em erro HTTP/rede e
+    // undefined quando 0 linhas foram afetadas (RLS/id inexistente). Em qualquer falha, abortar
+    // ANTES de gerar o documento oficial — senão emite Termo para obra que continua ativa.
+    if (!salva) { showToast('Nao foi possivel concluir a obra. Tente novamente.'); return; }
 
     if (obra?.clickup_list_id && typeof clickupArquivarObra === 'function') {
       clickupArquivarObra(obra.clickup_list_id);
