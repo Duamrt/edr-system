@@ -1295,11 +1295,21 @@ async function confirmarEditDesc() {
   btn.textContent = 'Salvando...';
   try {
     const novaDesc = codigo + ' \u00b7 ' + nome;
-    await sbPatch('lancamentos', `?id=eq.${lancId}`, { descricao: novaDesc });
-    // Sincronizar codigo_catalogo e item_desc na distribui\u00e7\u00e3o vinculada
+    // 1b: checar retorno dos patches antes de tocar estado local (espelha salvarLancamentoEdit).
+    // Lancamento primeiro (descricao exibida no custo); se falha, aborta sem mentir.
+    const savedLanc = await sbPatch('lancamentos', `?id=eq.${lancId}`, { descricao: novaDesc });
+    if (!savedLanc) { showToast('Erro ao salvar no banco. Tente novamente.'); return; }
+    // Sincronizar codigo_catalogo e item_desc na distribui\u00e7\u00e3o vinculada (se houver)
     const dist = (typeof distribuicoes !== 'undefined' ? distribuicoes : []).find(d => d.lancamento_id === lancId);
     if (dist) {
-      await sbPatch('distribuicoes', `?id=eq.${dist.id}`, { codigo_catalogo: codigo, item_desc: nome });
+      const savedDist = await sbPatch('distribuicoes', `?id=eq.${dist.id}`, { codigo_catalogo: codigo, item_desc: nome });
+      if (!savedDist) {
+        showToast('Descricao salva, mas o estoque divergiu. Recarregue a pagina.');
+        if (typeof loadLancamentos === 'function') await loadLancamentos();
+        if (typeof loadDistribuicoes === 'function') await loadDistribuicoes();
+        if (typeof filtrarLanc === 'function') filtrarLanc();
+        return; // nao mostrar sucesso quando a distribuicao ficou divergente
+      }
       dist.codigo_catalogo = codigo;
       dist.item_desc = nome;
     }
@@ -1310,9 +1320,11 @@ async function confirmarEditDesc() {
   } catch (e) {
     console.error('editDesc:', e);
     showToast('Erro ao salvar: ' + e.message);
+  } finally {
+    // Reabilitar o botao em qualquer saida (sucesso, erro ou return antecipado dos guards).
+    btn.disabled = false;
+    btn.textContent = 'Salvar';
   }
-  btn.disabled = false;
-  btn.textContent = 'Salvar';
 }
 
 // ── ABRIR NOTA DO LANCAMENTO ────────────────────────────────────
