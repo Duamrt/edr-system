@@ -579,7 +579,12 @@ function renderObraCef() {
   // Adicionais
   const adds = typeof AdicionaisModule !== 'undefined' ? AdicionaisModule.getAdicionaisObra(obraId) : { lista: [], valorTotal: 0, totalRecebido: 0, saldo: 0 };
   const receitaObra = valorVenda + adds.valorTotal;
-  const pctRecebido = receitaObra > 0 ? Math.min((totalRecebido / receitaObra * 100), 100) : 0;
+  // Onda 2.2+2.3 (regra aprovada Duam 2026-07-04): box financeiro coerente numa base so.
+  // recebido total = repasses (todos tipos) + pagamentos de adicionais; receita total = venda + adicionais validos (= receitaObra).
+  const recebidoAdicionais = Number(adds.totalRecebido || 0);
+  const recebidoTotal = totalRecebido + (Number.isFinite(recebidoAdicionais) ? recebidoAdicionais : 0);
+  const saldoReceber = receitaObra - recebidoTotal;
+  const pctRecebido = receitaObra > 0 ? Math.min((recebidoTotal / receitaObra * 100), 100) : 0;
 
   // Custos
   const custoTotal = lancamentos.filter(l => l.obra_id === obraId).reduce((s, l) => s + Number(l.total || 0), 0);
@@ -642,8 +647,8 @@ function renderObraCef() {
           <div class="cef-progress-fill" style="width:${pctRecebido}%;"></div>
         </div>
         <div class="cef-progress-footer">
-          <span>Recebido: <strong style="color:var(--primary);">${fmt(totalRecebido)}</strong></span>
-          <span>Falta: <strong style="color:var(--warning);">${fmt(Math.max(0, financiado - totalRecebido))}</strong></span>
+          <span>Recebido: <strong style="color:var(--primary);">${fmt(recebidoTotal)}</strong></span>
+          <span>Falta: <strong style="color:var(--warning);">${fmt(Math.max(0, saldoReceber))}</strong></span>
         </div>
       </div>
 
