@@ -946,7 +946,8 @@ async function confirmarConclusaoObra() {
       arquivada: true,
       proprietario, contratante: proprietario, cpf_contratante: cpf,
       endereco_rua: rua, endereco_numero: numero, endereco_bairro: bairro,
-      cidade, endereco_cep: cep, slug_entrega
+      cidade, endereco_cep: cep, slug_entrega,
+      data_entrega: dataEntrega   // Onda 3: persiste a data de entrega p/ o Termo (evita reprint cair em criado_em)
     });
     // 1d: só emitir o Termo / atualizar estado se a conclusão foi REALMENTE gravada no banco.
     // sbPatch (return=representation) devolve o objeto em sucesso; null em erro HTTP/rede e
@@ -1034,16 +1035,100 @@ function reimprimirTermo(obraId) {
     showToast('Dados incompletos. Edite a obra antes.');
     return;
   }
+  // Onda 3: usar a data de entrega REAL persistida. Nunca criado_em/contrato_data/new Date().
+  if (obra.data_entrega) { _emitirTermoObra(obra, obra.data_entrega); return; }
+  // Legado (obra concluida antes da coluna existir): pedir a data, persistir e so entao emitir.
+  _abrirModalDataEntregaLegado(obra);
+}
+
+function _emitirTermoObra(obra, dataEntrega) {
   gerarTermoEntrega({
     proprietario: obra.proprietario || obra.contratante || '',
     cpf: obra.cpf_contratante || '',
-    dataEntrega: obra.criado_em ? obra.criado_em.split('T')[0] : '',
+    dataEntrega: dataEntrega,
     rua: obra.endereco_rua || '',
     numero: obra.endereco_numero || '',
     bairro: obra.endereco_bairro || '',
     cidade: obra.cidade || '',
     modelo: obra.nome || ''
   });
+}
+
+function _abrirModalDataEntregaLegado(obra) {
+  document.getElementById('modal-data-entrega-legado')?.remove();
+  // DOM puro (sem innerHTML): so insere elementos novos; data SEM default (nao carimba hoje).
+  const modal = document.createElement('div');
+  modal.id = 'modal-data-entrega-legado';
+  modal.className = 'modal-overlay active';
+  modal.style.zIndex = '9999';
+
+  const box = document.createElement('div');
+  box.className = 'modal-box';
+  box.style.cssText = 'max-width:420px;padding:24px;';
+
+  const h = document.createElement('div');
+  h.style.cssText = "font-family:'Plus Jakarta Sans',sans-serif;font-size:16px;font-weight:700;margin-bottom:6px;";
+  h.textContent = 'Data de entrega';
+
+  const msg = document.createElement('div');
+  msg.style.cssText = 'font-size:13px;color:var(--text-secondary);margin-bottom:16px;';
+  msg.textContent = 'Esta obra nao tem data de entrega salva. Informe a data para emitir o Termo — ela sera salva para reimpressoes futuras.';
+
+  const field = document.createElement('div');
+  field.style.cssText = 'margin-bottom:16px;';
+  const lb = document.createElement('label');
+  lb.style.cssText = 'font-size:11px;font-weight:700;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;display:block;';
+  lb.textContent = 'Data de entrega';
+  const input = document.createElement('input');
+  input.id = 'del-data';
+  input.type = 'date';
+  input.style.cssText = 'width:100%;padding:10px 12px;border-radius:var(--radius-sm);background:var(--bg);color:var(--text-primary);border:1px solid var(--border);font-size:14px;box-sizing:border-box;';
+  field.appendChild(lb); field.appendChild(input);
+
+  const actions = document.createElement('div');
+  actions.style.cssText = 'display:flex;gap:10px;justify-content:flex-end;';
+  const btnCancel = document.createElement('button');
+  btnCancel.style.cssText = 'padding:10px 20px;border-radius:var(--radius-sm);background:var(--bg);color:var(--text-secondary);border:1px solid var(--border);cursor:pointer;font-size:13px;';
+  btnCancel.textContent = 'Cancelar';
+  btnCancel.addEventListener('click', () => modal.remove());
+  const btnOk = document.createElement('button');
+  btnOk.id = 'del-confirmar';
+  btnOk.className = 'btn-primary';
+  btnOk.style.cssText = 'padding:10px 20px;';
+  btnOk.textContent = 'Salvar e emitir';
+  btnOk.addEventListener('click', () => _confirmarDataEntregaLegado(obra.id));
+  actions.appendChild(btnCancel); actions.appendChild(btnOk);
+
+  box.appendChild(h); box.appendChild(msg); box.appendChild(field); box.appendChild(actions);
+  modal.appendChild(box);
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  document.body.appendChild(modal);
+  setTimeout(() => input.focus(), 80);
+}
+
+async function _confirmarDataEntregaLegado(obraId) {
+  const val = document.getElementById('del-data')?.value || '';
+  // Validar YYYY-MM-DD explicitamente (o input date ja restringe, mas garantimos).
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(val)) { showToast('Informe uma data valida.'); return; }
+  const obra = [...obras, ...obrasArquivadas].find(o => o.id === obraId);
+  if (!obra) { showToast('Obra nao encontrada.'); return; }
+  const btn = document.getElementById('del-confirmar');
+  if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
+  try {
+    const salvo = await sbPatch('obras', `?id=eq.${obraId}`, { data_entrega: val });
+    // sbPatch: objeto em sucesso, undefined em 0-linhas (RLS/id), null em erro HTTP. Qualquer falha: NAO emitir.
+    if (!salvo) {
+      showToast('Nao foi possivel salvar a data. Termo nao emitido.');
+      if (btn) { btn.disabled = false; btn.textContent = 'Salvar e emitir'; }
+      return;
+    }
+    obra.data_entrega = val;   // atualiza local so apos o patch confirmar
+    document.getElementById('modal-data-entrega-legado')?.remove();
+    _emitirTermoObra(obra, val);   // so agora emite o Termo
+  } catch (e) {
+    showToast('Erro ao salvar a data. Termo nao emitido.');
+    if (btn) { btn.disabled = false; btn.textContent = 'Salvar e emitir'; }
+  }
 }
 
 // ── REATIVAR OBRA ───────────────────────────────────────────────
