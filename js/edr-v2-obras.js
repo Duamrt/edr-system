@@ -1076,7 +1076,7 @@ function editarLancamento(lancId) {
     </div>
     <div style="display:flex;gap:10px;align-items:flex-end;">
       <div style="flex:1;"><label style="${lb}">Data</label><input id="el-data" type="date" value="${lanc.data || ''}" style="${inp}"></div>
-      <div style="flex:1;text-align:right;"><label style="${lb}">Total</label><div id="el-total" style="font-family:'Space Grotesk',monospace;font-weight:800;font-size:18px;color:var(--primary);">${fmtR(lanc.total || 0)}</div></div>
+      <div style="flex:1;text-align:right;"><label style="${lb}">Total</label><div id="el-total" data-total-original="${lanc.total != null ? lanc.total : 0}" style="font-family:'Space Grotesk',monospace;font-weight:800;font-size:18px;color:var(--primary);">${fmtR(lanc.total || 0)}</div></div>
     </div>
     <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:18px;">
       <button onclick="document.getElementById('modal-editar-lanc')?.remove()" style="padding:10px 20px;border-radius:var(--radius-sm);background:var(--bg);color:var(--text-secondary);border:1px solid var(--border);cursor:pointer;font-size:13px;">Cancelar</button>
@@ -1089,26 +1089,60 @@ function editarLancamento(lancId) {
 }
 
 function _elRecalc() {
-  const q = parseFloat(document.getElementById('el-qtd')?.value) || 0;
-  const p = parseFloat(document.getElementById('el-preco')?.value) || 0;
   const el = document.getElementById('el-total');
-  if (el) el.textContent = fmtR(q * p);
+  if (!el) return;
+  const qtdRaw = document.getElementById('el-qtd')?.value || '';
+  const precoRaw = document.getElementById('el-preco')?.value || '';
+  // Campo unitario vazio = lancamento avulso: total e autoritativo, exibe o original (nunca R$ 0,00).
+  if (qtdRaw.trim() === '' || precoRaw.trim() === '') {
+    const orig = parseFloat(el.dataset.totalOriginal);
+    el.textContent = fmtR(Number.isFinite(orig) ? orig : 0);
+    return;
+  }
+  const q = parseFloat(qtdRaw);
+  const p = parseFloat(precoRaw);
+  el.textContent = fmtR((Number.isFinite(q) && Number.isFinite(p)) ? q * p : 0);
 }
 
 async function salvarLancamentoEdit(lancId) {
   const desc = (document.getElementById('el-desc')?.value || '').trim();
-  const qtd = parseFloat(document.getElementById('el-qtd')?.value) || 0;
-  const preco = parseFloat(document.getElementById('el-preco')?.value) || 0;
+  const qtdRaw = document.getElementById('el-qtd')?.value || '';
+  const precoRaw = document.getElementById('el-preco')?.value || '';
   const data = document.getElementById('el-data')?.value || null;
   if (!desc) return showToast('Informe a descricao.');
-  const total = qtd * preco;
+
+  // Onda 2.1 — anti-zeragem de lancamento avulso:
+  // vazio detectado pelo raw input (nao pelo numero). Campo vazio = avulso (frete, conta paga, diaria):
+  // total e autoritativo, o patch NAO leva qtd/preco/total. Campo preenchido invalido = erro, aborta.
+  const qtdVazio = qtdRaw.trim() === '';
+  const precoVazio = precoRaw.trim() === '';
+  let qtd = null, preco = null;
+  if (!qtdVazio) {
+    qtd = parseFloat(qtdRaw);
+    if (!Number.isFinite(qtd)) return showToast('Quantidade invalida. Corrija para salvar.');
+  }
+  if (!precoVazio) {
+    preco = parseFloat(precoRaw);
+    if (!Number.isFinite(preco)) return showToast('Valor unitario invalido. Corrija para salvar.');
+  }
+  const mexeuFinanceiro = !qtdVazio && !precoVazio;
+  const patchLanc = { descricao: desc, data };
+  let total;
+  if (mexeuFinanceiro) {
+    total = qtd * preco;
+    patchLanc.qtd = qtd;
+    patchLanc.preco = preco;
+    patchLanc.total = total;
+  }
   try {
-    const savedLanc = await sbPatch('lancamentos', `?id=eq.${lancId}`, { descricao: desc, qtd, preco, total, data });
+    const savedLanc = await sbPatch('lancamentos', `?id=eq.${lancId}`, patchLanc);
     if (!savedLanc) { showToast('Erro ao salvar no banco. Tente novamente.'); return; }
-    // Sincronizar distribuição vinculada (qtd/valor/data) — campo operacional é 'valor'
+    // Distribuicao vinculada espelha SO o que mudou no lancamento (avulso: so a data, nunca zera valor).
     const dist = (typeof distribuicoes !== 'undefined' ? distribuicoes : []).find(d => d.lancamento_id === lancId);
     if (dist) {
-      const savedDist = await sbPatch('distribuicoes', `?id=eq.${dist.id}`, { qtd, valor: total, data });
+      const patchDist = { data };
+      if (mexeuFinanceiro) { patchDist.qtd = qtd; patchDist.valor = total; }
+      const savedDist = await sbPatch('distribuicoes', `?id=eq.${dist.id}`, patchDist);
       if (!savedDist) {
         showToast('Lancamento salvo, mas estoque divergiu. Recarregue a pagina.');
         if (typeof loadLancamentos === 'function') await loadLancamentos();
@@ -1116,10 +1150,13 @@ async function salvarLancamentoEdit(lancId) {
         if (typeof filtrarLanc === 'function') filtrarLanc();
         return; // não mostrar sucesso quando distribuição ficou divergente
       }
-      Object.assign(dist, { qtd, valor: total, data });
+      Object.assign(dist, patchDist);
     }
     const lanc = lancamentos.find(l => l.id === lancId);
-    if (lanc) Object.assign(lanc, { descricao: desc, qtd, preco, total, data });
+    if (lanc) {
+      Object.assign(lanc, { descricao: desc, data });
+      if (mexeuFinanceiro) Object.assign(lanc, { qtd, preco, total });
+    }
     document.getElementById('modal-editar-lanc')?.remove();
     showToast('Lancamento atualizado');
     if (typeof filtrarLanc === 'function') filtrarLanc();
