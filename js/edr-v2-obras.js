@@ -824,15 +824,27 @@ async function excluirDistribuicao(id) {
     : 'Excluir esta movimentacao de material?';
   if (!confirm(msg)) return;
   try {
-    const okDist = await sbDelete('distribuicoes', `?id=eq.${id}`);
-    if (!okDist) { showToast('Erro ao excluir movimentacao.'); return; }
+    // 1) custo (lancamento) primeiro. Sem FK em distribuicoes.lancamento_id, a ordem
+    //    e livre; deletar o custo antes garante que o pior estado parcial deixe o P&L correto.
     if (d?.lancamento_id) {
       const okLanc = await sbDelete('lancamentos', `?id=eq.${d.lancamento_id}`);
-      if (!okLanc) { showToast('Movimentacao excluida, mas custo nao removido do banco.'); }
-      else {
-        const li = lancamentos.findIndex(l => l.id === d.lancamento_id);
-        if (li !== -1) lancamentos.splice(li, 1);
-      }
+      if (okLanc === null) { showToast('Erro ao remover o custo. Nada foi excluido.'); return; }
+      if (okLanc === 0) console.warn('excluirDistribuicao: lancamento', d.lancamento_id, 'ja ausente (recuperacao de orfa) - seguindo para excluir a distribuicao.');
+    }
+    // 2) estoque (distribuicao) depois.
+    const okDist = await sbDelete('distribuicoes', `?id=eq.${id}`);
+    if (!okDist) {
+      // 0 ou null: nao confirmou. Nao mexe no cache, recarrega para nao mentir o estado.
+      showToast('Nao foi possivel confirmar a exclusao no estoque. Recarregando dados.');
+      await loadLancamentos();
+      await loadDistribuicoes();
+      renderObrasMateriais();
+      return;
+    }
+    // 3) ambos confirmados: atualiza cache local agora.
+    if (d?.lancamento_id) {
+      const li = lancamentos.findIndex(l => l.id === d.lancamento_id);
+      if (li !== -1) lancamentos.splice(li, 1);
     }
     const idx = distribuicoes.findIndex(x => x.id === id);
     if (idx !== -1) distribuicoes.splice(idx, 1);
