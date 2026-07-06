@@ -1107,17 +1107,28 @@ async function abrirAjusteEstoque(chave) {
     });
     if (!resp) return showToast('Erro ao salvar ajuste', 'error');
   }
+  const ajusteFeito = diferenca !== 0; // se chegou aqui, o ajuste (quando houve) foi gravado — falha ja deu return
 
+  // Preco opcional, INDEPENDENTE do ajuste. sbPatch (infra): objeto = atualizou / undefined = 0 linhas
+  // (nenhuma entrada com preco=0) / null = erro HTTP. Nao desfaz o ajuste; toast honesto abaixo.
+  let precoStatus = null; // null = nao informado | 'ok' | 'semmatch' | 'erro'
   if (novoPreco && novoPreco > 0) {
     const enc = encodeURIComponent(item.desc);
     const filtro = item.codigo
       ? `entradas_diretas?codigo_catalogo=eq.${encodeURIComponent(item.codigo)}&preco=eq.0`
       : `entradas_diretas?item_desc=ilike.${enc}&preco=eq.0`;
-    await sbPatch(filtro, { preco: novoPreco });
-    showToast(`Preço atualizado: ${fmtR(novoPreco)}/${item.unidade}`, 'success');
+    const precoRes = await sbPatch(filtro, { preco: novoPreco });
+    precoStatus = precoRes ? 'ok' : (precoRes === null ? 'erro' : 'semmatch');
   }
 
-  if (diferenca !== 0) showToast(`Estoque ajustado: ${diferenca > 0 ? '+' : ''}${fmt(diferenca)} ${item.unidade}`, 'success');
+  // Toast final unico e honesto (consolida ajuste + preco sem misturar a logica de gravacao).
+  const partes = [];
+  if (ajusteFeito) partes.push(`Estoque ajustado: ${diferenca > 0 ? '+' : ''}${fmt(diferenca)} ${item.unidade}`);
+  if (precoStatus === 'ok') partes.push(`Preço atualizado: ${fmtR(novoPreco)}/${item.unidade}`);
+  else if (precoStatus === 'semmatch') partes.push('Preço não atualizado: nenhuma entrada sem preço compatível');
+  else if (precoStatus === 'erro') partes.push('Erro ao atualizar o preço');
+  const tipoToast = (precoStatus === 'erro' || precoStatus === 'semmatch') ? 'error' : 'success';
+  if (partes.length) showToast(partes.join(' · '), tipoToast);
 
   if (typeof loadAjustesEstoque === 'function') await loadAjustesEstoque();
 
