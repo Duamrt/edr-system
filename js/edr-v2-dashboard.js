@@ -320,7 +320,7 @@ function _dashRenderOperador() {
   }).filter(o => o.qtd > 0).sort((a, b) => b.qtd - a.qtd);
 
   const estoqueDisp = typeof consolidarEstoque === 'function'
-    ? consolidarEstoque().filter(m => m.saldoTotal > 0.01).sort((a, b) => b.saldoTotal - a.saldoTotal).slice(0, 8).map(m => [m.desc, { qtd: m.saldoTotal, un: m.unidade }])
+    ? consolidarEstoque().filter(m => m.saldo > 0.01).sort((a, b) => b.saldo - a.saldo).slice(0, 8).map(m => [m.desc, { qtd: m.saldo, un: m.unidade }])
     : [];
 
   const obraMap = {};
