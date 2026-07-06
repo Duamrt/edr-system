@@ -324,6 +324,10 @@ function toggleObrasArquivadas() {
 function obrasAbrirDetalhe(obraId) {
   ObrasModule.obraAberta = obraId;
   ObrasModule.catsFiltro.clear();
+  // 3.3: sincronizar o DOM do filtro de categoria com o Set ja limpo (mesmo seletor/padrao de obrasCatLimpar) —
+  // senao checkboxes/label ficam "N selecionados" enquanto a lista abre sem filtro (dessync + toggle invertido).
+  document.querySelectorAll('#obras-filtro-cat-lista input[type=checkbox]').forEach(cb => cb.checked = false);
+  _obrasCatAtualizarLabel();
   ObrasModule.tab = 'lanc';
   ObrasModule.lancPage = 0;
 
