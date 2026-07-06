@@ -290,7 +290,9 @@ function _dashCalcPorObra(lancAtivos) {
     const receb = repsObra.reduce((s, r) => s + Number(r.valor || 0), 0);
     const lucro = receitaObra - custo;
     const margem = receitaObra > 0 ? (lucro / receitaObra * 100) : 0;
-    return { nome: o.nome, id: o.id, custo, vv, receb, lucro, margem, qtd: ls.length, adds };
+    const entradas = receb + (adds.totalRecebido || 0);
+    const pctReceb = receitaObra > 0 ? Math.min(entradas / receitaObra * 100, 100) : null;
+    return { nome: o.nome, id: o.id, custo, vv, receb, lucro, margem, qtd: ls.length, adds, pctReceb };
   }).filter(o => o.qtd > 0 || o.vv > 0).sort((a, b) => b.custo - a.custo);
 }
 
