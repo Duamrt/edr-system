@@ -366,8 +366,8 @@ function _dashBuildEstoqueDisp(estoqueDisp) {
     <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;color:#a78bfa;letter-spacing:2px;margin-bottom:12px;display:flex;align-items:center;gap:6px;"><span class="material-symbols-outlined" style="font-size:18px;">inventory_2</span> Estoque Disponivel</div>
     ${estoqueDisp.length ? estoqueDisp.map(([nome, v]) => `
       <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);">
-        <span style="font-size:12px;color:var(--text-primary);font-weight:500;font-family:Inter,sans-serif;">${nome}</span>
-        <span style="font-size:11px;font-weight:700;color:#a78bfa;font-family:'Space Grotesk',monospace;">${v.qtd % 1 === 0 ? v.qtd : v.qtd.toFixed(2)} ${v.un}</span>
+        <span style="font-size:12px;color:var(--text-primary);font-weight:500;font-family:Inter,sans-serif;">${esc(nome)}</span>
+        <span style="font-size:11px;font-weight:700;color:#a78bfa;font-family:'Space Grotesk',monospace;">${v.qtd % 1 === 0 ? v.qtd : v.qtd.toFixed(2)} ${esc(v.un)}</span>
       </div>`).join('') :
     '<div style="color:var(--text-tertiary);font-size:12px;padding:8px 0;font-family:Inter,sans-serif;">Sem estoque disponivel.</div>'}
   </div>`;
@@ -381,9 +381,9 @@ function _dashBuildUltimosLanc(ultimos, obraMap) {
       <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border);">
         <div>
           <div style="font-size:13px;color:var(--text-primary);font-weight:600;font-family:Inter,sans-serif;">${esc(l.descricao)}</div>
-          <div style="font-size:10px;color:var(--text-tertiary);margin-top:2px;font-family:'Space Grotesk',monospace;">${obraMap[l.obra_id] || '—'} · ${l.data || ''}</div>
+          <div style="font-size:10px;color:var(--text-tertiary);margin-top:2px;font-family:'Space Grotesk',monospace;">${esc(obraMap[l.obra_id] || '—')} · ${l.data || ''}</div>
         </div>
-        <span style="font-size:10px;color:var(--text-tertiary);background:var(--surface-alt);padding:2px 8px;border-radius:10px;font-family:'Space Grotesk',monospace;white-space:nowrap;">${Number(l.qtd || 1) % 1 === 0 ? Number(l.qtd || 1) : Number(l.qtd || 1).toFixed(2)} ${l.unidade || 'UN'}</span>
+        <span style="font-size:10px;color:var(--text-tertiary);background:var(--surface-alt);padding:2px 8px;border-radius:10px;font-family:'Space Grotesk',monospace;white-space:nowrap;">${Number(l.qtd || 1) % 1 === 0 ? Number(l.qtd || 1) : Number(l.qtd || 1).toFixed(2)} ${esc(l.unidade || 'UN')}</span>
       </div>`).join('')}
   </div>`;
 }
@@ -487,7 +487,7 @@ function _dashBuildAcaoNecessaria() {
       <span class="material-symbols-outlined" style="font-size:20px;color:${i.cor};">${i.icon}</span>
       <div style="flex:1;">
         <div style="font-size:12px;color:var(--text-primary);font-weight:600;font-family:Inter,sans-serif;">${esc(i.label)}</div>
-        <div style="font-size:10px;color:var(--text-tertiary);font-family:Inter,sans-serif;">${i.sub}</div>
+        <div style="font-size:10px;color:var(--text-tertiary);font-family:Inter,sans-serif;">${esc(i.sub)}</div>
       </div>
       <span class="material-symbols-outlined" style="font-size:16px;color:var(--text-tertiary);">chevron_right</span>
     </div>`).join('')}
