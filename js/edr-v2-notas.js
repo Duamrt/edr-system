@@ -1406,38 +1406,54 @@ async function processarExclusaoNota(id, lancsPremapeados) {
     // Falha aqui = nada apagado ainda → abortar com segurança.
     if (lancsDaNota.length) {
       const okLancFK = await sbDelete('lancamentos', `?nota_id=eq.${nota.id}`);
-      if (!okLancFK) {
+      // sbDelete 3-estados: null = erro real (aborta); 0 = nenhum lançamento com nota_id
+      // (normal quando a NF só tem legados por texto — o loop abaixo cuida deles).
+      if (okLancFK === null) {
         showToast('Erro ao estornar lancamentos. Exclusao cancelada.', 'error');
         console.error('[EDR] Erro ao excluir lancamentos por nota_id', nota.id);
         return;
       }
       // Delete individual para legados encontrados por texto (sem nota_id)
       const legacy = lancsDaNota.filter(l => !l.nota_id);
-      const idsLegacyFalhos = new Set();
+      const idsLegacyFalhos = new Set();     // sbDelete === null → erro HTTP REAL → aborta
+      const idsLegacyAusentes = new Set();   // sbDelete === 0 → id ja ausente → NAO fatal, mas AVISA
       for (const l of legacy) {
         const okLeg = await sbDelete('lancamentos', `?id=eq.${l.id}`);
-        if (!okLeg) {
-          console.error('[EDR] Erro ao excluir lancamento legacy', l.id);
+        if (okLeg === null) {
+          console.error('[EDR] Erro (HTTP) ao excluir lancamento legacy', l.id, 'nota', nota.id);
           idsLegacyFalhos.add(l.id);
+        } else if (okLeg === 0) {
+          // id especifico casou 0 linhas. O mapeamento legado e por TEXTO sobre o cache local
+          // (_mapearLancamentosNota → porTexto), que pode estar defasado do banco (outra sessao/
+          // exclusao parcial anterior ja removeu). Entao 0 = provavelmente ja removido → nao fatal.
+          // Mas NUNCA silencioso: registra e avisa no fim.
+          console.warn('[EDR] Lancamento legado ja ausente (0 linhas):', l.id, 'nota', nota.id);
+          idsLegacyAusentes.add(l.id);
         }
       }
-      // Atualiza cache local: FK ok = todos removidos; legacy = só os confirmados
+      // Cache local: FK todos + legados que sairam (>0) OU ja estavam ausentes (0) — só NAO os com erro real (null)
       const idsRemovidos = new Set(
         lancsDaNota.filter(l => l.nota_id ? true : !idsLegacyFalhos.has(l.id)).map(l => l.id)
       );
       if (idsRemovidos.size) lancamentos = lancamentos.filter(l => !idsRemovidos.has(l.id));
-      // Legado com falha = abortar antes de apagar distribuicoes e nota
+      // Erro REAL em legado = abortar antes de apagar distribuicoes e nota
       if (idsLegacyFalhos.size > 0) {
         showToast(`Erro ao estornar ${idsLegacyFalhos.size} lancamento(s) legado(s). Nota preservada.`, 'error');
         console.error('[EDR] Lancamentos legados nao removidos:', [...idsLegacyFalhos]);
         return;
+      }
+      // Legados ja ausentes (0 linhas) = nao bloqueia, mas AVISA (nao esconde a ausencia)
+      if (idsLegacyAusentes.size > 0) {
+        showToast(`${idsLegacyAusentes.size} lancamento(s) legado(s) ja estavam ausentes — confira.`, 'error');
+        console.warn('[EDR] Legados ja ausentes (0 linhas):', [...idsLegacyAusentes]);
       }
     }
 
     // Passo B: Excluir distribuicoes vinculadas
     // Falha aqui = lancamentos já removidos mas nota preservada.
     const okDist = await sbDelete('distribuicoes', `?nota_id=eq.${nota.id}`);
-    if (!okDist) {
+    // null = erro real (aborta); 0 = NF sem distribuição (serviço/taxa/frete movimenta_estoque=false) — normal.
+    if (okDist === null) {
       showToast('Erro ao estornar distribuicoes. Nota mantida (lancamentos ja removidos — avise suporte).', 'error');
       console.error('[EDR] Erro ao excluir distribuicoes da NF', nota.id);
       renderNotas();

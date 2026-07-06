@@ -112,13 +112,26 @@ async function sbPatch(t, q, b) {
 }
 
 async function sbDelete(t, q='') {
+  // Contrato 3-estados (provado no REST 2026-07-06 via count=exact → Content-Range */N):
+  //   N>0 = apagou N linhas | 0 = nao apagou nenhuma (id inexistente/filtro/RLS silenciosa) | null = erro HTTP/rede/header
+  // Callers OBRIGATORIOS usam if(!ok) (0 e null = falha). Callers que aceitam 0 (Notas bulk) usam if(ok===null).
   if (q && !q.includes('=') && !q.startsWith('?')) q = '?id=eq.' + q;
   try {
     const r = await fetch(`${SUPABASE_URL}/rest/v1/${t}${q}`, {
-      method: 'DELETE', headers: _sbHeaders()
+      method: 'DELETE',
+      headers: _sbHeaders('count=exact')
     });
-    return r.ok;
-  } catch (e) { console.warn('sbDelete falha:', t, e); return false; }
+    if (!r.ok) {
+      r.text().then(body => console.warn('sbDelete erro:', r.status, t, body));
+      return null;
+    }
+    const range = r.headers.get('content-range') || '';
+    const n = Number.parseInt(range.split('/')[1], 10);
+    return Number.isFinite(n) ? n : null;
+  } catch (e) {
+    console.warn('sbDelete falha:', t, e);
+    return null;
+  }
 }
 
 // ── SANITIZAÇÃO DE TEXTO PARA BANCO ─────────────────────────
