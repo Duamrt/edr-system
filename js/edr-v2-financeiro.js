@@ -337,17 +337,29 @@ async function salvarSaldoManual() {
   if (!inp) return;
   const val = parseFloat(inp.value);
   if (isNaN(val)) { showToast('Informe um valor valido.'); return; }
+  // Persistir no banco PRIMEIRO (quando ha empresa) — so muta estado local/localStorage apos confirmar,
+  // senao um saldo nao-persistido sobrevive ao reload via localStorage e contamina o caixa.
+  if (_companyId) {
+    const salvo = await sbPatch('companies', '?id=eq.' + _companyId, { saldo_manual: val });
+    if (!salvo) { showToast(salvo === null ? 'Erro ao salvar o saldo.' : 'Empresa nao encontrada — recarregue.', 'error'); return; }
+  }
+  // Sucesso (ou modo local-only sem _companyId): estado + localStorage. Aceita val 0.
   _saldoManual = val;
   try { localStorage.setItem('edr_saldo_manual', String(val)); } catch(e) {}
-  if (_companyId) await sbPatch('companies', '?id=eq.' + _companyId, { saldo_manual: val });
   showToast('Saldo salvo');
   renderCaixa();
 }
 
 async function limparSaldoManual() {
+  // Persistir no banco PRIMEIRO (quando ha empresa) — so limpa estado local/localStorage apos confirmar.
+  if (_companyId) {
+    const salvo = await sbPatch('companies', '?id=eq.' + _companyId, { saldo_manual: null });
+    if (!salvo) { showToast(salvo === null ? 'Erro ao limpar o saldo.' : 'Empresa nao encontrada — recarregue.', 'error'); return; }
+  }
+  // Sucesso (ou modo local-only): limpa estado + localStorage. Manda null (nunca 0).
   _saldoManual = null;
   try { localStorage.removeItem('edr_saldo_manual'); } catch(e) {}
-  if (_companyId) await sbPatch('companies', '?id=eq.' + _companyId, { saldo_manual: null });
+  showToast('Saldo limpo');
   renderCaixa();
 }
 
