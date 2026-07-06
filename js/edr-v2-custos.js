@@ -545,8 +545,10 @@ async function custosSalvarRepasse() {
 async function custosExcluirRepasse(id) {
   const ok = await confirmar('Excluir este repasse CEF? Esta acao nao pode ser desfeita.');
   if (!ok) return;
-  await sbDelete('repasses_cef', `?id=eq.${id}`);
-  showToast('Repasse excluido', 'success');
+  // sbDelete 3-estados: >0 apagou / 0 nao apagou (id inexistente/RLS) / null erro HTTP.
+  const apagou = await sbDelete('repasses_cef', `?id=eq.${id}`);
+  if (apagou === null) { showToast('Erro ao excluir o repasse.', 'error'); return; } // nao recarrega/renderiza
+  showToast(apagou ? 'Repasse excluido' : 'Repasse ja nao existia — lista atualizada.', apagou ? 'success' : 'error');
   await _custosCarregarRepasses();
   if (CustosModule.obraAtual) custosAbrirDetalhe(CustosModule.obraAtual);
   else _custosRenderCards();
@@ -698,9 +700,14 @@ async function custosSalvarContrato() {
     entrada_paga: entPaga, contrato_taxa: taxa, contrato_prazo: prazo, contrato_data: data,
   };
 
-  await sbPatch('obras', `?id=eq.${obraId}`, body);
+  // sbPatch (infra): objeto = persistiu / undefined = 0 linhas (obra inexistente/RLS) / null = erro HTTP.
+  const salvo = await sbPatch('obras', `?id=eq.${obraId}`, body);
+  if (!salvo) {
+    showToast(salvo === null ? 'Erro ao salvar o contrato.' : 'Obra nao encontrada — recarregue.', 'error');
+    return; // nao Object.assign, nao fecha modal, nao renderiza (contrato define valor_venda -> receita/lucro/margem)
+  }
 
-  // Atualizar obra local
+  // Atualizar obra local SO apos persistir
   const obra = [...obras, ...(typeof obrasArquivadas !== 'undefined' ? obrasArquivadas : [])].find(o => o.id === obraId);
   if (obra) Object.assign(obra, body);
 
