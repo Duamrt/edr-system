@@ -220,31 +220,48 @@ async function marcarComoPago(contaId) {
   if (!confirm('Confirma pagamento desta conta?')) return;
   const conta = contasPagar.find(c => c.id === contaId);
   try {
+    // 1) Marcar a conta como paga — checar retorno (sbPatch: objeto=persistiu / undefined=0 linhas / null=erro HTTP).
     const atualizada = await sbPatch('contas_pagar', `?id=eq.${contaId}`, { status: 'pago', data_pagamento: hojeISO() });
+    if (!atualizada) {
+      showToast(atualizada === null ? 'Erro ao marcar como paga.' : 'Conta nao encontrada — recarregue.', 'error');
+      if (typeof _loadContasPagar === 'function') await _loadContasPagar();
+      renderContasPagar();
+      return; // nao cria lancamento, nao mostra sucesso
+    }
     const idx = contasPagar.findIndex(c => c.id === contaId);
-    if (idx >= 0 && atualizada) contasPagar[idx] = { ...contasPagar[idx], ...atualizada };
-    // Só cria lançamento se a conta NÃO veio de uma NF.
+    if (idx >= 0) contasPagar[idx] = { ...contasPagar[idx], ...atualizada };
+
+    // 2) Lançamento de custo — só se a conta NÃO veio de uma NF (nota_ref) e tem obra.
     // NF direta já gera lançamentos em notas.js; criar outro aqui duplicaria custo no DRE.
-    // Conta com nota_ref = financeiro registra pagamento em caixa, não novo custo da obra.
     // Fix definitivo pendente: usar contas_pagar.nota_id quando existir (migration planejada).
     if (conta && conta.obra_id && !conta.nota_ref) {
-      try {
-        // Idempotência: verificar no banco se já existe lançamento para essa conta.
-        // Protege contra duplo clique, retry, reload estranho e chamada manual.
-        const obsKey = 'contas_pagar:' + contaId;
-        const existente = await sbGet('lancamentos', `?obs=eq.${encodeURIComponent(obsKey)}&limit=1`);
-        if (!Array.isArray(existente) || existente.length === 0) {
-          await sbPostMinimal('lancamentos', {
-            obra_id: conta.obra_id,
-            descricao: conta.descricao || 'Conta paga',
-            qtd: 1, preco: Number(conta.valor || 0), total: Number(conta.valor || 0),
-            data: hojeISO(), etapa: 'conta_pagar',
-            obs: obsKey,
-            criado_por: (typeof usuarioAtual !== 'undefined' && usuarioAtual?.nome) || ''
-          });
+      // Idempotência: só cria se ainda não existe lançamento p/ essa conta (protege duplo clique/retry/reexecucao).
+      const obsKey = 'contas_pagar:' + contaId;
+      let existente = null;
+      try { existente = await sbGet('lancamentos', `?obs=eq.${encodeURIComponent(obsKey)}&limit=1`); }
+      catch(e) { console.warn('[lancamento conta_pagar] idempotencia', e); }
+      const jaExiste = Array.isArray(existente) && existente.length > 0;
+      if (!jaExiste) {
+        const okLanc = await sbPostMinimal('lancamentos', {
+          obra_id: conta.obra_id,
+          descricao: conta.descricao || 'Conta paga',
+          qtd: 1, preco: Number(conta.valor || 0), total: Number(conta.valor || 0),
+          data: hojeISO(), etapa: 'conta_pagar',
+          obs: obsKey,
+          criado_por: (typeof usuarioAtual !== 'undefined' && usuarioAtual?.nome) || ''
+        });
+        if (!okLanc) {
+          // Conta PAGA (fato real) mas custo nao lancou. Sem rollback de status; aviso forte + recarrega.
+          // Recuperavel: reexecutar cria o lancamento faltante (idempotencia por obs evita duplicar custo).
+          showToast('Conta marcada como paga, mas o custo nao foi lancado na obra. Recarregue e tente marcar como paga novamente; o sistema evita custo duplicado.', 'error');
+          if (typeof _loadContasPagar === 'function') await _loadContasPagar();
           if (typeof loadLancamentos === 'function') await loadLancamentos();
+          renderContasPagar();
+          if (typeof renderDashboard === 'function') renderDashboard();
+          return; // sem sucesso pleno
         }
-      } catch(e) { console.warn('[lancamento conta_pagar]', e); }
+        if (typeof loadLancamentos === 'function') await loadLancamentos();
+      }
     }
     showToast('Conta marcada como paga');
     renderContasPagar();
