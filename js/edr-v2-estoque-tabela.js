@@ -312,14 +312,22 @@
     const por = (typeof usuarioAtual !== 'undefined' && (usuarioAtual?.email || usuarioAtual?.nome)) || 'admin';
     const em = new Date().toISOString();
     const payload = { valor_referencia_manual: valor, valor_ref_por: por, valor_ref_em: em, valor_ref_fonte: _modalFonte || 'manual' };
+    let res;
     try {
       if (typeof sbPatch !== 'function') throw new Error('sbPatch indisponível');
-      await sbPatch('materiais', `?id=eq.${mat.id}`, payload);
+      res = await sbPatch('materiais', `?id=eq.${mat.id}`, payload);
     } catch (e) {
       (typeof showToast === 'function') && showToast('Erro ao salvar: ' + (e.message || e));
-      return;
+      return; // excecao inesperada: nao mexe no cache local
     }
-    Object.assign(mat, payload); // otimista local (catálogo em memória)
+    // sbPatch (infra): objeto = persistiu / undefined = 0 linhas (id inexistente/RLS) / null = erro HTTP.
+    // So atualiza o catalogo em memoria (que alimenta o _rm do render da tabela) com valor CONFIRMADO.
+    if (!res) {
+      const msg = res === null ? 'Erro ao salvar o valor de referência.' : 'Material não encontrado no banco — recarregue o catálogo.';
+      (typeof showToast === 'function') && showToast(msg, 'error');
+      return; // nao Object.assign, nao render, nao fecha o modal
+    }
+    Object.assign(mat, payload); // otimista local SO apos persistir (catálogo em memória)
     (typeof showToast === 'function') && showToast('Valor de referência salvo.');
     fecharModal(); close();
     if (typeof renderEstoque === 'function') renderEstoque();
