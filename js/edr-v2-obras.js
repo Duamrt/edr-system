@@ -849,6 +849,7 @@ async function excluirDistribuicao(id) {
     const idx = distribuicoes.findIndex(x => x.id === id);
     if (idx !== -1) distribuicoes.splice(idx, 1);
     renderObrasMateriais();
+    renderDashboard();
     showToast('Movimentacao excluida.');
   } catch(e) { showToast('Erro ao excluir: ' + e.message); }
 }
