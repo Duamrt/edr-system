@@ -2871,13 +2871,19 @@ async function salvarMaterial() {
     }
     btn.disabled = true; btn.textContent = 'SALVANDO...';
     try {
-      await sbPatch('materiais', _editandoMaterialId, { nome, unidade, categoria, tipo_item, movimenta_estoque, auto: false });
-      atual.nome = nome; atual.unidade = unidade; atual.categoria = categoria;
-      atual.tipo_item = tipo_item; atual.movimenta_estoque = movimenta_estoque; atual.auto = false;
-      _editandoMaterialId = null;
-      fecharModal('material');
-      renderCatalogo();
-      showToast(`✅ Material ${atual.codigo} atualizado!`);
+      // sbPatch (infra): objeto = persistiu / undefined = 0 linhas (id inexistente/RLS) / null = erro HTTP.
+      const res = await sbPatch('materiais', _editandoMaterialId, { nome, unidade, categoria, tipo_item, movimenta_estoque, auto: false });
+      if (!res) {
+        // Falha: nao muta cache, nao fecha modal, nao reseta _editandoMaterialId (permite retentar).
+        showToast(res === null ? '❌ Erro ao salvar as alterações.' : 'Material não encontrado no banco — recarregue o catálogo.', 'error');
+      } else {
+        atual.nome = nome; atual.unidade = unidade; atual.categoria = categoria;
+        atual.tipo_item = tipo_item; atual.movimenta_estoque = movimenta_estoque; atual.auto = false;
+        _editandoMaterialId = null;
+        fecharModal('material');
+        renderCatalogo();
+        showToast(`✅ Material ${atual.codigo} atualizado!`);
+      }
     } catch(e) { showToast('❌ Não foi possível atualizar o material.'); }
     btn.disabled = false; btn.textContent = 'SALVAR ALTERAÇÕES';
     return;
@@ -2897,12 +2903,15 @@ async function salvarMaterial() {
     if (saved) {
       catsAtualizados.push(saved);
       catsAtualizados.sort((a,b) => (a.codigo||'').localeCompare(b.codigo||''));
+      fecharModal('material');
+      renderCatalogo();
+      showToast(`✅ Material ${codigo} — ${nome} cadastrado!`);
     } else {
+      // Falha (erro/0-linhas): NAO esconder com recarga+sucesso. Reconcilia e mantem o modal aberto p/ retentar.
       await _carregarCatalogo();
+      renderCatalogo();
+      showToast('❌ Não foi possível cadastrar o material. Tente novamente.', 'error');
     }
-    fecharModal('material');
-    renderCatalogo();
-    showToast(`✅ Material ${codigo} — ${nome} cadastrado!`);
   } catch(e) { showToast('❌ Não foi possível salvar o material.'); }
   btn.disabled = false; btn.textContent = 'SALVAR MATERIAL';
 }
