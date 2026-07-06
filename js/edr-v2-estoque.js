@@ -2563,31 +2563,48 @@ async function salvarSaidaMaterial() {
 
   try {
     const valor = qtd * valorUnit;
-    // FIX: criar lançamento PRIMEIRO, depois distribuição vinculada (rastreabilidade total)
-    let lancamentoId = null;
     const _catsSaida = EstoqueModule.catalogoMateriais?.length ? EstoqueModule.catalogoMateriais : (typeof catalogoMateriais !== 'undefined' ? catalogoMateriais : []);
     const codSaida = _catsSaida.find(m => norm(m.nome) === norm(desc));
+    // Custo primeiro e checado. `lanc` fica null SOMENTE no ramo defensivo valor<=0 abaixo
+    // (inatingivel hoje: a validacao acima exige custo > 0). NUNCA null por falha silenciosa — !lanc aborta.
+    let lanc = null;
     if (valor > 0) {
       const descSaida = codSaida ? `${codSaida.codigo} · ${desc}` : desc;
-      const lanc = await sbPost('lancamentos', {
+      lanc = await sbPost('lancamentos', {
         obra_id: obraId, descricao: descSaida,
         qtd, preco: valorUnit, total: valor, data,
         obs: obs || 'SAÍDA MANUAL DE ESTOQUE', etapa,
         origem: 'saida_manual'
       });
-      if (lanc) {
-        lancamentos.unshift(lanc);
-        lancamentoId = lanc.id;
-      }
+      if (!lanc) { showToast('Erro ao lancar o custo. Nada foi registrado.', 'error'); return; }
     }
+    // Ramo valor<=0: DEFENSIVO / inatingivel hoje (custo obrigatorio na validacao acima). A distribuicao
+    // sem lancamento existe so como fallback de seguranca — NAO e regra de negocio "saida sem custo".
     const nova = await sbPost('distribuicoes', {
       item_desc: desc, item_idx: 0, obra_id: obraId,
       obra_nome: obraObj?.nome || '',
       qtd, valor, etapa, data,
-      lancamento_id: lancamentoId,
+      lancamento_id: lanc ? lanc.id : null,
       codigo_catalogo: codSaida?.codigo || null
     });
-    if (!nova) { showToast('❌ Erro ao salvar saída. Verifique o console.'); return; }
+    if (!nova) {
+      if (lanc) {
+        // Distribuicao falhou DEPOIS do custo gravado: rollback best-effort (evita custo sem baixa e retry que duplica).
+        const desfeito = await sbDelete('lancamentos', lanc.id);
+        if (desfeito) showToast('Falha ao baixar o estoque. O custo foi revertido — tente novamente.', 'error');
+        else showToast('Falha ao baixar o estoque e o custo NAO pode ser revertido. Verifique antes de refazer a saida.', 'error');
+        if (typeof loadLancamentos === 'function') await loadLancamentos();
+        if (typeof loadDistribuicoes === 'function') await loadDistribuicoes();
+        renderEstoque();
+        if (typeof renderDashboard === 'function') renderDashboard();
+      } else {
+        // ramo defensivo valor<=0: nao houve lancamento, nada a reverter
+        showToast('❌ Erro ao salvar saída. Verifique o console.');
+      }
+      return;
+    }
+    // Cache local so apos consistente (dist ok; lancamento quando houve).
+    if (lanc) lancamentos.unshift(lanc);
     distribuicoes.unshift(nova);
     showToast(`✅ Baixa de ${qtd} ${unidade} de ${desc} registrada!`);
     fecharModal('saida');
