@@ -120,7 +120,7 @@ function _custosRenderCards() {
     const adds = typeof getAdicionaisObra === 'function' ? getAdicionaisObra(o.id) : { qtd: 0, valorTotal: 0 };
     const receitaObra = valorVenda + adds.valorTotal;
     const lucro = receitaObra - custoTotal;
-    const pctRecebido = receitaObra > 0 ? Math.min((totalRecebido / receitaObra * 100), 100) : 0;
+    const pctRecebido = receitaObra > 0 ? Math.min(((totalRecebido + (adds.totalRecebido || 0)) / receitaObra * 100), 100) : 0;
 
     // Contrato CEF
     const contratoValor = Number(o.contrato_valor || 0);
@@ -217,7 +217,7 @@ function _custosRenderResumoFinanceiro(obraId) {
   const saldoReceber = receitaObra - (totalRecebido + (adds.totalRecebido || 0));
   const lucro = receitaObra - custoTotal;
   const margem = receitaObra > 0 ? (lucro / receitaObra * 100) : 0;
-  const pctRecebido = receitaObra > 0 ? Math.min((totalRecebido / receitaObra * 100), 100) : 0;
+  const pctRecebido = receitaObra > 0 ? Math.min(((totalRecebido + (adds.totalRecebido || 0)) / receitaObra * 100), 100) : 0;
 
   el.innerHTML = `<div class="custos-resumo-title"><span class="material-symbols-outlined" style="font-size:18px;">bar_chart</span> RESUMO FINANCEIRO — ${esc(obra.nome)}</div>
   <div class="custos-resumo-grid">
