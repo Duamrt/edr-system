@@ -520,10 +520,19 @@ async function custosSalvarRepasse() {
   const body = { obra_id: obraId, medicao_numero: medicao, valor, data_credito: data, observacao: obs, tipo };
 
   if (editId) {
-    await sbPatch('repasses_cef', `?id=eq.${editId}`, body);
+    // sbPatch (infra): objeto = persistiu / undefined = 0 linhas (id inexistente/RLS) / null = erro HTTP.
+    const salvo = await sbPatch('repasses_cef', `?id=eq.${editId}`, body);
+    if (!salvo) {
+      showToast(salvo === null ? 'Erro ao salvar o repasse.' : 'Repasse nao encontrado — recarregue.', 'error');
+      return; // mantem modal aberto, nao recarrega/renderiza (tela nao recalcula com repasse nao persistido)
+    }
     showToast('Repasse atualizado', 'success');
   } else {
-    await sbPost('repasses_cef', body);
+    const criado = await sbPost('repasses_cef', body);
+    if (!criado) {
+      showToast('Erro ao criar o repasse.', 'error');
+      return; // mantem modal aberto, nao recarrega/renderiza
+    }
     showToast('Repasse salvo', 'success');
   }
 
