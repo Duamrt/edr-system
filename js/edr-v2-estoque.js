@@ -1740,17 +1740,24 @@ async function recalcularCategorias() {
   const ok = await confirmar('Recalcular categorias de TODOS os materiais baseado nas ETAPAS?');
   if (!ok) return;
 
-  let count = 0;
+  let count = 0, erros = 0;
   for (const mat of EstoqueModule.catalogoMateriais) {
     const novaCat = _categoriaPorEtapas(mat.nome);
     if (novaCat && novaCat !== mat.categoria) {
-      await sbPatch('materiais', mat.id, { categoria: novaCat });
-      mat.categoria = novaCat;
-      count++;
+      // sbPatch (infra): objeto = persistiu / undefined = 0 linhas (id inexistente/RLS) / null = erro HTTP.
+      const res = await sbPatch('materiais', mat.id, { categoria: novaCat });
+      if (res) {
+        mat.categoria = novaCat; // cache local so com persistencia confirmada
+        count++;
+      } else {
+        erros++;
+        console.warn('recalcularCategorias falhou:', mat.codigo || mat.id, res === null ? '(erro HTTP/rede)' : '(nao encontrado / 0 linhas / RLS)');
+      }
     }
   }
 
-  showToast(`${count} material(is) reclassificado(s)`, 'success');
+  if (erros > 0) showToast(`${count} reclassificado(s), ${erros} falharam`, 'error');
+  else showToast(`${count} material(is) reclassificado(s)`, 'success');
   renderCatalogo();
 }
 
