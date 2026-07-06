@@ -344,7 +344,19 @@ function obrasAbrirDetalhe(obraId) {
 
   // Selecionar obra no filtro do sticky (após populateSelects para não ser resetado)
   const filtroObra = document.getElementById('obras-filtro-obra');
-  if (filtroObra) filtroObra.value = obraId;
+  if (filtroObra) {
+    // 3.4: obra arquivada nao esta nas opcoes (populateSelects usa so ativas) → o cabecalho cairia p/ ''.
+    // Injeta SO a opcao da obra aberta quando ela nao existe (nao despeja todas as arquivadas).
+    // Checagem sem seletor CSS dinamico (id com caractere especial nao quebra).
+    const temOpcao = Array.from(filtroObra.options).some(opt => opt.value === String(obraId));
+    if (!temOpcao) {
+      const opt = document.createElement('option');
+      opt.value = obraId;
+      opt.textContent = (obra.nome || 'Obra') + (obra.arquivada ? ' (concluída)' : '');
+      filtroObra.appendChild(opt);
+    }
+    filtroObra.value = obraId;
+  }
 
   // Renderizar aba padrao (lancamentos)
   obrasSwitchTab('lanc');
