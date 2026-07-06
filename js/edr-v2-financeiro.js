@@ -198,14 +198,17 @@ async function salvarConta() {
 
   try {
     if (id) {
+      // sbPatch (infra): objeto = persistiu / undefined = 0 linhas / null = erro HTTP.
       const atualizada = await sbPatch('contas_pagar', `?id=eq.${id}`, payload);
+      if (!atualizada) { showToast(atualizada === null ? 'Erro ao salvar a conta.' : 'Conta nao encontrada — recarregue.', 'error'); return; }
       const idx = contasPagar.findIndex(c => c.id === id);
-      if (idx >= 0 && atualizada) contasPagar[idx] = { ...contasPagar[idx], ...atualizada };
+      if (idx >= 0) contasPagar[idx] = { ...contasPagar[idx], ...atualizada };
       showToast('Conta atualizada');
     } else {
       payload.status = 'pendente';
       const nova = await sbPost('contas_pagar', payload);
-      if (nova) contasPagar.push(nova);
+      if (!nova) { showToast('Erro ao cadastrar a conta.', 'error'); return; }
+      contasPagar.push(nova);
       showToast('Conta cadastrada');
     }
     fecharModal('conta');
@@ -604,11 +607,14 @@ async function salvarProjecao() {
   const body = { tipo, valor, data_prevista: data, obra_id, descricao };
   try {
     if (id) {
-      await sbPatch('projecoes_caixa', `?id=eq.${id}`, body);
+      // sbPatch (infra): objeto = persistiu / undefined = 0 linhas / null = erro HTTP.
+      const salvo = await sbPatch('projecoes_caixa', `?id=eq.${id}`, body);
+      if (!salvo) { showToast(salvo === null ? 'Erro ao salvar a projecao.' : 'Projecao nao encontrada — recarregue.', 'error'); return; }
       showToast('Projecao atualizada');
     } else {
       const nova = await sbPost('projecoes_caixa', body);
-      if (nova) projecoesCaixa.push(nova);
+      if (!nova) { showToast('Erro ao salvar a projecao.', 'error'); return; }
+      projecoesCaixa.push(nova);
       showToast('Entrada prevista salva');
     }
     fecharModal('proj');
@@ -623,9 +629,11 @@ async function salvarProjecao() {
 async function excluirProjecao(id) {
   if (!confirm('Excluir esta projecao?')) return;
   try {
-    await sbDelete('projecoes_caixa', `?id=eq.${id}`);
+    // sbDelete 3-estados: >0 apagou / 0 nao apagou (id inexistente/RLS) / null erro HTTP.
+    const apagou = await sbDelete('projecoes_caixa', `?id=eq.${id}`);
+    if (apagou === null) { showToast('Erro ao excluir a projecao.', 'error'); return; } // nao remove local/render
     projecoesCaixa = projecoesCaixa.filter(p => p.id !== id);
-    showToast('Projecao excluida');
+    showToast(apagou ? 'Projecao excluida' : 'Projecao ja nao existia — lista atualizada.', apagou ? 'success' : 'error');
     renderCaixa();
   } catch(e) {
     console.error(e);
