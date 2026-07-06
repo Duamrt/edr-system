@@ -891,6 +891,9 @@ async function confirmarDistribuicaoItem(chave, obraDestino, etapa, quantidade, 
     origem: 'distribuicao_estoque',
     nota_id: lotePrincipal?.nota_id || null,
   });
+  // Custo primeiro e checado: distribuir do almox SEMPRE gera lancamento (mesmo valor 0).
+  // !lanc = falha real de gravacao -> aborta, nao baixa estoque, nao mostra sucesso.
+  if (!lanc) return showToast('Erro ao lancar o custo. Nada foi distribuido.', 'error');
 
   const payload = {
     item_desc: item.desc,
@@ -903,17 +906,32 @@ async function confirmarDistribuicaoItem(chave, obraDestino, etapa, quantidade, 
     valor: valorProporcional,
     data: dataSaida || hojeISO(),
     nota_id: lotePrincipal?.nota_id || null,
-    lancamento_id: lanc?.id || null,
+    lancamento_id: lanc.id,
   };
 
   const resp = await sbPost('distribuicoes', payload);
-  if (!resp) return showToast('Erro ao salvar distribuicao', 'error');
+  if (!resp) {
+    // Distribuicao falhou DEPOIS do custo gravado: rollback best-effort do lancamento
+    // (criado agora nesta funcao, sem dependentes) — evita custo sem baixa e retry que duplica custo.
+    const desfeito = await sbDelete('lancamentos', lanc.id);
+    if (desfeito) {
+      showToast('Falha ao baixar o estoque. O custo foi revertido — tente novamente.', 'error');
+    } else {
+      showToast('Falha ao baixar o estoque e o custo NAO pode ser revertido. Verifique antes de redistribuir.', 'error');
+    }
+    if (typeof loadLancamentos === 'function') await loadLancamentos();
+    if (typeof loadDistribuicoes === 'function') await loadDistribuicoes();
+    renderEstoque();
+    if (typeof renderDashboard === 'function') renderDashboard();
+    return;
+  }
 
   showToast(`${fmt(qtd)} ${item.unidade} distribuido(s) com sucesso`, 'success');
   closeModal('dist-modal');
 
-  // Recarregar dados
+  // Recarregar dados (distribuicoes + lancamentos para o P&L/dashboard nao ficar stale)
   if (typeof loadDistribuicoes === 'function') await loadDistribuicoes();
+  if (typeof loadLancamentos === 'function') await loadLancamentos();
 
   renderEstoque();
   if (typeof renderDashboard === 'function') renderDashboard();
