@@ -2407,22 +2407,38 @@ async function salvarEntradaDireta() {
       // Serviço/taxa/doc/frete/MO (movimenta_estoque=false) gera SÓ custo (lançamento), nunca baixa de estoque.
       const movimentaEstoque = (typeof itemMovimentaEstoque !== 'function')
         || itemMovimentaEstoque({ codigo: materialNoCatalogo?.codigo, desc: descSemFornecedor, etapa });
+      // Custo primeiro e checado. Cache local (unshift) so depois de consistente.
       const lanc = await sbPost('lancamentos', { obra_id: obraId, descricao: descLanc, qtd, preco, total: valor, data, obs: obsLanc, etapa, nota_id: null, origem: ehDespesa ? 'manual' : 'compra_direta' });
-      if (lanc) lancamentos.unshift(lanc);
-      if (!ehDespesa && movimentaEstoque && !ehEscritorio) {
+      if (!lanc) return showToast('Erro ao lancar o custo. Nada foi registrado.', 'error');
+      const criaDist = !ehDespesa && movimentaEstoque && !ehEscritorio;
+      if (criaDist) {
         const dist = await sbPost('distribuicoes', {
           item_desc: desc, item_idx: 0, obra_id: obraId,
           obra_nome: obraObj.nome,
           qtd, valor, etapa, data,
-          lancamento_id: lanc?.id || null,
+          lancamento_id: lanc.id,
           codigo_catalogo: materialNoCatalogo?.codigo || null
         });
-        if (dist) distribuicoes.unshift(dist);
+        if (!dist) {
+          // Distribuicao falhou DEPOIS do custo gravado: rollback best-effort do lancamento
+          // (criado agora, sem dependentes) — evita custo sem baixa e retry que duplica custo.
+          const desfeito = await sbDelete('lancamentos', lanc.id);
+          if (desfeito) showToast('Falha ao baixar o estoque. O custo foi revertido — tente novamente.', 'error');
+          else showToast('Falha ao baixar o estoque e o custo NAO pode ser revertido. Verifique antes de redistribuir.', 'error');
+          if (typeof loadLancamentos === 'function') await loadLancamentos();
+          if (typeof loadDistribuicoes === 'function') await loadDistribuicoes();
+          renderEstoque();
+          if (typeof renderDashboard === 'function') renderDashboard();
+          return;
+        }
+        distribuicoes.unshift(dist);
       }
+      lancamentos.unshift(lanc); // cache local so apos consistente (dist ok, ou ramo sem dist)
       showToast((ehDespesa || !movimentaEstoque || ehEscritorio) ? `✅ Custo lancado → ${obraObj.nome}` : `✅ ${qtd} ${unidade} de ${desc} → ${obraObj.nome}!`);
     } else {
       const nova = await sbPost('entradas_diretas', { item_desc: desc, unidade, qtd, preco, fornecedor, data, obs, obra: 'EDR', codigo_catalogo: materialNoCatalogo?.codigo || null });
-      if (nova) entradasDiretas.unshift(nova);
+      if (!nova) return showToast('Erro ao registrar a entrada no estoque.', 'error');
+      entradasDiretas.unshift(nova);
       showToast(`✅ ${qtd} ${unidade} de ${desc} no estoque!`);
     }
     fecharModal('entrada');
