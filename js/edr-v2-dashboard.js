@@ -184,7 +184,8 @@ async function dashSalvarAgendaNota() {
   if (!texto) { showToast('Digite a anotacao.'); return; }
 
   try {
-    await sbPost('agenda_notas', { texto, data, hora, autor });
+    const nova = await sbPost('agenda_notas', { texto, data, hora, autor });
+    if (!nova) { showToast('Erro ao salvar a anotacao — tente de novo.'); return; }  // nao fecha modal (preserva texto), nao recarrega
     document.getElementById('modal-nota-overlay')?.remove();
     await loadAgendaNotas();
     renderDashboard();
@@ -227,7 +228,11 @@ async function dashSalvarNotaEdit() {
   if (!texto) { showToast('Digite a anotacao.'); return; }
 
   try {
-    await sbPatch('agenda_notas', '?id=eq.' + id, { texto, data, hora });
+    const atualizada = await sbPatch('agenda_notas', '?id=eq.' + id, { texto, data, hora });
+    if (!atualizada) {  // null=erro HTTP | undefined=0 linhas (id sumiu/RLS) — nao fecha modal
+      showToast(atualizada === null ? 'Erro ao atualizar.' : 'Anotacao nao encontrada — recarregue.');
+      return;
+    }
     document.getElementById('modal-nota-overlay')?.remove();
     await loadAgendaNotas();
     renderDashboard();
@@ -242,10 +247,11 @@ async function dashExcluirNota(id) {
   const ok = await confirmar('Excluir esta anotacao?', 'Essa acao nao pode ser desfeita.');
   if (!ok) return;
   try {
-    await sbDelete('agenda_notas', '?id=eq.' + id);
+    const apagou = await sbDelete('agenda_notas', '?id=eq.' + id);  // 3-estados: >0 apagou | 0 nao existia | null erro
+    if (apagou === null) { showToast('Erro ao excluir.'); return; }  // erro HTTP: NAO remove local
     DashboardModule.agendaNotas = DashboardModule.agendaNotas.filter(n => n.id !== id);
     renderDashboard();
-    showToast('Anotacao excluida.');
+    showToast(apagou ? 'Anotacao excluida.' : 'Anotacao ja nao existia — lista atualizada.');
   } catch (e) { showToast('Erro ao excluir.'); }
 }
 
@@ -255,7 +261,7 @@ function _dashRenderAgendaLegenda() {
   const autores = [...new Set(DashboardModule.agendaNotas.map(n => n.autor).filter(Boolean))];
   if (!autores.length && typeof usuarioAtual !== 'undefined' && usuarioAtual?.nome) autores.push(usuarioAtual.nome);
   el.innerHTML = autores.map(a =>
-    '<div style="display:flex;align-items:center;gap:4px;font-size:9px;color:var(--text-tertiary);font-family:Inter,sans-serif;"><div style="width:8px;height:8px;border-radius:2px;background:' + _dashGetCorAutor(a) + ';"></div> ' + a + '</div>'
+    '<div style="display:flex;align-items:center;gap:4px;font-size:9px;color:var(--text-tertiary);font-family:Inter,sans-serif;"><div style="width:8px;height:8px;border-radius:2px;background:' + _dashGetCorAutor(a) + ';"></div> ' + esc(a) + '</div>'
   ).join('');
 }
 
