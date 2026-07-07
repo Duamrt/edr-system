@@ -871,26 +871,41 @@ const PciModule = {
   async _salvarComoPadrao(medicaoId) {
     const itensMed = PciModule.itens.filter(i => i.medicao_id === medicaoId);
     if (!itensMed.length) { showToast('Nenhum item para salvar', 5000); return; }
+    const novoTemplate = itensMed.map((it, idx) => ({
+      categoria_nome: it.categoria_nome,
+      categoria_peso: it.categoria_peso || 0,
+      sub_servico_descricao: it.sub_servico_descricao,
+      nao_aplicavel: !!it.nao_aplicavel,
+      item_peso: it.item_peso || null,
+      manual: !!it.manual,
+      ordem: idx
+    }));
     try {
-      if (typeof _companyId !== 'undefined' && _companyId) {
-        await sbDelete('pci_template_padrao', '?company_id=eq.' + _companyId);
+      const temCompany = (typeof _companyId !== 'undefined' && _companyId);
+      // IDs antigos (só quando há company). sbGet retorna [] p/ vazio E p/ erro HTTP,
+      // então [] = "não há antigos" — no pior caso (leitura falha) vira duplicata recuperável, nunca perda.
+      let antigosIds = [];
+      if (temCompany) {
+        const antigos = await sbGet('pci_template_padrao?select=id&company_id=eq.' + _companyId);
+        antigosIds = (antigos || []).map(r => r.id).filter(Boolean);
       }
-      const novoTemplate = itensMed.map((it, idx) => ({
-        categoria_nome: it.categoria_nome,
-        categoria_peso: it.categoria_peso || 0,
-        sub_servico_descricao: it.sub_servico_descricao,
-        nao_aplicavel: !!it.nao_aplicavel,
-        item_peso: it.item_peso || null,
-        manual: !!it.manual,
-        ordem: idx
-      }));
-      const ok = await sbPostMinimal('pci_template_padrao', novoTemplate);
-      if (ok) {
-        PciModule.templatePadrao = await sbGet('pci_template_padrao?order=ordem') || [];
-        showToast('Padrão salvo — novas obras já usam essa configuração');
-      } else {
-        showToast('Erro ao salvar padrão', 5000);
+      // INSERT-FIRST: insere os novos ANTES de apagar os antigos (sem unique constraint, coexistem).
+      const okInsert = await sbPostMinimal('pci_template_padrao', novoTemplate);
+      if (!okInsert) {
+        showToast('Não foi possível salvar o padrão — nada foi alterado.', 5000);
+        return;
       }
+      // Só agora apaga os antigos por id (se houver).
+      if (temCompany && antigosIds.length) {
+        const apagou = await sbDelete('pci_template_padrao', '?id=in.(' + antigosIds.join(',') + ')');
+        if (apagou === null) {
+          PciModule.templatePadrao = await sbGet('pci_template_padrao?order=ordem') || [];
+          showToast('Padrão salvo, mas os antigos podem ter ficado duplicados — abra e salve de novo pra limpar.', 8000);
+          return;
+        }
+      }
+      PciModule.templatePadrao = await sbGet('pci_template_padrao?order=ordem') || [];
+      showToast('Padrão salvo — novas obras já usam essa configuração');
     } catch(e) {
       console.error('[PCI-TEMPLATE]', e);
       showToast('Erro ao salvar padrão', 5000);
