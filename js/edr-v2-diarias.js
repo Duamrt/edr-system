@@ -530,12 +530,13 @@ async function _diarConfirmarExcDefinitivo(id, modalId) {
       );
       if (!conf) return;
     }
-    await sbDelete('diarias', `?quinzena_id=eq.${id}`);
-    await sbDelete('diarias_extras', `?quinzena_id=eq.${id}`);
-    await sbDelete('diarias_quinzenas', `?id=eq.${id}`);
+    // 1 delete atomico: FKs diarias.quinzena_id e diarias_extras.quinzena_id sao ON DELETE CASCADE,
+    // entao o banco apaga diarias + diarias_extras na mesma transacao (sem estado parcial).
+    const apagou = await sbDelete('diarias_quinzenas', `?id=eq.${id}`);
+    if (apagou === null) { showToast('Erro ao excluir. Nada foi apagado — tente de novo.', 5000); return; }  // NAO fecha modais, NAO afirma sucesso
     document.getElementById(modalId)?.remove();
     document.getElementById('diar-modalLixeira')?.remove();
-    showToast('Quinzena excluida definitivamente.');
+    showToast(apagou ? 'Quinzena excluida definitivamente.' : 'Quinzena ja nao existia — lista atualizada.');
   } catch (e) { showToast('Erro: ' + e.message); }
 }
 
