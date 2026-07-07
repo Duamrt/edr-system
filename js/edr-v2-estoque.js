@@ -915,9 +915,9 @@ async function confirmarDistribuicaoItem(chave, obraDestino, etapa, quantidade, 
     // (criado agora nesta funcao, sem dependentes) — evita custo sem baixa e retry que duplica custo.
     const desfeito = await sbDelete('lancamentos', lanc.id);
     if (desfeito) {
-      showToast('Falha ao baixar o estoque. O custo foi revertido — tente novamente.', 'error');
+      showToast('Falha ao baixar o estoque. O custo foi revertido — tente novamente.', 8000);
     } else {
-      showToast('Falha ao baixar o estoque e o custo NAO pode ser revertido. Verifique antes de redistribuir.', 'error');
+      showToast('Falha ao baixar o estoque e o custo NAO pode ser revertido. Verifique antes de redistribuir.', 8000);
     }
     if (typeof loadLancamentos === 'function') await loadLancamentos();
     if (typeof loadDistribuicoes === 'function') await loadDistribuicoes();
@@ -2441,8 +2441,8 @@ async function salvarEntradaDireta() {
           // Distribuicao falhou DEPOIS do custo gravado: rollback best-effort do lancamento
           // (criado agora, sem dependentes) — evita custo sem baixa e retry que duplica custo.
           const desfeito = await sbDelete('lancamentos', lanc.id);
-          if (desfeito) showToast('Falha ao baixar o estoque. O custo foi revertido — tente novamente.', 'error');
-          else showToast('Falha ao baixar o estoque e o custo NAO pode ser revertido. Verifique antes de redistribuir.', 'error');
+          if (desfeito) showToast('Falha ao baixar o estoque. O custo foi revertido — tente novamente.', 8000);
+          else showToast('Falha ao baixar o estoque e o custo NAO pode ser revertido. Verifique antes de redistribuir.', 8000);
           if (typeof loadLancamentos === 'function') await loadLancamentos();
           if (typeof loadDistribuicoes === 'function') await loadDistribuicoes();
           renderEstoque();
@@ -2609,8 +2609,8 @@ async function salvarSaidaMaterial() {
       if (lanc) {
         // Distribuicao falhou DEPOIS do custo gravado: rollback best-effort (evita custo sem baixa e retry que duplica).
         const desfeito = await sbDelete('lancamentos', lanc.id);
-        if (desfeito) showToast('Falha ao baixar o estoque. O custo foi revertido — tente novamente.', 'error');
-        else showToast('Falha ao baixar o estoque e o custo NAO pode ser revertido. Verifique antes de refazer a saida.', 'error');
+        if (desfeito) showToast('Falha ao baixar o estoque. O custo foi revertido — tente novamente.', 8000);
+        else showToast('Falha ao baixar o estoque e o custo NAO pode ser revertido. Verifique antes de refazer a saida.', 8000);
         if (typeof loadLancamentos === 'function') await loadLancamentos();
         if (typeof loadDistribuicoes === 'function') await loadDistribuicoes();
         renderEstoque();
