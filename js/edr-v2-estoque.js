@@ -687,7 +687,7 @@ function _renderCategoriasSidebar(consolidado) {
 
 function abrirHistoricoMaterial(chave) {
   const item = EstoqueModule._consolidado.find(i => i.chave === chave);
-  if (!item) return showToast('Material nao encontrado', 'error');
+  if (!item) return showToast('Material nao encontrado', 5000);
 
   // Coletar movimentacoes
   const movs = [];
@@ -826,13 +826,13 @@ function abrirHistoricoMaterial(chave) {
 // para evitar race condition entre usuarios simultaneos.
 async function confirmarDistribuicaoItem(chave, obraDestino, etapa, quantidade, dataSaida) {
   const item = EstoqueModule._consolidado.find(i => i.chave === chave);
-  if (!item) return showToast('Material nao encontrado', 'error');
+  if (!item) return showToast('Material nao encontrado', 5000);
 
   const qtd = parseFloat(quantidade) || 0;
-  if (qtd <= 0) return showToast('Quantidade invalida', 'error');
+  if (qtd <= 0) return showToast('Quantidade invalida', 5000);
 
-  if (!obraDestino) return showToast('Selecione a obra destino', 'error');
-  if (!etapa) return showToast('Selecione a etapa/centro de custo', 'error');
+  if (!obraDestino) return showToast('Selecione a obra destino', 5000);
+  if (!etapa) return showToast('Selecione a etapa/centro de custo', 5000);
 
   // Verificar saldo
   if (qtd > item.saldo) {
@@ -1088,7 +1088,7 @@ async function abrirAjusteEstoque(chave) {
 
   if (real === null) return;
   const { real: realQtd, preco: novoPreco } = real;
-  if (realQtd === undefined || isNaN(realQtd)) return showToast('Quantidade inválida', 'error');
+  if (realQtd === undefined || isNaN(realQtd)) return showToast('Quantidade inválida', 5000);
 
   const diferenca = realQtd - item.saldo;
   const msgPreco = novoPreco ? `\nNovo preço unitário: ${fmtR(novoPreco)}` : '';
@@ -1240,7 +1240,7 @@ async function _vincularSelecionado(chave) {
   if (!item) return;
 
   const radio = document.querySelector('input[name="vincular-item"]:checked');
-  if (!radio) return showToast('Selecione um item do catalogo', 'error');
+  if (!radio) return showToast('Selecione um item do catalogo', 5000);
 
   const materialId = radio.value;
   const catItem = EstoqueModule.catalogoMateriais.find(m => m.id === materialId);
@@ -1250,7 +1250,7 @@ async function _vincularSelecionado(chave) {
   const codigo = catItem.codigo;
   const enc = encodeURIComponent(desc);
 
-  if (!codigo) return showToast('Item do catálogo sem código definido', 'error');
+  if (!codigo) return showToast('Item do catálogo sem código definido', 5000);
 
   showToast('Vinculando...', 'info');
 
