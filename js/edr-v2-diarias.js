@@ -188,7 +188,7 @@ function _diarRenderListaEquipe() {
       <div style="flex:1;min-width:0;overflow:hidden;">
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
           <span style="font-weight:700;font-size:13px">${esc(f.nome)}</span>
-          <span style="font-size:11px;color:var(--text-tertiary);">${f.cargo}</span>
+          <span style="font-size:11px;color:var(--text-tertiary);">${esc(f.cargo)}</span>
           <span style="${statusStyle}">${statusText}</span>
         </div>
         <div style="font-size:11px;color:var(--text-tertiary);margin-top:2px;">
@@ -397,7 +397,7 @@ async function _diarCriarQuinzenaAuto() {
 function _diarAtualizarSelectQuinzena() {
   const sel = document.getElementById('diar-quinzena-select');
   if (sel) sel.innerHTML = DiariasModule.quinzenas.map(q =>
-    `<option value="${q.id}" ${DiariasModule.quinzenaAtiva?.id === q.id ? 'selected' : ''}>${q.label}${q.fechada ? ' \u2713' : ''}</option>`
+    `<option value="${q.id}" ${DiariasModule.quinzenaAtiva?.id === q.id ? 'selected' : ''}>${esc(q.label)}${q.fechada ? ' \u2713' : ''}</option>`
   ).join('');
   const badge = document.getElementById('diar-quinzena-badge');
   if (badge && DiariasModule.quinzenaAtiva) badge.textContent = DiariasModule.quinzenaAtiva.label;
@@ -451,7 +451,7 @@ async function diarAbrirLixeira() {
       const dataExc = q.excluida_em ? new Date(q.excluida_em).toLocaleDateString('pt-BR') : '';
       return `<div style="display:flex;justify-content:space-between;align-items:center;padding:12px;border-bottom:1px solid var(--border-primary);">
         <div>
-          <div style="font-weight:700;font-size:13px;">${q.label}</div>
+          <div style="font-weight:700;font-size:13px;">${esc(q.label)}</div>
           <div style="color:var(--text-tertiary);" style="font-size:11px;">Excluida em ${dataExc}</div>
         </div>
         <div style="display:flex;gap:8px;">
@@ -1077,12 +1077,12 @@ function _diarRenderPreview(regs) {
     const periodos = r.periodos.map(p => {
       const cls = p.turno === 'manha' ? 'diar-turno-manha' : p.turno === 'tarde' ? 'diar-turno-tarde' : 'diar-turno-dia';
       const label = p.turno === 'manha' ? 'MANHA' : p.turno === 'tarde' ? 'TARDE' : 'DIA TODO';
-      return `<span class="diar-turno-tag ${cls}">${label}</span><span style="color:var(--text-tertiary);" style="font-size:10px">${p.obra}</span>`;
+      return `<span class="diar-turno-tag ${cls}">${label}</span><span style="color:var(--text-tertiary);" style="font-size:10px">${esc(p.obra)}</span>`;
     }).join(' · ');
     return `<div class="diar-func-card">
-      <div class="diar-func-avatar">${r.funcionario[0]}</div>
+      <div class="diar-func-avatar">${esc(r.funcionario[0])}</div>
       <div class="diar-func-info">
-        <div class="diar-func-nome">${r.funcionario} <span style="color:var(--text-tertiary);" style="font-size:10px;font-weight:400">${r.cargo || ''}</span></div>
+        <div class="diar-func-nome">${esc(r.funcionario)} <span style="color:var(--text-tertiary);" style="font-size:10px;font-weight:400">${esc(r.cargo || '')}</span></div>
         <div style="margin-top:3px">${periodos}</div>
       </div>
       ${isMestre ? '' : `<div class="diar-func-val">R$ ${Number(valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>`}
@@ -1195,11 +1195,11 @@ function _diarRenderRegistros() {
       const periodos = typeof r.periodos === 'string' ? JSON.parse(r.periodos || '[]') : (r.periodos || []);
       const obrasTexto = periodos.map(p => {
         const icon = p.turno === 'manha' ? 'wb_sunny' : p.turno === 'tarde' ? 'wb_twilight' : 'calendar_today';
-        return `<span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle">${icon}</span> ${p.obra}`;
+        return `<span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle">${icon}</span> ${esc(p.obra)}`;
       }).join(' · ');
       const btnEdit = isAdmin ? `<button onclick="event.stopPropagation();diarEditarRegistro('${r.id}')" class="edr-btn-icon" title="Editar"><span class="material-symbols-outlined" style="font-size:16px">edit</span></button>` : '';
       return `<div class="diar-registro-row">
-        <div class="diar-rr-nome">${r.funcionario}</div>
+        <div class="diar-rr-nome">${esc(r.funcionario)}</div>
         <div class="diar-rr-obras">${obrasTexto}</div>
         <div class="diar-rr-val">R$ ${r.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} ${btnEdit}</div>
       </div>`;
@@ -1210,7 +1210,7 @@ function _diarRenderRegistros() {
       ? `<div class="diar-faltas-banner">
            <span class="material-symbols-outlined" style="font-size:14px;color:var(--error)">warning</span>
            <span style="font-size:11px;font-weight:700;color:var(--error)">FALTOU: </span>
-           <span style="font-size:11px;color:var(--error)">${faltas.join(', ')}</span>
+           <span style="font-size:11px;color:var(--error)">${esc(faltas.join(', '))}</span>
          </div>` : '';
 
     const isFirst = dia === dias[0];
@@ -1256,7 +1256,7 @@ function diarEditarRegistro(regId) {
   const reg = DiariasModule.registros.find(r => r.id === regId);
   if (!reg) return;
   const periodos = typeof reg.periodos === 'string' ? JSON.parse(reg.periodos || '[]') : (reg.periodos || []);
-  const obrasOpts = obras.map(o => `<option value="${esc(o.nome)}">${o.nome}</option>`).join('');
+  const obrasOpts = obras.map(o => `<option value="${esc(o.nome)}">${esc(o.nome)}</option>`).join('');
 
   let periodosHtml = periodos.map((p, i) => {
     return `<div style="display:flex;gap:8px;margin-bottom:8px;align-items:center;" data-idx="${i}">
@@ -1308,7 +1308,7 @@ function diarEditarRegistro(regId) {
 function diarEditAddPeriodo() {
   const container = document.getElementById('ed-periodos');
   if (!container) return;
-  const obrasOpts = obras.map(o => `<option value="${esc(o.nome)}">${o.nome}</option>`).join('');
+  const obrasOpts = obras.map(o => `<option value="${esc(o.nome)}">${esc(o.nome)}</option>`).join('');
   container.insertAdjacentHTML('beforeend', `
     <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center;">
       <select class="ed-turno" style="flex:1;padding:7px 8px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-family:inherit;font-size:12px;">
@@ -1360,9 +1360,9 @@ function diarAdicionarNoDia(data) {
   const regs = DiariasModule.registros.filter(r => r.data === data && r.quinzena_id === DiariasModule.quinzenaAtiva?.id);
   const jaLancados = regs.map(r => r.funcionario);
   const ativos = _diarGetFuncionariosAtivos().filter(f => !jaLancados.includes(f.nome));
-  const obrasOpts = obras.map(o => `<option value="${esc(o.nome)}">${o.nome}</option>`).join('');
+  const obrasOpts = obras.map(o => `<option value="${esc(o.nome)}">${esc(o.nome)}</option>`).join('');
   if (!ativos.length) { showToast('Todos os funcionarios ja foram lancados neste dia.'); return; }
-  const funcOpts = ativos.map(f => `<option value="${esc(f.nome)}" data-cargo="${f.cargo || ''}" data-diaria="${f.diaria || 0}">${f.nome} (${f.cargo || '-'})</option>`).join('');
+  const funcOpts = ativos.map(f => `<option value="${esc(f.nome)}" data-cargo="${f.cargo || ''}" data-diaria="${f.diaria || 0}">${esc(f.nome)} (${esc(f.cargo || '-')})</option>`).join('');
 
   document.body.insertAdjacentHTML('beforeend', `
   <div id="diar-modalAdd" class="modal-overlay active">
@@ -1404,7 +1404,7 @@ function diarAdicionarNoDia(data) {
 function diarAddPeriodoModal() {
   const container = document.getElementById('add-periodos');
   if (!container) return;
-  const obrasOpts = obras.map(o => `<option value="${esc(o.nome)}">${o.nome}</option>`).join('');
+  const obrasOpts = obras.map(o => `<option value="${esc(o.nome)}">${esc(o.nome)}</option>`).join('');
   container.insertAdjacentHTML('beforeend', `
     <div style="display:flex;gap:8px;margin-bottom:8px;">
       <div style="flex:1;">
@@ -1526,7 +1526,7 @@ function buildSecaoFaltas() {
     const pct = totalDias > 0 ? Math.round(presencas / totalDias * 100) : 100;
     const cor = f === 0 ? 'var(--success)' : f <= 1 ? 'var(--warning)' : 'var(--error)';
     return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border-primary);">
-      <span style="font-weight:600;font-size:13px;">${nome}</span>
+      <span style="font-weight:600;font-size:13px;">${esc(nome)}</span>
       <div style="display:flex;align-items:center;gap:12px;">
         <span style="color:var(--text-tertiary);" style="font-size:11px;">${presencas}/${totalDias} dias</span>
         ${f > 0 ? `<span class="edr-badge edr-badge-error">${f} falta${f > 1 ? 's' : ''}</span>` : '<span class="edr-badge edr-badge-success">Sem faltas</span>'}
@@ -1541,12 +1541,12 @@ function buildSecaoFaltas() {
     const df = new Date(dia + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' }).toUpperCase();
     return faltasDia.length ? `<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border-secondary);font-size:11px;">
       <span class="edr-text-secondary">${df}</span>
-      <span style="color:var(--error)">${faltasDia.join(', ')}</span>
+      <span style="color:var(--error)">${esc(faltasDia.join(', '))}</span>
     </div>` : '';
   }).filter(Boolean).join('');
 
   return `<div class="edr-card" style="margin-top:16px;">
-    <div class="edr-card-title"><span class="material-symbols-outlined">warning</span> FALTAS — ${DiariasModule.quinzenaAtiva?.label || 'QUINZENA ATUAL'}</div>
+    <div class="edr-card-title"><span class="material-symbols-outlined">warning</span> FALTAS — ${esc(DiariasModule.quinzenaAtiva?.label || 'QUINZENA ATUAL')}</div>
     <div style="margin-bottom:16px;">${linhas}</div>
     ${diasHtml ? `<div style="margin-top:12px;"><div class="edr-section-label" style="margin-bottom:8px;">DETALHE POR DIA</div>${diasHtml}</div>` : ''}
   </div>`;
@@ -1600,7 +1600,7 @@ function diarAbrirCalendarioFunc(nome) {
       const obrasStr = periodos.map(p => {
         const icon = p.turno === 'manha' ? 'wb_sunny' : p.turno === 'tarde' ? 'wb_twilight' : 'calendar_today';
         const label = p.turno === 'manha' ? 'manha' : p.turno === 'tarde' ? 'tarde' : 'dia todo';
-        return `<span class="material-symbols-outlined" style="font-size:12px">${icon}</span> ${label} <strong>${p.obra}</strong>`;
+        return `<span class="material-symbols-outlined" style="font-size:12px">${icon}</span> ${label} <strong>${esc(p.obra)}</strong>`;
       }).join(' · ');
       const val = Number(reg.valor || 0);
       return `<div class="diar-cal-row diar-cal-presente">
@@ -1623,7 +1623,7 @@ function diarAbrirCalendarioFunc(nome) {
       <div class="modal-header">
         <div class="modal-title">
           <span class="material-symbols-outlined">calendar_month</span>
-          ${nome} <span style="color:var(--text-tertiary);" style="font-size:11px;font-weight:400">${cargo}</span>
+          ${esc(nome)} <span style="color:var(--text-tertiary);" style="font-size:11px;font-weight:400">${esc(cargo)}</span>
         </div>
         <button class="modal-close" onclick="document.getElementById('diar-modalCalendario')?.remove()">
           <span class="material-symbols-outlined">close</span>
@@ -1705,11 +1705,11 @@ function _diarRenderFolha() {
     const totalFunc = f.valor + extra;
     return `<tr>
       <td class="diar-td-nome" style="cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px;" onclick="diarAbrirCalendarioFunc('${esc(f.nome)}')" title="Ver calendario"><span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;opacity:.5">calendar_month</span> ${esc(f.nome)}</td>
-      <td style="color:var(--text-tertiary);" style="font-size:11px">${f.cargo || '-'}</td>
+      <td style="color:var(--text-tertiary);" style="font-size:11px">${esc(f.cargo || '-')}</td>
       ${isMestre ? '' : `<td class="edr-text-secondary" style="font-size:11px">R$ ${f.diaria} x ${f.fracoes.toFixed(1)}d</td>`}
       <td>${f.fracoes.toFixed(1)}d</td>
       ${isMestre ? '' : `<td style="text-align:center;font-weight:700;color:${(faltas[f.nome] || 0) > 0 ? 'var(--error)' : 'var(--text-tertiary)'};">${faltas[f.nome] || 0}</td>`}
-      <td><div class="diar-obras-breakdown">${Object.keys(f.obras).map(o => `<span class="diar-obra-tag">${o}</span>`).join('')}</div></td>
+      <td><div class="diar-obras-breakdown">${Object.keys(f.obras).map(o => `<span class="diar-obra-tag">${esc(o)}</span>`).join('')}</div></td>
       ${isMestre ? '' : `<td class="diar-td-val">R$ ${f.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>`}
       ${isMestre ? '' : `<td class="diar-td-val" style="color:${extra > 0 ? 'var(--warning)' : 'var(--text-tertiary)'};">${extra > 0 ? 'R$ ' + extra.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '\u2014'}</td>`}
       ${isMestre ? '' : `<td class="diar-td-val" style="font-size:14px;font-weight:800;color:var(--success)">R$ ${totalFunc.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>`}
@@ -1718,7 +1718,7 @@ function _diarRenderFolha() {
 
   const custoPorObra = _diarCalcCustoObra();
   const obraLinhas = Object.entries(custoPorObra).sort((a, b) => b[1] - a[1]).map(([o, v]) =>
-    `<tr><td style="padding:7px 10px;font-weight:600">${o}</td>${isMestre ? '' : `<td style="padding:7px 10px;color:var(--success);font-family:'Space Grotesk',monospace;text-align:right">R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>`}</tr>`).join('');
+    `<tr><td style="padding:7px 10px;font-weight:600">${esc(o)}</td>${isMestre ? '' : `<td style="padding:7px 10px;color:var(--success);font-family:'Space Grotesk',monospace;text-align:right">R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>`}</tr>`).join('');
   const totalObras = Object.values(custoPorObra).reduce((s, v) => s + v, 0);
 
   const thDiaria = isMestre ? '' : '<th>Diaria x Dias</th>';
@@ -1758,7 +1758,7 @@ function diarAbrirModalExtra() {
   const selFunc = document.getElementById('diar-extra-func');
   selFunc.innerHTML = '<option value="">Selecionar...</option>';
   _diarGetFuncionariosAtivos().forEach(f => {
-    selFunc.innerHTML += `<option value="${esc(f.nome)}">${esc(f.nome)} (${f.cargo})</option>`;
+    selFunc.innerHTML += `<option value="${esc(f.nome)}">${esc(f.nome)} (${esc(f.cargo)})</option>`;
   });
   const sel = document.getElementById('diar-extra-obra');
   sel.innerHTML = '<option value="">Selecionar obra...</option>';
@@ -1818,8 +1818,8 @@ function _diarRenderExtras() {
       ${extras.map(e => `
         <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border-bottom:1px solid var(--border-primary);gap:8px;flex-wrap:wrap;">
           <div style="display:flex;flex-direction:column;gap:2px;flex:1;">
-            <span style="font-weight:700;font-size:12px;">${e.funcionario}</span>
-            <span style="color:var(--text-tertiary);" style="font-size:10px;">${e.descricao || e.desc || ''} · <span style="color:var(--success)">${e.obra}</span></span>
+            <span style="font-weight:700;font-size:12px;">${esc(e.funcionario)}</span>
+            <span style="color:var(--text-tertiary);" style="font-size:10px;">${esc(e.descricao || e.desc || '')} · <span style="color:var(--success)">${esc(e.obra)}</span></span>
           </div>
           <div style="display:flex;align-items:center;gap:10px;">
             <span style="font-weight:700;color:var(--success);font-family:'Space Grotesk',monospace;font-size:13px;">R$ ${e.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
