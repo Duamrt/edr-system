@@ -225,7 +225,8 @@ async function diarAdicionarFuncionario() {
 
 async function diarToggleFuncionario(id, ativo) {
   try {
-    await sbPatch('diarias_funcionarios', `?id=eq.${id}`, { ativo });
+    const salvo = await sbPatch('diarias_funcionarios', `?id=eq.${id}`, { ativo });
+    if (!salvo) { showToast(salvo === null ? 'Erro ao atualizar o funcionario.' : 'Funcionario nao encontrado — recarregue.', 5000); return; }  // nao muta cache
     const f = DiariasModule.funcionariosRaw.find(f => f.id === id);
     if (f) f.ativo = ativo;
     _diarReconstruirMapa();
@@ -238,11 +239,12 @@ async function diarExcluirFuncionario(id, nome) {
   const ok = await confirmar('Excluir ' + nome + ' permanentemente? Isso nao afeta registros antigos.');
   if (!ok) return;
   try {
-    await sbDelete('diarias_funcionarios', `?id=eq.${id}`);
+    const apagou = await sbDelete('diarias_funcionarios', `?id=eq.${id}`);
+    if (apagou === null) { showToast('Erro ao excluir o funcionario.', 5000); return; }  // nao remove do cache
     DiariasModule.funcionariosRaw = DiariasModule.funcionariosRaw.filter(f => f.id !== id);
     _diarReconstruirMapa();
     _diarRenderListaEquipe();
-    showToast(nome + ' excluido.');
+    showToast(apagou ? (nome + ' excluido.') : (nome + ' ja nao existia — lista atualizada.'));  // 0 = sincroniza
   } catch (e) { showToast('Erro: ' + e.message); }
 }
 
@@ -294,7 +296,8 @@ async function diarSalvarEdicaoFunc(id) {
   const apelidos = apelidosStr ? apelidosStr.split(',').map(a => a.trim().toLowerCase()).filter(Boolean) : [];
   if (!nome) { showToast('Nome obrigatorio.'); return; }
   try {
-    await sbPatch('diarias_funcionarios', `?id=eq.${id}`, { nome, cargo, diaria, apelidos });
+    const salvo = await sbPatch('diarias_funcionarios', `?id=eq.${id}`, { nome, cargo, diaria, apelidos });
+    if (!salvo) { showToast(salvo === null ? 'Erro ao salvar as alteracoes.' : 'Funcionario nao encontrado — recarregue.', 5000); return; }  // nao muta cache (diaria intacta), nao fecha modal
     const f = DiariasModule.funcionariosRaw.find(f => f.id === id);
     if (f) { f.nome = nome; f.cargo = cargo; f.diaria = diaria; f.apelidos = apelidos; }
     _diarReconstruirMapa();
