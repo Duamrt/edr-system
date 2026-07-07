@@ -385,6 +385,7 @@ async function _diarCriarQuinzenaAuto() {
 
     try {
       const nova = await sbPost('diarias_quinzenas', { label, data_inicio: inicio, data_fim: fim });
+      if (!nova) { showToast('Nao foi possivel criar a quinzena. Tente de novo.', 5000); return; }  // nao poe null no array (quebraria _diarAtualizarSelectQuinzena)
       DiariasModule.quinzenas = [nova];
       DiariasModule.quinzenaAtiva = nova;
     } catch (e) { showToast('Erro ao criar quinzena: ' + (e.message || '')); }
@@ -414,21 +415,23 @@ async function diarExcluirQuinzena() {
     const ok = await confirmar('Excluir a quinzena vazia "' + DiariasModule.quinzenaAtiva.label + '"?');
     if (!ok) return;
     try {
-      await sbDelete('diarias_quinzenas', `?id=eq.${DiariasModule.quinzenaAtiva.id}`);
+      const apagou = await sbDelete('diarias_quinzenas', `?id=eq.${DiariasModule.quinzenaAtiva.id}`);
+      if (apagou === null) { showToast('Erro ao excluir a quinzena.', 5000); return; }  // null = falha real, nao remove do cache
       DiariasModule.quinzenas = DiariasModule.quinzenas.filter(q => q.id !== DiariasModule.quinzenaAtiva.id);
       DiariasModule.quinzenaAtiva = DiariasModule.quinzenas[0] || null;
       _diarAtualizarSelectQuinzena();
       _diarRenderRegistros(); _diarRenderExtras();
-      showToast('Quinzena vazia excluida.');
+      showToast(apagou ? 'Quinzena vazia excluida.' : 'Quinzena ja nao existia — lista atualizada.');
     } catch (e) { showToast('Erro ao excluir.'); }
     return;
   }
 
   // Soft delete
   try {
-    await sbPatch('diarias_quinzenas', `?id=eq.${DiariasModule.quinzenaAtiva.id}`, {
+    const arquivada = await sbPatch('diarias_quinzenas', `?id=eq.${DiariasModule.quinzenaAtiva.id}`, {
       excluida: true, excluida_em: new Date().toISOString()
     });
+    if (!arquivada) { showToast(arquivada === null ? 'Erro ao mover a quinzena para a lixeira.' : 'Quinzena nao encontrada — recarregue.', 5000); return; }  // nao remove da lista, NAO zera registros/extras
     DiariasModule.quinzenas = DiariasModule.quinzenas.filter(q => q.id !== DiariasModule.quinzenaAtiva.id);
     DiariasModule.quinzenaAtiva = DiariasModule.quinzenas[0] || null;
     DiariasModule.registros = []; DiariasModule.extras = [];
@@ -475,7 +478,8 @@ async function diarAbrirLixeira() {
 
 async function diarRestaurarQuinzena(id) {
   try {
-    await sbPatch('diarias_quinzenas', `?id=eq.${id}`, { excluida: false, excluida_em: null });
+    const restaurada = await sbPatch('diarias_quinzenas', `?id=eq.${id}`, { excluida: false, excluida_em: null });
+    if (!restaurada) { showToast(restaurada === null ? 'Erro ao restaurar a quinzena.' : 'Quinzena nao encontrada — recarregue.', 5000); return; }  // nao fecha modal da lixeira
     document.getElementById('diar-modalLixeira')?.remove();
     await _diarCarregarQuinzenas();
     DiariasModule.quinzenaAtiva = DiariasModule.quinzenas.find(q => q.id === id) || DiariasModule.quinzenaAtiva;
@@ -672,7 +676,8 @@ async function _diarSalvarEditLabel() {
     return;
   }
   try {
-    await sbPatch('diarias_quinzenas', '?id=eq.' + DiariasModule.quinzenaAtiva.id, { label: novoLabel });
+    const salvo = await sbPatch('diarias_quinzenas', '?id=eq.' + DiariasModule.quinzenaAtiva.id, { label: novoLabel });
+    if (!salvo) { showToast(salvo === null ? 'Erro ao editar a descricao.' : 'Quinzena nao encontrada — recarregue.', 5000); return; }  // nao muta label local, nao fecha modal
     DiariasModule.quinzenaAtiva.label = novoLabel;
     const q = DiariasModule.quinzenas.find(x => x.id === DiariasModule.quinzenaAtiva.id);
     if (q) q.label = novoLabel;
