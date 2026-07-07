@@ -1362,7 +1362,7 @@ function diarAdicionarNoDia(data) {
   const ativos = _diarGetFuncionariosAtivos().filter(f => !jaLancados.includes(f.nome));
   const obrasOpts = obras.map(o => `<option value="${esc(o.nome)}">${esc(o.nome)}</option>`).join('');
   if (!ativos.length) { showToast('Todos os funcionarios ja foram lancados neste dia.'); return; }
-  const funcOpts = ativos.map(f => `<option value="${esc(f.nome)}" data-cargo="${f.cargo || ''}" data-diaria="${f.diaria || 0}">${esc(f.nome)} (${esc(f.cargo || '-')})</option>`).join('');
+  const funcOpts = ativos.map(f => `<option value="${esc(f.nome)}" data-cargo="${esc(f.cargo || '')}" data-diaria="${f.diaria || 0}">${esc(f.nome)} (${esc(f.cargo || '-')})</option>`).join('');
 
   document.body.insertAdjacentHTML('beforeend', `
   <div id="diar-modalAdd" class="modal-overlay active">
@@ -2138,10 +2138,10 @@ async function diarAbrirModalEDR() {
     const sug = id ? null : _diarFuzzyObra(obra, obrasMap);
     const statusIcon = id ? 'check_circle' : 'warning';
     const statusColor = id ? 'var(--success)' : (sug ? 'var(--warning)' : 'var(--error)');
-    const sugChip = sug ? `<span class="diar-sug" style="margin-left:6px"><button onclick="_diarCorrigirObra(this,'${sug.id}')" style="font-size:10px;padding:1px 6px;cursor:pointer;border:1px solid var(--warning);border-radius:3px;background:transparent;color:var(--warning);font-weight:600">→ ${sug.key}?</button></span>` : '';
-    return `<tr data-obra="${obra}" data-valor="${valor.toFixed(2)}" data-id="${id || ''}">
+    const sugChip = sug ? `<span class="diar-sug" style="margin-left:6px"><button onclick="_diarCorrigirObra(this,'${sug.id}')" style="font-size:10px;padding:1px 6px;cursor:pointer;border:1px solid var(--warning);border-radius:3px;background:transparent;color:var(--warning);font-weight:600">→ ${esc(sug.key)}?</button></span>` : '';
+    return `<tr data-obra="${esc(obra)}" data-valor="${valor.toFixed(2)}" data-id="${id || ''}">
       <td style="padding:7px 5px"><span class="material-symbols-outlined diar-edr-icon" style="font-size:16px;color:${statusColor}">${statusIcon}</span></td>
-      <td style="padding:7px 5px;font-weight:600">${obra}${sugChip}</td>
+      <td style="padding:7px 5px;font-weight:600">${esc(obra)}${sugChip}</td>
       <td style="padding:7px 5px;color:var(--success);font-family:'Space Grotesk',monospace;text-align:right">R$ ${valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
     </tr>`;
   }).join('');
@@ -2150,7 +2150,7 @@ async function diarAbrirModalEDR() {
   document.getElementById('diar-modalEDRBody').innerHTML = `
     <p style="color:var(--text-tertiary);" style="font-size:12px;margin-bottom:10px">
       Cada linha sera lancada como <strong>MAO DE OBRA</strong> na obra correspondente.<br>
-      Obs: <em>${obs}</em>
+      Obs: <em>${esc(obs)}</em>
     </p>
     <table style="width:100%;border-collapse:collapse">
       <thead><tr style="border-bottom:1px solid var(--border-primary)">
@@ -2178,22 +2178,22 @@ async function diarConfirmarLancamentosEDR() {
   let ok = 0, erro = 0;
   for (const row of rows) {
     const obra = row.dataset.obra; const valor = parseFloat(row.dataset.valor); const obraId = row.dataset.id;
-    if (!obraId) { statusEl.innerHTML += `<div style="color:var(--warning)"><span class="material-symbols-outlined" style="font-size:14px">warning</span> ${obra}: sem ID, pulando</div>`; erro++; continue; }
+    if (!obraId) { statusEl.innerHTML += `<div style="color:var(--warning)"><span class="material-symbols-outlined" style="font-size:14px">warning</span> ${esc(obra)}: sem ID, pulando</div>`; erro++; continue; }
     try {
       // Verificar duplicata: mesma obra + obs (contém label da quinzena) + etapa
       const existente = await sbGet('lancamentos',
         `?obra_id=eq.${obraId}&obs=eq.${encodeURIComponent(obs)}&etapa=eq.28_mao&select=id`);
       if (Array.isArray(existente) && existente.length > 0) {
         const saved = await sbPatch('lancamentos', `?id=eq.${existente[0].id}`, { preco: valor, total: valor, descricao: '000460 \u00b7 MAO DE OBRA' });
-        if (!saved) { statusEl.innerHTML += `<div style="color:var(--error)"><span class="material-symbols-outlined" style="font-size:14px">error</span> ${obra}: falha ao atualizar</div>`; erro++; continue; }
-        statusEl.innerHTML += `<div style="color:var(--warning)"><span class="material-symbols-outlined" style="font-size:14px">update</span> ${obra}: atualizado (ja existia)</div>`;
+        if (!saved) { statusEl.innerHTML += `<div style="color:var(--error)"><span class="material-symbols-outlined" style="font-size:14px">error</span> ${esc(obra)}: falha ao atualizar</div>`; erro++; continue; }
+        statusEl.innerHTML += `<div style="color:var(--warning)"><span class="material-symbols-outlined" style="font-size:14px">update</span> ${esc(obra)}: atualizado (ja existia)</div>`;
       } else {
         const saved = await sbPostMinimal('lancamentos', { obra_id: obraId, descricao: '000460 \u00b7 MAO DE OBRA', qtd: 1, preco: valor, total: valor, data: hoje, obs, etapa: '28_mao' });
-        if (!saved) { statusEl.innerHTML += `<div style="color:var(--error)"><span class="material-symbols-outlined" style="font-size:14px">error</span> ${obra}: falha ao inserir</div>`; erro++; continue; }
-        statusEl.innerHTML += `<div style="color:var(--success)"><span class="material-symbols-outlined" style="font-size:14px">check_circle</span> ${obra}: R$ ${valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} lancado</div>`;
+        if (!saved) { statusEl.innerHTML += `<div style="color:var(--error)"><span class="material-symbols-outlined" style="font-size:14px">error</span> ${esc(obra)}: falha ao inserir</div>`; erro++; continue; }
+        statusEl.innerHTML += `<div style="color:var(--success)"><span class="material-symbols-outlined" style="font-size:14px">check_circle</span> ${esc(obra)}: R$ ${valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} lancado</div>`;
       }
       ok++;
-    } catch (e) { statusEl.innerHTML += `<div style="color:var(--error)"><span class="material-symbols-outlined" style="font-size:14px">error</span> ${obra}: ${e.message}</div>`; erro++; }
+    } catch (e) { statusEl.innerHTML += `<div style="color:var(--error)"><span class="material-symbols-outlined" style="font-size:14px">error</span> ${esc(obra)}: ${esc(e.message || e)}</div>`; erro++; }
   }
   btn.textContent = ok > 0 ? ok + ' lancado(s)' + (erro > 0 ? ' / ' + erro + ' erro(s)' : '') : 'Falhou';
   if (ok > 0) {
