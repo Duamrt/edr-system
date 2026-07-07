@@ -216,12 +216,14 @@ const CronogramaModule = {
 
       el.innerHTML = '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;">'
         + '<div style="flex:1;min-width:180px;" id="cron-filtro-wrap"></div>'
+        /* [GANTT DESATIVADO 2026-07-07] Alternancia Lista/Gantt removida (Syncfusion em trial/licenca pendente, ticket #839314). Descomentar junto com o Gantt quando sair a Community key v33.
         + '<div style="display:flex;gap:4px;" id="cron-view-btns">'
           + '<button id="cron-vm-lista" onclick="CronogramaModule._setView(\'lista\')" style="padding:6px 12px;border-radius:8px;border:1px solid var(--primary);background:rgba(45,106,79,0.1);color:var(--primary);font-size:12px;cursor:pointer;">'
             + '<span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;">list</span> Lista</button>'
           + '<button id="cron-vm-gantt" onclick="CronogramaModule._setView(\'gantt\')" style="padding:6px 12px;border-radius:8px;border:1px solid var(--borda);background:var(--bg2);color:var(--texto2);font-size:12px;cursor:pointer;">'
             + '<span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;">view_timeline</span> Gantt</button>'
         + '</div>'
+        */
         + '<button onclick="CronogramaModule._abrirModalImportarPCI()" style="padding:6px 12px;border-radius:8px;border:1px solid var(--primary);background:rgba(45,106,79,0.08);color:var(--primary);font-size:12px;cursor:pointer;font-weight:600;">'
           + '<span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;">upload_file</span> Importar PCI</button>'
         + '<button onclick="CronogramaModule._syncComPCI()" id="cron-btn-sync-pci" style="padding:6px 12px;border-radius:8px;border:1px solid var(--borda);background:var(--bg2);color:var(--texto2);font-size:12px;cursor:pointer;">'
@@ -627,6 +629,15 @@ const CronogramaModule = {
   },
 
   _renderGantt() {
+    // [GANTT SYNCFUSION DESATIVADO 2026-07-07] A licenca trial gerava banner/watermark; Community pendente (ticket #839314).
+    // Forca a Lista e NAO instancia o Syncfusion (nenhum ej.* abaixo executa). RELIGAR quando sair a Community key v33:
+    // descomentar as tags CDN no index.html (~2993), colar a key no registerLicense (~648), remover este bloco e descomentar a barra de views (~219).
+    this._view = 'lista';
+    const _wl = document.getElementById('cron-gantt-wrap'); if (_wl) _wl.style.display = 'none';
+    const _ll = document.getElementById('cron-lista'); if (_ll) _ll.style.display = '';
+    this._renderLista();
+    return;
+
     const wrap = document.getElementById('cron-gantt-wrap');
     const lista = document.getElementById('cron-lista');
     if (!wrap) return;
