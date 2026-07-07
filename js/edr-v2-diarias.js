@@ -1344,9 +1344,10 @@ async function diarSalvarEdicao(regId) {
   if (!periodos.length) { showToast('Adicione pelo menos um periodo.'); return; }
 
   try {
-    await sbPatch('diarias', `?id=eq.${regId}`, {
+    const salvo = await sbPatch('diarias', `?id=eq.${regId}`, {
       periodos, total_fracoes: totalFracoes, valor: reg.diaria_base * totalFracoes
     });
+    if (!salvo) { showToast(salvo === null ? 'Erro ao salvar a diaria.' : 'Registro nao encontrado — recarregue.', 5000); return; }  // nao fecha modal
     modal.remove();
     await _diarCarregarRegistros();
     _diarRenderRegistros();
@@ -1443,13 +1444,14 @@ async function diarConfirmarAdd(data) {
   if (!periodos.length) { showToast('Selecione pelo menos um turno.'); return; }
 
   try {
-    await sbPostMinimal('diarias', [{
+    const ok = await sbPostMinimal('diarias', [{
       quinzena_id: DiariasModule.quinzenaAtiva.id,
       data, funcionario: nome, cargo, diaria_base: diaria,
       periodos, total_fracoes: totalFracoes,
       valor: diaria * totalFracoes,
       criado_por: usuarioAtual?.nome || ''
     }]);
+    if (!ok) { showToast('Nao foi possivel adicionar. Tente de novo.', 5000); return; }  // sbPostMinimal=boolean; nao fecha modal
     modal.remove();
     await _diarCarregarRegistros();
     _diarRenderRegistros();
@@ -1462,11 +1464,12 @@ async function diarExcluirRegistro(regId) {
   const ok = await confirmar('Excluir este registro de diaria?');
   if (!ok) return;
   try {
-    await sbDelete('diarias', `?id=eq.${regId}`);
+    const apagou = await sbDelete('diarias', `?id=eq.${regId}`);
+    if (apagou === null) { showToast('Nao foi possivel excluir o registro.', 5000); return; }  // nao fecha modal
     document.getElementById('diar-modalEdit')?.remove();
     await _diarCarregarRegistros();
     _diarRenderRegistros();
-    showToast('Registro excluido.');
+    showToast(apagou ? 'Registro excluido.' : 'Registro ja nao existia — lista atualizada.');
   } catch (e) { showToast('Erro ao excluir: ' + e.message); }
 }
 
@@ -1475,10 +1478,11 @@ async function diarDeletarDia(data) {
   const ok = await confirmar('Remover todos os registros de ' + data + '?');
   if (!ok) return;
   try {
-    await sbDelete('diarias', `?quinzena_id=eq.${DiariasModule.quinzenaAtiva.id}&data=eq.${data}`);
+    const apagou = await sbDelete('diarias', `?quinzena_id=eq.${DiariasModule.quinzenaAtiva.id}&data=eq.${data}`);
+    if (apagou === null) { showToast('Nao foi possivel remover.', 5000); return; }  // null=falha; delete que falha nao apaga nada
     await _diarCarregarRegistros();
     _diarRenderRegistros();
-    showToast('Registros removidos.');
+    showToast(apagou ? 'Registros removidos.' : 'Nenhum registro nesse dia — lista atualizada.');
   } catch (e) { showToast('Nao foi possivel remover.'); }
 }
 
@@ -1792,10 +1796,11 @@ async function diarExcluirExtra(id) {
   const ok = await confirmar('Remover este extra? Esta acao nao pode ser desfeita.');
   if (!ok) return;
   try {
-    await sbDelete('diarias_extras', `?id=eq.${id}`);
+    const apagou = await sbDelete('diarias_extras', `?id=eq.${id}`);
+    if (apagou === null) { showToast('Nao foi possivel remover o extra.', 5000); return; }  // nao remove do cache
     DiariasModule.extras = DiariasModule.extras.filter(e => e.id !== id);
     _diarRenderExtras(); _diarRenderFolha();
-    showToast('Extra removido.');
+    showToast(apagou ? 'Extra removido.' : 'Extra ja nao existia — lista atualizada.');
   } catch (e) { showToast('Nao foi possivel remover o extra.'); }
 }
 
