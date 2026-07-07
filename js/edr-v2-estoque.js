@@ -893,7 +893,7 @@ async function confirmarDistribuicaoItem(chave, obraDestino, etapa, quantidade, 
   });
   // Custo primeiro e checado: distribuir do almox SEMPRE gera lancamento (mesmo valor 0).
   // !lanc = falha real de gravacao -> aborta, nao baixa estoque, nao mostra sucesso.
-  if (!lanc) return showToast('Erro ao lancar o custo. Nada foi distribuido.', 'error');
+  if (!lanc) return showToast('Erro ao lancar o custo. Nada foi distribuido.', 5000);
 
   const payload = {
     item_desc: item.desc,
@@ -1308,7 +1308,7 @@ async function _criarMaterialEVincular(chave, proximoCodigo) {
   const cats = EstoqueModule.catalogoMateriais;
   if (cats.find(m => m.codigo === proximoCodigo)) {
     await _carregarCatalogo();
-    return showToast('Código já em uso — catálogo recarregado, tente novamente.', 'error');
+    return showToast('Código já em uso — catálogo recarregado, tente novamente.', 5000);
   }
 
   const resp = await sbPost('materiais', {
@@ -1670,7 +1670,7 @@ async function excluirMaterial(id) {
   // Excluir liberaria o código/nome a virar órfão nos registros históricos. Guard conservador — mesmo helper do B1.
   // (antes usava EstoqueModule._consolidado, que é filtrado por obra → saldo em outra obra escapava do guard)
   if (_materialTemHistoricoEstoque(mat)) {
-    return showToast('Não pode excluir: este material tem histórico de estoque. Saneie antes.', 'error');
+    return showToast('Não pode excluir: este material tem histórico de estoque. Saneie antes.', 5000);
   }
 
   const ok = await confirmar(`Excluir "${mat.codigo} · ${mat.nome}" do catalogo?`);
@@ -1756,7 +1756,7 @@ async function recalcularCategorias() {
     }
   }
 
-  if (erros > 0) showToast(`${count} reclassificado(s), ${erros} falharam`, 'error');
+  if (erros > 0) showToast(`${count} reclassificado(s), ${erros} falharam`, 5000);
   else showToast(`${count} material(is) reclassificado(s)`, 'success');
   renderCatalogo();
 }
@@ -1898,7 +1898,7 @@ async function exportarEstoqueExcel() {
     showToast('Inventario exportado com sucesso', 'success');
   } catch (err) {
     console.error('Erro ao exportar Excel:', err);
-    showToast('Falha ao gerar planilha. Verifique sua conexao e tente novamente.', 'error');
+    showToast('Falha ao gerar planilha. Verifique sua conexao e tente novamente.', 5000);
   }
 }
 
@@ -2427,7 +2427,7 @@ async function salvarEntradaDireta() {
         || itemMovimentaEstoque({ codigo: materialNoCatalogo?.codigo, desc: descSemFornecedor, etapa });
       // Custo primeiro e checado. Cache local (unshift) so depois de consistente.
       const lanc = await sbPost('lancamentos', { obra_id: obraId, descricao: descLanc, qtd, preco, total: valor, data, obs: obsLanc, etapa, nota_id: null, origem: ehDespesa ? 'manual' : 'compra_direta' });
-      if (!lanc) return showToast('Erro ao lancar o custo. Nada foi registrado.', 'error');
+      if (!lanc) return showToast('Erro ao lancar o custo. Nada foi registrado.', 5000);
       const criaDist = !ehDespesa && movimentaEstoque && !ehEscritorio;
       if (criaDist) {
         const dist = await sbPost('distribuicoes', {
@@ -2455,7 +2455,7 @@ async function salvarEntradaDireta() {
       showToast((ehDespesa || !movimentaEstoque || ehEscritorio) ? `✅ Custo lancado → ${obraObj.nome}` : `✅ ${qtd} ${unidade} de ${desc} → ${obraObj.nome}!`);
     } else {
       const nova = await sbPost('entradas_diretas', { item_desc: desc, unidade, qtd, preco, fornecedor, data, obs, obra: 'EDR', codigo_catalogo: materialNoCatalogo?.codigo || null });
-      if (!nova) return showToast('Erro ao registrar a entrada no estoque.', 'error');
+      if (!nova) return showToast('Erro ao registrar a entrada no estoque.', 5000);
       entradasDiretas.unshift(nova);
       showToast(`✅ ${qtd} ${unidade} de ${desc} no estoque!`);
     }
@@ -2594,7 +2594,7 @@ async function salvarSaidaMaterial() {
         obs: obs || 'SAÍDA MANUAL DE ESTOQUE', etapa,
         origem: 'saida_manual'
       });
-      if (!lanc) { showToast('Erro ao lancar o custo. Nada foi registrado.', 'error'); return; }
+      if (!lanc) { showToast('Erro ao lancar o custo. Nada foi registrado.', 5000); return; }
     }
     // Ramo valor<=0: DEFENSIVO / inatingivel hoje (custo obrigatorio na validacao acima). A distribuicao
     // sem lancamento existe so como fallback de seguranca — NAO e regra de negocio "saida sem custo".
