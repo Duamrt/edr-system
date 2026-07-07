@@ -723,8 +723,10 @@ const PciModule = {
         const val = input.value === '' ? null : parseFloat(input.value) || 0;
         const item = PciModule.itens.find(i => i.id === id);
         if (!item) return;
-        item.item_peso = val;
-        await sbPatch('pci_itens?id=eq.' + id, { item_peso: val });
+        // Grava PRIMEIRO — só muta o cache se o banco confirmar (item_peso entra no % executado)
+        const salvo = await sbPatch('pci_itens?id=eq.' + id, { item_peso: val });
+        if (salvo) item.item_peso = val;
+        else showToast(salvo === null ? 'Erro ao salvar o peso — verifique a conexão.' : 'Item não encontrado — recarregue a PCI.', 5000);
         PciModule._rerender();
       });
       input.addEventListener('click', e => e.stopPropagation());
@@ -899,9 +901,14 @@ const PciModule = {
   async _toggleItem(itemId, field, value) {
     const item = PciModule.itens.find(i => i.id === itemId);
     if (!item) return;
+    // Grava PRIMEIRO — só muta o cache se o banco confirmar (evita % e Gantt com estado não persistido)
+    const salvo = await sbPatch('pci_itens?id=eq.' + itemId, { [field]: value });
+    if (!salvo) {
+      showToast(salvo === null ? 'Erro ao salvar — verifique a conexão.' : 'Item não encontrado — recarregue a PCI.', 5000);
+      return;
+    }
     item[field] = value;
-    await sbPatch('pci_itens?id=eq.' + itemId, { [field]: value });
-    // Sync automático no cronograma (silencioso)
+    // Sync automático no cronograma (silencioso, best-effort) — só após confirmar a gravação
     if (field === 'executado' || field === 'nao_aplicavel') {
       PciModule._syncItemNoCronograma(item.medicao_id, item.categoria_nome).catch(() => {});
     }
@@ -935,8 +942,13 @@ const PciModule = {
   async _editarCoberturas(medicaoId, novoPeso) {
     const med = PciModule.medicoes.find(m => m.id === medicaoId);
     if (!med) return;
+    // Grava PRIMEIRO — só muta o cache se o banco confirmar (cobertura_peso entra no % executado)
+    const salvo = await sbPatch('pci_medicao?id=eq.' + medicaoId, { cobertura_peso: novoPeso });
+    if (!salvo) {
+      showToast(salvo === null ? 'Erro ao salvar o peso — verifique a conexão.' : 'Medição não encontrada — recarregue a PCI.', 5000);
+      return;
+    }
     med.cobertura_peso = novoPeso;
-    await sbPatch('pci_medicao?id=eq.' + medicaoId, { cobertura_peso: novoPeso });
     // Atualiza categoria_peso nos itens de Coberturas para consistência
     PciModule.itens
       .filter(i => i.medicao_id === medicaoId && i.categoria_nome === 'Coberturas')
@@ -959,8 +971,13 @@ const PciModule = {
 
   // ── Remover item manual ──
   async _removerItem(itemId) {
-    await sbDelete('pci_itens?id=eq.' + itemId);
+    const apagou = await sbDelete('pci_itens?id=eq.' + itemId);
+    if (apagou === null) {
+      showToast('Erro ao remover — verifique a conexão.', 5000);
+      return;
+    }
     PciModule.itens = PciModule.itens.filter(i => i.id !== itemId);
+    if (apagou === 0) showToast('Item já não existia — lista atualizada.', 5000);
   },
 
   // ── Fechar medição ──
