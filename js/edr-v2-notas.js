@@ -1376,7 +1376,7 @@ async function confirmarExclusaoNota(id) {
   }
   msg += '\n\nEsta acao NAO pode ser desfeita.';
 
-  if (!confirm(msg)) return;
+  if (!await confirmar(msg)) return;
   await processarExclusaoNota(id, lancsDaNota);
 }
 

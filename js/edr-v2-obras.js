@@ -822,7 +822,7 @@ async function excluirDistribuicao(id) {
   const msg = d?.lancamento_id
     ? 'Excluir esta movimentacao de material?\nIsso tambem removera o custo vinculado da obra.'
     : 'Excluir esta movimentacao de material?';
-  if (!confirm(msg)) return;
+  if (!await confirmar(msg)) return;
   try {
     // 1) custo (lancamento) primeiro. Sem FK em distribuicoes.lancamento_id, a ordem
     //    e livre; deletar o custo antes garante que o pior estado parcial deixe o P&L correto.

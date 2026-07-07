@@ -276,7 +276,7 @@ async function marcarComoPago(contaId) {
 }
 
 async function excluirConta(contaId) {
-  if (!confirm('Excluir esta conta? Essa acao nao pode ser desfeita.')) return;
+  if (!await confirmar('Excluir esta conta? Essa acao nao pode ser desfeita.')) return;
   const ok = await sbDelete('contas_pagar', `?id=eq.${contaId}`);
   if (!ok) { showToast('Erro ao excluir conta. Tente novamente.', 'error'); return; }
   contasPagar = contasPagar.filter(c => c.id !== contaId);
@@ -639,7 +639,7 @@ async function salvarProjecao() {
 }
 
 async function excluirProjecao(id) {
-  if (!confirm('Excluir esta projecao?')) return;
+  if (!await confirmar('Excluir esta projecao?')) return;
   try {
     // sbDelete 3-estados: >0 apagou / 0 nao apagou (id inexistente/RLS) / null erro HTTP.
     const apagou = await sbDelete('projecoes_caixa', `?id=eq.${id}`);
