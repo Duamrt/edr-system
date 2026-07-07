@@ -212,6 +212,7 @@ async function diarAdicionarFuncionario() {
   }
   try {
     const novo = await sbPost('diarias_funcionarios', { nome, cargo, diaria, apelidos, ativo: true });
+    if (!novo) { showToast('Nao foi possivel adicionar o funcionario. Tente de novo.', 5000); return; }  // nao push null (quebraria _diarReconstruirMapa), nao limpa inputs
     DiariasModule.funcionariosRaw.push(novo);
     _diarReconstruirMapa();
     _diarRenderListaEquipe();
@@ -1771,6 +1772,7 @@ async function diarSalvarExtra() {
   if (!obra) { showToast('Selecione a obra.'); return; }
   try {
     const novo = await sbPost('diarias_extras', { quinzena_id: DiariasModule.quinzenaAtiva.id, funcionario: func, descricao: desc, valor, obra });
+    if (!novo) { showToast('Nao foi possivel salvar o extra. Tente de novo.', 5000); return; }  // nao push null (quebraria _diarRenderExtras/Folha), nao fecha modal
     DiariasModule.extras.push(novo);
     diarFecharModalExtra(); _diarRenderExtras(); _diarRenderFolha();
     showToast('Extra registrado!');
