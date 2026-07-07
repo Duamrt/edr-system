@@ -1044,17 +1044,30 @@ const PciModule = {
   async _excluirMedicao(medicaoId, obNome) {
     confirmar('RESETAR PCI de ' + (obNome || '') + '?\n\nIsso apaga TODOS os itens importados e o histórico desta obra. Use só para reimportar do zero.', async () => {
       try {
-        await sbDelete('pci_itens', '?medicao_id=eq.' + medicaoId);
-        await sbDelete('pci_historico', '?medicao_id=eq.' + medicaoId);
-        await sbDelete('pci_medicao', '?id=eq.' + medicaoId);
+        // Histórico PRIMEIRO: FK é ON DELETE SET NULL — se a medição for apagada antes,
+        // o vínculo do histórico vira NULL e ele nunca mais some (fica órfão pra sempre).
+        const apagouHist = await sbDelete('pci_historico', '?medicao_id=eq.' + medicaoId);
+        if (apagouHist === null) {
+          showToast('Não foi possível resetar — nada foi apagado.', 5000);
+          return;
+        }
+        // Medição depois: pci_itens cai por CASCADE na mesma transação (atômico).
+        const apagouMed = await sbDelete('pci_medicao', '?id=eq.' + medicaoId);
+        if (apagouMed === null) {
+          // Histórico já foi removido, mas a medição atual permaneceu — reconcilia só o histórico no cache.
+          PciModule.historico = PciModule.historico.filter(h => h.medicao_id !== medicaoId);
+          PciModule._rerender();
+          showToast('O histórico foi removido, mas a PCI atual não foi apagada — tente resetar de novo.', 8000);
+          return;
+        }
         PciModule.medicoes = PciModule.medicoes.filter(m => m.id !== medicaoId);
         PciModule.itens = PciModule.itens.filter(i => i.medicao_id !== medicaoId);
         PciModule.historico = PciModule.historico.filter(h => h.medicao_id !== medicaoId);
         PciModule._rerender();
-        showToast('PCI resetada');
+        showToast(apagouMed === 0 ? 'PCI já não existia — lista atualizada.' : 'PCI resetada');
       } catch(e) {
         console.error('[PCI-RESETAR]', e);
-        showToast('Erro ao resetar PCI');
+        showToast('Erro ao resetar PCI', 5000);
       }
     });
   },
