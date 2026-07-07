@@ -630,11 +630,11 @@ const PciModule = {
         await sbPatch('pci_medicao?id=eq.' + medicaoId, dados);
         Object.assign(med, dados);
         document.getElementById(id)?.remove();
-        showToast('Dados contratuais salvos.', 'success');
+        showToast('Dados contratuais salvos.');
         PciModule._rerender();
       } catch (e) {
         console.error(e);
-        showToast('Erro ao salvar.', 'error');
+        showToast('Erro ao salvar.', 5000);
         btn.disabled = false; btn.textContent = 'Salvar';
       }
     });
@@ -664,7 +664,7 @@ const PciModule = {
       btn.addEventListener('click', async (e) => {
         e.stopPropagation();
         if (!PciModule.obrasComCronograma.has(btn.dataset.obra)) {
-          showToast('Anexe o cronograma desta obra antes de gerar a PCI.', 'error');
+          showToast('Anexe o cronograma desta obra antes de gerar a PCI.', 5000);
           return;
         }
         btn.disabled = true;
@@ -868,7 +868,7 @@ const PciModule = {
   // ── Salvar configuração atual como padrão para novas obras ──
   async _salvarComoPadrao(medicaoId) {
     const itensMed = PciModule.itens.filter(i => i.medicao_id === medicaoId);
-    if (!itensMed.length) { showToast('Nenhum item para salvar', 'error'); return; }
+    if (!itensMed.length) { showToast('Nenhum item para salvar', 5000); return; }
     try {
       if (typeof _companyId !== 'undefined' && _companyId) {
         await sbDelete('pci_template_padrao', '?company_id=eq.' + _companyId);
@@ -887,11 +887,11 @@ const PciModule = {
         PciModule.templatePadrao = await sbGet('pci_template_padrao?order=ordem') || [];
         showToast('Padrão salvo — novas obras já usam essa configuração');
       } else {
-        showToast('Erro ao salvar padrão', 'error');
+        showToast('Erro ao salvar padrão', 5000);
       }
     } catch(e) {
       console.error('[PCI-TEMPLATE]', e);
-      showToast('Erro ao salvar padrão', 'error');
+      showToast('Erro ao salvar padrão', 5000);
     }
   },
 
@@ -995,14 +995,14 @@ const PciModule = {
           valor_executado: valorExec ? parseFloat(valorExec.toFixed(2)) : null
         });
         if (!snap || !snap.id) {
-          showToast('Medição fechada mas histórico não foi registrado. Tente fechar novamente.', 'error');
+          showToast('Medição fechada mas histórico não foi registrado. Tente fechar novamente.', 5000);
           return;
         }
         PciModule.historico.push(snap);
         PciModule._rerender();
       } catch(e) {
         console.error('[PCI-HISTORICO]', e);
-        showToast('Erro ao fechar medição. Tente novamente.', 'error');
+        showToast('Erro ao fechar medição. Tente novamente.', 5000);
       } finally {
         PciModule._fechando = false;
       }
