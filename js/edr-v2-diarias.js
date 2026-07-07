@@ -1089,10 +1089,7 @@ async function diarConfirmarLancamento() {
   if (btn) { btn.disabled = true; btn.textContent = 'SALVANDO...'; }
 
   try {
-    // Remover registros do mesmo dia em paralelo
-    const existentes = DiariasModule.registros.filter(r => r.data === DiariasModule.interpretado.data);
-    if (existentes.length) await Promise.all(existentes.map(r => sbDelete('diarias', `?id=eq.${r.id}`)));
-
+    // Monta os novos registros ANTES de qualquer escrita destrutiva
     const novos = DiariasModule.interpretado.registros.map(r => ({
       quinzena_id: DiariasModule.quinzenaAtiva.id,
       data: DiariasModule.interpretado.data,
@@ -1101,7 +1098,44 @@ async function diarConfirmarLancamento() {
       total_fracoes: r.total_fracoes, valor: r.diaria_base * r.total_fracoes,
       criado_por: usuarioAtual?.nome || ''
     }));
-    await sbPostMinimal('diarias', novos);
+
+    // Guard: sem novos, nao apaga nada (evita limpar o dia sem substituto)
+    if (!novos.length) {
+      showToast('Nenhum registro para salvar.');
+      if (btn) { btn.disabled = false; btn.textContent = 'CONFIRMAR E SALVAR'; }
+      return;
+    }
+
+    // IDs dos antigos do mesmo dia — apagados SO depois de confirmar o insert (insert-first, sem transacao)
+    const antigosIds = DiariasModule.registros.filter(r => r.data === DiariasModule.interpretado.data).map(r => r.id);
+
+    // 1) INSERT-FIRST: diarias nao tem unique constraint, antigos e novos coexistem sem violacao
+    const okInsert = await sbPostMinimal('diarias', novos);
+    if (!okInsert) {
+      // Insert falhou -> NAO apaga nada; antigos preservados (zero perda)
+      showToast('Erro ao salvar as diarias. Nada foi alterado — tente de novo.');
+      if (btn) { btn.disabled = false; btn.textContent = 'CONFIRMAR E SALVAR'; }
+      return;
+    }
+
+    // 2) Insert confirmado -> apaga os antigos por id (sbDelete 3-estados: 0 = ja nao existia/tolerado, null = falha real)
+    let deleteFalhou = false;
+    for (const _id of antigosIds) {
+      const apagou = await sbDelete('diarias', `?id=eq.${_id}`);
+      if (apagou === null) deleteFalhou = true;
+    }
+    if (deleteFalhou) {
+      // Novos salvos, mas antigos podem ter ficado -> DUPLICATA visivel e recuperavel (NUNCA perda)
+      await _diarCarregarRegistros();
+      _diarRenderRegistros();
+      _diarRenderFolha();
+      showToast('Diarias novas salvas, mas nao consegui remover os registros anteriores do dia. Pode haver DUPLICATA — revise e NAO clique em Lancar FP antes de corrigir.', 8000);
+      // NAO limpa input/preview: sinaliza que precisa revisar
+      if (btn) { btn.disabled = false; btn.textContent = 'CONFIRMAR E SALVAR'; }
+      return;
+    }
+
+    // 3) Caminho pleno: insert ok + todos os deletes ok/0
     DiariasModule.interpretado = null;
     document.getElementById('diar-msgInput').value = '';
     document.getElementById('diar-previewBox').innerHTML =
