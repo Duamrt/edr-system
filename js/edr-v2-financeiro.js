@@ -645,7 +645,7 @@ async function excluirProjecao(id) {
     const apagou = await sbDelete('projecoes_caixa', `?id=eq.${id}`);
     if (apagou === null) { showToast('Erro ao excluir a projecao.', 5000); return; } // nao remove local/render
     projecoesCaixa = projecoesCaixa.filter(p => p.id !== id);
-    showToast(apagou ? 'Projecao excluida' : 'Projecao ja nao existia — lista atualizada.', apagou ? 'success' : 'error');
+    showToast(apagou ? 'Projecao excluida' : 'Projecao ja nao existia — lista atualizada.');
     renderCaixa();
   } catch(e) {
     console.error(e);
