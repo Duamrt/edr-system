@@ -512,10 +512,10 @@ async function custosSalvarRepasse() {
   const obs = (document.getElementById('repasse-obs')?.value || '').trim();
   const editId = document.getElementById('repasse-edit-id')?.value;
 
-  if (!obraId) return showToast('Selecione uma obra', 'error');
-  if (tipo === 'pls' && medicao < 1) return showToast('Informe o numero da medicao', 'error');
-  if (!valor || valor <= 0) return showToast('Informe o valor', 'error');
-  if (!data) return showToast('Informe a data', 'error');
+  if (!obraId) return showToast('Selecione uma obra', 5000);
+  if (tipo === 'pls' && medicao < 1) return showToast('Informe o numero da medicao', 5000);
+  if (!valor || valor <= 0) return showToast('Informe o valor', 5000);
+  if (!data) return showToast('Informe a data', 5000);
 
   const body = { obra_id: obraId, medicao_numero: medicao, valor, data_credito: data, observacao: obs, tipo };
 
@@ -689,7 +689,7 @@ async function custosSalvarContrato() {
   const prazo = (document.getElementById('contrato-prazo')?.value || '').trim();
   const data = document.getElementById('contrato-data')?.value || null;
 
-  if (fin <= 0) return showToast('Informe o valor financiado', 'error');
+  if (fin <= 0) return showToast('Informe o valor financiado', 5000);
 
   const valorVenda = fin + sub + fgts + ent;
 
