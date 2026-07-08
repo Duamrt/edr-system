@@ -2458,7 +2458,7 @@ async function salvarEntradaDireta() {
     fecharModal('entrada');
     renderEstoque();
     if (typeof renderDashboard === 'function') renderDashboard();
-  } catch(e) { console.error(e); showToast('❌ Não foi possível registrar. Execute o SQL no Setup.'); }
+  } catch(e) { console.error(e); showToast('Não foi possível registrar. Execute o SQL no Setup.'); }
 }
 
 
@@ -2759,7 +2759,7 @@ async function salvarAjusteModal() {
     fecharModal('ajuste');
     renderEstoque();
     if (typeof renderDashboard === 'function') renderDashboard();
-  } catch (e) { console.error(e); showToast('❌ Não foi possível registrar o ajuste. Execute o SQL no Setup.'); }
+  } catch (e) { console.error(e); showToast('Não foi possível registrar o ajuste. Execute o SQL no Setup.'); }
 }
 
 
