@@ -1252,7 +1252,6 @@ async function _vincularSelecionado(chave) {
 
   if (!codigo) return showToast('Item do catálogo sem código definido', 5000);
 
-  showToast('Vinculando...', 'info');
 
   // 1. entradas_diretas (ilike = case-insensitive)
   const r1 = await sbPatch(`entradas_diretas?item_desc=ilike.${enc}&codigo_catalogo=is.null`, { codigo_catalogo: codigo });
@@ -1696,7 +1695,6 @@ async function _updateCategoriaMaterial(id, novaCategoria) {
 // ── RECONCILIACAO DE ORFAOS ─────────────────────────────────────
 
 async function escanearOrfaos() {
-  showToast('Escaneando orfaos...', 'info');
 
   // Buscar todas as descricoes unicas de movimentacoes
   const descs = new Set();
@@ -1961,7 +1959,6 @@ function importarPrecosEstoque() {
         return showToast('Nenhum preço corrigido encontrado na coluna K', 'info');
       }
 
-      showToast(`Atualizando ${atualizacoes.length} preços...`, 'info');
       let ok = 0, erros = 0;
 
       for (const a of atualizacoes) {
@@ -2068,7 +2065,6 @@ function importarContagemEstoque() {
       const ok = await confirmar(`Aplicar inventário de ${ajustes.length} item(ns)?\n\nO saldo de cada um passa a valer exatamente o que você contou na planilha. Isso acerta a régua do estoque (zera os negativos de material anterior ao sistema).`);
       if (!ok) return;
 
-      showToast(`Aplicando inventário de ${ajustes.length} itens...`, 'info');
       let okc = 0, erros = 0;
       for (const payload of ajustes) {
         const novo = await sbPost('ajustes_estoque', payload);
