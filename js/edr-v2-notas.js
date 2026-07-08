@@ -1088,7 +1088,7 @@ async function salvarNota(notaData) {
           showToast('NF lancada! Crie a obra Escritorio para baixa automatica.');
         }
       } else {
-        { const _av = []; if (falhasDesp > 0) _av.push(`${falhasDesp} despesa(s) NAO registradas no financeiro`); if (falhasCatalogo > 0) _av.push(`${falhasCatalogo} material(is) nao entraram no catalogo (revise itens sem codigo)`); showToast(_av.length ? `NF salva, mas ${_av.join('; ')}. Verifique.` : 'Nota fiscal lancada!', _av.length ? 'error' : undefined); }
+        { const _av = []; if (falhasDesp > 0) _av.push(`${falhasDesp} despesa(s) NAO registradas no financeiro`); if (falhasCatalogo > 0) _av.push(`${falhasCatalogo} material(is) nao entraram no catalogo (revise itens sem codigo)`); showToast(_av.length ? `NF salva, mas ${_av.join('; ')}. Verifique.` : 'Nota fiscal lancada!', _av.length ? 5000 : undefined); }
       }
     } else {
       // NF direta pra obra (inclusive escritorio): criar lancamentos + distribuicoes automaticamente
@@ -1152,7 +1152,7 @@ async function salvarNota(notaData) {
           }
         }
       }
-      { const _av = []; if (falhasLanc + falhasDesp > 0) _av.push(`${falhasLanc + falhasDesp} lancamento(s)/despesa(s) falharam`); if (falhasCatalogo > 0) _av.push(`${falhasCatalogo} material(is) nao entraram no catalogo (revise itens sem codigo)`); showToast(_av.length ? `NF salva, mas ${_av.join('; ')}. Verifique a conexao.` : 'Nota fiscal lancada!', _av.length ? 'error' : undefined); }
+      { const _av = []; if (falhasLanc + falhasDesp > 0) _av.push(`${falhasLanc + falhasDesp} lancamento(s)/despesa(s) falharam`); if (falhasCatalogo > 0) _av.push(`${falhasCatalogo} material(is) nao entraram no catalogo (revise itens sem codigo)`); showToast(_av.length ? `NF salva, mas ${_av.join('; ')}. Verifique a conexao.` : 'Nota fiscal lancada!', _av.length ? 5000 : undefined); }
     }
 
     resetForm();
@@ -1479,7 +1479,7 @@ async function processarExclusaoNota(id, lancsPremapeados) {
     renderNotas();
     if (typeof renderEstoque === 'function') renderEstoque();
     if (typeof renderDashboard === 'function') renderDashboard();
-    showToast(`NF ${nota.numero_nf || ''} excluida. Estorno completo.`, 'success');
+    showToast(`NF ${nota.numero_nf || ''} excluida. Estorno completo.`);
 
   } catch(e) {
     console.error('[EDR] Erro critico ao excluir nota', id, e);
