@@ -548,7 +548,7 @@ async function custosExcluirRepasse(id) {
   // sbDelete 3-estados: >0 apagou / 0 nao apagou (id inexistente/RLS) / null erro HTTP.
   const apagou = await sbDelete('repasses_cef', `?id=eq.${id}`);
   if (apagou === null) { showToast('Erro ao excluir o repasse.', 5000); return; } // nao recarrega/renderiza
-  showToast(apagou ? 'Repasse excluido' : 'Repasse ja nao existia — lista atualizada.', apagou ? 'success' : 'error');
+  showToast(apagou ? 'Repasse excluido' : 'Repasse ja nao existia — lista atualizada.');
   await _custosCarregarRepasses();
   if (CustosModule.obraAtual) custosAbrirDetalhe(CustosModule.obraAtual);
   else _custosRenderCards();
