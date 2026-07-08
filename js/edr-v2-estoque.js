@@ -2878,7 +2878,7 @@ async function salvarMaterial() {
       const res = await sbPatch('materiais', _editandoMaterialId, { nome, unidade, categoria, tipo_item, movimenta_estoque, auto: false });
       if (!res) {
         // Falha: nao muta cache, nao fecha modal, nao reseta _editandoMaterialId (permite retentar).
-        showToast(res === null ? '❌ Erro ao salvar as alterações.' : 'Material não encontrado no banco — recarregue o catálogo.', 'error');
+        showToast(res === null ? 'Erro ao salvar as alterações.' : 'Material não encontrado no banco — recarregue o catálogo.', 5000);
       } else {
         atual.nome = nome; atual.unidade = unidade; atual.categoria = categoria;
         atual.tipo_item = tipo_item; atual.movimenta_estoque = movimenta_estoque; atual.auto = false;
@@ -2913,7 +2913,7 @@ async function salvarMaterial() {
       // Falha (erro/0-linhas): NAO esconder com recarga+sucesso. Reconcilia e mantem o modal aberto p/ retentar.
       await _carregarCatalogo();
       renderCatalogo();
-      showToast('❌ Não foi possível cadastrar o material. Tente novamente.', 'error');
+      showToast('Não foi possível cadastrar o material. Tente novamente.', 5000);
     }
   } catch(e) { showToast('❌ Não foi possível salvar o material.'); }
   btn.disabled = false; btn.textContent = 'SALVAR MATERIAL';
