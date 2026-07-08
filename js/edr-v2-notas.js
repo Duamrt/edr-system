@@ -1409,7 +1409,7 @@ async function processarExclusaoNota(id, lancsPremapeados) {
       // sbDelete 3-estados: null = erro real (aborta); 0 = nenhum lançamento com nota_id
       // (normal quando a NF só tem legados por texto — o loop abaixo cuida deles).
       if (okLancFK === null) {
-        showToast('Erro ao estornar lancamentos. Exclusao cancelada.', 'error');
+        showToast('Erro ao estornar lancamentos. Exclusao cancelada.', 8000);
         console.error('[EDR] Erro ao excluir lancamentos por nota_id', nota.id);
         return;
       }
@@ -1438,13 +1438,13 @@ async function processarExclusaoNota(id, lancsPremapeados) {
       if (idsRemovidos.size) lancamentos = lancamentos.filter(l => !idsRemovidos.has(l.id));
       // Erro REAL em legado = abortar antes de apagar distribuicoes e nota
       if (idsLegacyFalhos.size > 0) {
-        showToast(`Erro ao estornar ${idsLegacyFalhos.size} lancamento(s) legado(s). Nota preservada.`, 'error');
+        showToast(`Erro ao estornar ${idsLegacyFalhos.size} lancamento(s) legado(s). Nota preservada.`, 8000);
         console.error('[EDR] Lancamentos legados nao removidos:', [...idsLegacyFalhos]);
         return;
       }
       // Legados ja ausentes (0 linhas) = nao bloqueia, mas AVISA (nao esconde a ausencia)
       if (idsLegacyAusentes.size > 0) {
-        showToast(`${idsLegacyAusentes.size} lancamento(s) legado(s) ja estavam ausentes — confira.`, 'error');
+        showToast(`${idsLegacyAusentes.size} lancamento(s) legado(s) ja estavam ausentes — confira.`, 8000);
         console.warn('[EDR] Legados ja ausentes (0 linhas):', [...idsLegacyAusentes]);
       }
     }
@@ -1454,7 +1454,7 @@ async function processarExclusaoNota(id, lancsPremapeados) {
     const okDist = await sbDelete('distribuicoes', `?nota_id=eq.${nota.id}`);
     // null = erro real (aborta); 0 = NF sem distribuição (serviço/taxa/frete movimenta_estoque=false) — normal.
     if (okDist === null) {
-      showToast('Erro ao estornar distribuicoes. Nota mantida (lancamentos ja removidos — avise suporte).', 'error');
+      showToast('Erro ao estornar distribuicoes. Nota mantida (lancamentos ja removidos — avise suporte).', 8000);
       console.error('[EDR] Erro ao excluir distribuicoes da NF', nota.id);
       renderNotas();
       if (typeof renderEstoque === 'function') renderEstoque();
@@ -1467,7 +1467,7 @@ async function processarExclusaoNota(id, lancsPremapeados) {
     // Passo C: Excluir a nota principal — só chega aqui se A e B foram OK
     const okNota = await sbDelete('notas_fiscais', `?id=eq.${nota.id}`);
     if (!okNota) {
-      showToast('Erro ao excluir nota. Lancamentos e distribuicoes ja removidos — avise suporte.', 'error');
+      showToast('Erro ao excluir nota. Lancamentos e distribuicoes ja removidos — avise suporte.', 8000);
       console.error('[EDR] Erro ao excluir nota principal', nota.id);
       renderNotas();
       if (typeof renderEstoque === 'function') renderEstoque();
