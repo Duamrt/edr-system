@@ -1105,7 +1105,7 @@ async function abrirAjusteEstoque(chave) {
       tipo: 'contagem',
       motivo: `Contagem fisica: sistema ${fmt(item.saldo)}, real ${fmt(realQtd)}, dif ${diferenca > 0 ? '+' : ''}${fmt(diferenca)}`,
     });
-    if (!resp) return showToast('Erro ao salvar ajuste', 'error');
+    if (!resp) return showToast('Erro ao salvar ajuste', 5000);
   }
   const ajusteFeito = diferenca !== 0; // se chegou aqui, o ajuste (quando houve) foi gravado — falha ja deu return
 
@@ -1264,7 +1264,7 @@ async function _vincularSelecionado(chave) {
   const r3 = await sbPatch(`distribuicoes?item_desc=ilike.${enc}&codigo_catalogo=is.null`, { codigo_catalogo: codigo });
 
   if (r1 === null && r2 === null && r3 === null) {
-    return showToast('Erro ao vincular — veja o console para detalhes', 'error');
+    return showToast('Erro ao vincular — veja o console para detalhes', 5000);
   }
 
   // 4. notas_fiscais — atualiza JSON dos itens (norm para match case-insensitive)
@@ -1319,7 +1319,7 @@ async function _criarMaterialEVincular(chave, proximoCodigo) {
     auto: false,
   });
 
-  if (!resp) return showToast('Erro ao criar material', 'error');
+  if (!resp) return showToast('Erro ao criar material', 5000);
 
   showToast(`Material criado: ${proximoCodigo} · ${item.desc}`, 'success');
   closeModal('vincular-modal');
@@ -1610,7 +1610,7 @@ async function novoMaterial() {
 
 async function confirmarAutoMaterial(id) {
   const resp = await sbPatch('materiais', id, { auto: false });
-  if (!resp) return showToast('Erro ao confirmar', 'error');
+  if (!resp) return showToast('Erro ao confirmar', 5000);
   showToast('Material confirmado', 'success');
   await _carregarCatalogo();
   renderCatalogo();
@@ -1656,7 +1656,7 @@ async function duplicarMaterial(id) {
     auto: false,
   });
 
-  if (!resp) return showToast('Erro ao duplicar', 'error');
+  if (!resp) return showToast('Erro ao duplicar', 5000);
   showToast(`Duplicado: ${proximoCodigo}`, 'success');
   await _carregarCatalogo();
   renderCatalogo();
@@ -1677,7 +1677,7 @@ async function excluirMaterial(id) {
   if (!ok) return;
 
   const resp = await sbDelete('materiais', id);
-  if (!resp) return showToast('Erro ao excluir', 'error');
+  if (!resp) return showToast('Erro ao excluir', 5000);
   showToast('Material excluido', 'success');
   await _carregarCatalogo();
   renderCatalogo();
@@ -1685,7 +1685,7 @@ async function excluirMaterial(id) {
 
 async function _updateCategoriaMaterial(id, novaCategoria) {
   const ok = await sbPatch('materiais', id, { categoria: novaCategoria });
-  if (!ok) { showToast('Erro ao atualizar centro de custo', 'error'); return; }
+  if (!ok) { showToast('Erro ao atualizar centro de custo', 5000); return; }
   const mat = EstoqueModule.catalogoMateriais.find(m => m.id === id);
   if (mat) mat.categoria = novaCategoria;
   const etapa = typeof ETAPAS !== 'undefined' ? ETAPAS.find(e => e.key === novaCategoria) : null;
@@ -1983,7 +1983,7 @@ function importarPrecosEstoque() {
       renderEstoque();
     } catch (err) {
       console.error('Erro ao importar preços:', err);
-      showToast('Erro ao ler planilha', 'error');
+      showToast('Erro ao ler planilha', 5000);
     }
   };
   input.click();
@@ -2080,7 +2080,7 @@ function importarContagemEstoque() {
       renderEstoque();
     } catch (err) {
       console.error('Erro ao importar contagem:', err);
-      showToast('Erro ao ler planilha de inventário', 'error');
+      showToast('Erro ao ler planilha de inventário', 5000);
     }
   };
   input.click();
