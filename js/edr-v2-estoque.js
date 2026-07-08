@@ -2448,12 +2448,12 @@ async function salvarEntradaDireta() {
         distribuicoes.unshift(dist);
       }
       lancamentos.unshift(lanc); // cache local so apos consistente (dist ok, ou ramo sem dist)
-      showToast((ehDespesa || !movimentaEstoque || ehEscritorio) ? `✅ Custo lancado → ${obraObj.nome}` : `✅ ${qtd} ${unidade} de ${desc} → ${obraObj.nome}!`);
+      showToast((ehDespesa || !movimentaEstoque || ehEscritorio) ? `Custo lancado → ${obraObj.nome}` : `${qtd} ${unidade} de ${desc} → ${obraObj.nome}!`);
     } else {
       const nova = await sbPost('entradas_diretas', { item_desc: desc, unidade, qtd, preco, fornecedor, data, obs, obra: 'EDR', codigo_catalogo: materialNoCatalogo?.codigo || null });
       if (!nova) return showToast('Erro ao registrar a entrada no estoque.', 5000);
       entradasDiretas.unshift(nova);
-      showToast(`✅ ${qtd} ${unidade} de ${desc} no estoque!`);
+      showToast(`${qtd} ${unidade} de ${desc} no estoque!`);
     }
     fecharModal('entrada');
     renderEstoque();
@@ -2613,18 +2613,18 @@ async function salvarSaidaMaterial() {
         if (typeof renderDashboard === 'function') renderDashboard();
       } else {
         // ramo defensivo valor<=0: nao houve lancamento, nada a reverter
-        showToast('❌ Erro ao salvar saída. Verifique o console.');
+        showToast('Erro ao salvar saída. Verifique o console.');
       }
       return;
     }
     // Cache local so apos consistente (dist ok; lancamento quando houve).
     if (lanc) lancamentos.unshift(lanc);
     distribuicoes.unshift(nova);
-    showToast(`✅ Baixa de ${qtd} ${unidade} de ${desc} registrada!`);
+    showToast(`Baixa de ${qtd} ${unidade} de ${desc} registrada!`);
     fecharModal('saida');
     renderEstoque();
     if (typeof renderDashboard === 'function') renderDashboard();
-  } catch(e) { console.error(e); showToast('❌ Não foi possível registrar a saída.'); }
+  } catch(e) { console.error(e); showToast('Não foi possível registrar a saída.'); }
   finally {
     window._saidaEmAndamento = false;
     if (btnSaida) { btnSaida.disabled = false; btnSaida.textContent = 'CONFIRMAR SAÍDA'; }
@@ -2728,7 +2728,7 @@ async function salvarAjusteModal() {
     const m = EstoqueModule._consolidado.find(i => norm(i.desc) === norm(desc));
     const saldoAtual = m ? m.saldo : 0;
     const diff = qtd - saldoAtual;
-    if (diff === 0) { showToast('✅ Contagem igual ao saldo — nenhum ajuste necessário.'); return; }
+    if (diff === 0) { showToast('Contagem igual ao saldo — nenhum ajuste necessário.'); return; }
     const ok = await confirmar(`Contagem física: ${qtd} ${unidade}\nSaldo sistema: ${saldoAtual} ${unidade}\nDiferença: ${diff > 0 ? '+' : ''}${diff} ${unidade}\n\nConfirma o ajuste?`);
     if (!ok) return;
     // _motivoContagem embute o valor real para que consolidarEstoque use como reset point
@@ -2753,7 +2753,7 @@ async function salvarAjusteModal() {
       motivo: motivoFinal,
       codigo_catalogo: _matAjuste?.codigo || null
     });
-    if (!novo) { showToast('❌ Erro ao salvar ajuste.'); return; }
+    if (!novo) { showToast('Erro ao salvar ajuste.'); return; }
     ajustesEstoque.unshift(novo);
     showToast(`Ajuste registrado: ${qtd > 0 ? '+' : ''}${qtd} ${unidade} de ${desc}`);
     fecharModal('ajuste');
@@ -2885,9 +2885,9 @@ async function salvarMaterial() {
         _editandoMaterialId = null;
         fecharModal('material');
         renderCatalogo();
-        showToast(`✅ Material ${atual.codigo} atualizado!`);
+        showToast(`Material ${atual.codigo} atualizado!`);
       }
-    } catch(e) { showToast('❌ Não foi possível atualizar o material.'); }
+    } catch(e) { showToast('Não foi possível atualizar o material.'); }
     btn.disabled = false; btn.textContent = 'SALVAR ALTERAÇÕES';
     return;
   }
@@ -2908,14 +2908,14 @@ async function salvarMaterial() {
       catsAtualizados.sort((a,b) => (a.codigo||'').localeCompare(b.codigo||''));
       fecharModal('material');
       renderCatalogo();
-      showToast(`✅ Material ${codigo} — ${nome} cadastrado!`);
+      showToast(`Material ${codigo} — ${nome} cadastrado!`);
     } else {
       // Falha (erro/0-linhas): NAO esconder com recarga+sucesso. Reconcilia e mantem o modal aberto p/ retentar.
       await _carregarCatalogo();
       renderCatalogo();
       showToast('Não foi possível cadastrar o material. Tente novamente.', 5000);
     }
-  } catch(e) { showToast('❌ Não foi possível salvar o material.'); }
+  } catch(e) { showToast('Não foi possível salvar o material.'); }
   btn.disabled = false; btn.textContent = 'SALVAR MATERIAL';
 }
 
