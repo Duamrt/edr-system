@@ -1128,7 +1128,7 @@ async function abrirAjusteEstoque(chave) {
   else if (precoStatus === 'semmatch') partes.push('Preço não atualizado: nenhuma entrada sem preço compatível');
   else if (precoStatus === 'erro') partes.push('Erro ao atualizar o preço');
   const tipoToast = (precoStatus === 'erro' || precoStatus === 'semmatch') ? 'error' : 'success';
-  if (partes.length) showToast(partes.join(' · '), tipoToast);
+  if (partes.length) showToast(partes.join(' · '), tipoToast === 'error' ? 5000 : 3500);
 
   if (typeof loadAjustesEstoque === 'function') await loadAjustesEstoque();
 
