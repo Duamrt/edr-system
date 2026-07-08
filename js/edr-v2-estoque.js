@@ -926,7 +926,7 @@ async function confirmarDistribuicaoItem(chave, obraDestino, etapa, quantidade, 
     return;
   }
 
-  showToast(`${fmt(qtd)} ${item.unidade} distribuido(s) com sucesso`, 'success');
+  showToast(`${fmt(qtd)} ${item.unidade} distribuido(s) com sucesso`);
   closeModal('dist-modal');
 
   // Recarregar dados (distribuicoes + lancamentos para o P&L/dashboard nao ficar stale)
@@ -1288,7 +1288,7 @@ async function _vincularSelecionado(chave) {
   }
 
   closeModal('vincular-modal');
-  showToast(`Vinculado: "${desc}" → ${codigo} · ${catItem.nome}`, 'success');
+  showToast(`Vinculado: "${desc}" → ${codigo} · ${catItem.nome}`);
 
   // Recarregar dados do banco e re-renderizar
   await Promise.all([
@@ -1321,7 +1321,7 @@ async function _criarMaterialEVincular(chave, proximoCodigo) {
 
   if (!resp) return showToast('Erro ao criar material', 5000);
 
-  showToast(`Material criado: ${proximoCodigo} · ${item.desc}`, 'success');
+  showToast(`Material criado: ${proximoCodigo} · ${item.desc}`);
   closeModal('vincular-modal');
 
   // Recarregar catalogo
@@ -1611,7 +1611,7 @@ async function novoMaterial() {
 async function confirmarAutoMaterial(id) {
   const resp = await sbPatch('materiais', id, { auto: false });
   if (!resp) return showToast('Erro ao confirmar', 5000);
-  showToast('Material confirmado', 'success');
+  showToast('Material confirmado');
   await _carregarCatalogo();
   renderCatalogo();
 }
@@ -1657,7 +1657,7 @@ async function duplicarMaterial(id) {
   });
 
   if (!resp) return showToast('Erro ao duplicar', 5000);
-  showToast(`Duplicado: ${proximoCodigo}`, 'success');
+  showToast(`Duplicado: ${proximoCodigo}`);
   await _carregarCatalogo();
   renderCatalogo();
 }
@@ -1678,7 +1678,7 @@ async function excluirMaterial(id) {
 
   const resp = await sbDelete('materiais', id);
   if (!resp) return showToast('Erro ao excluir', 5000);
-  showToast('Material excluido', 'success');
+  showToast('Material excluido');
   await _carregarCatalogo();
   renderCatalogo();
 }
@@ -1689,7 +1689,7 @@ async function _updateCategoriaMaterial(id, novaCategoria) {
   const mat = EstoqueModule.catalogoMateriais.find(m => m.id === id);
   if (mat) mat.categoria = novaCategoria;
   const etapa = typeof ETAPAS !== 'undefined' ? ETAPAS.find(e => e.key === novaCategoria) : null;
-  showToast(`Centro de custo: ${etapa ? etapa.lb : novaCategoria}`, 'success');
+  showToast(`Centro de custo: ${etapa ? etapa.lb : novaCategoria}`);
 }
 
 
@@ -1757,7 +1757,7 @@ async function recalcularCategorias() {
   }
 
   if (erros > 0) showToast(`${count} reclassificado(s), ${erros} falharam`, 5000);
-  else showToast(`${count} material(is) reclassificado(s)`, 'success');
+  else showToast(`${count} material(is) reclassificado(s)`);
   renderCatalogo();
 }
 
@@ -1895,7 +1895,7 @@ async function exportarEstoqueExcel() {
     a.click();
     URL.revokeObjectURL(url);
 
-    showToast('Inventario exportado com sucesso', 'success');
+    showToast('Inventario exportado com sucesso');
   } catch (err) {
     console.error('Erro ao exportar Excel:', err);
     showToast('Falha ao gerar planilha. Verifique sua conexao e tente novamente.', 5000);
@@ -1976,7 +1976,7 @@ function importarPrecosEstoque() {
         if (r !== null) ok++; else erros++;
       }
 
-      showToast(`Preços atualizados: ${ok} itens${erros ? ` (${erros} sem entradas diretas com preço zero)` : ''}`, erros ? 'info' : 'success');
+      showToast(`Preços atualizados: ${ok} itens${erros ? ` (${erros} sem entradas diretas com preço zero)` : ''}`);
 
       // Recarregar
       await loadEntradasDiretas();
@@ -2075,7 +2075,7 @@ function importarContagemEstoque() {
         if (novo) { if (typeof ajustesEstoque !== 'undefined') ajustesEstoque.unshift(novo); okc++; } else erros++;
       }
 
-      showToast(`Inventário aplicado: ${okc} item(ns)${erros ? ` (${erros} falharam)` : ''}`, erros ? 'info' : 'success');
+      showToast(`Inventário aplicado: ${okc} item(ns)${erros ? ` (${erros} falharam)` : ''}`);
       if (typeof loadAjustesEstoque === 'function') await loadAjustesEstoque();
       renderEstoque();
     } catch (err) {
