@@ -324,7 +324,7 @@
     // So atualiza o catalogo em memoria (que alimenta o _rm do render da tabela) com valor CONFIRMADO.
     if (!res) {
       const msg = res === null ? 'Erro ao salvar o valor de referência.' : 'Material não encontrado no banco — recarregue o catálogo.';
-      (typeof showToast === 'function') && showToast(msg, 'error');
+      (typeof showToast === 'function') && showToast(msg, 5000);
       return; // nao Object.assign, nao render, nao fecha o modal
     }
     Object.assign(mat, payload); // otimista local SO apos persistir (catálogo em memória)
