@@ -200,14 +200,14 @@ async function salvarConta() {
     if (id) {
       // sbPatch (infra): objeto = persistiu / undefined = 0 linhas / null = erro HTTP.
       const atualizada = await sbPatch('contas_pagar', `?id=eq.${id}`, payload);
-      if (!atualizada) { showToast(atualizada === null ? 'Erro ao salvar a conta.' : 'Conta nao encontrada — recarregue.', 'error'); return; }
+      if (!atualizada) { showToast(atualizada === null ? 'Erro ao salvar a conta.' : 'Conta nao encontrada — recarregue.', 5000); return; }
       const idx = contasPagar.findIndex(c => c.id === id);
       if (idx >= 0) contasPagar[idx] = { ...contasPagar[idx], ...atualizada };
       showToast('Conta atualizada');
     } else {
       payload.status = 'pendente';
       const nova = await sbPost('contas_pagar', payload);
-      if (!nova) { showToast('Erro ao cadastrar a conta.', 'error'); return; }
+      if (!nova) { showToast('Erro ao cadastrar a conta.', 5000); return; }
       contasPagar.push(nova);
       showToast('Conta cadastrada');
     }
@@ -226,7 +226,7 @@ async function marcarComoPago(contaId) {
     // 1) Marcar a conta como paga — checar retorno (sbPatch: objeto=persistiu / undefined=0 linhas / null=erro HTTP).
     const atualizada = await sbPatch('contas_pagar', `?id=eq.${contaId}`, { status: 'pago', data_pagamento: hojeISO() });
     if (!atualizada) {
-      showToast(atualizada === null ? 'Erro ao marcar como paga.' : 'Conta nao encontrada — recarregue.', 'error');
+      showToast(atualizada === null ? 'Erro ao marcar como paga.' : 'Conta nao encontrada — recarregue.', 5000);
       if (typeof _loadContasPagar === 'function') await _loadContasPagar();
       renderContasPagar();
       return; // nao cria lancamento, nao mostra sucesso
@@ -278,7 +278,7 @@ async function marcarComoPago(contaId) {
 async function excluirConta(contaId) {
   if (!await confirmar('Excluir esta conta? Essa acao nao pode ser desfeita.')) return;
   const ok = await sbDelete('contas_pagar', `?id=eq.${contaId}`);
-  if (!ok) { showToast('Erro ao excluir conta. Tente novamente.', 'error'); return; }
+  if (!ok) { showToast('Erro ao excluir conta. Tente novamente.', 5000); return; }
   contasPagar = contasPagar.filter(c => c.id !== contaId);
   showToast('Conta excluida');
   renderContasPagar();
@@ -341,7 +341,7 @@ async function salvarSaldoManual() {
   // senao um saldo nao-persistido sobrevive ao reload via localStorage e contamina o caixa.
   if (_companyId) {
     const salvo = await sbPatch('companies', '?id=eq.' + _companyId, { saldo_manual: val });
-    if (!salvo) { showToast(salvo === null ? 'Erro ao salvar o saldo.' : 'Empresa nao encontrada — recarregue.', 'error'); return; }
+    if (!salvo) { showToast(salvo === null ? 'Erro ao salvar o saldo.' : 'Empresa nao encontrada — recarregue.', 5000); return; }
   }
   // Sucesso (ou modo local-only sem _companyId): estado + localStorage. Aceita val 0.
   _saldoManual = val;
@@ -354,7 +354,7 @@ async function limparSaldoManual() {
   // Persistir no banco PRIMEIRO (quando ha empresa) — so limpa estado local/localStorage apos confirmar.
   if (_companyId) {
     const salvo = await sbPatch('companies', '?id=eq.' + _companyId, { saldo_manual: null });
-    if (!salvo) { showToast(salvo === null ? 'Erro ao limpar o saldo.' : 'Empresa nao encontrada — recarregue.', 'error'); return; }
+    if (!salvo) { showToast(salvo === null ? 'Erro ao limpar o saldo.' : 'Empresa nao encontrada — recarregue.', 5000); return; }
   }
   // Sucesso (ou modo local-only): limpa estado + localStorage. Manda null (nunca 0).
   _saldoManual = null;
@@ -621,11 +621,11 @@ async function salvarProjecao() {
     if (id) {
       // sbPatch (infra): objeto = persistiu / undefined = 0 linhas / null = erro HTTP.
       const salvo = await sbPatch('projecoes_caixa', `?id=eq.${id}`, body);
-      if (!salvo) { showToast(salvo === null ? 'Erro ao salvar a projecao.' : 'Projecao nao encontrada — recarregue.', 'error'); return; }
+      if (!salvo) { showToast(salvo === null ? 'Erro ao salvar a projecao.' : 'Projecao nao encontrada — recarregue.', 5000); return; }
       showToast('Projecao atualizada');
     } else {
       const nova = await sbPost('projecoes_caixa', body);
-      if (!nova) { showToast('Erro ao salvar a projecao.', 'error'); return; }
+      if (!nova) { showToast('Erro ao salvar a projecao.', 5000); return; }
       projecoesCaixa.push(nova);
       showToast('Entrada prevista salva');
     }
@@ -643,7 +643,7 @@ async function excluirProjecao(id) {
   try {
     // sbDelete 3-estados: >0 apagou / 0 nao apagou (id inexistente/RLS) / null erro HTTP.
     const apagou = await sbDelete('projecoes_caixa', `?id=eq.${id}`);
-    if (apagou === null) { showToast('Erro ao excluir a projecao.', 'error'); return; } // nao remove local/render
+    if (apagou === null) { showToast('Erro ao excluir a projecao.', 5000); return; } // nao remove local/render
     projecoesCaixa = projecoesCaixa.filter(p => p.id !== id);
     showToast(apagou ? 'Projecao excluida' : 'Projecao ja nao existia — lista atualizada.', apagou ? 'success' : 'error');
     renderCaixa();
