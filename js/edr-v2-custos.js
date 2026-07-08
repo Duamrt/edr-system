@@ -523,14 +523,14 @@ async function custosSalvarRepasse() {
     // sbPatch (infra): objeto = persistiu / undefined = 0 linhas (id inexistente/RLS) / null = erro HTTP.
     const salvo = await sbPatch('repasses_cef', `?id=eq.${editId}`, body);
     if (!salvo) {
-      showToast(salvo === null ? 'Erro ao salvar o repasse.' : 'Repasse nao encontrado — recarregue.', 'error');
+      showToast(salvo === null ? 'Erro ao salvar o repasse.' : 'Repasse nao encontrado — recarregue.', 5000);
       return; // mantem modal aberto, nao recarrega/renderiza (tela nao recalcula com repasse nao persistido)
     }
     showToast('Repasse atualizado', 'success');
   } else {
     const criado = await sbPost('repasses_cef', body);
     if (!criado) {
-      showToast('Erro ao criar o repasse.', 'error');
+      showToast('Erro ao criar o repasse.', 5000);
       return; // mantem modal aberto, nao recarrega/renderiza
     }
     showToast('Repasse salvo', 'success');
@@ -547,7 +547,7 @@ async function custosExcluirRepasse(id) {
   if (!ok) return;
   // sbDelete 3-estados: >0 apagou / 0 nao apagou (id inexistente/RLS) / null erro HTTP.
   const apagou = await sbDelete('repasses_cef', `?id=eq.${id}`);
-  if (apagou === null) { showToast('Erro ao excluir o repasse.', 'error'); return; } // nao recarrega/renderiza
+  if (apagou === null) { showToast('Erro ao excluir o repasse.', 5000); return; } // nao recarrega/renderiza
   showToast(apagou ? 'Repasse excluido' : 'Repasse ja nao existia — lista atualizada.', apagou ? 'success' : 'error');
   await _custosCarregarRepasses();
   if (CustosModule.obraAtual) custosAbrirDetalhe(CustosModule.obraAtual);
@@ -703,7 +703,7 @@ async function custosSalvarContrato() {
   // sbPatch (infra): objeto = persistiu / undefined = 0 linhas (obra inexistente/RLS) / null = erro HTTP.
   const salvo = await sbPatch('obras', `?id=eq.${obraId}`, body);
   if (!salvo) {
-    showToast(salvo === null ? 'Erro ao salvar o contrato.' : 'Obra nao encontrada — recarregue.', 'error');
+    showToast(salvo === null ? 'Erro ao salvar o contrato.' : 'Obra nao encontrada — recarregue.', 5000);
     return; // nao Object.assign, nao fecha modal, nao renderiza (contrato define valor_venda -> receita/lucro/margem)
   }
 
