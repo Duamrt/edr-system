@@ -526,14 +526,14 @@ async function custosSalvarRepasse() {
       showToast(salvo === null ? 'Erro ao salvar o repasse.' : 'Repasse nao encontrado — recarregue.', 5000);
       return; // mantem modal aberto, nao recarrega/renderiza (tela nao recalcula com repasse nao persistido)
     }
-    showToast('Repasse atualizado', 'success');
+    showToast('Repasse atualizado');
   } else {
     const criado = await sbPost('repasses_cef', body);
     if (!criado) {
       showToast('Erro ao criar o repasse.', 5000);
       return; // mantem modal aberto, nao recarrega/renderiza
     }
-    showToast('Repasse salvo', 'success');
+    showToast('Repasse salvo');
   }
 
   closeModal('custos-modal-repasse');
@@ -712,7 +712,7 @@ async function custosSalvarContrato() {
   if (obra) Object.assign(obra, body);
 
   closeModal('custos-modal-contrato');
-  showToast('Contrato salvo', 'success');
+  showToast('Contrato salvo');
   _custosRenderContratoCard(obraId);
   _custosRenderResumoFinanceiro(obraId);
 }
