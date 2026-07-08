@@ -1016,7 +1016,7 @@ async function salvarNota(notaData) {
     let obraDestino = null, falhasLanc = 0, falhasDesp = 0, falhasCatalogo = 0;
     if (destino !== COMPANY_DEFAULTS.estoqueGeral) {
       obraDestino = [...obras, ...(obrasArquivadas || [])].find(o => o.nome === destino);
-      if (!obraDestino) { showToast(`Obra "${destino}" nao encontrada. Selecione um destino valido antes de salvar.`, 'error'); return false; }
+      if (!obraDestino) { showToast(`Obra "${destino}" nao encontrada. Selecione um destino valido antes de salvar.`, 5000); return false; }
     }
     const payload = {
       data: emissao, data_recebimento: recebimento, natureza,
@@ -1235,7 +1235,7 @@ async function _notasPromptPagamento(notaId, valor, dataRef, obraId, fornecedor,
         if (nova) {
           if (typeof contasPagar !== 'undefined') contasPagar.push(nova);
           showToast('Saída registrada no financeiro ✓');
-        } else { showToast('Erro ao registrar pagamento. Tente pela tela Financeiro.', 'error'); }
+        } else { showToast('Erro ao registrar pagamento. Tente pela tela Financeiro.', 5000); }
       } catch(e) { console.error('[EDR] prompt pagamento:', e); }
     };
 
@@ -1259,7 +1259,7 @@ async function _notasPromptPagamento(notaId, valor, dataRef, obraId, fornecedor,
           if (nova) {
             if (typeof contasPagar !== 'undefined') contasPagar.push(nova);
             showToast('Conta a pagar criada ✓');
-          } else { showToast('Erro ao criar conta a pagar. Tente pela tela Financeiro.', 'error'); }
+          } else { showToast('Erro ao criar conta a pagar. Tente pela tela Financeiro.', 5000); }
         } catch(e) { console.error('[EDR] prompt pagamento:', e); }
       };
     };
@@ -1339,18 +1339,18 @@ async function _contasQueTravam(nfNum, fornecedorNota, status) {
 
 async function confirmarExclusaoNota(id) {
   const nota = notas.find(n => n.id === id || n.id === Number(id));
-  if (!nota) { showToast('Nota nao encontrada.', 'error'); return; }
+  if (!nota) { showToast('Nota nao encontrada.', 5000); return; }
 
   // Trava financeira: nao excluir NF com conta PAGA ou PENDENTE relacionada (mesmo fornecedor).
   const _contasPagas = await _contasQueTravam(nota.numero_nf, nota.fornecedor, 'pago');
   if (_contasPagas.length > 0) {
-    showToast(`NF ${nota.numero_nf} ja esta PAGA no financeiro. Cancele o pagamento antes de excluir.`, 'error');
+    showToast(`NF ${nota.numero_nf} ja esta PAGA no financeiro. Cancele o pagamento antes de excluir.`, 5000);
     return;
   }
   // [Onda2-3] contas a pagar PENDENTES ficariam orfas apos excluir a NF — bloqueia e manda resolver no Financeiro.
   const _contasPend = await _contasQueTravam(nota.numero_nf, nota.fornecedor, 'pendente');
   if (_contasPend.length > 0) {
-    showToast(`NF ${nota.numero_nf} tem ${_contasPend.length} conta(s) a pagar pendente(s). Resolva no Financeiro antes de excluir.`, 'error');
+    showToast(`NF ${nota.numero_nf} tem ${_contasPend.length} conta(s) a pagar pendente(s). Resolva no Financeiro antes de excluir.`, 5000);
     return;
   }
 
@@ -1397,7 +1397,7 @@ function _mapearLancamentosNota(nota) {
 
 async function processarExclusaoNota(id, lancsPremapeados) {
   const nota = notas.find(n => n.id === id || n.id === Number(id));
-  if (!nota) { showToast('Nota nao encontrada.', 'error'); return; }
+  if (!nota) { showToast('Nota nao encontrada.', 5000); return; }
 
   const lancsDaNota = lancsPremapeados || _mapearLancamentosNota(nota);
 
@@ -1483,6 +1483,6 @@ async function processarExclusaoNota(id, lancsPremapeados) {
 
   } catch(e) {
     console.error('[EDR] Erro critico ao excluir nota', id, e);
-    showToast('Erro ao excluir: ' + (e.message || 'verifique o console.'), 'error');
+    showToast('Erro ao excluir: ' + (e.message || 'verifique o console.'), 5000);
   }
 }
