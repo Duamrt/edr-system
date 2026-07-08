@@ -2406,7 +2406,7 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
 <div class="toast-container" id="toast-container"></div>
 
 <!-- ═══════ JAVASCRIPT ═══════ -->
-<script src="js/posthog.js?v=07080903"></script>
+<script src="js/posthog.js?v=07080906"></script>
 <script>
 // ══════════════════════════════════════════
 // EDR SYSTEM V2 — NAVEGACAO + SHELL
@@ -2972,47 +2972,47 @@ function updateShellUser(nome, perfil) {
 
 <!-- ═══════ MODULOS V2 (ordem de dependência) ═══════ -->
 <!-- 0. Infraestrutura: sbGet/sbPost/sbPatch/sbDelete, confirmar(), showModal, usuarioAtual -->
-<script src="js/edr-v2-infra.js?v=07080903"></script>
+<script src="js/edr-v2-infra.js?v=07080906"></script>
 <!-- 1. Utilitários globais (valorPorExtenso, fmtN) -->
-<script src="js/edr-v2-utils-extras.js?v=07080903"></script>
+<script src="js/edr-v2-utils-extras.js?v=07080906"></script>
 <!-- 2. Obras PRIMEIRO (ETAPAS, resolveEtapaKey, etapaCor, etapaLabel — vários módulos dependem) -->
-<script src="js/edr-v2-obras.js?v=07080903"></script>
+<script src="js/edr-v2-obras.js?v=07080906"></script>
 <!-- 3. PDF engine (pdfMake CDN + PdfModule) -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js?v=07080903"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js?v=07080903"></script>
-<script src="js/edr-v2-pdf.js?v=07080903"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js?v=07080906"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js?v=07080906"></script>
+<script src="js/edr-v2-pdf.js?v=07080906"></script>
 <!-- 4. Módulos core de negócio -->
-<script src="js/edr-v2-notas.js?v=07080903"></script>
-<script src="js/edr-v2-importar.js?v=07080903"></script>
-<script src="js/edr-v2-estoque.js?v=07080903"></script>
-<script src="js/edr-v2-estoque-tabela.js?v=07080903"></script>
-<script src="js/edr-v2-custos.js?v=07080903"></script>
+<script src="js/edr-v2-notas.js?v=07080906"></script>
+<script src="js/edr-v2-importar.js?v=07080906"></script>
+<script src="js/edr-v2-estoque.js?v=07080906"></script>
+<script src="js/edr-v2-estoque-tabela.js?v=07080906"></script>
+<script src="js/edr-v2-custos.js?v=07080906"></script>
 <!-- 5. Equipe e operacional -->
-<script src="js/edr-v2-diarias.js?v=07080903"></script>
-<script src="js/edr-v2-diario.js?v=07080903"></script>
+<script src="js/edr-v2-diarias.js?v=07080906"></script>
+<script src="js/edr-v2-diario.js?v=07080906"></script>
 <!-- 6. Relatórios e dashboard (dependem de obras.js pra etapaCor) -->
-<script src="js/edr-v2-relatorio.js?v=07080903"></script>
-<script src="js/edr-v2-dashboard.js?v=07080903"></script>
-<script src="js/edr-v2-raiox.js?v=07080903"></script>
+<script src="js/edr-v2-relatorio.js?v=07080906"></script>
+<script src="js/edr-v2-dashboard.js?v=07080906"></script>
+<script src="js/edr-v2-raiox.js?v=07080906"></script>
 <!-- 7. Módulos complementares -->
-<script src="js/edr-v2-leads.js?v=07080903"></script>
-<script src="js/edr-v2-garantias.js?v=07080903"></script>
-<script src="js/edr-v2-adicionais.js?v=07080903"></script>
+<script src="js/edr-v2-leads.js?v=07080906"></script>
+<script src="js/edr-v2-garantias.js?v=07080906"></script>
+<script src="js/edr-v2-adicionais.js?v=07080906"></script>
 <!-- Syncfusion EJ2 Gantt DESATIVADO 2026-07-07: licenca Community pendente (ticket #839314); a trial gerava banner/watermark na tela.
      Cronograma roda so na Lista. RELIGAR: descomentar as 2 tags abaixo + colar Community key v33 no registerLicense de cronograma.js + remover o curto-circuito no _renderGantt + descomentar a barra de views (~219 em cronograma.js).
-<link rel="stylesheet" href="https://cdn.syncfusion.com/ej2/33.2.3/tailwind3-dark.css?v=07080903"/>
-<script src="https://cdn.syncfusion.com/ej2/33.2.3/dist/ej2.min.js?v=07080903"></script>
+<link rel="stylesheet" href="https://cdn.syncfusion.com/ej2/33.2.3/tailwind3-dark.css?v=07080906"/>
+<script src="https://cdn.syncfusion.com/ej2/33.2.3/dist/ej2.min.js?v=07080906"></script>
 -->
-<script src="js/edr-v2-cronograma.js?v=07080903"></script>
-<script src="js/edr-v2-orcamento.js?v=07080903"></script>
+<script src="js/edr-v2-cronograma.js?v=07080906"></script>
+<script src="js/edr-v2-orcamento.js?v=07080906"></script>
 <!-- 8. Documentação e medições -->
-<script src="js/edr-v2-termo-manual.js?v=07080903"></script>
-<script src="js/edr-v2-pci.js?v=07080903"></script>
+<script src="js/edr-v2-termo-manual.js?v=07080906"></script>
+<script src="js/edr-v2-pci.js?v=07080906"></script>
 <!-- 9. Auth (login, sessão, refresh — ÚLTIMO) -->
-<script src="js/edr-v2-alertas.js?v=07080903"></script>
-<script src="js/edr-v2-auth.js?v=07080903"></script>
-<script src="js/edr-v2-financeiro.js?v=07080903"></script>
-<script src="js/edr-v2-dre.js?v=07080903"></script>
+<script src="js/edr-v2-alertas.js?v=07080906"></script>
+<script src="js/edr-v2-auth.js?v=07080906"></script>
+<script src="js/edr-v2-financeiro.js?v=07080906"></script>
+<script src="js/edr-v2-dre.js?v=07080906"></script>
 
 <!-- ═══════════════════════════════════════════════════════════════ -->
 <!-- MODAIS (Fase 0 — containers para módulos que precisam)        -->

@@ -256,7 +256,7 @@ async function marcarComoPago(contaId) {
         if (!okLanc) {
           // Conta PAGA (fato real) mas custo nao lancou. Sem rollback de status; aviso forte + recarrega.
           // Recuperavel: reexecutar cria o lancamento faltante (idempotencia por obs evita duplicar custo).
-          showToast('Conta marcada como paga, mas o custo nao foi lancado na obra. Recarregue e tente marcar como paga novamente; o sistema evita custo duplicado.', 'error');
+          showToast('Conta marcada como paga, mas o custo nao foi lancado na obra. Recarregue e tente marcar como paga novamente; o sistema evita custo duplicado.', 8000);
           if (typeof _loadContasPagar === 'function') await _loadContasPagar();
           if (typeof loadLancamentos === 'function') await loadLancamentos();
           renderContasPagar();
