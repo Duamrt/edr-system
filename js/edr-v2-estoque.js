@@ -1727,12 +1727,12 @@ async function escanearOrfaos() {
   const orfaos = [...descs].filter(d => !catalogoNorms.has(d));
 
   EstoqueModule._orfaos = orfaos;
-  showToast(`${orfaos.length} orfao(s) encontrado(s)`, orfaos.length ? 'warning' : 'success');
+  showToast(`${orfaos.length} orfao(s) encontrado(s)`);
 
   // Se tiver orfaos, filtrar catalogo pra mostrar
   if (orfaos.length) {
     // TODO: abrir modal de vinculacao em lote
-    showToast(`Use "Sem Codigo" no estoque para vincular`, 'info');
+    showToast(`Use "Sem Codigo" no estoque para vincular`);
   }
 }
 
@@ -1954,7 +1954,7 @@ function importarPrecosEstoque() {
         const exemplos = descartadas.slice(0, 5).map(d => `linha ${d.linha}: ${d.motivo}`).join('\n');
         const extra = descartadas.length > 5 ? `\n...e mais ${descartadas.length - 5}` : '';
         console.warn('[importarPrecosEstoque] descartadas:', descartadas);
-        showToast(`⚠ ${descartadas.length} linha(s) descartada(s):\n${exemplos}${extra}`, 'info');
+        showToast(`${descartadas.length} linha(s) descartada(s):\n${exemplos}${extra}`);
       }
 
       if (!atualizacoes.length) {
@@ -2059,7 +2059,7 @@ function importarContagemEstoque() {
       if (descartadas.length) {
         const exemplos = descartadas.slice(0, 5).map(d => `linha ${d.linha}: ${d.motivo}`).join('\n');
         const extra = descartadas.length > 5 ? `\n...e mais ${descartadas.length - 5}` : '';
-        showToast(`⚠ ${descartadas.length} linha(s) ignorada(s):\n${exemplos}${extra}`, 'info');
+        showToast(`${descartadas.length} linha(s) ignorada(s):\n${exemplos}${extra}`);
       }
       if (!ajustes.length) {
         return showToast('Nenhuma contagem nova na coluna "Contagem Real" (col I).', 'info');
