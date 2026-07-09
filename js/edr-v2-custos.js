@@ -102,7 +102,10 @@ function _custosRenderCards() {
 
   const isAdmin = usuarioAtual?.perfil === 'admin';
 
-  el.innerHTML = todasObras.map(o => {
+  // Totais agregados — SOMENTE soma de campos já calculados por obra (sem novo cálculo)
+  let totContrato = 0, totRecebido = 0, totCusto = 0, totLucro = 0, totReceita = 0;
+
+  const linhas = todasObras.map(o => {
     // Repasses da obra (totais macro — sem carregar detalhes)
     let reps = CustosModule.repassesCef.filter(r => r.obra_id === o.id);
     if (dataLimite) reps = reps.filter(r => r.data_credito && new Date(r.data_credito + 'T12:00:00') >= dataLimite);
@@ -126,37 +129,81 @@ function _custosRenderCards() {
     const contratoValor = Number(o.contrato_valor || 0);
     const pctContrato = contratoValor > 0 ? Math.min((totalRecebido / contratoValor * 100), 100) : 0;
 
-    return `<div class="custos-card" onclick="custosAbrirDetalhe('${esc(o.id)}')">
-      <div class="custos-card-top">
-        <div>
-          <div class="custos-card-nome">${esc(o.nome)}</div>
-          <div class="custos-card-cidade">${esc(o.cidade || 'Sem cidade')}</div>
-        </div>
-        ${isAdmin && valorVenda > 0 ? `<div class="custos-card-valor">${fmtR(valorVenda)}</div>` : ''}
-      </div>
-      ${isAdmin ? `<div class="custos-card-grid">
-        <div class="custos-card-metric"><div class="custos-card-metric-label">PLS</div><div class="custos-card-metric-value green">${fmtR(totalPls)}</div></div>
-        <div class="custos-card-metric"><div class="custos-card-metric-label">ENTRADA</div><div class="custos-card-metric-value blue">${fmtR(totalEntrada)}</div></div>
-        <div class="custos-card-metric"><div class="custos-card-metric-label">TERRENO</div><div class="custos-card-metric-value purple">${fmtR(totalTerreno)}</div></div>
-        <div class="custos-card-metric"><div class="custos-card-metric-label">CUSTO</div><div class="custos-card-metric-value yellow">${fmtR(custoTotal)}</div></div>
-      </div>` : ''}
-      ${contratoValor > 0 ? `<div class="custos-card-contrato">
-        <div class="custos-card-contrato-row">
-          <span class="custos-card-contrato-label">CONTRATO CEF</span>
-          <span>${pctContrato.toFixed(0)}% recebido</span>
-        </div>
-        <div class="custos-card-progress"><div class="custos-card-progress-fill" style="width:${pctContrato}%;"></div></div>
-      </div>` : ''}
-      ${isAdmin && valorVenda > 0 ? `<div class="custos-card-bottom">
-        <span>Lucro: <strong style="color:${lucro >= 0 ? 'var(--success)' : 'var(--error)'};">${fmtR(lucro)}</strong></span>
-        <span>Recebido: ${pctRecebido.toFixed(0)}%</span>
-      </div>` : ''}
-      <div class="custos-card-footer">
-        <span>${reps.length} lancamento(s)</span>
-        <span style="color:var(--primary);font-weight:600;">VER DETALHES</span>
-      </div>
-    </div>`;
+    const margem = receitaObra > 0 ? (lucro / receitaObra * 100) : 0;
+
+    // Agrega totais (apenas campos já computados acima)
+    totContrato += contratoValor;
+    totRecebido += totalRecebido;
+    totCusto += custoTotal;
+    totLucro += lucro;
+    totReceita += receitaObra;
+
+    if (isAdmin) {
+      return `<tr class="custos-tr" onclick="custosAbrirDetalhe('${esc(o.id)}')">
+        <td class="custos-td-obra">
+          <div class="custos-obra-nome">${esc(o.nome)}</div>
+          <div class="custos-obra-cidade">${esc(o.cidade || 'Sem cidade')}</div>
+        </td>
+        <td class="custos-num">${valorVenda > 0 ? fmtR(valorVenda) : '<span class="custos-muted">—</span>'}</td>
+        <td class="custos-num">${contratoValor > 0 ? `${fmtR(contratoValor)}<div class="custos-mini">${pctContrato.toFixed(0)}% recebido</div>` : '<span class="custos-muted">—</span>'}</td>
+        <td class="custos-num">${fmtR(totalRecebido)}<div class="custos-bar"><div class="custos-bar-fill" style="width:${pctRecebido}%;"></div></div><div class="custos-mini">${pctRecebido.toFixed(0)}% da receita · ${reps.length} lanç.</div></td>
+        <td class="custos-num">${fmtR(custoTotal)}</td>
+        <td class="custos-num"><strong style="color:${lucro >= 0 ? 'var(--success)' : 'var(--error)'};">${fmtR(lucro)}</strong></td>
+        <td class="custos-num" style="color:${margem >= 0 ? 'var(--text-primary)' : 'var(--error)'};">${margem.toFixed(1)}%</td>
+        <td class="custos-td-acao"><button class="custos-btn-abrir" onclick="event.stopPropagation();custosAbrirDetalhe('${esc(o.id)}')">Abrir</button></td>
+      </tr>`;
+    }
+
+    // Não-admin: mantém o mesmo escopo do card atual (só obra + contrato + ação)
+    return `<tr class="custos-tr" onclick="custosAbrirDetalhe('${esc(o.id)}')">
+      <td class="custos-td-obra">
+        <div class="custos-obra-nome">${esc(o.nome)}</div>
+        <div class="custos-obra-cidade">${esc(o.cidade || 'Sem cidade')}</div>
+        <div class="custos-mini">${reps.length} lanç.</div>
+      </td>
+      <td class="custos-num">${contratoValor > 0 ? `${fmtR(contratoValor)}<div class="custos-mini">${pctContrato.toFixed(0)}% recebido</div>` : '<span class="custos-muted">—</span>'}</td>
+      <td class="custos-td-acao"><button class="custos-btn-abrir" onclick="event.stopPropagation();custosAbrirDetalhe('${esc(o.id)}')">Abrir</button></td>
+    </tr>`;
   }).join('');
+
+  const totMargem = totReceita > 0 ? (totLucro / totReceita * 100) : 0;
+  const totPctReceb = totReceita > 0 ? Math.min(totRecebido / totReceita * 100, 100) : 0;
+
+  const resumo = isAdmin ? `<div class="custos-resumo">
+    <div class="custos-kpi">
+      <div class="custos-kpi-head"><span class="custos-kpi-ico green"><span class="material-symbols-outlined">request_quote</span></span></div>
+      <div class="custos-kpi-val">${fmtR(totContrato)}</div>
+      <div class="custos-kpi-lbl">Contrato total</div>
+    </div>
+    <div class="custos-kpi">
+      <div class="custos-kpi-head"><span class="custos-kpi-ico blue"><span class="material-symbols-outlined">payments</span></span></div>
+      <div class="custos-kpi-val">${fmtR(totRecebido)}</div>
+      <div class="custos-kpi-lbl">Recebido total · ${totPctReceb.toFixed(1)}% da receita</div>
+    </div>
+    <div class="custos-kpi">
+      <div class="custos-kpi-head"><span class="custos-kpi-ico amber"><span class="material-symbols-outlined">construction</span></span></div>
+      <div class="custos-kpi-val">${fmtR(totCusto)}</div>
+      <div class="custos-kpi-lbl">Custo total</div>
+    </div>
+    <div class="custos-kpi">
+      <div class="custos-kpi-head"><span class="custos-kpi-ico green"><span class="material-symbols-outlined">trending_up</span></span></div>
+      <div class="custos-kpi-val" style="color:${totLucro >= 0 ? 'var(--success)' : 'var(--error)'};">${fmtR(totLucro)}</div>
+      <div class="custos-kpi-lbl">Lucro · margem ${totMargem.toFixed(1)}%</div>
+    </div>
+  </div>` : '';
+
+  const thead = isAdmin
+    ? `<tr><th>Obra</th><th>Venda</th><th>Contrato CEF</th><th>Recebido</th><th>Custo</th><th>Lucro</th><th>Margem</th><th>Ação</th></tr>`
+    : `<tr><th>Obra</th><th>Contrato CEF</th><th>Ação</th></tr>`;
+
+  el.innerHTML = `${resumo}
+    <div class="custos-tbl-wrap">
+      <table class="custos-tbl">
+        <thead>${thead}</thead>
+        <tbody>${linhas}</tbody>
+      </table>
+    </div>
+    <div class="custos-tbl-count">${todasObras.length} obra(s)</div>`;
 }
 
 

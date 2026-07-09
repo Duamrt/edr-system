@@ -1185,6 +1185,39 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
 .custos-card-bottom { display:flex;justify-content:space-between;font-size:12px;color:var(--text-secondary); }
 .custos-card-footer { display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border);padding-top:8px;font-size:12px;color:var(--text-tertiary); }
 
+/* ── Custos V2: resumo + tabela comparável (Passo 1 — re-layout, sem regra nova) ── */
+.custos-resumo { display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px; }
+.custos-kpi { background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px 18px;transition:box-shadow .2s,border-color .2s; }
+.custos-kpi:hover { box-shadow:0 6px 20px rgba(0,0,0,.05);border-color:rgba(45,106,79,.22); }
+.custos-kpi-head { display:flex;justify-content:flex-end;margin-bottom:10px; }
+.custos-kpi-ico { width:36px;height:36px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center; }
+.custos-kpi-ico .material-symbols-outlined { font-size:20px; }
+.custos-kpi-ico.green { background:rgba(45,106,79,.1);color:var(--primary); }
+.custos-kpi-ico.amber { background:rgba(217,119,6,.1);color:var(--warning); }
+.custos-kpi-ico.blue { background:rgba(37,99,235,.1);color:var(--info); }
+.custos-kpi-val { font-family:'Plus Jakarta Sans',sans-serif;font-size:26px;font-weight:800;line-height:1;color:var(--text-primary);font-variant-numeric:tabular-nums; }
+.custos-kpi-lbl { font-family:'Space Grotesk',sans-serif;font-size:11px;color:var(--text-secondary);margin-top:8px; }
+.custos-tbl-wrap { background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);overflow-x:auto; }
+.custos-tbl { width:100%;border-collapse:collapse;min-width:820px; }
+.custos-tbl thead th { background:rgba(45,106,79,.03);color:var(--text-tertiary);font-family:'Space Grotesk',sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap; }
+.custos-tbl tbody td { padding:10px 12px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle; }
+.custos-tbl tbody tr:last-child td { border-bottom:none; }
+.custos-tr { cursor:pointer;transition:background .12s; }
+.custos-tr:hover td { background:rgba(45,106,79,.04); }
+.custos-obra-nome { font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:700;color:var(--text-primary); }
+.custos-obra-cidade { font-size:11px;color:var(--text-tertiary);margin-top:2px; }
+.custos-num { font-family:'Space Grotesk',sans-serif;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--text-primary); }
+.custos-mini { font-size:10px;color:var(--text-tertiary);margin-top:3px;font-family:'Inter',sans-serif; }
+.custos-muted { color:var(--text-tertiary); }
+.custos-bar { height:4px;border-radius:2px;background:rgba(45,106,79,.1);overflow:hidden;margin-top:5px;width:96px;max-width:100%; }
+.custos-bar-fill { height:100%;border-radius:2px;background:var(--primary); }
+.custos-td-acao { text-align:right; }
+.custos-btn-abrir { padding:6px 12px;border-radius:var(--radius-sm);border:1px solid rgba(45,106,79,.24);background:var(--primary-surface);color:var(--primary);font:700 12px 'Inter',sans-serif;cursor:pointer;white-space:nowrap; }
+.custos-btn-abrir:hover { border-color:rgba(45,106,79,.4); }
+.custos-tbl-count { text-align:right;font-size:11px;color:var(--text-tertiary);margin-top:8px;font-family:'Space Grotesk',sans-serif; }
+@media(max-width:720px){ .custos-resumo{grid-template-columns:1fr 1fr;} }
+@media(max-width:440px){ .custos-resumo{grid-template-columns:1fr;} }
+
 /* ── CUSTOS RESUMO FINANCEIRO ── */
 .custos-resumo-title { font-size:13px;font-weight:700;color:var(--primary);letter-spacing:1px;margin-bottom:12px;display:flex;align-items:center;gap:6px;font-family:'Plus Jakarta Sans',sans-serif; }
 .custos-resumo-grid { display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:12px; }
@@ -1860,7 +1893,7 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
           <option value="365">Último ano</option>
         </select>
       </div>
-      <div id="custos-cards-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;"></div>
+      <div id="custos-cards-grid" style="display:block;"></div>
     </div>
 
     <!-- DETALHE POR OBRA (oculto por padrão) -->
@@ -2406,7 +2439,7 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
 <div class="toast-container" id="toast-container"></div>
 
 <!-- ═══════ JAVASCRIPT ═══════ -->
-<script src="js/posthog.js?v=07081013"></script>
+<script src="js/posthog.js?v=07090537"></script>
 <script>
 // ══════════════════════════════════════════
 // EDR SYSTEM V2 — NAVEGACAO + SHELL
@@ -2972,47 +3005,47 @@ function updateShellUser(nome, perfil) {
 
 <!-- ═══════ MODULOS V2 (ordem de dependência) ═══════ -->
 <!-- 0. Infraestrutura: sbGet/sbPost/sbPatch/sbDelete, confirmar(), showModal, usuarioAtual -->
-<script src="js/edr-v2-infra.js?v=07081013"></script>
+<script src="js/edr-v2-infra.js?v=07090537"></script>
 <!-- 1. Utilitários globais (valorPorExtenso, fmtN) -->
-<script src="js/edr-v2-utils-extras.js?v=07081013"></script>
+<script src="js/edr-v2-utils-extras.js?v=07090537"></script>
 <!-- 2. Obras PRIMEIRO (ETAPAS, resolveEtapaKey, etapaCor, etapaLabel — vários módulos dependem) -->
-<script src="js/edr-v2-obras.js?v=07081013"></script>
+<script src="js/edr-v2-obras.js?v=07090537"></script>
 <!-- 3. PDF engine (pdfMake CDN + PdfModule) -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js?v=07081013"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js?v=07081013"></script>
-<script src="js/edr-v2-pdf.js?v=07081013"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js?v=07090537"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js?v=07090537"></script>
+<script src="js/edr-v2-pdf.js?v=07090537"></script>
 <!-- 4. Módulos core de negócio -->
-<script src="js/edr-v2-notas.js?v=07081013"></script>
-<script src="js/edr-v2-importar.js?v=07081013"></script>
-<script src="js/edr-v2-estoque.js?v=07081013"></script>
-<script src="js/edr-v2-estoque-tabela.js?v=07081013"></script>
-<script src="js/edr-v2-custos.js?v=07081013"></script>
+<script src="js/edr-v2-notas.js?v=07090537"></script>
+<script src="js/edr-v2-importar.js?v=07090537"></script>
+<script src="js/edr-v2-estoque.js?v=07090537"></script>
+<script src="js/edr-v2-estoque-tabela.js?v=07090537"></script>
+<script src="js/edr-v2-custos.js?v=07090537"></script>
 <!-- 5. Equipe e operacional -->
-<script src="js/edr-v2-diarias.js?v=07081013"></script>
-<script src="js/edr-v2-diario.js?v=07081013"></script>
+<script src="js/edr-v2-diarias.js?v=07090537"></script>
+<script src="js/edr-v2-diario.js?v=07090537"></script>
 <!-- 6. Relatórios e dashboard (dependem de obras.js pra etapaCor) -->
-<script src="js/edr-v2-relatorio.js?v=07081013"></script>
-<script src="js/edr-v2-dashboard.js?v=07081013"></script>
-<script src="js/edr-v2-raiox.js?v=07081013"></script>
+<script src="js/edr-v2-relatorio.js?v=07090537"></script>
+<script src="js/edr-v2-dashboard.js?v=07090537"></script>
+<script src="js/edr-v2-raiox.js?v=07090537"></script>
 <!-- 7. Módulos complementares -->
-<script src="js/edr-v2-leads.js?v=07081013"></script>
-<script src="js/edr-v2-garantias.js?v=07081013"></script>
-<script src="js/edr-v2-adicionais.js?v=07081013"></script>
+<script src="js/edr-v2-leads.js?v=07090537"></script>
+<script src="js/edr-v2-garantias.js?v=07090537"></script>
+<script src="js/edr-v2-adicionais.js?v=07090537"></script>
 <!-- Syncfusion EJ2 Gantt DESATIVADO 2026-07-07: licenca Community pendente (ticket #839314); a trial gerava banner/watermark na tela.
      Cronograma roda so na Lista. RELIGAR: descomentar as 2 tags abaixo + colar Community key v33 no registerLicense de cronograma.js + remover o curto-circuito no _renderGantt + descomentar a barra de views (~219 em cronograma.js).
-<link rel="stylesheet" href="https://cdn.syncfusion.com/ej2/33.2.3/tailwind3-dark.css?v=07081013"/>
-<script src="https://cdn.syncfusion.com/ej2/33.2.3/dist/ej2.min.js?v=07081013"></script>
+<link rel="stylesheet" href="https://cdn.syncfusion.com/ej2/33.2.3/tailwind3-dark.css?v=07090537"/>
+<script src="https://cdn.syncfusion.com/ej2/33.2.3/dist/ej2.min.js?v=07090537"></script>
 -->
-<script src="js/edr-v2-cronograma.js?v=07081013"></script>
-<script src="js/edr-v2-orcamento.js?v=07081013"></script>
+<script src="js/edr-v2-cronograma.js?v=07090537"></script>
+<script src="js/edr-v2-orcamento.js?v=07090537"></script>
 <!-- 8. Documentação e medições -->
-<script src="js/edr-v2-termo-manual.js?v=07081013"></script>
-<script src="js/edr-v2-pci.js?v=07081013"></script>
+<script src="js/edr-v2-termo-manual.js?v=07090537"></script>
+<script src="js/edr-v2-pci.js?v=07090537"></script>
 <!-- 9. Auth (login, sessão, refresh — ÚLTIMO) -->
-<script src="js/edr-v2-alertas.js?v=07081013"></script>
-<script src="js/edr-v2-auth.js?v=07081013"></script>
-<script src="js/edr-v2-financeiro.js?v=07081013"></script>
-<script src="js/edr-v2-dre.js?v=07081013"></script>
+<script src="js/edr-v2-alertas.js?v=07090537"></script>
+<script src="js/edr-v2-auth.js?v=07090537"></script>
+<script src="js/edr-v2-financeiro.js?v=07090537"></script>
+<script src="js/edr-v2-dre.js?v=07090537"></script>
 
 <!-- ═══════════════════════════════════════════════════════════════ -->
 <!-- MODAIS (Fase 0 — containers para módulos que precisam)        -->
