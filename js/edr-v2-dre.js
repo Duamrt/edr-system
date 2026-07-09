@@ -158,6 +158,18 @@
     return { total, noResultado, foraResultado: total - noResultado };
   }
 
+  // Higiene (SÓ leitura): lançamentos sem etapa nas obras reais — o _classif os joga em "material" por default.
+  function _semEtapa(per) {
+    const lancs = (typeof lancamentos !== 'undefined' && Array.isArray(lancamentos)) ? lancamentos : [];
+    const ids = new Set(_todasObras().map(o => o.id));
+    let n = 0, valor = 0;
+    lancs.forEach(l => {
+      if (!ids.has(l.obra_id) || !_inPer(l.data, per)) return;
+      if (String(l.etapa || '').trim() === '') { n++; valor += _n(l.total); }
+    });
+    return { n, valor };
+  }
+
   // ── Períodos disponíveis (YYYY-MM presentes nos dados) ──
   function _periodos() {
     const set = new Set();
@@ -221,6 +233,8 @@
 .dre-cas .cv.minus{color:var(--error)} .dre-cas.tot .cv{color:var(--primary)} .dre-cas.grand .cv{color:var(--primary);font-size:16px}
 .dre-cas .cp{font-family:'Space Grotesk',monospace;font-size:11px;color:var(--text-tertiary);text-align:right}
 .dre-est{font-size:8.5px;background:var(--warning,#d97706);color:#fff;padding:1px 5px;border-radius:5px;font-weight:700;letter-spacing:.3px;vertical-align:middle;margin-left:5px}
+.dre-nota{padding:7px 17px;background:var(--bg);border-bottom:1px solid var(--border);font-size:10.5px;color:var(--text-tertiary);line-height:1.45}
+.dre-nota b{color:var(--text-secondary);font-weight:700}
 .dre-side{display:flex;flex-direction:column;gap:12px}
 .dre-sc{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
 .dre-sc h4{margin:0 0 10px;font-size:12.5px;font-weight:700;display:flex;align-items:center;gap:7px}
@@ -325,7 +339,9 @@
     <div class="dre-cas plus"><div><span class="op">+</span>Receita Bruta de Obras</div><div class="cv">${_money(c.recBruta)}</div><div class="cp">—</div></div>
     <div class="dre-cas sub"><div><span class="op">·</span>Medições + entrada</div><div class="cv">${_money(c.recMed)}</div><div class="cp">${_fpct(c.recMed, c.recBruta)}</div></div>
     <div class="dre-cas sub"><div><span class="op">·</span>Adicionais</div><div class="cv">${_money(c.recAdic)}</div><div class="cp">${_fpct(c.recAdic, c.recBruta)}</div></div>
+    <div class="dre-nota">Receita = repasses CEF (medições + entrada) + adicionais. Aportes ou adiantamentos do dono não entram como receita nesta visão.</div>
     <div class="dre-cas minus"><div><span class="op">−</span>Impostos e Encargos${c.impostoEst ? '<span class="dre-est">EST 6%</span>' : ''}</div><div class="cv minus">${_money(c.imposto)}</div><div class="cp">${rl(c.imposto)}</div></div>
+    <div class="dre-nota">Imposto — estimado 6%: <b>${_money(c.dasEstimado)}</b> · lançado real: <b>${_money(c.impostoReal)}</b>. DRE usa o maior valor entre estimado e lançado até a classificação fiscal ser revisada.</div>
     <div class="dre-cas tot"><div><span class="op">=</span>Receita Líquida</div><div class="cv">${_money(c.recLiq)}</div><div class="cp">100%</div></div>
     <div class="dre-cas minus"><div><span class="op">−</span>Custo das Obras</div><div class="cv minus">${_money(c.custoObras)}</div><div class="cp">${rl(c.custoObras)}</div></div>
     <div class="dre-cas sub"><div><span class="op">·</span>Mão de obra</div><div class="cv">${_money(c.cMao)}</div><div class="cp">${rl(c.cMao)}</div></div>
@@ -378,6 +394,10 @@
     } else {
       const baixo = c.imposto < c.dasEstimado * 0.7;   // real bem abaixo da estimativa → pode faltar lançar
       h += `<div class="dre-ins ${baixo ? 'wn' : 'ok'}"><span class="material-symbols-outlined">${baixo ? 'warning' : 'receipt_long'}</span><span><b>Impostos reais lançados: ${_money(c.imposto)}.</b> ${baixo ? `Estimativa 6% seria ${_money(c.dasEstimado)} — confira se faltam impostos a lançar no período.` : `Próximo da estimativa (${_money(c.dasEstimado)}).`}</span></div>`;
+    }
+    const _se = _semEtapa(_periodo);
+    if (_se.n > 0) {
+      h += `<div class="dre-ins wn"><span class="material-symbols-outlined">rule</span><span><b>${_se.n} lançamento(s) sem etapa (${_money(_se.valor)})</b> entram como "material" por falta de classificação. Defina a etapa pra afinar o custo por serviço.</span></div>`;
     }
     h += `</div>`;
     return h;
