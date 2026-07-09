@@ -257,7 +257,13 @@ function renderObrasCards() {
 
   const isAdmin = usuarioAtual?.perfil === 'admin';
 
-  grid.innerHTML = pool.map(o => {
+  // Separa overhead interno (escritório) das obras reais — OBRAS_INTERNAS é definido em edr-v2-custos.js
+  // e exposto em window. Fallback defensivo p/ não quebrar (ReferenceError) se custos.js não tiver carregado.
+  const _internas = (typeof window !== 'undefined' && window.OBRAS_INTERNAS) || [];
+  const obrasReais = pool.filter(o => !_internas.includes(o.id));
+  const obrasInternas = pool.filter(o => _internas.includes(o.id));
+
+  const linhas = obrasReais.map(o => {
     // Calcular totais (TODO: migrar pra view Supabase — obra_resumo)
     const ls = lancamentos.filter(l => l.obra_id === o.id);
     const total = ls.reduce((s, l) => s + Number(l.total || 0), 0);
@@ -272,46 +278,72 @@ function renderObrasCards() {
     });
     const topEtapas = Object.entries(porEtapa).sort((a, b) => b[1] - a[1]).slice(0, 3);
 
-    return `<div class="obra-card" onclick="obrasAbrirDetalhe('${esc(o.id)}')">
-      <div class="obra-card-header">
-        <div>
-          <div class="obra-card-name">${esc(o.nome)}</div>
-          <div class="obra-card-city">
-            <span class="material-symbols-outlined" style="font-size:14px;">location_on</span>
-            ${esc(o.cidade || 'Sem cidade')}
-          </div>
-        </div>
-        <div>
-          ${isAdmin ? `<div class="obra-card-value">${fmtR(total)}</div>` : ''}
-          <div class="obra-card-count">${ls.length} lancamento${ls.length !== 1 ? 's' : ''}</div>
-          ${isAdmin && adds.qtd > 0 ? `<div style="font-size:10px;color:#8B5CF6;margin-top:2px;">${adds.qtd} adicional(is): ${fmtR(adds.valorTotal)}</div>` : ''}
-        </div>
-      </div>
-      ${topEtapas.length ? `<div class="etapa-chips">
-        ${topEtapas.map(([k, v]) => {
-          const pct = total > 0 ? (v / total * 100).toFixed(0) : 0;
-          return `<span class="etapa-chip">${etapaLabel(k).split(' ').slice(0, 2).join(' ')} ${pct}%</span>`;
-        }).join('')}
-      </div>` : ''}
-      <div class="obra-card-footer">
-        <span class="obra-card-date">
-          <span class="material-symbols-outlined" style="font-size:14px;">calendar_today</span>
-          Ultimo: ${ultimaData ? fmtData(ultimaData) : 'Sem lancamentos'}
-        </span>
-        <div class="obra-card-actions">
-          ${isAdmin ? `<button class="obra-action-btn obra-action-edit" onclick="event.stopPropagation();abrirModalObra('${esc(o.id)}')">Editar</button>` : ''}
-          ${isAdmin && !ObrasModule.mostandoArquivadas ? `<button class="obra-action-btn obra-action-complete" onclick="event.stopPropagation();abrirModalConclusao('${esc(o.id)}')">Concluir</button>` : ''}
-          ${isAdmin && ObrasModule.mostandoArquivadas ? `
-            ${o.slug_entrega ? `<button class="obra-action-btn" style="color:var(--warning);background:rgba(217,119,6,.06);border:1px solid rgba(217,119,6,.15);" onclick="event.stopPropagation();abrirEntregaDigital('${esc(o.slug_entrega)}')">Entrega</button>` : ''}
-            <button class="obra-action-btn" style="color:#8B5CF6;background:rgba(139,92,246,.06);border:1px solid rgba(139,92,246,.15);" onclick="event.stopPropagation();reimprimirTermo('${esc(o.id)}')">Termo</button>
-            <button class="obra-action-btn" style="color:var(--success);background:rgba(5,150,105,.06);border:1px solid rgba(5,150,105,.15);" onclick="event.stopPropagation();reativarObra('${esc(o.id)}')">Reativar</button>
-          ` : ''}
-          ${isAdmin ? `<button class="obra-action-btn" style="color:#0d5220;background:rgba(13,82,32,.06);border:1px solid rgba(13,82,32,.18);" onclick="event.stopPropagation();gerarRelatorioObra('${esc(o.id)}')">Relatório</button>` : ''}
-          <span class="obra-card-link">Detalhes <span class="material-symbols-outlined" style="font-size:16px;">arrow_forward</span></span>
-        </div>
-      </div>
+    // Chips das principais etapas (top 3) — reusa .etapa-chip, limitado como hoje
+    const chips = topEtapas.length ? `<div class="etapa-chips">${topEtapas.map(([k, v]) => {
+      const pct = total > 0 ? (v / total * 100).toFixed(0) : 0;
+      return `<span class="etapa-chip">${esc(etapaLabel(k).split(' ').slice(0, 2).join(' '))} ${pct}%</span>`;
+    }).join('')}</div>` : '<span class="custos-muted">—</span>';
+
+    // Ações — MESMA lógica/condicionais do card atual (só muda o container)
+    const acoes = `<div class="obras-tbl-acoes">
+      ${isAdmin ? `<button class="obra-action-btn obra-action-edit" onclick="event.stopPropagation();abrirModalObra('${esc(o.id)}')">Editar</button>` : ''}
+      ${isAdmin && !ObrasModule.mostandoArquivadas ? `<button class="obra-action-btn obra-action-complete" onclick="event.stopPropagation();abrirModalConclusao('${esc(o.id)}')">Concluir</button>` : ''}
+      ${isAdmin && ObrasModule.mostandoArquivadas ? `${o.slug_entrega ? `<button class="obra-action-btn" style="color:var(--warning);background:rgba(217,119,6,.06);border:1px solid rgba(217,119,6,.15);" onclick="event.stopPropagation();abrirEntregaDigital('${esc(o.slug_entrega)}')">Entrega</button>` : ''}<button class="obra-action-btn" style="color:#8B5CF6;background:rgba(139,92,246,.06);border:1px solid rgba(139,92,246,.15);" onclick="event.stopPropagation();reimprimirTermo('${esc(o.id)}')">Termo</button><button class="obra-action-btn" style="color:var(--success);background:rgba(5,150,105,.06);border:1px solid rgba(5,150,105,.15);" onclick="event.stopPropagation();reativarObra('${esc(o.id)}')">Reativar</button>` : ''}
+      ${isAdmin ? `<button class="obra-action-btn" style="color:#0d5220;background:rgba(13,82,32,.06);border:1px solid rgba(13,82,32,.18);" onclick="event.stopPropagation();gerarRelatorioObra('${esc(o.id)}')">Relatório</button>` : ''}
+      <button class="obra-action-btn" onclick="event.stopPropagation();obrasAbrirDetalhe('${esc(o.id)}')">Detalhes</button>
     </div>`;
+
+    if (isAdmin) {
+      return `<tr class="custos-tr" onclick="obrasAbrirDetalhe('${esc(o.id)}')">
+        <td class="custos-td-obra"><div class="custos-obra-nome">${esc(o.nome)}</div><div class="custos-obra-cidade">${esc(o.cidade || 'Sem cidade')}</div></td>
+        <td class="custos-num">${fmtR(total)}<div class="custos-mini">${ls.length} lanç. · último: ${ultimaData ? fmtData(ultimaData) : '—'}</div></td>
+        <td class="custos-num">${adds.qtd > 0 ? `${fmtR(adds.valorTotal)}<div class="custos-mini">${adds.qtd} adicional(is)</div>` : '<span class="custos-muted">—</span>'}</td>
+        <td>${chips}</td>
+        <td class="custos-td-acao">${acoes}</td>
+      </tr>`;
+    }
+    return `<tr class="custos-tr" onclick="obrasAbrirDetalhe('${esc(o.id)}')">
+      <td class="custos-td-obra"><div class="custos-obra-nome">${esc(o.nome)}</div><div class="custos-obra-cidade">${esc(o.cidade || 'Sem cidade')}</div></td>
+      <td class="custos-num"><div class="custos-mini">${ls.length} lanç. · último: ${ultimaData ? fmtData(ultimaData) : '—'}</div></td>
+      <td>${chips}</td>
+      <td class="custos-td-acao">${acoes}</td>
+    </tr>`;
   }).join('');
+
+  // Bloco "Interno / Escritório" — overhead, fora da tabela de obras. Só ativas (escritório não é arquivado) e só admin.
+  let internosHtml = '';
+  if (isAdmin && obrasInternas.length) {
+    const cards = obrasInternas.map(o => {
+      const ls = lancamentos.filter(l => l.obra_id === o.id);
+      const total = ls.reduce((s, l) => s + Number(l.total || 0), 0);
+      const ultimaData = ls.length ? ls.slice().sort((a, b) => (b.data || '').localeCompare(a.data || ''))[0]?.data : null;
+      const porEtapa = {};
+      ls.forEach(l => { const k = l.etapa || '36_outros'; porEtapa[k] = (porEtapa[k] || 0) + Number(l.total || 0); });
+      const top = Object.entries(porEtapa).sort((a, b) => b[1] - a[1]).slice(0, 5);
+      const etapasHtml = top.map(([k, v]) => `<div class="custos-internos-etapa"><span>${esc(etapaLabel(k))}</span><span class="custos-num">${fmtR(v)}</span></div>`).join('');
+      return `<div class="custos-internos-card">
+        <div class="custos-internos-head">
+          <div><div class="custos-obra-nome">${esc(o.nome)}</div><div class="custos-obra-cidade">centro de custo · overhead (fora das obras) · ${ls.length} lanç. · último: ${ultimaData ? fmtData(ultimaData) : '—'}</div></div>
+          <div class="custos-internos-total">${fmtR(total)}</div>
+        </div>
+        <div class="custos-internos-etapas">${etapasHtml || '<div class="custos-mini">Sem lançamentos.</div>'}</div>
+        <div class="obras-tbl-acoes">
+          <button class="obra-action-btn obra-action-edit" onclick="event.stopPropagation();abrirModalObra('${esc(o.id)}')">Editar</button>
+          <button class="obra-action-btn" style="color:#0d5220;background:rgba(13,82,32,.06);border:1px solid rgba(13,82,32,.18);" onclick="event.stopPropagation();gerarRelatorioObra('${esc(o.id)}')">Relatório</button>
+          <button class="obra-action-btn" onclick="event.stopPropagation();obrasAbrirDetalhe('${esc(o.id)}')">Abrir detalhe</button>
+        </div>
+      </div>`;
+    }).join('');
+    internosHtml = `<div class="custos-internos-title">Interno / Escritório</div><div class="custos-internos">${cards}</div>`;
+  }
+
+  const thead = isAdmin
+    ? `<tr><th>Obra</th><th>Custo / lançamentos</th><th>Adicionais</th><th>Principais etapas</th><th>Ações</th></tr>`
+    : `<tr><th>Obra</th><th>Lançamentos</th><th>Principais etapas</th><th>Ações</th></tr>`;
+
+  grid.innerHTML = `<div class="custos-tbl-wrap"><table class="custos-tbl"><thead>${thead}</thead><tbody>${linhas}</tbody></table></div>
+    <div class="custos-tbl-count">${obrasReais.length} obra(s)</div>
+    ${internosHtml}`;
 }
 
 // ── TOGGLE ATIVAS / CONCLUIDAS ──────────────────────────────────

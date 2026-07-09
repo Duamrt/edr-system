@@ -34,6 +34,7 @@ const CustosModule = {
 // Separado por ID EXATO (nome é frágil: '%edr%' pega 'pEDRo').
 // Único interno hoje (verificado no banco 2026-07-09). Ao formalizar, migrar p/ obras.tipo.
 const OBRAS_INTERNAS = ['4481e116-591d-42a7-a69c-da373980a988']; // EDR - ESCRITORIO
+if (typeof window !== 'undefined') window.OBRAS_INTERNAS = OBRAS_INTERNAS; // exposto p/ outros módulos (ex.: obras.js) sem depender da ordem de load
 
 
 // ── REGISTRO NO VIEW REGISTRY ───────────────────────────────────
