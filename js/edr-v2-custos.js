@@ -28,6 +28,13 @@ const CustosModule = {
   _detalheCarregado: null,
 };
 
+// ── CENTROS DE CUSTO INTERNOS (overhead) ────────────────────────
+// TRANSIÇÃO até existir obras.tipo no banco. EDR-ESCRITORIO é overhead
+// cadastrado como obra: poluía totais/lucro/margem/destaques das obras reais.
+// Separado por ID EXATO (nome é frágil: '%edr%' pega 'pEDRo').
+// Único interno hoje (verificado no banco 2026-07-09). Ao formalizar, migrar p/ obras.tipo.
+const OBRAS_INTERNAS = ['4481e116-591d-42a7-a69c-da373980a988']; // EDR - ESCRITORIO
+
 
 // ── REGISTRO NO VIEW REGISTRY ───────────────────────────────────
 if (typeof viewRegistry !== 'undefined') {
@@ -102,10 +109,22 @@ function _custosRenderCards() {
 
   const isAdmin = usuarioAtual?.perfil === 'admin';
 
+  // Separa overhead interno (escritório) das obras reais — só obras reais entram em tabela/totais/destaques
+  const obrasReais = todasObras.filter(o => !OBRAS_INTERNAS.includes(o.id));
+  const obrasInternas = todasObras.filter(o => OBRAS_INTERNAS.includes(o.id));
+
   // Totais agregados — SOMENTE soma de campos já calculados por obra (sem novo cálculo)
   let totContrato = 0, totRecebido = 0, totCusto = 0, totLucro = 0, totReceita = 0;
 
-  const linhas = todasObras.map(o => {
+  // "Onde olhar agora" (Passo 2a) — SUPERLATIVOS factuais dos campos já calculados.
+  // Sem corte inventado, sem status OK/Atenção/Risco. Só max/min/contagem.
+  let maiorCusto = { nome: '', val: -Infinity };
+  let menorReceb = { nome: '', val: Infinity, has: false };
+  let maiorPrej = { nome: '', val: 0, has: false };
+  let semContrato = [];
+  let menosLanc = { nome: '', val: Infinity };
+
+  const linhas = obrasReais.map(o => {
     // Repasses da obra (totais macro — sem carregar detalhes)
     let reps = CustosModule.repassesCef.filter(r => r.obra_id === o.id);
     if (dataLimite) reps = reps.filter(r => r.data_credito && new Date(r.data_credito + 'T12:00:00') >= dataLimite);
@@ -138,6 +157,13 @@ function _custosRenderCards() {
     totLucro += lucro;
     totReceita += receitaObra;
 
+    // Superlativos factuais (Passo 2a) — sem corte, só extremos dos campos já calculados
+    if (custoTotal > maiorCusto.val) maiorCusto = { nome: o.nome, val: custoTotal };
+    if (receitaObra > 0 && pctRecebido < menorReceb.val) menorReceb = { nome: o.nome, val: pctRecebido, has: true };
+    if (lucro < maiorPrej.val) maiorPrej = { nome: o.nome, val: lucro, has: true };
+    if (contratoValor <= 0) semContrato.push(o.nome);
+    if (reps.length < menosLanc.val) menosLanc = { nome: o.nome, val: reps.length };
+
     if (isAdmin) {
       return `<tr class="custos-tr" onclick="custosAbrirDetalhe('${esc(o.id)}')">
         <td class="custos-td-obra">
@@ -169,7 +195,34 @@ function _custosRenderCards() {
   const totMargem = totReceita > 0 ? (totLucro / totReceita * 100) : 0;
   const totPctReceb = totReceita > 0 ? Math.min(totRecebido / totReceita * 100, 100) : 0;
 
-  const resumo = isAdmin ? `<div class="custos-resumo">
+  // "Onde olhar agora" — cards factuais (só admin, como o resumo). Sem julgamento/corte.
+  const olhar = isAdmin ? `<div class="custos-olhar-title">Onde olhar agora</div>
+    <div class="custos-olhar">
+      <div class="custos-olhar-card">
+        <div class="custos-olhar-lbl"><span class="material-symbols-outlined">construction</span>Maior custo lançado</div>
+        <div class="custos-olhar-obra">${esc(maiorCusto.nome)}</div>
+        <div class="custos-olhar-val">${fmtR(maiorCusto.val)}</div>
+      </div>
+      <div class="custos-olhar-card">
+        <div class="custos-olhar-lbl"><span class="material-symbols-outlined">trending_down</span>Menor % recebido</div>
+        ${menorReceb.has ? `<div class="custos-olhar-obra">${esc(menorReceb.nome)}</div><div class="custos-olhar-val">${menorReceb.val.toFixed(0)}% da receita</div>` : `<div class="custos-olhar-obra">—</div><div class="custos-olhar-val">sem obra com receita</div>`}
+      </div>
+      <div class="custos-olhar-card">
+        <div class="custos-olhar-lbl"><span class="material-symbols-outlined">money_off</span>Maior prejuízo</div>
+        ${maiorPrej.has ? `<div class="custos-olhar-obra">${esc(maiorPrej.nome)}</div><div class="custos-olhar-val">${fmtR(maiorPrej.val)}</div>` : `<div class="custos-olhar-obra">Nenhuma no prejuízo</div><div class="custos-olhar-val">lucro ≥ 0 em todas</div>`}
+      </div>
+      <div class="custos-olhar-card">
+        <div class="custos-olhar-lbl"><span class="material-symbols-outlined">description</span>Sem contrato CEF</div>
+        ${semContrato.length ? `<div class="custos-olhar-obra">${semContrato.length} obra(s)</div><div class="custos-olhar-val">${esc(semContrato.slice(0, 3).join(', '))}${semContrato.length > 3 ? '…' : ''}</div>` : `<div class="custos-olhar-obra">Nenhuma</div><div class="custos-olhar-val">todas com contrato</div>`}
+      </div>
+      <div class="custos-olhar-card">
+        <div class="custos-olhar-lbl"><span class="material-symbols-outlined">receipt_long</span>Menos lançamentos</div>
+        <div class="custos-olhar-obra">${esc(menosLanc.nome)}</div>
+        <div class="custos-olhar-val">${menosLanc.val} lanç.</div>
+      </div>
+    </div>` : '';
+
+  const resumo = isAdmin ? `${olhar}<div class="custos-resumo">
     <div class="custos-kpi">
       <div class="custos-kpi-head"><span class="custos-kpi-ico green"><span class="material-symbols-outlined">request_quote</span></span></div>
       <div class="custos-kpi-val">${fmtR(totContrato)}</div>
@@ -196,6 +249,33 @@ function _custosRenderCards() {
     ? `<tr><th>Obra</th><th>Venda</th><th>Contrato CEF</th><th>Recebido</th><th>Custo</th><th>Lucro</th><th>Margem</th><th>Ação</th></tr>`
     : `<tr><th>Obra</th><th>Contrato CEF</th><th>Ação</th></tr>`;
 
+  // Bloco "Custos internos / Escritório" — overhead separado, FORA dos totais de obra. Só admin (financeiro).
+  let internosHtml = '';
+  if (isAdmin && obrasInternas.length) {
+    const cards = obrasInternas.map(oi => {
+      const ls = (typeof lancamentos !== 'undefined' && Array.isArray(lancamentos))
+        ? lancamentos.filter(l => l.obra_id === oi.id) : [];
+      const totalInt = ls.reduce((s, l) => s + Number(l.total || 0), 0);
+      const porEtapa = {};
+      ls.forEach(l => { const k = l.etapa || '(sem etapa)'; porEtapa[k] = (porEtapa[k] || 0) + Number(l.total || 0); });
+      const top = Object.entries(porEtapa).sort((a, b) => b[1] - a[1]).slice(0, 5);
+      const etapasHtml = top.map(([k, v]) => `<div class="custos-internos-etapa"><span>${esc(typeof etapaLabel === 'function' ? etapaLabel(k) : k)}</span><span class="custos-num">${fmtR(v)}</span></div>`).join('');
+      return `<div class="custos-internos-card">
+        <div class="custos-internos-head">
+          <div>
+            <div class="custos-obra-nome">${esc(oi.nome)}</div>
+            <div class="custos-obra-cidade">centro de custo · overhead (fora dos totais de obra)</div>
+          </div>
+          <div class="custos-internos-total">${fmtR(totalInt)}</div>
+        </div>
+        <div class="custos-internos-etapas">${etapasHtml || '<div class="custos-mini">Sem lançamentos.</div>'}</div>
+        <button class="custos-btn-abrir" onclick="custosAbrirDetalhe('${esc(oi.id)}')">Abrir detalhe</button>
+      </div>`;
+    }).join('');
+    internosHtml = `<div class="custos-internos-title">Custos internos / Escritório</div>
+    <div class="custos-internos">${cards}</div>`;
+  }
+
   el.innerHTML = `${resumo}
     <div class="custos-tbl-wrap">
       <table class="custos-tbl">
@@ -203,7 +283,8 @@ function _custosRenderCards() {
         <tbody>${linhas}</tbody>
       </table>
     </div>
-    <div class="custos-tbl-count">${todasObras.length} obra(s)</div>`;
+    <div class="custos-tbl-count">${obrasReais.length} obra(s)</div>
+    ${internosHtml}`;
 }
 
 

@@ -1215,7 +1215,24 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
 .custos-btn-abrir { padding:6px 12px;border-radius:var(--radius-sm);border:1px solid rgba(45,106,79,.24);background:var(--primary-surface);color:var(--primary);font:700 12px 'Inter',sans-serif;cursor:pointer;white-space:nowrap; }
 .custos-btn-abrir:hover { border-color:rgba(45,106,79,.4); }
 .custos-tbl-count { text-align:right;font-size:11px;color:var(--text-tertiary);margin-top:8px;font-family:'Space Grotesk',sans-serif; }
-@media(max-width:720px){ .custos-resumo{grid-template-columns:1fr 1fr;} }
+/* Onde olhar agora (Passo 2a — factual, sem status colorido) */
+.custos-olhar-title { font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-secondary);margin:0 0 10px; }
+.custos-olhar { display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;margin-bottom:16px; }
+.custos-olhar-card { background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:12px 14px; }
+.custos-olhar-lbl { font-family:'Space Grotesk',sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-tertiary);display:flex;align-items:center;gap:6px; }
+.custos-olhar-lbl .material-symbols-outlined { font-size:15px; }
+.custos-olhar-obra { font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:700;color:var(--text-primary);margin-top:6px; }
+.custos-olhar-val { font-family:'Space Grotesk',sans-serif;font-size:12px;font-variant-numeric:tabular-nums;color:var(--text-secondary);margin-top:2px; }
+/* Custos internos / Escritório (overhead separado das obras — fora dos totais de obra) */
+.custos-internos-title { font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-secondary);margin:22px 0 10px; }
+.custos-internos { display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,380px));gap:12px; }
+.custos-internos-card { background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px 18px; }
+.custos-internos-head { display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:12px; }
+.custos-internos-total { font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:var(--text-primary);font-variant-numeric:tabular-nums;white-space:nowrap; }
+.custos-internos-etapas { display:flex;flex-direction:column;gap:5px;margin-bottom:12px; }
+.custos-internos-etapa { display:flex;justify-content:space-between;gap:12px;font-size:12px;color:var(--text-secondary);border-bottom:1px solid var(--border-light);padding-bottom:4px; }
+.custos-internos-etapa .custos-num { font-size:12px;color:var(--text-primary); }
+@media(max-width:720px){ .custos-resumo{grid-template-columns:1fr 1fr;} .custos-internos{grid-template-columns:1fr;} }
 @media(max-width:440px){ .custos-resumo{grid-template-columns:1fr;} }
 
 /* ── CUSTOS RESUMO FINANCEIRO ── */
@@ -2439,7 +2456,7 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
 <div class="toast-container" id="toast-container"></div>
 
 <!-- ═══════ JAVASCRIPT ═══════ -->
-<script src="js/posthog.js?v=07090537"></script>
+<script src="js/posthog.js?v=07090617"></script>
 <script>
 // ══════════════════════════════════════════
 // EDR SYSTEM V2 — NAVEGACAO + SHELL
@@ -3005,47 +3022,47 @@ function updateShellUser(nome, perfil) {
 
 <!-- ═══════ MODULOS V2 (ordem de dependência) ═══════ -->
 <!-- 0. Infraestrutura: sbGet/sbPost/sbPatch/sbDelete, confirmar(), showModal, usuarioAtual -->
-<script src="js/edr-v2-infra.js?v=07090537"></script>
+<script src="js/edr-v2-infra.js?v=07090617"></script>
 <!-- 1. Utilitários globais (valorPorExtenso, fmtN) -->
-<script src="js/edr-v2-utils-extras.js?v=07090537"></script>
+<script src="js/edr-v2-utils-extras.js?v=07090617"></script>
 <!-- 2. Obras PRIMEIRO (ETAPAS, resolveEtapaKey, etapaCor, etapaLabel — vários módulos dependem) -->
-<script src="js/edr-v2-obras.js?v=07090537"></script>
+<script src="js/edr-v2-obras.js?v=07090617"></script>
 <!-- 3. PDF engine (pdfMake CDN + PdfModule) -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js?v=07090537"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js?v=07090537"></script>
-<script src="js/edr-v2-pdf.js?v=07090537"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js?v=07090617"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js?v=07090617"></script>
+<script src="js/edr-v2-pdf.js?v=07090617"></script>
 <!-- 4. Módulos core de negócio -->
-<script src="js/edr-v2-notas.js?v=07090537"></script>
-<script src="js/edr-v2-importar.js?v=07090537"></script>
-<script src="js/edr-v2-estoque.js?v=07090537"></script>
-<script src="js/edr-v2-estoque-tabela.js?v=07090537"></script>
-<script src="js/edr-v2-custos.js?v=07090537"></script>
+<script src="js/edr-v2-notas.js?v=07090617"></script>
+<script src="js/edr-v2-importar.js?v=07090617"></script>
+<script src="js/edr-v2-estoque.js?v=07090617"></script>
+<script src="js/edr-v2-estoque-tabela.js?v=07090617"></script>
+<script src="js/edr-v2-custos.js?v=07090617"></script>
 <!-- 5. Equipe e operacional -->
-<script src="js/edr-v2-diarias.js?v=07090537"></script>
-<script src="js/edr-v2-diario.js?v=07090537"></script>
+<script src="js/edr-v2-diarias.js?v=07090617"></script>
+<script src="js/edr-v2-diario.js?v=07090617"></script>
 <!-- 6. Relatórios e dashboard (dependem de obras.js pra etapaCor) -->
-<script src="js/edr-v2-relatorio.js?v=07090537"></script>
-<script src="js/edr-v2-dashboard.js?v=07090537"></script>
-<script src="js/edr-v2-raiox.js?v=07090537"></script>
+<script src="js/edr-v2-relatorio.js?v=07090617"></script>
+<script src="js/edr-v2-dashboard.js?v=07090617"></script>
+<script src="js/edr-v2-raiox.js?v=07090617"></script>
 <!-- 7. Módulos complementares -->
-<script src="js/edr-v2-leads.js?v=07090537"></script>
-<script src="js/edr-v2-garantias.js?v=07090537"></script>
-<script src="js/edr-v2-adicionais.js?v=07090537"></script>
+<script src="js/edr-v2-leads.js?v=07090617"></script>
+<script src="js/edr-v2-garantias.js?v=07090617"></script>
+<script src="js/edr-v2-adicionais.js?v=07090617"></script>
 <!-- Syncfusion EJ2 Gantt DESATIVADO 2026-07-07: licenca Community pendente (ticket #839314); a trial gerava banner/watermark na tela.
      Cronograma roda so na Lista. RELIGAR: descomentar as 2 tags abaixo + colar Community key v33 no registerLicense de cronograma.js + remover o curto-circuito no _renderGantt + descomentar a barra de views (~219 em cronograma.js).
-<link rel="stylesheet" href="https://cdn.syncfusion.com/ej2/33.2.3/tailwind3-dark.css?v=07090537"/>
-<script src="https://cdn.syncfusion.com/ej2/33.2.3/dist/ej2.min.js?v=07090537"></script>
+<link rel="stylesheet" href="https://cdn.syncfusion.com/ej2/33.2.3/tailwind3-dark.css?v=07090617"/>
+<script src="https://cdn.syncfusion.com/ej2/33.2.3/dist/ej2.min.js?v=07090617"></script>
 -->
-<script src="js/edr-v2-cronograma.js?v=07090537"></script>
-<script src="js/edr-v2-orcamento.js?v=07090537"></script>
+<script src="js/edr-v2-cronograma.js?v=07090617"></script>
+<script src="js/edr-v2-orcamento.js?v=07090617"></script>
 <!-- 8. Documentação e medições -->
-<script src="js/edr-v2-termo-manual.js?v=07090537"></script>
-<script src="js/edr-v2-pci.js?v=07090537"></script>
+<script src="js/edr-v2-termo-manual.js?v=07090617"></script>
+<script src="js/edr-v2-pci.js?v=07090617"></script>
 <!-- 9. Auth (login, sessão, refresh — ÚLTIMO) -->
-<script src="js/edr-v2-alertas.js?v=07090537"></script>
-<script src="js/edr-v2-auth.js?v=07090537"></script>
-<script src="js/edr-v2-financeiro.js?v=07090537"></script>
-<script src="js/edr-v2-dre.js?v=07090537"></script>
+<script src="js/edr-v2-alertas.js?v=07090617"></script>
+<script src="js/edr-v2-auth.js?v=07090617"></script>
+<script src="js/edr-v2-financeiro.js?v=07090617"></script>
+<script src="js/edr-v2-dre.js?v=07090617"></script>
 
 <!-- ═══════════════════════════════════════════════════════════════ -->
 <!-- MODAIS (Fase 0 — containers para módulos que precisam)        -->
