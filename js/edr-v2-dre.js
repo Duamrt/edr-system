@@ -41,16 +41,22 @@
     return 'material';
   }
   function _ehQA(nome) { return /^OBRA QA/i.test(String(nome || '')); }
-  // Obras de teste (QA) e almoxarifado/escritório (estoque = ativo) NÃO entram no DRE.
-  // O custo do material só conta quando é distribuído para uma obra real.
-  function _ehEstrutural(nome) {
-    const n = String(nome || '').toUpperCase();
-    return /^OBRA QA/i.test(n) || n.includes('ESCRIT') || n.includes('ALMOX');
+  // Obra "estrutural" = NÃO entra no DRE como obra: teste QA, ou centro de custo interno (escritório/almoxarifado).
+  // Fonte de verdade do interno = OBRAS_INTERNAS por ID (compartilhado com Custos/Obras, edr-v2-custos.js via window).
+  // Mantém heurística por nome (ESCRIT/ALMOX) como FALLBACK p/ tenants ainda sem OBRAS_INTERNAS.
+  // ADITIVO → não muda o conjunto excluído hoje (o escritório EDR já casava por nome). TODO: migrar p/ obras.tipo.
+  function _ehInterna(o) {
+    if (!o) return false;
+    const n = String(o.nome || '').toUpperCase();
+    if (/^OBRA QA/i.test(n)) return true;
+    const internas = (typeof window !== 'undefined' && window.OBRAS_INTERNAS) || [];
+    if (o.id && internas.indexOf(o.id) !== -1) return true;
+    return n.includes('ESCRIT') || n.includes('ALMOX');
   }
   function _todasObras() {
     const a = (typeof obras !== 'undefined' && Array.isArray(obras)) ? obras : [];
     const b = (typeof obrasArquivadas !== 'undefined' && Array.isArray(obrasArquivadas)) ? obrasArquivadas : [];
-    return a.concat(b).filter(o => o && o.id && !_ehEstrutural(o.nome));
+    return a.concat(b).filter(o => o && o.id && !_ehInterna(o));
   }
 
   // ── ENGINE: cálculo por obra ──
@@ -135,6 +141,21 @@
       mBruta: _pct(lucroBruto, recLiq), mLiq: _pct(resultado, recLiq),
       custoM2: area ? custoObras / area : 0
     };
+  }
+
+  // ── C: conciliação de overhead interno (escritório) — SÓ leitura p/ exibir, NÃO entra no Resultado ──
+  function _calcOverheadInterno(per) {
+    const internas = (typeof window !== 'undefined' && window.OBRAS_INTERNAS) || [];
+    if (!internas.length) return null;
+    const lancs = (typeof lancamentos !== 'undefined' && Array.isArray(lancamentos)) ? lancamentos : [];
+    let total = 0, noResultado = 0;
+    lancs.forEach(l => {
+      if (internas.indexOf(l.obra_id) === -1 || !_inPer(l.data, per)) return;
+      const v = _n(l.total), e = String(l.etapa || '').trim();
+      total += v;
+      if (e === ETAPA_IMPOSTO || ETAPAS_OPER.indexOf(e) !== -1) noResultado += v; // o que o DRE JÁ conta como imposto/desp. operacional
+    });
+    return { total, noResultado, foraResultado: total - noResultado };
   }
 
   // ── Períodos disponíveis (YYYY-MM presentes nos dados) ──
@@ -318,6 +339,17 @@
         <div class="tr"><span>Recebido pelo terreno</span><b>${_money(c.recTerr)}</b></div>
         <div class="tr"><span>Custo do terreno</span><b>${_money(c.cTerr)}</b></div>
         <div class="tr" style="border-top:1px solid var(--border);margin-top:4px;padding-top:7px;"><span><b>Resultado do terreno</b></span><b style="color:var(--primary)">${_money(c.recTerr - c.cTerr)}</b></div>
+      </div>`;
+    }
+    // C — conciliação do overhead interno (escritório). INFORMATIVO: NÃO altera o Resultado Líquido acima.
+    const _oh = _calcOverheadInterno(_periodo);
+    if (_oh && _oh.total > 0) {
+      h += `<div class="dre-terr" style="border-color:rgba(217,119,6,.4);margin-top:12px;">
+        <div class="tt" style="color:var(--warning,#d97706);">Overhead / Escritório · a classificar (fora do Resultado)</div>
+        <div class="tr"><span>Total lançado no escritório</span><b>${_money(_oh.total)}</b></div>
+        <div class="tr"><span>Já no Resultado (impostos + desp. operacional)</span><b>${_money(_oh.noResultado)}</b></div>
+        <div class="tr" style="border-top:1px solid var(--border);margin-top:4px;padding-top:7px;"><span><b>Fora do Resultado — a classificar com contador</b></span><b style="color:var(--warning,#d97706)">${_money(_oh.foraResultado)}</b></div>
+        <div style="font-size:10.5px;color:var(--text-tertiary);margin-top:8px;line-height:1.45;">Não incluído no Resultado Líquido. Depende de decisão contábil: despesa operacional vs. imobilizado (capex) vs. distribuição de lucro (PL). Frente "Overhead nos relatórios".</div>
       </div>`;
     }
     return h;
