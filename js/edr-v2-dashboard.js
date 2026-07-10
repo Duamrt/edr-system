@@ -573,7 +573,9 @@ function _dashBuildResumoFinanceiro(porObra) {
   const filtroMes = DashboardModule.finFiltro;
   let totalEntradas = 0, totalSaidas = 0, totalReceita = 0, totalMao = 0;
 
-  const obrasData = obras.filter(o => porObra.some(p => p.id === o.id)).map(o => {
+  // F1: exclui EDR-ESCRITÓRIO (interna) da visão de OBRAS via listarObrasReais — some da lista "Por obra" e dos totais de obras.
+  const _idsReais = (window.DREModule && DREModule.listarObrasReais) ? new Set(DREModule.listarObrasReais().map(o => o.id)) : null;
+  const obrasData = obras.filter(o => porObra.some(p => p.id === o.id) && (!_idsReais || _idsReais.has(o.id))).map(o => {
     const d = _dashFinCalcObra(o, filtroMes);
     totalEntradas += d.entradas;
     totalSaidas += d.custo;
