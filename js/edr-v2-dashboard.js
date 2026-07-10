@@ -449,7 +449,8 @@ function _dashBuildOndeOlhar(alertas) {
 function _dashBuildAlertas(alertas) {
   if (!alertas.length) return '';
   return `<div style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);border-radius:16px;padding:14px 16px;margin-bottom:14px;">
-    <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;color:var(--danger);letter-spacing:2px;margin-bottom:8px;display:flex;align-items:center;gap:6px;"><span class="material-symbols-outlined" style="font-size:18px;">warning</span> OBRAS COM MARGEM NEGATIVA</div>
+    <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;color:var(--danger);margin-bottom:2px;display:flex;align-items:center;gap:6px;"><span class="material-symbols-outlined" style="font-size:18px;">warning</span> Obras com contribuição negativa</div>
+    <div style="font-size:10px;color:var(--text-tertiary);margin-bottom:8px;font-family:Inter,sans-serif;">base DRE: recebido + adicionais − custo</div>
     ${alertas.map(o => `
       <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(239,68,68,0.08);">
         <span style="font-size:12px;color:var(--text-primary);font-weight:600;cursor:pointer;font-family:Inter,sans-serif;" onclick="setView('custos');setTimeout(()=>custosAbrirDetalhe('${esc(o.id)}'),100)">${esc(o.nome)}</span>
@@ -759,7 +760,13 @@ function renderDashboard() {
     const carteiraAtiva = obrasAtivasReais.reduce((s, o) => s + Number(o.valor_venda || 0), 0);
     const m = _dashCalcMetricas();
     const porObra = _dashCalcPorObra(m.lancAtivos);
-    const alertas = porObra.filter(o => o.vv > 0 && o.margem < 0);
+    // D2: "obras com contribuição negativa" pela base DRE (recebido + adicionais − custo), NÃO margem de contrato.
+    // Fonte única (calcGerencialPorObra) = mesmas obras "no vermelho" do DRE. Ordena pior (maior prejuízo) primeiro.
+    const _obrasReais = (window.DREModule && DREModule.listarObrasReais) ? DREModule.listarObrasReais() : [];
+    const alertas = _obrasReais.map(o => {
+      const d = (window.DREModule && DREModule.calcGerencialPorObra) ? (DREModule.calcGerencialPorObra(o.id, '') || {}) : {};
+      return { nome: o.nome, id: o.id, margem: d.margemPct || 0, lucro: d.margem || 0 };
+    }).filter(x => x.lucro < 0).sort((a, b) => a.lucro - b.lucro);
     const dataStr = new Date().toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
 
     const isMobile = window.innerWidth <= 768;
