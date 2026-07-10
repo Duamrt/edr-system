@@ -509,7 +509,22 @@ ${c.impostoEst ? '<div class="ln">⚠ Impostos estimados em 6% da receita — la
   function setModo(m) { _modo = m; renderDRE(); }
   function setPeriodo(p) { _periodo = p; renderDRE(); }
 
-  window.DREModule = { render: renderDRE, setModo, setPeriodo, exportar };
+  window.DREModule = {
+    render: renderDRE, setModo, setPeriodo, exportar,
+    // ── API READ-ONLY p/ consumo por outros módulos (ex: Painel) ──
+    // Fonte única do cálculo gerencial consolidado — MESMA lógica do DRE Consolidado.
+    // Funções puras: NÃO renderizam, NÃO alteram período/modo, NÃO mudam o cálculo.
+    // OBRIGATÓRIO no consumidor (ex: Painel/lote B): chamar `await DREModule.garantirContasAdmin()`
+    //   UMA VEZ antes de qualquer calcGerencial* — senão o Resultado volta SEM despesa admin
+    //   (hoje R$0, então bate; mas vira bug latente quando houver conta admin paga).
+    calcGerencialConsolidado: function (per) { return _calcCons(per || ''); },
+    calcGerencialPorObra: function (obraId, per) { return _calcObra(obraId, per || ''); },
+    calcGerencialOverhead: function (per) { return _calcOverheadInterno(per || ''); },
+    listarObrasReais: function () { return _todasObras(); },
+    // Único ponto que toca dados: popula o cache de contas admin (idêntico ao load do DRE),
+    // idempotente. Consumidor chama 1x antes de calcular p/ o Resultado bater se houver desp. admin.
+    garantirContasAdmin: async function () { if (!_loaded) await _loadContasAdmin(); }
+  };
 
   if (typeof viewRegistry !== 'undefined') {
     viewRegistry.register('dre', renderDRE);
