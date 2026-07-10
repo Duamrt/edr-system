@@ -396,6 +396,48 @@ function _dashBuildUltimosLanc(ultimos, obraMap) {
 
 // ── KPIs ──────────────────────────────────────────────────────
 
+function _dashBuildTopoGerencial(c, oh, carteiraAtiva) {
+  // Fallback defensivo: se a API do DRE não respondeu, não quebra o Painel.
+  if (!c) return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px;color:var(--text-tertiary);font-size:12px;font-family:Inter,sans-serif;">Resumo gerencial indisponível — abra o DRE uma vez.</div>`;
+
+  const corRes = c.resultado >= 0 ? 'var(--success)' : 'var(--danger)';
+  const margem = (typeof c.mBruta === 'number' ? c.mBruta : 0).toFixed(1);
+  const foraOh = oh ? Number(oh.foraResultado || 0) : 0;
+
+  const cardDRE = (label, valor, cor, sub) => `
+    <div style="background:var(--surface);border:1px solid var(--border);border-top:3px solid ${cor};border-radius:12px;padding:14px 15px;">
+      <div style="font-size:10px;color:var(--text-tertiary);font-weight:700;letter-spacing:.5px;text-transform:uppercase;font-family:Inter,sans-serif;">${label}</div>
+      <div style="font-size:20px;font-weight:800;font-family:'Space Grotesk',monospace;color:${cor};letter-spacing:-.5px;margin-top:5px;line-height:1.1;">${valor}</div>
+      <div style="font-size:10px;color:var(--text-tertiary);margin-top:4px;font-family:Inter,sans-serif;">${sub}</div>
+    </div>`;
+
+  const cardCarteira = `
+    <div style="background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:14px 15px;">
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+        <span style="font-size:10px;color:var(--text-tertiary);font-weight:700;letter-spacing:.5px;text-transform:uppercase;font-family:Inter,sans-serif;">Carteira contratada ativa</span>
+        <span style="font-size:8px;background:var(--text-tertiary);color:var(--surface);padding:1px 5px;border-radius:5px;font-weight:800;letter-spacing:.5px;font-family:Inter,sans-serif;">COMERCIAL</span>
+      </div>
+      <div style="font-size:20px;font-weight:800;font-family:'Space Grotesk',monospace;color:var(--text-secondary);letter-spacing:-.5px;margin-top:5px;line-height:1.1;">${fmt(carteiraAtiva)}</div>
+      <div style="font-size:10px;color:var(--text-tertiary);margin-top:4px;font-family:Inter,sans-serif;">contratos ativos, não realizado</div>
+    </div>`;
+
+  const cols = window.innerWidth <= 768 ? 2 : 4;
+  return `<div style="margin-bottom:16px;">
+    <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;color:var(--text-primary);margin-bottom:10px;display:flex;align-items:center;gap:8px;"><span class="material-symbols-outlined" style="font-size:18px;color:#2D6A4F;">insights</span> Como estou agora <span style="font-size:10px;font-weight:700;color:var(--text-tertiary);letter-spacing:.5px;">· GERENCIAL (DRE)</span></div>
+    <div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:10px;">
+      ${cardDRE('Resultado (DRE)', fmt(c.resultado), corRes, 'margem ' + margem + '%')}
+      ${cardDRE('Receita realizada', fmt(c.recBruta), '#2D6A4F', 'medições + adicionais')}
+      ${cardDRE('Custo aplicado em obras', fmt(c.custoObras), 'var(--warning)', 'mão + material, sem escritório')}
+      ${cardCarteira}
+    </div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;font-size:11px;color:var(--text-tertiary);font-family:Inter,sans-serif;">
+      <span>Overhead a classificar: <b style="color:var(--warning);font-family:'Space Grotesk',monospace;">${fmt(foraOh)}</b> <span style="opacity:.8;">(fora do resultado)</span></span>
+    </div>
+  </div>`;
+}
+
+// LEGADO — NÃO CHAMADO (grep=0, sem fallback). Substituído por _dashBuildTopoGerencial (sub-lote B).
+// Mantido SÓ p/ rollback rápido; REMOVER no sub-lote C após validação visual do topo novo.
 function _dashBuildKPIs(m, porObra) {
   const contasVenc = typeof getContasVencidas === 'function' ? getContasVencidas().length : 0;
   const valEstoque = typeof _valorEstoqueAtual !== 'undefined' ? _valorEstoqueAtual : 0;
@@ -733,8 +775,15 @@ function renderDashboard() {
   el.innerHTML = '<div class="skeleton-block" style="height:120px;border-radius:16px;margin-bottom:12px;"></div>'.repeat(4);
 
   // Async: libera thread pra pintar skeleton, depois calcula
-  requestAnimationFrame(() => {
+  requestAnimationFrame(async () => {
     if (typeof calcularValorEstoque === 'function') calcularValorEstoque();
+    // Sub-lote B: topo do Painel consome a verdade gerencial do DRE (fonte única, sem reimplementar fórmula).
+    // OBRIGATÓRIO: garantir contas admin ANTES de calcular (senão Resultado vem sem desp. admin — bug latente).
+    if (window.DREModule && DREModule.garantirContasAdmin) { try { await DREModule.garantirContasAdmin(); } catch (e) { console.warn('[DASH] garantirContasAdmin falhou', e); } }
+    const cGer = (window.DREModule && DREModule.calcGerencialConsolidado) ? DREModule.calcGerencialConsolidado('') : null;
+    const ohGer = (window.DREModule && DREModule.calcGerencialOverhead) ? DREModule.calcGerencialOverhead('') : null;
+    const obrasAtivasReais = (window.DREModule && DREModule.listarObrasReais) ? DREModule.listarObrasReais().filter(o => !o.arquivada) : (typeof obras !== 'undefined' ? obras : []);
+    const carteiraAtiva = obrasAtivasReais.reduce((s, o) => s + Number(o.valor_venda || 0), 0);
     const m = _dashCalcMetricas();
     const porObra = _dashCalcPorObra(m.lancAtivos);
     const alertas = porObra.filter(o => o.vv > 0 && o.margem < 0);
@@ -744,7 +793,7 @@ function renderDashboard() {
 
     if (isMobile) {
       const pages = [
-        { label: 'Resumo', icon: 'dashboard', html: _dashBuildKPIs(m, porObra) + _dashBuildAlertas(alertas) + _dashBuildContasVencidas() + _dashBuildAcaoNecessaria() + '<div id="dash-exec-obras-m"></div>' + _dashBuildAgenda() },
+        { label: 'Resumo', icon: 'dashboard', html: _dashBuildTopoGerencial(cGer, ohGer, carteiraAtiva) + _dashBuildAlertas(alertas) + _dashBuildContasVencidas() + _dashBuildAcaoNecessaria() + '<div id="dash-exec-obras-m"></div>' + _dashBuildAgenda() },
         { label: 'Financeiro', icon: 'bar_chart', html: _dashBuildResumoFinanceiro(porObra) },
         { label: 'Obras', icon: 'domain', html: _dashBuildSaudeObras(porObra) },
       ];
@@ -764,7 +813,7 @@ function renderDashboard() {
       _dashMobileSwipeInit();
     } else {
       const deskPages = [
-        { label: 'Resumo', icon: 'dashboard', html: _dashBuildKPIs(m, porObra) + _dashBuildAlertas(alertas) + _dashBuildContasVencidas() + _dashBuildAcaoNecessaria() + '<div id="dash-exec-obras"></div>' },
+        { label: 'Resumo', icon: 'dashboard', html: _dashBuildTopoGerencial(cGer, ohGer, carteiraAtiva) + _dashBuildAlertas(alertas) + _dashBuildContasVencidas() + _dashBuildAcaoNecessaria() + '<div id="dash-exec-obras"></div>' },
         { label: 'Financeiro', icon: 'bar_chart', html: _dashBuildResumoFinanceiro(porObra) },
       ];
 
