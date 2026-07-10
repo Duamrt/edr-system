@@ -610,8 +610,8 @@ function _dashBuildResumoFinanceiro(porObra) {
       <div style="font-size:10px;color:var(--text-tertiary);margin-top:6px;font-family:Inter,sans-serif;">${sub}</div>
     </div>`;
 
-  const subEntradas = filtroMes ? 'Repasses do mes' : 'PLs + Entrada + Terreno';
-  const subSaidas = 'Material: ' + _dashFmtR(totalSaidas - totalMao) + ' · Mao de obra: ' + _dashFmtR(totalMao) + ' · s/ admin/impostos';
+  const subEntradas = filtroMes ? 'Repasses do mes' : 'PLS + Entrada + Terreno + Adicionais';
+  const subSaidas = 'Total lançado nas obras (mão de obra + material + impostos)';
 
   let html = `<div style="margin-bottom:20px;">
     <div style="font-size:13px;font-weight:700;color:#2D6A4F;letter-spacing:2px;margin-bottom:14px;font-family:'Plus Jakarta Sans',sans-serif;display:flex;align-items:center;gap:8px;"><span class="material-symbols-outlined" style="font-size:20px;">bar_chart</span> RESUMO FINANCEIRO — ${periodoLabel}</div>
@@ -624,25 +624,25 @@ function _dashBuildResumoFinanceiro(porObra) {
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:14px;">
       ${cardG('trending_up', filtroMes ? 'RECEBIDO NO MES' : 'RECEBIDO', totalEntradas, 'var(--success)', subEntradas)}
       ${cardG('trending_down', filtroMes ? 'APLICADO NO MES' : 'APLICADO NAS OBRAS', totalSaidas, 'var(--danger)', subSaidas)}
-      ${filtroMes ? cardG('account_balance', 'DISPONIVEL NO MES', saldoGeral, saldoGeral >= 0 ? 'var(--success)' : 'var(--danger)', 'Recebido - Aplicado no periodo') : cardG('account_balance_wallet', 'FALTA RECEBER', totalReceita - totalEntradas, '#3b82f6', 'Receita: ' + _dashFmtR(totalReceita))}
+      ${filtroMes ? cardG('account_balance', 'DISPONIVEL NO MES', saldoGeral, saldoGeral >= 0 ? 'var(--success)' : 'var(--danger)', 'Recebido - Aplicado no periodo') : cardG('account_balance_wallet', 'A RECEBER DA CARTEIRA', totalReceita - totalEntradas, '#3b82f6', 'Carteira: ' + _dashFmtR(totalReceita))}
     </div>`;
 
   // Barra progresso (modo geral)
   if (!filtroMes) {
     html += `<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:14px;">
-      <div style="font-size:10px;color:var(--text-tertiary);font-weight:700;letter-spacing:1px;margin-bottom:8px;font-family:'Space Grotesk',monospace;">RECEBIDO vs RECEITA TOTAL</div>
+      <div style="font-size:10px;color:var(--text-tertiary);font-weight:700;letter-spacing:1px;margin-bottom:8px;font-family:'Space Grotesk',monospace;">RECEBIDO vs CARTEIRA</div>
       <div style="height:10px;background:var(--border);border-radius:5px;overflow:hidden;">
         <div style="height:100%;width:${Math.min(pctRecebGeral, 100)}%;background:linear-gradient(90deg,#2D6A4F,#1B4332);border-radius:5px;transition:width .5s;"></div>
       </div>
       <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:10px;color:var(--text-tertiary);font-family:Inter,sans-serif;">
         <span>Recebido: <strong style="color:#2D6A4F;">${_dashFmtR(totalEntradas)}</strong> (${pctRecebGeral.toFixed(0)}%)</span>
-        <span>Receita: <strong style="color:var(--text-primary);">${_dashFmtR(totalReceita)}</strong></span>
+        <span>Carteira: <strong style="color:var(--text-primary);">${_dashFmtR(totalReceita)}</strong></span>
       </div>
     </div>`;
 
     html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
       ${cardG('account_balance', 'DISPONIVEL', saldoGeral, saldoGeral >= 0 ? 'var(--success)' : 'var(--danger)', 'Recebido que ainda nao foi aplicado')}
-      ${cardG('trending_up', 'LUCRO PROJETADO', lucroProjetado, lucroProjetado >= 0 ? 'var(--warning)' : 'var(--danger)', 'Margem bruta de obra: ' + margemProj.toFixed(0) + '% · s/ admin/impostos')}
+      ${cardG('trending_up', 'PROJEÇÃO POR CARTEIRA', lucroProjetado, lucroProjetado >= 0 ? 'var(--warning)' : 'var(--danger)', 'contratos ativos − aplicado nas obras')}
     </div>`;
   }
 
@@ -679,7 +679,7 @@ function _dashBuildResumoFinanceiro(porObra) {
       <div style="display:grid;grid-template-columns:repeat(${filtroMes ? 3 : 4},1fr);gap:8px;margin-bottom:10px;">
         <div><div style="font-size:9px;color:var(--text-tertiary);font-weight:700;letter-spacing:0.5px;margin-bottom:2px;font-family:'Space Grotesk',monospace;">ENTRADAS</div><div style="font-size:13px;font-weight:800;color:var(--success);font-family:'Space Grotesk',monospace;">${_dashFmtR(o.entradas, true)}</div></div>
         <div><div style="font-size:9px;color:var(--text-tertiary);font-weight:700;letter-spacing:0.5px;margin-bottom:2px;font-family:'Space Grotesk',monospace;">SAIDAS</div><div style="font-size:13px;font-weight:800;color:var(--danger);font-family:'Space Grotesk',monospace;">${_dashFmtR(o.custo, true)}</div></div>
-        ${filtroMes ? '' : '<div><div style="font-size:9px;color:var(--text-tertiary);font-weight:700;letter-spacing:0.5px;margin-bottom:2px;font-family:\'Space Grotesk\',monospace;">FALTA RECEBER</div><div style="font-size:13px;font-weight:800;color:#3b82f6;font-family:\'Space Grotesk\',monospace;">' + _dashFmtR(o.faltaReceber, true) + '</div></div>'}
+        ${filtroMes ? '' : '<div><div style="font-size:9px;color:var(--text-tertiary);font-weight:700;letter-spacing:0.5px;margin-bottom:2px;font-family:\'Space Grotesk\',monospace;">A RECEBER</div><div style="font-size:13px;font-weight:800;color:#3b82f6;font-family:\'Space Grotesk\',monospace;">' + _dashFmtR(o.faltaReceber, true) + '</div></div>'}
         <div><div style="font-size:9px;color:var(--text-tertiary);font-weight:700;letter-spacing:0.5px;margin-bottom:2px;font-family:'Space Grotesk',monospace;">SALDO</div><div style="font-size:13px;font-weight:800;color:${corSaldo};font-family:'Space Grotesk',monospace;">${_dashFmtR(o.saldo, true)}</div></div>
       </div>
       ${filtroMes ? '' : '<div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden;"><div style="height:100%;width:' + Math.min(o.pctReceb, 100) + '%;background:linear-gradient(90deg,#2D6A4F,rgba(45,106,79,0.6));border-radius:3px;transition:width .5s;"></div></div>'}
