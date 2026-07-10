@@ -816,32 +816,41 @@ function renderDashboard() {
 async function _dashRenderExecObras() {
   try {
     if (!PciModule.medicoes.length) await PciModule._carregar();
-    const obrasAtivas = (typeof obras !== 'undefined' ? obras : []).filter(o => !o.arquivada);
+    // D1: exclui EDR-ESCRITÓRIO via listarObrasReais (fonte única) + só ativas (não arquivadas).
+    const _base = (window.DREModule && DREModule.listarObrasReais) ? DREModule.listarObrasReais() : (typeof obras !== 'undefined' ? obras : []);
+    const obrasAtivas = _base.filter(o => !o.arquivada);
     if (!obrasAtivas.length) return;
 
-    const rows = obrasAtivas.map(obra => {
+    const linhas = obrasAtivas.map(obra => {
       const medicao = PciModule.medicoes.find(m => m.obra_id === obra.id);
       const exec = medicao ? PciModule._calcExec(medicao.id) : null;
       const cor = exec !== null ? PciModule._corProg(exec) : 'var(--text-tertiary)';
       const dataAtual = medicao && medicao.data_levantamento
         ? medicao.data_levantamento.split('-').reverse().join('/')
         : '—';
-      return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);">
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:12px;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:Inter,sans-serif;">${esc(obra.nome)}</div>
-          <div style="font-size:10px;color:var(--text-tertiary);margin-top:2px;font-family:'Space Grotesk',monospace;">Última medição: ${dataAtual}</div>
-        </div>
-        <div style="width:90px;">
-          <div style="width:100%;height:5px;background:var(--border);border-radius:3px;overflow:hidden;">
+      return { obra, exec, cor, dataAtual };
+    }).sort((a, b) => (b.exec ?? -1) - (a.exec ?? -1));
+
+    const _th = `font-size:9px;color:var(--text-tertiary);font-weight:700;letter-spacing:.5px;text-transform:uppercase;font-family:Inter,sans-serif;`;
+    const _cols = `grid-template-columns:1fr 96px 132px;`;
+    const rows = `<div style="display:grid;${_cols}gap:10px;padding:4px 0 8px;border-bottom:1px solid var(--border);">
+        <span style="${_th}">Obra</span>
+        <span style="${_th}text-align:right;">Última medição</span>
+        <span style="${_th}text-align:right;">Execução</span>
+      </div>` + linhas.map(({ obra, exec, cor, dataAtual }) => `
+      <div style="display:grid;${_cols}gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);">
+        <span style="font-size:12px;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:Inter,sans-serif;">${esc(obra.nome)}</span>
+        <span style="font-size:11px;color:var(--text-tertiary);text-align:right;font-family:'Space Grotesk',monospace;">${dataAtual}</span>
+        <div style="display:flex;align-items:center;gap:8px;justify-content:flex-end;">
+          <div style="flex:1;max-width:76px;height:5px;background:var(--border);border-radius:3px;overflow:hidden;">
             <div style="width:${exec ?? 0}%;height:100%;background:${cor};border-radius:3px;transition:width .4s;"></div>
           </div>
+          <span style="font-size:11px;font-weight:700;color:${cor};min-width:42px;text-align:right;font-family:'Space Grotesk',monospace;">${exec !== null ? exec.toFixed(1) + '%' : '—'}</span>
         </div>
-        <span style="font-size:11px;font-weight:700;color:${cor};min-width:40px;text-align:right;font-family:'Space Grotesk',monospace;">${exec !== null ? exec.toFixed(1) + '%' : '—'}</span>
-      </div>`;
-    }).join('');
+      </div>`).join('');
 
     const html = `<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:14px;">
-      <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;color:#2D6A4F;letter-spacing:2px;margin-bottom:10px;display:flex;align-items:center;gap:6px;">
+      <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;color:#2D6A4F;letter-spacing:2px;margin-bottom:6px;display:flex;align-items:center;gap:6px;">
         <span class="material-symbols-outlined" style="font-size:18px;">construction</span> EXECUÇÃO DAS OBRAS
       </div>
       ${rows}
