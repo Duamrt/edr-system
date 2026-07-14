@@ -142,14 +142,16 @@ function _relMsgVazio() {
   return '<div style="text-align:center;padding:60px 20px;color:var(--text-tertiary);font-size:13px;font-family:Inter,sans-serif;">Nenhum lancamento encontrado para o periodo selecionado.</div>';
 }
 
-function _relGetObrasIdsAtivas() { return new Set(obras.filter(o => !o.arquivada).map(o => o.id)); }
+function _relIdsInternas() { return new Set((typeof window !== 'undefined' && window.OBRAS_INTERNAS) || []); }
+function _relGetObrasIdsAtivas() { const _int = _relIdsInternas(); return new Set(obras.filter(o => !o.arquivada && !_int.has(o.id)).map(o => o.id)); }
 
 // Helper: entradas/saídas/mão de obra de um mês, respeitando filtro de obras ativas
 function _relCalcMes(ym, mostrar, idsAtivas) {
   const _adics = typeof adicionais !== 'undefined' ? adicionais : [];
+  const _int = _relIdsInternas();
   const lancMes = lancamentos.filter(l => {
     if (!l.data || !l.data.startsWith(ym)) return false;
-    return mostrar || !l.obra_id || idsAtivas.has(l.obra_id);
+    return (mostrar || !l.obra_id || idsAtivas.has(l.obra_id)) && !_int.has(l.obra_id);
   });
   const saidas = lancMes.reduce((s, l) => s + Number(l.total || 0), 0);
   const maoObra = lancMes.filter(l => getCatFromLanc(l) === '28_mao').reduce((s, l) => s + Number(l.total || 0), 0);
@@ -163,7 +165,7 @@ function _relCalcMes(ym, mostrar, idsAtivas) {
   }).reduce((s, p) => s + Number(p.valor || 0), 0);
   const entRep = _relGetRepassesCef().filter(r => {
     if (!r.data_credito || !r.data_credito.startsWith(ym)) return false;
-    return mostrar || !r.obra_id || idsAtivas.has(r.obra_id);
+    return (mostrar || !r.obra_id || idsAtivas.has(r.obra_id)) && !_int.has(r.obra_id);
   }).reduce((s, r) => s + Number(r.valor || 0), 0);
   const entradas = entAdic + entRep;
   return { entradas, saidas, maoObra, saldo: entradas - saidas };
@@ -199,7 +201,8 @@ function _relBuildPainelFinanceiro() {
 
   // Saidas do mes
   const lancMesTodas = _relGetLancMes(ym);
-  const lancMes = mostrar ? lancMesTodas : lancMesTodas.filter(l => !l.obra_id || idsAtivas.has(l.obra_id));
+  const _int = _relIdsInternas();
+  const lancMes = (mostrar ? lancMesTodas : lancMesTodas.filter(l => !l.obra_id || idsAtivas.has(l.obra_id))).filter(l => !_int.has(l.obra_id));
   const totalSaidas = lancMes.reduce((s, l) => s + Number(l.total || 0), 0);
   const lancMaoObra = lancMes.filter(l => getCatFromLanc(l) === '28_mao');
   const maoObraMes = lancMaoObra.reduce((s, l) => s + Number(l.total || 0), 0);
@@ -217,9 +220,9 @@ function _relBuildPainelFinanceiro() {
     return true;
   });
   const totalPgtosAdic = pgtosMes.reduce((s, p) => s + Number(p.valor || 0), 0);
-  const repassesMes = mostrar
+  const repassesMes = (mostrar
     ? _relGetRepassesMes(ym)
-    : _relGetRepassesMes(ym).filter(r => !r.obra_id || idsAtivas.has(r.obra_id));
+    : _relGetRepassesMes(ym).filter(r => !r.obra_id || idsAtivas.has(r.obra_id))).filter(r => !_int.has(r.obra_id));
   const totalRepasses = repassesMes.reduce((s, r) => s + Number(r.valor || 0), 0);
   const plsMes = repassesMes.filter(r => (r.tipo || 'pls') === 'pls').reduce((s, r) => s + Number(r.valor || 0), 0);
   const entradaMes = repassesMes.filter(r => r.tipo === 'entrada').reduce((s, r) => s + Number(r.valor || 0), 0);
@@ -509,7 +512,8 @@ function _relBuildGraficoMensal(ymBase, mostrar, idsAtivas) {
 
 function _relBuildDetalheObras(ym) {
   const mostrar = RelatorioModule.mostrarConcluidas;
-  const obrasAtivas = mostrar ? [...obras, ...(typeof obrasArquivadas !== 'undefined' ? obrasArquivadas : [])] : obras.filter(o => !o.arquivada);
+  const _int = _relIdsInternas();
+  const obrasAtivas = (mostrar ? [...obras, ...(typeof obrasArquivadas !== 'undefined' ? obrasArquivadas : [])] : obras.filter(o => !o.arquivada)).filter(o => !_int.has(o.id));
   if (!obrasAtivas.length) return '';
 
   const dados = obrasAtivas.map(o => {
