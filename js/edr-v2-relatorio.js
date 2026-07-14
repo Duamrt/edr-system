@@ -256,6 +256,13 @@ function _relBuildPainelFinanceiro() {
     ${_relCardResumo('engineering', 'MAO DE OBRA', maoObraMes, 'var(--warning)', totalSaidas > 0 ? (maoObraMes / totalSaidas * 100).toFixed(0) + '% do total' : '—', "relToggleDetalheCard('mao')")}
   </div>`;
 
+  // R3 microcopy: regime de caixa + aviso de terreno como operacao a parte (so texto, nao toca calculo nem R$/m2)
+  const _relNotaTerreno = terrenoMes > 0 ? ' O total de entradas inclui terreno (operação à parte).' : '';
+  html += `<div style="display:flex;align-items:flex-start;gap:6px;margin:-8px 0 20px;font-size:11px;color:var(--text-tertiary);font-family:Inter,sans-serif;line-height:1.4;">
+    <span class="material-symbols-outlined" style="font-size:14px;flex-shrink:0;">info</span>
+    <span>Regime de caixa — entradas recebidas e saídas pagas no mês selecionado.${_relNotaTerreno}</span>
+  </div>`;
+
   // Estoque como patrimonio
   const valEstoque = typeof _valorEstoqueAtual !== 'undefined' ? _valorEstoqueAtual : 0;
   if (valEstoque > 0) {
