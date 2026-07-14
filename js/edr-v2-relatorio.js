@@ -239,16 +239,24 @@ function _relBuildPainelFinanceiro() {
   if (totalPgtosAdic > 0) subParts.push('Extras: ' + _relFmtR(totalPgtosAdic));
   const subEntradas = subParts.length ? subParts.join(' · ') : 'Nenhuma entrada no mes';
 
-  // Toggle obras concluidas
+  // V1 re-layout: indicadores por m2 PRIMEIRO (protagonista; acumulado por obra, nao depende do mes/toggle)
+  let html = _relBuildCustoPorM2();
+
+  // Controle global "Visao financeira por obra" — governa caixa/acumulado/grafico/detalhe/comparativo; NAO a tabela m2 acima
   const toggleAtivo = mostrar;
-  let html = `<div style="display:flex;justify-content:flex-end;margin-bottom:12px;">
+  html += `<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:4px;">
+    <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:700;color:var(--text-primary);display:flex;align-items:center;gap:8px;">
+      <span class="material-symbols-outlined" style="font-size:20px;color:#2D6A4F;">insights</span> Visão financeira por obra
+    </div>
     <span onclick="relToggleObrasConcluidas()" style="cursor:pointer;padding:6px 14px;border-radius:20px;font-size:11px;font-weight:600;color:${toggleAtivo ? 'var(--success)' : 'var(--text-tertiary)'};background:${toggleAtivo ? 'rgba(45,106,79,0.1)' : 'transparent'};border:1.5px solid ${toggleAtivo ? 'rgba(45,106,79,0.3)' : 'var(--border)'};transition:all .2s;user-select:none;font-family:Inter,sans-serif;">
       <span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;margin-right:4px;">${toggleAtivo ? 'check_circle' : 'filter_list'}</span>
-      ${toggleAtivo ? 'Mostrando concluidas' : 'So obras ativas'}
+      ${toggleAtivo ? 'Ativas + concluídas' : 'Obras ativas'}
     </span>
-  </div>`;
+  </div>
+  <div style="margin:0 0 16px;font-size:11px;color:var(--text-tertiary);font-family:Inter,sans-serif;line-height:1.4;">Aplica-se ao caixa mensal, acumulado, gráfico, detalhe e comparativo. Indicadores por m² mostram todas as obras com área.</div>
+  <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:700;color:var(--text-primary);margin-bottom:12px;display:flex;align-items:center;gap:8px;"><span class="material-symbols-outlined" style="font-size:20px;color:#2D6A4F;">account_balance_wallet</span> Movimento de caixa do mês — ${mesLabel}</div>`;
 
-  // Cards resumo
+  // Cards resumo (movimento de caixa do mes)
   html += `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:20px;">
     ${_relCardResumo('trending_up', 'ENTRADAS', totalEntradas, 'var(--success)', subEntradas, "relToggleDetalheCard('entradas')")}
     ${_relCardResumo('trending_down', 'SAIDAS', totalSaidas, 'var(--danger)', lancMes.length + ' lancamentos', "relToggleDetalheCard('saidas')")}
@@ -338,8 +346,6 @@ function _relBuildPainelFinanceiro() {
   html += _relBuildGraficoMensal(ym, mostrar, idsAtivas);
   // Detalhamento por obra
   html += _relBuildDetalheObras(ym);
-  // Custo por m2
-  html += _relBuildCustoPorM2();
 
   return html;
 }
@@ -603,45 +609,49 @@ function _relBuildCustoPorM2() {
     return { nome: o.nome, area, totalGasto, maoObra, custoM2, maoM2, vendaM2, lucroM2, margemPct, arquivada: o.arquivada };
   }).sort((a, b) => a.custoM2 - b.custoM2);
 
+  // V1 re-layout: tabela densa (reusa .custos-tbl). Destaque tipografico so em Custo/m2 e Lucro/m2; demais peso normal.
+  // Lucro/m2 mantem cor pelo SINAL (verde +, vermelho -) — nao e status inventado. Custo/m2 destacado porem neutro.
+  const numCel = "font-family:'Space Grotesk',monospace;text-align:right;white-space:nowrap;color:var(--text-secondary);";
   const linhas = dados.map(d => {
-    const corMargem = d.lucroM2 > 0 ? 'var(--success)' : d.vendaM2 > 0 ? 'var(--danger)' : 'var(--text-tertiary)';
-    const badge = d.arquivada ? '<span style="font-size:8px;background:rgba(45,106,79,0.15);color:#2D6A4F;padding:2px 6px;border-radius:4px;margin-left:6px;font-weight:700;font-family:Inter,sans-serif;">CONCLUIDA</span>' : '';
-    return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-        <div style="font-size:13px;font-weight:700;color:var(--text-primary);font-family:'Plus Jakarta Sans',sans-serif;">${esc(d.nome)}${badge}</div>
-        <div style="font-size:10px;color:var(--text-tertiary);font-family:'Space Grotesk',monospace;">${d.area.toFixed(1)} m²</div>
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px;">
-        <div>
-          <div style="font-size:9px;color:var(--text-tertiary);margin-bottom:2px;font-family:'Space Grotesk',monospace;">CUSTO / m²</div>
-          <div style="font-size:16px;font-weight:800;color:var(--danger);font-family:'Space Grotesk',monospace;">${_relFmtR(d.custoM2)}</div>
-        </div>
-        <div>
-          <div style="font-size:9px;color:var(--text-tertiary);margin-bottom:2px;font-family:'Space Grotesk',monospace;">MAO OBRA / m²</div>
-          <div style="font-size:16px;font-weight:800;color:var(--warning);font-family:'Space Grotesk',monospace;">${_relFmtR(d.maoM2)}</div>
-        </div>
-        ${d.vendaM2 > 0 ? `<div>
-          <div style="font-size:9px;color:var(--text-tertiary);margin-bottom:2px;font-family:'Space Grotesk',monospace;">VENDA / m²</div>
-          <div style="font-size:16px;font-weight:800;color:var(--success);font-family:'Space Grotesk',monospace;">${_relFmtR(d.vendaM2)}</div>
-        </div>
-        <div>
-          <div style="font-size:9px;color:var(--text-tertiary);margin-bottom:2px;font-family:'Space Grotesk',monospace;">LUCRO / m² · CONTRATO</div>
-          <div style="font-size:16px;font-weight:800;color:${corMargem};font-family:'Space Grotesk',monospace;">${_relFmtR(d.lucroM2)}</div>
-          <div style="font-size:9px;color:${corMargem};margin-top:2px;font-family:Inter,sans-serif;">Margem ${d.margemPct.toFixed(1)}% (venda − custo)</div>
-        </div>` : ''}
-      </div>
-      <div style="margin-top:10px;font-size:10px;color:var(--text-tertiary);font-family:Inter,sans-serif;">
-        Total gasto: ${_relFmtR(d.totalGasto)} · Mao de obra: ${_relFmtR(d.maoObra)} (${d.totalGasto > 0 ? (d.maoObra / d.totalGasto * 100).toFixed(0) : 0}%)
-      </div>
-    </div>`;
+    const corLucro = d.lucroM2 > 0 ? 'var(--success)' : d.vendaM2 > 0 ? 'var(--danger)' : 'var(--text-tertiary)';
+    const badge = d.arquivada ? '<span style="font-size:8px;background:rgba(45,106,79,0.15);color:#2D6A4F;padding:2px 6px;border-radius:4px;margin-left:6px;font-weight:700;font-family:Inter,sans-serif;vertical-align:middle;">CONCLUÍDA</span>' : '';
+    const temVenda = d.vendaM2 > 0;
+    return `<tr>
+      <td style="font-weight:700;color:var(--text-primary);font-family:'Plus Jakarta Sans',sans-serif;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(d.nome)}${badge}</td>
+      <td style="${numCel}">${d.area.toFixed(1)} m²</td>
+      <td style="text-align:right;white-space:nowrap;">
+        <div style="font-family:'Space Grotesk',monospace;font-size:15px;font-weight:800;color:var(--text-primary);">${_relFmtR(d.custoM2)}</div>
+        <div style="font-size:11px;color:var(--text-tertiary);font-family:Inter,sans-serif;margin-top:2px;">Total gasto: ${_relFmtR(d.totalGasto)}</div>
+      </td>
+      <td style="text-align:right;white-space:nowrap;">
+        <div style="font-family:'Space Grotesk',monospace;color:var(--text-secondary);">${_relFmtR(d.maoM2)}</div>
+        <div style="font-size:11px;color:var(--text-tertiary);font-family:Inter,sans-serif;margin-top:2px;">${d.totalGasto > 0 ? (d.maoObra / d.totalGasto * 100).toFixed(0) : 0}% do custo</div>
+      </td>
+      <td style="${numCel}">${temVenda ? _relFmtR(d.vendaM2) : '—'}</td>
+      <td style="font-family:'Space Grotesk',monospace;text-align:right;white-space:nowrap;font-size:15px;font-weight:800;color:${corLucro};">${temVenda ? _relFmtR(d.lucroM2) : '—'}</td>
+      <td style="${numCel}">${temVenda ? d.margemPct.toFixed(1) + '%' : '—'}</td>
+    </tr>`;
   }).join('');
 
-  return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:16px;">
-    <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:700;color:var(--text-primary);margin-bottom:6px;display:flex;align-items:center;gap:8px;">
-      <span class="material-symbols-outlined" style="font-size:20px;color:#2D6A4F;">straighten</span> CUSTO POR m²
+  return `<div style="margin-bottom:20px;">
+    <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:15px;font-weight:700;color:var(--text-primary);margin-bottom:4px;display:flex;align-items:center;gap:8px;">
+      <span class="material-symbols-outlined" style="font-size:22px;color:#2D6A4F;">straighten</span> Indicadores por m² — acumulado por obra
     </div>
-    <div style="font-size:11px;color:var(--text-tertiary);margin-bottom:12px;font-family:Inter,sans-serif;">Comparativo de custo acumulado por area construida</div>
-    ${linhas}
+    <div style="font-size:11px;color:var(--text-tertiary);margin-bottom:12px;font-family:Inter,sans-serif;line-height:1.5;">Não depende do mês selecionado.<br>Todas as obras com área; concluídas identificadas.</div>
+    <div class="custos-tbl-wrap">
+      <table class="custos-tbl">
+        <thead><tr>
+          <th>Obra</th>
+          <th style="text-align:right;">Área</th>
+          <th style="text-align:right;">Custo/m²</th>
+          <th style="text-align:right;">Mão/m²</th>
+          <th style="text-align:right;">Venda/m²</th>
+          <th style="text-align:right;">Lucro/m² · contrato</th>
+          <th style="text-align:right;">Margem</th>
+        </tr></thead>
+        <tbody>${linhas}</tbody>
+      </table>
+    </div>
   </div>`;
 }
 
