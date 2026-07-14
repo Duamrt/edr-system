@@ -131,10 +131,10 @@ function _rxBadge(status) {
   return `<span class="rx-badge ${cls}">${lab}</span>`;
 }
 
-function _rxMetric(lab, val, cor, sub) {
-  // 'cor' inline (ex.: '#2563eb' do LOCK "Falta receber") -> ramo LEGADO byte-idêntico ao original, SEM nenhuma classe .rx-*.
-  const isInline = typeof cor === 'string' && (cor[0] === '#' || cor.indexOf('var(') === 0);
-  if (isInline) {
+function _rxMetric(lab, val, cor, sub, preservarLegado) {
+  // preservarLegado=true SÓ para o "Falta receber" (LOCK 2026-05-28): HTML byte-idêntico ao original, sem classe .rx-*.
+  // A decisão depende do LOCK (flag explícito), NÃO do formato da cor — evita métrica futura cair no legado por engano.
+  if (preservarLegado) {
     return `<div style="display:flex;flex-direction:column;gap:2px;">
     <div style="font-size:9.5px;letter-spacing:.4px;text-transform:uppercase;color:var(--text-tertiary);font-weight:700;font-family:'Space Grotesk',monospace;">${lab}</div>
     <div style="font-size:15px;font-weight:700;color:${cor};font-family:'Plus Jakarta Sans',sans-serif;">${val}</div>
@@ -165,7 +165,7 @@ function _rxCardObra(x) {
       _rxMetric('Projeção por contrato', _rxFmt(x.lucro), x.lucro >= 0 ? 'rx-success' : 'rx-danger', x.receita > 0 ? ('margem ' + x.margem.toFixed(0) + '%') : '') +
       _rxMetric('Recebido', _rxFmt(x.receb), 'rx-success') +
       _rxMetric('Saldo de fluxo acumulado', _rxFmt(x.caixa), x.caixa >= 0 ? 'rx-success' : 'rx-danger', 'recebido − custo, acumulado') +
-      _rxMetric('Falta receber', x.aReceber < 10 ? 'quitado' : _rxFmt(x.aReceber), '#2563eb', arSub);
+      _rxMetric('Falta receber', x.aReceber < 10 ? 'quitado' : _rxFmt(x.aReceber), '#2563eb', arSub, true); // LOCK: preservarLegado
   }
 
   // barra de recebimento
