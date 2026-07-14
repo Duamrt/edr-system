@@ -34,8 +34,11 @@ function _rxK(v) { return 'R$ ' + Math.round(Number(v) || 0).toLocaleString('pt-
 function _rxEsc(s) { return (typeof esc === 'function') ? esc(s) : String(s == null ? '' : s); }
 
 function _rxStatus(o) {
+  // RX1: alinha ao contrato compartilhado (OBRAS_INTERNAS por ID, exposto por custos.js) + fallback de nome.
+  // ADITIVO: escritorio ja e pego por nome; ID so adiciona robustez p/ futura interna sem ESCRIT/ALMOX no nome.
+  const internas = (typeof window !== 'undefined' && Array.isArray(window.OBRAS_INTERNAS)) ? window.OBRAS_INTERNAS : [];
   const nome = (o.nome || '').toUpperCase();
-  if (nome.includes('ESCRIT') || nome.includes('ALMOX')) return 'estrutura';
+  if (internas.includes(o.id) || nome.includes('ESCRIT') || nome.includes('ALMOX')) return 'estrutura';
   if (o.arquivada) return 'concluida';
   return 'andamento';
 }
