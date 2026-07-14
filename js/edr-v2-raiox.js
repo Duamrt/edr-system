@@ -89,19 +89,27 @@ function _rxKpisHtml(linhas) {
 
   // [LOCK 2026-05-28] destaque azul (cor #2563eb + destaque:true) do card "Falta receber" é proposital — Duam pediu pra fixar. NÃO mover/remover sem pedido explícito.
   const cards = [
-    { lab: 'Contratos', val: _rxK(contratos), sub: reais.length + ' obras · valor de venda', cor: 'var(--text-primary)' },
-    { lab: 'Serviços extras', val: _rxK(extras), sub: 'entrou a mais (adicionais)', cor: '#2563eb' },
-    { lab: 'Recebido', val: _rxK(recebido), sub: 'entrou no caixa', cor: '#16a34a' },
-    { lab: 'Custo realizado', val: _rxK(custo), sub: 'saiu' + (estrut > 0 ? ' · +' + _rxK(estrut) + ' estrutura' : ''), cor: '#b45309' },
-    { lab: 'Saldo de fluxo acumulado', val: _rxK(caixa), sub: 'recebido − custo, acumulado', cor: caixa >= 0 ? '#16a34a' : '#dc2626' },
-    { lab: 'Projeção por contrato', val: _rxK(lucro), sub: 'contrato + extras − custo realizado', cor: lucro >= 0 ? '#16a34a' : '#dc2626' },
+    { lab: 'Contratos', val: _rxK(contratos), sub: reais.length + ' obras · valor de venda', cls: 'rx-default' },
+    { lab: 'Serviços extras', val: _rxK(extras), sub: 'entrou a mais (adicionais)', cls: 'rx-info' },
+    { lab: 'Recebido', val: _rxK(recebido), sub: 'entrou no caixa', cls: 'rx-success' },
+    { lab: 'Custo realizado', val: _rxK(custo), sub: 'saiu' + (estrut > 0 ? ' · +' + _rxK(estrut) + ' estrutura' : ''), cls: 'rx-warning' },
+    { lab: 'Saldo de fluxo acumulado', val: _rxK(caixa), sub: 'recebido − custo, acumulado', cls: caixa >= 0 ? 'rx-success' : 'rx-danger' },
+    { lab: 'Projeção por contrato', val: _rxK(lucro), sub: 'contrato + extras − custo realizado', cls: lucro >= 0 ? 'rx-success' : 'rx-danger' },
     { lab: 'Falta receber', val: _rxK(aReceber), sub: 'contrato + extras', cor: '#2563eb', destaque: true },
   ];
-  return cards.map(c => `
-    <div style="background:var(--surface);border:1px solid ${c.destaque ? '#bfdbfe' : 'var(--border)'};border-radius:14px;padding:14px 16px;${c.destaque ? 'box-shadow:0 0 0 1px #bfdbfe inset;' : ''}">
+  // Ramo 'destaque' = card "Falta receber": HTML/cor/box byte-idênticos ao original (LOCK 2026-05-28, fora do RX3+4).
+  return cards.map(c => c.destaque
+    ? `
+    <div style="background:var(--surface);border:1px solid #bfdbfe;border-radius:14px;padding:14px 16px;box-shadow:0 0 0 1px #bfdbfe inset;">
       <div style="font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;color:var(--text-tertiary);font-weight:700;font-family:'Space Grotesk',monospace;">${c.lab}</div>
       <div style="font-size:21px;font-weight:800;color:${c.cor};margin-top:4px;font-family:'Plus Jakarta Sans',sans-serif;">${c.val}</div>
       <div style="font-size:11px;color:var(--text-tertiary);margin-top:2px;font-family:Inter,sans-serif;">${c.sub}</div>
+    </div>`
+    : `
+    <div class="rx-kpi">
+      <div class="rx-kpi-lab">${c.lab}</div>
+      <div class="rx-kpi-val ${c.cls}">${c.val}</div>
+      <div class="rx-kpi-sub">${c.sub}</div>
     </div>`).join('');
 }
 
@@ -115,19 +123,29 @@ function _rxFiltrosHtml(f) {
 // ── CARD DE OBRA ───────────────────────────────────────────────
 function _rxBadge(status) {
   const map = {
-    andamento: ['Em obra', '#2D6A4F', 'rgba(45,106,79,0.1)'],
-    concluida: ['Concluída', '#2563eb', 'rgba(37,99,235,0.1)'],
-    estrutura: ['Estrutura', '#6b7280', 'rgba(107,114,128,0.12)'],
+    andamento: ['Em obra', 'rx-badge--andamento'],
+    concluida: ['Concluída', 'rx-badge--concluida'],
+    estrutura: ['Estrutura', 'rx-badge--estrutura'],
   };
-  const [lab, cor, bg] = map[status] || map.estrutura;
-  return `<span style="font-family:'Space Grotesk',monospace;font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;padding:3px 9px;border-radius:6px;color:${cor};background:${bg};">${lab}</span>`;
+  const [lab, cls] = map[status] || map.estrutura;
+  return `<span class="rx-badge ${cls}">${lab}</span>`;
 }
 
 function _rxMetric(lab, val, cor, sub) {
-  return `<div style="display:flex;flex-direction:column;gap:2px;">
+  // 'cor' inline (ex.: '#2563eb' do LOCK "Falta receber") -> ramo LEGADO byte-idêntico ao original, SEM nenhuma classe .rx-*.
+  const isInline = typeof cor === 'string' && (cor[0] === '#' || cor.indexOf('var(') === 0);
+  if (isInline) {
+    return `<div style="display:flex;flex-direction:column;gap:2px;">
     <div style="font-size:9.5px;letter-spacing:.4px;text-transform:uppercase;color:var(--text-tertiary);font-weight:700;font-family:'Space Grotesk',monospace;">${lab}</div>
-    <div style="font-size:15px;font-weight:700;color:${cor || 'var(--text-primary)'};font-family:'Plus Jakarta Sans',sans-serif;">${val}</div>
+    <div style="font-size:15px;font-weight:700;color:${cor};font-family:'Plus Jakarta Sans',sans-serif;">${val}</div>
     ${sub ? `<div style="font-size:10px;color:var(--text-tertiary);font-family:Inter,sans-serif;">${sub}</div>` : ''}
+  </div>`;
+  }
+  // Ramo RX3+4: classe .rx-* (ou rx-default quando sem cor de status)
+  return `<div class="rx-metric">
+    <div class="rx-metric-lab">${lab}</div>
+    <div class="rx-metric-val ${cor || 'rx-default'}">${val}</div>
+    ${sub ? `<div class="rx-metric-sub">${sub}</div>` : ''}
   </div>`;
 }
 
@@ -137,16 +155,16 @@ function _rxCardObra(x) {
 
   let metricas;
   if (isEstrut) {
-    metricas = `${_rxMetric('Custo acumulado', _rxFmt(x.custo), '#b45309')}${_rxMetric('Material', _rxFmt(x.material))}${_rxMetric('Lançamentos', x.qtd + '')}`;
+    metricas = `${_rxMetric('Custo acumulado', _rxFmt(x.custo), 'rx-warning')}${_rxMetric('Material', _rxFmt(x.material))}${_rxMetric('Lançamentos', x.qtd + '')}`;
   } else {
     const arSub = x.aReceber < 10 ? 'quitado' : (x.extrasReceber > 0 ? ('contrato ' + _rxK(x.aReceberContrato) + ' + extras ' + _rxK(x.extrasReceber)) : 'do contrato');
     metricas =
       _rxMetric('Contrato (venda)', _rxFmt(x.contrato)) +
-      _rxMetric('Serviços extras', x.extras > 0 ? _rxFmt(x.extras) : '—', x.extras > 0 ? '#2563eb' : 'var(--text-tertiary)', x.adicQtd > 0 ? (x.adicQtd + ' item' + (x.adicQtd > 1 ? 's' : '')) : '') +
-      _rxMetric('Custo (saiu)', _rxFmt(x.custo), '#b45309') +
-      _rxMetric('Projeção por contrato', _rxFmt(x.lucro), x.lucro >= 0 ? '#16a34a' : '#dc2626', x.receita > 0 ? ('margem ' + x.margem.toFixed(0) + '%') : '') +
-      _rxMetric('Recebido', _rxFmt(x.receb), '#16a34a') +
-      _rxMetric('Saldo de fluxo acumulado', _rxFmt(x.caixa), x.caixa >= 0 ? '#16a34a' : '#dc2626', 'recebido − custo, acumulado') +
+      _rxMetric('Serviços extras', x.extras > 0 ? _rxFmt(x.extras) : '—', x.extras > 0 ? 'rx-info' : 'rx-muted', x.adicQtd > 0 ? (x.adicQtd + ' item' + (x.adicQtd > 1 ? 's' : '')) : '') +
+      _rxMetric('Custo (saiu)', _rxFmt(x.custo), 'rx-warning') +
+      _rxMetric('Projeção por contrato', _rxFmt(x.lucro), x.lucro >= 0 ? 'rx-success' : 'rx-danger', x.receita > 0 ? ('margem ' + x.margem.toFixed(0) + '%') : '') +
+      _rxMetric('Recebido', _rxFmt(x.receb), 'rx-success') +
+      _rxMetric('Saldo de fluxo acumulado', _rxFmt(x.caixa), x.caixa >= 0 ? 'rx-success' : 'rx-danger', 'recebido − custo, acumulado') +
       _rxMetric('Falta receber', x.aReceber < 10 ? 'quitado' : _rxFmt(x.aReceber), '#2563eb', arSub);
   }
 
@@ -169,13 +187,13 @@ function _rxCardObra(x) {
       <div style="display:flex;justify-content:space-between;font-family:'Space Grotesk',monospace;font-size:11px;color:var(--text-tertiary);margin-bottom:4px;">
         <span>Avanço da obra</span><span><b style="color:var(--text-secondary);">${x.prog}% construído</b>${x.pctGasto != null ? ' · ' + x.pctGasto + '% gasto' : ''}${alerta ? ' · ritmo de gasto alto' : ''}</span>
       </div>
-      <div style="height:8px;background:var(--surface-alt);border-radius:5px;overflow:hidden;">
-        <div style="height:100%;width:${x.prog}%;background:${alerta ? '#b45309' : '#1d4e89'};border-radius:5px;"></div>
+      <div class="rx-bar-track">
+        <div class="rx-bar-fill ${alerta ? 'rx-bar-fill--avanco-alerta' : 'rx-bar-fill--avanco'}" style="width:${x.prog}%;"></div>
       </div>
     </div>`;
   }
 
-  return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px 18px;margin-bottom:12px;">
+  return `<div class="rx-card">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
         <span style="font-family:'Plus Jakarta Sans',sans-serif;font-size:17px;font-weight:800;color:var(--text-primary);">${_rxEsc(o.nome)}</span>
