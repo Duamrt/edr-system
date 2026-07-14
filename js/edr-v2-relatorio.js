@@ -609,27 +609,26 @@ function _relBuildCustoPorM2() {
     return { nome: o.nome, area, totalGasto, maoObra, custoM2, maoM2, vendaM2, lucroM2, margemPct, arquivada: o.arquivada };
   }).sort((a, b) => a.custoM2 - b.custoM2);
 
-  // V1 re-layout: tabela densa (reusa .custos-tbl). Destaque tipografico so em Custo/m2 e Lucro/m2; demais peso normal.
-  // Lucro/m2 mantem cor pelo SINAL (verde +, vermelho -) — nao e status inventado. Custo/m2 destacado porem neutro.
-  const numCel = "font-family:'Space Grotesk',monospace;text-align:right;white-space:nowrap;color:var(--text-secondary);";
+  // V1.1 visual: cor de CATEGORIA fixa por metrica (classes .relm2-* no index.html, tokens existentes — NAO status).
+  // Custo=danger, Mao=warning, Venda=info(azul), Margem=info discreto (peso/opacidade menor, e derivada), Lucro=sinal.
   const linhas = dados.map(d => {
-    const corLucro = d.lucroM2 > 0 ? 'var(--success)' : d.vendaM2 > 0 ? 'var(--danger)' : 'var(--text-tertiary)';
     const badge = d.arquivada ? '<span style="font-size:8px;background:rgba(45,106,79,0.15);color:#2D6A4F;padding:2px 6px;border-radius:4px;margin-left:6px;font-weight:700;font-family:Inter,sans-serif;vertical-align:middle;">CONCLUÍDA</span>' : '';
     const temVenda = d.vendaM2 > 0;
+    const lucroCls = temVenda ? (d.lucroM2 > 0 ? 'pos' : 'neg') : 'nulo';
     return `<tr>
-      <td style="font-weight:700;color:var(--text-primary);font-family:'Plus Jakarta Sans',sans-serif;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(d.nome)}${badge}</td>
-      <td style="${numCel}">${d.area.toFixed(1)} m²</td>
-      <td style="text-align:right;white-space:nowrap;">
-        <div style="font-family:'Space Grotesk',monospace;font-size:15px;font-weight:800;color:var(--text-primary);">${_relFmtR(d.custoM2)}</div>
-        <div style="font-size:11px;color:var(--text-tertiary);font-family:Inter,sans-serif;margin-top:2px;">Total gasto: ${_relFmtR(d.totalGasto)}</div>
+      <td class="relm2-obra">${esc(d.nome)}${badge}</td>
+      <td class="relm2-cel relm2-neutro">${d.area.toFixed(1)} m²</td>
+      <td class="relm2-cel">
+        <div class="relm2-custo">${_relFmtR(d.custoM2)}</div>
+        <div class="relm2-sub">Total gasto: ${_relFmtR(d.totalGasto)}</div>
       </td>
-      <td style="text-align:right;white-space:nowrap;">
-        <div style="font-family:'Space Grotesk',monospace;color:var(--text-secondary);">${_relFmtR(d.maoM2)}</div>
-        <div style="font-size:11px;color:var(--text-tertiary);font-family:Inter,sans-serif;margin-top:2px;">${d.totalGasto > 0 ? (d.maoObra / d.totalGasto * 100).toFixed(0) : 0}% do custo</div>
+      <td class="relm2-cel">
+        <div class="relm2-mao">${_relFmtR(d.maoM2)}</div>
+        <div class="relm2-sub">${d.totalGasto > 0 ? (d.maoObra / d.totalGasto * 100).toFixed(0) : 0}% do custo</div>
       </td>
-      <td style="${numCel}">${temVenda ? _relFmtR(d.vendaM2) : '—'}</td>
-      <td style="font-family:'Space Grotesk',monospace;text-align:right;white-space:nowrap;font-size:15px;font-weight:800;color:${corLucro};">${temVenda ? _relFmtR(d.lucroM2) : '—'}</td>
-      <td style="${numCel}">${temVenda ? d.margemPct.toFixed(1) + '%' : '—'}</td>
+      <td class="relm2-cel ${temVenda ? 'relm2-venda' : 'relm2-neutro'}">${temVenda ? _relFmtR(d.vendaM2) : '—'}</td>
+      <td class="relm2-cel relm2-lucro ${lucroCls}">${temVenda ? _relFmtR(d.lucroM2) : '—'}</td>
+      <td class="relm2-cel ${temVenda ? 'relm2-margem' : 'relm2-neutro'}">${temVenda ? d.margemPct.toFixed(1) + '%' : '—'}</td>
     </tr>`;
   }).join('');
 
