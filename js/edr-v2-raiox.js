@@ -88,17 +88,17 @@ function _rxKpisHtml(linhas) {
   const estrut = linhas.filter(x => x.status === 'estrutura').reduce((s, x) => s + x.custo, 0);
 
   // [LOCK 2026-05-28] destaque azul (cor #2563eb + destaque:true) do card "Falta receber" é proposital — Duam pediu pra fixar. NÃO mover/remover sem pedido explícito.
-  const cards = [
-    { lab: 'Contratos', val: _rxK(contratos), sub: reais.length + ' obras · valor de venda', cls: 'rx-default' },
-    { lab: 'Serviços extras', val: _rxK(extras), sub: 'entrou a mais (adicionais)', cls: 'rx-info' },
-    { lab: 'Recebido', val: _rxK(recebido), sub: 'entrou no caixa', cls: 'rx-success' },
-    { lab: 'Custo realizado', val: _rxK(custo), sub: 'saiu' + (estrut > 0 ? ' · +' + _rxK(estrut) + ' estrutura' : ''), cls: 'rx-warning' },
-    { lab: 'Saldo de fluxo acumulado', val: _rxK(caixa), sub: 'recebido − custo, acumulado', cls: caixa >= 0 ? 'rx-success' : 'rx-danger' },
-    { lab: 'Projeção por contrato', val: _rxK(lucro), sub: 'contrato + extras − custo realizado', cls: lucro >= 0 ? 'rx-success' : 'rx-danger' },
-    { lab: 'Falta receber', val: _rxK(aReceber), sub: 'contrato + extras', cor: '#2563eb', destaque: true },
-  ];
-  // Ramo 'destaque' = card "Falta receber": HTML/cor/box byte-idênticos ao original (LOCK 2026-05-28, fora do RX3+4).
-  return cards.map(c => c.destaque
+  // RX5a: MESMOS 7 cards (rótulo/valor/subtítulo idênticos), agrupados em 2 níveis — "Carteira em foco" (ação) e "Base da carteira" (contexto).
+  const kContratos = { lab: 'Contratos', val: _rxK(contratos), sub: reais.length + ' obras · valor de venda', cls: 'rx-default' };
+  const kExtras = { lab: 'Serviços extras', val: _rxK(extras), sub: 'entrou a mais (adicionais)', cls: 'rx-info' };
+  const kRecebido = { lab: 'Recebido', val: _rxK(recebido), sub: 'entrou no caixa', cls: 'rx-success' };
+  const kCusto = { lab: 'Custo realizado', val: _rxK(custo), sub: 'saiu' + (estrut > 0 ? ' · +' + _rxK(estrut) + ' estrutura' : ''), cls: 'rx-warning' };
+  const kSaldo = { lab: 'Saldo de fluxo acumulado', val: _rxK(caixa), sub: 'recebido − custo, acumulado', cls: caixa >= 0 ? 'rx-success' : 'rx-danger' };
+  const kProjecao = { lab: 'Projeção por contrato', val: _rxK(lucro), sub: 'contrato + extras − custo realizado', cls: lucro >= 0 ? 'rx-success' : 'rx-danger' };
+  const kFalta = { lab: 'Falta receber', val: _rxK(aReceber), sub: 'contrato + extras', cor: '#2563eb', destaque: true };
+
+  // Ramo 'destaque' = card "Falta receber": HTML/cor/box byte-idênticos ao original (LOCK 2026-05-28). RX5a só muda o container/grupo externo.
+  const card = c => c.destaque
     ? `
     <div style="background:var(--surface);border:1px solid #bfdbfe;border-radius:14px;padding:14px 16px;box-shadow:0 0 0 1px #bfdbfe inset;">
       <div style="font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;color:var(--text-tertiary);font-weight:700;font-family:'Space Grotesk',monospace;">${c.lab}</div>
@@ -110,7 +110,12 @@ function _rxKpisHtml(linhas) {
       <div class="rx-kpi-lab">${c.lab}</div>
       <div class="rx-kpi-val ${c.cls}">${c.val}</div>
       <div class="rx-kpi-sub">${c.sub}</div>
-    </div>`).join('');
+    </div>`;
+  const grid = (arr, extra) => `<div class="rx-kpi-grid${extra ? ' ' + extra : ''}">${arr.map(card).join('')}</div>`;
+  const secao = t => `<div class="rx-kpi-secao">${t}</div>`;
+
+  return secao('Carteira em foco') + grid([kFalta, kSaldo], 'rx-kpi-grid--foco')
+    + secao('Base da carteira') + grid([kContratos, kExtras, kRecebido, kCusto, kProjecao]);
 }
 
 // ── FILTROS ────────────────────────────────────────────────────
@@ -242,13 +247,12 @@ function renderRaiox(container) {
   cont.innerHTML = `
     <div style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
       <div>
-        <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:800;color:var(--text-primary);">Raio-X de Obras</div>
-        <div style="font-size:13px;color:var(--text-tertiary);font-family:Inter,sans-serif;margin-top:2px;">Carteira ao vivo — quanto saiu, quanto entrou e o que entrou a mais (extras)</div>
+        <div style="font-size:13px;color:var(--text-tertiary);font-family:Inter,sans-serif;">Carteira ao vivo — quanto saiu, quanto entrou e o que entrou a mais (extras)</div>
       </div>
       <button onclick="rxEmitirRelatorio()" style="display:flex;align-items:center;gap:7px;background:var(--primary);color:#fff;border:none;border-radius:10px;padding:10px 16px;font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap;"><span class="material-symbols-outlined" style="font-size:18px;">description</span> Relatório completo</button>
     </div>
     <div style="font-size:11px;color:var(--text-tertiary);font-family:'Space Grotesk',monospace;margin-bottom:8px;">Números de: <b style="color:var(--text-secondary);">${escopo}</b> — use os filtros abaixo pra mudar</div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px;">${_rxKpisHtml(linhasKpi)}</div>
+    ${_rxKpisHtml(linhasKpi)}
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px;">${_rxFiltrosHtml(f)}</div>
     ${corpo}`;
 }
