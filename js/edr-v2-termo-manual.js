@@ -263,7 +263,7 @@ const ManualModule = {
       { id: 'estoque', icon: 'inventory_2', titulo: 'Estoque', conteudo: ManualModule._secEstoque() },
       { id: 'custos', icon: 'payments', titulo: 'Custos e Lancamentos', conteudo: ManualModule._secCustos() },
       { id: 'diarias', icon: 'groups', titulo: 'Diarias e Equipe', conteudo: ManualModule._secDiarias() },
-      { id: 'relatorio', icon: 'analytics', titulo: 'Relatorio P&L', conteudo: ManualModule._secRelatorio() },
+      { id: 'relatorio', icon: 'analytics', titulo: 'Análise de Obras', conteudo: ManualModule._secRelatorio() },
       { id: 'cronograma', icon: 'calendar_month', titulo: 'Cronograma', conteudo: ManualModule._secCronograma() },
       { id: 'orcamento', icon: 'calculate', titulo: 'Orcamento', conteudo: ManualModule._secOrcamento() },
       { id: 'dashboard', icon: 'dashboard', titulo: 'Dashboard', conteudo: ManualModule._secDashboard() },

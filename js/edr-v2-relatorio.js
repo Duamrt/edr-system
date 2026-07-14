@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════
-// EDR System V2 — Modulo: RELATORIO P&L
+// EDR System V2 — Modulo: ANALISE DE OBRAS (caixa mensal + R$/m²) — renomeado de "P&L"; o DRE Gerencial e o P&L/resultado de verdade
 // Depende: api.js, utils.js, config.js, obras.js (ETAPAS,
 //          resolveEtapaKey, etapaLabel, etapaCor),
 //          notas.js (lancamentos), custos.js (CustosModule.repasses),
@@ -614,9 +614,9 @@ function _relBuildCustoPorM2() {
           <div style="font-size:16px;font-weight:800;color:var(--success);font-family:'Space Grotesk',monospace;">${_relFmtR(d.vendaM2)}</div>
         </div>
         <div>
-          <div style="font-size:9px;color:var(--text-tertiary);margin-bottom:2px;font-family:'Space Grotesk',monospace;">LUCRO / m²</div>
+          <div style="font-size:9px;color:var(--text-tertiary);margin-bottom:2px;font-family:'Space Grotesk',monospace;">LUCRO / m² · CONTRATO</div>
           <div style="font-size:16px;font-weight:800;color:${corMargem};font-family:'Space Grotesk',monospace;">${_relFmtR(d.lucroM2)}</div>
-          <div style="font-size:9px;color:${corMargem};margin-top:2px;font-family:Inter,sans-serif;">Margem ${d.margemPct.toFixed(1)}%</div>
+          <div style="font-size:9px;color:${corMargem};margin-top:2px;font-family:Inter,sans-serif;">Margem ${d.margemPct.toFixed(1)}% (venda − custo)</div>
         </div>` : ''}
       </div>
       <div style="margin-top:10px;font-size:10px;color:var(--text-tertiary);font-family:Inter,sans-serif;">

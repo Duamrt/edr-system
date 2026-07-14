@@ -223,7 +223,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 const _MODULOS_PERMISSAO = [
   { id: 'dashboard',    label: 'Dashboard' },
   { id: 'raiox',        label: 'Raio-X de Obras' },
-  { id: 'relatorio',    label: 'Relatório P&L' },
+  { id: 'relatorio',    label: 'Análise Obras' },
   { id: 'caixa',        label: 'Fluxo de Caixa' },
   { id: 'dre',          label: 'DRE Gerencial' },
   { id: 'obras',        label: 'Obras' },
