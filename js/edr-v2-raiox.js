@@ -93,8 +93,8 @@ function _rxKpisHtml(linhas) {
     { lab: 'Serviços extras', val: _rxK(extras), sub: 'entrou a mais (adicionais)', cor: '#2563eb' },
     { lab: 'Recebido', val: _rxK(recebido), sub: 'entrou no caixa', cor: '#16a34a' },
     { lab: 'Custo realizado', val: _rxK(custo), sub: 'saiu' + (estrut > 0 ? ' · +' + _rxK(estrut) + ' estrutura' : ''), cor: '#b45309' },
-    { lab: 'Caixa (hoje)', val: _rxK(caixa), sub: 'entrou − saiu', cor: caixa >= 0 ? '#16a34a' : '#dc2626' },
-    { lab: 'Lucro previsto', val: _rxK(lucro), sub: '(contrato + extras) − custo · quando fechar', cor: lucro >= 0 ? '#16a34a' : '#dc2626' },
+    { lab: 'Saldo de fluxo acumulado', val: _rxK(caixa), sub: 'recebido − custo, acumulado', cor: caixa >= 0 ? '#16a34a' : '#dc2626' },
+    { lab: 'Projeção por contrato', val: _rxK(lucro), sub: 'contrato + extras − custo realizado', cor: lucro >= 0 ? '#16a34a' : '#dc2626' },
     { lab: 'Falta receber', val: _rxK(aReceber), sub: 'contrato + extras', cor: '#2563eb', destaque: true },
   ];
   return cards.map(c => `
@@ -144,9 +144,9 @@ function _rxCardObra(x) {
       _rxMetric('Contrato (venda)', _rxFmt(x.contrato)) +
       _rxMetric('Serviços extras', x.extras > 0 ? _rxFmt(x.extras) : '—', x.extras > 0 ? '#2563eb' : 'var(--text-tertiary)', x.adicQtd > 0 ? (x.adicQtd + ' item' + (x.adicQtd > 1 ? 's' : '')) : '') +
       _rxMetric('Custo (saiu)', _rxFmt(x.custo), '#b45309') +
-      _rxMetric('Lucro previsto', _rxFmt(x.lucro), x.lucro >= 0 ? '#16a34a' : '#dc2626', x.receita > 0 ? ('margem ' + x.margem.toFixed(0) + '%') : '') +
+      _rxMetric('Projeção por contrato', _rxFmt(x.lucro), x.lucro >= 0 ? '#16a34a' : '#dc2626', x.receita > 0 ? ('margem ' + x.margem.toFixed(0) + '%') : '') +
       _rxMetric('Recebido', _rxFmt(x.receb), '#16a34a') +
-      _rxMetric('Caixa hoje', _rxFmt(x.caixa), x.caixa >= 0 ? '#16a34a' : '#dc2626', 'entrou − saiu') +
+      _rxMetric('Saldo de fluxo acumulado', _rxFmt(x.caixa), x.caixa >= 0 ? '#16a34a' : '#dc2626', 'recebido − custo, acumulado') +
       _rxMetric('Falta receber', x.aReceber < 10 ? 'quitado' : _rxFmt(x.aReceber), '#2563eb', arSub);
   }
 
@@ -324,8 +324,8 @@ function _rxDocObra(x) {
       <div class="m"><div class="l">Serviços extras</div><div class="v az">${x.extras > 0 ? _rxFmt(x.extras) : '—'}</div></div>
       <div class="m"><div class="l">Recebido</div><div class="v pos">${_rxFmt(x.receb)}</div></div>
       <div class="m"><div class="l">Custo (saiu)</div><div class="v acc">${_rxFmt(x.custo)}</div></div>
-      <div class="m"><div class="l">Caixa hoje</div><div class="v ${x.caixa >= 0 ? 'pos' : 'neg'}">${_rxFmt(x.caixa)}</div></div>
-      <div class="m"><div class="l">Lucro previsto</div><div class="v ${x.lucro >= 0 ? 'pos' : 'neg'}">${_rxFmt(x.lucro)}</div></div>
+      <div class="m"><div class="l">Saldo de fluxo acumulado</div><div class="v ${x.caixa >= 0 ? 'pos' : 'neg'}">${_rxFmt(x.caixa)}</div></div>
+      <div class="m"><div class="l">Projeção por contrato</div><div class="v ${x.lucro >= 0 ? 'pos' : 'neg'}">${_rxFmt(x.lucro)}</div></div>
       <div class="m"><div class="l">Falta receber</div><div class="v az">${arTxt}</div></div>
       ${x.prog != null ? `<div class="m"><div class="l">Avanço da obra</div><div class="v">${x.prog}%${x.pctGasto != null ? ' · ' + x.pctGasto + '% gasto' : ''}</div></div>` : ''}`;
   }
@@ -358,8 +358,8 @@ function rxEmitirRelatorio() {
     ['Serviços extras', _rxK(extras), 'entrou a mais', 'az'],
     ['Recebido', _rxK(recebido), 'entrou', 'pos'],
     ['Custo', _rxK(custo), 'saiu', 'acc'],
-    ['Caixa (hoje)', _rxK(caixa), 'entrou − saiu', caixa >= 0 ? 'pos' : 'neg'],
-    ['Lucro previsto', _rxK(lucro), '(contrato+extras)−custo · quando fechar', lucro >= 0 ? 'pos' : 'neg'],
+    ['Saldo de fluxo acumulado', _rxK(caixa), 'recebido − custo, acumulado', caixa >= 0 ? 'pos' : 'neg'],
+    ['Projeção por contrato', _rxK(lucro), 'contrato + extras − custo realizado', lucro >= 0 ? 'pos' : 'neg'],
     ['Falta receber', _rxK(aReceber), 'contrato + extras', 'az'],
   ];
   const kpiHtml = kpis.map(k => `<div class="kpi"><div class="l">${k[0]}</div><div class="v ${k[3] || ''}">${k[1]}</div><div class="s">${k[2]}</div></div>`).join('');
