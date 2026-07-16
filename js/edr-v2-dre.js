@@ -200,6 +200,7 @@
 .dre-sel{padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--card);font-family:inherit;font-size:13px;font-weight:600;color:var(--text-primary);cursor:pointer}
 .dre-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
 @media(max-width:760px){.dre-kpis{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:380px){.dre-kpis{grid-template-columns:1fr}}
 .dre-kpi{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:13px 15px;border-top:3px solid var(--primary)}
 .dre-kpi.g{border-top-color:var(--success)} .dre-kpi.r{border-top-color:var(--error)} .dre-kpi.y{border-top-color:var(--warning,#d97706)}
 .dre-kpi .lb{font-size:10px;color:var(--text-tertiary);font-weight:700;letter-spacing:.5px;text-transform:uppercase}
@@ -207,7 +208,7 @@
 .dre-kpi .vl.g{color:var(--success)} .dre-kpi .vl.r{color:var(--error)}
 .dre-kpi .sub{font-size:10px;color:var(--text-tertiary);margin-top:3px}
 .dre-grid{display:grid;grid-template-columns:1fr 310px;gap:14px;align-items:start}
-@media(max-width:980px){.dre-grid{grid-template-columns:1fr}}
+@media(max-width:980px){.dre-grid{grid-template-columns:1fr}.dre-col{min-width:0}}
 .dre-card{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden}
 .dre-ch{padding:13px 17px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
 .dre-ch h3{margin:0;font-size:14px;font-weight:700}
@@ -222,6 +223,7 @@
 .dre-obra-head{cursor:default} .dre-obra-head:hover{background:var(--card)}
 .dre-obra-head .hl,.dre-obra-head .hr{font-size:10px;font-weight:700;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.5px}
 .dre-obra-head .hr{text-align:right}
+@media(max-width:480px){.dre-obra,.dre-obra-head{grid-template-columns:1fr 1fr 1fr;gap:4px 8px;padding:10px 12px}.dre-obra .nm,.dre-obra-head .hl{grid-column:1/-1}}
 .dre-cas{display:grid;grid-template-columns:1fr 130px 58px;gap:9px;align-items:center;padding:9px 17px;border-bottom:1px solid var(--border);font-size:13px}
 .dre-cas:last-child{border-bottom:none}
 .dre-cas.sub{padding-left:34px;background:var(--bg);font-size:12px}
@@ -302,7 +304,7 @@
       <div class="dre-kpi y"><div class="lb">Margem Bruta</div><div class="vl">${_fpct(c.lucroBruto, c.recLiq)}</div><div class="sub">benchmark ${BENCH_BRUTA[0]}–${BENCH_BRUTA[1]}%</div></div>
     </div>
     <div class="dre-grid">
-      <div>${_modo === 'obra' ? _renderObras() : _renderCascata(c)}</div>
+      <div class="dre-col">${_modo === 'obra' ? _renderObras() : _renderCascata(c)}</div>
       <div class="dre-side">${_renderPainel(c)}</div>
     </div>`;
 
