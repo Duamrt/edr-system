@@ -23,18 +23,17 @@
 | ID | Prio | Achado | Estado | Evidência |
 |---|---|---|---|---|
 | SEC-01 | P0 | RPC `get_obra_publica` executável por `anon` **e** `authenticated`, sem autz/tenant no corpo | ⏸ aguarda "vai" (DDL prod) | ACL `{=X, anon=X, authenticated=X, service_role=X}` + corpo só casa `slug_entrega` |
-| MOB-01A | P1 | DRE `.dre-obra` reflow | ✅ **validado** (bateria DRE 6vp × Obras/Cascata) | pageOverflow=false em todos; sem clip; desktop ok |
-| MOB-01B | P1 | DRE KPI `.dre-kpis` single-col <380 | ✅ **validado** (bateria DRE 6vp × Obras/Cascata) | 360/380 1-col limpo; 381/390 2-col (kpisOverflow pré-existente, sem page overflow) |
+| MOB-01A | P1 | DRE `.dre-obra` reflow | ✅ **NO AR** (`f8434c1`) | validado 6vp×2modos; prod: `@media` presente, `?v=07161551` |
+| MOB-01B | P1 | DRE KPI `.dre-kpis` single-col <380 | ✅ **NO AR** (`f8434c1`) | 360/380 1-col; 390 2×2; prod-verificado |
 | MOB-02 | P1 | Orçamento overflow de página em 390 | 🟢 pronto (gate fechado) | `docScrollW=424 > 390` |
 | MOB-03 | P1 | Adicionais overflow em 390 (faixa `.stat-mini`) | 🟢 pronto (gate fechado) | `docScrollW=429 > 390` |
 | SUITE-FIX-01 | P2 | Atualizar 5 testes stale (cronograma CR2-4 Gantt desativado; raiox RX1-2 pós-`RX5a`) | 🔵 tarefa separada — NÃO bloqueia DRE | baseline `4e3647a` = mesmos 5 falham |
 
 ## Tarefa Ativa
-**Módulo DRE — VALIDADO localmente (MOB-01A + MOB-01B). Aguarda go de deploy do Duam.**
-- **Bateria `360·380·381·390·430·1200` × Obras+Cascata:** `pageOverflow=false` nos **12 combos**; `.dre-obra` e Cascata sem clip (`casClipByCard=false`, `cellsBeyondCard=0`); KPIs/header/nome/`.vv`/`.mg` visíveis; maior KPI "R$ 1.095.966,01" cabe em todos. Desktop 1200 sem regressão (grid `1fr 310px`, `.dre-obra` cols originais, KPI 4-col).
-- **Fronteira 380/381:** 380 KPI 1-col limpo; 381 volta a 2-col com `kpisOverflow` (folga no container ~13px, **sem page overflow**) — idêntico ao 390 pré-existente; **não quebra o aceite**.
-- **Console:** só `_checkResponsive` (RISK-RESIZE-01) + `_entrarNoApp` (auth init, pré-existente). **Zero** erro de `edr-v2-dre.js`. Patch é CSS+classe → não adiciona runtime error.
-- **Deploy:** cache do arquivo OK (`index.html:3110 = edr-v2-dre.js?v=…"` → `sed` do deploy pega). Falta: **go do Duam** + reconciliar GATE-DEPLOY-01. Reauditoria matriz `dre.1/2/8` ao fechar.
+**Nenhuma — Módulo DRE FECHADO e NO AR** (deploy `f8434c1`, 2026-07-16; verificado em produção: `@media(max-width:380px)` presente, `?v=07161551`, `CACHE_NAME v20260716155137`).
+- **MOB-01A + MOB-01B:** deployados. Bateria 12/12 (6vp×2modos) + não-regressão empírica (baseline `4e3647a`). Suíte por **exceção documentada** (SUITE-FIX-01 pendente, não bloqueou).
+- **Reauditoria `dre.1/2/8` (código novo):** dre.1 (overflow-X) → contido pelo reflow mobile · dre.2 (breakpoints) → novos `@media 380/480` · dre.8 (cards/grids) → KPI single-col <380 + linha `.dre-obra` 3-col <480. Matriz congelada NÃO alterada; runtime em coluna separada.
+- **Próximo (aguarda Duam):** MOB-02 (Orçamento) · MOB-03 (Adicionais) · SEC-01 (RPC) · SUITE-FIX-01 (rodando). Não abro sem go.
 
 ## Registro de Validação
 | rota | vp | caso | status código | geometria/runtime | pendente físico | evidência | decisão |
