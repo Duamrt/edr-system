@@ -22,7 +22,7 @@
 ## Fila
 | ID | Prio | Achado | Estado | Evidência |
 |---|---|---|---|---|
-| SEC-01 | P0 | RPC `get_obra_publica` executável por `anon` **e** `authenticated`, sem autz/tenant no corpo | ⏸ aguarda "vai" (DDL prod) | ACL `{=X, anon=X, authenticated=X, service_role=X}` + corpo só casa `slug_entrega` |
+| SEC-01 | P0 | RPC `get_obra_publica` exposta a `anon`+`authenticated` | ✅ **CONTIDO** (REVOKE aplicado 2026-07-16) | ACL anon/auth=false·service=true · HTTP anon **401** / auth **403**, ambos `42501`, zero dado |
 | MOB-01A | P1 | DRE `.dre-obra` reflow | ✅ **NO AR** (`f8434c1`) | validado 6vp×2modos; prod: `@media` presente, `?v=07161551` |
 | MOB-01B | P1 | DRE KPI `.dre-kpis` single-col <380 | ✅ **NO AR** (`f8434c1`) | 360/380 1-col; 390 2×2; prod-verificado |
 | MOB-02 | P1 | Orçamento overflow de página em 390 | 🟢 pronto (gate fechado) | `docScrollW=424 > 390` |
@@ -48,5 +48,5 @@
 
 ## Decisões Pendentes
 - **DRE-DEPLOY:** (1) exceção de suíte **CONCEDIDA** (SUITE-FIX-01 separado); (2) doc em **commit separado** (deploy pega só `edr-v2-dre.js`); (3) GATE-DEPLOY-01 **provado p/ este deploy**; (4) **FALTA SÓ o "vai" explícito** → `./deploy.sh "fix(dre): reflow .dre-obra + KPIs 1-col <380 no mobile"`. **Nenhum deploy automático.** **Pré-deploy isolado PROVADO (2026-07-16):** `git status --short`=só `M js/edr-v2-dre.js` · `git diff --check` sem whitespace · commit doc `1da5fff`. **Suíte NÃO verde** (exceção/dívida) — gate geral não fecha como verde.
-- **SEC-01:** aprovar ou não a contenção `REVOKE EXECUTE ON FUNCTION public.get_obra_publica(text) FROM PUBLIC, anon, authenticated;` (mantém `service_role`/`postgres`). Validação: `has_function_privilege` (anon=false, authenticated=false, service_role=true) + 2× HTTP `/rpc/` com UUID aleatório (anon sem `Authorization`; auth JWT `role=authenticated`) → não-2xx + sem dado + priv. insuficiente.
+- **SEC-01: ✅ CONCLUÍDO (2026-07-16).** REVOKE `FROM PUBLIC, anon, authenticated` aplicado + validado — ACL (anon=false, authenticated=false, service_role=true, postgres=true) + HTTP anon **401** / auth(`role=authenticated`) **403**, ambos **`42501` permission denied**, zero dado. **Efeito registrado:** `/acompanhar.html` agora falha (403/`42501`) p/ qualquer usuário final (anon+autenticado) — **esperado** (a página depende da RPC contida); feature órfã sem link → sem impacto prático.
 - **Destino de `acompanhar.html`** após a contenção: remover × reconstruir com token aleatório + colunas mínimas.
