@@ -28,12 +28,15 @@
 | MOB-02 | P1 | Orçamento overflow de página em 390 | 🟢 pronto (gate fechado) | `docScrollW=424 > 390` |
 | MOB-03 | P1 | Adicionais overflow em 390 (faixa `.stat-mini`) | 🟢 pronto (gate fechado) | `docScrollW=429 > 390` |
 | SUITE-FIX-01 | P2 | Atualizar 5 testes stale (cronograma CR2-4 Gantt desativado; raiox RX1-2 pós-`RX5a`) | 🔵 tarefa separada — NÃO bloqueia DRE | baseline `4e3647a` = mesmos 5 falham |
+| NF-01 | P1 | Notas Fiscais — layout pouco funcional (cards altos · excluir por linha · fornecedor select) | 🔵 **diagnóstico** (read-only, NÃO redesenhar) | `edr-v2-notas.js` render/filtros/exclusão lidos |
 
 ## Tarefa Ativa
-**Nenhuma — Módulo DRE FECHADO e NO AR** (deploy `f8434c1`, 2026-07-16; verificado em produção: `@media(max-width:380px)` presente, `?v=07161551`, `CACHE_NAME v20260716155137`).
-- **MOB-01A + MOB-01B:** deployados. Bateria 12/12 (6vp×2modos) + não-regressão empírica (baseline `4e3647a`). Suíte por **exceção documentada** (SUITE-FIX-01 pendente, não bloqueou).
-- **Reauditoria `dre.1/2/8` (código novo):** dre.1 (overflow-X) → contido pelo reflow mobile · dre.2 (breakpoints) → novos `@media 380/480` · dre.8 (cards/grids) → KPI single-col <380 + linha `.dre-obra` 3-col <480. Matriz congelada NÃO alterada; runtime em coluna separada.
-- **Próximo (aguarda Duam):** MOB-02 (Orçamento) · MOB-03 (Adicionais) · SEC-01 (RPC) · SUITE-FIX-01 (rodando). Não abro sem go.
+**NF-01 — Diagnóstico Notas Fiscais (read-only, NÃO redesenhar).** (DRE fechado/no ar `f8434c1`; SEC-01 contido `e102937`.)
+- **Arquivos/seletores:** `js/edr-v2-notas.js` — `renderNotas()`→`#notas-lista`; filtros `#filtro-obra/-fornecedor/-credito/-numero-nf/-mes`; card `.nf-card`→`abrirNota`, `.nf-card-top/-meta/-tags/-cnpj`, ação `.btn-excluir-nf` (admin, por linha)→`confirmarExclusaoNota`→`processarExclusaoNota`.
+- **Problemas de uso:** cards altos (~4 blocos × 121 notas = varredura ruim) · **botão destrutivo em TODA linha** (admin) · fornecedor = `<select>` auto-populado (não autocomplete) · sem ordenação. 390: 5 filtros+busca+data empilham (**NÃO medido em runtime ainda**).
+- **Exclusão:** FLUXO robusto (travas PAGO/PENDENTE + confirmação de impacto + estorno ordenado lançamentos→distribuições→nota, abort-safe) — risco é UX (botão por linha), **não** perda de dado. **NÃO mexer na lógica.** Filtros não persistem entre navegações.
+- **Proposta de estrutura (NÃO implementar):** lista densa (1 linha/NF) em vez de cards altos · excluir sai da linha → detalhe/ação secundária · fornecedor autocomplete · ordenação. Estrutura final = mapear fluxo real com Duam.
+- **Pendente:** medição 390 runtime (se quiser) · localizar `abrirNota` (detalhe, fora de notas.js) · **decisão de estrutura do Duam**.
 
 ## Registro de Validação
 | rota | vp | caso | status código | geometria/runtime | pendente físico | evidência | decisão |
