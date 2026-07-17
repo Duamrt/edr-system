@@ -2168,38 +2168,114 @@ async function diarAbrirModalEDR() {
   modal.dataset.obs = obs;
 }
 
+// ── FUNCAO PURA (testavel, sem DOM/rede): monta o plano canonico de lancamento a partir
+// das linhas cruas do modal. Producao E teste chamam ESTA funcao — nao uma copia da logica.
+// Entrada: [{ obraId, nomeBruto, valorRaw }]  +  obs (label da quinzena)  +  etapa
+// Saida: { ok:false, erros:[...] }  |  { ok:true, grupos:[{ obraId, valor, brutos:[], chave }] }
+// Regras: 1 linha invalida (sem obraId | valorRaw vazio | valor nao-finito) => lote inteiro invalido.
+//         Consolida por obra_id|obs|etapa somando valores em memoria (aliases -> 1 grupo).
+function _diarMontarPlanoLancamento(linhas, obs, etapa) {
+  const erros = [];
+  const validas = [];
+  for (const l of linhas) {
+    const obraId = l.obraId || null;
+    const nomeBruto = l.nomeBruto || '(sem nome)';
+    const valorRaw = (l.valorRaw == null ? '' : String(l.valorRaw)).trim();
+    if (!obraId)         { erros.push(`${nomeBruto}: sem obra resolvida (clique na sugestao)`); continue; }
+    if (valorRaw === '') { erros.push(`${nomeBruto}: valor vazio`); continue; } // '' NAO vira 0
+    const valor = Number(valorRaw);
+    if (!Number.isFinite(valor)) { erros.push(`${nomeBruto}: valor invalido ("${valorRaw}")`); continue; }
+    validas.push({ obraId, valor, nomeBruto });
+  }
+  if (erros.length) return { ok: false, erros };
+
+  const mapa = new Map();
+  for (const v of validas) {
+    const chave = `${v.obraId}|${obs}|${etapa}`;
+    const g = mapa.get(chave) || { obraId: v.obraId, valor: 0, brutos: [], chave };
+    g.valor += v.valor;
+    g.brutos.push(v.nomeBruto);
+    mapa.set(chave, g);
+  }
+  return { ok: true, grupos: [...mapa.values()] };
+}
+if (typeof module !== 'undefined' && module.exports) module.exports = { _diarMontarPlanoLancamento };
+
 async function diarConfirmarLancamentosEDR() {
   const btn = document.getElementById('diar-btnConfirmarEDR');
   btn.disabled = true; btn.textContent = 'Lancando...';
   const statusEl = document.getElementById('diar-edrStatus');
   const obs = document.getElementById('diar-modalEDR').dataset.obs || 'Folha quinzenal';
-  const hoje = DiariasModule.quinzenaAtiva?.data_fim || hojeISO(); // competência da obra, não data de pagamento
-  const rows = document.querySelectorAll('#diar-modalEDRBody tbody tr');
-  let ok = 0, erro = 0;
-  for (const row of rows) {
-    const obra = row.dataset.obra; const valor = parseFloat(row.dataset.valor); const obraId = row.dataset.id;
-    if (!obraId) { statusEl.innerHTML += `<div style="color:var(--warning)"><span class="material-symbols-outlined" style="font-size:14px">warning</span> ${esc(obra)}: sem ID, pulando</div>`; erro++; continue; }
-    try {
-      // Verificar duplicata: mesma obra + obs (contém label da quinzena) + etapa
+  const hoje = DiariasModule.quinzenaAtiva?.data_fim || hojeISO(); // competencia da obra, nao data de pagamento
+  const ETAPA = '28_mao';
+  const _reabrirBtn = () => { btn.disabled = false; btn.textContent = 'Confirmar e Lancar Tudo'; };
+
+  // Le linhas cruas do modal e monta o plano canonico com a MESMA funcao pura testada.
+  const linhas = [...document.querySelectorAll('#diar-modalEDRBody tbody tr')].map(row => ({
+    obraId: row.dataset.id || null, nomeBruto: row.dataset.obra || '(sem nome)', valorRaw: row.dataset.valor
+  }));
+  const plano = _diarMontarPlanoLancamento(linhas, obs, ETAPA);
+
+  // PRE-VALIDACAO TOTAL: 1 linha invalida => ZERO escrita no lote inteiro.
+  if (!plano.ok) {
+    statusEl.innerHTML = `<div style="color:var(--error)"><span class="material-symbols-outlined" style="font-size:14px">block</span> Nada foi lancado. Corrija antes:</div>`
+      + plano.erros.map(m => `<div style="color:var(--warning);margin-left:18px">&bull; ${esc(m)}</div>`).join('');
+    _reabrirBtn();
+    return;
+  }
+  // GUARDA de lote vazio: sem grupos, NADA lanca e a quinzena NAO fecha silenciosamente.
+  if (plano.grupos.length === 0) {
+    statusEl.innerHTML = `<div style="color:var(--warning)"><span class="material-symbols-outlined" style="font-size:14px">info</span> Nenhuma obra para lancar. Quinzena nao foi fechada.</div>`;
+    _reabrirBtn();
+    return;
+  }
+
+  // PRE-CHECAGEM de TODAS as chaves antes de escrever. >1 existente = duplicata legada => ABORTA (nao escolhe [0]).
+  const existentesPorChave = new Map();
+  try {
+    for (const g of plano.grupos) {
       const existente = await sbGet('lancamentos',
-        `?obra_id=eq.${obraId}&obs=eq.${encodeURIComponent(obs)}&etapa=eq.28_mao&select=id`);
-      if (Array.isArray(existente) && existente.length > 0) {
-        const saved = await sbPatch('lancamentos', `?id=eq.${existente[0].id}`, { preco: valor, total: valor, descricao: '000460 \u00b7 MAO DE OBRA' });
-        if (!saved) { statusEl.innerHTML += `<div style="color:var(--error)"><span class="material-symbols-outlined" style="font-size:14px">error</span> ${esc(obra)}: falha ao atualizar</div>`; erro++; continue; }
-        statusEl.innerHTML += `<div style="color:var(--warning)"><span class="material-symbols-outlined" style="font-size:14px">update</span> ${esc(obra)}: atualizado (ja existia)</div>`;
+        `?obra_id=eq.${g.obraId}&obs=eq.${encodeURIComponent(obs)}&etapa=eq.${ETAPA}&select=id`);
+      existentesPorChave.set(g.chave, Array.isArray(existente) ? existente : []);
+    }
+  } catch (e) {
+    statusEl.innerHTML = `<div style="color:var(--error)"><span class="material-symbols-outlined" style="font-size:14px">cloud_off</span> Falha ao consultar lancamentos existentes. Nada foi lancado - tente de novo.</div>`;
+    _reabrirBtn();
+    return; // falha de LEITURA != ID inexistente: zero escrita
+  }
+  const dupes = plano.grupos.filter(g => (existentesPorChave.get(g.chave) || []).length > 1);
+  if (dupes.length) {
+    statusEl.innerHTML = `<div style="color:var(--error)"><span class="material-symbols-outlined" style="font-size:14px">error</span> Inconsistencia: obra(s) com lancamento duplicado. Nada foi lancado - resolva antes:</div>`
+      + dupes.map(g => `<div style="color:var(--warning);margin-left:18px">&bull; ${esc(g.brutos.join(' / '))}: ${existentesPorChave.get(g.chave).length} lancamentos com a mesma chave</div>`).join('');
+    _reabrirBtn();
+    return; // ZERO escrita
+  }
+
+  // Persistencia: 1 mutacao por chave (post OU patch). Duplicidade concorrente barrada pelo indice
+  // unico parcial 'lancamentos_mao_unico'. Colisao de outra aba => sbPostMinimal=false => FALHA FECHADA:
+  // marca erro, NAO fecha a quinzena, NAO faz retry/patch automatico (sbPostMinimal esconde o 23505).
+  let ok = 0, erro = 0;
+  for (const g of plano.grupos) {
+    const obra = esc(g.brutos.join(' / ')); // bruto SO no log; payload nunca leva nome
+    const valor = g.valor;
+    const existente = existentesPorChave.get(g.chave); // 0 ou 1
+    try {
+      let saved;
+      if (existente.length === 1) {
+        saved = await sbPatch('lancamentos', `?id=eq.${existente[0].id}`, { preco: valor, total: valor, descricao: '000460 · MAO DE OBRA' });
       } else {
-        const saved = await sbPostMinimal('lancamentos', { obra_id: obraId, descricao: '000460 \u00b7 MAO DE OBRA', qtd: 1, preco: valor, total: valor, data: hoje, obs, etapa: '28_mao' });
-        if (!saved) { statusEl.innerHTML += `<div style="color:var(--error)"><span class="material-symbols-outlined" style="font-size:14px">error</span> ${esc(obra)}: falha ao inserir</div>`; erro++; continue; }
-        statusEl.innerHTML += `<div style="color:var(--success)"><span class="material-symbols-outlined" style="font-size:14px">check_circle</span> ${esc(obra)}: R$ ${valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} lancado</div>`;
+        saved = await sbPostMinimal('lancamentos', { obra_id: g.obraId, descricao: '000460 · MAO DE OBRA', qtd: 1, preco: valor, total: valor, data: hoje, obs, etapa: ETAPA });
       }
+      if (!saved) { statusEl.innerHTML += `<div style="color:var(--error)"><span class="material-symbols-outlined" style="font-size:14px">error</span> ${obra}: falha ao gravar (conferir e relancar)</div>`; erro++; continue; }
+      statusEl.innerHTML += `<div style="color:${existente.length ? 'var(--warning)' : 'var(--success)'}"><span class="material-symbols-outlined" style="font-size:14px">${existente.length ? 'update' : 'check_circle'}</span> ${obra}: R$ ${valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} ${existente.length ? 'atualizado' : 'lancado'}</div>`;
       ok++;
-    } catch (e) { statusEl.innerHTML += `<div style="color:var(--error)"><span class="material-symbols-outlined" style="font-size:14px">error</span> ${esc(obra)}: ${esc(e.message || e)}</div>`; erro++; }
+    } catch (e) { statusEl.innerHTML += `<div style="color:var(--error)"><span class="material-symbols-outlined" style="font-size:14px">error</span> ${obra}: ${esc(e.message || e)}</div>`; erro++; }
   }
   btn.textContent = ok > 0 ? ok + ' lancado(s)' + (erro > 0 ? ' / ' + erro + ' erro(s)' : '') : 'Falhou';
   if (ok > 0) {
     DiariasModule._obrasCache = null;
     showToast(ok + ' lancamento(s) enviado(s)!' + (erro > 0 ? ' ' + erro + ' com erro.' : ''));
-    // Fechar quinzena só se TODOS lançamentos tiveram sucesso
+    // Fechar quinzena so se TODOS os grupos tiveram sucesso (gate erro===0)
     const qz = DiariasModule.quinzenaAtiva;
     if (qz && qz.id && !qz.fechada && erro === 0) {
       const savedQz = await sbPatch('diarias_quinzenas', '?id=eq.' + qz.id, { fechada: true });
@@ -2211,8 +2287,10 @@ async function diarConfirmarLancamentosEDR() {
         statusEl.innerHTML += '<div style="color:var(--warning)"><span class="material-symbols-outlined" style="font-size:14px">warning</span> Folha lancada mas nao foi possivel marcar quinzena como fechada.</div>';
       }
     } else if (erro > 0) {
-      statusEl.innerHTML += '<div style="color:var(--warning)"><span class="material-symbols-outlined" style="font-size:14px">warning</span> Quinzena NAO fechada — corrija os erros e relance.</div>';
+      statusEl.innerHTML += '<div style="color:var(--warning)"><span class="material-symbols-outlined" style="font-size:14px">warning</span> Quinzena NAO fechada - corrija os erros e relance.</div>';
     }
+  } else {
+    _reabrirBtn(); // tudo falhou: permite nova tentativa
   }
 }
 
