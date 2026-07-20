@@ -82,8 +82,22 @@ async function initDiarias() {
 // ══════════════════════════════════════════════════════════════════
 async function _diarCarregarFuncionarios() {
   const isMestre = usuarioAtual?.perfil === 'mestre';
+  const isAdmin = usuarioAtual?.perfil === 'admin';
   try {
-    // 1) Tenta a leitura SEGURA (sem coluna `diaria`). Existe a partir da Migration A.
+    // 0) ADMIN: leitura server-side COM `diaria` (RPC nega mestre no servidor). Necessaria
+    //    para a previa financeira do resumo/linhas. Mestre NUNCA cai aqui.
+    if (isAdmin) {
+      const adm = await sbRpc('diarias_funcionarios_admin', {});
+      if (Array.isArray(adm)) {
+        if (!adm.length) return;
+        DiariasModule._funcionariosCarregados = true;
+        DiariasModule.funcionariosRaw = adm;   // COM `diaria` — so admin
+        _diarReconstruirMapa();
+        return;
+      }
+      // adm ausente/erro -> cai na leitura publica (admin fica sem R$ na previa, mas nao quebra)
+    }
+    // 1) Leitura SEGURA (sem coluna `diaria`). Mestre usa SEMPRE esta. Existe desde a Migration A.
     const seg = await sbRpc('diarias_funcionarios_publico', {});
     if (Array.isArray(seg)) {
       if (!seg.length) return;
@@ -118,7 +132,10 @@ async function _diarCarregarFuncionarios() {
 function _diarReconstruirMapa() {
   DiariasModule.funcionarios = {};
   DiariasModule.funcionariosRaw.filter(f => f.ativo).forEach(f => {
-    const entry = { nome: f.nome, cargo: f.cargo, diaria: Number(f.diaria) };
+    // diaria pode NAO vir (roster publica do mestre): preserva `null` = DESCONHECIDA.
+    // NUNCA virar 0 — 0 seria uma taxa valida e mascararia "valor indisponivel".
+    const diaria = (f.diaria === undefined || f.diaria === null) ? null : Number(f.diaria);
+    const entry = { nome: f.nome, cargo: f.cargo, diaria };
     DiariasModule.funcionarios[f.nome.toLowerCase()] = entry;
     const apelidos = Array.isArray(f.apelidos) ? f.apelidos : [];
     apelidos.forEach(a => { if (a) DiariasModule.funcionarios[a.toLowerCase()] = entry; });
@@ -2521,7 +2538,17 @@ function _diarListaNet() {
   else { box.classList.add('diar-net-off'); txt.textContent = 'Sem conexao: alteracoes ainda nao enviadas'; }
 }
 
-function _diarListaDiaria(func) { return Number(func && func.diaria) || 0; }
+// Retorna a taxa da diaria, ou null se DESCONHECIDA (roster sem `diaria`).
+// NUNCA cair para 0: 0 e uma taxa valida; usar 0 como "desconhecido" mascara o problema.
+function _diarListaDiaria(func) {
+  const d = func && func.diaria;
+  return (d === undefined || d === null || Number.isNaN(Number(d))) ? null : Number(d);
+}
+// true quando o admin tem as taxas para calcular a previa financeira.
+function _diarTemTaxas() {
+  const ativos = _diarGetFuncionariosAtivos();
+  return ativos.length > 0 && ativos.every(f => _diarListaDiaria(f) !== null);
+}
 
 // ── RENDER: lista vertical de funcionarios ativos ──
 function _diarListaRender() {
@@ -2573,8 +2600,11 @@ function _diarListaRender() {
     // Mestre NAO ve R$: mostra status em fracao (1 diaria / meia / falta). Admin ve valor.
     let valorTxt;
     if (r.estado === 'ok') {
-      if (isMestre) valorTxt = (r.totalFracoes === 1 ? '1 diária' : r.totalFracoes === 0.5 ? 'meia diária' : r.totalFracoes + ' diária');
-      else valorTxt = 'R$ ' + (_diarListaDiaria(f) * r.totalFracoes).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+      const fracTxt = (r.totalFracoes === 1 ? '1 diária' : r.totalFracoes === 0.5 ? 'meia diária' : r.totalFracoes + ' diária');
+      const taxa = _diarListaDiaria(f);  // null = desconhecida (nunca 0 falso)
+      // mestre sempre fracao; admin ve R$ se a taxa veio, senao cai na fracao (nao inventa R$ 0,00)
+      if (isMestre || taxa === null) valorTxt = fracTxt;
+      else valorTxt = 'R$ ' + (taxa * r.totalFracoes).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
     } else if (ap.naoEscalado) {
       valorTxt = 'nao escalado';
     } else if (ap.falta) {
@@ -2712,7 +2742,7 @@ function _diarListaResumo() {
   const ativos = _diarGetFuncionariosAtivos();
   const custoObra = {};   // valor R$ por obra (so admin ve)
   const fracObra = {};    // diarias (fracao) por obra (mestre ve)
-  let totalDia = 0, faltas = 0, ok = 0, confirmar = 0;
+  let totalDia = 0, faltas = 0, ok = 0, confirmar = 0, semTaxa = false;
   ativos.forEach(f => {
     const ap = _diarLista.apont[f.nome] || {};
     const r = _diarListaMontaPeriodos(ap);
@@ -2720,14 +2750,19 @@ function _diarListaResumo() {
     if (r.estado === 'confirma_falta') { confirmar++; return; }
     if (r.estado !== 'ok') return;
     ok++;
-    const diaria = _diarListaDiaria(f);
+    const diaria = _diarListaDiaria(f);  // null = DESCONHECIDA
+    if (diaria === null) semTaxa = true;
     r.periodos.forEach(p => {
-      custoObra[p.obra] = (custoObra[p.obra] || 0) + diaria * p.fracao;
+      // fracao SEMPRE soma (mestre ve isto). custo R$ so quando a taxa e conhecida.
       fracObra[p.obra] = (fracObra[p.obra] || 0) + p.fracao;
-      totalDia += diaria * p.fracao;
+      if (diaria !== null) {
+        custoObra[p.obra] = (custoObra[p.obra] || 0) + diaria * p.fracao;
+        totalDia += diaria * p.fracao;
+      }
     });
   });
-  return { custoObra, fracObra, totalDia, faltas, ok, confirmar };
+  // semTaxa => nao ha como exibir R$ confiavel; custoObra/totalDia ficam indisponiveis (null)
+  return { custoObra, fracObra, totalDia: semTaxa ? null : totalDia, faltas, ok, confirmar, semTaxa };
 }
 
 function diarListaAbrirResumo() {
@@ -2735,19 +2770,23 @@ function diarListaAbrirResumo() {
   if (res.confirmar > 0) { showToast('Ainda ha turno vazio sem confirmacao. Confirme falta ou escolha obra.'); return; }
   if (res.ok === 0) { showToast('Nenhum apontamento para salvar.'); return; }
   const isMestre = usuarioAtual?.perfil === 'mestre';  // mestre ve DIARIAS por obra, nunca R$
+  // admin sem taxa carregada: NAO exibir R$ 0,00 falso. Mostra fracao + aviso.
+  const mostrarFrac = isMestre || res.semTaxa;
   const fmtFrac = (n) => (n === 1 ? '1 diaria' : (Number.isInteger(n) ? n + ' diarias' : String(n).replace('.', ',') + ' diaria'));
-  const linhas = Object.keys(res.custoObra).sort().map(o =>
+  // conteudo montado so com numeros calculados + nomes de obra via esc() (mesmo padrao do arquivo)
+  const linhas = Object.keys(res.fracObra).sort().map(o =>
     '<div class="diar-lista-resumo-row"><span>' + esc(o) + '</span><span>' +
-      (isMestre ? fmtFrac(res.fracObra[o]) : 'R$ ' + res.custoObra[o].toLocaleString('pt-BR', { minimumFractionDigits: 2 })) +
+      (mostrarFrac ? fmtFrac(res.fracObra[o]) : 'R$ ' + res.custoObra[o].toLocaleString('pt-BR', { minimumFractionDigits: 2 })) +
     '</span></div>'
   ).join('');
   const totalFrac = Object.values(res.fracObra).reduce((sum, v) => sum + v, 0);
   const body = document.getElementById('diar-listaResumoBody');
   if (body) body.innerHTML = linhas +
     '<div class="diar-lista-resumo-tot"><span>TOTAL DO DIA</span><span>' +
-      (isMestre ? fmtFrac(totalFrac) : 'R$ ' + res.totalDia.toLocaleString('pt-BR', { minimumFractionDigits: 2 })) +
+      (mostrarFrac ? fmtFrac(totalFrac) : 'R$ ' + res.totalDia.toLocaleString('pt-BR', { minimumFractionDigits: 2 })) +
     '</span></div>' +
-    (res.faltas ? '<div class="diar-lista-resumo-obs">' + res.faltas + ' falta(s) marcada(s).</div>' : '');
+    (res.faltas ? '<div class="diar-lista-resumo-obs">' + res.faltas + ' falta(s) marcada(s).</div>' : '') +
+    (!isMestre && res.semTaxa ? '<div class="diar-lista-resumo-obs">Valores indisponiveis nesta sessao — serao calculados no servidor ao salvar.</div>' : '');
   const modal = document.getElementById('diar-listaResumoModal');
   if (modal) { modal.classList.remove('hidden'); modal.classList.add('active'); }
 }
@@ -2845,17 +2884,24 @@ async function diarListaSalvar() {
 // Monta valor no cliente (aceitavel só para admin) e faz insert-first + delete dos antigos.
 async function _diarListaSalvarLegado(data, ativos) {
   const novos = [];
+  let taxaDesconhecida = false;
   ativos.forEach(f => {
     const ap = _diarLista.apont[f.nome] || {};
     const r = _diarListaMontaPeriodos(ap);
     if (r.estado !== 'ok') return;
-    const diaria = _diarListaDiaria(f);
+    const diaria = _diarListaDiaria(f);  // null = desconhecida
+    if (diaria === null) { taxaDesconhecida = true; return; }  // NAO gravar valor 0 falso
     novos.push({
       quinzena_id: DiariasModule.quinzenaAtiva.id, data, funcionario: f.nome, cargo: f.cargo || '',
       diaria_base: diaria, periodos: r.periodos, total_fracoes: r.totalFracoes,
       valor: diaria * r.totalFracoes, criado_por: (usuarioAtual && usuarioAtual.nome) || ''
     });
   });
+  // Sem a taxa, o caminho legado gravaria valor 0 (errado). Recusa e nao grava nada.
+  if (taxaDesconhecida) {
+    showToast('Valores das diarias indisponiveis nesta sessao. Recarregue a pagina antes de salvar.', 7000);
+    return;
+  }
   if (!novos.length) { showToast('Nenhum apontamento para salvar.'); return; }
   const lidos = await sbGet('diarias', '?quinzena_id=eq.' + DiariasModule.quinzenaAtiva.id + '&data=eq.' + data);
   if (!Array.isArray(lidos)) { showToast('Nao consegui ler os apontamentos ja existentes do dia. Nada foi salvo - tente de novo.', 6000); return; }
