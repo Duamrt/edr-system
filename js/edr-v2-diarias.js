@@ -1542,6 +1542,11 @@ function _diarGetFaltasDia(dia, regs) {
   return DiariasModule.team.filter(n => !presentes.has(n));
 }
 
+// Formata contagem de faltas: inteiro sem decimal, meio-turno com virgula (0,5).
+function _diarFmtFaltas(n) {
+  return Number.isInteger(n) ? String(n) : String(n).replace('.', ',');
+}
+
 function _diarGetFaltasQuinzena() {
   const regs = _diarGetRegistrosQuinzena();
   const diasLancados = [...new Set(regs.map(r => r.data))];
@@ -1552,10 +1557,16 @@ function _diarGetFaltasQuinzena() {
     if (dow === 0 || dow === 6) return; // fds: não conta falta
     const regsDia = regs.filter(r => r.data === dia);
     const presentes = new Set(regsDia.map(r => r.funcionario));
-    // falta EXPLICITA: tem registro com status='falta' (novo fluxo, auditavel)
-    regsDia.forEach(r => { if (r.status === 'falta' && faltas[r.funcionario] !== undefined) faltas[r.funcionario]++; });
-    // falta IMPLICITA: nao tem registro nenhum no dia util (fluxo legado)
-    DiariasModule.team.forEach(n => { if (!presentes.has(n)) faltas[n]++; });
+    regsDia.forEach(r => {
+      if (faltas[r.funcionario] === undefined) return;
+      if (r.status === 'falta') { faltas[r.funcionario] += 1; return; }   // falta INTEGRAL = 1
+      // MEIO-TURNO de falta (status apontado + faltas_turno): cada turno faltado = 0,5
+      const ft = Array.isArray(r.faltas_turno) ? r.faltas_turno
+               : (typeof r.faltas_turno === 'string' ? JSON.parse(r.faltas_turno || '[]') : []);
+      if (ft.length) faltas[r.funcionario] += ft.length * 0.5;
+    });
+    // falta IMPLICITA: sem registro nenhum no dia util (fluxo legado) = 1
+    DiariasModule.team.forEach(n => { if (!presentes.has(n)) faltas[n] += 1; });
   });
   return faltas;
 }
@@ -1756,7 +1767,7 @@ function _diarRenderFolha() {
       <td style="color:var(--text-tertiary);" style="font-size:11px">${esc(f.cargo || '-')}</td>
       ${isMestre ? '' : `<td class="edr-text-secondary" style="font-size:11px">R$ ${f.diaria} x ${f.fracoes.toFixed(1)}d</td>`}
       <td>${f.fracoes.toFixed(1)}d</td>
-      ${isMestre ? '' : `<td style="text-align:center;font-weight:700;color:${(faltas[f.nome] || 0) > 0 ? 'var(--error)' : 'var(--text-tertiary)'};">${faltas[f.nome] || 0}</td>`}
+      ${isMestre ? '' : `<td style="text-align:center;font-weight:700;color:${(faltas[f.nome] || 0) > 0 ? 'var(--error)' : 'var(--text-tertiary)'};">${_diarFmtFaltas(faltas[f.nome] || 0)}</td>`}
       <td><div class="diar-obras-breakdown">${Object.keys(f.obras).map(o => `<span class="diar-obra-tag">${esc(o)}</span>`).join('')}</div></td>
       ${isMestre ? '' : `<td class="diar-td-val">R$ ${f.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>`}
       ${isMestre ? '' : `<td class="diar-td-val" style="color:${extra > 0 ? 'var(--warning)' : 'var(--text-tertiary)'};">${extra > 0 ? 'R$ ' + extra.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '\u2014'}</td>`}
