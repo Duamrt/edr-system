@@ -1537,7 +1537,8 @@ function _diarGetFaltasDia(dia, regs) {
   const dow = new Date(dia + 'T12:00:00').getDay();
   if (dow === 0 || dow === 6) return []; // fds: presença voluntária, não conta falta
   regs = regs.map(r => ({ ...r, periodos: typeof r.periodos === 'string' ? JSON.parse(r.periodos || '[]') : (r.periodos || []) }));
-  const presentes = new Set(regs.map(r => r.funcionario));
+  // presente = tem registro E nao e status='falta'. Quem faltou explicitamente conta como falta.
+  const presentes = new Set(regs.filter(r => r.status !== 'falta').map(r => r.funcionario));
   return DiariasModule.team.filter(n => !presentes.has(n));
 }
 
@@ -1549,7 +1550,11 @@ function _diarGetFaltasQuinzena() {
   diasLancados.forEach(dia => {
     const dow = new Date(dia + 'T12:00:00').getDay();
     if (dow === 0 || dow === 6) return; // fds: não conta falta
-    const presentes = new Set(regs.filter(r => r.data === dia).map(r => r.funcionario));
+    const regsDia = regs.filter(r => r.data === dia);
+    const presentes = new Set(regsDia.map(r => r.funcionario));
+    // falta EXPLICITA: tem registro com status='falta' (novo fluxo, auditavel)
+    regsDia.forEach(r => { if (r.status === 'falta' && faltas[r.funcionario] !== undefined) faltas[r.funcionario]++; });
+    // falta IMPLICITA: nao tem registro nenhum no dia util (fluxo legado)
     DiariasModule.team.forEach(n => { if (!presentes.has(n)) faltas[n]++; });
   });
   return faltas;
