@@ -1342,6 +1342,37 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
 .diarias-main { display:grid;grid-template-columns:300px 1fr;gap:0;min-height:calc(100vh - 100px); }
 .diarias-panel-left { border-right:1px solid var(--border);padding:16px 14px;display:flex;flex-direction:column;gap:14px;overflow-y:auto; }
 .diarias-panel-right { padding:14px 16px;overflow-y:auto; }
+
+/* ── ABAS DE TRABALHO (desktop): uma área por vez, largura total. Escondidas no mobile. ── */
+.diar-worktabs { display:none; }
+@media(min-width:769px) {
+  .diar-worktabs {
+    display:flex;gap:4px;grid-column:1 / -1;
+    padding:6px;margin:0 0 2px;border-bottom:1px solid var(--border);
+    background:var(--bg);position:sticky;top:0;z-index:5;
+  }
+  .diar-worktab {
+    padding:9px 18px;font-size:12px;font-weight:700;letter-spacing:.4px;
+    background:transparent;border:1px solid transparent;border-radius:var(--radius-sm);
+    color:var(--text-tertiary);cursor:pointer;font-family:inherit;transition:all .15s;
+  }
+  .diar-worktab:hover { color:var(--text-secondary);background:rgba(255,255,255,.03); }
+  .diar-worktab.active { background:rgba(45,106,79,.14);color:var(--primary);border-color:rgba(34,197,94,.25); }
+
+  /* desktop = UMA coluna; a aba ativa ocupa a área útil inteira */
+  .diarias-main { grid-template-columns:1fr; }
+  .diarias-main.panel-recolhido { grid-template-columns:1fr; }
+  .diarias-panel-left { border-right:none;padding:16px 20px; }
+  .diarias-panel-right { padding:16px 20px; }
+  #diar-togglePanel { display:none; }   /* recolher-painel não faz sentido em largura total */
+
+  /* mostra só o painel da aba de trabalho ativa */
+  .diarias-main.wtab-apontar   .diarias-panel-right { display:none; }
+  .diarias-main.wtab-registros .diarias-panel-left  { display:none; }
+  .diarias-main.wtab-folha     .diarias-panel-left  { display:none; }
+  /* no desktop a barra interna Registros/Folha é redundante com as work-tabs → some */
+  .diarias-panel-right .diarias-tabs { display:none; }
+}
 .diarias-panel-title { font-size:10px;font-weight:700;letter-spacing:1.5px;color:var(--text-tertiary);font-family:'Space Grotesk',monospace;text-transform:uppercase;margin-bottom:0; }
 .diarias-date-input { padding:8px 12px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:13px;font-family:inherit;width:100%;box-sizing:border-box; }
 .diarias-date-input:focus { border-color:var(--primary);outline:none; }
@@ -1418,10 +1449,117 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
 .diarias-panel-left.recolhido { width:36px;min-width:36px;max-width:36px;padding:8px 4px;overflow:hidden;border-right:1px solid var(--border); }
 .diarias-main.panel-recolhido { grid-template-columns:36px 1fr; }
 
+/* ── LISTA DIÁRIA — fluxo ÚNICO em todas as larguras. Legado = fallback oculto. ── */
+.diar-lista-wrap { display:block; }
+.diar-legado { display:none; }
+#diar-togglePanel { display:none; }
+
+.diar-net { display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;padding:6px 10px;border-radius:var(--radius-sm);margin-bottom:8px;letter-spacing:.3px; }
+.diar-net-ok { background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.22);color:var(--primary); }
+.diar-net-off { background:rgba(245,158,11,.09);border:1px solid rgba(245,158,11,.25);color:#f59e0b; }
+.diar-net-fail { background:rgba(239,68,68,.09);border:1px solid rgba(239,68,68,.28);color:var(--error); }
+.diar-lista-field { margin-bottom:12px; }
+
+.diar-lista-head { display:none; }
+.diar-lista-box { display:flex;flex-direction:column;gap:8px; }
+.diar-q-hint { font-size:10px;color:var(--text-tertiary);text-align:center;margin-top:8px;line-height:1.4; }
+.diar-q-salvar:not(:disabled) { background:rgba(34,197,94,.12)!important;border-color:var(--primary)!important;color:var(--primary)!important;opacity:1!important;cursor:pointer!important; }
+
+/* linha por funcionario */
+.diar-lista-row { border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);padding:10px 11px; }
+.diar-lista-row.ok { border-color:rgba(34,197,94,.3); }
+.diar-lista-row.confirma { border-color:#f59e0b;background:rgba(245,158,11,.05); }
+.diar-lista-row.faltou { border-color:rgba(239,68,68,.3);opacity:.85; }
+.diar-lista-top { display:flex;align-items:center;gap:10px;flex-wrap:wrap; }
+.diar-lista-info { display:flex;flex-direction:column;min-width:88px;flex:0 0 auto; }
+.diar-lista-nome { font-weight:700;color:var(--text-primary);font-size:14px; }
+.diar-lista-cargo { font-size:10px;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.4px; }
+.diar-lista-turnos { display:flex;gap:8px;flex:1;min-width:0; }
+.diar-lista-cell { flex:1;min-height:52px;padding:8px 8px;border-radius:var(--radius-sm);border:2px solid var(--border);background:var(--card);color:var(--text-secondary);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;justify-content:center;transition:transform .1s,background .15s,border-color .15s; }
+.diar-lista-cell:active { transform:scale(.96); }
+.diar-lista-cell.vazio { color:var(--text-tertiary);border-style:dashed;font-weight:600; }
+.diar-lista-cell.vazio.precisa { border-color:#f59e0b;color:#f59e0b;background:rgba(245,158,11,.06); }
+.diar-lista-cell.on { background:rgba(34,197,94,.16);border-color:var(--primary);color:var(--text-primary); }
+.diar-lista-cell.meiofalta { background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.5);color:var(--error); }
+.diar-lista-cell.falta-dia { flex:1;min-height:52px;display:flex;align-items:center;justify-content:center;border:2px dashed rgba(239,68,68,.4);border-radius:var(--radius-sm);color:var(--error);font-size:12px;font-weight:700; }
+.diar-lista-acao { display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex:0 0 auto; }
+.diar-lista-val { font-size:13px;font-weight:800;color:var(--primary);font-variant-numeric:tabular-nums;white-space:nowrap; }
+.diar-lista-row.confirma .diar-lista-val { color:#f59e0b; }
+.diar-lista-row.faltou .diar-lista-val { color:var(--error); }
+.diar-lista-falta-btn { min-height:44px;padding:8px 12px;background:none;border:1.5px solid var(--border);color:var(--text-tertiary);border-radius:var(--radius-sm);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;transition:all .12s; }
+.diar-lista-falta-btn:active { transform:scale(.96); }
+.diar-lista-falta-btn.ativo { border-color:rgba(239,68,68,.5);color:var(--error);background:rgba(239,68,68,.12); }
+.diar-lista-ne-btn { min-height:44px;padding:8px 12px;background:none;border:1.5px solid var(--border);color:var(--text-tertiary);border-radius:var(--radius-sm);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;transition:all .12s; }
+.diar-lista-ne-btn:active { transform:scale(.96); }
+.diar-lista-ne-btn.ativo { border-color:rgba(148,163,184,.5);color:var(--text-secondary);background:rgba(148,163,184,.12); }
+.diar-lista-row.naoescalado { opacity:.7;border-style:dashed; }
+/* linha ainda-não-apontada = NEUTRA (não parece erro). O aviso fica num chip discreto. */
+.diar-lista-row.pendentevazio { border-color:var(--border);background:var(--bg); }
+.diar-lista-chip-pend { font-size:10px;font-weight:700;letter-spacing:.3px;color:#b7791f;background:rgba(245,158,11,.10);border:1px solid rgba(245,158,11,.22);border-radius:10px;padding:2px 9px;text-transform:uppercase; }
+.diar-lista-confirma { display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;padding:8px 10px;background:rgba(245,158,11,.09);border:1px solid rgba(245,158,11,.3);border-radius:var(--radius-sm);font-size:12px;color:var(--text-primary); }
+.diar-lista-confirma-sim { flex-shrink:0;background:#f59e0b;color:#1a1200;border:none;border-radius:var(--radius-sm);padding:7px 12px;min-height:38px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit; }
+
+/* modal/sheet de busca e resumo */
+.diar-lista-modal { position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:flex-end;justify-content:center; }
+.diar-lista-modal.hidden { display:none; }
+.diar-lista-sheet { background:var(--card);border:1px solid var(--border);border-radius:16px 16px 0 0;width:100%;max-width:520px;max-height:82vh;overflow-y:auto;padding:16px 16px 24px; }
+.diar-lista-sheet-h { display:flex;align-items:center;justify-content:space-between;font-weight:700;font-size:15px;color:var(--text-primary);margin-bottom:14px; }
+.diar-lista-busca-input { width:100%;box-sizing:border-box;padding:12px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-family:inherit;font-size:15px;margin-bottom:10px; }
+.diar-lista-faltar { width:100%;display:flex;align-items:center;justify-content:center;gap:6px;padding:11px;margin-bottom:12px;background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.28);border-radius:var(--radius-sm);color:var(--error);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit; }
+.diar-lista-busca-result { display:flex;flex-direction:column;gap:6px; }
+.diar-lista-busca-item { display:flex;align-items:center;justify-content:space-between;width:100%;text-align:left;padding:13px 12px;min-height:48px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit; }
+.diar-lista-recente { font-size:10px;color:var(--primary);background:rgba(34,197,94,.1);padding:2px 7px;border-radius:10px;font-weight:700; }
+.diar-lista-resumo-body { display:flex;flex-direction:column;gap:2px; }
+.diar-lista-resumo-row { display:flex;justify-content:space-between;padding:9px 4px;font-size:14px;color:var(--text-primary);border-bottom:1px solid var(--border); }
+.diar-lista-resumo-tot { display:flex;justify-content:space-between;padding:12px 4px 4px;font-size:15px;font-weight:800;color:var(--text-primary);border-top:2px solid var(--border);margin-top:6px; }
+.diar-lista-resumo-obs { font-size:11px;color:var(--text-tertiary);margin-top:8px; }
+
 @media(max-width:768px) {
   .diarias-main { grid-template-columns:1fr; }
   .diarias-panel-left { border-right:none;border-bottom:1px solid var(--border); }
   .diarias-main.panel-recolhido { grid-template-columns:1fr; }
+  /* Lista Diária já é o fluxo único (default). Aqui só o empilhamento mobile. */
+}
+
+/* ── DESKTOP ≥769px: MESMA lista, MESMOS estados, TABELA LARGA e LEGÍVEL ──
+   5 colunas reais: Funcionário · Função · Manhã · Tarde · Ações.
+   Nada de lógica muda; só o arranjo visual aproveita a largura total da aba. */
+@media(min-width:769px) {
+  /* grade compartilhada por cabeçalho e linhas — colunas nomeadas pra alinhar sempre */
+  .diar-lista-wrap { --diar-cols: minmax(150px,1.6fr) minmax(90px,0.9fr) minmax(120px,1.3fr) minmax(120px,1.3fr) minmax(190px,auto); }
+  .diar-lista-box, .diar-lista-field, .diar-lista-head, .diar-lista-salvar, .diar-q-hint, #diar-listaNet {
+    max-width:1100px;   /* não esticar sem fim em 1440px+ */
+  }
+  /* cabeçalho de colunas visível só no desktop */
+  .diar-lista-head {
+    display:grid;grid-template-columns:var(--diar-cols);
+    gap:14px;align-items:center;
+    padding:8px 14px;margin-bottom:6px;
+    font-size:10px;font-weight:800;letter-spacing:.5px;
+    color:var(--text-tertiary);text-transform:uppercase;
+    border-bottom:1px solid var(--border);
+  }
+  .diar-lista-box { gap:4px; }
+  .diar-lista-row { padding:7px 14px; }
+  .diar-lista-top {
+    display:grid;grid-template-columns:var(--diar-cols);
+    gap:14px;align-items:stretch;flex-wrap:nowrap;
+  }
+  /* Nome e Função viram 2 colunas próprias (display:contents dissolve o wrapper) */
+  .diar-lista-info { display:contents; }
+  .diar-lista-nome { align-self:center;font-size:14px; }
+  .diar-lista-cargo { align-self:center;margin-top:0;font-size:11px; }
+  .diar-lista-turnos { display:contents; }   /* Manhã e Tarde nas colunas 3 e 4 */
+  .diar-lista-cell { min-height:40px;height:auto;align-self:stretch;font-size:13px; }
+  .diar-lista-cell.falta-dia { min-height:40px;align-self:stretch; }
+  .diar-lista-acao { flex-direction:row;align-items:center;justify-content:flex-end;gap:8px;align-self:stretch; }
+  .diar-lista-val { align-self:center; }
+  .diar-lista-falta-btn, .diar-lista-ne-btn { min-height:40px;white-space:nowrap; }
+  /* barra de confirmação de meio-turno ocupa a linha inteira abaixo, sem quebrar a grade */
+  .diar-lista-confirma { grid-column:1 / -1; }
+  /* modais/sheets: no desktop centralizam em vez de subir do rodapé */
+  .diar-lista-modal { align-items:center; }
+  .diar-lista-sheet { border-radius:16px;max-width:460px; }
 }
 
 /* ── BADGES E BOTÕES AUXILIARES ── */
@@ -2249,12 +2387,42 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
       <button onclick="diarAbrirModalEquipe()" class="admin-only btn-tipo btn-tipo-active-info" style="padding:5px 12px;min-height:auto;font-size:11px;" title="Gerenciar equipe"><span class="material-symbols-outlined icon-sm">group</span> EQUIPE</button>
       <div class="diarias-quinzena-badge" id="diar-quinzena-badge">QUINZENA</div>
     </div>
-    <div class="diarias-main">
+    <div class="diarias-main wtab-apontar" id="diar-mainGrid">
+      <!-- ABAS DE TRABALHO (só desktop): Apontamento | Registros | Folha, uma por vez em largura total -->
+      <div class="diar-worktabs" role="tablist" aria-label="Áreas de trabalho das Diárias">
+        <button class="diar-worktab active" id="wtab-apontar" role="tab" aria-selected="true" onclick="diarWorkTab('apontar', this)">Apontamento do dia</button>
+        <button class="diar-worktab" id="wtab-registros" role="tab" aria-selected="false" onclick="diarWorkTab('registros', this)">Registros</button>
+        <button class="diar-worktab" id="wtab-folha" role="tab" aria-selected="false" onclick="diarWorkTab('folha', this)">Folha de pagamento</button>
+      </div>
       <!-- PAINEL ESQUERDO: ENTRADA -->
       <div class="diarias-panel-left" id="diar-panelLeft">
         <!-- Botão toggle -->
         <button id="diar-togglePanel" onclick="diarTogglePanel()" title="Recolher painel" style="align-self:flex-end;background:rgba(255,255,255,0.04);border:1px solid rgba(34,197,94,0.12);color:var(--verde-hl);border-radius:7px;padding:4px 9px;font-size:13px;cursor:pointer;line-height:1;flex-shrink:0;">◀</button>
         <div id="diar-panelContent">
+
+        <!-- ══ LISTA DIÁRIA (principal no mobile) — funcionários ativos, Manhã/Tarde por tap ══ -->
+        <div id="diar-lista" class="diar-lista-wrap">
+          <div class="diarias-panel-title">// APONTAMENTO DO DIA</div>
+          <div id="diar-listaNet" class="diar-net diar-net-ok">
+            <span class="material-symbols-outlined" style="font-size:14px">wifi</span>
+            <span id="diar-listaNetTxt">Conectado</span>
+          </div>
+          <div class="diar-lista-field">
+            <label class="diarias-panel-title" style="margin-bottom:5px">DATA</label>
+            <input type="date" class="diarias-date-input" id="diar-listaData" style="width:100%">
+          </div>
+          <div class="diar-lista-head">
+            <span>FUNCIONÁRIO</span><span>FUNÇÃO</span><span>MANHÃ</span><span>TARDE</span><span style="text-align:right">AÇÕES</span>
+          </div>
+          <div id="diar-listaBox" class="diar-lista-box"></div>
+          <button class="btn-diarias-confirmar diar-q-salvar diar-lista-salvar" id="diar-listaSalvar" onclick="diarListaAbrirResumo()" disabled>
+            <span class="material-symbols-outlined icon-md">check_circle</span> CONFERIR E SALVAR
+          </button>
+          <div class="diar-q-hint">Salvar não fecha a quinzena nem lança pagamento. O fechamento continua na Folha.</div>
+        </div>
+        <!-- ══ /LISTA DIÁRIA ══ -->
+
+        <div id="diar-legadoWrap" class="diar-legado">
         <div class="diarias-panel-title">// LANÇAR DIÁRIAS</div>
         <div>
           <div class="diarias-panel-title" style="margin-bottom:6px">DATA</div>
@@ -2315,6 +2483,7 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
         <button class="btn-diarias-confirmar" id="diar-btnConfirmar" onclick="diarConfirmarLancamento()" disabled>
           <span class="material-symbols-outlined icon-md">check_circle</span> CONFIRMAR E SALVAR
         </button>
+        </div><!-- /diar-legadoWrap -->
         </div><!-- /diar-panelContent -->
       </div>
       <!-- PAINEL DIREITO: REGISTROS / FOLHA -->
@@ -2501,7 +2670,7 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
 <div class="toast-container" id="toast-container"></div>
 
 <!-- ═══════ JAVASCRIPT ═══════ -->
-<script src="js/posthog.js?v=07171712"></script>
+<script src="js/posthog.js?v=07201050"></script>
 <script>
 // ══════════════════════════════════════════
 // EDR SYSTEM V2 — NAVEGACAO + SHELL
@@ -3067,47 +3236,47 @@ function updateShellUser(nome, perfil) {
 
 <!-- ═══════ MODULOS V2 (ordem de dependência) ═══════ -->
 <!-- 0. Infraestrutura: sbGet/sbPost/sbPatch/sbDelete, confirmar(), showModal, usuarioAtual -->
-<script src="js/edr-v2-infra.js?v=07171712"></script>
+<script src="js/edr-v2-infra.js?v=07201050"></script>
 <!-- 1. Utilitários globais (valorPorExtenso, fmtN) -->
-<script src="js/edr-v2-utils-extras.js?v=07171712"></script>
+<script src="js/edr-v2-utils-extras.js?v=07201050"></script>
 <!-- 2. Obras PRIMEIRO (ETAPAS, resolveEtapaKey, etapaCor, etapaLabel — vários módulos dependem) -->
-<script src="js/edr-v2-obras.js?v=07171712"></script>
+<script src="js/edr-v2-obras.js?v=07201050"></script>
 <!-- 3. PDF engine (pdfMake CDN + PdfModule) -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js?v=07171712"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js?v=07171712"></script>
-<script src="js/edr-v2-pdf.js?v=07171712"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js?v=07201050"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js?v=07201050"></script>
+<script src="js/edr-v2-pdf.js?v=07201050"></script>
 <!-- 4. Módulos core de negócio -->
-<script src="js/edr-v2-notas.js?v=07171712"></script>
-<script src="js/edr-v2-importar.js?v=07171712"></script>
-<script src="js/edr-v2-estoque.js?v=07171712"></script>
-<script src="js/edr-v2-estoque-tabela.js?v=07171712"></script>
-<script src="js/edr-v2-custos.js?v=07171712"></script>
+<script src="js/edr-v2-notas.js?v=07201050"></script>
+<script src="js/edr-v2-importar.js?v=07201050"></script>
+<script src="js/edr-v2-estoque.js?v=07201050"></script>
+<script src="js/edr-v2-estoque-tabela.js?v=07201050"></script>
+<script src="js/edr-v2-custos.js?v=07201050"></script>
 <!-- 5. Equipe e operacional -->
-<script src="js/edr-v2-diarias.js?v=07171712"></script>
-<script src="js/edr-v2-diario.js?v=07171712"></script>
+<script src="js/edr-v2-diarias.js?v=07201050"></script>
+<script src="js/edr-v2-diario.js?v=07201050"></script>
 <!-- 6. Relatórios e dashboard (dependem de obras.js pra etapaCor) -->
-<script src="js/edr-v2-relatorio.js?v=07171712"></script>
-<script src="js/edr-v2-dashboard.js?v=07171712"></script>
-<script src="js/edr-v2-raiox.js?v=07171712"></script>
+<script src="js/edr-v2-relatorio.js?v=07201050"></script>
+<script src="js/edr-v2-dashboard.js?v=07201050"></script>
+<script src="js/edr-v2-raiox.js?v=07201050"></script>
 <!-- 7. Módulos complementares -->
-<script src="js/edr-v2-leads.js?v=07171712"></script>
-<script src="js/edr-v2-garantias.js?v=07171712"></script>
-<script src="js/edr-v2-adicionais.js?v=07171712"></script>
+<script src="js/edr-v2-leads.js?v=07201050"></script>
+<script src="js/edr-v2-garantias.js?v=07201050"></script>
+<script src="js/edr-v2-adicionais.js?v=07201050"></script>
 <!-- Syncfusion EJ2 Gantt DESATIVADO 2026-07-07: licenca Community pendente (ticket #839314); a trial gerava banner/watermark na tela.
      Cronograma roda so na Lista. RELIGAR: descomentar as 2 tags abaixo + colar Community key v33 no registerLicense de cronograma.js + remover o curto-circuito no _renderGantt + descomentar a barra de views (~219 em cronograma.js).
-<link rel="stylesheet" href="https://cdn.syncfusion.com/ej2/33.2.3/tailwind3-dark.css?v=07171712"/>
-<script src="https://cdn.syncfusion.com/ej2/33.2.3/dist/ej2.min.js?v=07171712"></script>
+<link rel="stylesheet" href="https://cdn.syncfusion.com/ej2/33.2.3/tailwind3-dark.css?v=07201050"/>
+<script src="https://cdn.syncfusion.com/ej2/33.2.3/dist/ej2.min.js?v=07201050"></script>
 -->
-<script src="js/edr-v2-cronograma.js?v=07171712"></script>
-<script src="js/edr-v2-orcamento.js?v=07171712"></script>
+<script src="js/edr-v2-cronograma.js?v=07201050"></script>
+<script src="js/edr-v2-orcamento.js?v=07201050"></script>
 <!-- 8. Documentação e medições -->
-<script src="js/edr-v2-termo-manual.js?v=07171712"></script>
-<script src="js/edr-v2-pci.js?v=07171712"></script>
+<script src="js/edr-v2-termo-manual.js?v=07201050"></script>
+<script src="js/edr-v2-pci.js?v=07201050"></script>
 <!-- 9. Auth (login, sessão, refresh — ÚLTIMO) -->
-<script src="js/edr-v2-alertas.js?v=07171712"></script>
-<script src="js/edr-v2-auth.js?v=07171712"></script>
-<script src="js/edr-v2-financeiro.js?v=07171712"></script>
-<script src="js/edr-v2-dre.js?v=07171712"></script>
+<script src="js/edr-v2-alertas.js?v=07201050"></script>
+<script src="js/edr-v2-auth.js?v=07201050"></script>
+<script src="js/edr-v2-financeiro.js?v=07201050"></script>
+<script src="js/edr-v2-dre.js?v=07201050"></script>
 
 <!-- ═══════════════════════════════════════════════════════════════ -->
 <!-- MODAIS (Fase 0 — containers para módulos que precisam)        -->
@@ -3444,6 +3613,34 @@ function updateShellUser(nome, perfil) {
 <div id="custos-modal-contrato" class="modal-overlay"><div class="modal-box" style="max-width:560px;width:92vw;max-height:88vh;overflow-y:auto;padding:0;"><div class="modal" style="padding:0 20px 20px;"></div></div></div>
 
 <!-- MODAL LANÇAR DIÁRIAS NO EDR -->
+<!-- Modal: busca de obra (recentes + pesquisa) — Lista Diária -->
+<div id="diar-listaBuscaModal" class="diar-lista-modal hidden">
+  <div class="diar-lista-sheet">
+    <div class="diar-lista-sheet-h">
+      <span>Em qual obra?</span>
+      <button class="modal-close" onclick="_diarListaFecharBusca()"><span class="material-symbols-outlined">close</span></button>
+    </div>
+    <input type="text" id="diar-listaBuscaInput" class="diar-lista-busca-input" placeholder="Buscar obra..." oninput="diarListaFiltrarBusca(this.value)">
+    <button class="diar-lista-faltar" onclick="diarListaFaltarTurno()"><span class="material-symbols-outlined" style="font-size:16px">event_busy</span> Faltou neste turno</button>
+    <div id="diar-listaBuscaResult" class="diar-lista-busca-result"></div>
+  </div>
+</div>
+
+<!-- Modal: resumo por obra antes de salvar — Lista Diária -->
+<div id="diar-listaResumoModal" class="diar-lista-modal hidden">
+  <div class="diar-lista-sheet">
+    <div class="diar-lista-sheet-h">
+      <span>Confira antes de salvar</span>
+      <button class="modal-close" onclick="_diarListaFecharResumo()"><span class="material-symbols-outlined">close</span></button>
+    </div>
+    <div id="diar-listaResumoBody" class="diar-lista-resumo-body"></div>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="btn btn-outline" style="flex:1" onclick="_diarListaFecharResumo()">Voltar</button>
+      <button class="btn btn-primary" style="flex:2" onclick="diarListaSalvar()">Salvar diárias</button>
+    </div>
+  </div>
+</div>
+
 <div id="diar-modalEDR" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:9999;align-items:center;justify-content:center;padding:16px">
   <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);width:100%;max-width:500px;max-height:90vh;overflow-y:auto;padding:22px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">

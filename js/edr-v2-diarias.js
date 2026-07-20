@@ -63,6 +63,9 @@ async function initDiarias() {
   await _diarCarregarQuinzenas();
   _diarRenderRegistros();
   _diarRenderExtras();
+  _diarListaInit();  // Lista Diaria (mobile principal) — funcionarios ativos, Manha/Tarde por tap
+  _diarWorkTabReset();      // entrar na tela sempre abre em "Apontamento do dia" (padrao)
+  _diarWorkTabsBindKeys();  // liga navegacao por teclado nas abas (uma vez)
 
   if (usuarioAtual?.perfil === 'mestre') _diarPopularFormManual();
   aplicarPerfil();
@@ -78,14 +81,37 @@ async function initDiarias() {
 // FUNCIONARIOS — Supabase (100% dinamico, zero fallback hardcoded)
 // ══════════════════════════════════════════════════════════════════
 async function _diarCarregarFuncionarios() {
+  const isMestre = usuarioAtual?.perfil === 'mestre';
   try {
-    const lista = await sbGet('diarias_funcionarios', '?order=nome.asc');
-    if (!Array.isArray(lista) || !lista.length) return;
-    DiariasModule._funcionariosCarregados = true;
-    DiariasModule.funcionariosRaw = lista;
-    _diarReconstruirMapa();
+    // 1) Tenta a leitura SEGURA (sem coluna `diaria`). Existe a partir da Migration A.
+    const seg = await sbRpc('diarias_funcionarios_publico', {});
+    if (Array.isArray(seg)) {
+      if (!seg.length) return;
+      DiariasModule._funcionariosCarregados = true;
+      DiariasModule.funcionariosRaw = seg;   // sem `diaria` — mestre nao recebe valor
+      _diarReconstruirMapa();
+      return;
+    }
+    // 2) RPC ausente (Migration A ainda nao subiu):
+    //    - MESTRE: NAO pode ler a tabela bruta (vaza `diaria`). Fica sem lista + avisa.
+    //    - ADMIN: pode usar o caminho antigo (ele ve valor de qualquer forma).
+    if (seg === 'RPC_AUSENTE') {
+      if (isMestre) {
+        console.warn('[DIARIAS] leitura segura indisponivel; mestre nao usa a tabela bruta.');
+        showToast('Atualizacao pendente no servidor. Peca ao admin para concluir a migracao das diarias.', 6000);
+        return;
+      }
+      const lista = await sbGet('diarias_funcionarios', '?order=nome.asc');
+      if (!Array.isArray(lista) || !lista.length) return;
+      DiariasModule._funcionariosCarregados = true;
+      DiariasModule.funcionariosRaw = lista;
+      _diarReconstruirMapa();
+      return;
+    }
+    // 3) seg === null: erro real (rede/RLS). Nao rebaixa para a tabela bruta no mestre.
+    console.warn('[DIARIAS] erro ao carregar equipe (RPC).');
   } catch (e) {
-    console.warn('[DIARIAS] Fallback funcionarios', e);
+    console.warn('[DIARIAS] Falha ao carregar funcionarios', e);
   }
 }
 
@@ -1850,10 +1876,70 @@ function _diarCalcCustoObra() {
 function diarSwitchTab(tab, el) {
   DiariasModule.tab = tab;
   document.querySelectorAll('#view-diarias .diar-tab').forEach(t => t.classList.remove('active'));
-  el.classList.add('active');
+  if (el) el.classList.add('active');
   document.getElementById('diar-tabRegistros').style.display = tab === 'registros' ? 'block' : 'none';
   document.getElementById('diar-tabFolha').style.display = tab === 'folha' ? 'block' : 'none';
   if (tab === 'folha') { _diarCarregarRegistros().then(() => { _diarRenderFolha(); _diarRenderExtras(); }); }
+}
+
+// ── ABAS DE TRABALHO (desktop): Apontamento | Registros | Folha, uma por vez em largura total ──
+// Só troca de estado/visibilidade via classe no grid-pai. Não move DOM. No mobile as work-tabs
+// ficam escondidas por CSS e o fluxo continua empilhado (apontamento sempre visivel).
+function diarWorkTab(area, el) {
+  const grid = document.getElementById('diar-mainGrid');
+  if (!grid) return;
+  if (!['apontar', 'registros', 'folha'].includes(area)) area = 'apontar';
+  DiariasModule.workTab = area;
+  grid.classList.remove('wtab-apontar', 'wtab-registros', 'wtab-folha');
+  grid.classList.add('wtab-' + area);
+  // estado das work-tabs: uma ativa, resto inativo (com aria-selected coerente)
+  const btnAtivo = el || document.getElementById('wtab-' + area);
+  document.querySelectorAll('.diar-worktab').forEach(t => {
+    const on = (t === btnAtivo);
+    t.classList.toggle('active', on);
+    t.setAttribute('aria-selected', on ? 'true' : 'false');
+    t.setAttribute('tabindex', on ? '0' : '-1');
+  });
+  // Registros e Folha compartilham o painel direito: aciona a sub-troca de conteudo.
+  // (passa null como botao — a barra interna de tabs fica oculta no desktop; a work-tab manda)
+  if (area === 'registros') diarSwitchTab('registros', null);
+  else if (area === 'folha') diarSwitchTab('folha', null);
+}
+
+// Reseta a aba de trabalho para o padrao (Apontamento) — chamado ao ENTRAR na tela/recarregar.
+function _diarWorkTabReset() {
+  diarWorkTab('apontar', document.getElementById('wtab-apontar'));
+}
+
+// Navegacao por teclado no tablist (padrao ARIA): setas movem entre abas, Home/End vao aos extremos.
+// Roving tabindex so funciona COM este handler — sem ele o teclado fica preso na aba ativa.
+function diarWorkTabKey(ev) {
+  const tabs = [...document.querySelectorAll('.diar-worktab')];
+  if (!tabs.length) return;
+  const atual = tabs.indexOf(document.activeElement);
+  let alvo = -1;
+  switch (ev.key) {
+    case 'ArrowRight':
+    case 'ArrowDown': alvo = (atual + 1) % tabs.length; break;
+    case 'ArrowLeft':
+    case 'ArrowUp':   alvo = (atual - 1 + tabs.length) % tabs.length; break;
+    case 'Home':      alvo = 0; break;
+    case 'End':       alvo = tabs.length - 1; break;
+    default: return;   // outras teclas: nao interfere
+  }
+  ev.preventDefault();
+  const btn = tabs[alvo];
+  const area = btn.id.replace('wtab-', '');
+  diarWorkTab(area, btn);   // ativa a aba + troca o painel
+  btn.focus();              // move o foco visivel para ela
+}
+
+// Liga o handler de teclado uma unica vez na barra de abas.
+function _diarWorkTabsBindKeys() {
+  const bar = document.querySelector('.diar-worktabs');
+  if (!bar || bar._keysBound) return;
+  bar.addEventListener('keydown', diarWorkTabKey);
+  bar._keysBound = true;
 }
 
 
@@ -2299,3 +2385,492 @@ function diarFecharModalEDR() {
   const btn = document.getElementById('diar-btnConfirmarEDR');
   btn.disabled = false; btn.textContent = 'Confirmar e Lancar Tudo';
 }
+
+
+// ══════════════════════════════════════════════════════════════════
+// LISTA DIARIA (mobile principal) — todos funcionarios ativos, Manha/Tarde por tap.
+// Sem parser, sem IA, sem texto livre. Obra SEMPRE do cadastro (impossivel digitar errado).
+// Regra: mesma obra manha+tarde = 1 periodo dia 1.0; obras diferentes = 2 periodos 0.5.
+// Vazio = PENDENTE (bloqueia salvar). Falta = acao explicita. Extra fica fora.
+// Salvar reusa o motor validado (captura antes do insert, insert-first, falha fechada).
+// ══════════════════════════════════════════════════════════════════
+// escape para valores dentro de atributos onclick (barra e aspas simples)
+function _diarEscAttr(s) { return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
+
+const _diarLista = {
+  data: null,
+  recentes: [],          // nomes de obras usadas recentemente (topo da busca)
+  apont: {},             // funcId -> { manha: nomeObra|null, tarde: nomeObra|null, falta: bool }
+  _alvoBusca: null,      // { funcId, turno } enquanto a busca esta aberta
+};
+
+// ── Função PURA: monta periodos[] a partir de manha/tarde/falta (testável) ──
+// Retorna { estado, periodos:[], totalFracoes, turnoVazio? }.
+//   ok            -> ambos turnos resolvidos (obra ou meio-falta confirmado)
+//   falta         -> falta do DIA inteiro, explicita (0 periodos, nao paga)
+//   nao_escalado  -> decisao EXPLICITA: funcionario nao trabalhou nesta frente hoje (nao paga)
+//   confirma_falta-> um turno com obra, outro VAZIO: precisa CONFIRMAR se o vazio e falta
+//                    (nao assume nada; bloqueia ate o mestre confirmar)
+//   vazio         -> NADA decidido -> PENDENTE. Bloqueia a conferencia ate virar
+//                    apontado/falta/nao_escalado. Vazio NUNCA e decisao financeira silenciosa.
+// Campos de ap: manha, tarde (obra) | falta (dia) | faltaManha/faltaTarde (meio) | naoEscalado (explicito)
+function _diarListaMontaPeriodos(ap) {
+  ap = ap || {};
+  if (ap.falta) return { estado: 'falta', periodos: [], totalFracoes: 0 };
+  if (ap.naoEscalado) return { estado: 'nao_escalado', periodos: [], totalFracoes: 0 };
+
+  // resolve cada turno: obra preenchida, meio-falta confirmado, ou vazio
+  const mObra = ap.manha || null, tObra = ap.tarde || null;
+  const mFalta = !!ap.faltaManha, tFalta = !!ap.faltaTarde;
+  const mResolvido = mObra || mFalta;   // manha decidida?
+  const tResolvido = tObra || tFalta;   // tarde decidida?
+
+  // nada decidido em nenhum turno = VAZIO PENDENTE -> bloqueia (exige decisao explicita)
+  if (!mResolvido && !tResolvido) return { estado: 'vazio', periodos: [], totalFracoes: 0 };
+
+  // um turno decidido e o outro AINDA VAZIO (sem obra, sem meio-falta) -> precisa CONFIRMAR
+  if (mResolvido && !tResolvido) return { estado: 'confirma_falta', turnoVazio: 'tarde', periodos: [], totalFracoes: 0 };
+  if (!mResolvido && tResolvido) return { estado: 'confirma_falta', turnoVazio: 'manha', periodos: [], totalFracoes: 0 };
+
+  // ambos decididos. monta periodos so dos turnos COM obra (meio-falta nao gera periodo)
+  const periodos = [];
+  if (mObra && tObra && mObra === tObra) {
+    // mesma obra nos dois turnos = diaria inteira (1 periodo dia 1.0)
+    periodos.push({ turno: 'dia', obra: mObra, fracao: 1.0 });
+  } else {
+    if (mObra) periodos.push({ turno: 'manha', obra: mObra, fracao: 0.5 });
+    if (tObra) periodos.push({ turno: 'tarde', obra: tObra, fracao: 0.5 });
+  }
+  const totalFracoes = periodos.reduce((s, p) => s + p.fracao, 0);
+  // ambos meio-falta = dia inteiro de falta (sem periodo)
+  if (!periodos.length) return { estado: 'falta', periodos: [], totalFracoes: 0 };
+  return { estado: 'ok', periodos, totalFracoes };
+}
+
+// Converte um registro salvo (vindo de diarias_do_dia) de volta para o formato `apont`
+// que o render usa: {manha, tarde, falta, naoEscalado, faltaManha, faltaTarde}.
+// NAO usa valor nem diaria_base (mestre nem recebe). So status + periodos (obra por turno).
+function _diarListaApontDeRegistro(reg) {
+  if (!reg) return null;
+  if (reg.status === 'falta') return { falta: true };
+  if (reg.status === 'nao_escalado') return { naoEscalado: true };
+  const ap = {};
+  // periodos = SÓ obra (turno + nome oficial). faltas_turno = coluna separada (decisao explicita).
+  const per = Array.isArray(reg.periodos) ? reg.periodos : [];
+  per.forEach(p => {
+    if (!p || !p.turno) return;
+    const obra = p.obra;   // nome oficial (snapshot do servidor)
+    if (!obra) return;
+    if (p.turno === 'dia') { ap.manha = obra; ap.tarde = obra; }
+    else if (p.turno === 'manha') ap.manha = obra;
+    else if (p.turno === 'tarde') ap.tarde = obra;
+  });
+  const faltas = Array.isArray(reg.faltas_turno) ? reg.faltas_turno : [];
+  if (faltas.includes('manha')) ap.faltaManha = true;
+  if (faltas.includes('tarde')) ap.faltaTarde = true;
+  return ap;
+}
+
+// Pre-preenche a lista com o que JA foi salvo naquela data (evita sobrescrever ao reabrir).
+// Usa a RPC segura diarias_do_dia. Se ausente (Migration A nao subiu), deixa vazio SEM erro.
+async function _diarListaPreencherDoDia() {
+  _diarLista.apont = {};
+  const q = DiariasModule.quinzenaAtiva;
+  const data = _diarLista.data;
+  if (!q || !q.id || !data) { _diarListaRender(); return; }
+  const resp = await sbRpc('diarias_do_dia', { p_quinzena_id: q.id, p_data: data });
+  if (resp && resp !== 'RPC_AUSENTE' && Array.isArray(resp.linhas)) {
+    resp.linhas.forEach(reg => {
+      const ap = _diarListaApontDeRegistro(reg);
+      if (ap && reg.funcionario) _diarLista.apont[reg.funcionario] = ap;   // chave = nome (mesmo criterio do render)
+    });
+  }
+  // RPC_AUSENTE ou erro: mantem vazio (comportamento atual) — nao quebra, so nao pre-preenche
+  _diarListaRender();
+}
+
+function _diarListaInit() {
+  const d = document.getElementById('diar-listaData');
+  if (d && !d.value) d.value = hojeISO();
+  _diarLista.data = d ? d.value : hojeISO();
+  _diarLista.apont = {};
+  _diarLista._alvoBusca = null;
+  // ao trocar a data, pre-preenche com o que ja foi salvo naquela data
+  if (d) d.onchange = () => { _diarLista.data = d.value; _diarListaPreencherDoDia(); };
+  _diarListaNet();
+  window.addEventListener('online', _diarListaNet);
+  window.addEventListener('offline', _diarListaNet);
+  const main = document.querySelector('.diarias-main');
+  const panel = document.getElementById('diar-panelLeft');
+  if (window.matchMedia('(max-width:768px)').matches) {
+    main && main.classList.remove('panel-recolhido');
+    panel && panel.classList.remove('recolhido');
+  }
+  // NAO resetar a aba de trabalho aqui: _diarListaInit tambem roda apos salvar/re-render,
+  // e resetar ejetaria o operador de Registros/Folha. O reset fica so em initDiarias (entrada da tela).
+  // pre-preenche com o que ja foi salvo na data (evita sobrescrever ao reabrir); faz o render.
+  _diarListaPreencherDoDia();
+}
+
+function _diarListaNet() {
+  const box = document.getElementById('diar-listaNet');
+  const txt = document.getElementById('diar-listaNetTxt');
+  if (!box || !txt) return;
+  box.classList.remove('diar-net-ok', 'diar-net-off', 'diar-net-fail');
+  if (navigator.onLine) { box.classList.add('diar-net-ok'); txt.textContent = 'Conectado'; }
+  else { box.classList.add('diar-net-off'); txt.textContent = 'Sem conexao: alteracoes ainda nao enviadas'; }
+}
+
+function _diarListaDiaria(func) { return Number(func && func.diaria) || 0; }
+
+// ── RENDER: lista vertical de funcionarios ativos ──
+function _diarListaRender() {
+  const box = document.getElementById('diar-listaBox');
+  const bs = document.getElementById('diar-listaSalvar');
+  if (!box) return;
+  const ativos = _diarGetFuncionariosAtivos();
+  if (!ativos.length) { box.innerHTML = '<div class="edr-empty" style="padding:24px"><p>Nenhum funcionario ativo cadastrado.</p></div>'; if (bs) bs.disabled = true; return; }
+
+  const isMestre = usuarioAtual?.perfil === 'mestre';  // mestre NUNCA ve valores R$
+  let temPendente = false, temAlgumApontado = false;   // pendente = confirma_falta OU vazio total
+  const rows = ativos.map(f => {
+    const id = f.nome; // usa nome como chave (mesmo criterio do resto do modulo)
+    const ap = _diarLista.apont[id] || {};
+    const r = _diarListaMontaPeriodos(ap);
+    if (r.estado === 'confirma_falta' || r.estado === 'vazio') temPendente = true;  // vazio total tambem bloqueia
+    if (r.estado === 'ok' || r.estado === 'falta' || r.estado === 'nao_escalado') temAlgumApontado = true;
+
+    // celula de um turno: obra escolhida / meio-falta / vazio (com pedido de confirmacao)
+    const cell = (turno) => {
+      const faltaMeio = turno === 'manha' ? ap.faltaManha : ap.faltaTarde;
+      const val = ap[turno];
+      if (ap.falta) return '<div class="diar-lista-cell falta-dia">falta</div>';
+      if (val) return '<button class="diar-lista-cell on" onclick="diarListaAbrirBusca(&#39;' + _diarEscAttr(id) + '&#39;,&#39;' + turno + '&#39;)">' + esc(val) + '</button>';
+      if (faltaMeio) return '<button class="diar-lista-cell meiofalta" onclick="diarListaAbrirBusca(&#39;' + _diarEscAttr(id) + '&#39;,&#39;' + turno + '&#39;)">faltou</button>';
+      // vazio: se o OUTRO turno ja foi decidido, este vazio precisa de decisao -> destaque confirmar
+      const outro = turno === 'manha' ? (ap.tarde || ap.faltaTarde) : (ap.manha || ap.faltaManha);
+      const precisa = !!outro;
+      return '<button class="diar-lista-cell vazio' + (precisa ? ' precisa' : '') + '" onclick="diarListaAbrirBusca(&#39;' + _diarEscAttr(id) + '&#39;,&#39;' + turno + '&#39;)">' + (turno === 'manha' ? 'Manhã' : 'Tarde') + '</button>';
+    };
+
+    let statusCls = '';
+    if (ap.falta) statusCls = ' faltou';
+    else if (ap.naoEscalado) statusCls = ' naoescalado';
+    else if (r.estado === 'confirma_falta') statusCls = ' confirma';
+    else if (r.estado === 'vazio') statusCls = ' pendentevazio';
+    else if (r.estado === 'ok') statusCls = ' ok';
+
+    // confirmacao inline quando um turno esta vazio e o outro decidido
+    let confirmaBar = '';
+    if (r.estado === 'confirma_falta') {
+      const tv = r.turnoVazio;
+      confirmaBar = '<div class="diar-lista-confirma">' +
+        '<span>' + (tv === 'manha' ? 'Manhã' : 'Tarde') + ' vazia — faltou nesse turno?</span>' +
+        '<button class="diar-lista-confirma-sim" onclick="diarListaConfirmaMeioFalta(&#39;' + _diarEscAttr(id) + '&#39;,&#39;' + tv + '&#39;)">Sim, faltou</button>' +
+        '</div>';
+    }
+
+    // Mestre NAO ve R$: mostra status em fracao (1 diaria / meia / falta). Admin ve valor.
+    let valorTxt;
+    if (r.estado === 'ok') {
+      if (isMestre) valorTxt = (r.totalFracoes === 1 ? '1 diária' : r.totalFracoes === 0.5 ? 'meia diária' : r.totalFracoes + ' diária');
+      else valorTxt = 'R$ ' + (_diarListaDiaria(f) * r.totalFracoes).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+    } else if (ap.naoEscalado) {
+      valorTxt = 'nao escalado';
+    } else if (ap.falta) {
+      valorTxt = 'FALTA DIA';
+    } else if (r.estado === 'confirma_falta') {
+      valorTxt = 'confirmar';
+    } else if (r.estado === 'vazio') {
+      valorTxt = '<span class="diar-lista-chip-pend">Pendente</span>';
+    } else {
+      valorTxt = '';
+    }
+
+    return '<div class="diar-lista-row' + statusCls + '">' +
+      '<div class="diar-lista-top">' +
+        '<div class="diar-lista-info"><span class="diar-lista-nome">' + esc(f.nome) + '</span><span class="diar-lista-cargo">' + esc(f.cargo || '') + '</span></div>' +
+        '<div class="diar-lista-turnos">' + cell('manha') + cell('tarde') + '</div>' +
+        '<div class="diar-lista-acao">' +
+          '<span class="diar-lista-val">' + valorTxt + '</span>' +
+          '<button class="diar-lista-falta-btn' + (ap.falta ? ' ativo' : '') + '" onclick="diarListaToggleFalta(&#39;' + _diarEscAttr(id) + '&#39;)" title="Falta o dia inteiro">' + (ap.falta ? 'Faltou dia' : 'Falta dia') + '</button>' +
+          '<button class="diar-lista-ne-btn' + (ap.naoEscalado ? ' ativo' : '') + '" onclick="diarListaToggleNaoEscalado(&#39;' + _diarEscAttr(id) + '&#39;)" title="Nao foi escalado para esta frente hoje">' + (ap.naoEscalado ? 'Não escalado' : 'Não escalado') + '</button>' +
+        '</div>' +
+      '</div>' + confirmaBar +
+    '</div>';
+  }).join('');
+
+  box.innerHTML = rows;
+
+  if (bs) {
+    bs.disabled = temPendente || !temAlgumApontado;
+    bs.textContent = temPendente ? 'RESOLVA TODOS OS FUNCIONARIOS' : (!temAlgumApontado ? 'APONTE A EQUIPE' : 'CONFERIR E SALVAR');
+  }
+}
+
+// confirma que o turno vazio foi falta (meio-falta) -> paga 0.5 do outro turno
+function diarListaConfirmaMeioFalta(id, turnoVazio) {
+  const ap = _diarLista.apont[id] || {};
+  if (turnoVazio === 'manha') ap.faltaManha = true; else ap.faltaTarde = true;
+  _diarLista.apont[id] = ap;
+  _diarListaRender();
+}
+
+function diarListaToggleFalta(id) {
+  const ap = _diarLista.apont[id] || {};
+  if (ap.falta) { delete ap.falta; }
+  else { ap.falta = true; delete ap.manha; delete ap.tarde; delete ap.faltaManha; delete ap.faltaTarde; delete ap.naoEscalado; }
+  _diarLista.apont[id] = ap;
+  _diarListaRender();
+}
+
+// "Nao escalado": decisao explicita de que o funcionario nao trabalhou nesta frente hoje.
+function diarListaToggleNaoEscalado(id) {
+  const ap = _diarLista.apont[id] || {};
+  if (ap.naoEscalado) { delete ap.naoEscalado; }
+  else { ap.naoEscalado = true; delete ap.manha; delete ap.tarde; delete ap.faltaManha; delete ap.faltaTarde; delete ap.falta; }
+  _diarLista.apont[id] = ap;
+  _diarListaRender();
+}
+
+// ── BUSCA DE OBRAS: recentes no topo + pesquisa (sem texto livre, sem select longo) ──
+function diarListaAbrirBusca(id, turno) {
+  _diarLista._alvoBusca = { id, turno };
+  const lista = (typeof obras !== 'undefined' && Array.isArray(obras)) ? obras : [];
+  _diarListaRenderBusca('');
+  const modal = document.getElementById('diar-listaBuscaModal');
+  if (modal) { modal.classList.remove('hidden'); modal.classList.add('active'); }
+  const inp = document.getElementById('diar-listaBuscaInput');
+  if (inp) { inp.value = ''; setTimeout(() => inp.focus(), 50); }
+}
+
+function _diarListaRenderBusca(filtro) {
+  const cont = document.getElementById('diar-listaBuscaResult');
+  if (!cont) return;
+  const lista = (typeof obras !== 'undefined' && Array.isArray(obras)) ? obras : [];
+  const f = _diarNormStr(filtro || '');
+  let itens = lista.slice();
+  // recentes no topo (se sem filtro)
+  if (!f && _diarLista.recentes.length) {
+    const rec = _diarLista.recentes.map(n => lista.find(o => o.nome === n)).filter(Boolean);
+    const resto = lista.filter(o => !_diarLista.recentes.includes(o.nome));
+    itens = rec.concat(resto);
+  } else if (f) {
+    itens = lista.filter(o => _diarNormStr(o.nome).includes(f));
+  }
+  const recSet = new Set(_diarLista.recentes);
+  cont.innerHTML = itens.map(o =>
+    '<button class="diar-lista-busca-item" onclick="diarListaEscolherObra(&#39;' + _diarEscAttr(o.nome) + '&#39;)">' +
+      esc(o.nome) + (recSet.has(o.nome) && !f ? '<span class="diar-lista-recente">recente</span>' : '') +
+    '</button>'
+  ).join('') || '<div class="edr-empty" style="padding:20px">Nenhuma obra encontrada.</div>';
+}
+
+function diarListaFiltrarBusca(v) { _diarListaRenderBusca(v); }
+
+function diarListaEscolherObra(nomeObra) {
+  const alvo = _diarLista._alvoBusca;
+  if (!alvo) return;
+  const ap = _diarLista.apont[alvo.id] || {};
+  delete ap.falta; // escolher obra desfaz falta do dia
+  if (alvo.turno === 'manha') delete ap.faltaManha; else delete ap.faltaTarde; // desfaz meio-falta do turno
+  ap[alvo.turno] = nomeObra;
+  _diarLista.apont[alvo.id] = ap;
+  // atualiza recentes (mantem unicas, max 5, mais recente primeiro)
+  _diarLista.recentes = [nomeObra].concat(_diarLista.recentes.filter(n => n !== nomeObra)).slice(0, 5);
+  _diarListaFecharBusca();
+  _diarListaRender();
+}
+
+// Marca falta SO deste turno (meio-falta), direto da busca
+function diarListaFaltarTurno() {
+  const alvo = _diarLista._alvoBusca;
+  if (!alvo) return;
+  const ap = _diarLista.apont[alvo.id] || {};
+  delete ap.falta;
+  if (alvo.turno === 'manha') { ap.faltaManha = true; delete ap.manha; }
+  else { ap.faltaTarde = true; delete ap.tarde; }
+  _diarLista.apont[alvo.id] = ap;
+  _diarListaFecharBusca();
+  _diarListaRender();
+}
+
+function _diarListaFecharBusca() {
+  const modal = document.getElementById('diar-listaBuscaModal');
+  if (modal) { modal.classList.remove('active'); modal.classList.add('hidden'); }
+  _diarLista._alvoBusca = null;
+}
+function diarListaLimparCelula() {
+  const alvo = _diarLista._alvoBusca;
+  if (alvo) { const ap = _diarLista.apont[alvo.id] || {}; delete ap[alvo.turno]; _diarLista.apont[alvo.id] = ap; }
+  _diarListaFecharBusca();
+  _diarListaRender();
+}
+
+// ── RESUMO por obra + total do dia (antes de salvar) ──
+function _diarListaResumo() {
+  const ativos = _diarGetFuncionariosAtivos();
+  const custoObra = {};   // valor R$ por obra (so admin ve)
+  const fracObra = {};    // diarias (fracao) por obra (mestre ve)
+  let totalDia = 0, faltas = 0, ok = 0, confirmar = 0;
+  ativos.forEach(f => {
+    const ap = _diarLista.apont[f.nome] || {};
+    const r = _diarListaMontaPeriodos(ap);
+    if (r.estado === 'falta') { faltas++; return; }
+    if (r.estado === 'confirma_falta') { confirmar++; return; }
+    if (r.estado !== 'ok') return;
+    ok++;
+    const diaria = _diarListaDiaria(f);
+    r.periodos.forEach(p => {
+      custoObra[p.obra] = (custoObra[p.obra] || 0) + diaria * p.fracao;
+      fracObra[p.obra] = (fracObra[p.obra] || 0) + p.fracao;
+      totalDia += diaria * p.fracao;
+    });
+  });
+  return { custoObra, fracObra, totalDia, faltas, ok, confirmar };
+}
+
+function diarListaAbrirResumo() {
+  const res = _diarListaResumo();
+  if (res.confirmar > 0) { showToast('Ainda ha turno vazio sem confirmacao. Confirme falta ou escolha obra.'); return; }
+  if (res.ok === 0) { showToast('Nenhum apontamento para salvar.'); return; }
+  const isMestre = usuarioAtual?.perfil === 'mestre';  // mestre ve DIARIAS por obra, nunca R$
+  const fmtFrac = (n) => (n === 1 ? '1 diaria' : (Number.isInteger(n) ? n + ' diarias' : String(n).replace('.', ',') + ' diaria'));
+  const linhas = Object.keys(res.custoObra).sort().map(o =>
+    '<div class="diar-lista-resumo-row"><span>' + esc(o) + '</span><span>' +
+      (isMestre ? fmtFrac(res.fracObra[o]) : 'R$ ' + res.custoObra[o].toLocaleString('pt-BR', { minimumFractionDigits: 2 })) +
+    '</span></div>'
+  ).join('');
+  const totalFrac = Object.values(res.fracObra).reduce((sum, v) => sum + v, 0);
+  const body = document.getElementById('diar-listaResumoBody');
+  if (body) body.innerHTML = linhas +
+    '<div class="diar-lista-resumo-tot"><span>TOTAL DO DIA</span><span>' +
+      (isMestre ? fmtFrac(totalFrac) : 'R$ ' + res.totalDia.toLocaleString('pt-BR', { minimumFractionDigits: 2 })) +
+    '</span></div>' +
+    (res.faltas ? '<div class="diar-lista-resumo-obs">' + res.faltas + ' falta(s) marcada(s).</div>' : '');
+  const modal = document.getElementById('diar-listaResumoModal');
+  if (modal) { modal.classList.remove('hidden'); modal.classList.add('active'); }
+}
+function _diarListaFecharResumo() {
+  const modal = document.getElementById('diar-listaResumoModal');
+  if (modal) { modal.classList.remove('active'); modal.classList.add('hidden'); }
+}
+
+// ── SALVAR: envia o LOTE DIÁRIO via RPC diarias_apontar (sem montar valor no cliente).
+//    Fallback para o caminho antigo SÓ se a RPC ainda nao existe (Migration A nao subiu). ──
+async function diarListaSalvar() {
+  if (!DiariasModule.quinzenaAtiva) { showToast('Nenhuma quinzena ativa. Crie uma quinzena primeiro.'); return; }
+  if (DiariasModule.quinzenaAtiva.fechada) { showToast('Quinzena fechada. Reabra antes de lancar.'); return; }
+  if (!DiariasModule._funcionariosCarregados) { showToast('Sem conexao com o banco. Nao e seguro salvar agora.', 5000); return; }
+  const data = _diarLista.data || document.getElementById('diar-listaData').value;
+  if (!data) { showToast('Escolha a data.'); return; }
+
+  const ativos = _diarGetFuncionariosAtivos();
+  const obrasMap = await _diarBuscarObras();   // { normStr(nome) -> obra_id }
+  if (!obrasMap) { showToast('Nao consegui carregar as obras. Nada foi salvo - tente de novo.', 6000); return; }
+
+  // monta o LOTE (funcionario_id + status + periodos com obra_id) — SEM valor.
+  const apontamentos = [];
+  let temPendente = false, obraSemId = null;
+  ativos.forEach(f => {
+    const ap = _diarLista.apont[f.nome] || {};
+    const r = _diarListaMontaPeriodos(ap);
+    if (r.estado === 'confirma_falta' || r.estado === 'vazio') { temPendente = true; return; }
+
+    let status = 'apontado', periodos = [], faltasTurno = [];
+    if (r.estado === 'falta') status = 'falta';
+    else if (r.estado === 'nao_escalado') status = 'nao_escalado';
+    else if (r.estado === 'ok') {
+      // turnos COM obra: 'dia' vira manha+tarde (0.5 cada) na MESMA obra; senao o proprio turno
+      periodos = r.periodos.map(p => {
+        const oid = obrasMap[_diarNormStr(p.obra)] || null;
+        if (!oid) obraSemId = p.obra;
+        return { obra_id: oid, fracao: p.fracao, turno: p.turno };
+      }).flatMap(p => p.turno === 'dia'
+        ? [{ turno: 'manha', obra_id: p.obra_id, fracao: 0.5 }, { turno: 'tarde', obra_id: p.obra_id, fracao: 0.5 }]
+        : [{ turno: p.turno, obra_id: p.obra_id, fracao: 0.5 }]);
+      // meio-turnos de FALTA explicita (auditavel, sem inferencia no banco)
+      if (ap.faltaManha) faltasTurno.push('manha');
+      if (ap.faltaTarde) faltasTurno.push('tarde');
+    } else return;
+
+    apontamentos.push({ funcionario_id: f.id, status, periodos, faltas_turno: faltasTurno });
+  });
+
+  if (temPendente) { showToast('Ainda ha funcionario pendente. Resolva todos (obra, falta ou nao escalado) antes de salvar.'); return; }
+  if (obraSemId) { showToast('Obra "' + obraSemId + '" nao foi reconhecida. Escolha uma obra valida antes de salvar.', 7000); return; }
+  if (!apontamentos.length) { showToast('Nenhum apontamento para salvar.'); return; }
+
+  const btn = document.getElementById('diar-listaSalvar');
+  const reset = () => { if (btn) { btn.disabled = false; btn.textContent = 'CONFERIR E SALVAR'; } };
+  if (btn) { btn.disabled = true; btn.textContent = 'ENVIANDO...'; }
+  _diarListaFecharResumo();
+
+  try {
+    // 1) CAMINHO NOVO: RPC transacional (calcula valor no servidor; upsert; sem duplicar)
+    const resp = await sbRpc('diarias_apontar', {
+      p_data: data,
+      p_quinzena_id: DiariasModule.quinzenaAtiva.id,
+      p_apontamentos: apontamentos
+    });
+
+    if (resp && resp !== 'RPC_AUSENTE' && resp.ok) {
+      _diarLista.apont = {};
+      _diarListaInit();                 // re-preenche a data com o que acabou de salvar
+      await _diarCarregarRegistros();
+      _diarRenderRegistros();
+      _diarRenderFolha();
+      showToast('Apontamento do dia enviado!');
+      reset(); return;
+    }
+    if (resp === null) {   // erro real da RPC (validacao/rede) — nada foi gravado (transacao)
+      const nb = document.getElementById('diar-listaNet');
+      if (nb) { nb.classList.remove('diar-net-ok', 'diar-net-off'); nb.classList.add('diar-net-fail'); const t = document.getElementById('diar-listaNetTxt'); if (t) t.textContent = 'Falha ao enviar: revise e tente novamente'; }
+      showToast('Nao consegui enviar. Nada foi alterado - revise e tente de novo.', 6000);
+      reset(); return;
+    }
+
+    // 2) RPC AUSENTE (Migration A ainda nao subiu): caminho antigo.
+    //    MESTRE nao pode usar este caminho (monta/mostra valor). So admin.
+    if (usuarioAtual?.perfil === 'mestre') {
+      showToast('Atualizacao pendente no servidor. Peca ao admin para concluir a migracao das diarias.', 7000);
+      reset(); return;
+    }
+    await _diarListaSalvarLegado(data, ativos);
+  } catch (e) { showToast('Erro: ' + (e.message || JSON.stringify(e))); }
+  reset();
+}
+
+// Caminho ANTIGO de salvar (pre-RPC). Só usado por admin enquanto a Migration A nao subiu.
+// Monta valor no cliente (aceitavel só para admin) e faz insert-first + delete dos antigos.
+async function _diarListaSalvarLegado(data, ativos) {
+  const novos = [];
+  ativos.forEach(f => {
+    const ap = _diarLista.apont[f.nome] || {};
+    const r = _diarListaMontaPeriodos(ap);
+    if (r.estado !== 'ok') return;
+    const diaria = _diarListaDiaria(f);
+    novos.push({
+      quinzena_id: DiariasModule.quinzenaAtiva.id, data, funcionario: f.nome, cargo: f.cargo || '',
+      diaria_base: diaria, periodos: r.periodos, total_fracoes: r.totalFracoes,
+      valor: diaria * r.totalFracoes, criado_por: (usuarioAtual && usuarioAtual.nome) || ''
+    });
+  });
+  if (!novos.length) { showToast('Nenhum apontamento para salvar.'); return; }
+  const lidos = await sbGet('diarias', '?quinzena_id=eq.' + DiariasModule.quinzenaAtiva.id + '&data=eq.' + data);
+  if (!Array.isArray(lidos)) { showToast('Nao consegui ler os apontamentos ja existentes do dia. Nada foi salvo - tente de novo.', 6000); return; }
+  const alvoNomes = new Set(novos.map(n => n.funcionario));
+  const antigosIds = lidos.filter(r => alvoNomes.has(r.funcionario)).map(r => r.id);
+  const okInsert = await sbPostMinimal('diarias', novos);
+  if (!okInsert) { showToast('Nao consegui salvar. Nada foi alterado - tente de novo.', 6000); return; }
+  let deleteFalhou = false;
+  for (const _id of antigosIds) { const ap = await sbDelete('diarias', '?id=eq.' + _id); if (ap === null) deleteFalhou = true; }
+  _diarLista.apont = {};
+  _diarListaInit();
+  await _diarCarregarRegistros();
+  _diarRenderRegistros();
+  _diarRenderFolha();
+  if (deleteFalhou) showToast('Diarias salvas, mas nao removi algum registro anterior do dia. Pode haver DUPLICATA - revise nos Registros.', 8000);
+  else showToast('Diarias do dia salvas!');
+}
+

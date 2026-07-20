@@ -134,6 +134,28 @@ async function sbDelete(t, q='') {
   }
 }
 
+// ── CHAMADA DE RPC (funcao PostgREST em /rest/v1/rpc/<nome>) ─────────────
+// Contrato de 3 estados para permitir FALLBACK enquanto a Migration A nao subiu:
+//   - objeto/valor   = sucesso (a RPC existe e respondeu)
+//   - 'RPC_AUSENTE'  = a funcao ainda NAO existe no banco (404 / PGRST202) -> caller usa caminho antigo
+//   - null           = erro real (rede, 4xx/5xx de negocio, RLS) -> caller trata como falha
+async function sbRpc(fn, params) {
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
+      method: 'POST', headers: _sbHeaders(), body: JSON.stringify(params || {})
+    });
+    if (r.status === 404) return 'RPC_AUSENTE';               // funcao nao existe ainda
+    if (!r.ok) {
+      const body = await r.json().catch(() => ({}));
+      // PGRST202 = "Could not find the function" -> tratar como ausente (fallback), nao como erro
+      if (body && (body.code === 'PGRST202' || /could not find the function/i.test(body.message || ''))) return 'RPC_AUSENTE';
+      console.warn('sbRpc erro:', r.status, fn, body);
+      return null;
+    }
+    return await r.json();
+  } catch (e) { console.warn('sbRpc falha:', fn, e); return null; }
+}
+
 // ── SANITIZAÇÃO DE TEXTO PARA BANCO ─────────────────────────
 // Remove acentos, cedilhas e converte para CAIXA ALTA
 // Deve ser usada antes de gravar materiais, fornecedores e descrições de obra
