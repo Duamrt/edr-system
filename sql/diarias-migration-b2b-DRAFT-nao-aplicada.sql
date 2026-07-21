@@ -1,4 +1,16 @@
 -- ============================================================================
+-- ⚠️ DRAFT NAO APLICADO — NAO REPRESENTA O ESTADO DO BANCO.
+-- Este era o rascunho original da "Migration B" (lockdown de leitura + revoke de
+-- escrita num passo so). Foi SUPERADO e dividido:
+--   - LEITURA admin-only  -> APLICADA como diarias-migration-b1-read-lockdown.sql
+--   - ESCRITA admin-only  -> APLICADA como diarias-migration-b2a-escrita-admin-only.sql
+--   - REVOKE de grants     -> PENDENTE (B2b real), so apos migrar os 5 fluxos admin
+--                             diretos (diarConfirmarLancamento/SalvarEdicao/ConfirmarAdd/
+--                             ExcluirRegistro/DeletarDia) para RPC.
+-- Mantido no repo apenas como referencia historica do plano original. NAO EXECUTAR:
+-- o `revoke ... from authenticated` abaixo QUEBRARIA os 5 fluxos admin legados hoje.
+-- ============================================================================
+-- ============================================================================
 -- MIGRATION B (LOCKDOWN) — fecha o acesso bruto que vaza `diaria` e o POST forjado.
 -- APLICAR POR ULTIMO: so depois do front novo publicado E testado (mestre+admin).
 -- Aplicar B antes do front novo QUEBRA o mestre. Irreversivel-na-pratica em producao.
