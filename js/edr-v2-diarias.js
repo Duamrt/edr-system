@@ -66,6 +66,7 @@ async function initDiarias() {
   _diarListaInit();  // Lista Diaria (mobile principal) — funcionarios ativos, Manha/Tarde por tap
   _diarWorkTabReset();      // entrar na tela sempre abre em "Apontamento do dia" (padrao)
   _diarWorkTabsBindKeys();  // liga navegacao por teclado nas abas (uma vez)
+  _diarAplicarRestricaoMestre();  // mestre: esconde Registros/Folha/Equipe/PDF/quinzena/lixeira
 
   if (usuarioAtual?.perfil === 'mestre') _diarPopularFormManual();
   aplicarPerfil();
@@ -163,6 +164,7 @@ function _diarGetFuncionariosAtivos() {
 // EQUIPE — CRUD Funcionarios (Modal)
 // ══════════════════════════════════════════════════════════════════
 function diarAbrirModalEquipe() {
+  if (_diarBloqueiaMestre()) return; // guard-mestre:diarAbrirModalEquipe
   let modal = document.getElementById('diar-modalEquipe');
   if (!modal) {
     document.body.insertAdjacentHTML('beforeend', `
@@ -447,6 +449,7 @@ function _diarAtualizarSelectQuinzena() {
 }
 
 async function diarExcluirQuinzena() {
+  if (_diarBloqueiaMestre()) return; // guard-mestre:diarExcluirQuinzena
   if (!DiariasModule.quinzenaAtiva) return;
   const regsCount = DiariasModule.registros.filter(r => r.quinzena_id === DiariasModule.quinzenaAtiva.id).length;
   const extrasCount = DiariasModule.extras.filter(e => e.quinzena_id === DiariasModule.quinzenaAtiva.id).length;
@@ -486,6 +489,7 @@ async function diarExcluirQuinzena() {
 
 // ── Lixeira de quinzenas ────────────────────────────
 async function diarAbrirLixeira() {
+  if (_diarBloqueiaMestre()) return; // guard-mestre:diarAbrirLixeira
   try {
     const excluidas = await sbGet('diarias_quinzenas', '?excluida=eq.true&order=excluida_em.desc');
     if (!excluidas || !excluidas.length) { showToast('Lixeira vazia.'); return; }
@@ -616,6 +620,7 @@ function _diarGetExtrasQuinzena() { return DiariasModule.extras; }
 
 // ── Nova quinzena (modal) ──────────────────────
 function diarAbrirModalNovaQuinzena() {
+  if (_diarBloqueiaMestre()) return; // guard-mestre:diarAbrirModalNovaQuinzena
   if (usuarioAtual?.perfil === 'mestre') { showToast('Sem permissao para criar quinzena.'); return; }
   const hoje = hojeISO();
   document.body.insertAdjacentHTML('beforeend', `
@@ -691,6 +696,7 @@ async function diarSalvarNovaQuinzena() {
 
 // ── Editar label da quinzena ──────────────────
 function diarEditarLabelQuinzena() {
+  if (_diarBloqueiaMestre()) return; // guard-mestre:diarEditarLabelQuinzena
   if (!DiariasModule.quinzenaAtiva) { showToast('Selecione uma quinzena.'); return; }
   // V2: modal em vez de prompt() nativo
   const labelAtual = DiariasModule.quinzenaAtiva.label;
@@ -1134,6 +1140,7 @@ function _diarRenderPreview(regs) {
 }
 
 async function diarConfirmarLancamento() {
+  if (_diarBloqueiaMestre()) return; // guard-mestre:diarConfirmarLancamento
   if (!DiariasModule.interpretado) return;
   if (!DiariasModule.quinzenaAtiva) { showToast('Nenhuma quinzena ativa. Crie uma quinzena primeiro.'); return; }
   if (!DiariasModule._funcionariosCarregados) { showToast('Sem conexao com o banco. Valores de diaria podem estar desatualizados.', 5000); return; }
@@ -1368,6 +1375,7 @@ function diarEditAddPeriodo() {
 }
 
 async function diarSalvarEdicao(regId) {
+  if (_diarBloqueiaMestre()) return; // guard-mestre:diarSalvarEdicao
   if (DiariasModule.quinzenaAtiva?.fechada) { showToast('Quinzena fechada. Reabra antes de editar.'); return; }
   const modal = document.getElementById('diar-modalEdit');
   if (!modal) return;
@@ -1465,6 +1473,7 @@ function diarAddPeriodoModal() {
 }
 
 async function diarConfirmarAdd(data) {
+  if (_diarBloqueiaMestre()) return; // guard-mestre:diarConfirmarAdd
   if (DiariasModule.quinzenaAtiva?.fechada) { showToast('Quinzena fechada. Reabra antes de adicionar.'); return; }
   const modal = document.getElementById('diar-modalAdd');
   if (!modal) return;
@@ -1503,6 +1512,7 @@ async function diarConfirmarAdd(data) {
 }
 
 async function diarExcluirRegistro(regId) {
+  if (_diarBloqueiaMestre()) return; // guard-mestre:diarExcluirRegistro
   if (DiariasModule.quinzenaAtiva?.fechada) { showToast('Quinzena fechada. Reabra antes de excluir.'); return; }
   const ok = await confirmar('Excluir este registro de diaria?');
   if (!ok) return;
@@ -1517,6 +1527,7 @@ async function diarExcluirRegistro(regId) {
 }
 
 async function diarDeletarDia(data) {
+  if (_diarBloqueiaMestre()) return; // guard-mestre:diarDeletarDia
   if (DiariasModule.quinzenaAtiva?.fechada) { showToast('Quinzena fechada. Reabra antes de excluir.'); return; }
   const ok = await confirmar('Remover todos os registros de ' + data + '?');
   if (!ok) return;
@@ -1814,6 +1825,7 @@ function _diarRenderFolha() {
 // EXTRAS / BONIFICACOES
 // ══════════════════════════════════════════════════════════════════
 function diarAbrirModalExtra() {
+  if (_diarBloqueiaMestre()) return; // guard-mestre:diarAbrirModalExtra
   const selFunc = document.getElementById('diar-extra-func');
   selFunc.innerHTML = '<option value="">Selecionar...</option>';
   _diarGetFuncionariosAtivos().forEach(f => {
@@ -1906,7 +1918,43 @@ function _diarCalcCustoObra() {
 // ══════════════════════════════════════════════════════════════════
 // TABS
 // ══════════════════════════════════════════════════════════════════
+// Mestre: SÓ Apontamento do dia. Registros/Folha/Equipe/quinzena sao superficies
+// administrativas (leem valor bruto) e ficam vedadas — no front E no banco (RLS/B1).
+function _diarIsMestre() { return usuarioAtual?.perfil === 'mestre'; }
+
+// Esconde do MESTRE todos os controles administrativos de Diarias. Chamado no initDiarias.
+// Complementa os guards nos handlers (esconder != seguranca; o banco fecha via B1).
+function _diarAplicarRestricaoMestre() {
+  if (!_diarIsMestre()) return;
+  const esconde = (sel) => document.querySelectorAll(sel).forEach(e => { if (e) e.style.display = 'none'; });
+  // abas de trabalho Registros/Folha (desktop)
+  esconde('#wtab-registros, #wtab-folha');
+  // barra interna Registros/Folha (mobile)
+  document.querySelectorAll('#view-diarias .diarias-tab').forEach(b => {
+    const oc = b.getAttribute('onclick') || '';
+    if (/registros|folha/i.test(oc)) b.style.display = 'none';
+  });
+  // botoes administrativos por handler
+  document.querySelectorAll('#view-diarias button[onclick]').forEach(b => {
+    const oc = b.getAttribute('onclick') || '';
+    if (/diarAbrirModalEquipe|diarExportar|diarEditarLabelQuinzena|diarAbrirModalNovaQuinzena|diarExcluirQuinzena|diarAbrirLixeira|diarAbrirModalExtra|diarAbrirModalEDR|diarConfirmarLancamentosEDR/.test(oc)) {
+      b.style.display = 'none';
+    }
+  });
+  // ids conhecidos (redundancia defensiva)
+  esconde('#btn-diar-nova-quinzena, #btn-diar-del-quinzena, #btn-diar-extra');
+  // garante que a tela ativa e Apontamento
+  if (typeof diarWorkTab === 'function') diarWorkTab('apontar', null);
+}
+
+// Guard reutilizavel: nega handler administrativo se for mestre. Retorna true se BLOQUEADO.
+function _diarBloqueiaMestre() {
+  if (_diarIsMestre()) { showToast('Acao disponivel apenas para administradores.'); return true; }
+  return false;
+}
+
 function diarSwitchTab(tab, el) {
+  if (_diarIsMestre()) return;   // mestre nao acessa Registros/Folha (nem via chamada direta)
   DiariasModule.tab = tab;
   document.querySelectorAll('#view-diarias .diar-tab').forEach(t => t.classList.remove('active'));
   if (el) el.classList.add('active');
@@ -1921,6 +1969,7 @@ function diarSwitchTab(tab, el) {
 function diarWorkTab(area, el) {
   const grid = document.getElementById('diar-mainGrid');
   if (!grid) return;
+  if (_diarIsMestre()) area = 'apontar';   // mestre travado em Apontamento, ignora registros/folha
   if (!['apontar', 'registros', 'folha'].includes(area)) area = 'apontar';
   DiariasModule.workTab = area;
   grid.classList.remove('wtab-apontar', 'wtab-registros', 'wtab-folha');
@@ -2005,6 +2054,7 @@ function diarTogglePanel() {
 // EXPORTAR PDF (jsPDF com try/catch)
 // ══════════════════════════════════════════════════════════════════
 function diarExportarFolha() {
+  if (_diarBloqueiaMestre()) return; // guard-mestre:diarExportarFolha
   try {
     const regs = _diarGetRegistrosQuinzena();
     if (!regs.length) { showToast('Nenhum dado para exportar.'); return; }
@@ -2237,6 +2287,7 @@ async function _diarBuscarObras() {
 }
 
 async function diarAbrirModalEDR() {
+  if (_diarBloqueiaMestre()) return; // guard-mestre:diarAbrirModalEDR
   const custoPorObra = _diarCalcCustoObra();
   if (!Object.keys(custoPorObra).length) { showToast('Nenhum dado na quinzena atual.'); return; }
   const obs = 'Folha quinzenal · ' + (DiariasModule.quinzenaAtiva?.id || DiariasModule.quinzenaAtiva?.label || 'Quinzena');
