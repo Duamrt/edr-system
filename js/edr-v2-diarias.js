@@ -1934,10 +1934,10 @@ function _diarAplicarRestricaoMestre() {
     const oc = b.getAttribute('onclick') || '';
     if (/registros|folha/i.test(oc)) b.style.display = 'none';
   });
-  // botoes administrativos por handler
+  // botoes administrativos por handler (inclui PDF, que estava so com .admin-only e vazava)
   document.querySelectorAll('#view-diarias button[onclick]').forEach(b => {
     const oc = b.getAttribute('onclick') || '';
-    if (/diarAbrirModalEquipe|diarExportar|diarEditarLabelQuinzena|diarAbrirModalNovaQuinzena|diarExcluirQuinzena|diarAbrirLixeira|diarAbrirModalExtra|diarAbrirModalEDR|diarConfirmarLancamentosEDR/.test(oc)) {
+    if (/pdfDiarias|diarAbrirModalEquipe|diarExportar|diarEditarLabelQuinzena|diarAbrirModalNovaQuinzena|diarExcluirQuinzena|diarAbrirLixeira|diarAbrirModalExtra|diarAbrirModalEDR|diarConfirmarLancamentosEDR/.test(oc)) {
       b.style.display = 'none';
     }
   });
@@ -1954,7 +1954,8 @@ function _diarBloqueiaMestre() {
 }
 
 function diarSwitchTab(tab, el) {
-  if (_diarIsMestre()) return;   // mestre nao acessa Registros/Folha (nem via chamada direta)
+  // mestre: forca 'apontar' e NAO altera estado para registros/folha (nem via chamada direta)
+  if (_diarIsMestre()) { DiariasModule.tab = 'apontar'; return; }
   DiariasModule.tab = tab;
   document.querySelectorAll('#view-diarias .diar-tab').forEach(t => t.classList.remove('active'));
   if (el) el.classList.add('active');

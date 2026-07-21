@@ -772,6 +772,6 @@ const PdfModule = {
 
 // ── Wrappers globais (chamados pelos botões no HTML) ──────────
 function pdfRelatorio()  { PdfModule.gerarRelatorio(); }
-function pdfDiarias()    { PdfModule.gerarDiarias(); }
+function pdfDiarias()    { if (usuarioAtual?.perfil === 'mestre') { if (typeof showToast==='function') showToast('Acao disponivel apenas para administradores.'); return; } PdfModule.gerarDiarias(); }
 function cronGerarPDF()  { PdfModule.gerarCronograma(); }
 function pciGerarPDF()   { if (typeof PciModule !== 'undefined') PciModule._gerarPdf(); }
