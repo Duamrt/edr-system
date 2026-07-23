@@ -2306,7 +2306,11 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
       </div>
       <div class="field frete-field">
         <label><span class="material-symbols-outlined icon-sm icon-inline">receipt_long</span> OUTRAS DESPESAS ACESSÓRIAS (R$) <span style="font-weight:400;color:var(--texto3);font-size:11px;">Taxas e encargos do XML — deixe em branco se não houver</span></label>
-        <input type="number" id="f-outras" data-next="f-obs" placeholder="0,00" oninput="atualizarTotalComFrete()">
+        <input type="number" id="f-outras" data-next="f-desconto-total" placeholder="0,00" oninput="atualizarTotalComFrete()">
+      </div>
+      <div class="field frete-field">
+        <label><span class="material-symbols-outlined icon-sm icon-inline">sell</span> DESCONTO TOTAL DA NF (R$) <span style="font-weight:400;color:var(--texto3);font-size:11px;">Do XML (vDesc) — abatido do total, não infla estoque</span></label>
+        <input type="number" id="f-desconto-total" data-next="f-obs" placeholder="0,00" oninput="atualizarTotalComFrete()">
       </div>
       <div class="field"><label>OBSERVAÇÃO</label><textarea id="f-obs" data-next="i-desc" placeholder="OBSERVAÇÕES GERAIS DA NOTA..."></textarea></div>
     </div>

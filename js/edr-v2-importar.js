@@ -851,6 +851,8 @@ const ImportModule = {
     const vNF = total ? parseFloat(getVal(total, 'vNF')) || 0 : 0;
     // vOutro = outras despesas acessórias (taxas de marketplace, etc) — não estão nos itens
     const outras = total ? parseFloat(getVal(total, 'vOutro')) || 0 : 0;
+    // vDesc = desconto total da NF (abate do custo — não pode inflar estoque)
+    const desconto = total ? parseFloat(getVal(total, 'vDesc')) || 0 : 0;
 
     const dets = getAllTag(xml, 'det');
     if (!dets.length) return null;
@@ -881,7 +883,11 @@ const ImportModule = {
     let dataFormatada = '';
     if (dataEmissao) dataFormatada = dataEmissao.substring(0, 10);
 
-    return { fornecedor, cnpj, numero, serie, natureza, dataEmissao: dataFormatada, valorBruto, frete, outras, vNF, itens };
+    // chave de acesso da propria NF-e (infNFe@Id sem prefixo NFe)
+    const infNFeEl = getTag(xml, 'infNFe');
+    const chaveAcesso = infNFeEl ? (infNFeEl.getAttribute('Id') || '').replace(/^NFe/, '') : '';
+
+    return { fornecedor, cnpj, numero, serie, natureza, dataEmissao: dataFormatada, valorBruto, frete, outras, desconto, vNF, itens, chaveAcesso };
   },
 
   _preencherFormComXML(nfe) {
@@ -915,16 +921,33 @@ const ImportModule = {
     if (_freteEl) _freteEl.value = nfe.frete > 0 ? nfe.frete : '';
     const _outrasEl = document.getElementById('f-outras');
     if (_outrasEl) _outrasEl.value = nfe.outras > 0 ? nfe.outras : '';
+    // Desconto total da NF (vDesc do XML) — abate do custo, nao infla estoque
+    const _descEl = document.getElementById('f-desconto-total');
+    if (_descEl) _descEl.value = nfe.desconto > 0 ? nfe.desconto : '';
     if (typeof atualizarTotalComFrete === 'function') atualizarTotalComFrete();
 
-    // Confere se itens + frete + outras batem com o total oficial da NF (vNF do XML).
+    // Confere se itens + frete + outras − desconto batem com o total oficial (vNF do XML).
     if (nfe.vNF > 0) {
-      const _somaXml = (nfe.itens || []).reduce((s, i) => s + (i.total || 0), 0) + (nfe.frete || 0) + (nfe.outras || 0);
+      const _somaXml = (nfe.itens || []).reduce((s, i) => s + (i.total || 0), 0) + (nfe.frete || 0) + (nfe.outras || 0) - (nfe.desconto || 0);
       if (Math.abs(_somaXml - nfe.vNF) > 0.05) {
         const _fmt = typeof fmtR === 'function' ? fmtR : (v => 'R$ ' + Number(v).toFixed(2));
-        showToast(`Atencao: total dos itens (${_fmt(_somaXml)}) difere do total da NF no XML (${_fmt(nfe.vNF)}). Confira itens/frete antes de salvar.`);
+        showToast(`Atencao: total dos itens (${_fmt(_somaXml)}) difere do total da NF no XML (${_fmt(nfe.vNF)}). Confira itens/frete/desconto antes de salvar.`);
       }
     }
+
+    // CONTEXTO DE IMPORTACAO XML: salvar so e' permitido com XML valido importado.
+    // Se fornecedor/numero/total/qtd-itens mudarem depois, o contexto e' invalidado
+    // (comparado no salvarNota) e o usuario precisa reimportar. Bloqueia edicao manual.
+    this._xmlCtx = {
+      chaveAcesso: nfe.chaveAcesso || '',
+      desconto: nfe.desconto || 0,
+      fornecedorCnpj: (nfe.cnpj || '').replace(/\D/g, ''),
+      // numero guardado COM serie — igual ao que o form recebe (f-numero = numComSerie).
+      // Sem isso, "9999" (puro) != "9999/1" (form) dava falso positivo de "alterado".
+      numero: (numComSerie || '').trim(),
+      vNF: nfe.vNF || 0,
+      qtdItens: (nfe.itens || []).length,
+    };
 
     const natEl = document.getElementById('f-natureza');
     if (natEl && nfe.natureza) {

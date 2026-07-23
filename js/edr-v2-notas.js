@@ -4,6 +4,18 @@
 //          auth.js, menu.js, dashboard.js
 // ══════════════════════════════════════════════════════════════════
 
+// ── BLOQUEIO TEMPORARIO — LANCAMENTO MANUAL DE NF ───────────────
+// UX ONLY. A protecao REAL esta no banco: policy RLS nf_insert = false
+// (migracao revisao-diarias-rpc/NF-BLOQUEIO-INSERT-temporario.sql, 2026-07-23).
+// Motivo: prevencao de NF fiscal duplicada (caso NF 284 CPM lancada 2x manual).
+// Saida do bloqueio: liberar SO quando importacao por XML + chave de acesso
+// unica no banco estiverem implementados e testados. Ao liberar: apagar esta
+// flag E restaurar a policy nf_insert original (bloco RESTAURAR na migracao).
+const _NF_LANCAMENTO_MANUAL_BLOQUEADO = true;
+const _NF_MSG_BLOQUEIO = 'Lancamento manual de NF temporariamente desativado. '
+  + 'A entrada fiscal passara a ser por importacao de XML (com chave de acesso), '
+  + 'para impedir nota duplicada. Fale com o Duam para liberar.';
+
 // ── ESTADO ENCAPSULADO ──────────────────────────────────────────
 const NotasModule = {
   itens: [],                // itens do formulario atual
@@ -914,6 +926,15 @@ async function _alertarFornDuplicado(existente, novoNome, novoCnpj) {
 
 // salvarNota aceita JSON (desacoplado do HTML pra futuro XML import)
 async function salvarNota(notaData) {
+  // SOMENTE XML: lancamento so e' permitido a partir de um XML importado valido.
+  // O contexto (ImportModule._xmlCtx) e' setado ao importar. Se nao existe, ou se
+  // fornecedor/numero/total/qtd-itens foram alterados apos importar, bloqueia.
+  const _ctx = (typeof ImportModule !== 'undefined') ? ImportModule._xmlCtx : null;
+  if (!_ctx || !_ctx.chaveAcesso) {
+    showToast(_NF_MSG_BLOQUEIO, 6000);
+    return false;
+  }
+
   let numero, fornecedor, emissao, recebimento, cnpjVal, destino, natureza, frete, outras, obs, itens;
 
   if (notaData && typeof notaData === 'object') {
@@ -942,6 +963,35 @@ async function salvarNota(notaData) {
     outras = parseFloat(document.getElementById('f-outras')?.value) || 0;
     obs = (document.getElementById('f-obs')?.value || '').toUpperCase();
     itens = NotasModule.itens;
+  }
+
+  // ── VALIDACAO XML: contexto nao pode ter sido alterado apos importar ──
+  // Se fornecedor/numero/total/qtd-itens divergem do XML importado, invalida.
+  // desconto do form; se o campo estiver vazio usa o do contexto XML. (0 e' valor valido —
+  // nao usar || que trataria 0 como ausente e reintroduziria o desconto do XML.)
+  const _descRaw = document.getElementById('f-desconto-total')?.value;
+  const _descTotal = (_descRaw !== undefined && _descRaw !== '' && _descRaw !== null)
+    ? (parseFloat(_descRaw) || 0)
+    : (_ctx.desconto || 0);
+  const _cnpjAtual = (cnpjVal || '').replace(/\D/g, '');
+  const _somaItens = (itens || []).reduce((s, i) => s + (parseFloat(i.total) || 0), 0);
+  const _totalLiquidoAtual = _somaItens + frete + outras - _descTotal;
+  const _mudou =
+    _cnpjAtual !== _ctx.fornecedorCnpj ||
+    numero.toUpperCase() !== (_ctx.numero || '').toUpperCase() ||
+    (itens || []).length !== _ctx.qtdItens ||
+    (_ctx.vNF > 0 && Math.abs(_totalLiquidoAtual - _ctx.vNF) > 0.05);
+  if (_mudou) {
+    ImportModule._xmlCtx = null;  // invalida — exige nova importacao
+    showToast('Os dados foram alterados apos importar o XML. Reimporte o XML para salvar.', 6000);
+    return false;
+  }
+
+  // Chave de acesso valida (44 dig, Mod 11) — o banco tambem exige (trigger).
+  const _chave = _ctx.chaveAcesso;
+  if (!_chave || !/^\d{44}$/.test(_chave) || _chave.substring(20, 22) !== '55') {
+    showToast('Chave de acesso do XML invalida. Reimporte um XML de NF-e valido.', 6000);
+    return false;
   }
 
   // Validacoes
@@ -999,7 +1049,8 @@ async function salvarNota(notaData) {
   if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
 
   const subtotal = itens.reduce((s, i) => s + i.total, 0);
-  const totalBruto = subtotal + frete + outras;
+  // valor_bruto e' o total LIQUIDO (desconto abatido) — desconto NAO infla custo/estoque.
+  const totalBruto = Math.max(0, subtotal + frete + outras - _descTotal);
   const totalImposto = itens.reduce((s, i) => s + (i.imposto || 0), 0);
   const temCredito = itens.some(i => i.credito) || frete > 0 || outras > 0;
   const csSimples = itens.length === 0 ? 'misto' : itens.every(i => i.credito) ? 'sim' : itens.some(i => i.credito) || frete > 0 || outras > 0 ? 'misto' : 'nao';
@@ -1022,6 +1073,7 @@ async function salvarNota(notaData) {
       data: emissao, data_recebimento: recebimento, natureza,
       numero_nf: numero.toUpperCase(), fornecedor, cnpj: cnpjVal,
       obra: destino, valor_bruto: totalBruto, frete, outras_despesas: outras, imposto: totalImposto,
+      desconto_total: _descTotal, chave_acesso: _chave,
       gera_credito: temCredito, credito_status: csSimples,
       itens: JSON.stringify(itens, (k, v) => k === '_etapa' ? undefined : v), obs
     };
@@ -1155,6 +1207,8 @@ async function salvarNota(notaData) {
       { const _av = []; if (falhasLanc + falhasDesp > 0) _av.push(`${falhasLanc + falhasDesp} lancamento(s)/despesa(s) falharam`); if (falhasCatalogo > 0) _av.push(`${falhasCatalogo} material(is) nao entraram no catalogo (revise itens sem codigo)`); showToast(_av.length ? `NF salva, mas ${_av.join('; ')}. Verifique a conexao.` : 'Nota fiscal lancada!', _av.length ? 5000 : undefined); }
     }
 
+    // invalida o contexto XML: proxima NF exige nova importacao (nao reusa chave/dados)
+    if (typeof ImportModule !== 'undefined') ImportModule._xmlCtx = null;
     resetForm();
     renderDashboard();
     if (typeof renderEstoque === 'function') renderEstoque();
