@@ -2,3 +2,20 @@ backups/
 backup.js
 .mcp.json
 .env.asaas
+.agent-coordination/
+
+# Artefatos de sessoes de teste (nao sao codigo) — 2026-07-30
+.playwright-mcp/
+
+# Screenshots de validacao de sessoes anteriores (nomes explicitos, sem curinga)
+demo-crm-conversa.png
+lotes-01-topo.png
+lotes-02-modal-procura.png
+lotes-03-modal-oportunidade.png
+lotes-trava-gravacao.png
+mobile-antes.png
+teste-desktop.png
+teste-estados-painel.png
+
+# repo embutido de revisao (nao versionar aqui)
+revisao-diarias-rpc/

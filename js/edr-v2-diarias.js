@@ -194,6 +194,10 @@ function diarAbrirModalEquipe() {
             <input id="diar-eq-diaria" type="number" placeholder="Diaria (R$)" min="0" step="5" style="padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-family:inherit;font-size:12px;width:100%;box-sizing:border-box;">
             <input id="diar-eq-apelidos" type="text" placeholder="Apelidos (virgula)" style="padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-family:inherit;font-size:12px;width:100%;box-sizing:border-box;">
           </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+            <input id="diar-eq-nomecompleto" type="text" placeholder="Nome completo (sai no PDF)" style="padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-family:inherit;font-size:12px;width:100%;box-sizing:border-box;">
+            <input id="diar-eq-pix" type="text" placeholder="Chave PIX" style="padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-family:inherit;font-size:12px;width:100%;box-sizing:border-box;">
+          </div>
           <button onclick="diarAdicionarFuncionario()" class="btn btn-primary" style="width:100%;padding:10px;">ADICIONAR</button>
         </div>
       </div>
@@ -203,6 +207,39 @@ function diarAbrirModalEquipe() {
     modal.style.display = 'flex';
   }
   _diarRenderListaEquipe();
+  _diarBackfillAdmissao();
+}
+
+function _diarFmtDataBR(iso) {
+  // 'YYYY-MM-DD' → 'DD/MM/YYYY' sem criar Date (evita shift de timezone)
+  const p = String(iso).split('T')[0].split('-');
+  return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : iso;
+}
+
+// Admissao sugerida = data da primeira diaria lancada do funcionario.
+// So preenche quem esta sem admissao e sem edicao manual (admissao_manual).
+let _diarBackfillFeito = false;
+async function _diarBackfillAdmissao() {
+  if (_diarBackfillFeito) return;
+  const pendentes = DiariasModule.funcionariosRaw.filter(f => !f.admissao && !f.admissao_manual);
+  if (!pendentes.length) { _diarBackfillFeito = true; return; }
+  try {
+    const regs = await sbGet('diarias', '?select=funcionario,data&order=data.asc');
+    if (!Array.isArray(regs) || !regs.length) { _diarBackfillFeito = true; return; }
+    const primeira = {};
+    regs.forEach(r => {
+      const k = (r.funcionario || '').toLowerCase();
+      if (k && !primeira[k]) primeira[k] = r.data;
+    });
+    for (const f of pendentes) {
+      const data = primeira[f.nome.toLowerCase()];
+      if (!data) continue;
+      const salvo = await sbPatch('diarias_funcionarios', `?id=eq.${f.id}`, { admissao: data });
+      if (salvo) f.admissao = data;
+    }
+    _diarBackfillFeito = true;
+    _diarRenderListaEquipe();
+  } catch (e) { console.warn('[DIARIAS] Backfill admissao falhou', e); }
 }
 
 function _diarRenderListaEquipe() {
@@ -237,7 +274,7 @@ function _diarRenderListaEquipe() {
           <span style="${statusStyle}">${statusText}</span>
         </div>
         <div style="font-size:11px;color:var(--text-tertiary);margin-top:2px;">
-          R$ ${Number(f.diaria).toFixed(2)}${apelidos ? ' · apelidos: ' + apelidos : ''}
+          R$ ${Number(f.diaria).toFixed(2)}${apelidos ? ' · apelidos: ' + apelidos : ''}${f.chave_pix ? ' · <span style="color:var(--success);font-weight:700;">PIX ✓</span>' : ''}${f.admissao ? ' · desde ' + _diarFmtDataBR(f.admissao) : ''}
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">${btnEditar}${btnToggle}${btnExcluir}</div>
@@ -256,7 +293,7 @@ async function diarAdicionarFuncionario() {
     showToast('Ja existe um funcionario com esse nome.'); return;
   }
   try {
-    const novo = await sbPost('diarias_funcionarios', { nome, cargo, diaria, apelidos, ativo: true });
+    const novo = await sbPost('diarias_funcionarios', { nome, cargo, diaria, apelidos, ativo: true, nome_completo: (document.getElementById('diar-eq-nomecompleto').value.trim() || null), chave_pix: (document.getElementById('diar-eq-pix').value.trim() || null) });
     if (!novo) { showToast('Nao foi possivel adicionar o funcionario. Tente de novo.', 5000); return; }  // nao push null (quebraria _diarReconstruirMapa), nao limpa inputs
     DiariasModule.funcionariosRaw.push(novo);
     _diarReconstruirMapa();
@@ -264,6 +301,8 @@ async function diarAdicionarFuncionario() {
     document.getElementById('diar-eq-nome').value = '';
     document.getElementById('diar-eq-diaria').value = '';
     document.getElementById('diar-eq-apelidos').value = '';
+    document.getElementById('diar-eq-nomecompleto').value = '';
+    document.getElementById('diar-eq-pix').value = '';
     showToast(nome + ' adicionado!');
   } catch (e) { showToast('Nao foi possivel adicionar: ' + e.message); }
 }
@@ -324,6 +363,11 @@ function diarEditarFuncionario(id) {
           <div><label style="${labelStyle}">DIARIA (R$)</label><input id="diar-edit-diaria" type="number" value="${f.diaria}" min="0" step="5" style="${inputStyle}"></div>
           <div><label style="${labelStyle}">APELIDOS</label><input id="diar-edit-apelidos" type="text" value="${apelidos}" placeholder="virgula" style="${inputStyle}"></div>
         </div>
+        <div><label style="${labelStyle}">NOME COMPLETO (SAI NO PDF)</label><input id="diar-edit-nomecompleto" type="text" value="${esc(f.nome_completo || '')}" style="${inputStyle}"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div><label style="${labelStyle}">CHAVE PIX</label><input id="diar-edit-pix" type="text" value="${esc(f.chave_pix || '')}" style="${inputStyle}"></div>
+          <div><label style="${labelStyle}">ADMISSAO</label><input id="diar-edit-admissao" type="date" value="${esc(f.admissao || '')}" style="${inputStyle}"></div>
+        </div>
         <div style="display:flex;justify-content:flex-end;gap:8px;padding-top:4px;">
           <button onclick="document.getElementById('diar-editFunc').remove()" class="btn btn-outline">CANCELAR</button>
           <button onclick="diarSalvarEdicaoFunc('${id}')" class="btn btn-primary">SALVAR</button>
@@ -340,11 +384,18 @@ async function diarSalvarEdicaoFunc(id) {
   const apelidosStr = document.getElementById('diar-edit-apelidos').value.trim();
   const apelidos = apelidosStr ? apelidosStr.split(',').map(a => a.trim().toLowerCase()).filter(Boolean) : [];
   if (!nome) { showToast('Nome obrigatorio.'); return; }
+  const nomeCompleto = document.getElementById('diar-edit-nomecompleto').value.trim() || null;
+  const chavePix = document.getElementById('diar-edit-pix').value.trim() || null;
+  const admissao = document.getElementById('diar-edit-admissao').value || null;
   try {
-    const salvo = await sbPatch('diarias_funcionarios', `?id=eq.${id}`, { nome, cargo, diaria, apelidos });
+    const atual = DiariasModule.funcionariosRaw.find(f => f.id === id);
+    const payload = { nome, cargo, diaria, apelidos, nome_completo: nomeCompleto, chave_pix: chavePix, admissao };
+    // admissao alterada na mao → marca manual, backfill nao sobrescreve mais
+    if (atual && admissao !== (atual.admissao || null)) payload.admissao_manual = true;
+    const salvo = await sbPatch('diarias_funcionarios', `?id=eq.${id}`, payload);
     if (!salvo) { showToast(salvo === null ? 'Erro ao salvar as alteracoes.' : 'Funcionario nao encontrado — recarregue.', 5000); return; }  // nao muta cache (diaria intacta), nao fecha modal
     const f = DiariasModule.funcionariosRaw.find(f => f.id === id);
-    if (f) { f.nome = nome; f.cargo = cargo; f.diaria = diaria; f.apelidos = apelidos; }
+    if (f) { f.nome = nome; f.cargo = cargo; f.diaria = diaria; f.apelidos = apelidos; f.nome_completo = nomeCompleto; f.chave_pix = chavePix; if (payload.admissao_manual) f.admissao_manual = true; f.admissao = admissao; }
     _diarReconstruirMapa();
     document.getElementById('diar-editFunc')?.remove();
     _diarRenderListaEquipe();
@@ -2208,6 +2259,47 @@ function _diarGerarPDF(regs) {
       y += 14;
     } else {
       y += 4;
+    }
+
+    // DADOS PARA PAGAMENTO — nome completo + chave PIX do cadastro da equipe
+    {
+      const cadastro = {};
+      DiariasModule.funcionariosRaw.forEach(f => { cadastro[f.nome.toLowerCase()] = f; });
+      const extrasPorFunc = {};
+      extras.forEach(e => {
+        const k = (e.funcionario || '').toLowerCase();
+        extrasPorFunc[k] = (extrasPorFunc[k] || 0) + e.valor;
+      });
+      const pgW = [70, 76, 36];
+      const pgX = [margem, margem + pgW[0], margem + pgW[0] + pgW[1]];
+      const alturaSecao = 5 + 7 + (funcs.length + 1) * 7;
+      if (y + alturaSecao > 270) { doc.addPage(); y = 16; }
+      doc.setTextColor(...CINZA1); doc.setFont('helvetica', 'bold'); doc.setFontSize(10);
+      doc.text('DADOS PARA PAGAMENTO', margem, y);
+      y += 5;
+      doc.setFillColor(...VERDE);
+      doc.rect(margem, y, W - margem * 2, 7, 'F');
+      doc.setTextColor(...BRANCO); doc.setFontSize(8); doc.setFont('helvetica', 'bold');
+      doc.text('FUNCIONARIO', pgX[0] + 2, y + 5);
+      doc.text('CHAVE PIX', pgX[1] + 2, y + 5);
+      doc.text('TOTAL A PAGAR (R$)', pgX[2] + pgW[2] - 2, y + 5, { align: 'right' });
+      y += 7;
+      funcs.forEach((f, idx) => {
+        if (y > 275) { doc.addPage(); y = 16; }
+        const cad = cadastro[f.nome.toLowerCase()];
+        const nomePag = (cad?.nome_completo || f.nome).substring(0, 42);
+        const pix = (cad?.chave_pix || '—').substring(0, 45);
+        const totalPagar = f.valor + (extrasPorFunc[f.nome.toLowerCase()] || 0);
+        if (idx % 2 === 0) { doc.setFillColor(248, 248, 248); doc.rect(margem, y, W - margem * 2, 7, 'F'); }
+        doc.setTextColor(...CINZA1); doc.setFont('helvetica', 'bold'); doc.setFontSize(8);
+        doc.text(nomePag, pgX[0] + 2, y + 5);
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(...CINZA2);
+        doc.text(pix, pgX[1] + 2, y + 5);
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(...VERDE);
+        doc.text('R$ ' + totalPagar.toLocaleString('pt-BR', { minimumFractionDigits: 2 }), pgX[2] + pgW[2] - 2, y + 5, { align: 'right' });
+        y += 7;
+      });
+      y += 10;
     }
 
     // CUSTO POR OBRA
