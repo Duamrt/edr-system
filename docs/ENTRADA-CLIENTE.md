@@ -263,3 +263,83 @@ Recebido R$ 5.000,00 · Falta R$ 135.613,02 (contrato) · Saldo a receber R$ 176
 quitação exata, excedente, legado sem repasse, legado parcial) estão cobertos por
 teste e foram exercitados por script no shell local — **não** foram vistos com obra
 real em produção.
+
+## 4. Deploy executado — evidência
+
+```
+./deploy.sh "fix(custos/obras): entrada do cliente mostra pendente e recebido — repasses sao a fonte de verdade"
+
+[dev d6e64a1] ... 18 files changed, 677 insertions(+), 51 deletions(-)
+ create mode 100644 docs/ENTRADA-CLIENTE.md
+ create mode 100644 js/edr-v2-entrada-cliente.js
+ create mode 100644 tests/entrada-cliente.test.js
+
+To https://github.com/Duamrt/edr-system.git
+   22ee2e0..d6e64a1  dev  -> dev
+   22ee2e0..d6e64a1  main -> main
+
+=== Deploy concluido! ===
+Versao: 08031552
+Cache SW: edr-system-v20260803155231
+```
+
+**Por que 18 arquivos:** `6 autorizados + 11 HTMLs adicionais + sw.js = 18`.
+`index.html` está nos dois grupos — é um dos 6 autorizados **e** foi reescrito pelo
+cache-busting —, por isso não se somam 6 + 12. Os 11 HTMLs adicionais tiveram apenas o
+`?v=` trocado (2 linhas cada), confirmado no `git show --stat` com `| 2 +-`:
+`acompanhar`, `agenda-iannaline`, `agenda`, `landing`, `meu-plano`, `novo-cliente`,
+`preview-polimento`, `produto`, `relatorio-obra`, `termo-entrega`, `tracker`.
+
+### Cache-busting aplicado
+
+```
+antes:  js/edr-v2-{entrada-cliente,custos,obras}.js?v=08020734
+depois: js/edr-v2-{entrada-cliente,custos,obras}.js?v=08031552
+
+sw.js antes:  const CACHE_NAME = 'edr-system-v20260802073401';
+sw.js depois: const CACHE_NAME = 'edr-system-v20260803155231';
+```
+
+### Verificação em produção — https://sistema.edreng.com.br
+
+```
+index.html                    HTTP 200
+js/edr-v2-entrada-cliente.js  HTTP 200
+js/edr-v2-custos.js           HTTP 200
+js/edr-v2-obras.js            HTTP 200
+```
+
+O JS novo deu **404 na primeira tentativa** (propagação do GitHub Pages) e passou a 200 na
+verificação seguinte. Conteúdo conferido contra o local: **idêntico** — a diferença de
+125 bytes é apenas CRLF (local) vs LF (servidor), confirmada por
+`diff <(tr -d '\r' local) <(tr -d '\r' producao)` → sem diferenças.
+
+### Alcance do que foi provado em produção
+
+**Artefato publicado e motor exercitado** — não fluxo produtivo validado.
+
+O que está provado: os arquivos respondem 200, o conteúdo servido é idêntico ao local, e
+a função pura, carregada da URL `.../edr-v2-entrada-cliente.js?v=08031552`, devolve o
+resultado esperado para uma entrada **sintética** digitada no console:
+
+```
+calcular({contrato_entrada: 14000}, [{valor: 5000, tipo: 'entrada'}])
+  → "Entrada: R$ 9.000,00 pendente · R$ 5.000,00 recebido"
+```
+
+O que **não** está provado: as telas de Custos e Obras renderizando com **dado produtivo**.
+Isso exigiria abrir a obra logado em produção — não foi feito. A validação com dado real
+(LUCIVANIA MACENA) ocorreu **no ambiente local**, antes do deploy.
+
+## 5. O que NÃO foi validado em produção
+
+- **A UI de Custos e Obras com dado produtivo.** Em produção só foram exercitados os
+  artefatos (HTTP 200 + conteúdo idêntico) e o motor com dados sintéticos no console.
+- Apenas o **caso parcial** foi conferido com dado real, e **localmente**
+  (LUCIVANIA MACENA), antes do deploy.
+- Sem lançamento, quitação exata, excedente, legado sem repasse e legado parcial:
+  cobertos por teste, **não** observados com obra real.
+- Celular, perfil não-admin.
+- **Obras com `entrada_paga = true` e sem repasse passarão a exibir "CONFERIR" em
+  vermelho.** É o comportamento correto pela regra, mas o volume não foi medido —
+  nenhuma consulta ao banco foi feita.
