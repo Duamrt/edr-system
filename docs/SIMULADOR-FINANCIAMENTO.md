@@ -5,11 +5,16 @@
 > **que já está em andamento**. O nome anterior ("Simulador de Financiamento") e o fluxo de
 > "criar cenário a partir do contrato" foram descartados.
 >
-> Estado: **desenvolvimento local, não integrado ao banco, não publicado.**
-> Proibido nesta janela: SQL, Supabase remoto, RLS, commit, push, deploy.
-> Nada aqui declara o módulo pronto, integrado, seguro ou publicável.
+> ~~Estado: **desenvolvimento local, não integrado ao banco, não publicado.**~~
+> ~~Proibido nesta janela: SQL, Supabase remoto, RLS, commit, push, deploy.~~
+> **SUPERADO em 2026-08-03** — integrado em `dev` e publicado (`a300ea1`, versão `08031749`).
+> Continua **sem persistência e sem banco**: projeção de sessão, some ao recarregar.
+> As restrições acima valiam na janela de desenvolvimento local e ficam registradas
+> como histórico, não como estado atual.
+>
+> Nada aqui declara o módulo validado com login real ou com perfil não-admin.
 > Tudo marcado como testado é **reportado pelo Claude** e pende de auditoria independente do Codex.
-> Evidências: `docs/SIMULADOR-VALIDACAO-LOCAL.md`.
+> Evidências: `docs/SIMULADOR-VALIDACAO-LOCAL.md` (seção 5 = integração e publicação).
 
 > **AUDITORIA DE REGRAS TEMPORAIS — 2026-08-03.** Os achados abaixo foram **confirmados
 > localmente pelo Codex** e corrigidos nesta janela, no branch `backup/wip-pre-sync-20260802`:

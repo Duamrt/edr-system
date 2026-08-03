@@ -1312,6 +1312,9 @@ Hashes inalterados: motor, taxa e os três testes. Só a UI mudou.
 **O módulo NÃO está integrado, NÃO está pronto, NÃO tem persistência, NÃO foi validado
 contra banco e NÃO está apto a deploy.** Continua exclusivamente no worktree, sem commit.
 
+> **[REVOGADO em 2026-08-03]** — verdadeiro quando escrito. O módulo foi integrado em
+> `dev` e publicado (`a300ea1`). Segue sem persistência e sem banco. Ver seção 5.
+
 ---
 
 # Cobertura da UI acessível — 2026-08-03 (12ª rodada)
@@ -1403,6 +1406,9 @@ ca8b78…  js/edr-v2-simulador.js        (só o export acrescentado nesta rodada
 **O módulo NÃO está integrado, NÃO está pronto, NÃO tem persistência, NÃO foi validado
 contra banco e NÃO está apto a deploy.**
 
+> **[REVOGADO em 2026-08-03]** — verdadeiro quando escrito. Integrado e publicado em
+> `a300ea1`. Segue sem persistência e sem banco. Ver seção 5.
+
 ---
 
 # Foco após setas e natureza do teste — 2026-08-03 (13ª rodada)
@@ -1473,5 +1479,89 @@ Leitor de tela real (NVDA/VoiceOver) · teclado físico · `:focus-visible` rend
 celular físico · perfil não-admin · autocomplete com lista grande · tudo que depende de
 banco.
 
-**O módulo NÃO está integrado, NÃO tem persistência, NÃO foi validado contra banco e
-NÃO está apto a deploy.**
+**O módulo NÃO tem persistência e NÃO foi validado contra banco.**
+
+---
+
+## 5. Integração e publicação — 2026-08-03
+
+Integrado em `dev` e publicado. O commit `4f7f062` (branch `backup/wip-pre-sync-20260802`)
+**não** pôde ser levado por `cherry-pick`: ele nasceu sobre `d83778d`, onde os arquivos do
+simulador já existiam, então registra *modificações*. Em `dev` esses arquivos nunca
+existiram → conflito `DU` em 5 dos 7 arquivos. Abortado sem forçar nem resetar.
+
+Estratégia usada: `git checkout 4f7f062 -- <pacote>` (copia o conteúdo final, não aplica
+diff) + edição cirúrgica dos 2 arquivos existentes. Evita arrastar o resto do WIP
+(`d83778d` traz quadro de diárias, notas/importar/estoque e rascunho do PIX) e evita
+apagar a Entrada do Cliente — que no branch de backup aparece como deleção
+(`edr-v2-entrada-cliente.js | 125 --`), por ser anterior a ela.
+
+### Escopo publicado — 12 arquivos
+
+| Arquivo | Ação |
+|---|---|
+| `js/edr-v2-simulador-{calc,taxa}.js`, `js/edr-v2-simulador.js` | novos |
+| `tests/simulador-{calc,guardas,temporal,acessibilidade}.test.js` | novos |
+| `docs/SIMULADOR-{FINANCIAMENTO,VALIDACAO-LOCAL}.md` | novos |
+| `index.html` | +10 linhas (view, menu ×2, título, 3 scripts) |
+| `js/edr-v2-auth.js` | +1 linha (item no registry) |
+| `docs/ENTRADA-CLIENTE.md` | commit separado (evidências do deploy anterior) |
+
+`SIMULADOR-VALIDACAO-LOCAL.md` veio da versão **commitada** em `4f7f062`, não da alteração
+local pós-commit no worktree.
+
+### Verificações antes do commit
+
+```
+comparação arquivo a arquivo vs worktree  → 9/9 iguais (divergência era só CRLF)
+index.html — auditoria linha a linha      → 10 linhas, todas do simulador
+node -c nos 3 JS + auth.js                → OK
+git diff --check                          → limpo
+lista final                               → 12 arquivos, nenhum extra
+```
+
+```
+simulador-calc            108 OK · 0 FALHA
+simulador-guardas          63 OK · 0 FALHA
+simulador-temporal         51 OK · 0 FALHA
+simulador-acessibilidade   44 OK · 0 FALHA
+entrada-cliente (regress.) 67 OK · 0 FALHA     → 333 asserções, zero falhas
+```
+
+### Commits
+
+```
+b8d54ef  feat(simulador): motor de amortizacao SAC/Price com regras temporais
+da713d4  test(simulador): 266 assercoes em 4 suites + relatorio de validacao local
+ffa313c  feat(shell): expor Amortizacao no menu Financeiro
+3ef2091  docs(entrada-cliente): registrar evidencias do deploy d6e64a1
+a300ea1  deploy — cache-busting (13 arquivos, 47/47 linhas simétricas)
+```
+
+Publicado por `./deploy.sh`. Versão `08031749` · SW `edr-system-v20260803174935`.
+`d6e64a1..a300ea1` em `dev` e `main`.
+
+### Evidência em produção — `https://sistema.edreng.com.br`
+
+```
+3 scripts do simulador servindo         → HTTP 200 (?v=08031749)
+edr-v2-entrada-cliente.js               → HTTP 200 (preservado)
+botões data-view="simulador"            → 2 (desktop + mobile), texto "Amortização"
+setView('simulador')                    → tela montada, 1500px, 8 campos, 0 erros
+viewRegistry: simulador entre 24 handlers, view reconstruída do zero (3842 chars)
+console                                 → sem erro do simulador
+                                          (PostHog sem token é pré-existente)
+```
+
+**Ressalva de método:** o shell foi revelado por script **sem autenticar**, para provar a
+montagem da tela. Isso prova que o módulo carrega, registra e renderiza em produção —
+**não** prova o fluxo com login real, dados de obra reais nem permissão por perfil.
+
+### Pendências
+
+- Validação do Duam com **login real**: menu Financeiro → Amortização, simulação de ponta
+  a ponta com obra real.
+- Perfil não-admin: o item `simulador` foi adicionado ao registry de permissões, mas o
+  comportamento com perfil restrito **não** foi testado.
+- Persistência: segue como projeção de sessão; não grava em banco.
+- Acessibilidade com leitor de tela real e teclado físico — segue não testada.
