@@ -239,6 +239,7 @@ const _MODULOS_PERMISSAO = [
   { id: 'catalogo',     label: 'Catálogo' },
   { id: 'contas-pagar', label: 'Contas a Pagar' },
   { id: 'creditos',     label: 'Créditos' },
+  { id: 'simulador',    label: 'Amortização' },
   { id: 'diarias',      label: 'Diárias' },
   { id: 'leads',        label: 'Leads / CRM' },
   { id: 'banco',        label: 'Dados' },
