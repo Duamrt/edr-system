@@ -613,7 +613,7 @@ function renderObraCef() {
   const entrada = Number(obra.contrato_entrada || 0);
   const terreno = Number(obra.contrato_terreno || 0);
   const valorVenda = Number(obra.valor_venda || 0);
-  const entradaPaga = obra.entrada_paga;
+  // `posEntrada` é calculado abaixo, depois de `reps` — precisa dos repasses.
 
   // Validacao CEF: soma dos componentes = valor de venda (sem extras)
   const somaComponentes = financiado + subsidio + fgts + entrada;
@@ -623,6 +623,12 @@ function renderObraCef() {
   // Repasses
   const reps = (typeof repassesCef !== 'undefined' ? repassesCef : []).filter(r => r.obra_id === obraId);
   const totalRecebido = reps.reduce((s, r) => s + Number(r.valor || 0), 0);
+
+  /* ENTRADA DO CLIENTE — regra única em edr-v2-entrada-cliente.js.
+     Antes desta correção (2026-08-03) esta tela lia SÓ o booleano
+     `obra.entrada_paga`, sem consultar repasse nenhum — divergindo de Custos.
+     O ledger (`repasses_cef` tipo 'entrada') é a fonte de verdade. */
+  const posEntrada = EntradaCliente.calcular(obra, reps);
 
   // Adicionais
   const adds = typeof AdicionaisModule !== 'undefined' ? AdicionaisModule.getAdicionaisObra(obraId) : { lista: [], valorTotal: 0, totalRecebido: 0, saldo: 0 };
@@ -674,10 +680,31 @@ function renderObraCef() {
         </div>
       </div>
 
+      <!-- Card de entrada: o valor GRANDE e o que ainda FALTA receber.
+           Antes era o contratado, com o pendente em letra miuda — repetindo a
+           confusao do defeito original. Revisao do Codex, 2026-08-03. -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
         <div class="cef-card">
-          <div class="cef-card-label">Entrada ${entradaPaga ? '<span style="color:var(--success);font-size:9px;">PAGA</span>' : '<span style="color:var(--warning);font-size:9px;">PENDENTE</span>'}</div>
-          <div class="cef-card-value" style="color:var(--warning);">${fmt(entrada)}</div>
+          <div class="cef-card-label">${
+            posEntrada.status === 'quitada'
+              ? 'Entrada <span style="color:var(--success);font-size:9px;">QUITADA</span>'
+              : posEntrada.status === 'inconsistente'
+                ? `Entrada pendente <span style="color:var(--error);font-size:9px;" title="${esc(posEntrada.alerta || '')}">CONFERIR</span>`
+                : posEntrada.status === 'parcial'
+                  ? 'Entrada pendente <span style="color:var(--warning);font-size:9px;">PARCIAL</span>'
+                  : 'Entrada pendente <span style="color:var(--warning);font-size:9px;">PENDENTE</span>'
+          }</div>
+          <div class="cef-card-value" style="color:${posEntrada.status === 'quitada' ? 'var(--success)' : 'var(--warning)'};">${
+            posEntrada.status === 'quitada' ? fmt(posEntrada.recebido) : fmt(posEntrada.pendente)
+          }</div>
+          <div style="font-size:10px;color:var(--text-secondary);margin-top:3px;line-height:1.4;">
+            ${posEntrada.status === 'quitada'
+              ? (posEntrada.excedente > 0
+                  ? `${fmt(posEntrada.contratado)} contratado · ${fmt(posEntrada.excedente)} acima`
+                  : `${fmt(posEntrada.contratado)} contratado`)
+              : `${fmt(posEntrada.contratado)} contratado · ${fmt(posEntrada.recebido)} recebido`}
+          </div>
+          ${posEntrada.alerta ? `<div style="font-size:9.5px;color:var(--error);margin-top:3px;line-height:1.35;">${esc(posEntrada.alerta)}</div>` : ''}
         </div>
         ${terreno > 0 ? `<div class="cef-card">
           <div class="cef-card-label">Terreno <span style="font-size:9px;color:var(--text-tertiary);">incluso no financiado</span></div>

@@ -399,10 +399,15 @@ function _custosRenderContratoCard(obraId) {
   const falta = contratoValor - totalRecebido;
   const pctRecebido = contratoValor > 0 ? Math.min((totalRecebido / contratoValor) * 100, 100) : 0;
 
-  const totalEntradaPaga = repassesObra.filter(r => (r.tipo || 'pls') === 'entrada').reduce((s, r) => s + Number(r.valor || 0), 0);
   const totalTerrenoPago = repassesObra.filter(r => (r.tipo || 'pls') === 'terreno').reduce((s, r) => s + Number(r.valor || 0), 0);
-  const entradaOk = contratoEntrada > 0 && (obra.entrada_paga || totalEntradaPaga >= contratoEntrada);
   const terrenoOk = contratoTerreno > 0 && (obra.terreno_pago || totalTerrenoPago >= contratoTerreno);
+
+  /* ENTRADA DO CLIENTE — regra única em edr-v2-entrada-cliente.js.
+     Antes desta correção (2026-08-03) o selo exibia `contratoEntrada` inteiro:
+     com 14.000 contratados e 5.000 lançados, dizia "14.000 pendente".
+     NÃO mexer no `falta` acima: `totalRecebido` já inclui os repasses de
+     entrada; descontar de novo contaria a entrada duas vezes. */
+  const entrada = EntradaCliente.calcular(obra, repassesObra);
 
   const infoParts = [];
   if (contratoTaxa) infoParts.push(`Taxa: ${esc(contratoTaxa)}`);
@@ -425,7 +430,7 @@ function _custosRenderContratoCard(obraId) {
       <span>Recebido: <strong style="color:var(--primary);">${fmtR(totalRecebido)}</strong> | Falta: <strong style="color:var(--warning);">${fmtR(falta)}</strong></span>
     </div>
     <div class="custos-contrato-tags">
-      ${contratoEntrada > 0 ? `<span class="custos-contrato-tag ${entradaOk ? 'green' : 'yellow'}">Entrada: ${fmtR(contratoEntrada)} ${entradaOk ? '&#10003;' : 'pendente'}</span>` : ''}
+      ${entrada.status !== 'sem_contrato' ? `<span class="custos-contrato-tag ${EntradaCliente.cor(entrada)}" ${entrada.alerta ? `title="${esc(entrada.alerta)}"` : ''}>${entrada.quitada ? '&#10003; ' : ''}${esc(EntradaCliente.rotulo(entrada, fmtR))}</span>` : ''}
       ${contratoTerreno > 0 ? `<span class="custos-contrato-tag purple">Terreno: ${fmtR(contratoTerreno)}</span>` : ''}
     </div>
     ${infoParts.length ? `<div class="custos-contrato-info">${infoParts.join(' | ')}</div>` : ''}
@@ -752,9 +757,14 @@ function custosAbrirModalContrato(obraId) {
       <div style="flex:1;"></div>
     </div>
     <div style="margin-bottom:16px;">
-      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--text-secondary);">
-        <input type="checkbox" id="contrato-entrada-paga" ${obra.entrada_paga ? 'checked' : ''} style="accent-color:var(--primary);width:16px;height:16px;"/> Entrada já paga pelo cliente
+      <label style="display:flex;align-items:flex-start;gap:6px;cursor:pointer;font-size:12px;color:var(--text-secondary);">
+        <input type="checkbox" id="contrato-entrada-paga" ${obra.entrada_paga ? 'checked' : ''} style="accent-color:var(--primary);width:16px;height:16px;margin-top:1px;flex:0 0 auto;"/>
+        <span>Marca legada de conciliação — <strong>não registra recebimento</strong></span>
       </label>
+      <div style="font-size:10.5px;color:var(--text-tertiary);margin:5px 0 0 22px;line-height:1.45;">
+        O valor recebido vem dos <strong>repasses do tipo Entrada</strong>. Para registrar
+        que o cliente pagou, lance o repasse — marcar aqui não soma ao caixa nem quita a entrada.
+      </div>
     </div>
 
     <!-- Seção: Dados do Contrato -->
