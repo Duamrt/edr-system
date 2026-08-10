@@ -109,6 +109,16 @@ Hoje o usuário usa "Entrada" no Estoque para registrar esses custos → contami
 - Cache buster automático no deploy.sh
 - Service Worker: CACHE_NAME atualizado automaticamente pelo deploy.sh
 
+## Ponte Claude ↔ Codex (sem copiar e colar)
+- Codex é o **revisor read-only** (papel em `AGENTS.md`); Claude implementa. A ponte é só transporte.
+- Instalar uma vez por clone: `bash tools/ponte/instalar.sh` (depois reiniciar o Claude Code)
+- Pedir revisão: `/revisar` (ou `tools/ponte/revisar.sh --foco "..."`) — parecer volta em `.ponte/pareceres/`
+- Aplicar o parecer: `tools/ponte/implementar.sh --do-parecer`
+- Codex roda **sempre** com `--sandbox read-only`; `deploy.sh` nunca entra na allowlist da ponte
+- Parecer errado se contesta **com prova** (arquivo:linha) — revisor não é dono da verdade
+- `.ponte/` é ignorado pelo git; parecer que virar evidência de card entra com `git add -f`
+- Detalhes e troubleshooting: `docs/PONTE-CLAUDE-CODEX.md`
+
 ## Início de sessão
 Ao iniciar qualquer sessão neste repo, leia primeiro:
 `G:/DUAM - ECOSISTEMA/DUAM - ECOSISTEMA/03_EDR SYSTEM/_CONTEXTO_MESTRE.md`

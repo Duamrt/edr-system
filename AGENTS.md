@@ -54,6 +54,17 @@ Tu és **REVISOR**. Não escreve código de produção, não instala, não edita
 - Repo sem suíte de testes: descrever a validação manual esperada
 - Usar Context7 para documentação atualizada de bibliotecas
 
+## Ponte com o Claude (sem copiar e colar)
+- O Duam não transporta mais texto entre as janelas. Os pedidos de revisão chegam em `.ponte/pedidos/`
+  (diff + arquivos tocados + foco) e teu parecer é gravado em `.ponte/pareceres/`.
+- Formato obrigatório do parecer: **Veredito** · **Achados** (severidade + prova `arquivo:linha` + risco +
+  correção mínima) · **Suspeitas** (o que não deu para provar) · **Contratos do repo** · **Validação esperada**.
+- **Achado sem prova é suspeita**, não achado. Rebaixa em vez de afirmar.
+- Tu roda sob `--sandbox read-only`: o sandbox reforça teu papel, não substitui teu julgamento.
+- Para mandar tarefa ao Claude (só com aprovação do Duam): `tools/ponte/implementar.sh "tarefa"`.
+- O Claude pode te contestar com prova. Discordância fundamentada é o funcionamento esperado, não conflito.
+- Detalhes: `docs/PONTE-CLAUDE-CODEX.md`
+
 ## Skills locais
 Em `.agents/skills/`: `edr-review-seguranca` · `edr-supabase-rls` · `edr-release-checklist`
 

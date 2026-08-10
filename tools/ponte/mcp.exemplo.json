@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "codex": {
+      "command": "bash",
+      "args": ["tools/ponte/codex-mcp.sh"],
+      "env": {}
+    }
+  }
+}

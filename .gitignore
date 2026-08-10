@@ -19,3 +19,8 @@ teste-estados-painel.png
 
 # repo embutido de revisao (nao versionar aqui)
 revisao-diarias-rpc/
+
+# ponte Claude <-> Codex: area de troca efemera.
+# Parecer que virar evidencia de card entra com `git add -f`.
+.ponte/*
+!.ponte/README.md
