@@ -78,6 +78,8 @@ ImportModule._renderPreview();
 assert.match(node('import-preview-v2').innerHTML, /XML: 0\.8 MI/);
 assert.match(node('import-preview-v2').innerHTML, /QTD ESTOQUE/);
 assert.match(node('import-preview-v2').innerHTML, /readonly/);
+assert.match(node('import-preview-v2').innerHTML, /value="0\.999"/);
+assert.doesNotMatch(node('import-preview-v2').innerHTML, /0\.9990000000000001/);
 
 await ImportModule.confirmarImport();
 assert.equal(enviados.length, 1);

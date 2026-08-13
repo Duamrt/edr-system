@@ -489,6 +489,12 @@ const ImportModule = {
       const campoUnidade = veioDoXml ? 'UNIDADE ESTOQUE' : 'UNIDADE';
       const campoPreco = veioDoXml ? 'PRECO ESTOQUE' : 'PRECO UNIT.';
       const campoTotal = veioDoXml ? 'TOTAL FISCAL' : 'TOTAL';
+      // A conversao pode produzir residuos binarios (0.9990000000000001).
+      // O campo e apenas visual/readonly: limita a exibicao, sem alterar o
+      // valor que segue para a validacao decimal do banco.
+      const precoExibido = veioDoXml && Number.isFinite(Number(item.preco))
+        ? Number(item.preco).toFixed(6).replace(/\.?0+$/, '')
+        : item.preco;
 
       return `
       <div class="import-item-card" style="border:1px solid var(--borda);border-radius:8px;padding:12px;margin-bottom:8px;background:var(--bg3);">
@@ -525,7 +531,7 @@ const ImportModule = {
           </div>
           <div>
             <label class="label-mini">${campoPreco}</label>
-            <input type="number" value="${item.preco}" step="any" onchange="ImportModule.editarCampo(${i},'preco',this.value)" class="input-mini input-mono" ${item.preco <= 0 ? 'style="border-color:var(--vermelho);"' : ''} ${somenteLeitura}>
+            <input type="number" value="${precoExibido}" step="any" onchange="ImportModule.editarCampo(${i},'preco',this.value)" class="input-mini input-mono" ${item.preco <= 0 ? 'style="border-color:var(--vermelho);"' : ''} ${somenteLeitura}>
           </div>
           <div>
             <label class="label-mini">${campoTotal}</label>
