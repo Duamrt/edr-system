@@ -40,7 +40,7 @@ function _addCriadoPor(t, b) {
 }
 
 // ── SUPABASE REST HELPERS ─────────────────────────────────────
-async function sbGet(t, q='') {
+async function sbGet(t, q='', options={}) {
   // Compatibilidade: query pode vir junto no t (ex: 'tabela?order=x')
   if (q === '' && t.includes('?')) { const i = t.indexOf('?'); q = t.substring(i); t = t.substring(0, i); }
   // Filtro automático por empresa para tabelas tenant-específicas
@@ -49,20 +49,29 @@ async function sbGet(t, q='') {
   }
   try {
     const r = await fetch(`${SUPABASE_URL}/rest/v1/${t}${q}`, { headers: _sbHeaders() });
-    if (!r.ok) { console.warn('sbGet erro:', r.status, t); return []; }
+    if (!r.ok) {
+      const erro = new Error(`sbGet erro ${r.status}: ${t}`);
+      console.warn(erro.message);
+      if (options.throwOnError) throw erro;
+      return [];
+    }
     return await r.json();
-  } catch (e) { console.warn('sbGet falha:', t, e); return []; }
+  } catch (e) {
+    console.warn('sbGet falha:', t, e);
+    if (options.throwOnError) throw e;
+    return [];
+  }
 }
 
 // Carrega TODOS os registros paginando — PostgREST corta em 1000 linhas por resposta
 // (o limit=N da query NAO sobrepoe esse teto do servidor). Usar em tabelas que passam
 // de 1000 linhas (lancamentos, distribuicoes). Order PRECISA de tie-breaker unico (id).
-async function sbGetAll(t, q = '') {
+async function sbGetAll(t, q = '', options = {}) {
   const size = 1000;
   let all = [], offset = 0;
   for (let i = 0; i < 100; i++) {
     const sep = q.includes('?') ? '&' : '?';
-    const batch = await sbGet(t, q + sep + 'limit=' + size + '&offset=' + offset);
+    const batch = await sbGet(t, q + sep + 'limit=' + size + '&offset=' + offset, options);
     if (!Array.isArray(batch) || batch.length === 0) break;
     all = all.concat(batch);
     if (batch.length < size) break;
@@ -229,6 +238,21 @@ let _companyId = null;
 let _isSuperAdmin = false;
 let MODO_DEMO = false;
 
+// Um saldo so e confiavel quando todos os livros que o compoem carregaram.
+// Estado inicial incompleto evita calcular estoque com arrays vazios durante a
+// primeira carga ou depois de uma falha de rede.
+const _CARGAS_CRITICAS_ESTOQUE = ['notas', 'lancamentos', 'distribuicoes', 'entradasDiretas', 'ajustesEstoque'];
+const _estadoCargaEstoque = Object.fromEntries(_CARGAS_CRITICAS_ESTOQUE.map(chave => [chave, false]));
+function _marcarCargaEstoque(chave, ok) {
+  if (Object.prototype.hasOwnProperty.call(_estadoCargaEstoque, chave)) _estadoCargaEstoque[chave] = !!ok;
+}
+function estoqueDadosCompletos() {
+  return _CARGAS_CRITICAS_ESTOQUE.every(chave => _estadoCargaEstoque[chave] === true);
+}
+function estoqueCargasPendentes() {
+  return _CARGAS_CRITICAS_ESTOQUE.filter(chave => !_estadoCargaEstoque[chave]);
+}
+
 // ── TELEGRAM ──
 const TG_CHAT_EDR = '-5239426430';
 function notificarTelegram(chatId, texto) {
@@ -338,17 +362,72 @@ async function loadObras() {
     obras = Array.isArray(todas) ? todas.filter(o => !o.arquivada) : [];
   } catch(e) { obras = []; obrasArquivadas = []; }
 }
-async function loadNotas() { try { notas = await sbGetAll('notas_fiscais', '?order=criado_em.desc,id'); if (!Array.isArray(notas)) notas = []; } catch(e) { notas = []; } }
-async function loadLancamentos() { try { lancamentos = await sbGetAll('lancamentos', '?select=id,obra_id,descricao,qtd,preco,total,data,obs,etapa,criado_por,nota_id,origem&order=data.desc,id'); if (!Array.isArray(lancamentos)) lancamentos = []; } catch(e) { lancamentos = []; } }
-async function loadDistribuicoes() { try { const r = await sbGetAll('distribuicoes', '?order=criado_em.desc,id'); distribuicoes = Array.isArray(r) ? r : []; } catch(e) { distribuicoes = []; } }
-async function loadEntradasDiretas() { try { const r = await sbGetAll('entradas_diretas', '?order=criado_em.desc,id'); entradasDiretas = Array.isArray(r) ? r : []; } catch(e) { entradasDiretas = []; } }
+async function loadNotas() {
+  try {
+    const r = await sbGetAll('notas_fiscais', '?order=criado_em.desc,id', { throwOnError: true });
+    notas = Array.isArray(r) ? r : [];
+    _marcarCargaEstoque('notas', true);
+    return true;
+  } catch (e) {
+    _marcarCargaEstoque('notas', false);
+    console.warn('loadNotas falhou; estoque bloqueado ate recarregar.', e);
+    return false;
+  }
+}
+async function loadLancamentos() {
+  try {
+    const r = await sbGetAll('lancamentos', '?select=id,obra_id,descricao,qtd,preco,total,data,obs,etapa,criado_por,nota_id,origem&order=data.desc,id', { throwOnError: true });
+    lancamentos = Array.isArray(r) ? r : [];
+    _marcarCargaEstoque('lancamentos', true);
+    return true;
+  } catch (e) {
+    _marcarCargaEstoque('lancamentos', false);
+    console.warn('loadLancamentos falhou; estoque bloqueado ate recarregar.', e);
+    return false;
+  }
+}
+async function loadDistribuicoes() {
+  try {
+    const r = await sbGetAll('distribuicoes', '?order=criado_em.desc,id', { throwOnError: true });
+    distribuicoes = Array.isArray(r) ? r : [];
+    _marcarCargaEstoque('distribuicoes', true);
+    return true;
+  } catch (e) {
+    _marcarCargaEstoque('distribuicoes', false);
+    console.warn('loadDistribuicoes falhou; estoque bloqueado ate recarregar.', e);
+    return false;
+  }
+}
+async function loadEntradasDiretas() {
+  try {
+    const r = await sbGetAll('entradas_diretas', '?order=criado_em.desc,id', { throwOnError: true });
+    entradasDiretas = Array.isArray(r) ? r : [];
+    _marcarCargaEstoque('entradasDiretas', true);
+    return true;
+  } catch (e) {
+    _marcarCargaEstoque('entradasDiretas', false);
+    console.warn('loadEntradasDiretas falhou; estoque bloqueado ate recarregar.', e);
+    return false;
+  }
+}
 async function loadMateriais() { try { const r = await sbGetAll('materiais', '?order=codigo'); catalogoMateriais = Array.isArray(r) ? r : []; } catch(e) { catalogoMateriais = []; } }
 // Centros de custo customizados (criados pelo usuario) — mesclados na lista ETAPAS.
 // Falha silenciosa: ETAPAS cai na base do codigo (rede de seguranca, nunca fica sem).
 let centrosCustoCustom = [];
 async function loadCentrosCusto() { try { const r = await sbGet('centros_custo', '?order=label'); centrosCustoCustom = Array.isArray(r) ? r : []; if (typeof aplicarCentrosCustoExtras === 'function') aplicarCentrosCustoExtras(centrosCustoCustom); } catch(e) { centrosCustoCustom = []; } }
 async function loadRepassesCef() { try { repassesCef = await sbGet('repasses_cef', '?order=data_credito.desc'); if (!Array.isArray(repassesCef)) repassesCef = []; } catch(e) { repassesCef = []; } }
-async function loadAjustesEstoque() { try { const r = await sbGetAll('ajustes_estoque', '?order=criado_em.desc,id'); ajustesEstoque = Array.isArray(r) ? r : []; } catch(e) { ajustesEstoque = []; } }
+async function loadAjustesEstoque() {
+  try {
+    const r = await sbGetAll('ajustes_estoque', '?order=criado_em.desc,id', { throwOnError: true });
+    ajustesEstoque = Array.isArray(r) ? r : [];
+    _marcarCargaEstoque('ajustesEstoque', true);
+    return true;
+  } catch (e) {
+    _marcarCargaEstoque('ajustesEstoque', false);
+    console.warn('loadAjustesEstoque falhou; estoque bloqueado ate recarregar.', e);
+    return false;
+  }
+}
 async function loadAdicionais() {
   try { const r = await sbGet('obra_adicionais', '?order=criado_em.desc'); obrasAdicionais = Array.isArray(r) ? r : []; } catch(e) { obrasAdicionais = []; }
   try { const r = await sbGet('adicional_pagamentos', '?order=data.desc'); adicionaisPgtos = Array.isArray(r) ? r : []; } catch(e) { adicionaisPgtos = []; }

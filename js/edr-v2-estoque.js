@@ -479,7 +479,30 @@ function _categoriaPorEtapas(desc) {
 // RENDER ESTOQUE (tab principal)
 // ══════════════════════════════════════════════════════════════════
 
+function _mostrarEstoqueIndisponivel(cargasPendentes) {
+  const nomes = {
+    notas: 'notas fiscais', lancamentos: 'lançamentos', distribuicoes: 'distribuições',
+    entradasDiretas: 'entradas diretas', ajustesEstoque: 'ajustes de estoque',
+  };
+  const faltando = (cargasPendentes || []).map(chave => nomes[chave] || chave).join(', ');
+  const loading = document.getElementById('estoque-loading');
+  if (loading) {
+    loading.classList.remove('hidden');
+    loading.innerHTML = `<strong>Estoque indisponível para conferência.</strong><br>Não foi possível carregar: ${esc(faltando)}. Atualize a página antes de lançar ou distribuir material.`;
+  }
+  const lista = document.getElementById('estoque-lista');
+  if (lista) lista.innerHTML = '';
+  const loadMore = document.getElementById('est-load-more');
+  if (loadMore) loadMore.style.display = 'none';
+  document.getElementById('estoque-empty')?.classList.add('hidden');
+}
+
 function renderEstoque() {
+  const cargasPendentes = typeof estoqueCargasPendentes === 'function' ? estoqueCargasPendentes() : [];
+  if (cargasPendentes.length) {
+    _mostrarEstoqueIndisponivel(cargasPendentes);
+    return;
+  }
   // Esconder spinner de carregamento
   document.getElementById('estoque-loading')?.classList.add('hidden');
 
