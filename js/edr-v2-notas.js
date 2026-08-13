@@ -29,6 +29,19 @@ const NotasModule = {
   _fornecedorTimer: null,   // debounce fornecedor
 };
 
+// Precos com milésimos precisam aparecer completos para que quantidade × preço
+// continue compreensível na prévia da NF. Não altera o valor armazenado.
+function formatarPrecoUnitarioNota(valor) {
+  const numero = Number(valor) || 0;
+  const arredondadoEmCentavos = Math.round(numero * 100) / 100;
+  const temPrecisaoExtra = Math.abs(numero - arredondadoEmCentavos) > 1e-9;
+  return numero.toLocaleString('pt-BR', {
+    style: 'currency', currency: 'BRL',
+    minimumFractionDigits: temPrecisaoExtra ? 3 : 2,
+    maximumFractionDigits: temPrecisaoExtra ? 6 : 2,
+  });
+}
+
 // ── REGISTRO NO VIEW REGISTRY ───────────────────────────────────
 if (typeof viewRegistry !== 'undefined') {
   viewRegistry.register('notas', renderNotasView);
@@ -744,7 +757,7 @@ function renderItensForm() {
         </div>
         <div class="nf-item-meta">
           <span>${Number(item.qtd) % 1 === 0 ? item.qtd : Number(item.qtd).toFixed(3)} ${esc(item.unidade)}</span>
-          <span>${fmtR(item.preco)}/un</span>
+          <span>${formatarPrecoUnitarioNota(item.preco)}/un</span>
           <span class="nf-item-credito ${item.credito ? 'nf-item-credito-sim' : 'nf-item-credito-nao'}">${item.credito ? 'CREDITO' : 'SEM CREDITO'}</span>
         </div>
       </div>
@@ -1558,4 +1571,9 @@ async function processarExclusaoNota(id, lancsPremapeados) {
     console.error('[EDR] Erro critico ao excluir nota', id, e);
     showToast('Erro ao excluir: ' + (e.message || 'verifique o console.'), 5000);
   }
+}
+
+// Exportacao restrita ao Node: permite testar a regra de exibicao sem afetar o navegador.
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { formatarPrecoUnitarioNota };
 }
