@@ -671,7 +671,23 @@ function adicionarItem(itemData) {
     }
   }
 
-  NotasModule.itens.push({ desc, qtd, unidade, preco, desconto, total, imposto, credito, cat, codigo });
+  // Campos fiscais e de estoque sao preenchidos exclusivamente pela importacao
+  // XML. Itens manuais continuam no formato legado.
+  const rastreioXml = itemData && typeof itemData === 'object' ? {
+    descricao_fiscal: itemData.descricao_fiscal || null,
+    codigo_produto_fiscal: itemData.codigo_produto_fiscal || null,
+    qtd_fiscal: itemData.qtd_fiscal ?? null,
+    unidade_fiscal: itemData.unidade_fiscal || null,
+    preco_fiscal: itemData.preco_fiscal ?? null,
+    total_fiscal: itemData.total_fiscal ?? null,
+    qtd_estoque: itemData.qtd_estoque ?? null,
+    unidade_estoque: itemData.unidade_estoque || null,
+    preco_estoque: itemData.preco_estoque ?? null,
+    material_id: itemData.material_id || null,
+    regra_conversao_id: itemData.regra_conversao_id || null,
+    status_conversao: itemData.status_conversao || null,
+  } : {};
+  NotasModule.itens.push({ desc, qtd, unidade, preco, desconto, total, imposto, credito, cat, codigo, ...rastreioXml });
   renderItensForm();
 
   // Limpar form HTML (se chamada do form)
@@ -1070,7 +1086,10 @@ async function salvarNota(notaData) {
       if (!obraDestino) { showToast(`Obra "${destino}" nao encontrada. Selecione um destino valido antes de salvar.`, 5000); return false; }
     }
     const payload = {
-      data: emissao, data_recebimento: recebimento, natureza,
+      data: emissao, data_recebimento: recebimento,
+      // Data que determina quando a entrada passa a existir no almoxarifado.
+      // O banco preenche/valida o mesmo campo para inserts fora desta tela.
+      data_efetiva_estoque: recebimento || emissao, natureza,
       numero_nf: numero.toUpperCase(), fornecedor, cnpj: cnpjVal,
       obra: destino, valor_bruto: totalBruto, frete, outras_despesas: outras, imposto: totalImposto,
       desconto_total: _descTotal, chave_acesso: _chave,

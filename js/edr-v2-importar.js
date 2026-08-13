@@ -8,6 +8,71 @@ if (typeof fmtR !== 'function') {
   var fmtR = v => 'R$ ' + Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+// Unidade fiscal e unidade de estoque nao podem ser apenas relabeladas. Estas
+// normalizacoes sao sinonimos (fator 1), nunca conversoes comerciais.
+function normalizarUnidadeImportacao(unidade) {
+  const u = String(unidade || 'UN').trim().toUpperCase();
+  const sinonimos = {
+    'UND': 'UN', 'UNID': 'UN', 'UNIDADE': 'UN',
+    'M2': 'M²', 'M^2': 'M²',
+    'M3': 'M³', 'M^3': 'M³',
+  };
+  return sinonimos[u] || u;
+}
+
+function dataNoIntervaloSemiaberto(data, inicio, fim) {
+  if (!data || !inicio || data < inicio) return false;
+  return !fim || data < fim;
+}
+
+// Calcula somente para a previa. O banco repete o calculo com numeric e com
+// a regra encontrada no servidor antes de aceitar a NF.
+function resolverConversaoImportacao(item, material, regras, dataEfetiva) {
+  const qtdFiscal = Number(item.qtd_fiscal ?? item.qtd) || 0;
+  const totalFiscal = Number(item.total_fiscal ?? item.total ?? (qtdFiscal * (Number(item.preco_fiscal ?? item.preco) || 0))) || 0;
+  const unidadeFiscal = normalizarUnidadeImportacao(item.unidade_fiscal ?? item.unidade);
+  const unidadeEstoque = normalizarUnidadeImportacao(material?.unidade || unidadeFiscal);
+  const base = {
+    qtd_fiscal: qtdFiscal,
+    unidade_fiscal: unidadeFiscal,
+    preco_fiscal: Number(item.preco_fiscal ?? item.preco) || 0,
+    total_fiscal: totalFiscal,
+    unidade_estoque: unidadeEstoque,
+    material_id: material?.id || null,
+    regra_conversao_id: null,
+  };
+
+  if (!material) {
+    return { ...base, qtd_estoque: qtdFiscal, preco_estoque: qtdFiscal > 0 ? totalFiscal / qtdFiscal : 0, status_conversao: 'sem_catalogo' };
+  }
+  if (unidadeFiscal === unidadeEstoque) {
+    return { ...base, qtd_estoque: qtdFiscal, preco_estoque: qtdFiscal > 0 ? totalFiscal / qtdFiscal : 0, status_conversao: 'igual' };
+  }
+  if (!dataEfetiva) {
+    return { ...base, qtd_estoque: null, preco_estoque: null, status_conversao: 'revisao_obrigatoria', motivo_conversao: 'Informe a data de recebimento para localizar a regra de conversao.' };
+  }
+
+  const regra = (regras || []).find(r =>
+    r.material_id === material.id &&
+    normalizarUnidadeImportacao(r.unidade_origem) === unidadeFiscal &&
+    normalizarUnidadeImportacao(r.unidade_destino) === unidadeEstoque &&
+    dataNoIntervaloSemiaberto(dataEfetiva, r.vigente_de, r.vigente_ate)
+  );
+  const fator = Number(regra?.fator);
+  if (!(fator > 0)) {
+    return { ...base, qtd_estoque: null, preco_estoque: null, status_conversao: 'revisao_obrigatoria', motivo_conversao: `Sem regra de conversao ${unidadeFiscal} → ${unidadeEstoque} para este material.` };
+  }
+
+  const qtdEstoque = qtdFiscal * fator;
+  return {
+    ...base,
+    qtd_estoque: qtdEstoque,
+    preco_estoque: qtdEstoque > 0 ? totalFiscal / qtdEstoque : 0,
+    regra_conversao_id: regra.id,
+    status_conversao: 'convertido',
+  };
+}
+
 const ImportModule = {
 
   // ── Estado encapsulado ──────────────────────────────────
@@ -16,6 +81,30 @@ const ImportModule = {
   _catCache: null,
   _cadastroIdx: null,
   _deParaCache: null, // {key: codigo} do banco — de-para compartilhado/permanente (Fase 4)
+  _conversoesCache: [],
+
+  async _carregarConversoes() {
+    try {
+      const rows = (typeof sbGet === 'function')
+        ? await sbGet('material_conversao', '?select=id,material_id,unidade_origem,unidade_destino,fator,vigente_de,vigente_ate')
+        : [];
+      this._conversoesCache = Array.isArray(rows) ? rows : [];
+    } catch (e) {
+      this._conversoesCache = [];
+    }
+  },
+
+  _recalcularConversaoItem(item, material) {
+    const dataEfetiva = document.getElementById('f-recebimento')?.value || '';
+    const conversao = resolverConversaoImportacao(item, material, this._conversoesCache, dataEfetiva);
+    Object.assign(item, conversao, {
+      qtd: conversao.qtd_estoque ?? item.qtd_fiscal,
+      unidade: conversao.unidade_estoque,
+      preco: conversao.preco_estoque ?? item.preco_fiscal,
+      total: conversao.total_fiscal,
+    });
+    return item;
+  },
 
   // ══════════════════════════════════════════════════════════
   // PARSER: interpreta texto colado (5 formatos)
@@ -389,6 +478,17 @@ const ImportModule = {
       const hasMatch = item.match && item.match.score >= 60;
       const scoreLabel = !item.match ? 'SEM MATCH' : item.match.score >= 80 ? 'MATCH FORTE' : item.match.score >= 60 ? 'MATCH PARCIAL' : 'MATCH FRACO';
       const scoreClass = hasMatch ? (item.match.score >= 80 ? 'badge-ok' : 'badge-warn') : 'badge-err';
+      const veioDoXml = !!item.descricao_fiscal;
+      const conversaoPendente = item.status_conversao === 'revisao_obrigatoria';
+      const statusConversao = veioDoXml ? (conversaoPendente
+        ? `<div style="margin-top:7px;font-size:10px;font-weight:700;color:var(--vermelho);"><span class="material-symbols-outlined" style="font-size:13px;vertical-align:middle;">error</span> REVISAO OBRIGATORIA: ${typeof esc === 'function' ? esc(item.motivo_conversao || 'Conversao sem regra cadastrada.') : (item.motivo_conversao || 'Conversao sem regra cadastrada.')}</div>`
+        : `<div style="margin-top:7px;font-size:10px;color:var(--texto3);">XML: ${item.qtd_fiscal} ${item.unidade_fiscal} • ${fmtR(item.preco_fiscal)}/un • estoque: ${item.qtd_estoque} ${item.unidade_estoque}${item.status_conversao === 'convertido' ? ' (convertido)' : ''}</div>`)
+        : '';
+      const somenteLeitura = veioDoXml ? 'readonly' : '';
+      const campoQtd = veioDoXml ? 'QTD ESTOQUE' : 'QTD';
+      const campoUnidade = veioDoXml ? 'UNIDADE ESTOQUE' : 'UNIDADE';
+      const campoPreco = veioDoXml ? 'PRECO ESTOQUE' : 'PRECO UNIT.';
+      const campoTotal = veioDoXml ? 'TOTAL FISCAL' : 'TOTAL';
 
       return `
       <div class="import-item-card" style="border:1px solid var(--borda);border-radius:8px;padding:12px;margin-bottom:8px;background:var(--bg3);">
@@ -416,22 +516,23 @@ const ImportModule = {
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;">
           <div>
-            <label class="label-mini">QTD</label>
-            <input type="number" value="${item.qtd}" onchange="ImportModule.editarCampo(${i},'qtd',this.value)" class="input-mini input-mono">
+            <label class="label-mini">${campoQtd}</label>
+            <input type="number" value="${item.qtd}" onchange="ImportModule.editarCampo(${i},'qtd',this.value)" class="input-mini input-mono" ${somenteLeitura}>
           </div>
           <div>
-            <label class="label-mini">UNIDADE</label>
-            <input type="text" value="${item.unidade}" onchange="ImportModule.editarCampo(${i},'unidade',this.value)" class="input-mini" style="text-transform:uppercase;">
+            <label class="label-mini">${campoUnidade}</label>
+            <input type="text" value="${item.unidade}" onchange="ImportModule.editarCampo(${i},'unidade',this.value)" class="input-mini" style="text-transform:uppercase;" ${somenteLeitura}>
           </div>
           <div>
-            <label class="label-mini">PRECO UNIT.</label>
-            <input type="number" value="${item.preco}" step="0.01" onchange="ImportModule.editarCampo(${i},'preco',this.value)" class="input-mini input-mono" ${item.preco <= 0 ? 'style="border-color:var(--vermelho);"' : ''}>
+            <label class="label-mini">${campoPreco}</label>
+            <input type="number" value="${item.preco}" step="any" onchange="ImportModule.editarCampo(${i},'preco',this.value)" class="input-mini input-mono" ${item.preco <= 0 ? 'style="border-color:var(--vermelho);"' : ''} ${somenteLeitura}>
           </div>
           <div>
-            <label class="label-mini">TOTAL</label>
-            <input type="number" value="${item.total.toFixed(2)}" step="0.01" onchange="ImportModule.editarCampo(${i},'total',this.value)" class="input-mini input-mono" style="color:var(--verde-hl);font-weight:700;">
+            <label class="label-mini">${campoTotal}</label>
+            <input type="number" value="${item.total.toFixed(2)}" step="0.01" onchange="ImportModule.editarCampo(${i},'total',this.value)" class="input-mini input-mono" style="color:var(--verde-hl);font-weight:700;" ${somenteLeitura}>
           </div>
         </div>
+        ${statusConversao}
         ${item.credito !== null ? `
         <div style="margin-top:6px;font-size:10px;font-weight:700;color:${item.credito ? 'var(--verde-hl)' : 'var(--vermelho)'};">
           <span class="material-symbols-outlined" style="font-size:13px;vertical-align:middle;">${item.credito ? 'check_circle' : 'cancel'}</span>
@@ -484,9 +585,11 @@ const ImportModule = {
     const item = this.itensPreview[idx];
     if (!codigoCat) {
       item.match = null;
-      item.descFinal = item.descOriginal;
+      item.descFinal = item.descricao_fiscal || item.descOriginal;
       item.codigoCat = null;
+      item.material_id = null;
       item.confirmado = false;
+      this._recalcularConversaoItem(item, null);
       const cred = typeof classificarItemSync === 'function' ? classificarItemSync(item.descOriginal) : null;
       item.credito = cred ? cred.credito : null;
       item.creditoCat = cred ? cred.cat : '';
@@ -497,8 +600,9 @@ const ImportModule = {
         item.match = { material: mat, score: 100, tipo: 'manual' };
         item.descFinal = mat.nome;
         item.codigoCat = mat.codigo;
-        item.unidade = mat.unidade || item.unidade;
+        item.material_id = mat.id;
         item.confirmado = true;
+        this._recalcularConversaoItem(item, mat);
         const cred = typeof classificarItemSync === 'function'
           ? (classificarItemSync(mat.nome, mat.codigo) || classificarItemSync(item.descOriginal, null))
           : null;
@@ -511,6 +615,12 @@ const ImportModule = {
 
   editarCampo(idx, campo, valor) {
     const item = this.itensPreview[idx];
+    if (!item) return;
+    if (item.descricao_fiscal) {
+      showToast('Dados do XML não podem ser alterados aqui. Ajuste o vínculo ou cadastre a conversão.', 'warning');
+      this._renderPreview();
+      return;
+    }
     if (campo === 'qtd') {
       item.qtd = parseFloat(valor) || 0;
       item.total = item.qtd * item.preco;
@@ -584,6 +694,20 @@ const ImportModule = {
   // ══════════════════════════════════════════════════════════
 
   async confirmarImport() {
+    // Recalcula usando a data de recebimento atual. Sem regra explicita, uma
+    // conversao comercial nao pode seguir para a NF silenciosamente.
+    this.itensPreview.forEach(item => {
+      if (!item.descricao_fiscal) return;
+      const material = item.match?.material || null;
+      this._recalcularConversaoItem(item, material);
+    });
+    const pendentesConversao = this.itensPreview.filter(i => i.status_conversao === 'revisao_obrigatoria');
+    if (pendentesConversao.length) {
+      this._renderPreview();
+      showToast(`${pendentesConversao.length} item(ns) precisam de regra de conversao antes da confirmacao`, 'error');
+      return;
+    }
+
     const naoClassificados = this.itensPreview.filter(i => i.credito === null);
     if (naoClassificados.length) {
       showToast(`Classifique ${naoClassificados.length} item(ns) antes de confirmar`);
@@ -615,7 +739,19 @@ const ImportModule = {
         total: item.total,
         imposto: 0,
         credito: item.credito,
-        cat: res?.cat || item.creditoCat || 'Manual'
+        cat: res?.cat || item.creditoCat || 'Manual',
+        descricao_fiscal: item.descricao_fiscal || null,
+        codigo_produto_fiscal: item.codigo_produto_fiscal || null,
+        qtd_fiscal: item.qtd_fiscal ?? null,
+        unidade_fiscal: item.unidade_fiscal || null,
+        preco_fiscal: item.preco_fiscal ?? null,
+        total_fiscal: item.total_fiscal ?? null,
+        qtd_estoque: item.qtd_estoque ?? null,
+        unidade_estoque: item.unidade_estoque || null,
+        preco_estoque: item.preco_estoque ?? null,
+        material_id: item.material_id || null,
+        regra_conversao_id: item.regra_conversao_id || null,
+        status_conversao: item.status_conversao || null
       };
 
       // adicionarItem e funcao global definida em edr-v2-notas.js
@@ -774,7 +910,7 @@ const ImportModule = {
       showToast('Selecione um arquivo .xml'); return;
     }
     const reader = new FileReader();
-    reader.onload = e => {
+    reader.onload = async e => {
       try {
         const parser = new DOMParser();
         const xml = parser.parseFromString(e.target.result, 'text/xml');
@@ -783,7 +919,7 @@ const ImportModule = {
         if (!nfe) { showToast('Nao foi possivel ler a NF-e. Verifique se e um XML de nota fiscal.'); return; }
         // CT-e (frete): oferece embutir o frete no custo de uma compra (rateio proporcional na saida)
         if (nfe._tipoDoc === 'CTE') { this._abrirVinculoFrete(nfe); return; }
-        this._preencherFormComXML(nfe);
+        await this._preencherFormComXML(nfe);
       } catch (err) {
         console.error('ImportModule XML erro:', err);
         showToast('Nao foi possivel processar o XML');
@@ -890,7 +1026,8 @@ const ImportModule = {
     return { fornecedor, cnpj, numero, serie, natureza, dataEmissao: dataFormatada, valorBruto, frete, outras, desconto, vNF, itens, chaveAcesso };
   },
 
-  _preencherFormComXML(nfe) {
+  async _preencherFormComXML(nfe) {
+    await this._carregarConversoes();
     // Preencher cabecalho da NF (compativel com V2 NotasModule)
     const setVal = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val; };
     // Numero inclui serie quando disponivel (ex: 123456/1) — padrão NF-e
@@ -973,22 +1110,30 @@ const ImportModule = {
       if (!match) match = this.matchCatalogo(item.descOriginal);
       const confiavel = match && match.score >= 60;
       const credito = typeof classificarItemSync === 'function' ? classificarItemSync(match ? match.material.nome : item.descOriginal) : null;
-      return {
+      const preview = {
         idx,
         descOriginal: item.descOriginal,
         cProd: item.cProd || '',
         _cnpj: cnpjDigits,
+        descricao_fiscal: item.descOriginal,
+        codigo_produto_fiscal: item.cProd || '',
+        qtd_fiscal: item.qtd,
+        unidade_fiscal: normalizarUnidadeImportacao(item.unidade),
+        preco_fiscal: item.preco,
+        total_fiscal: item.total || item.qtd * item.preco,
         qtd: item.qtd,
-        unidade: confiavel ? (match.material.unidade || item.unidade) : item.unidade,
+        unidade: normalizarUnidadeImportacao(item.unidade),
         preco: item.preco,
         total: item.total || item.qtd * item.preco,
         match,
         descFinal: confiavel ? match.material.nome : item.descOriginal,
         codigoCat: confiavel ? match.material.codigo : null,
+        material_id: confiavel ? match.material.id : null,
         credito: credito ? credito.credito : null,
         creditoCat: credito ? credito.cat : '',
         confirmado: confiavel
       };
+      return this._recalcularConversaoItem(preview, confiavel ? match.material : null);
     });
 
     // Preencher campo texto com info do XML
@@ -1093,4 +1238,9 @@ const ImportModule = {
 // Compatibilidade: hooks globais para cadastro rapido
 function importPosicaoRapidoCallback(codigo) {
   ImportModule.posicaoRapidoCallback(codigo);
+}
+
+// Testes locais usam somente o motor puro; o navegador ignora este bloco.
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { ImportModule, normalizarUnidadeImportacao, dataNoIntervaloSemiaberto, resolverConversaoImportacao };
 }

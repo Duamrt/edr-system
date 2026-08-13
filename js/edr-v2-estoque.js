@@ -176,8 +176,8 @@ function consolidarEstoque(obraId) {
 
   // [sub-lote 2] valor liquido do item (desconto abatido). Prefere it.total; fallback qtd*preco-desconto p/ notas antigas.
   const _liqItem = x => {
-    const q = parseFloat(x.quantidade || x.qtd) || 0;
-    const p = parseFloat(x.preco_unitario || x.preco) || 0;
+    const q = parseFloat(x.qtd_estoque ?? x.quantidade ?? x.qtd) || 0;
+    const p = parseFloat(x.preco_estoque ?? x.preco_unitario ?? x.preco) || 0;
     return (x.total != null && x.total !== '') ? (parseFloat(x.total) || 0) : Math.max(0, q * p - (parseFloat(x.desconto) || 0));
   };
 
@@ -192,10 +192,10 @@ function consolidarEstoque(obraId) {
     const fatorFrete = (freteNota > 0 && totalValorItens > 0) ? (1 + freteNota / totalValorItens) : 1;
     for (const it of itens) {
       const desc = it.descricao || it.desc || '';
-      const codCat = it.codigo_catalogo || it.cod || null;
+      const codCat = it.codigo_catalogo || it.codigo || it.cod || null;
       const chave = getChave(desc, codCat);
-      const item = garantir(chave, desc, codCat, it.unidade);
-      const qtd = parseFloat(it.quantidade || it.qtd) || 0;
+      const item = garantir(chave, desc, codCat, it.unidade_estoque || it.unidade);
+      const qtd = parseFloat(it.qtd_estoque ?? it.quantidade ?? it.qtd) || 0;
       const _totLiq = _liqItem(it);  // liquido do item (desconto abatido); notas antigas ja tem total liquido salvo
       const _precoLiqUn = qtd > 0 ? _totLiq / qtd : (parseFloat(it.preco_unitario || it.preco) || 0);
       const valorUn = _precoLiqUn * fatorFrete;  // unitario liquido (desconto abatido) + frete embutido
@@ -206,7 +206,8 @@ function consolidarEstoque(obraId) {
         nota_id: n.id,
         nf: n.numero_nf,
         fornecedor: n.fornecedor,
-        data: n.data,
+        // Legado usa emissao; NFs novas usam a data em que o material chegou.
+        data: n.data_efetiva_estoque || n.data,
         qtd,
         qtd_disponivel: qtd, // sera reduzido pelas distribuicoes
         valor_un: valorUn,
