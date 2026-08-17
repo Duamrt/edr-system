@@ -3,23 +3,81 @@
 # Uso: ./deploy.sh "mensagem do commit"
 # Atualiza ?v=X em todos os HTML, bumpa o SW, comita e faz push
 
-set -e
+set -euo pipefail
 cd "$(dirname "$0")"
 
-# Gerar versao baseada em timestamp
+CURRENT_BRANCH=$(git branch --show-current)
+if [ "$CURRENT_BRANCH" != "dev" ]; then
+  echo "[BLOQUEADO] Execute o deploy a partir da branch dev. Branch atual: $CURRENT_BRANCH"
+  exit 1
+fi
+
+# Aborta antes de alterar arquivos: o deploy nunca pode incluir trabalho alheio.
+if ! git diff --quiet || ! git diff --cached --quiet || [ -n "$(git ls-files --others --exclude-standard)" ]; then
+  echo "[BLOQUEADO] Checkout sujo. Use um worktree limpo ou guarde as alteracoes pendentes antes do deploy."
+  exit 1
+fi
+
+if ! git remote get-url origin >/dev/null 2>&1; then
+  echo "[BLOQUEADO] Remote origin nao configurado."
+  exit 1
+fi
+
+echo "[PRE-FLIGHT] Atualizando referencias remotas..."
+git fetch --prune origin
+
+for REF in origin/dev origin/main; do
+  if ! git show-ref --verify --quiet "refs/remotes/$REF"; then
+    echo "[BLOQUEADO] Referencia remota ausente: $REF"
+    exit 1
+  fi
+done
+
+if ! git merge-base --is-ancestor origin/dev dev; then
+  echo "[BLOQUEADO] dev local esta atras ou divergiu de origin/dev. Reconcilie antes do deploy."
+  exit 1
+fi
+
+if ! git merge-base --is-ancestor origin/main dev; then
+  echo "[BLOQUEADO] main nao pode avancar por fast-forward a partir de dev. Reconcilie as branches antes do deploy."
+  exit 1
+fi
+
+# Se uma etapa posterior falhar, devolve o operador para a branch de origem.
+restore_branch() {
+  STATUS=$?
+  if [ "$(git branch --show-current)" != "$CURRENT_BRANCH" ]; then
+    git switch "$CURRENT_BRANCH" || true
+  fi
+  exit "$STATUS"
+}
+trap restore_branch EXIT
+
+# Gerar versao baseada em timestamp somente apos todos os bloqueios.
 VERSION=$(date +%Y%m%d%H%M%S)
 SHORT_V=$(date +%m%d%H%M)
+MSG="${1:-deploy: cache busting v$SHORT_V}"
 
 echo "=== EDR System Deploy ==="
 echo "Versao: $VERSION"
 
-# 1. Atualizar ?v=XXXX em todos os HTMLs para JS e CSS
+# 1. Atualizar ?v=XXXX apenas em HTMLs rastreados na raiz.
 echo "[1/4] Atualizando cache busting em HTMLs..."
-for f in *.html; do
+HTML_FILES=()
+while IFS= read -r FILE; do
+  HTML_FILES+=("$FILE")
+done < <(git ls-files -- '*.html' | awk 'index($0, "/") == 0')
+
+if [ "${#HTML_FILES[@]}" -eq 0 ]; then
+  echo "[BLOQUEADO] Nenhum HTML rastreado encontrado para cache busting."
+  exit 1
+fi
+
+for FILE in "${HTML_FILES[@]}"; do
   # JS: arquivo.js?v=X → arquivo.js?v=NOVO
-  sed -i -E "s/\.js(\?v=[0-9a-zA-Z]+)?\"/.js?v=$SHORT_V\"/g" "$f"
+  sed -i -E "s/\.js(\?v=[0-9a-zA-Z]+)?\"/.js?v=$SHORT_V\"/g" "$FILE"
   # CSS: arquivo.css?v=X → arquivo.css?v=NOVO
-  sed -i -E "s/\.css(\?v=[0-9a-zA-Z]+)?\"/.css?v=$SHORT_V\"/g" "$f"
+  sed -i -E "s/\.css(\?v=[0-9a-zA-Z]+)?\"/.css?v=$SHORT_V\"/g" "$FILE"
 done
 
 # Atualizar _VER em novo-cliente.html
@@ -34,10 +92,9 @@ fs.writeFileSync('novo-cliente.html',c);
 echo "[2/4] Atualizando Service Worker..."
 sed -i -E "s/const CACHE_NAME = 'edr-system-v[0-9]+';/const CACHE_NAME = 'edr-system-v$VERSION';/" sw.js
 
-# 3. Git commit + push
+# 3. Git commit + push explicitos
 echo "[3/4] Commitando..."
-MSG="${1:-deploy: cache busting v$SHORT_V}"
-git add -A
+git add -- "${HTML_FILES[@]}" sw.js
 
 # Pre-deploy check — varre diff staged contra secrets/SQL destrutivo/RLS aberta
 if [ "${SKIP_CHECK:-0}" -ne 1 ] && [ -f "$HOME/.claude/scripts/pre-deploy-check.sh" ]; then
@@ -48,14 +105,11 @@ git commit -m "$MSG" || echo "Nada pra comitar"
 
 # 4. Push dev + sync main
 echo "[4/4] Publicando..."
-git push
-CURRENT=$(git branch --show-current)
-if [ "$CURRENT" = "dev" ]; then
-  git checkout main
-  git reset --hard dev
-  git push --force-with-lease
-  git checkout dev
-fi
+git push origin dev
+git switch main
+git merge --ff-only dev
+git push origin main
+git switch dev
 
 echo ""
 echo "=== Deploy concluido! ==="

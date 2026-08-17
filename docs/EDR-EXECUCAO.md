@@ -11,6 +11,10 @@
 - Claude recebe **só o card ativo**, nunca a matriz inteira. Retorna: arquivos lidos · micro-diff · validação · novo status.
 - O documento não narra histórico — guarda estado atual + evidência curta. Card fechado = arquivado em 3 linhas.
 
+## Contrato seguro do deploy
+
+O `deploy.sh` interrompe antes de alterar arquivos quando o checkout tiver modificações pendentes, arquivos não rastreados, `dev` estiver atrás de `origin/dev`, ou `main` não puder avançar por fast-forward. O cache busting adiciona apenas os HTMLs rastreados na raiz e o `sw.js`; nunca usa `git add -A`. A publicação envia `dev` primeiro e integra `main` com `git merge --ff-only dev`, sem `reset --hard` ou push forçado.
+
 ## Gates
 | ID | Bloqueio | Próxima ação | Estado |
 |---|---|---|---|
