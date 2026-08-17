@@ -1,8 +1,8 @@
-# Notas Fiscais — compactação do fluxo desktop
+# Notas Fiscais — compactação do fluxo desktop e mobile
 
 ## Objetivo
 
-Reduzir a altura e a navegação necessária no lançamento e na consulta de notas fiscais em desktop, preservando regras fiscais, importação, salvamento e banco.
+Reduzir a altura e a navegação necessária no lançamento e na consulta de notas fiscais em desktop, preservando regras fiscais, importação, salvamento e banco. No mobile, priorizar importar XML no início e conferir XMLs extensos sem a lista tomar a tela inteira.
 
 ## Mudança aplicada
 
@@ -20,6 +20,13 @@ Reduzir a altura e a navegação necessária no lançamento e na consulta de not
 2. Os cartões altos foram substituídos por linhas compactas com fornecedor, NF/CNPJ, recebimento, natureza, destino, itens, valor e situação.
 3. A busca cobre número da NF, fornecedor e CNPJ.
 
+### Mobile
+
+1. A natureza continua sendo o primeiro campo e as ações **Importar XML** / **Colar texto** ficam imediatamente abaixo, em uma única linha.
+2. O cabeçalho é compacto; campos acessórios permanecem recolhidos.
+3. Após importar, a lista de itens usa uma área de rolagem limitada e filtro próprio, adequada para notas com muitos itens.
+4. O botão **Salvar nota fiscal** fica fixo na base da tela para não obrigar o usuário a percorrer novamente a lista.
+
 ## Arquivos
 
 - `index.html` — estrutura e estilos da tela.
@@ -30,6 +37,7 @@ Reduzir a altura e a navegação necessária no lançamento e na consulta de not
 - Nenhuma chamada de banco, regra de crédito, cálculo, payload de salvamento ou regra de devolução foi alterada.
 - Não houve alteração de schema, dados, RLS, deploy ou produção.
 - O filtro dos itens é somente visual e é limpo ao reiniciar o formulário.
+- A adaptação mobile é somente CSS/estrutura visual: não altera IDs, handlers, importação, payload ou validações de devolução.
 
 ## Evidência local — 17/08/2026
 
@@ -45,6 +53,13 @@ Reduzir a altura e a navegação necessária no lançamento e na consulta de not
 - Salvamento de uma NF real.
 - Produção, banco e deploy.
 - Mobile: deliberadamente fora desta rodada, que priorizou desktop.
+
+## Evidência local — mobile (17/08/2026)
+
+- Protótipo visual mobile aprovado pelo Duam antes da implementação.
+- A implementação reutiliza os tokens originais do sistema: `#2D6A4F`, `#1B4332`, `#FAFAFA`, `#FFFFFF`, `#E5E7EB`; fontes Inter, Plus Jakarta Sans e Space Grotesk.
+- `node --check js/edr-v2-notas.js`, `git diff --check` e as suítes `tests/*.test.js` passaram.
+- Pendente nesta atualização: validação autenticada em navegador local com lista importada extensa e fluxo real de XML.
 
 ## Próxima etapa
 

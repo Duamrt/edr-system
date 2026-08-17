@@ -1138,22 +1138,40 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
 .nf-itens-vazio { padding:18px 0;text-align:center;font-size:12px;color:var(--text-tertiary); }
 
 @media (max-width:640px) {
-  .nf-start-grid,.nf-header-grid,.nf-extra-grid { grid-template-columns:1fr; }
-  .nf-start-copy { min-height:0; }
+  /* Notas fiscais: fluxo de conferência em campo, sem perder a densidade para XMLs extensos. */
+  #view-form { padding-bottom:82px; }
+  #view-form > .modulo-badge { margin:2px 0 10px; }
+  #view-form .form-section { margin-bottom:10px; }
+  .nf-start-section,.nf-header-section { padding:12px; }
+  .nf-start-grid { grid-template-columns:1fr; gap:8px; }
+  .nf-start-grid .field { order:0; }
+  .nf-start-grid .nf-itens-toolbar { order:1;display:grid;grid-template-columns:1fr 1fr;gap:8px; }
+  .nf-start-grid .btn-import { min-height:44px;padding:8px 10px;font-size:12px; }
+  .nf-start-grid .btn-import-sub { display:none; }
+  .nf-start-copy { order:2;min-height:0;padding:1px 0 0;font-size:11px; }
+  .nf-header-grid,.nf-extra-grid { grid-template-columns:1fr; }
   .nf-header-grid .field-wide,.nf-extra-grid .field:last-child { grid-column:auto; }
+  .nf-extra-dados > summary { padding-top:10px; }
+  #devolucao-origem-wrap { padding:10px!important;margin:8px 0!important; }
   .nf-list-filterbar { grid-template-columns:1fr 1fr; }
   .nf-list-filterbar input { grid-column:1 / -1; }
   .nf-list-head { display:none; }
   .nf-list-row { grid-template-columns:minmax(0,1fr) auto auto;gap:6px;min-height:64px;padding:9px 10px; }
   .nf-list-row > :nth-child(2),.nf-list-row > :nth-child(3),.nf-list-row > :nth-child(5),.nf-list-row > :nth-child(7) { display:none; }
-  .nf-itens-toolbar { flex-direction:column; }
   .nf-itens-controlbar { align-items:stretch;flex-direction:column;gap:8px; }
   .nf-itens-filtro { max-width:none; }
-  .nf-itens-list-wrap { max-height:300px;padding:0 10px; }
+  .nf-itens-list-wrap { max-height:clamp(270px,42vh,420px);padding:0 10px; }
   .nf-itens-colunas { display:none; }
-  .nf-item-row { grid-template-columns:minmax(0,1fr) 82px 86px 28px;column-gap:7px; }
+  .nf-item-row { grid-template-columns:minmax(0,1fr) 86px 92px 28px;column-gap:7px;padding:10px 0; }
   .nf-item-qtd,.nf-item-unidade,.nf-item-preco { display:none; }
   .nf-item-credito { font-size:9px; }
+  .nf-item-desc { font-size:12px; }
+  .nf-item-valor { font-size:12px; }
+  #btn-salvar {
+    position:fixed;z-index:95;right:12px;bottom:max(10px,env(safe-area-inset-bottom));left:12px;
+    min-height:48px;border-radius:10px;box-shadow:0 8px 20px rgba(17,24,39,.18);
+  }
+  #view-form > .btn-outline { margin-bottom:52px; }
 }
 
 /* Manual classification */
