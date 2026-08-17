@@ -25,6 +25,18 @@ function dataNoIntervaloSemiaberto(data, inicio, fim) {
   return !fim || data < fim;
 }
 
+// A finalidade fiscal 4 e' a fonte autoritativa para devolucao. `natOp` e'
+// texto livre do emissor e pode vir abreviado como "DEV.", sem "DEVOL".
+function classificarNaturezaNFe(nfe) {
+  const finalidade = String(nfe?.finalidade || '').trim();
+  const natureza = String(nfe?.natureza || '').toUpperCase();
+  if (finalidade === '4' || /\bDEV(?:\.|OL)/.test(natureza)) return 'DEVOLUCAO';
+  if (natureza.includes('VENDA')) return 'VENDA';
+  if (natureza.includes('BONIF')) return 'BONIFICACAO';
+  if (natureza.includes('TRANSF')) return 'TRANSFERENCIA';
+  return '';
+}
+
 // Calcula somente para a previa. O banco repete o calculo com numeric e com
 // a regra encontrada no servidor antes de aceitar a NF.
 function resolverConversaoImportacao(item, material, regras, dataEfetiva) {
@@ -984,6 +996,7 @@ const ImportModule = {
     const numero = ide ? getVal(ide, 'nNF') : '';
     const serie = ide ? getVal(ide, 'serie') : '';
     const natureza = ide ? getVal(ide, 'natOp') : '';
+    const finalidade = ide ? getVal(ide, 'finNFe') : '';
     const dataEmissao = ide ? (getVal(ide, 'dhEmi') || getVal(ide, 'dEmi')) : '';
 
     const total = getTag(xml, 'ICMSTot');
@@ -1029,7 +1042,7 @@ const ImportModule = {
     const infNFeEl = getTag(xml, 'infNFe');
     const chaveAcesso = infNFeEl ? (infNFeEl.getAttribute('Id') || '').replace(/^NFe/, '') : '';
 
-    return { fornecedor, cnpj, numero, serie, natureza, dataEmissao: dataFormatada, valorBruto, frete, outras, desconto, vNF, itens, chaveAcesso };
+    return { fornecedor, cnpj, numero, serie, natureza, finalidade, dataEmissao: dataFormatada, valorBruto, frete, outras, desconto, vNF, itens, chaveAcesso };
   },
 
   async _preencherFormComXML(nfe) {
@@ -1093,13 +1106,9 @@ const ImportModule = {
     };
 
     const natEl = document.getElementById('f-natureza');
-    if (natEl && nfe.natureza) {
-      const natNorm = nfe.natureza.toLowerCase();
-      if (natNorm.includes('venda')) natEl.value = 'VENDA';
-      else if (natNorm.includes('bonif')) natEl.value = 'BONIFICACAO';
-      else if (natNorm.includes('devol')) natEl.value = 'DEVOLUCAO';
-      else if (natNorm.includes('transf')) natEl.value = 'TRANSFERENCIA';
-    }
+    const naturezaSistema = classificarNaturezaNFe(nfe);
+    if (natEl && naturezaSistema) natEl.value = naturezaSistema;
+    if (typeof onNaturezaNotaChange === 'function') onNaturezaNotaChange();
 
     // Processar itens com de-para inteligente + match do catalogo
     const cnpjDigits = (nfe.cnpj || '').replace(/\D/g, '');
@@ -1248,5 +1257,5 @@ function importPosicaoRapidoCallback(codigo) {
 
 // Testes locais usam somente o motor puro; o navegador ignora este bloco.
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { ImportModule, normalizarUnidadeImportacao, dataNoIntervaloSemiaberto, resolverConversaoImportacao };
+  module.exports = { ImportModule, normalizarUnidadeImportacao, dataNoIntervaloSemiaberto, resolverConversaoImportacao, classificarNaturezaNFe };
 }

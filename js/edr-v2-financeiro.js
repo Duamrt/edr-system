@@ -16,6 +16,7 @@ const CONTA_STATUS = {
   pendente:  { lb: 'PENDENTE',  cor: '#f59e0b', bg: 'rgba(245,158,11,0.08)' },
   vencido:   { lb: 'VENCIDO',   cor: '#ef4444', bg: 'rgba(239,68,68,0.08)' },
   pago:      { lb: 'PAGO',      cor: '#22c55e', bg: 'rgba(34,197,94,0.08)' },
+  reembolsado: { lb: 'REEMBOLSADO', cor: '#3b82f6', bg: 'rgba(59,130,246,0.08)' },
   cancelado: { lb: 'CANCELADO', cor: '#6b7280', bg: 'rgba(255,255,255,0.04)' }
 };
 
@@ -27,6 +28,13 @@ async function _loadContasPagar() {
 }
 
 function _getStatusConta(c) {
+  // Devolução fiscal gera direito a reembolso, não dinheiro imediato no caixa.
+  // Só fica concluída após a confirmação explícita de recebimento.
+  if (c.tipo === 'reembolso_fornecedor') {
+    if (c.status === 'pago' || c.data_recebimento) return 'reembolsado';
+    if (c.data_vencimento < hojeISO() && c.status === 'pendente') return 'vencido';
+    return c.status || 'pendente';
+  }
   if (c.status === 'pago' || c.status === 'cancelado') return c.status;
   if (c.data_vencimento < hojeISO() && c.status === 'pendente') return 'vencido';
   return c.status || 'pendente';
@@ -34,8 +42,8 @@ function _getStatusConta(c) {
 
 // Mês 'relevante' da conta p/ o filtro: paga -> data de pagamento; senão -> vencimento. Retorna 'YYYY-MM'.
 function _mesConta(c) {
-  const isPaga = c._status === 'pago' || c._status === 'cancelado';
-  const d = (isPaga ? (c.data_pagamento || c.data_vencimento) : c.data_vencimento) || '';
+  const isFinalizada = c._status === 'pago' || c._status === 'cancelado' || c._status === 'reembolsado';
+  const d = (isFinalizada ? (c.data_recebimento || c.data_pagamento || c.data_vencimento) : c.data_vencimento) || '';
   return String(d).slice(0, 7);
 }
 
@@ -62,6 +70,7 @@ function renderContasPagar() {
   const totalPendente = lista.filter(c => c._status === 'pendente').reduce((s, c) => s + Number(c.valor || 0), 0);
   const totalVencido  = lista.filter(c => c._status === 'vencido').reduce((s, c) => s + Number(c.valor || 0), 0);
   const pagasMes = lista.filter(c => c._status === 'pago' && (c.data_pagamento || c.data_vencimento || '').startsWith(mesResumo)).reduce((s, c) => s + Number(c.valor || 0), 0);
+  const reembolsosMes = lista.filter(c => c._status === 'reembolsado' && (c.data_recebimento || c.data_vencimento || '').startsWith(mesResumo)).reduce((s, c) => s + Number(c.valor || 0), 0);
   const qtdPendente = lista.filter(c => c._status === 'pendente').length;
   const qtdVencido  = lista.filter(c => c._status === 'vencido').length;
   const qtdPago     = lista.filter(c => c._status === 'pago').length;
@@ -74,6 +83,7 @@ function renderContasPagar() {
         <button onclick="_contasFiltro='pendente';renderContasPagar()" style="padding:5px 12px;border-radius:20px;border:1px solid ${_contasFiltro==='pendente' ? '#f59e0b' : 'var(--border)'};background:${_contasFiltro==='pendente' ? 'rgba(245,158,11,0.1)' : 'transparent'};color:${_contasFiltro==='pendente' ? '#f59e0b' : 'var(--text-tertiary)'};font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">Pendentes (${qtdPendente})</button>
         <button onclick="_contasFiltro='vencido';renderContasPagar()" style="padding:5px 12px;border-radius:20px;border:1px solid ${_contasFiltro==='vencido' ? '#ef4444' : 'var(--border)'};background:${_contasFiltro==='vencido' ? 'rgba(239,68,68,0.1)' : 'transparent'};color:${_contasFiltro==='vencido' ? '#ef4444' : 'var(--text-tertiary)'};font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">Vencidas (${qtdVencido})</button>
         <button onclick="_contasFiltro='pago';renderContasPagar()" style="padding:5px 12px;border-radius:20px;border:1px solid ${_contasFiltro==='pago' ? '#22c55e' : 'var(--border)'};background:${_contasFiltro==='pago' ? 'rgba(34,197,94,0.1)' : 'transparent'};color:${_contasFiltro==='pago' ? '#22c55e' : 'var(--text-tertiary)'};font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">Pagas (${qtdPago})</button>
+        <button onclick="_contasFiltro='reembolsado';renderContasPagar()" style="padding:5px 12px;border-radius:20px;border:1px solid ${_contasFiltro==='reembolsado' ? '#3b82f6' : 'var(--border)'};background:${_contasFiltro==='reembolsado' ? 'rgba(59,130,246,0.1)' : 'transparent'};color:${_contasFiltro==='reembolsado' ? '#3b82f6' : 'var(--text-tertiary)'};font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">Reembolsos</button>
         <input type="month" value="${_contasMes}" onchange="_contasMes=this.value;renderContasPagar()" title="Filtrar por mês (limpe o campo para ver todos)" style="padding:4px 10px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text-secondary);font-size:11px;font-family:inherit;">
         <div style="flex:1;"></div>
         <button onclick="abrirModalConta(null)" class="admin-only" style="padding:6px 14px;border-radius:10px;border:1px solid rgba(45,106,79,0.3);background:rgba(45,106,79,0.08);color:var(--primary);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.5px;">+ NOVA CONTA</button>
@@ -91,6 +101,10 @@ function renderContasPagar() {
           <div style="font-size:9px;color:var(--text-tertiary);font-weight:700;letter-spacing:1px;">${_contasMes ? 'PAGO EM ' + _labelMes(_contasMes).toUpperCase() : 'PAGAS NO MES'}</div>
           <div style="font-size:16px;font-weight:800;color:#22c55e;font-family:'Space Grotesk',monospace;">${fmt(pagasMes)}</div>
         </div>
+        <div style="background:var(--card);border:1px solid var(--border);border-top:2px solid #3b82f6;border-radius:10px;padding:12px;text-align:center;">
+          <div style="font-size:9px;color:var(--text-tertiary);font-weight:700;letter-spacing:1px;">REEMBOLSOS</div>
+          <div style="font-size:16px;font-weight:800;color:#3b82f6;font-family:'Space Grotesk',monospace;">${fmt(reembolsosMes)}</div>
+        </div>
       </div>`;
   }
 
@@ -106,7 +120,7 @@ function renderContasPagar() {
     return;
   }
 
-  const ordemStatus = { vencido: 0, pendente: 1, pago: 2, cancelado: 3 };
+  const ordemStatus = { vencido: 0, pendente: 1, pago: 2, reembolsado: 3, cancelado: 4 };
   filtrada.sort((a, b) => {
     const oa = ordemStatus[a._status] ?? 9, ob = ordemStatus[b._status] ?? 9;
     if (oa !== ob) return oa - ob;
@@ -118,9 +132,9 @@ function renderContasPagar() {
 
   listaEl.innerHTML = filtrada.map(c => {
     const st = CONTA_STATUS[c._status] || CONTA_STATUS.pendente;
-    const bordaCor = c._status === 'vencido' ? '#ef4444' : c._status === 'pago' ? '#22c55e' : '#f59e0b';
+    const bordaCor = c._status === 'vencido' ? '#ef4444' : c._status === 'pago' ? '#22c55e' : c._status === 'reembolsado' ? '#3b82f6' : '#f59e0b';
     const obraNome = c.obra_id ? (obraMap[c.obra_id] || '') : '';
-    const isPago = c._status === 'pago' || c._status === 'cancelado';
+    const isPago = c._status === 'pago' || c._status === 'cancelado' || c._status === 'reembolsado';
     return `<div style="background:var(--card);border:1px solid var(--border);border-left:3px solid ${bordaCor};border-radius:12px;padding:14px 14px 14px 18px;margin-bottom:8px;${isPago ? 'opacity:0.7;' : ''}">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
         <div style="flex:1;min-width:0;">
@@ -139,7 +153,7 @@ function renderContasPagar() {
         </div>
       </div>
       ${!isPago ? `<div class="admin-only" style="display:flex;gap:6px;margin-top:10px;justify-content:flex-end;">
-        <button onclick="marcarComoPago('${esc(c.id)}')" style="padding:5px 12px;border-radius:8px;border:1px solid rgba(34,197,94,0.3);background:rgba(34,197,94,0.08);color:#22c55e;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">Pago</button>
+        <button onclick="marcarComoPago('${esc(c.id)}')" style="padding:5px 12px;border-radius:8px;border:1px solid rgba(34,197,94,0.3);background:rgba(34,197,94,0.08);color:#22c55e;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">${c.tipo === 'reembolso_fornecedor' ? 'Confirmar recebimento' : 'Pago'}</button>
         <button onclick="abrirModalConta('${esc(c.id)}')" style="padding:5px 12px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text-secondary);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">Editar</button>
         <button onclick="excluirConta('${esc(c.id)}')" style="padding:5px 12px;border-radius:8px;border:1px solid rgba(239,68,68,0.2);background:transparent;color:#f87171;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">Excluir</button>
       </div>` : `<div class="admin-only" style="display:flex;gap:6px;margin-top:10px;justify-content:flex-end;">
@@ -220,19 +234,33 @@ async function salvarConta() {
 }
 
 async function marcarComoPago(contaId) {
-  if (!confirm('Confirma pagamento desta conta?')) return;
   const conta = contasPagar.find(c => c.id === contaId);
+  const ehReembolso = conta?.tipo === 'reembolso_fornecedor';
+  if (!confirm(ehReembolso ? 'Confirma que o reembolso do fornecedor foi recebido?' : 'Confirma pagamento desta conta?')) return;
   try {
     // 1) Marcar a conta como paga — checar retorno (sbPatch: objeto=persistiu / undefined=0 linhas / null=erro HTTP).
-    const atualizada = await sbPatch('contas_pagar', `?id=eq.${contaId}`, { status: 'pago', data_pagamento: hojeISO() });
+    const atualizada = await sbPatch('contas_pagar', `?id=eq.${contaId}`,
+      ehReembolso
+        ? { status: 'pago', data_recebimento: hojeISO() }
+        : { status: 'pago', data_pagamento: hojeISO() });
     if (!atualizada) {
-      showToast(atualizada === null ? 'Erro ao marcar como paga.' : 'Conta nao encontrada — recarregue.', 5000);
+      showToast(atualizada === null
+        ? (ehReembolso ? 'Erro ao confirmar recebimento.' : 'Erro ao marcar como paga.')
+        : 'Conta nao encontrada — recarregue.', 5000);
       if (typeof _loadContasPagar === 'function') await _loadContasPagar();
       renderContasPagar();
       return; // nao cria lancamento, nao mostra sucesso
     }
     const idx = contasPagar.findIndex(c => c.id === contaId);
     if (idx >= 0) contasPagar[idx] = { ...contasPagar[idx], ...atualizada };
+
+    // Reembolso é entrada de caixa, portanto nunca gera lançamento de custo.
+    if (ehReembolso) {
+      showToast('Reembolso confirmado como recebido');
+      renderContasPagar();
+      if (typeof renderDashboard === 'function') renderDashboard();
+      return;
+    }
 
     // 2) Lançamento de custo — só se a conta NÃO veio de uma NF (nota_ref) e tem obra.
     // NF direta já gera lançamentos em notas.js; criar outro aqui duplicaria custo no DRE.
@@ -382,9 +410,10 @@ function _getRepassesCef() {
 function _calcSaldoHoje() {
   const entRepasses  = _getRepassesCef().reduce((s, r) => s + Number(r.valor || 0), 0);
   const entAdicionais = (typeof adicionaisPgtos !== 'undefined' ? adicionaisPgtos : []).reduce((s, p) => s + Number(p.valor || 0), 0);
+  const reembolsos = contasPagar.filter(c => _getStatusConta(c) === 'reembolsado').reduce((s, c) => s + Number(c.valor || 0), 0);
   const saidas = (typeof lancamentos !== 'undefined' ? lancamentos : []).reduce((s, l) => s + Number(l.total || 0), 0);
-  const contasPagas = contasPagar.filter(c => c.status === 'pago' && !c.obra_id).reduce((s, c) => s + Number(c.valor || 0), 0);
-  return (entRepasses + entAdicionais) - saidas - contasPagas;
+  const contasPagas = contasPagar.filter(c => c.status === 'pago' && c.tipo !== 'reembolso_fornecedor' && !c.obra_id).reduce((s, c) => s + Number(c.valor || 0), 0);
+  return (entRepasses + entAdicionais + reembolsos) - saidas - contasPagas;
 }
 
 function _calcMediaSaidaSemanal() {
@@ -420,9 +449,10 @@ async function renderCaixa() {
 
   // Card saldo calculado automaticamente
   const _entradas = _getRepassesCef().reduce((s, r) => s + Number(r.valor || 0), 0) +
-    (typeof adicionaisPgtos !== 'undefined' ? adicionaisPgtos : []).reduce((s, p) => s + Number(p.valor || 0), 0);
+    (typeof adicionaisPgtos !== 'undefined' ? adicionaisPgtos : []).reduce((s, p) => s + Number(p.valor || 0), 0) +
+    contasPagar.filter(c => _getStatusConta(c) === 'reembolsado').reduce((s, c) => s + Number(c.valor || 0), 0);
   const _saidas = (typeof lancamentos !== 'undefined' ? lancamentos : []).reduce((s, l) => s + Number(l.total || 0), 0) +
-    contasPagar.filter(c => c.status === 'pago' && !c.obra_id).reduce((s, c) => s + Number(c.valor || 0), 0);
+    contasPagar.filter(c => c.status === 'pago' && c.tipo !== 'reembolso_fornecedor' && !c.obra_id).reduce((s, c) => s + Number(c.valor || 0), 0);
   const _inicio = _saldoManual !== null ? _saldoManual : 0;
   html += `<div style="background:var(--card);border:1.5px solid ${saldoBase >= 0 ? 'rgba(5,150,105,0.3)' : 'rgba(220,38,38,0.3)'};border-radius:16px;padding:20px;margin-bottom:16px;">
     <div style="font-size:10px;color:var(--text-tertiary);font-weight:700;letter-spacing:2px;margin-bottom:4px;display:flex;align-items:center;gap:6px;">

@@ -2282,7 +2282,7 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
       <div class="form-title"><span class="form-step">1</span> CABEÇALHO DA NOTA</div>
       <div class="field-row">
         <div class="field"><label>NATUREZA *</label>
-          <select id="f-natureza" data-next="f-numero">
+          <select id="f-natureza" data-next="f-numero" onchange="onNaturezaNotaChange()">
             <option value="VENDA">VENDA</option><option value="BONIFICACAO">BONIFICAÇÃO</option>
             <option value="DEVOLUCAO">DEVOLUÇÃO</option><option value="TRANSFERENCIA">TRANSFERÊNCIA</option>
           </select>
@@ -2300,6 +2300,12 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
       </div>
       <div class="field"><label>CNPJ</label><input type="text" id="f-cnpj" data-next="f-obra" placeholder="00.000.000/0001-00" oninput="maskCNPJ(this)"></div>
       <div class="field"><label>DESTINO</label><select id="f-obra" data-next="f-frete" onchange="onDestinoChange()"><option value="" disabled selected>— SELECIONE O DESTINO —</option><option value="EDR">ESTOQUE GERAL</option><option value="EDR_ESCRITORIO">ESCRITÓRIO (CONSUMO DIRETO)</option></select></div>
+      <div id="devolucao-origem-wrap" class="hidden" style="padding:12px;border:1px solid rgba(220,38,38,.28);border-radius:10px;background:rgba(220,38,38,.05);margin:10px 0;">
+        <div style="font-size:12px;font-weight:800;color:var(--error);margin-bottom:8px;">DEVOLUÇÃO AO FORNECEDOR</div>
+        <div class="field"><label>NOTA DE COMPRA DE ORIGEM *</label><select id="f-nota-origem" onchange="onOrigemDevolucaoChange()"><option value="">— SELECIONE A COMPRA ORIGINAL —</option></select></div>
+        <div id="devolucao-origem-ajuda" style="font-size:11px;color:var(--text-secondary);margin:4px 0 10px;"></div>
+        <div class="field"><label>MOTIVO DA DEVOLUÇÃO *</label><textarea id="f-motivo-devolucao" placeholder="EX.: CAIXA-D'ÁGUA SEM TAMPA"></textarea></div>
+      </div>
       <div id="aviso-escritorio" class="alert-box-v2 alert-info hidden">
         <span class="material-symbols-outlined">business</span> CONSUMO DIRETO — Esta NF não vai para o estoque. Será registrada como despesa geral da EDR.
       </div>
@@ -2320,14 +2326,14 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
     <div class="form-section">
       <div class="form-title"><span class="form-step">2</span> ITENS DA NOTA</div>
       <div class="btn-row" style="margin-bottom:14px;">
-        <button class="btn-import btn-import-xml" onclick="abrirImportXML()">
+        <button type="button" class="btn-import btn-import-xml" onclick="abrirImportXML()">
           <span class="material-symbols-outlined">description</span> IMPORTAR XML <span class="btn-import-sub">Arquivo da NF-e</span>
         </button>
+        <input type="file" id="input-xml-nfe" accept=".xml" aria-label="Escolher XML da NF-e" onchange="processarXMLNFe(this)" style="display:none;">
         <button class="btn-import btn-import-paste" onclick="abrirImportRapida()">
           <span class="material-symbols-outlined">content_paste</span> COLAR TEXTO <span class="btn-import-sub">Cola os itens da nota</span>
         </button>
       </div>
-      <input type="file" id="input-xml-nfe" accept=".xml" style="display:none;" onchange="processarXMLNFe(this)">
       <div class="itens-lista" id="itens-lista"></div>
       <div id="item-total-row" class="item-total-row hidden"><span>SUBTOTAL ITENS</span><span id="item-total-val">R$ 0,00</span></div>
       <div id="frete-total-row" class="frete-total-row hidden"><span><span class="material-symbols-outlined icon-sm icon-inline">local_shipping</span> FRETE</span><span id="frete-total-val">R$ 0,00</span></div>
@@ -2936,7 +2942,21 @@ function _checkResponsive() {
 window.addEventListener('resize', _checkResponsive);
 
 // ── SERVICE WORKER ─────────────────────────
-if ('serviceWorker' in navigator && location.hostname !== 'localhost') {
+const _hostServiceWorker = location.hostname;
+const _ambienteLocalServiceWorker = _hostServiceWorker === 'localhost' || _hostServiceWorker === '127.0.0.1' || _hostServiceWorker === '[::1]';
+
+// Um Service Worker antigo em 127.0.0.1 devolve arquivos de cache e mascara
+// alteracoes locais. Limpa somente o cache desta origem, uma vez por aba.
+if ('serviceWorker' in navigator && _ambienteLocalServiceWorker && sessionStorage.getItem('edr_local_sw_limpo') !== '1') {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.getRegistrations()
+      .then(registros => Promise.all(registros.map(registro => registro.unregister())))
+      .then(() => caches.keys())
+      .then(chaves => Promise.all(chaves.map(chave => caches.delete(chave))))
+      .then(() => { sessionStorage.setItem('edr_local_sw_limpo', '1'); location.reload(); })
+      .catch(() => {});
+  });
+} else if ('serviceWorker' in navigator && !_ambienteLocalServiceWorker) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js').catch(() => {});
   });
@@ -3247,6 +3267,7 @@ function updateShellUser(nome, perfil) {
 <!-- ═══════ MODULOS V2 (ordem de dependência) ═══════ -->
 <!-- 0. Infraestrutura: sbGet/sbPost/sbPatch/sbDelete, confirmar(), showModal, usuarioAtual -->
 <script src="js/edr-v2-infra.js?v=08131213"></script>
+<script src="js/edr-v2-devolucao.js?v=08131213"></script>
 <!-- 1. Utilitários globais (valorPorExtenso, fmtN) -->
 <script src="js/edr-v2-utils-extras.js?v=08131213"></script>
 <!-- 1b. Entrada do cliente (regra única, usada por Obras e Custos — deve vir antes) -->

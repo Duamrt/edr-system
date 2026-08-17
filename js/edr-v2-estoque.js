@@ -155,7 +155,8 @@ function consolidarEstoque(obraId) {
         saidas: 0,
         ajustes: 0,
         valorTotal: 0,
-        lotes: [],         // { nota_id, data, qtd, qtd_disponivel, valor_un }
+        lotes: [],         // { nota_id, item_idx, data, qtd, qtd_disponivel, valor_un }
+        _devolucoes: [],   // devoluções posteriores à contagem também precisam reduzir o saldo
         _ediretas: [],     // { qtd, date } — entradas diretas com data para filtro pós-contagem
         _saidas: [],       // { qtd, date } — saídas com data para filtro pós-contagem
         _ajustes: [],      // { qtd, date } — ajustes delta com data para filtro pós-contagem
@@ -183,6 +184,7 @@ function consolidarEstoque(obraId) {
 
   for (const n of notasFiltradas) {
     const itens = parseItens(n);
+    const ehDevolucao = n.natureza === 'DEVOLUCAO';
     // Frete de CT-e embutido nesta compra: rateia proporcional ao valor liquido de cada item.
     // fatorFrete = 1 quando nao ha frete embutido (frete_rateado = 0) → custo inalterado.
     const freteNota = parseFloat(n.frete_rateado) || 0;
@@ -190,7 +192,8 @@ function consolidarEstoque(obraId) {
       ? itens.reduce((s, x) => s + _liqItem(x), 0)
       : 0;
     const fatorFrete = (freteNota > 0 && totalValorItens > 0) ? (1 + freteNota / totalValorItens) : 1;
-    for (const it of itens) {
+    for (let itemIdx = 0; itemIdx < itens.length; itemIdx++) {
+      const it = itens[itemIdx];
       const desc = it.descricao || it.desc || '';
       const codCat = it.codigo_catalogo || it.codigo || it.cod || null;
       const chave = getChave(desc, codCat);
@@ -199,19 +202,41 @@ function consolidarEstoque(obraId) {
       const _totLiq = _liqItem(it);  // liquido do item (desconto abatido); notas antigas ja tem total liquido salvo
       const _precoLiqUn = qtd > 0 ? _totLiq / qtd : (parseFloat(it.preco_unitario || it.preco) || 0);
       const valorUn = _precoLiqUn * fatorFrete;  // unitario liquido (desconto abatido) + frete embutido
-      item.entradas += qtd;
-      item.valorTotal += qtd * valorUn;
+      item.entradas += ehDevolucao ? -qtd : qtd;
+      item.valorTotal += (ehDevolucao ? -1 : 1) * qtd * valorUn;
       item.temNF = true;
-      item.lotes.push({
-        nota_id: n.id,
-        nf: n.numero_nf,
-        fornecedor: n.fornecedor,
-        // Legado usa emissao; NFs novas usam a data em que o material chegou.
-        data: n.data_efetiva_estoque || n.data,
-        qtd,
-        qtd_disponivel: qtd, // sera reduzido pelas distribuicoes
-        valor_un: valorUn,
-      });
+      if (ehDevolucao) {
+        item._devolucoes.push({
+          nota_origem_id: n.nota_origem_id || null,
+          item_idx_origem: Number.isInteger(it.item_idx_origem) ? it.item_idx_origem : null,
+          qtd,
+          date: n.data_efetiva_estoque || n.data || null,
+        });
+      } else {
+        item.lotes.push({
+          nota_id: n.id,
+          item_idx: itemIdx,
+          nf: n.numero_nf,
+          fornecedor: n.fornecedor,
+          // Legado usa emissao; NFs novas usam a data em que o material chegou.
+          data: n.data_efetiva_estoque || n.data,
+          qtd,
+          qtd_disponivel: qtd, // sera reduzido pelas distribuicoes
+          valor_un: valorUn,
+        });
+      }
+    }
+  }
+
+  // A devolução reduz o lote original, mas não é um novo lote para FIFO.
+  // Processa depois de todas as notas porque a lista pode vir em ordem decrescente.
+  for (const item of Object.values(mapa)) {
+    for (const devolucao of item._devolucoes) {
+      const loteOrigem = item.lotes.find(lote =>
+        lote.nota_id === devolucao.nota_origem_id && lote.item_idx === devolucao.item_idx_origem
+      );
+      if (!loteOrigem) continue; // legado inválido não pode derrubar a tela; o banco bloqueia novas ocorrências.
+      loteOrigem.qtd_disponivel = Math.max(0, loteOrigem.qtd_disponivel - devolucao.qtd);
     }
   }
 
@@ -318,6 +343,9 @@ function consolidarEstoque(obraId) {
       const postNF = cd
         ? it.lotes.filter(l => !l.data || new Date(l.data) > cd).reduce((s, l) => s + l.qtd, 0)
         : it.entradas;
+      const postDevolucoes = cd
+        ? it._devolucoes.filter(d => !d.date || new Date(d.date) > cd).reduce((s, d) => s + d.qtd, 0)
+        : 0;
       // Entradas diretas posteriores
       const postED = cd
         ? it._ediretas.filter(e => !e.date || new Date(e.date) > cd).reduce((s, e) => s + e.qtd, 0)
@@ -331,7 +359,7 @@ function consolidarEstoque(obraId) {
       const postAjustes = cd
         ? it._ajustes.filter(a => !a.date || new Date(a.date) > cd).reduce((s, a) => s + a.qtd, 0)
         : it.ajustes;
-      saldo = it._ultimaContagem + postNF + postED + postAjustes - postS;
+      saldo = it._ultimaContagem + postNF + postED + postAjustes - postS - postDevolucoes;
     } else {
       saldo = it.entradas + it.entradasDiretas + it.ajustes - it.saidas;
     }

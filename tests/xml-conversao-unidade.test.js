@@ -3,6 +3,7 @@ const {
   normalizarUnidadeImportacao,
   dataNoIntervaloSemiaberto,
   resolverConversaoImportacao,
+  classificarNaturezaNFe,
   ImportModule,
 } = require('../js/edr-v2-importar.js');
 
@@ -36,6 +37,9 @@ assert.equal(normalizarUnidadeImportacao('UND'), 'UN');
 assert.equal(normalizarUnidadeImportacao('m2'), 'M²');
 assert.equal(dataNoIntervaloSemiaberto('2026-07-24', '2026-07-24', null), true);
 assert.equal(dataNoIntervaloSemiaberto('2026-07-24', '2026-01-01', '2026-07-24'), false);
+assert.equal(classificarNaturezaNFe({ natureza: 'DEV. DE MERCADORIA', finalidade: '4' }), 'DEVOLUCAO');
+assert.equal(classificarNaturezaNFe({ natureza: 'DEV. DE MERCADORIA' }), 'DEVOLUCAO');
+assert.equal(classificarNaturezaNFe({ natureza: 'VENDA DE MERCADORIAS', finalidade: '1' }), 'VENDA');
 
 const convertido = resolverConversaoImportacao(itemMilheiro, telha, [{
   id: 'regra-mi-pc', material_id: 'mat-telha', unidade_origem: 'MI', unidade_destino: 'PC',
@@ -102,7 +106,7 @@ await ImportModule.confirmarImport();
 assert.equal(enviados.length, 0);
 assert.match(avisos.at(-1), /precisam de regra de conversao/);
 
-console.log('xml-conversao-unidade: 25 assertions passed');
+console.log('xml-conversao-unidade: 28 assertions passed');
 })().catch(err => {
   console.error(err);
   process.exitCode = 1;

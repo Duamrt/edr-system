@@ -29,6 +29,63 @@ const NotasModule = {
   _fornecedorTimer: null,   // debounce fornecedor
 };
 
+function _ehDevolucaoFornecedor() {
+  return document.getElementById('f-natureza')?.value === 'DEVOLUCAO';
+}
+
+function _popularOrigensDevolucao() {
+  const select = document.getElementById('f-nota-origem');
+  const ajuda = document.getElementById('devolucao-origem-ajuda');
+  if (!select || typeof DevolucaoFornecedor === 'undefined') return;
+  const cnpj = document.getElementById('f-cnpj')?.value || '';
+  const selecionado = select.value;
+  const candidatas = DevolucaoFornecedor.origensElegiveis(notas, cnpj);
+  select.innerHTML = '<option value="">— SELECIONE A COMPRA ORIGINAL —</option>' + candidatas.map(n =>
+    `<option value="${esc(n.id)}">NF ${esc(n.numero_nf || 'SEM NÚMERO')} · ${esc(n.data || '')} · ${fmtR(n.valor_bruto || 0)}</option>`
+  ).join('');
+  if (candidatas.some(n => n.id === selecionado)) select.value = selecionado;
+  else if (candidatas.length === 1) select.value = candidatas[0].id;
+  if (ajuda) ajuda.textContent = candidatas.length
+    ? 'A devolução só é aceita enquanto a compra original estiver íntegra no Estoque EDR.'
+    : 'Nenhuma compra elegível deste fornecedor foi encontrada. Salve primeiro a nota de compra no Estoque EDR.';
+  onOrigemDevolucaoChange();
+}
+
+function onNaturezaNotaChange() {
+  const devolucao = _ehDevolucaoFornecedor();
+  document.getElementById('devolucao-origem-wrap')?.classList.toggle('hidden', !devolucao);
+  const destino = document.getElementById('f-obra');
+  if (devolucao) {
+    if (destino) { destino.value = COMPANY_DEFAULTS.estoqueGeral; destino.disabled = true; }
+    _popularOrigensDevolucao();
+  } else if (destino) {
+    destino.disabled = false;
+  }
+}
+
+function onOrigemDevolucaoChange() {
+  const select = document.getElementById('f-nota-origem');
+  const destino = document.getElementById('f-obra');
+  if (!_ehDevolucaoFornecedor() || !select || !destino) return;
+  const origem = notas.find(n => n.id === select.value);
+  destino.value = origem?.obra || COMPANY_DEFAULTS.estoqueGeral;
+}
+
+function _validarDevolucaoAntesDeSalvar(itens, fornecedor, cnpjVal) {
+  const origemId = document.getElementById('f-nota-origem')?.value || '';
+  const motivo = (document.getElementById('f-motivo-devolucao')?.value || '').trim().toUpperCase();
+  const origem = notas.find(n => n.id === origemId);
+  if (!motivo) return { ok: false, erros: ['Informe o motivo da devolução.'] };
+  if (typeof DevolucaoFornecedor === 'undefined') return { ok: false, erros: ['Módulo de devolução não foi carregado. Atualize a página.'] };
+  const validacao = DevolucaoFornecedor.validar({
+    origem, itensDevolucao: itens, notas, distribuicoes,
+    cnpjFornecedor: cnpjVal || fornecedor,
+  });
+  if (!validacao.ok) return validacao;
+  for (const vinculo of validacao.itensValidados) itens[vinculo.indice].item_idx_origem = vinculo.item_idx_origem;
+  return { ...validacao, origemId, motivo };
+}
+
 // Precos com milésimos precisam aparecer completos para que quantidade × preço
 // continue compreensível na prévia da NF. Não altera o valor armazenado.
 function formatarPrecoUnitarioNota(valor) {
@@ -351,6 +408,8 @@ function salvarRascunhoNF() {
         recebimento: document.getElementById('f-recebimento')?.value || '',
         obra: document.getElementById('f-obra')?.value || '',
         natureza: document.getElementById('f-natureza')?.value || '',
+        nota_origem_id: document.getElementById('f-nota-origem')?.value || '',
+        motivo_devolucao: document.getElementById('f-motivo-devolucao')?.value || '',
         frete: document.getElementById('f-frete')?.value || '',
         outras: document.getElementById('f-outras')?.value || '',
         obs: document.getElementById('f-obs')?.value || '',
@@ -387,7 +446,16 @@ function restaurarRascunhoNF() {
     if (r.emissao) document.getElementById('f-emissao').value = r.emissao;
     if (r.recebimento) document.getElementById('f-recebimento').value = r.recebimento;
     if (r.obra) document.getElementById('f-obra').value = r.obra;
-    if (r.natureza) document.getElementById('f-natureza').value = r.natureza;
+    if (r.natureza) {
+      document.getElementById('f-natureza').value = r.natureza;
+      if (typeof onNaturezaNotaChange === 'function') onNaturezaNotaChange();
+    }
+    if (r.nota_origem_id) {
+      const origem = document.getElementById('f-nota-origem');
+      if (origem) origem.value = r.nota_origem_id;
+      if (typeof onOrigemDevolucaoChange === 'function') onOrigemDevolucaoChange();
+    }
+    if (r.motivo_devolucao) document.getElementById('f-motivo-devolucao').value = r.motivo_devolucao;
     if (r.frete) document.getElementById('f-frete').value = r.frete;
     if (r.outras) document.getElementById('f-outras').value = r.outras;
     if (r.obs) document.getElementById('f-obs').value = r.obs;
@@ -406,9 +474,12 @@ function limparRascunhoNF() {
 
 // Listeners de rascunho nos campos do form NF
 document.addEventListener('DOMContentLoaded', () => {
-  ['f-fornecedor', 'f-cnpj', 'f-numero', 'f-emissao', 'f-recebimento', 'f-obra', 'f-natureza', 'f-frete', 'f-outras', 'f-obs'].forEach(id => {
+  ['f-fornecedor', 'f-cnpj', 'f-numero', 'f-emissao', 'f-recebimento', 'f-obra', 'f-natureza', 'f-nota-origem', 'f-motivo-devolucao', 'f-frete', 'f-outras', 'f-obs'].forEach(id => {
     const el = document.getElementById(id);
-    if (el) el.addEventListener('input', salvarRascunhoNF);
+    if (el) {
+      el.addEventListener('input', salvarRascunhoNF);
+      el.addEventListener('change', salvarRascunhoNF);
+    }
   });
   const cnpjEl = document.getElementById('f-cnpj');
   if (cnpjEl) cnpjEl.addEventListener('blur', _onCnpjBlur);
@@ -1028,6 +1099,13 @@ async function salvarNota(notaData) {
   if (!itens.length) { showToast('Adicione pelo menos um item.'); return false; }
   // Trava: destino obrigatorio — NF só lança quando o destino (obra ou almoxarifado) for escolhido conscientemente (sem default p/ estoque)
   if (!destino) { showToast('Selecione o destino da nota: uma obra ou o almoxarifado.'); document.getElementById('f-obra')?.focus(); return false; }
+  const ehDevolucao = natureza === 'DEVOLUCAO';
+  let devolucao = null;
+  if (ehDevolucao) {
+    devolucao = _validarDevolucaoAntesDeSalvar(itens, fornecedor, cnpjVal);
+    if (!devolucao.ok) { showToast(devolucao.erros[0], 7000); return false; }
+    destino = COMPANY_DEFAULTS.estoqueGeral;
+  }
   // Aviso de data de emissao fora do normal (so no preenchimento manual)
   if (!(notaData && typeof notaData === 'object') && typeof _dataSuspeita === 'function' && _dataSuspeita(emissao)) {
     const _okData = await confirmar(`A data de emissão ${emissao} parece fora do normal. Salvar mesmo assim?`);
@@ -1107,15 +1185,21 @@ async function salvarNota(notaData) {
       obra: destino, valor_bruto: totalBruto, frete, outras_despesas: outras, imposto: totalImposto,
       desconto_total: _descTotal, chave_acesso: _chave,
       gera_credito: temCredito, credito_status: csSimples,
-      itens: JSON.stringify(itens, (k, v) => k === '_etapa' ? undefined : v), obs
+      itens: JSON.stringify(itens, (k, v) => k === '_etapa' ? undefined : v), obs,
     };
+    // As colunas de rastreio da devolução exigem migration própria. Não as
+    // envie em compras normais, pois o PostgREST rejeita colunas inexistentes.
+    if (ehDevolucao) {
+      payload.nota_origem_id = devolucao.origemId;
+      payload.motivo_devolucao = devolucao.motivo;
+    }
     const saved = await sbPost('notas_fiscais', payload);
     if (!saved) { showToast('Erro ao salvar nota fiscal. Tente novamente.'); return false; }
     const notaSalva = { ...saved, valor_bruto: totalBruto, frete, outras_despesas: outras };
     notas.unshift(notaSalva);
 
     // Auto-cadastrar materiais novos no catalogo
-    const _ac = await autocadastrarMateriais(itens);
+    const _ac = ehDevolucao ? { novos: [], falhas: 0 } : await autocadastrarMateriais(itens);
     if (_ac.novos.length > 0) {
       console.log(`[EDR] Auto-cadastrado(s) no catalogo: ${_ac.novos.join(', ')}`);
     }
@@ -1124,7 +1208,7 @@ async function salvarNota(notaData) {
 
     // Consumo de escritorio (5 categorias) vira DESPESA (conta paga), nao estoque/obra. O DRE le como despesa.
     const ETAPAS_DESPESA = ['03_alimentacao', '07_combustivel', '14_expediente', '25_limpeza', '34_tecnologia'];
-    const _itensDespesa = itens.filter(it => ETAPAS_DESPESA.includes(it._etapa));
+    const _itensDespesa = ehDevolucao ? [] : itens.filter(it => ETAPAS_DESPESA.includes(it._etapa));
     if (_itensDespesa.length) {
       const _hojeDesp = hojeISO();
       for (const _itD of _itensDespesa) {
@@ -1172,7 +1256,7 @@ async function salvarNota(notaData) {
           showToast('NF lancada! Crie a obra Escritorio para baixa automatica.');
         }
       } else {
-        { const _av = []; if (falhasDesp > 0) _av.push(`${falhasDesp} despesa(s) NAO registradas no financeiro`); if (falhasCatalogo > 0) _av.push(`${falhasCatalogo} material(is) nao entraram no catalogo (revise itens sem codigo)`); showToast(_av.length ? `NF salva, mas ${_av.join('; ')}. Verifique.` : 'Nota fiscal lancada!', _av.length ? 5000 : undefined); }
+        { const _av = []; if (falhasDesp > 0) _av.push(`${falhasDesp} despesa(s) NAO registradas no financeiro`); if (falhasCatalogo > 0) _av.push(`${falhasCatalogo} material(is) nao entraram no catalogo (revise itens sem codigo)`); showToast(_av.length ? `NF salva, mas ${_av.join('; ')}. Verifique.` : (ehDevolucao ? 'Devolução fiscal salva. Confira o reembolso no Financeiro.' : 'Nota fiscal lancada!'), _av.length ? 5000 : undefined); }
       }
     } else {
       // NF direta pra obra (inclusive escritorio): criar lancamentos + distribuicoes automaticamente
@@ -1254,7 +1338,7 @@ async function salvarNota(notaData) {
     const totalDespesaJaFinanceiro = _itensDespesa.reduce((s, it) => s + (Number(it.total) || 0), 0);
     const valorPrompt = Math.max(0, totalBruto - totalDespesaJaFinanceiro);
     // falhasDesp > 0: NF ficou inconsistente — NAO abrir prompt parcial confuso; o toast ja mandou verificar no Financeiro.
-    if (falhasDesp === 0 && valorPrompt > 0) {
+    if (!ehDevolucao && falhasDesp === 0 && valorPrompt > 0) {
       setTimeout(() => _notasPromptPagamento(saved.id, valorPrompt, recebimento || emissao, _obraId, fornecedor, numero), 300);
     }
 
@@ -1370,6 +1454,14 @@ function resetForm() {
   });
   const selObra = document.getElementById('f-obra');
   if (selObra) selObra.value = '';
+  if (selObra) selObra.disabled = false;
+  const origem = document.getElementById('f-nota-origem');
+  if (origem) origem.innerHTML = '<option value="">— SELECIONE A COMPRA ORIGINAL —</option>';
+  const motivoDevolucao = document.getElementById('f-motivo-devolucao');
+  if (motivoDevolucao) motivoDevolucao.value = '';
+  document.getElementById('devolucao-origem-wrap')?.classList.add('hidden');
+  const natureza = document.getElementById('f-natureza');
+  if (natureza) natureza.value = 'VENDA';
   const frRow = document.getElementById('frete-total-row');
   if (frRow) frRow.classList.add('hidden');
   document.getElementById('outras-total-row')?.classList.add('hidden');
@@ -1393,8 +1485,8 @@ function abrirFormNF() {
 // ══════════════════════════════════════════════════════════════════
 function abrirImportXML() {
   if (typeof ImportModule === 'undefined') { showToast('Modulo de importacao nao carregado.'); return; }
-  ImportModule.abrir();
-  setTimeout(() => ImportModule.abrirXML(), 150);
+  const input = document.getElementById('input-xml-nfe');
+  if (input) { input.value = ''; input.click(); }
 }
 function abrirImportRapida() {
   if (typeof ImportModule === 'undefined') { showToast('Modulo de importacao nao carregado.'); return; }
@@ -1402,6 +1494,9 @@ function abrirImportRapida() {
 }
 function processarXMLNFe(input) {
   if (typeof ImportModule === 'undefined') { showToast('Modulo de importacao nao carregado.'); return; }
+  // A selecao foi feita pelo input nativo do botao principal. Abre a previa
+  // somente depois da escolha do arquivo, sem quebrar o gesto do usuario.
+  ImportModule.abrir();
   ImportModule.processarXML(input);
 }
 
