@@ -35,7 +35,7 @@ Reduzir a altura e a navegação necessária no lançamento e na consulta de not
 ## Garantias de escopo
 
 - Nenhuma chamada de banco, regra de crédito, cálculo, payload de salvamento ou regra de devolução foi alterada.
-- Não houve alteração de schema, dados, RLS, deploy ou produção.
+- Não houve alteração de schema, dados ou RLS.
 - O filtro dos itens é somente visual e é limpo ao reiniciar o formulário.
 - A adaptação mobile é somente CSS/estrutura visual: não altera IDs, handlers, importação, payload ou validações de devolução.
 
@@ -51,7 +51,6 @@ Reduzir a altura e a navegação necessária no lançamento e na consulta de not
 
 - Importação de um XML real após esta mudança visual.
 - Salvamento de uma NF real.
-- Produção, banco e deploy.
 - Mobile: deliberadamente fora desta rodada, que priorizou desktop.
 
 ## Evidência local — mobile (17/08/2026)
@@ -61,6 +60,19 @@ Reduzir a altura e a navegação necessária no lançamento e na consulta de not
 - `node --check js/edr-v2-notas.js`, `git diff --check` e as suítes `tests/*.test.js` passaram.
 - Pendente nesta atualização: validação autenticada em navegador local com lista importada extensa e fluxo real de XML.
 
+## Publicação — 17/08/2026
+
+- Código funcional: `fa3b4bc` (`feat: compacta fluxo de notas fiscais`).
+- Publicação: `788b045` (`deploy: compacta notas fiscais`), com cache-busting `08171511` e Service Worker atualizado.
+- `dev` e `main` foram integradas exclusivamente por fast-forward.
+- Produção: `https://sistema.edreng.com.br/index.html` respondeu `200`, expôs o token `08171511`, a estrutura **COMECE PELA NOTA** e `js/edr-v2-notas.js?v=08171511` respondeu `200` com o handler `abrirImportXML`.
+- Nenhuma NF, devolução ou dado de teste foi salvo em produção.
+
+## Pendente operacional
+
+- Conferir uma NF operacional real quando houver arquivo disponível: seleção de XML, preenchimento, conferência e salvamento sob decisão do Duam.
+- Ainda não há evidência de uma NF real com lista extensa (por exemplo, 150 itens) salva após esta publicação.
+
 ## Próxima etapa
 
-Após commit e deploy autorizados, repetir o fluxo real de importação de XML em produção sem salvar uma NF de teste; em seguida validar uma NF operacional sob decisão do Duam.
+Quando houver uma NF operacional, validar o fluxo completo em produção sob decisão do Duam.
