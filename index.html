@@ -908,6 +908,27 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
   display: flex; align-items: center; justify-content: center;
   font-size: 13px; font-weight: 700; flex-shrink: 0;
 }
+.nf-start-section { padding:14px 16px; }
+.nf-start-section .form-title { margin-bottom:10px; }
+.nf-start-grid { display:grid;grid-template-columns:220px minmax(260px,1fr) minmax(180px,.55fr);gap:12px;align-items:end; }
+.nf-start-copy { min-height:42px;display:flex;align-items:center;color:var(--text-secondary);font-size:12px;line-height:1.35; }
+.nf-start-grid .nf-itens-toolbar { margin:0; }
+.nf-start-grid .btn-import { min-height:42px;padding:9px 12px; }
+.nf-start-grid .btn-import-sub { display:none; }
+.nf-header-section { padding:16px; }
+.nf-header-section .form-title { margin-bottom:12px; }
+.nf-header-grid { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 12px; }
+.nf-header-grid .field { margin:0; }
+.nf-header-grid .field-wide { grid-column:1 / -1; }
+.nf-header-grid .field input,.nf-header-grid .field select { min-height:38px; }
+.nf-extra-dados { margin-top:12px;border-top:1px solid var(--border); }
+.nf-extra-dados > summary { cursor:pointer;list-style:none;padding:10px 0 0;color:var(--text-secondary);font-size:11px;font-weight:800;letter-spacing:.7px; }
+.nf-extra-dados > summary::-webkit-details-marker { display:none; }
+.nf-extra-dados > summary::after { content:'expand_more';font-family:'Material Symbols Outlined';font-size:17px;vertical-align:middle;margin-left:6px; }
+.nf-extra-dados[open] > summary::after { content:'expand_less'; }
+.nf-extra-grid { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 12px;padding-top:10px; }
+.nf-extra-grid .field { margin:0; }
+.nf-extra-grid .field:last-child { grid-column:1 / -1; }
 
 /* ── NOTAS CARDS ─────────────────────────── */
 .nota-card {
@@ -983,6 +1004,24 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
 .btn-excluir-nf { display: flex; align-items: center; gap: 4px; padding: 4px 10px; font-size: 11px; border: 1px solid var(--error); color: var(--error); background: transparent; border-radius: 6px; cursor: pointer; transition: background .15s; }
 .btn-excluir-nf:hover { background: rgba(220,38,38,.08); }
 
+/* ── HISTÓRICO DE NFs: DENSIDADE DESKTOP ─────────────────────── */
+.nf-list-toolbar { padding:12px 0 10px!important; }
+.nf-list-toolbar .modulo-badge { margin-bottom:10px; }
+.nf-list-filterbar { display:grid;grid-template-columns:minmax(230px,1.3fr) minmax(180px,.8fr) 150px 140px 130px;gap:8px;align-items:center; }
+.nf-list-filterbar input,.nf-list-filterbar select { width:100%;min-width:0;height:34px;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--bg-card);color:var(--text); }
+.nf-list-summary { padding:8px 12px!important;margin-top:8px!important;border-radius:6px!important;font-size:12px!important; }
+.nf-list-head,.nf-list-row { display:grid;grid-template-columns:minmax(280px,1.6fr) 96px 100px minmax(118px,.7fr) 50px 110px minmax(120px,.7fr) 34px;gap:10px;align-items:center; }
+.nf-list-head { padding:9px 14px 7px;color:var(--text-tertiary);font-size:10px;font-weight:800;letter-spacing:.6px;border-bottom:1px solid var(--border); }
+.nf-list-row { min-height:54px;padding:8px 14px;border-bottom:1px solid var(--border-light);cursor:pointer;background:var(--card); }
+.nf-list-row:hover { background:var(--primary-surface); }
+.nf-list-fornecedor { display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--text-primary); }
+.nf-list-identificador { display:block;margin-top:2px;color:var(--text-tertiary);font-family:'Space Grotesk',monospace;font-size:10px; }
+.nf-list-data,.nf-list-itens { font-family:'Space Grotesk',monospace;font-size:11px;color:var(--text-secondary); }
+.nf-list-valor { font-family:'Space Grotesk',monospace;font-size:13px;font-weight:700;color:var(--primary);text-align:right;white-space:nowrap; }
+.nf-list-status .nf-tag { display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+.nf-list-row .btn-excluir-nf { justify-self:end;padding:4px 7px;font-size:0; }
+.nf-list-row .btn-excluir-nf .material-symbols-outlined { margin:0;font-size:16px!important; }
+
 /* ═══ COMPONENTES V2 — Padronização visual ═══ */
 
 /* Sticky header dos módulos */
@@ -1057,15 +1096,27 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
 .ac-badge-duvida { color:var(--text-tertiary); }
 
 /* NF item form row */
-.nf-item-row { display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--border-light); }
+.nf-itens-toolbar { display:flex;gap:8px;margin-bottom:10px; }
+.nf-itens-controlbar { display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 10px;margin:8px 0 0;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm); }
+.nf-itens-resumo { display:flex;align-items:baseline;gap:6px;min-width:0;color:var(--text-secondary);font-size:12px;font-weight:700;white-space:nowrap; }
+.nf-itens-resumo strong { color:var(--text-primary);font-family:'Space Grotesk',monospace;font-size:14px; }
+.nf-itens-filtro { display:flex;align-items:center;gap:6px;flex:1;max-width:330px;padding:0 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg); }
+.nf-itens-filtro .material-symbols-outlined { color:var(--text-tertiary);font-size:17px; }
+.nf-itens-filtro input { width:100%;min-width:0;border:0!important;box-shadow:none!important;background:transparent!important;padding:7px 0!important;font-size:12px; }
+.nf-itens-list-wrap { max-height:460px;overflow:auto;margin-top:8px;border:1px solid var(--border);border-radius:var(--radius-sm);padding:0 12px;background:var(--bg); }
+.nf-itens-list-wrap:empty { display:none; }
+.nf-itens-colunas,.nf-item-row { display:grid;grid-template-columns:minmax(260px,1fr) 72px 58px 105px 88px 108px 28px;align-items:center;column-gap:10px; }
+.nf-itens-colunas { position:sticky;top:0;z-index:1;padding:9px 0 7px;background:var(--bg);border-bottom:1px solid var(--border);color:var(--text-tertiary);font-size:10px;font-weight:800;letter-spacing:.6px; }
+.nf-itens-colunas span:not(:first-child) { text-align:right; }
+.nf-item-row { padding:9px 0;border-bottom:1px solid var(--border-light); }
 .nf-item-row:last-child { border-bottom:none; }
-.nf-item-desc { font-size:13px;font-weight:600;color:var(--text-primary); }
-.nf-item-meta { display:flex;gap:8px;font-size:11px;color:var(--text-tertiary);margin-top:2px;flex-wrap:wrap; }
-.nf-item-credito { font-weight:700; }
+.nf-item-desc { min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:600;color:var(--text-primary); }
+.nf-item-cell { min-width:0;text-align:right;font-family:'Space Grotesk',monospace;font-size:12px;color:var(--text-secondary);white-space:nowrap; }
+.nf-item-credito { text-align:right;font-size:10px;font-weight:800;white-space:nowrap; }
 .nf-item-credito-sim { color:var(--success); }
 .nf-item-credito-nao { color:var(--error); }
-.nf-item-valor { font-family:'Space Grotesk',monospace;font-size:13px;font-weight:700;color:var(--text-primary);white-space:nowrap; }
-.nf-item-remove { color:var(--text-tertiary);padding:4px;background:none;border:none;cursor:pointer;border-radius:4px; }
+.nf-item-valor { text-align:right;font-family:'Space Grotesk',monospace;font-size:13px;font-weight:700;color:var(--text-primary);white-space:nowrap; }
+.nf-item-remove { justify-self:end;color:var(--text-tertiary);padding:4px;background:none;border:none;cursor:pointer;border-radius:4px; }
 .nf-item-remove:hover { color:var(--error);background:rgba(220,38,38,.08); }
 
 /* Modal title padronizado */
@@ -1074,8 +1125,36 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
 .modal-title-v2 h3 .material-symbols-outlined { font-size:20px;color:var(--primary); }
 
 /* Item form section */
+.item-form { margin-top:12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg); }
+.item-form > summary { list-style:none;cursor:pointer;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:10px;color:var(--text-secondary);font-size:12px;font-weight:700;letter-spacing:.7px;user-select:none; }
+.item-form > summary::-webkit-details-marker { display:none; }
+.item-form > summary::after { content:'expand_more';font-family:'Material Symbols Outlined';font-size:18px;transition:transform .15s; }
+.item-form[open] > summary { border-bottom:1px solid var(--border);color:var(--primary); }
+.item-form[open] > summary::after { transform:rotate(180deg); }
+.item-form-body { padding:12px; }
 .item-form-title { font-size:12px;font-weight:700;letter-spacing:1px;color:var(--text-secondary);margin-bottom:12px;display:flex;align-items:center;gap:6px; }
 .item-form-title .material-symbols-outlined { font-size:16px;color:var(--primary); }
+.item-form-hint { font-size:11px;font-weight:400;letter-spacing:0;color:var(--text-tertiary);margin-left:6px; }
+.nf-itens-vazio { padding:18px 0;text-align:center;font-size:12px;color:var(--text-tertiary); }
+
+@media (max-width:640px) {
+  .nf-start-grid,.nf-header-grid,.nf-extra-grid { grid-template-columns:1fr; }
+  .nf-start-copy { min-height:0; }
+  .nf-header-grid .field-wide,.nf-extra-grid .field:last-child { grid-column:auto; }
+  .nf-list-filterbar { grid-template-columns:1fr 1fr; }
+  .nf-list-filterbar input { grid-column:1 / -1; }
+  .nf-list-head { display:none; }
+  .nf-list-row { grid-template-columns:minmax(0,1fr) auto auto;gap:6px;min-height:64px;padding:9px 10px; }
+  .nf-list-row > :nth-child(2),.nf-list-row > :nth-child(3),.nf-list-row > :nth-child(5),.nf-list-row > :nth-child(7) { display:none; }
+  .nf-itens-toolbar { flex-direction:column; }
+  .nf-itens-controlbar { align-items:stretch;flex-direction:column;gap:8px; }
+  .nf-itens-filtro { max-width:none; }
+  .nf-itens-list-wrap { max-height:300px;padding:0 10px; }
+  .nf-itens-colunas { display:none; }
+  .nf-item-row { grid-template-columns:minmax(0,1fr) 82px 86px 28px;column-gap:7px; }
+  .nf-item-qtd,.nf-item-unidade,.nf-item-preco { display:none; }
+  .nf-item-credito { font-size:9px; }
+}
 
 /* Manual classification */
 .manual-title { font-size:12px;font-weight:700;color:var(--warning);margin-bottom:8px;display:flex;align-items:center;gap:6px; }
@@ -2251,14 +2330,15 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
     <div id="cat-load-more" style="text-align:center;padding:16px;display:none;"></div>
     </div>
     <div class="view" id="view-notas">
-<div id="notas-sticky" class="sticky-header">
+<div id="notas-sticky" class="sticky-header nf-list-toolbar">
       <div class="modulo-badge" style="display:flex;justify-content:space-between;align-items:center;">
         <span><span class="material-symbols-outlined">receipt_long</span> HISTÓRICO DE NFs</span>
         <button class="btn btn-primary" style="padding:6px 14px;font-size:12px;font-weight:700;display:flex;align-items:center;gap:6px;" onclick="abrirFormNF()">
           <span class="material-symbols-outlined" style="font-size:16px;">add</span> NOVA NF
         </button>
       </div>
-      <div class="filter-row">
+      <div class="nf-list-filterbar">
+        <input type="text" id="filtro-numero-nf" placeholder="Buscar NF, fornecedor ou CNPJ..." oninput="renderNotas()">
         <select id="filtro-obra" onchange="renderNotas()"><option value="">TODAS AS OBRAS</option></select>
         <select id="filtro-fornecedor" onchange="renderNotas()"><option value="">TODOS OS FORNECEDORES</option></select>
         <select id="filtro-credito" onchange="renderNotas()">
@@ -2266,40 +2346,47 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
           <option value="nao">SEM CRÉDITO</option><option value="estoque">EM ESTOQUE</option>
           <option value="escritorio">ESCRITÓRIO</option>
         </select>
+        <input type="month" id="filtro-mes" onchange="renderNotas()" title="Filtrar por mês de emissão">
       </div>
-      <div class="filter-row" style="margin-top:8px;">
-        <input type="text" id="filtro-numero-nf" placeholder="Buscar por Nº da nota..." oninput="renderNotas()" style="flex:1;min-width:0;padding:7px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg-card);color:var(--text);">
-        <input type="month" id="filtro-mes" onchange="renderNotas()" title="Filtrar por mês de emissão" style="padding:7px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg-card);color:var(--text);">
-      </div>
-      <div id="notas-resumo" class="hidden" style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 14px;margin-top:8px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text-secondary);"></div>
+      <div id="notas-resumo" class="hidden nf-list-summary" style="display:flex;justify-content:space-between;align-items:center;gap:12px;background:var(--bg-card);border:1px solid var(--border);color:var(--text-secondary);"></div>
     </div>
+    <div class="nf-list-head" id="notas-list-head"><span>FORNECEDOR / NF</span><span>RECEBIMENTO</span><span>NATUREZA</span><span>DESTINO</span><span>ITENS</span><span style="text-align:right">VALOR</span><span>SITUAÇÃO</span><span></span></div>
     <div id="notas-lista"></div>
     <div id="notas-empty" class="empty hidden">Nenhuma nota encontrada.</div>
     </div>
     <div class="view" id="view-form">
-<div class="modulo-badge"><span class="material-symbols-outlined">add_circle</span> NOVO LANÇAMENTO</div>
-    <div class="form-section">
-      <div class="form-title"><span class="form-step">1</span> CABEÇALHO DA NOTA</div>
-      <div class="field-row">
-        <div class="field"><label>NATUREZA *</label>
-          <select id="f-natureza" data-next="f-numero" onchange="onNaturezaNotaChange()">
-            <option value="VENDA">VENDA</option><option value="BONIFICACAO">BONIFICAÇÃO</option>
-            <option value="DEVOLUCAO">DEVOLUÇÃO</option><option value="TRANSFERENCIA">TRANSFERÊNCIA</option>
-          </select>
+      <div class="modulo-badge"><span class="material-symbols-outlined">add_circle</span> NOVO LANÇAMENTO</div>
+      <div class="form-section nf-start-section">
+        <div class="form-title"><span class="form-step">1</span> COMECE PELA NOTA</div>
+        <div class="nf-start-grid">
+          <div class="field"><label>NATUREZA *</label>
+            <select id="f-natureza" data-next="f-numero" onchange="onNaturezaNotaChange()">
+              <option value="VENDA">VENDA</option><option value="BONIFICACAO">BONIFICAÇÃO</option>
+              <option value="DEVOLUCAO">DEVOLUÇÃO</option><option value="TRANSFERENCIA">TRANSFERÊNCIA</option>
+            </select>
+          </div>
+          <div class="nf-start-copy">Escolha a natureza e importe o XML. Os campos da nota são preenchidos automaticamente.</div>
+          <div class="nf-itens-toolbar">
+            <button type="button" class="btn-import btn-import-xml" onclick="abrirImportXML()"><span class="material-symbols-outlined">description</span> IMPORTAR XML</button>
+            <input type="file" id="input-xml-nfe" accept=".xml" aria-label="Escolher XML da NF-e" onchange="processarXMLNFe(this)" style="display:none;">
+            <button type="button" class="btn-import btn-import-paste" onclick="abrirImportRapida()"><span class="material-symbols-outlined">content_paste</span> COLAR TEXTO</button>
+          </div>
         </div>
-        <div class="field"><label>Nº DA NOTA *</label><input type="text" id="f-numero" data-next="f-emissao" placeholder="EX: 001234"></div>
       </div>
-      <div class="field-row">
-        <div class="field"><label>DATA DE EMISSÃO *</label><input type="date" id="f-emissao" data-next="f-recebimento"></div>
-        <div class="field"><label>DATA DE RECEBIMENTO</label><input type="date" id="f-recebimento" data-next="f-fornecedor"></div>
-      </div>
-      <div class="field autocomplete-wrap">
-        <label>FORNECEDOR *</label>
-        <input type="text" id="f-fornecedor" data-next="f-cnpj" placeholder="NOME DO FORNECEDOR" oninput="onFornecedorInput()" autocomplete="off">
-        <div class="autocomplete-list hidden" id="ac-forn-list"></div>
-      </div>
-      <div class="field"><label>CNPJ</label><input type="text" id="f-cnpj" data-next="f-obra" placeholder="00.000.000/0001-00" oninput="maskCNPJ(this)"></div>
-      <div class="field"><label>DESTINO</label><select id="f-obra" data-next="f-frete" onchange="onDestinoChange()"><option value="" disabled selected>— SELECIONE O DESTINO —</option><option value="EDR">ESTOQUE GERAL</option><option value="EDR_ESCRITORIO">ESCRITÓRIO (CONSUMO DIRETO)</option></select></div>
+      <div class="form-section nf-header-section">
+        <div class="form-title"><span class="form-step">2</span> DADOS DA NOTA</div>
+        <div class="nf-header-grid">
+          <div class="field"><label>Nº DA NOTA *</label><input type="text" id="f-numero" data-next="f-emissao" placeholder="EX: 001234"></div>
+          <div class="field"><label>DATA DE EMISSÃO *</label><input type="date" id="f-emissao" data-next="f-recebimento"></div>
+          <div class="field"><label>DATA DE RECEBIMENTO</label><input type="date" id="f-recebimento" data-next="f-fornecedor"></div>
+          <div class="field autocomplete-wrap field-wide">
+            <label>FORNECEDOR *</label>
+            <input type="text" id="f-fornecedor" data-next="f-cnpj" placeholder="NOME DO FORNECEDOR" oninput="onFornecedorInput()" autocomplete="off">
+            <div class="autocomplete-list hidden" id="ac-forn-list"></div>
+          </div>
+          <div class="field"><label>CNPJ</label><input type="text" id="f-cnpj" data-next="f-obra" placeholder="00.000.000/0001-00" oninput="maskCNPJ(this)"></div>
+          <div class="field"><label>DESTINO</label><select id="f-obra" data-next="f-frete" onchange="onDestinoChange()"><option value="" disabled selected>— SELECIONE O DESTINO —</option><option value="EDR">ESTOQUE GERAL</option><option value="EDR_ESCRITORIO">ESCRITÓRIO (CONSUMO DIRETO)</option></select></div>
+        </div>
       <div id="devolucao-origem-wrap" class="hidden" style="padding:12px;border:1px solid rgba(220,38,38,.28);border-radius:10px;background:rgba(220,38,38,.05);margin:10px 0;">
         <div style="font-size:12px;font-weight:800;color:var(--error);margin-bottom:8px;">DEVOLUÇÃO AO FORNECEDOR</div>
         <div class="field"><label>NOTA DE COMPRA DE ORIGEM *</label><select id="f-nota-origem" onchange="onOrigemDevolucaoChange()"><option value="">— SELECIONE A COMPRA ORIGINAL —</option></select></div>
@@ -2309,6 +2396,9 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
       <div id="aviso-escritorio" class="alert-box-v2 alert-info hidden">
         <span class="material-symbols-outlined">business</span> CONSUMO DIRETO — Esta NF não vai para o estoque. Será registrada como despesa geral da EDR.
       </div>
+      <details class="nf-extra-dados">
+        <summary>FRETE, DESCONTOS E OBSERVAÇÕES</summary>
+        <div class="nf-extra-grid">
       <div class="field frete-field">
         <label><span class="material-symbols-outlined icon-sm icon-inline">local_shipping</span> FRETE DESTACADO (R$) <span style="font-weight:400;color:var(--success);font-size:11px;">Gera crédito — deixe em branco se não houver</span></label>
         <input type="number" id="f-frete" data-next="f-outras" placeholder="0,00" oninput="atualizarTotalComFrete()">
@@ -2322,25 +2412,30 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
         <input type="number" id="f-desconto-total" data-next="f-obs" placeholder="0,00" oninput="atualizarTotalComFrete()">
       </div>
       <div class="field"><label>OBSERVAÇÃO</label><textarea id="f-obs" data-next="i-desc" placeholder="OBSERVAÇÕES GERAIS DA NOTA..."></textarea></div>
+        </div>
+      </details>
     </div>
     <div class="form-section">
-      <div class="form-title"><span class="form-step">2</span> ITENS DA NOTA</div>
-      <div class="btn-row" style="margin-bottom:14px;">
-        <button type="button" class="btn-import btn-import-xml" onclick="abrirImportXML()">
-          <span class="material-symbols-outlined">description</span> IMPORTAR XML <span class="btn-import-sub">Arquivo da NF-e</span>
-        </button>
-        <input type="file" id="input-xml-nfe" accept=".xml" aria-label="Escolher XML da NF-e" onchange="processarXMLNFe(this)" style="display:none;">
-        <button class="btn-import btn-import-paste" onclick="abrirImportRapida()">
-          <span class="material-symbols-outlined">content_paste</span> COLAR TEXTO <span class="btn-import-sub">Cola os itens da nota</span>
-        </button>
+      <div class="form-title"><span class="form-step">3</span> ITENS DA NOTA</div>
+      <div class="nf-itens-controlbar hidden" id="nf-itens-controlbar">
+        <div class="nf-itens-resumo"><strong id="nf-itens-qtd">0</strong><span id="nf-itens-label">itens na nota</span></div>
+        <label class="nf-itens-filtro" for="nf-itens-busca">
+          <span class="material-symbols-outlined">search</span>
+          <input type="search" id="nf-itens-busca" placeholder="Filtrar item importado" oninput="filtrarItensNota(this.value)" autocomplete="off">
+        </label>
       </div>
-      <div class="itens-lista" id="itens-lista"></div>
+      <div class="nf-itens-list-wrap hidden" id="nf-itens-list-wrap">
+        <div class="nf-itens-colunas" aria-hidden="true"><span>MATERIAL</span><span>QTD.</span><span>UN.</span><span>VLR. UNIT.</span><span>CRÉDITO</span><span>TOTAL</span><span></span></div>
+        <div class="itens-lista" id="itens-lista"></div>
+      </div>
       <div id="item-total-row" class="item-total-row hidden"><span>SUBTOTAL ITENS</span><span id="item-total-val">R$ 0,00</span></div>
       <div id="frete-total-row" class="frete-total-row hidden"><span><span class="material-symbols-outlined icon-sm icon-inline">local_shipping</span> FRETE</span><span id="frete-total-val">R$ 0,00</span></div>
       <div id="outras-total-row" class="frete-total-row hidden"><span><span class="material-symbols-outlined icon-sm icon-inline">receipt_long</span> OUTRAS DESPESAS</span><span id="outras-total-val">R$ 0,00</span></div>
       <div id="total-nf-row" class="frete-total-row hidden" style="border-top:1px solid var(--borda);margin-top:4px;padding-top:8px;font-weight:800;"><span>TOTAL DA NOTA</span><span id="total-nf-val" style="color:var(--verde-hl);">R$ 0,00</span></div>
-      <div class="item-form">
-        <div class="item-form-title"><span class="material-symbols-outlined">add_circle</span> ADICIONAR ITEM MANUAL</div>
+      <details class="item-form" id="item-manual-form">
+        <summary>ADICIONAR ITEM MANUAL <span class="item-form-hint">abre só quando precisar</span></summary>
+        <div class="item-form-body">
+        <div class="item-form-title"><span class="material-symbols-outlined">add_circle</span> NOVO ITEM</div>
         <div class="field autocomplete-wrap">
           <label>DESCRIÇÃO DO ITEM *</label>
           <input type="text" id="i-desc" data-next="i-qtd" placeholder="EX: CIMENTO, AREIA, MÃO DE OBRA..." oninput="onDescInput()" autocomplete="off">
@@ -2366,7 +2461,8 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
         </div>
         <div class="field"><label>TOTAL DO ITEM</label><input type="number" id="i-total" readonly style="background:rgba(255,255,255,.03);font-weight:700;"></div>
         <button class="btn-add-item" onclick="adicionarItem()"><span class="material-symbols-outlined icon-md">add</span> ADICIONAR ITEM <span style="font-size:11px;opacity:.7;">ou ENTER</span></button>
-      </div>
+        </div>
+      </details>
     </div>
     <button class="btn-save" id="btn-salvar" onclick="salvarNota()"><span class="material-symbols-outlined">save</span> SALVAR NOTA FISCAL <span style="font-size:11px;opacity:.8;">Ctrl+S</span></button>
     <button class="btn-outline" onclick="resetForm()">CANCELAR</button>

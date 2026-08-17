@@ -25,6 +25,7 @@ const NotasModule = {
   cachedItens: [],          // autocomplete itens
   acSelectedIdx: -1,        // indice selecionado no autocomplete
   acFornIdx: -1,            // indice fornecedor selecionado
+  itemFiltro: '',           // filtro visual da lista de itens (nao altera a NF)
   _rascunhoTimer: null,     // timer do rascunho auto
   _fornecedorTimer: null,   // debounce fornecedor
 };
@@ -148,16 +149,18 @@ function renderNotas() {
   if (fc === 'nao') lista = lista.filter(n => !n.gera_credito && n.obra !== COMPANY_DEFAULTS.estoqueGeral && n.obra !== COMPANY_DEFAULTS.escritorio);
   if (fc === 'estoque') lista = lista.filter(n => n.obra === COMPANY_DEFAULTS.estoqueGeral);
   if (fc === 'escritorio') lista = lista.filter(n => n.obra === COMPANY_DEFAULTS.escritorio);
-  if (fn) lista = lista.filter(n => (n.numero_nf || '').toLowerCase().includes(fn));
+  if (fn) lista = lista.filter(n => [n.numero_nf, n.fornecedor, n.cnpj].some(v => String(v || '').toLowerCase().includes(fn)));
   if (fm) lista = lista.filter(n => _mesNota(n.data) === fm);
 
   // Resumo do que está filtrado (total de débito / quanto de NF) — admin only
   _renderNotasResumo(lista, fm);
 
   const el = document.getElementById('notas-lista');
+  const head = document.getElementById('notas-list-head');
   if (!el) return;
 
   if (!lista.length) {
+    head?.classList.add('hidden');
     el.innerHTML = `<div class="empty-state">
       <span class="material-symbols-outlined icon-3xl">receipt_long</span>
       <p>Nenhuma nota fiscal encontrada.</p>
@@ -166,6 +169,7 @@ function renderNotas() {
   }
 
   const isAdmin = usuarioAtual?.perfil === 'admin';
+  head?.classList.remove('hidden');
 
   el.innerHTML = lista.map(n => {
     const itens = parseItens(n);
@@ -186,29 +190,15 @@ function renderNotas() {
     else if (isEscritorio) { tagObra = 'ESCRITORIO'; tagObraClass = 'nf-tag-nat'; }
     else { tagObra = n.obra || '—'; }
 
-    return `<div class="nf-card" onclick="abrirNota('${esc(n.id)}')">
-      <div class="nf-card-top">
-        <div>
-          <span class="nf-card-fornecedor">${esc(n.fornecedor)}</span>
-          <span class="nf-card-nf">NF ${esc(n.numero_nf || '')}</span>
-        </div>
-        ${isAdmin ? `<span class="nf-card-valor">${fmtR(n.valor_bruto)}</span>` : ''}
-      </div>
-      <div class="nf-card-meta">
-        <span>${esc(n.natureza || '')}</span>
-        <span>&middot;</span>
-        <span>${itens.length} ite${itens.length !== 1 ? 'ns' : 'm'}</span>
-        <span>&middot;</span>
-        <span>${n.data || ''}</span>
-        ${n.frete > 0 ? `<span>&middot;</span><span>Frete: ${fmtR(n.frete)}</span>` : ''}
-      </div>
-      <div class="nf-card-tags">
-        <span class="nf-tag ${tagObraClass}">${esc(tagObra)}</span>
-        <span class="nf-tag nf-tag-nat">${esc(n.natureza || '')}</span>
-        <span class="nf-tag ${tagClass}">${tagCredito}</span>
-      </div>
-      <div class="nf-card-cnpj">${esc(n.cnpj || 'SEM CNPJ')}</div>
-      ${isAdmin ? `<div class="nf-card-acoes"><button class="btn-excluir-nf" onclick="event.stopPropagation();confirmarExclusaoNota('${esc(n.id)}')"><span class="material-symbols-outlined icon-sm">delete</span> Excluir nota</button></div>` : ''}
+    return `<div class="nf-list-row" onclick="abrirNota('${esc(n.id)}')">
+      <span><strong class="nf-list-fornecedor">${esc(n.fornecedor || 'FORNECEDOR NÃO INFORMADO')}</strong><small class="nf-list-identificador">NF ${esc(n.numero_nf || '—')} · ${esc(n.cnpj || 'SEM CNPJ')}</small></span>
+      <span class="nf-list-data">${esc(n.data_recebimento || n.data || '—')}</span>
+      <span><span class="nf-tag nf-tag-nat">${esc(n.natureza || '—')}</span></span>
+      <span><span class="nf-tag ${tagObraClass}">${esc(tagObra)}</span></span>
+      <span class="nf-list-itens">${itens.length}</span>
+      <span class="nf-list-valor">${isAdmin ? fmtR(n.valor_bruto) : '—'}</span>
+      <span class="nf-list-status"><span class="nf-tag ${tagClass}">${tagCredito}</span></span>
+      ${isAdmin ? `<button class="btn-excluir-nf" title="Excluir nota" aria-label="Excluir nota" onclick="event.stopPropagation();confirmarExclusaoNota('${esc(n.id)}')"><span class="material-symbols-outlined icon-sm">delete</span></button>` : '<span></span>'}
     </div>`;
   }).join('');
 
@@ -802,44 +792,58 @@ function removerItem(idx) {
   salvarRascunhoNF();
 }
 
+function filtrarItensNota(valor) {
+  NotasModule.itemFiltro = (valor || '').trim().toUpperCase();
+  renderItensForm();
+}
+
 function renderItensForm() {
   const lista = document.getElementById('itens-lista');
   const totalRow = document.getElementById('item-total-row');
+  const listWrap = document.getElementById('nf-itens-list-wrap');
+  const controlBar = document.getElementById('nf-itens-controlbar');
+  const qtdEl = document.getElementById('nf-itens-qtd');
+  const labelEl = document.getElementById('nf-itens-label');
+  const buscaEl = document.getElementById('nf-itens-busca');
   if (!lista) return;
 
   if (!NotasModule.itens.length) {
     lista.innerHTML = '';
     if (totalRow) totalRow.classList.add('hidden');
+    if (listWrap) listWrap.classList.add('hidden');
+    if (controlBar) controlBar.classList.add('hidden');
     if (typeof atualizarTotalComFrete === 'function') atualizarTotalComFrete();
     return;
   }
 
   if (totalRow) totalRow.classList.remove('hidden');
+  if (listWrap) listWrap.classList.remove('hidden');
+  if (controlBar) controlBar.classList.remove('hidden');
+  if (qtdEl) qtdEl.textContent = NotasModule.itens.length;
+  if (labelEl) labelEl.textContent = NotasModule.itens.length === 1 ? 'item na nota' : 'itens na nota';
+  if (buscaEl && buscaEl.value !== NotasModule.itemFiltro) buscaEl.value = NotasModule.itemFiltro;
   const subtotal = NotasModule.itens.reduce((s, i) => s + i.total, 0);
   const subEl = document.getElementById('item-total-val');
   if (subEl) subEl.textContent = fmtR(subtotal);
 
-  lista.innerHTML = NotasModule.itens.map((item, idx) => `
+  const filtro = NotasModule.itemFiltro;
+  const itensVisiveis = NotasModule.itens
+    .map((item, idx) => ({ item, idx }))
+    .filter(({ item }) => !filtro || `${item.codigo || ''} ${item.desc || ''} ${item.unidade || ''}`.toUpperCase().includes(filtro));
+
+  lista.innerHTML = itensVisiveis.length ? itensVisiveis.map(({ item, idx }) => `
     <div class="nf-item-row">
-      <div style="flex:1;min-width:0;">
-        <div class="nf-item-desc">
-          ${item.codigo ? `<span class="ac-item-code">${esc(item.codigo)}</span>` : ''}
-          ${esc(item.desc)}
-        </div>
-        <div class="nf-item-meta">
-          <span>${Number(item.qtd) % 1 === 0 ? item.qtd : Number(item.qtd).toFixed(3)} ${esc(item.unidade)}</span>
-          <span>${formatarPrecoUnitarioNota(item.preco)}/un</span>
-          <span class="nf-item-credito ${item.credito ? 'nf-item-credito-sim' : 'nf-item-credito-nao'}">${item.credito ? 'CREDITO' : 'SEM CREDITO'}</span>
-        </div>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px;">
-        <span class="nf-item-valor">${fmtR(item.total)}</span>
-        <button class="nf-item-remove" onclick="removerItem(${idx})">
-          <span class="material-symbols-outlined icon-sm">delete</span>
-        </button>
-      </div>
+      <div class="nf-item-desc">${item.codigo ? `<span class="ac-item-code">${esc(item.codigo)}</span>` : ''}${esc(item.desc)}</div>
+      <span class="nf-item-cell nf-item-qtd">${Number(item.qtd) % 1 === 0 ? item.qtd : Number(item.qtd).toFixed(3)}</span>
+      <span class="nf-item-cell nf-item-unidade">${esc(item.unidade)}</span>
+      <span class="nf-item-cell nf-item-preco">${formatarPrecoUnitarioNota(item.preco)}</span>
+      <span class="nf-item-credito ${item.credito ? 'nf-item-credito-sim' : 'nf-item-credito-nao'}">${item.credito ? 'CREDITO' : 'SEM CREDITO'}</span>
+      <span class="nf-item-valor">${fmtR(item.total)}</span>
+      <button class="nf-item-remove" onclick="removerItem(${idx})" title="Remover item">
+        <span class="material-symbols-outlined icon-sm">delete</span>
+      </button>
     </div>
-  `).join('');
+  `).join('') : '<div class="nf-itens-vazio">Nenhum item encontrado neste filtro.</div>';
   if (typeof atualizarTotalComFrete === 'function') atualizarTotalComFrete();
 }
 
@@ -1445,6 +1449,7 @@ function onDestinoChange() {
 function resetForm() {
   limparRascunhoNF();
   NotasModule.itens = [];
+  NotasModule.itemFiltro = '';
   NotasModule.currentCredito = null;
   NotasModule.currentCodigo = null;
   renderItensForm();
