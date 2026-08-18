@@ -26,7 +26,7 @@ const EstoqueModule = {
   catBusca: '',             // busca no catalogo
   catFiltroAuto: false,     // mostrar apenas AUTO pendentes
   catFiltroCats: new Set(), // centros de custo selecionados no filtro (multi)
-  catFiltroTipo: 'todos',   // chip de tipo: todos|material|servico|mao_obra|taxa|frete|documento|movimenta|nao_movimenta|sem_preco|sem_categoria
+  catFiltroTipo: 'todos',   // chip de tipo: todos|material|servico|mao_obra|taxa|frete|documento|movimenta|nao_movimenta|saldo_sem_custo|sem_categoria
   catPage: 0,
   catPageSize: 250,         // lote do catalogo (separado do pageSize=50 do estoque; some com "carregar mais" 10x)
 
@@ -1448,7 +1448,7 @@ function _catalogoCatAtualizarLabel() {
   if (btn) btn.style.borderColor = n > 0 ? 'var(--primary)' : 'var(--border)';
 }
 
-// Chip de tipo do catalogo (todos|material|servico|mao_obra|taxa|frete|documento|movimenta|nao_movimenta|sem_preco|sem_categoria)
+// Chip de tipo do catalogo (todos|material|servico|mao_obra|taxa|frete|documento|movimenta|nao_movimenta|saldo_sem_custo|sem_categoria)
 function catalogoFiltroTipo(tipo) {
   EstoqueModule.catFiltroTipo = tipo || 'todos';
   EstoqueModule.catPage = 0; // reset paginacao ao trocar de filtro
@@ -1501,7 +1501,8 @@ function renderCatalogo() {
     itens = itens.filter(m => norm(m.nome).includes(b) || (m.codigo && m.codigo.includes(b)));
   }
 
-  // Mapa saldo/preco do consolidado (usado no filtro "sem preco" e nas linhas)
+  // Mapa de saldo e custo médio calculado. Referência manual é tratada separadamente:
+  // ela estima o valor parado no estoque, mas nunca vira custo de obra/DRE.
   const saldoMap = {}, precoMap = {};
   for (const c of EstoqueModule._consolidado) {
     if (c.codigo) { saldoMap[c.codigo] = c.saldo; precoMap[c.codigo] = c.valorMedio || 0; }
@@ -1509,6 +1510,11 @@ function renderCatalogo() {
   // Classificacao por tipo: tipo_item vazio/'material' = material fisico
   const _tipoDe = m => (m.tipo_item && m.tipo_item !== 'material') ? m.tipo_item : 'material';
   const _movEst = m => m.movimenta_estoque !== false;
+  const _saldoDe = m => Number(saldoMap[m.codigo] || 0);
+  const _custoRealDe = m => Number(precoMap[m.codigo] || 0);
+  const _referenciaDe = m => Number(m.valor_referencia_manual || 0);
+  const _precoExibidoDe = m => _custoRealDe(m) || _referenciaDe(m);
+  const _saldoSemCusto = m => _saldoDe(m) > 0 && !(_precoExibidoDe(m) > 0);
 
   // Contadores dos chips (sobre a lista ja filtrada por busca/centro/auto, antes do filtro de tipo)
   const catCont = {
@@ -1521,7 +1527,7 @@ function renderCatalogo() {
     documento: itens.filter(m => _tipoDe(m) === 'documento').length,
     movimenta: itens.filter(m => _movEst(m)).length,
     nao_movimenta: itens.filter(m => !_movEst(m)).length,
-    sem_preco: itens.filter(m => !(precoMap[m.codigo] > 0)).length,
+    saldo_sem_custo: itens.filter(_saldoSemCusto).length,
     sem_categoria: itens.filter(m => !m.categoria).length,
   };
   if (typeof _catalogoAtualizarChips === 'function') _catalogoAtualizarChips(catCont);
@@ -1535,7 +1541,7 @@ function renderCatalogo() {
           return _tipoDe(m) === _ft;
         case 'movimenta': return _movEst(m);
         case 'nao_movimenta': return !_movEst(m);
-        case 'sem_preco': return !(precoMap[m.codigo] > 0);
+        case 'saldo_sem_custo': return _saldoSemCusto(m);
         case 'sem_categoria': return !m.categoria;
         default: return true;
       }
@@ -1562,7 +1568,7 @@ function renderCatalogo() {
   if (!el) return;
 
   if (!visiveis.length) {
-    el.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:48px;color:var(--text-tertiary);">Nenhum material encontrado.</td></tr>`;
+    el.innerHTML = `<tr><td colspan="11" style="text-align:center;padding:48px;color:var(--text-tertiary);">Nenhum material encontrado.</td></tr>`;
     const _lm = document.getElementById('cat-load-more');
     if (_lm) _lm.style.display = 'none';  // evita "Carregar mais" fantasma do estado anterior
     return;
@@ -1578,7 +1584,7 @@ function renderCatalogo() {
     : '';
 
   el.innerHTML = visiveis.map(m => {
-    const saldo = saldoMap[m.codigo] || 0;
+    const saldo = _saldoDe(m);
     const saldoColor = saldo > 0 ? 'var(--primary)' : saldo < 0 ? 'var(--error)' : 'var(--text-tertiary)';
     const isAuto = m.auto === true;
     const rowStyle = isAuto ? ' style="background:rgba(217,119,6,.03);"' : '';
@@ -1587,7 +1593,11 @@ function renderCatalogo() {
     const _ti = (m.tipo_item && m.tipo_item !== 'material') ? m.tipo_item : 'material';
     const _naoMov = m.movimenta_estoque === false;
     const _tipoCor = _ti === 'material' ? 'background:rgba(45,106,79,.12);color:#2D6A4F;' : 'background:rgba(234,88,12,.12);color:#ea580c;';
-    const preco = precoMap[m.codigo] || 0;
+    const custoReal = _custoRealDe(m);
+    const referencia = _referenciaDe(m);
+    const preco = _precoExibidoDe(m);
+    const usaReferencia = !(custoReal > 0) && referencia > 0;
+    const valorEstoque = saldo > 0 && preco > 0 ? saldo * preco : 0;
 
     // Coluna TIPO (classificacao — sempre visivel pra TODOS os itens, nao so servico)
     const tipoBadge = `<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:5px;${_tipoCor}font-family:'Space Grotesk',monospace;white-space:nowrap;">${tipoLabels[_ti]}</span>`;
@@ -1597,10 +1607,13 @@ function renderCatalogo() {
       ? `<span title="nao movimenta estoque" style="font-size:11px;font-weight:600;color:#6b7280;white-space:nowrap;">○ Não</span>`
       : `<span title="movimenta estoque" style="font-size:11px;font-weight:600;color:#2D6A4F;white-space:nowrap;">● Sim</span>`;
 
-    // Coluna STATUS (so operacional agora: revisar / sem preco / sem categoria)
+    // Coluna STATUS: só cobra ação quando existe saldo físico sem valor.
+    // Saldo zero não é dinheiro parado e não deve inflar a fila de "sem custo".
     let statusCol = '';
     if (isAuto) statusCol += '<span class="cat-badge-auto">REVISAR</span> ';
-    if (!(preco > 0)) statusCol += `<span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:5px;background:rgba(180,83,9,.12);color:#b45309;white-space:nowrap;">sem preço</span> `;
+    if (_saldoSemCusto(m)) statusCol += `<span title="Há saldo físico, mas nenhuma compra ou referência disponível" style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:5px;background:rgba(180,83,9,.12);color:#b45309;white-space:nowrap;">sem custo</span> `;
+    else if (saldo > 0 && usaReferencia) statusCol += `<span title="Valor estimado para gestão do estoque; não altera custo da obra" style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:5px;background:rgba(45,106,79,.12);color:#2D6A4F;white-space:nowrap;">referência</span> `;
+    else if (saldo === 0) statusCol += `<span title="Não há dinheiro parado neste item; o custo exibido é somente histórico" style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:5px;background:rgba(107,114,128,.10);color:#6b7280;white-space:nowrap;">sem saldo</span> `;
     if (!m.categoria) statusCol += `<span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:5px;background:rgba(180,83,9,.12);color:#b45309;white-space:nowrap;">sem categoria</span>`;
     if (!statusCol.trim()) statusCol = `<span style="font-size:11px;color:var(--success);">OK</span>`;
 
@@ -1630,8 +1643,9 @@ function renderCatalogo() {
       <td>${tipoBadge}</td>
       <td>${esc(m.unidade || '')}</td>
       <td>${catCol}</td>
-      <td style="font-family:'Space Grotesk',monospace;font-size:12px;color:${preco > 0 ? 'var(--text-primary)' : 'var(--text-tertiary)'};">${preco > 0 ? fmtR(preco) : '—'}</td>
+      <td style="font-family:'Space Grotesk',monospace;font-size:12px;color:${preco > 0 ? 'var(--text-primary)' : 'var(--text-tertiary)'};" title="${custoReal > 0 ? 'Custo médio calculado pelas entradas' : (usaReferencia ? 'Preço de referência para estimar o valor em estoque' : 'Sem custo conhecido')}">${preco > 0 ? `${fmtR(preco)} <span style="font-family:inherit;font-size:9px;font-weight:700;color:${usaReferencia ? '#2D6A4F' : 'var(--text-tertiary)'};">${usaReferencia ? 'REF.' : 'CUSTO'}</span>` : '—'}</td>
       <td><strong style="color:${saldoColor};">${Number(saldo).toLocaleString('pt-BR', { maximumFractionDigits: 3 })}</strong></td>
+      <td style="font-family:'Space Grotesk',monospace;font-size:12px;font-weight:700;color:${valorEstoque > 0 ? 'var(--primary)' : 'var(--text-tertiary)'};" title="${saldo > 0 ? (usaReferencia ? 'Estimativa do dinheiro parado no estoque' : 'Custo conhecido do saldo atual') : 'Sem saldo físico no almoxarifado'}">${valorEstoque > 0 ? fmtR(valorEstoque) : '—'}</td>
       <td>${estBadge}</td>
       <td>${statusCol}</td>
       <td class="cat-actions">${acoesCol}</td>

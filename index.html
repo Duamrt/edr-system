@@ -2313,7 +2313,7 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
         <button type="button" class="cat-chip" data-tipo="documento" onclick="catalogoFiltroTipo('documento')">Docs <span id="catchip-documento" class="cat-chip-n"></span></button>
         <button type="button" class="cat-chip" data-tipo="movimenta" onclick="catalogoFiltroTipo('movimenta')">Movimenta estoque <span id="catchip-movimenta" class="cat-chip-n"></span></button>
         <button type="button" class="cat-chip" data-tipo="nao_movimenta" onclick="catalogoFiltroTipo('nao_movimenta')">Não movimenta <span id="catchip-nao_movimenta" class="cat-chip-n"></span></button>
-        <button type="button" class="cat-chip" data-tipo="sem_preco" onclick="catalogoFiltroTipo('sem_preco')">Sem preço <span id="catchip-sem_preco" class="cat-chip-n"></span></button>
+        <button type="button" class="cat-chip" data-tipo="saldo_sem_custo" onclick="catalogoFiltroTipo('saldo_sem_custo')" title="Materiais que existem fisicamente no almoxarifado, mas ainda não têm custo nem referência">Saldo sem custo <span id="catchip-saldo_sem_custo" class="cat-chip-n"></span></button>
         <button type="button" class="cat-chip" data-tipo="sem_categoria" onclick="catalogoFiltroTipo('sem_categoria')">Sem categoria <span id="catchip-sem_categoria" class="cat-chip-n"></span></button>
       </div>
       <div style="display:flex;align-items:center;justify-content:space-between;">
@@ -2335,8 +2335,9 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
             <th style="width:95px;">Tipo</th>
             <th style="width:70px;">Unid.</th>
             <th>Centro de Custo</th>
-            <th style="width:90px;">Preço Méd.</th>
+            <th style="width:112px;">Custo / ref.</th>
             <th style="width:80px;">Saldo</th>
+            <th style="width:118px;">Valor em estoque</th>
             <th style="width:75px;">Estoque</th>
             <th style="width:110px;">Status</th>
             <th style="width:120px;">Ações</th>
