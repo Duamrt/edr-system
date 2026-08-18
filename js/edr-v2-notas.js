@@ -1220,7 +1220,8 @@ async function salvarNota(notaData) {
           fornecedor: fornecedor || 'Fornecedor',
           descricao: _itD.desc,
           valor: _itD.total, data_vencimento: _hojeDesp,
-          status: 'pago', data_pagamento: _hojeDesp, nota_ref: String(numero)
+          status: 'pago', data_pagamento: _hojeDesp,
+          nota_id: saved.id, nota_ref: String(numero)
         });
         if (!_cp) falhasDesp++;  // [sub-lote 1] falha de despesa nao pode sumir em silencio
       }
@@ -1404,7 +1405,7 @@ async function _notasPromptPagamento(notaId, valor, dataRef, obraId, fornecedor,
         const nova = await sbPost('contas_pagar', {
           fornecedor, descricao: `NF ${numero} · ${fornecedor}`,
           valor, data_vencimento: dataRef, obra_id: obraId,
-          nota_ref: numero, status: 'pago', data_pagamento: dataRef
+          nota_id: notaId, nota_ref: numero, status: 'pago', data_pagamento: dataRef
         });
         if (nova) {
           if (typeof contasPagar !== 'undefined') contasPagar.push(nova);
@@ -1428,7 +1429,7 @@ async function _notasPromptPagamento(notaId, valor, dataRef, obraId, fornecedor,
           const nova = await sbPost('contas_pagar', {
             fornecedor, descricao: `NF ${numero} · ${fornecedor}`,
             valor, data_vencimento: venc, obra_id: obraId,
-            nota_ref: numero, status: 'pendente'
+            nota_id: notaId, nota_ref: numero, status: 'pendente'
           });
           if (nova) {
             if (typeof contasPagar !== 'undefined') contasPagar.push(nova);
@@ -1508,17 +1509,19 @@ function processarXMLNFe(input) {
 // ══════════════════════════════════════════════════════════════════
 // EXCLUSAO DE NOTA FISCAL COM ESTORNO
 // ══════════════════════════════════════════════════════════════════
-// [Onda2] Contas_pagar de um status que travam a exclusao da NF (mesma NF = mesmo fornecedor, ou sem fornecedor = conservador).
-// Cruza por fornecedor porque numero de NF nao e unico entre fornecedores. Colisao (fornecedor diferente) e ignorada e logada.
-// Consulta o banco (nao array local). Fix definitivo quando contas_pagar.nota_id existir (migration pendente).
-async function _contasQueTravam(nfNum, fornecedorNota, status) {
+// Contas pagas ou pendentes bloqueiam a exclusão. Notas novas usam o UUID;
+// numero+fornecedor fica limitado ao legado sem nota_id.
+async function _contasQueTravam(notaId, nfNum, fornecedorNota, status) {
   const num = (nfNum || '').trim();
-  if (!num) return [];
-  const contas = await sbGet('contas_pagar', `?nota_ref=ilike.${encodeURIComponent(num)}&status=eq.${status}`);
-  const lista = Array.isArray(contas) ? contas : [];
+  const porId = notaId
+    ? await sbGet('contas_pagar', `?nota_id=eq.${notaId}&status=eq.${status}`)
+    : [];
+  if (!num) return Array.isArray(porId) ? porId : [];
+  const porTexto = await sbGet('contas_pagar', `?nota_id=is.null&nota_ref=ilike.${encodeURIComponent(num)}&status=eq.${status}`);
+  const lista = [...(Array.isArray(porId) ? porId : []), ...(Array.isArray(porTexto) ? porTexto : [])];
   const fornNota = norm(fornecedorNota || '');
-  const daNota = lista.filter(c => !c.fornecedor ? true : norm(c.fornecedor) === fornNota);
-  const colisao = lista.length - daNota.length;
+  const daNota = lista.filter(c => c.nota_id || !c.fornecedor || norm(c.fornecedor) === fornNota);
+  const colisao = lista.filter(c => !c.nota_id).length - daNota.filter(c => !c.nota_id).length;
   if (colisao > 0) console.warn(`[EDR] Exclusao NF ${num} (${status}): ${colisao} conta(s) com mesmo numero mas fornecedor diferente (colisao ignorada).`);
   return daNota;
 }
@@ -1528,13 +1531,13 @@ async function confirmarExclusaoNota(id) {
   if (!nota) { showToast('Nota nao encontrada.', 5000); return; }
 
   // Trava financeira: nao excluir NF com conta PAGA ou PENDENTE relacionada (mesmo fornecedor).
-  const _contasPagas = await _contasQueTravam(nota.numero_nf, nota.fornecedor, 'pago');
+  const _contasPagas = await _contasQueTravam(nota.id, nota.numero_nf, nota.fornecedor, 'pago');
   if (_contasPagas.length > 0) {
     showToast(`NF ${nota.numero_nf} ja esta PAGA no financeiro. Cancele o pagamento antes de excluir.`, 5000);
     return;
   }
   // [Onda2-3] contas a pagar PENDENTES ficariam orfas apos excluir a NF — bloqueia e manda resolver no Financeiro.
-  const _contasPend = await _contasQueTravam(nota.numero_nf, nota.fornecedor, 'pendente');
+  const _contasPend = await _contasQueTravam(nota.id, nota.numero_nf, nota.fornecedor, 'pendente');
   if (_contasPend.length > 0) {
     showToast(`NF ${nota.numero_nf} tem ${_contasPend.length} conta(s) a pagar pendente(s). Resolva no Financeiro antes de excluir.`, 5000);
     return;
@@ -1588,6 +1591,24 @@ async function processarExclusaoNota(id, lancsPremapeados) {
   const lancsDaNota = lancsPremapeados || _mapearLancamentosNota(nota);
 
   try {
+    // A RPC executa o estorno em transação: ou tudo é removido, ou nada é.
+    // O caminho legado só fica ativo enquanto a migration ainda não existe.
+    const rpc = await sbRpc('excluir_nota_fiscal', { p_nota_id: nota.id });
+    if (rpc !== 'RPC_AUSENTE') {
+      if (!rpc) {
+        showToast('Erro ao excluir nota. Nenhum dado foi alterado.', 8000);
+        return;
+      }
+      notas = notas.filter(n => n.id !== nota.id);
+      if (typeof loadLancamentos === 'function') await loadLancamentos();
+      if (typeof loadDistribuicoes === 'function') await loadDistribuicoes();
+      renderNotas();
+      if (typeof renderEstoque === 'function') renderEstoque();
+      if (typeof renderDashboard === 'function') renderDashboard();
+      showToast(`NF ${nota.numero_nf || ''} excluida. Estorno completo.`);
+      return;
+    }
+    console.warn('[EDR] RPC excluir_nota_fiscal ainda não está disponível; usando fluxo legado.');
     // Passo A: Excluir lancamentos vinculados (FK nota_id + fallback texto obs)
     // Falha aqui = nada apagado ainda → abortar com segurança.
     if (lancsDaNota.length) {

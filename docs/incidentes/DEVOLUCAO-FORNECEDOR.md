@@ -1,6 +1,6 @@
 # Devolução ao fornecedor — contrato e validação local
 
-**Status:** banco de produção preparado; interface ainda local, sem deploy. As migrations `20260817112045_devolucao_fornecedor` e `20260817112156_harden_devolucao_trigger_execute` foram aplicadas em 17/08/2026. Nenhuma NF real foi lançada nesta etapa.
+**Status:** regra de banco aplicada em 17/08/2026 e operação real registrada. A devolução abaixo ficou vinculada à compra de origem e gerou um único reembolso pendente; a confirmação do dinheiro segue sendo uma ação financeira posterior.
 
 ## Caso que originou a correção
 
@@ -9,7 +9,7 @@
 | NF 861318/1 — compra FEMAC | 04/08/2026 | Caixa-d'água Fortlev 1.000 L | 2 UN | R$ 792,90 |
 | NF 147051/2 — devolução FEMAC | 07/08/2026 | Caixa-d'água Fortlev 1.000 L | 1 UN | R$ 396,45 |
 
-Resultado esperado: **1 UN no Estoque EDR, avaliada em R$ 396,45**, e um reembolso de **R$ 396,45** pendente de confirmação no Financeiro. O caixa só recebe esse valor após a confirmação de que o fornecedor devolveu o dinheiro. Os XMLs continuam fora do repositório, em `Downloads`, e não foram lançados.
+Resultado esperado: **1 UN no Estoque EDR, avaliada em R$ 396,45**, e um reembolso de **R$ 396,45** pendente de confirmação no Financeiro. O caixa só recebe esse valor após a confirmação de que o fornecedor devolveu o dinheiro. Os XMLs continuam fora do repositório, em `Downloads`.
 
 ## Regra implementada localmente
 
@@ -77,6 +77,17 @@ Limite da evidência: isto prova o DDL e as regras no banco, não a gravação f
 4. A verificação posterior retornou `false` para as quatro permissões de execução direta. Um novo teste transacional confirmou que os triggers continuam criando o reembolso pendente automaticamente.
 
 O alerta de permissões foi corrigido antes de qualquer lançamento real. Os demais avisos do Advisor são anteriores e abrangem outros módulos/tabelas; não foram alterados nesta entrega.
+
+## Operação real conferida no banco — 18/08/2026
+
+Consulta somente leitura no projeto de produção confirmou:
+
+1. A compra `861318/1` (R$ 792,90) existe como `VENDA`, recebida em 10/08/2026.
+2. A devolução parcial `147051/2` (R$ 396,45), recebida em 17/08/2026, existe como `DEVOLUCAO`, aponta por UUID para a compra `861318/1` e registra o motivo `CAIXA DAGUA`.
+3. Há exatamente um `reembolso_fornecedor` pendente de R$ 396,45, vinculado por `contas_pagar.nota_id` à NF de devolução.
+4. A conta da compra original está paga e também vinculada por UUID à sua NF.
+
+Limite: esta conferência prova os vínculos e o reembolso persistidos; não substitui uma nova conferência física do saldo nem confirma o recebimento do dinheiro.
 
 ## Validação integrada controlada — 14/08/2026
 

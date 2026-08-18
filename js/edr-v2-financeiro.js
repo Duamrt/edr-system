@@ -262,10 +262,9 @@ async function marcarComoPago(contaId) {
       return;
     }
 
-    // 2) Lançamento de custo — só se a conta NÃO veio de uma NF (nota_ref) e tem obra.
+    // 2) Lançamento de custo — só se a conta NÃO veio de uma NF e tem obra.
     // NF direta já gera lançamentos em notas.js; criar outro aqui duplicaria custo no DRE.
-    // Fix definitivo pendente: usar contas_pagar.nota_id quando existir (migration planejada).
-    if (conta && conta.obra_id && !conta.nota_ref) {
+    if (conta && conta.obra_id && !conta.nota_id && !conta.nota_ref) {
       // Idempotência: só cria se ainda não existe lançamento p/ essa conta (protege duplo clique/retry/reexecucao).
       const obsKey = 'contas_pagar:' + contaId;
       let existente = null;

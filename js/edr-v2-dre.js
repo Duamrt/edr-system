@@ -264,9 +264,9 @@
     try {
       const r = await sbGet('contas_pagar', '?status=eq.pago&obra_id=is.null&order=data_pagamento.desc');
       // DRE = competência: despesa operacional é só conta avulsa (salário, contador, aluguel...).
-      // Conta com nota_ref = pagamento de NF; o custo desse material/serviço já entra no DRE
-      // pelo lançamento (custo de obra). Contar aqui também = double-count. Excluir.
-      _contasAdmin = Array.isArray(r) ? r.filter(c => !c.nota_ref) : [];
+      // Conta vinculada à NF já entra no DRE pelo lançamento da própria nota.
+      // UUID é a regra atual; nota_ref protege o legado ainda sem vínculo.
+      _contasAdmin = Array.isArray(r) ? r.filter(c => !c.nota_id && !c.nota_ref) : [];
     } catch (e) { _contasAdmin = []; }
     _loaded = true;
   }
