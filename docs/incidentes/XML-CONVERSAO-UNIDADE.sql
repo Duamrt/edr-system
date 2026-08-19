@@ -7,6 +7,11 @@
 -- Itens continuam em text contendo JSON nesta etapa de transicao. O trigger abaixo e a
 -- autoridade: ele ignora fator recebido do navegador e recalcula pela regra
 -- vigente do proprio banco.
+--
+-- 2026-08-19: a importacao passou a oferecer uma confirmacao explicita para
+-- equivalencias 1:1 ainda desconhecidas (ex.: BRITA 19, MT -> M³). A regra e'
+-- salva por material em material_conversao; a unidade original do XML continua
+-- preservada. Conversoes nao confirmadas continuam bloqueadas.
 
 do $$
 begin

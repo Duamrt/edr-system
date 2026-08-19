@@ -23,6 +23,14 @@ global.showToast = mensagem => avisos.push(mensagem);
 global.classificarItemSync = () => ({ cat: 'Material' });
 const enviados = [];
 global.adicionarItem = item => enviados.push(item);
+const regrasSalvas = [];
+global.confirmar = async () => true;
+global.sbPost = async (tabela, body) => {
+  assert.equal(tabela, 'material_conversao');
+  const regra = { id: `regra-${regrasSalvas.length + 1}`, ...body };
+  regrasSalvas.push(regra);
+  return regra;
+};
 node('f-recebimento').value = '2026-07-24';
 
 const telha = { id: 'mat-telha', unidade: 'PC' };
@@ -106,7 +114,38 @@ await ImportModule.confirmarImport();
 assert.equal(enviados.length, 0);
 assert.match(avisos.at(-1), /precisam de regra de conversao/);
 
-console.log('xml-conversao-unidade: 28 assertions passed');
+const brita = { id: 'mat-brita', codigo: '000108', nome: 'BRITA 19', unidade: 'M³' };
+const itemBrita = {
+  qtd_fiscal: 11.5,
+  unidade_fiscal: 'MT',
+  preco_fiscal: 135,
+  total_fiscal: 1552.5,
+};
+const britaPendente = resolverConversaoImportacao(itemBrita, brita, [], '2026-08-19');
+assert.equal(britaPendente.status_conversao, 'revisao_obrigatoria');
+node('f-recebimento').value = '2026-08-19';
+ImportModule._conversoesCache = [];
+ImportModule.itensPreview = [{
+  ...itemBrita, ...britaPendente,
+  descricao_fiscal: 'BRITA 19mm', descOriginal: 'BRITA 19mm', descFinal: 'BRITA 19',
+  codigoCat: '000108', material_id: 'mat-brita', qtd: 11.5, unidade: 'M³', preco: 135,
+  total: 1552.5, credito: true, creditoCat: 'Material', confirmado: true,
+  match: { material: brita, score: 100, tipo: 'manual' },
+}];
+ImportModule._renderPreview();
+assert.match(node('import-preview-v2').innerHTML, /Usar M³ e memorizar 1:1/);
+await ImportModule.aprenderConversaoUnidade(0);
+assert.equal(regrasSalvas.length, 1);
+assert.deepEqual(
+  { origem: regrasSalvas[0].unidade_origem, destino: regrasSalvas[0].unidade_destino, fator: regrasSalvas[0].fator },
+  { origem: 'MT', destino: 'M³', fator: 1 }
+);
+assert.equal(ImportModule.itensPreview[0].status_conversao, 'convertido');
+assert.equal(ImportModule.itensPreview[0].qtd_estoque, 11.5);
+assert.equal(ImportModule.itensPreview[0].preco_estoque, 135);
+assert.doesNotMatch(node('import-preview-v2').innerHTML, /REVISAO OBRIGATORIA/);
+
+console.log('xml-conversao-unidade: 36 assertions passed');
 })().catch(err => {
   console.error(err);
   process.exitCode = 1;

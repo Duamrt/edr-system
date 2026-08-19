@@ -118,6 +118,54 @@ const ImportModule = {
     return item;
   },
 
+  async aprenderConversaoUnidade(idx) {
+    const item = this.itensPreview[idx];
+    const material = item?.match?.material || null;
+    if (!item || !material || item.status_conversao !== 'revisao_obrigatoria') return;
+    if (item._salvandoConversao) return;
+
+    const dataEfetiva = document.getElementById('f-recebimento')?.value || '';
+    if (!dataEfetiva) {
+      showToast('Informe a data de recebimento antes de memorizar a unidade.', 5000);
+      return;
+    }
+
+    const unidadeFiscal = normalizarUnidadeImportacao(item.unidade_fiscal);
+    const unidadeEstoque = normalizarUnidadeImportacao(material.unidade);
+    const qtd = Number(item.qtd_fiscal || 0).toLocaleString('pt-BR', { maximumFractionDigits: 4 });
+    const identificacao = `${material.codigo || ''} - ${material.nome || item.descFinal}`.replace(/^\s*-\s*/, '');
+    const ok = await confirmar(
+      `Confirmar que, para ${identificacao}, ${qtd} ${unidadeFiscal} no XML corresponde a ${qtd} ${unidadeEstoque} no estoque? Esta equivalencia 1:1 ficara salva para as proximas notas deste material.`
+    );
+    if (!ok) return;
+
+    item._salvandoConversao = true;
+    try {
+      const novaRegra = await sbPost('material_conversao', {
+        material_id: material.id,
+        unidade_origem: unidadeFiscal,
+        unidade_destino: unidadeEstoque,
+        fator: 1,
+        vigente_de: dataEfetiva,
+      });
+      if (!novaRegra) {
+        await this._carregarConversoes();
+        const recalculado = resolverConversaoImportacao(item, material, this._conversoesCache, dataEfetiva);
+        if (recalculado.status_conversao === 'revisao_obrigatoria') {
+          showToast('Nao foi possivel memorizar a unidade. Um administrador precisa autorizar esta equivalencia.', 5000);
+          return;
+        }
+      } else {
+        this._conversoesCache = [...this._conversoesCache, novaRegra];
+      }
+      this._recalcularConversaoItem(item, material);
+      this._renderPreview();
+      showToast(`Unidade memorizada: ${unidadeFiscal} corresponde a ${unidadeEstoque} neste material.`);
+    } finally {
+      item._salvandoConversao = false;
+    }
+  },
+
   // ══════════════════════════════════════════════════════════
   // PARSER: interpreta texto colado (5 formatos)
   // ══════════════════════════════════════════════════════════
@@ -493,7 +541,11 @@ const ImportModule = {
       const veioDoXml = !!item.descricao_fiscal;
       const conversaoPendente = item.status_conversao === 'revisao_obrigatoria';
       const statusConversao = veioDoXml ? (conversaoPendente
-        ? `<div style="margin-top:7px;font-size:10px;font-weight:700;color:var(--vermelho);"><span class="material-symbols-outlined" style="font-size:13px;vertical-align:middle;">error</span> REVISAO OBRIGATORIA: ${typeof esc === 'function' ? esc(item.motivo_conversao || 'Conversao sem regra cadastrada.') : (item.motivo_conversao || 'Conversao sem regra cadastrada.')}</div>`
+        ? `<div style="margin-top:7px;font-size:10px;font-weight:700;color:var(--vermelho);"><span class="material-symbols-outlined" style="font-size:13px;vertical-align:middle;">error</span> REVISAO OBRIGATORIA: ${typeof esc === 'function' ? esc(item.motivo_conversao || 'Conversao sem regra cadastrada.') : (item.motivo_conversao || 'Conversao sem regra cadastrada.')}</div>
+           <button type="button" onclick="ImportModule.aprenderConversaoUnidade(${i})" class="btn-mini btn-secondary" style="margin-top:7px;">
+             <span class="material-symbols-outlined" style="font-size:13px;vertical-align:middle;">school</span>
+             Usar ${typeof esc === 'function' ? esc(item.unidade_estoque) : item.unidade_estoque} e memorizar 1:1
+           </button>`
         : `<div style="margin-top:7px;font-size:10px;color:var(--texto3);">XML: ${item.qtd_fiscal} ${item.unidade_fiscal} • ${fmtR(item.preco_fiscal)}/un • estoque: ${item.qtd_estoque} ${item.unidade_estoque}${item.status_conversao === 'convertido' ? ' (convertido)' : ''}</div>`)
         : '';
       const somenteLeitura = veioDoXml ? 'readonly' : '';
