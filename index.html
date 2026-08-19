@@ -1196,11 +1196,35 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
 .empty-state p { margin-top:12px; }
 
 /* Histórico estoque badges */
-.hist-badge { font-size:11px;font-weight:700;padding:3px 8px;border-radius:var(--radius-sm); }
-.hist-badge-nf { background:rgba(5,150,105,.08);color:var(--success);border:1px solid rgba(5,150,105,.15); }
-.hist-badge-direta { background:rgba(37,99,235,.08);color:var(--info);border:1px solid rgba(37,99,235,.15); }
-.hist-badge-ajuste { background:rgba(139,92,246,.08);color:#8b5cf6;border:1px solid rgba(139,92,246,.15); }
-.hist-badge-saida { background:rgba(220,38,38,.08);color:var(--error);border:1px solid rgba(220,38,38,.15); }
+#hist-modal .modal-box { background:var(--card);color:var(--text-primary); }
+.hist-badges { display:flex;gap:6px;flex-wrap:wrap;align-items:center; }
+.hist-badge { white-space:nowrap;font-size:11px;font-weight:800;padding:4px 8px;border-radius:var(--radius-sm); }
+.hist-badge-nf { background:#ecfdf5;color:#047857;border:1px solid #a7f3d0; }
+.hist-badge-direta { background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe; }
+.hist-badge-ajuste { background:#f5f3ff;color:#6d28d9;border:1px solid #ddd6fe; }
+.hist-badge-saida { background:#fef2f2;color:#b91c1c;border:1px solid #fecaca; }
+.hist-badge-obra { background:#ecfeff;color:#155e75;border:1px solid #a5f3fc; }
+.hist-timeline { display:flex;flex-direction:column; }
+.hist-item { display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:10px;align-items:center;padding:11px 2px;border-bottom:1px solid var(--border); }
+.hist-icon { width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center; }
+.hist-icon .material-symbols-outlined { font-size:17px; }
+.hist-icon.entrada { background:rgba(5,150,105,.1);color:var(--success); }
+.hist-icon.saida { background:rgba(220,38,38,.09);color:var(--error); }
+.hist-icon.ajuste { background:rgba(139,92,246,.1);color:#8b5cf6; }
+.hist-icon.direto-obra { background:rgba(14,116,144,.1);color:#0e7490; }
+.hist-content { min-width:0; }
+.hist-desc { font-size:13px;font-weight:700;color:var(--text-primary); }
+.hist-meta { margin-top:2px;font-size:11px;font-weight:500;line-height:1.4;color:#4b5563; }
+.hist-qty { white-space:nowrap;font-family:'Space Grotesk',monospace;font-size:13px;font-weight:800; }
+.hist-qty.plus { color:var(--success); }
+.hist-qty.minus { color:var(--error); }
+.hist-qty.neutral { color:#0e7490; }
+html.dark .hist-meta { color:#d1d5db; }
+html.dark .hist-badge-nf { background:rgba(5,150,105,.15);color:#6ee7b7;border-color:rgba(110,231,183,.35); }
+html.dark .hist-badge-direta { background:rgba(37,99,235,.15);color:#93c5fd;border-color:rgba(147,197,253,.35); }
+html.dark .hist-badge-ajuste { background:rgba(139,92,246,.15);color:#c4b5fd;border-color:rgba(196,181,253,.35); }
+html.dark .hist-badge-saida { background:rgba(220,38,38,.15);color:#fca5a5;border-color:rgba(252,165,165,.35); }
+html.dark .hist-badge-obra { background:rgba(14,116,144,.18);color:#67e8f9;border-color:rgba(103,232,249,.35); }
 
 /* Saldo final card */
 .saldo-final { text-align:center;padding:16px 0;margin-top:12px;background:var(--primary-surface);border-radius:var(--radius-sm); }

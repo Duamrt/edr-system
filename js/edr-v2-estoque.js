@@ -782,7 +782,7 @@ function abrirHistoricoMaterial(chave) {
         movs.push({
           tipo: 'ajuste',
           desc: `Ajuste — ${a.motivo || 'Contagem fisica'}`,
-          data: a.data,
+          data: String(a.criado_em || a.data || '').slice(0, 10),
           qtd: parseFloat(a.qtd) || 0,
           meta: a.tipo || 'contagem',
         });
@@ -796,12 +796,25 @@ function abrirHistoricoMaterial(chave) {
     for (const d of distribuicoes) {
       const match = (item.codigo && d.codigo_catalogo === item.codigo) || norm(d.item_desc) === nDesc;
       if (match) {
+        const notaOrigem = d.nota_id ? notas.find(n => n.id === d.nota_id) : null;
+        const lancamentoOrigem = d.lancamento_id && typeof lancamentos !== 'undefined'
+          ? lancamentos.find(l => l.id === d.lancamento_id)
+          : null;
+        const diretoNaObra = !!(
+          (notaOrigem?.obra && notaOrigem.obra !== COMPANY_DEFAULTS.estoqueGeral) ||
+          lancamentoOrigem?.origem === 'compra_direta'
+        );
         movs.push({
-          tipo: 'saida',
-          desc: `Distribuicao → ${d.obra_nome || '---'}`,
+          tipo: diretoNaObra ? 'direto_obra' : 'saida',
+          desc: diretoNaObra
+            ? `Direto na obra → ${d.obra_nome || notaOrigem?.obra || '---'}`
+            : `Saída do almoxarifado → ${d.obra_nome || '---'}`,
           data: d.data,
           qtd: parseFloat(d.qtd) || 0,
-          meta: `Etapa: ${d.etapa || '---'} · ${fmtR(d.valor || 0)}`,
+          meta: diretoNaObra
+            ? `Não passou pelo almoxarifado · Etapa: ${d.etapa || '---'} · ${fmtR(d.valor || 0)}`
+            : `Etapa: ${d.etapa || '---'} · ${fmtR(d.valor || 0)}`,
+          nota_id: d.nota_id || null,
         });
       }
     }
@@ -815,6 +828,10 @@ function abrirHistoricoMaterial(chave) {
   const totalDireta = item.entradasDiretas;
   const totalAjuste = item.ajustes;
   const totalSaida = item.saidas;
+  const totalDiretoObra = movs
+    .filter(m => m.tipo === 'direto_obra')
+    .reduce((s, m) => s + m.qtd, 0);
+  const unidade = esc(item.unidade);
 
   // Render modal
   const modal = document.getElementById('hist-modal');
@@ -825,35 +842,38 @@ function abrirHistoricoMaterial(chave) {
 
   content.innerHTML = `
     <div class="modal-title-v2">
-      <h3><span class="material-symbols-outlined">history</span> Historico — ${esc(item.desc)}</h3>
+      <h3><span class="material-symbols-outlined">history</span> Histórico — ${esc(item.desc)}</h3>
       <button class="modal-close" onclick="closeModal('hist-modal')"><span class="material-symbols-outlined">close</span></button>
     </div>
     <div class="hist-badges">
-      <span class="hist-badge hist-badge-nf">+${fmt(totalNF)} NF</span>
-      <span class="hist-badge hist-badge-direta">+${fmt(totalDireta)} Direta</span>
-      <span class="hist-badge hist-badge-ajuste">${totalAjuste >= 0 ? '+' : ''}${fmt(totalAjuste)} Ajuste</span>
-      <span class="hist-badge hist-badge-saida">-${fmt(totalSaida)} Saida</span>
+      <span class="hist-badge hist-badge-nf">+${fmtQtd(totalNF)} ${unidade} por NF</span>
+      <span class="hist-badge hist-badge-direta">+${fmtQtd(totalDireta)} ${unidade} entrada manual</span>
+      <span class="hist-badge hist-badge-ajuste">${totalAjuste >= 0 ? '+' : ''}${fmtQtd(totalAjuste)} ${unidade} ajuste</span>
+      <span class="hist-badge hist-badge-saida">-${fmtQtd(totalSaida)} ${unidade} saída do almoxarifado</span>
+      ${totalDiretoObra > 0 ? `<span class="hist-badge hist-badge-obra">${fmtQtd(totalDiretoObra)} ${unidade} direto à obra · fora do saldo</span>` : ''}
     </div>
     <div class="saldo-final">
-      <div class="saldo-final-label">Saldo Final</div>
-      <div class="saldo-final-value" style="color:${item.saldo < 0 ? 'var(--error)' : item.saldo > 0 ? 'var(--primary)' : 'var(--text-tertiary)'};">${fmt(item.saldo)} ${esc(item.unidade)}</div>
+      <div class="saldo-final-label">Saldo no almoxarifado</div>
+      <div class="saldo-final-value" style="color:${item.saldo < 0 ? 'var(--error)' : item.saldo > 0 ? 'var(--primary)' : 'var(--text-tertiary)'};">${fmtQtd(item.saldo)} ${unidade}</div>
     </div>
     <div class="hist-timeline" style="margin-top:16px;">
       ${movs.map(m => {
         const isSaida = m.tipo === 'saida';
         const isAjuste = m.tipo === 'ajuste';
-        const iconClass = isSaida ? 'saida' : isAjuste ? 'ajuste' : 'entrada';
-        const iconName = isSaida ? 'arrow_upward' : isAjuste ? 'sync_alt' : 'arrow_downward';
-        const qtyClass = isSaida ? 'minus' : 'plus';
-        const qtyPrefix = isSaida ? '-' : '+';
-        const clickNota = m.nota_id ? ` style="cursor:pointer;color:var(--primary);" onclick="closeModal('hist-modal');abrirNota('${esc(m.nota_id)}')"` : '';
+        const isDiretoObra = m.tipo === 'direto_obra';
+        const iconClass = isDiretoObra ? 'direto-obra' : isSaida ? 'saida' : isAjuste ? 'ajuste' : 'entrada';
+        const iconName = isDiretoObra ? 'construction' : isSaida ? 'arrow_upward' : isAjuste ? 'sync_alt' : 'arrow_downward';
+        const qtyClass = isDiretoObra ? 'neutral' : isSaida ? 'minus' : 'plus';
+        const qtyPrefix = isDiretoObra ? '' : isSaida ? '-' : '+';
+        const corDescricao = isDiretoObra ? '#0e7490' : isSaida ? 'var(--error)' : 'var(--primary)';
+        const clickNota = m.nota_id ? ` style="cursor:pointer;color:${corDescricao};" onclick="closeModal('hist-modal');abrirNota('${esc(m.nota_id)}')"` : '';
         return `<div class="hist-item">
           <div class="hist-icon ${iconClass}"><span class="material-symbols-outlined">${iconName}</span></div>
           <div class="hist-content">
             <div class="hist-desc"${clickNota}>${esc(m.desc)}</div>
             <div class="hist-meta">${esc(m.data || '---')} · ${esc(m.meta)}</div>
           </div>
-          <div class="hist-qty ${qtyClass}">${qtyPrefix}${fmtQtd(m.qtd)}</div>
+          <div class="hist-qty ${qtyClass}">${qtyPrefix}${fmtQtd(m.qtd)} ${unidade}</div>
         </div>`;
       }).join('')}
     </div>
