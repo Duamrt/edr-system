@@ -109,6 +109,32 @@ function switchTab(tab) {
 // Sem fuzzy match — itens nao identificados viram orfaos
 // ══════════════════════════════════════════════════════════════════
 
+// Retorna o saldo absoluto definido pelo ajuste, ou null quando o registro
+// representa apenas um delta. "Zeragem" sempre significa saldo final zero,
+// inclusive nos registros legados gravados como tipo "ajuste".
+function _alvoAbsolutoAjuste(a) {
+  const motivo = String(a?.motivo || '');
+  if (/\bzer(?:agem|ar|ad[oa])\b/i.test(motivo)) return 0;
+  if (a?.tipo !== 'contagem') return null;
+
+  const mReal = motivo.match(/real\s+([\d.,]+)/i);
+  if (!mReal) return null;
+  const bruto = mReal[1];
+  const normalizado = bruto.includes(',')
+    ? bruto.replace(/\./g, '').replace(',', '.')
+    : bruto;
+  const valor = Number(normalizado);
+  return Number.isFinite(valor) && valor >= 0 ? valor : null;
+}
+
+function _unidadeEstoqueExibicao(unidade) {
+  const valor = String(unidade || 'UN').trim();
+  const chave = valor.toUpperCase();
+  if (chave === 'M3' || chave === 'M³') return 'M³';
+  if (chave === 'M2' || chave === 'M²') return 'M²';
+  return valor;
+}
+
 function consolidarEstoque(obraId) {
   const mapa = {}; // chave → { desc, codigo, un, cat, entradas, saidas, ajustes, lotes, temNF }
 
@@ -267,23 +293,15 @@ function consolidarEstoque(obraId) {
     for (const a of ajFiltrados) {
       const chave = getChave(a.item_desc, a.codigo_catalogo);
       const item = garantir(chave, a.item_desc, a.codigo_catalogo, a.unidade);
-      if (a.tipo === 'contagem') {
-        // Extrair valor absoluto do motivo: "sistema X, real Y, dif Z"
-        const mReal = (a.motivo || '').match(/real\s+([\d.,]+)/i);
-        const realAbs = mReal ? parseFloat(mReal[1].replace(',', '.')) : null;
-        if (realAbs !== null) {
-          const dataA = (a.criado_em || a.data) ? new Date(a.criado_em || a.data) : null; // ajustes_estoque não tem coluna 'data' — usar criado_em como ponto de corte da contagem
-          if (item._ultimaContagem === undefined || (dataA && (!item._ultimaContagemData || dataA >= item._ultimaContagemData))) {
-            item._ultimaContagem = realAbs;
-            item._ultimaContagemData = dataA;
-          }
-        } else {
-          // Motivo sem valor real legível → tratar como delta (backward compat)
-          const _dq = parseFloat(a.qtd) || 0;
-          item.ajustes += _dq;
-          item._ajustes.push({ qtd: _dq, date: a.criado_em || a.data || null });
+      const realAbs = _alvoAbsolutoAjuste(a);
+      if (realAbs !== null) {
+        const dataA = (a.criado_em || a.data) ? new Date(a.criado_em || a.data) : null; // ajustes_estoque não tem coluna 'data' — usar criado_em como ponto de corte da contagem
+        if (item._ultimaContagem === undefined || (dataA && (!item._ultimaContagemData || dataA >= item._ultimaContagemData))) {
+          item._ultimaContagem = realAbs;
+          item._ultimaContagemData = dataA;
         }
       } else {
+        // Contagem antiga sem alvo legível e ajustes comuns continuam como delta.
         const _dq = parseFloat(a.qtd) || 0;
         item.ajustes += _dq;
         item._ajustes.push({ qtd: _dq, date: a.criado_em || a.data || null });
@@ -740,6 +758,7 @@ function _renderCategoriasSidebar(consolidado) {
 function abrirHistoricoMaterial(chave) {
   const item = EstoqueModule._consolidado.find(i => i.chave === chave);
   if (!item) return showToast('Material nao encontrado', 5000);
+  const unidade = esc(_unidadeEstoqueExibicao(item.unidade));
 
   // Coletar movimentacoes
   const movs = [];
@@ -751,7 +770,7 @@ function abrirHistoricoMaterial(chave) {
       desc: `NF ${lote.nf || '---'} — ${lote.fornecedor || 'Fornecedor'}`,
       data: lote.data,
       qtd: lote.qtd,
-      meta: `Lote #${item.lotes.indexOf(lote) + 1} · ${fmtR(lote.valor_un)}/${item.unidade}`,
+      meta: `Lote #${item.lotes.indexOf(lote) + 1} · ${fmtR(lote.valor_un)}/${unidade}`,
       nota_id: lote.nota_id,
     });
   }
@@ -767,7 +786,7 @@ function abrirHistoricoMaterial(chave) {
           desc: `Entrada Direta — ${e.fornecedor || 'Compra balcao'}`,
           data: e.data,
           qtd: parseFloat(e.qtd) || 0,
-          meta: `Sem NF · ${fmtR(e.preco)}/${item.unidade}`,
+          meta: `Sem NF · ${fmtR(e.preco)}/${unidade}`,
         });
       }
     }
@@ -779,12 +798,18 @@ function abrirHistoricoMaterial(chave) {
     for (const a of ajustesEstoque) {
       const match = (item.codigo && a.codigo_catalogo === item.codigo) || norm(a.item_desc) === nDesc;
       if (match) {
+        const alvoAbsoluto = _alvoAbsolutoAjuste(a);
+        const ehZeragem = alvoAbsoluto === 0 && /\bzer(?:agem|ar|ad[oa])\b/i.test(String(a.motivo || ''));
         movs.push({
-          tipo: 'ajuste',
-          desc: `Ajuste — ${a.motivo || 'Contagem fisica'}`,
+          tipo: alvoAbsoluto !== null ? 'contagem' : 'ajuste',
+          desc: ehZeragem
+            ? 'Zeragem — saldo definido em 0'
+            : alvoAbsoluto !== null
+              ? `Contagem física — saldo definido em ${fmtQtd(alvoAbsoluto)} ${unidade}`
+              : `Ajuste — ${a.motivo || 'Correção manual'}`,
           data: String(a.criado_em || a.data || '').slice(0, 10),
-          qtd: parseFloat(a.qtd) || 0,
-          meta: a.tipo || 'contagem',
+          qtd: alvoAbsoluto !== null ? alvoAbsoluto : (parseFloat(a.qtd) || 0),
+          meta: alvoAbsoluto !== null ? `Saldo absoluto · ${a.motivo || 'contagem física'}` : (a.tipo || 'ajuste'),
         });
       }
     }
@@ -831,8 +856,7 @@ function abrirHistoricoMaterial(chave) {
   const totalDiretoObra = movs
     .filter(m => m.tipo === 'direto_obra')
     .reduce((s, m) => s + m.qtd, 0);
-  const unidade = esc(item.unidade);
-
+  const ultimaContagem = movs.find(m => m.tipo === 'contagem') || null;
   // Render modal
   const modal = document.getElementById('hist-modal');
   if (!modal) return;
@@ -848,23 +872,25 @@ function abrirHistoricoMaterial(chave) {
     <div class="hist-badges">
       <span class="hist-badge hist-badge-nf">+${fmtQtd(totalNF)} ${unidade} por NF</span>
       <span class="hist-badge hist-badge-direta">+${fmtQtd(totalDireta)} ${unidade} entrada manual</span>
-      <span class="hist-badge hist-badge-ajuste">${totalAjuste >= 0 ? '+' : ''}${fmtQtd(totalAjuste)} ${unidade} ajuste</span>
+      ${totalAjuste !== 0 ? `<span class="hist-badge hist-badge-ajuste">${totalAjuste > 0 ? '+' : ''}${fmtQtd(totalAjuste)} ${unidade} ajuste</span>` : ''}
+      ${ultimaContagem ? `<span class="hist-badge hist-badge-ajuste">Saldo definido em ${fmtQtd(ultimaContagem.qtd)} ${unidade} · ${esc(ultimaContagem.data || 'data não informada')}</span>` : ''}
       <span class="hist-badge hist-badge-saida">-${fmtQtd(totalSaida)} ${unidade} saída do almoxarifado</span>
       ${totalDiretoObra > 0 ? `<span class="hist-badge hist-badge-obra">${fmtQtd(totalDiretoObra)} ${unidade} direto à obra · fora do saldo</span>` : ''}
     </div>
     <div class="saldo-final">
       <div class="saldo-final-label">Saldo no almoxarifado</div>
-      <div class="saldo-final-value" style="color:${item.saldo < 0 ? 'var(--error)' : item.saldo > 0 ? 'var(--primary)' : 'var(--text-tertiary)'};">${fmtQtd(item.saldo)} ${unidade}</div>
+      <div class="saldo-final-value" style="color:${item.saldo < 0 ? 'var(--error)' : item.saldo > 0 ? 'var(--primary)' : 'var(--text-primary)'};">${fmtQtd(item.saldo)} ${unidade}</div>
     </div>
     <div class="hist-timeline" style="margin-top:16px;">
       ${movs.map(m => {
         const isSaida = m.tipo === 'saida';
         const isAjuste = m.tipo === 'ajuste';
+        const isContagem = m.tipo === 'contagem';
         const isDiretoObra = m.tipo === 'direto_obra';
-        const iconClass = isDiretoObra ? 'direto-obra' : isSaida ? 'saida' : isAjuste ? 'ajuste' : 'entrada';
-        const iconName = isDiretoObra ? 'construction' : isSaida ? 'arrow_upward' : isAjuste ? 'sync_alt' : 'arrow_downward';
-        const qtyClass = isDiretoObra ? 'neutral' : isSaida ? 'minus' : 'plus';
-        const qtyPrefix = isDiretoObra ? '' : isSaida ? '-' : '+';
+        const iconClass = isDiretoObra ? 'direto-obra' : isSaida ? 'saida' : isContagem ? 'contagem' : isAjuste ? 'ajuste' : 'entrada';
+        const iconName = isDiretoObra ? 'construction' : isSaida ? 'arrow_upward' : isContagem ? 'restart_alt' : isAjuste ? 'sync_alt' : 'arrow_downward';
+        const qtyClass = isDiretoObra ? 'neutral' : isContagem ? 'count' : isSaida ? 'minus' : 'plus';
+        const qtyPrefix = (isDiretoObra || isContagem) ? '' : isSaida ? '-' : '+';
         const corDescricao = isDiretoObra ? '#0e7490' : isSaida ? 'var(--error)' : 'var(--primary)';
         const clickNota = m.nota_id ? ` style="cursor:pointer;color:${corDescricao};" onclick="closeModal('hist-modal');abrirNota('${esc(m.nota_id)}')"` : '';
         return `<div class="hist-item">
@@ -2806,7 +2832,7 @@ async function salvarAjusteModal() {
   const motivo = (document.getElementById('ajuste-motivo').value || '').toUpperCase();
   if (!desc) { showToast('Informe o material.'); return; }
   if (ajusteTipoAtual === 'inventario' && qtd <= 0) { showToast('Inventário inicial deve ser positivo.'); return; }
-  if (ajusteTipoAtual !== 'inventario' && qtd === 0) { showToast('Informe a quantidade.'); return; }
+  if (ajusteTipoAtual === 'correcao' && qtd === 0) { showToast('Informe a quantidade.'); return; }
 
   if (ajusteTipoAtual === 'contagem') {
     if (qtd < 0) { showToast('Contagem física deve ser >= 0.'); return; }
