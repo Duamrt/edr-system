@@ -34,6 +34,7 @@ const { consolidarEstoque, abrirHistoricoMaterial, _alvoAbsolutoAjuste } = conte
 assert.equal(_alvoAbsolutoAjuste({ tipo: 'ajuste', motivo: 'Zeragem manual 02/06/2026', qtd: 12.95 }), 0);
 assert.equal(_alvoAbsolutoAjuste({ tipo: 'correcao', motivo: 'Ajuste comum', qtd: 12.95 }), null);
 assert.equal(_alvoAbsolutoAjuste({ tipo: 'contagem', motivo: 'sistema 19,64, real 0, dif -19,64' }), 0);
+assert.equal(_alvoAbsolutoAjuste({ tipo: 'contagem', motivo: 'sistema R$ 33,00, real R$ 0,00, dif -R$ 33,00' }), 0);
 
 contexto.catalogoMateriais.push({ codigo: '000108', nome: 'BRITA 19', unidade: 'M3', categoria: '04_alven' });
 contexto.notas.push(
@@ -66,8 +67,43 @@ assert.match(historicoContent.innerHTML, /saldo-final-value[^>]*>0 M³</);
 assert.doesNotMatch(historicoContent.innerHTML, /\+12,95 M³ ajuste/);
 assert.match(historicoContent.innerHTML, /Direto na obra → MIRELI/);
 
+// Regressão real: a MALHA tinha uma contagem antiga com quantidades formatadas
+// como moeda. Sem reconhecer "real R$ 0,00" como saldo absoluto, o sistema
+// voltava à zeragem de 02/06 e exibia -12 UN em vez de -5 UN.
+contexto.catalogoMateriais.length = 0;
+contexto.notas.length = 0;
+contexto.distribuicoes.length = 0;
+contexto.ajustesEstoque.length = 0;
+contexto.catalogoMateriais.push({ codigo: '000050', nome: 'MALHA POP LEVE 3X2', unidade: 'UN', categoria: '04_alven' });
+contexto.notas.push(
+  { id: 'nf-antiga', numero_nf: 'ANTIGA', fornecedor: 'ACOMAIS LTDA', natureza: 'VENDA', obra: 'EDR', data: '2026-05-20', itens: JSON.stringify([{ codigo: '000050', desc: 'MALHA POP LEVE 3X2', qtd: 70, unidade: 'UN', preco: 28.5 }]) },
+  { id: 'nf-219025', numero_nf: '219025/1', fornecedor: 'ACOMAIS LTDA', natureza: 'VENDA', obra: 'EDR', data: '2026-06-17', itens: JSON.stringify([{ codigo: '000050', desc: 'MALHA POP LEVE 3X2', qtd: 30, unidade: 'UN', preco: 28.5 }]) },
+  { id: 'nf-226266', numero_nf: '226266/1', fornecedor: 'ACOMAIS LTDA', natureza: 'VENDA', obra: 'EDR', data: '2026-08-07', itens: JSON.stringify([{ codigo: '000050', desc: 'MALHA POP LEVE 3X2', qtd: 10, unidade: 'UN', preco: 28.89 }]) },
+);
+contexto.distribuicoes.push(
+  { item_desc: 'MALHA POP LEVE 3X2', codigo_catalogo: '000050', obra_nome: 'DUAM', qtd: 4, data: '2026-06-10', criado_em: '2026-06-30T11:29:13Z' },
+  { item_desc: 'MALHA POP LEVE 3X2', codigo_catalogo: '000050', obra_nome: 'MIRELI', qtd: 2, data: '2026-07-08' },
+  { item_desc: 'MALHA POP LEVE 3X2', codigo_catalogo: '000050', obra_nome: 'MIRELI', qtd: 12, data: '2026-07-30' },
+  { item_desc: 'MALHA POP LEVE 3X2', codigo_catalogo: '000050', obra_nome: 'MIRELI', qtd: 1, data: '2026-08-10' },
+);
+contexto.ajustesEstoque.push(
+  { tipo: 'ajuste', item_desc: 'MALHA POP LEVE 3X2', codigo_catalogo: '000050', unidade: 'UN', qtd: 66, motivo: 'Zeragem manual 02/06/2026', criado_em: '2026-06-02T12:00:00Z' },
+  { tipo: 'contagem', item_desc: 'MALHA POP LEVE 3X2', codigo_catalogo: '000050', unidade: 'UN', qtd: -33, motivo: 'sistema R$ 33,00, real R$ 0,00, dif -R$ 33,00', criado_em: '2026-06-27T12:00:00Z' },
+);
+
+const consolidadoMalha = consolidarEstoque();
+assert.equal(consolidadoMalha.length, 1);
+assert.equal(consolidadoMalha[0].ajustes, 0);
+assert.equal(consolidadoMalha[0].saldo, -5);
+
+abrirHistoricoMaterial(consolidadoMalha[0].chave);
+assert.match(historicoContent.innerHTML, /Contagem física — saldo definido em 0 UN/);
+assert.match(historicoContent.innerHTML, /Saldo definido em 0 UN · 2026-06-27/);
+assert.match(historicoContent.innerHTML, /saldo-final-value[^>]*>-5 UN</);
+assert.doesNotMatch(historicoContent.innerHTML, /-33 UN ajuste/);
+
 const fonteValidacao = fs.readFileSync(require.resolve('../js/edr-v2-estoque.js'), 'utf8');
 assert.match(fonteValidacao, /ajusteTipoAtual === 'correcao' && qtd === 0/);
 assert.doesNotMatch(fonteValidacao, /ajusteTipoAtual !== 'inventario' && qtd === 0/);
 
-console.log('estoque-zeragem: 14 assertions passed');
+console.log('estoque-zeragem: 23 assertions passed');

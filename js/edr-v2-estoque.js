@@ -117,7 +117,9 @@ function _alvoAbsolutoAjuste(a) {
   if (/\bzer(?:agem|ar|ad[oa])\b/i.test(motivo)) return 0;
   if (a?.tipo !== 'contagem') return null;
 
-  const mReal = motivo.match(/real\s+([\d.,]+)/i);
+  // Registros antigos formatavam quantidades com fmt() e gravavam "R$" no
+  // motivo (ex.: "real R$ 0,00"). Isso continua sendo uma contagem absoluta.
+  const mReal = motivo.match(/real\s+(?:R\$\s*)?([\d](?:[\d.,]*\d)?)/i);
   if (!mReal) return null;
   const bruto = mReal[1];
   const normalizado = bruto.includes(',')
@@ -336,7 +338,9 @@ function consolidarEstoque(obraId) {
       const item = garantir(chave, d.item_desc, d.codigo_catalogo, d.unidade);
       const qtd = parseFloat(d.qtd) || 0;
       item.saidas += qtd;
-      item._saidas.push({ qtd, date: d.criado_em || d.data || null });
+      // A contagem física corta pela data em que a saída aconteceu. Uma baixa
+      // antiga cadastrada depois da contagem não pode ser descontada de novo.
+      item._saidas.push({ qtd, date: d.data || d.criado_em || null });
 
       // Consumir FIFO dos lotes
       let restante = qtd;
