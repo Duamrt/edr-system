@@ -35,6 +35,7 @@ assert.equal(_alvoAbsolutoAjuste({ tipo: 'ajuste', motivo: 'Zeragem manual 02/06
 assert.equal(_alvoAbsolutoAjuste({ tipo: 'correcao', motivo: 'Ajuste comum', qtd: 12.95 }), null);
 assert.equal(_alvoAbsolutoAjuste({ tipo: 'contagem', motivo: 'sistema 19,64, real 0, dif -19,64' }), 0);
 assert.equal(_alvoAbsolutoAjuste({ tipo: 'contagem', motivo: 'sistema R$ 33,00, real R$ 0,00, dif -R$ 33,00' }), 0);
+assert.equal(_alvoAbsolutoAjuste({ tipo: 'contagem', motivo: 'Contagem física · Real: 21 · Sistema: 9' }), 21);
 
 contexto.catalogoMateriais.push({ codigo: '000108', nome: 'BRITA 19', unidade: 'M3', categoria: '04_alven' });
 contexto.notas.push(
@@ -102,8 +103,83 @@ assert.match(historicoContent.innerHTML, /Saldo definido em 0 UN · 2026-06-27/)
 assert.match(historicoContent.innerHTML, /saldo-final-value[^>]*>-5 UN</);
 assert.doesNotMatch(historicoContent.innerHTML, /-33 UN ajuste/);
 
+// Regressão real: a NF foi emitida antes da contagem, mas o material só chegou
+// depois. Sem o fallback para data_recebimento, as 30 UN somem do saldo.
+contexto.catalogoMateriais.length = 0;
+contexto.notas.length = 0;
+contexto.distribuicoes.length = 0;
+contexto.ajustesEstoque.length = 0;
+contexto.catalogoMateriais.push({ codigo: '000287', nome: 'LUVA PVC ESGOTO 100MM', unidade: 'UN', categoria: '06_hidraulica' });
+contexto.notas.push({
+  id: 'nf-recebida-depois', numero_nf: 'LEGADA', fornecedor: 'FORNECEDOR', natureza: 'VENDA', obra: 'EDR',
+  data: '2026-06-04', data_recebimento: '2026-06-29', data_efetiva_estoque: null,
+  itens: JSON.stringify([{ codigo: '000287', desc: 'LUVA PVC ESGOTO 100MM', qtd: 30, unidade: 'UN', preco: 5 }]),
+});
+contexto.ajustesEstoque.push({
+  tipo: 'contagem', item_desc: 'LUVA PVC ESGOTO 100MM', codigo_catalogo: '000287', unidade: 'UN', qtd: -11,
+  motivo: 'Contagem fisica: sistema R$ 14,00, real R$ 3,00, dif R$ -11,00', criado_em: '2026-06-23T16:14:51Z',
+});
+contexto.distribuicoes.push({ item_desc: 'LUVA PVC ESGOTO 100MM', codigo_catalogo: '000287', obra_nome: 'DUAM', qtd: 14, data: '2026-07-01' });
+
+const consolidadoRecebimento = consolidarEstoque();
+assert.equal(consolidadoRecebimento.length, 1);
+assert.equal(consolidadoRecebimento[0].lotes[0].data, '2026-06-29');
+assert.equal(consolidadoRecebimento[0].saldo, 19);
+
+// O mesmo corte vale para devolução legada: se a mercadoria saiu fisicamente
+// depois da contagem, ela precisa reduzir o saldo a partir do recebimento.
+contexto.catalogoMateriais.length = 0;
+contexto.notas.length = 0;
+contexto.distribuicoes.length = 0;
+contexto.ajustesEstoque.length = 0;
+contexto.catalogoMateriais.push({ codigo: '000006', nome: 'CAIXA DAGUA FORTLEV 1000L POLIETILENO', unidade: 'UN', categoria: '04_alven' });
+contexto.notas.push(
+  {
+    id: 'nf-caixa-origem', numero_nf: 'COMPRA', fornecedor: 'FORNECEDOR', natureza: 'VENDA', obra: 'EDR', data: '2026-05-01',
+    itens: JSON.stringify([{ codigo: '000006', desc: 'CAIXA DAGUA FORTLEV 1000L POLIETILENO', qtd: 5, unidade: 'UN', preco: 100 }]),
+  },
+  {
+    id: 'nf-caixa-devolucao', nota_origem_id: 'nf-caixa-origem', numero_nf: 'DEVOLUCAO', fornecedor: 'FORNECEDOR', natureza: 'DEVOLUCAO', obra: 'EDR',
+    data: '2026-05-30', data_recebimento: '2026-06-10', data_efetiva_estoque: null,
+    itens: JSON.stringify([{ codigo: '000006', desc: 'CAIXA DAGUA FORTLEV 1000L POLIETILENO', qtd: 2, unidade: 'UN', preco: 100, item_idx_origem: 0 }]),
+  },
+);
+contexto.ajustesEstoque.push({
+  tipo: 'ajuste', item_desc: 'CAIXA DAGUA FORTLEV 1000L POLIETILENO', codigo_catalogo: '000006', unidade: 'UN', qtd: 0,
+  motivo: 'Zeragem manual 02/06/2026', criado_em: '2026-06-02T13:01:28Z',
+});
+
+const consolidadoDevolucaoLegada = consolidarEstoque();
+assert.equal(consolidadoDevolucaoLegada.length, 1);
+assert.equal(consolidadoDevolucaoLegada[0].saldo, -2);
+
+// Regressão real: contagens de março usavam "Real:". O alvo absoluto deve
+// descartar entradas/saídas anteriores e aplicar apenas movimentos posteriores.
+contexto.catalogoMateriais.length = 0;
+contexto.notas.length = 0;
+contexto.distribuicoes.length = 0;
+contexto.ajustesEstoque.length = 0;
+contexto.catalogoMateriais.push({ codigo: '000414', nome: 'TUBO SOLD PVC 50MM 6M', unidade: 'UN', categoria: '06_hidraulica' });
+contexto.notas.push({
+  id: 'nf-tubo-antiga', numero_nf: 'ANTIGA', fornecedor: 'FORNECEDOR', natureza: 'VENDA', obra: 'EDR', data: '2026-03-01',
+  itens: JSON.stringify([{ codigo: '000414', desc: 'TUBO SOLD PVC 50MM 6M', qtd: 9, unidade: 'UN', preco: 10 }]),
+});
+contexto.distribuicoes.push(
+  { item_desc: 'TUBO SOLD PVC 50MM 6M', codigo_catalogo: '000414', obra_nome: 'DUAM', qtd: 11, data: '2026-03-20' },
+  { item_desc: 'TUBO SOLD PVC 50MM 6M', codigo_catalogo: '000414', obra_nome: 'DUAM', qtd: 4, data: '2026-04-02' },
+);
+contexto.ajustesEstoque.push({
+  tipo: 'contagem', item_desc: 'TUBO SOLD PVC 50MM 6M', codigo_catalogo: '000414', unidade: 'UN', qtd: 12,
+  motivo: 'Contagem física · Real: 21 · Sistema: 9', criado_em: '2026-03-31T17:25:48Z',
+});
+
+const consolidadoDoisPontos = consolidarEstoque();
+assert.equal(consolidadoDoisPontos.length, 1);
+assert.equal(consolidadoDoisPontos[0].ajustes, 0);
+assert.equal(consolidadoDoisPontos[0].saldo, 17);
+
 const fonteValidacao = fs.readFileSync(require.resolve('../js/edr-v2-estoque.js'), 'utf8');
 assert.match(fonteValidacao, /ajusteTipoAtual === 'correcao' && qtd === 0/);
 assert.doesNotMatch(fonteValidacao, /ajusteTipoAtual !== 'inventario' && qtd === 0/);
 
-console.log('estoque-zeragem: 23 assertions passed');
+console.log('estoque-zeragem: 32 assertions passed');

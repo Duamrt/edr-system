@@ -118,8 +118,9 @@ function _alvoAbsolutoAjuste(a) {
   if (a?.tipo !== 'contagem') return null;
 
   // Registros antigos formatavam quantidades com fmt() e gravavam "R$" no
-  // motivo (ex.: "real R$ 0,00"). Isso continua sendo uma contagem absoluta.
-  const mReal = motivo.match(/real\s+(?:R\$\s*)?([\d](?:[\d.,]*\d)?)/i);
+  // motivo; outros usavam dois-pontos (ex.: "Real: 21"). Ambos representam
+  // uma contagem absoluta e precisam definir o corte do histórico.
+  const mReal = motivo.match(/real\s*:?\s*(?:R\$\s*)?([\d](?:[\d.,]*\d)?)/i);
   if (!mReal) return null;
   const bruto = mReal[1];
   const normalizado = bruto.includes(',')
@@ -127,6 +128,13 @@ function _alvoAbsolutoAjuste(a) {
     : bruto;
   const valor = Number(normalizado);
   return Number.isFinite(valor) && valor >= 0 ? valor : null;
+}
+
+// NFs novas persistem data_efetiva_estoque. No legado, a data de recebimento
+// é a melhor evidência de quando o material passou a existir no almoxarifado;
+// usar a emissão antes dela pode esconder a entrada após uma contagem física.
+function _dataMovimentoNotaEstoque(n) {
+  return n?.data_efetiva_estoque || n?.data_recebimento || n?.data || null;
 }
 
 function _unidadeEstoqueExibicao(unidade) {
@@ -238,7 +246,7 @@ function consolidarEstoque(obraId) {
           nota_origem_id: n.nota_origem_id || null,
           item_idx_origem: Number.isInteger(it.item_idx_origem) ? it.item_idx_origem : null,
           qtd,
-          date: n.data_efetiva_estoque || n.data || null,
+          date: _dataMovimentoNotaEstoque(n),
         });
       } else {
         item.lotes.push({
@@ -246,8 +254,8 @@ function consolidarEstoque(obraId) {
           item_idx: itemIdx,
           nf: n.numero_nf,
           fornecedor: n.fornecedor,
-          // Legado usa emissao; NFs novas usam a data em que o material chegou.
-          data: n.data_efetiva_estoque || n.data,
+          // Legado cai em recebimento; NFs novas usam data_efetiva_estoque.
+          data: _dataMovimentoNotaEstoque(n),
           qtd,
           qtd_disponivel: qtd, // sera reduzido pelas distribuicoes
           valor_un: valorUn,
