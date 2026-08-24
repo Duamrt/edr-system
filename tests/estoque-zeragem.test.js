@@ -31,7 +31,7 @@ const contexto = {
 vm.runInNewContext(fonte, contexto, { filename: 'edr-v2-estoque.js' });
 const { consolidarEstoque, abrirHistoricoMaterial, _alvoAbsolutoAjuste } = contexto.__estoqueZeragemTeste;
 
-assert.equal(_alvoAbsolutoAjuste({ tipo: 'ajuste', motivo: 'Zeragem manual 02/06/2026', qtd: 12.95 }), 0);
+assert.equal(_alvoAbsolutoAjuste({ tipo: 'ajuste', motivo: 'Zeragem manual 02/06/2026', qtd: 12.95 }), null);
 assert.equal(_alvoAbsolutoAjuste({ tipo: 'correcao', motivo: 'Ajuste comum', qtd: 12.95 }), null);
 assert.equal(_alvoAbsolutoAjuste({ tipo: 'contagem', motivo: 'sistema 19,64, real 0, dif -19,64' }), 0);
 assert.equal(_alvoAbsolutoAjuste({ tipo: 'contagem', motivo: 'sistema R$ 33,00, real R$ 0,00, dif -R$ 33,00' }), 0);
@@ -54,19 +54,34 @@ contexto.ajustesEstoque.push({
   motivo: 'Zeragem manual 02/06/2026', criado_em: '2026-06-02T12:00:00Z',
 });
 
-const consolidado = consolidarEstoque();
-assert.equal(consolidado.length, 1);
-assert.equal(consolidado[0].entradas, 34.21);
-assert.equal(consolidado[0].saidas, 27.52);
-assert.equal(consolidado[0].ajustes, 0);
-assert.equal(consolidado[0].saldo, 0);
+// O lote de 02/06 é compensação de migração, não uma contagem física. Ele
+// precisa continuar somando como delta para não negativar o catálogo inteiro.
+const consolidadoLegado = consolidarEstoque();
+assert.equal(consolidadoLegado.length, 1);
+assert.equal(consolidadoLegado[0].entradas, 34.21);
+assert.equal(consolidadoLegado[0].saidas, 27.52);
+assert.equal(consolidadoLegado[0].ajustes, 12.95);
+assert.ok(Math.abs(consolidadoLegado[0].saldo - 19.64) < 0.000001);
 
-abrirHistoricoMaterial(consolidado[0].chave);
-assert.match(historicoContent.innerHTML, /Zeragem — saldo definido em 0/);
-assert.match(historicoContent.innerHTML, /Saldo definido em 0 M³ · 2026-06-02/);
-assert.match(historicoContent.innerHTML, /saldo-final-value[^>]*>0 M³</);
-assert.doesNotMatch(historicoContent.innerHTML, /\+12,95 M³ ajuste/);
+abrirHistoricoMaterial(consolidadoLegado[0].chave);
+assert.match(historicoContent.innerHTML, /Ajuste — Zeragem manual 02\/06\/2026/);
+assert.match(historicoContent.innerHTML, /\+12,95 M³ ajuste/);
+assert.doesNotMatch(historicoContent.innerHTML, /Saldo definido em 0 M³ · 2026-06-02/);
 assert.match(historicoContent.innerHTML, /Direto na obra → MIRELI/);
+
+// Quando o saldo físico é realmente zero, a fonte da verdade é uma contagem
+// explícita com o valor real no motivo.
+contexto.ajustesEstoque.push({
+  tipo: 'contagem', item_desc: 'BRITA 19', codigo_catalogo: '000108', unidade: 'M3', qtd: -19.64,
+  motivo: 'Contagem fisica: sistema 19,64, real 0, dif -19,64', criado_em: '2026-08-24T12:00:00Z',
+});
+const consolidado = consolidarEstoque();
+assert.equal(consolidado[0].ajustes, 12.95);
+assert.equal(consolidado[0].saldo, 0);
+abrirHistoricoMaterial(consolidado[0].chave);
+assert.match(historicoContent.innerHTML, /Contagem física — saldo definido em 0 M³/);
+assert.match(historicoContent.innerHTML, /Saldo definido em 0 M³ · 2026-08-24/);
+assert.match(historicoContent.innerHTML, /saldo-final-value[^>]*>0 M³</);
 
 // Regressão real: a MALHA tinha uma contagem antiga com quantidades formatadas
 // como moeda. Sem reconhecer "real R$ 0,00" como saldo absoluto, o sistema
@@ -94,7 +109,7 @@ contexto.ajustesEstoque.push(
 
 const consolidadoMalha = consolidarEstoque();
 assert.equal(consolidadoMalha.length, 1);
-assert.equal(consolidadoMalha[0].ajustes, 0);
+assert.equal(consolidadoMalha[0].ajustes, 66);
 assert.equal(consolidadoMalha[0].saldo, -5);
 
 abrirHistoricoMaterial(consolidadoMalha[0].chave);
@@ -145,8 +160,8 @@ contexto.notas.push(
   },
 );
 contexto.ajustesEstoque.push({
-  tipo: 'ajuste', item_desc: 'CAIXA DAGUA FORTLEV 1000L POLIETILENO', codigo_catalogo: '000006', unidade: 'UN', qtd: 0,
-  motivo: 'Zeragem manual 02/06/2026', criado_em: '2026-06-02T13:01:28Z',
+  tipo: 'contagem', item_desc: 'CAIXA DAGUA FORTLEV 1000L POLIETILENO', codigo_catalogo: '000006', unidade: 'UN', qtd: -5,
+  motivo: 'Contagem fisica: sistema 5, real 0, dif -5', criado_em: '2026-06-02T13:01:28Z',
 });
 
 const consolidadoDevolucaoLegada = consolidarEstoque();
@@ -182,4 +197,4 @@ const fonteValidacao = fs.readFileSync(require.resolve('../js/edr-v2-estoque.js'
 assert.match(fonteValidacao, /ajusteTipoAtual === 'correcao' && qtd === 0/);
 assert.doesNotMatch(fonteValidacao, /ajusteTipoAtual !== 'inventario' && qtd === 0/);
 
-console.log('estoque-zeragem: 32 assertions passed');
+console.log('estoque-zeragem: regressões validadas');

@@ -109,12 +109,12 @@ function switchTab(tab) {
 // Sem fuzzy match — itens nao identificados viram orfaos
 // ══════════════════════════════════════════════════════════════════
 
-// Retorna o saldo absoluto definido pelo ajuste, ou null quando o registro
-// representa apenas um delta. "Zeragem" sempre significa saldo final zero,
-// inclusive nos registros legados gravados como tipo "ajuste".
+// Retorna o saldo absoluto definido por uma contagem física, ou null quando o
+// registro representa apenas um delta. O lote legado de 02/06 foi gravado como
+// tipo "ajuste" e compensava saídas importadas; apesar do texto "Zeragem
+// manual", ele NÃO é uma contagem física nem pode cortar o histórico.
 function _alvoAbsolutoAjuste(a) {
   const motivo = String(a?.motivo || '');
-  if (/\bzer(?:agem|ar|ad[oa])\b/i.test(motivo)) return 0;
   if (a?.tipo !== 'contagem') return null;
 
   // Registros antigos formatavam quantidades com fmt() e gravavam "R$" no
