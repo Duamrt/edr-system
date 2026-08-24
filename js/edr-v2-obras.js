@@ -883,33 +883,24 @@ async function excluirDistribuicao(id) {
     : 'Excluir esta movimentacao de material?';
   if (!await confirmar(msg)) return;
   try {
-    // 1) custo (lancamento) primeiro. Sem FK em distribuicoes.lancamento_id, a ordem
-    //    e livre; deletar o custo antes garante que o pior estado parcial deixe o P&L correto.
-    if (d?.lancamento_id) {
-      const okLanc = await sbDelete('lancamentos', `?id=eq.${d.lancamento_id}`);
-      if (okLanc === null) { showToast('Erro ao remover o custo. Nada foi excluido.'); return; }
-      if (okLanc === 0) console.warn('excluirDistribuicao: lancamento', d.lancamento_id, 'ja ausente (recuperacao de orfa) - seguindo para excluir a distribuicao.');
-    }
-    // 2) estoque (distribuicao) depois.
-    const okDist = await sbDelete('distribuicoes', `?id=eq.${id}`);
-    if (!okDist) {
-      // 0 ou null: nao confirmou. Nao mexe no cache, recarrega para nao mentir o estado.
-      showToast('Nao foi possivel confirmar a exclusao no estoque. Recarregando dados.');
-      await loadLancamentos();
-      await loadDistribuicoes();
-      renderObrasMateriais();
+    // O banco remove distribuicao + custo na mesma transacao. A FK RESTRICT exige
+    // esta ordem e a RPC garante rollback integral se qualquer etapa falhar.
+    const rpc = await sbRpc('excluir_distribuicao_estoque', { p_distribuicao_id: id });
+    if (rpc === 'RPC_AUSENTE') {
+      showToast('Exclusao segura ainda indisponivel. Atualize a pagina em instantes.', 8000);
       return;
     }
-    // 3) ambos confirmados: atualiza cache local agora.
-    if (d?.lancamento_id) {
-      const li = lancamentos.findIndex(l => l.id === d.lancamento_id);
-      if (li !== -1) lancamentos.splice(li, 1);
+    if (!rpc) {
+      showToast('Erro ao excluir. Nenhum dado foi alterado.', 8000);
+      return;
     }
-    const idx = distribuicoes.findIndex(x => x.id === id);
-    if (idx !== -1) distribuicoes.splice(idx, 1);
+
+    await loadLancamentos();
+    await loadDistribuicoes();
     renderObrasMateriais();
     renderDashboard();
-    showToast('Movimentacao excluida.');
+    if (typeof renderEstoque === 'function') renderEstoque();
+    showToast('Movimentacao excluida. Estoque e custo atualizados.');
   } catch(e) { showToast('Erro ao excluir: ' + e.message); }
 }
 
