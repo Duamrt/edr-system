@@ -340,6 +340,23 @@ function getAdicionaisGeral(obraIds) {
   const totalRecebido = pgtos.reduce((s, p) => s + Number(p.valor || 0), 0);
   return { valorTotal, totalRecebido, saldo: valorTotal - totalRecebido };
 }
+const CUSTO_DESTINOS = Object.freeze({ PADRAO: 'padrao', ADICIONAL: 'adicional', NAO_CLASSIFICADO: 'nao_classificado' });
+function custoDestinoNormalizar(lanc) {
+  const d = String(lanc?.destino_custo || '').trim();
+  if (d === CUSTO_DESTINOS.PADRAO) return CUSTO_DESTINOS.PADRAO;
+  if (d === CUSTO_DESTINOS.ADICIONAL && lanc?.adicional_id) return CUSTO_DESTINOS.ADICIONAL;
+  return CUSTO_DESTINOS.NAO_CLASSIFICADO;
+}
+function custoAdicionaisAtivos(obraId) {
+  return (Array.isArray(obrasAdicionais) ? obrasAdicionais : [])
+    .filter(a => a.obra_id === obraId && a.status !== 'pendente' && a.status !== 'cancelado');
+}
+function custoClassificacaoNovo(obraId, adicionalId) {
+  if (adicionalId) return { destino_custo: CUSTO_DESTINOS.ADICIONAL, adicional_id: adicionalId };
+  return custoAdicionaisAtivos(obraId).length
+    ? { destino_custo: CUSTO_DESTINOS.NAO_CLASSIFICADO, adicional_id: null }
+    : { destino_custo: CUSTO_DESTINOS.PADRAO, adicional_id: null };
+}
 async function loadCompanyId() {
   if (!usuarioAtual?.id) return;
   try {
@@ -376,7 +393,7 @@ async function loadNotas() {
 }
 async function loadLancamentos() {
   try {
-    const r = await sbGetAll('lancamentos', '?select=id,obra_id,descricao,qtd,preco,total,data,obs,etapa,criado_por,nota_id,origem&order=data.desc,id', { throwOnError: true });
+    const r = await sbGetAll('lancamentos', '?select=id,obra_id,descricao,qtd,preco,total,data,obs,etapa,criado_por,nota_id,origem,destino_custo,adicional_id&order=data.desc,id', { throwOnError: true });
     lancamentos = Array.isArray(r) ? r : [];
     _marcarCargaEstoque('lancamentos', true);
     return true;

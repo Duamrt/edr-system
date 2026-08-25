@@ -278,7 +278,8 @@ async function marcarComoPago(contaId) {
           qtd: 1, preco: Number(conta.valor || 0), total: Number(conta.valor || 0),
           data: hojeISO(), etapa: 'conta_pagar',
           obs: obsKey,
-          criado_por: (typeof usuarioAtual !== 'undefined' && usuarioAtual?.nome) || ''
+          criado_por: (typeof usuarioAtual !== 'undefined' && usuarioAtual?.nome) || '',
+          ...custoClassificacaoNovo(conta.obra_id)
         });
         if (!okLanc) {
           // Conta PAGA (fato real) mas custo nao lancou. Sem rollback de status; aviso forte + recarrega.

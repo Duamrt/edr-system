@@ -303,6 +303,7 @@ function custosAbrirDetalhe(obraId) {
   if (detalheEl) detalheEl.style.display = '';
 
   _custosRenderResumoFinanceiro(obraId);
+  _custosRenderResultadoOrigem(obraId);
   _custosRenderContratoCard(obraId);
   _custosRenderRepasses(obraId);
   _custosRenderHistoricoMensal(obraId);
@@ -342,17 +343,18 @@ function _custosRenderResumoFinanceiro(obraId) {
 
   const adds = typeof getAdicionaisObra === 'function' ? getAdicionaisObra(obraId) : { qtd: 0, valorTotal: 0, totalRecebido: 0 };
   const receitaObra = valorVenda + adds.valorTotal;
+  const totalRecebidoGeral = totalRecebido + (adds.totalRecebido || 0);
   // Saldo a receber = receita TOTAL (venda + adicionais aprovados) - tudo que já entrou (repasses + pagamentos de adicionais)
-  const saldoReceber = receitaObra - (totalRecebido + (adds.totalRecebido || 0));
+  const saldoReceber = receitaObra - totalRecebidoGeral;
   const lucro = receitaObra - custoTotal;
   const margem = receitaObra > 0 ? (lucro / receitaObra * 100) : 0;
-  const pctRecebido = receitaObra > 0 ? Math.min(((totalRecebido + (adds.totalRecebido || 0)) / receitaObra * 100), 100) : 0;
+  const pctRecebido = receitaObra > 0 ? Math.min((totalRecebidoGeral / receitaObra * 100), 100) : 0;
 
   el.innerHTML = `<div class="custos-resumo-title"><span class="material-symbols-outlined" style="font-size:18px;">bar_chart</span> RESUMO FINANCEIRO — ${esc(obra.nome)}</div>
   <div class="custos-resumo-grid">
     <div class="custos-resumo-item"><div class="custos-resumo-label">VALOR DO IMOVEL</div><div class="custos-resumo-value">${valorVenda > 0 ? fmtR(valorVenda) : 'Nao informado'}</div></div>
-    <div class="custos-resumo-item"><div class="custos-resumo-label">TOTAL RECEBIDO</div><div class="custos-resumo-value green">${fmtR(totalRecebido)}</div>
-      <div class="custos-resumo-sub">PLS: ${fmtR(totalPls)} | Entrada: ${fmtR(totalEntrada)} | Terreno: ${fmtR(totalTerreno)}</div></div>
+    <div class="custos-resumo-item"><div class="custos-resumo-label">TOTAL RECEBIDO</div><div class="custos-resumo-value green">${fmtR(totalRecebidoGeral)}</div>
+      <div class="custos-resumo-sub">Contrato: ${fmtR(totalRecebido)} | Adicionais: ${fmtR(adds.totalRecebido || 0)}</div></div>
     <div class="custos-resumo-item"><div class="custos-resumo-label">SALDO A RECEBER</div><div class="custos-resumo-value" style="color:${saldoReceber >= 0 ? 'var(--primary)' : 'var(--error)'};">${valorVenda > 0 ? fmtR(saldoReceber) : '-'}</div></div>
     <div class="custos-resumo-item" style="cursor:pointer;" onclick="verLancamentosObra('${esc(obraId)}')"><div class="custos-resumo-label">CUSTO TOTAL</div><div class="custos-resumo-value yellow">${fmtR(custoTotal)}</div><div class="custos-resumo-sub">ver lancamentos</div></div>
     ${adds.qtd > 0 ? `<div class="custos-resumo-item"><div class="custos-resumo-label">ADICIONAIS (${adds.qtd})</div><div class="custos-resumo-value purple">${fmtR(adds.valorTotal)}</div></div>` : ''}
@@ -360,9 +362,110 @@ function _custosRenderResumoFinanceiro(obraId) {
     <div class="custos-resumo-item"><div class="custos-resumo-label">MARGEM</div><div class="custos-resumo-value" style="color:${margem >= 15 ? 'var(--success)' : margem >= 0 ? 'var(--warning)' : 'var(--error)'};">${receitaObra > 0 ? margem.toFixed(1) + '%' : '-'}</div></div>
   </div>
   ${valorVenda > 0 ? `<div class="custos-progress-bar">
-    <div class="custos-progress-header"><span>RECEBIDO vs VALOR VENDA</span><span style="font-weight:700;color:var(--primary);">${pctRecebido.toFixed(1)}%</span></div>
+    <div class="custos-progress-header"><span>RECEBIDO vs RECEITA TOTAL</span><span style="font-weight:700;color:var(--primary);">${pctRecebido.toFixed(1)}%</span></div>
     <div class="custos-progress-track"><div class="custos-progress-fill" style="width:${pctRecebido}%;"></div></div>
   </div>` : ''}`;
+}
+
+function _custosDadosOrigem(obraId) {
+  const lista = (Array.isArray(lancamentos) ? lancamentos : []).filter(l => l.obra_id === obraId);
+  const adicionais = typeof custoAdicionaisAtivos === 'function' ? custoAdicionaisAtivos(obraId) : [];
+  const porAdicional = new Map(adicionais.map(a => [a.id, { adicional: a, custo: 0, qtd: 0 }]));
+  let custoPadrao = 0, qtdPadrao = 0, custoPendente = 0, qtdPendente = 0;
+  lista.forEach(l => {
+    const destino = typeof custoDestinoNormalizar === 'function' ? custoDestinoNormalizar(l) : 'nao_classificado';
+    const valor = Number(l.total || 0);
+    if (destino === 'padrao') { custoPadrao += valor; qtdPadrao++; return; }
+    if (destino === 'adicional' && porAdicional.has(l.adicional_id)) {
+      const grupo = porAdicional.get(l.adicional_id); grupo.custo += valor; grupo.qtd++; return;
+    }
+    custoPendente += valor; qtdPendente++;
+  });
+  return { lista, adicionais, porAdicional: [...porAdicional.values()], custoPadrao, qtdPadrao, custoPendente, qtdPendente };
+}
+
+function _custosRenderResultadoOrigem(obraId) {
+  const el = document.getElementById('custos-resultado-origem');
+  if (!el) return;
+  const obra = [...obras, ...(typeof obrasArquivadas !== 'undefined' ? obrasArquivadas : [])].find(o => o.id === obraId);
+  if (!obra) { el.innerHTML = ''; return; }
+  const d = _custosDadosOrigem(obraId);
+  const vendaPadrao = Number(obra.valor_venda || 0);
+  const cards = [`<div class="custos-origem-card">
+    <div class="custos-origem-meta"><strong>Obra padrão</strong><span>${d.qtdPadrao} ${d.qtdPadrao === 1 ? 'custo' : 'custos'}</span></div>
+    <div class="custos-origem-valores"><div><span>Vendido</span><b>${fmtR(vendaPadrao)}</b></div><div><span>Custo classificado</span><b>${fmtR(d.custoPadrao)}</b></div><div><span>Lucro provisório</span><b>${fmtR(vendaPadrao - d.custoPadrao)}</b></div></div>
+  </div>`];
+  d.porAdicional.forEach(g => {
+    const venda = Number(g.adicional.valor || 0);
+    cards.push(`<div class="custos-origem-card">
+      <div class="custos-origem-meta"><strong>${esc(g.adicional.descricao || 'Adicional')}</strong><span>${g.qtd} ${g.qtd === 1 ? 'custo' : 'custos'}</span></div>
+      <div class="custos-origem-valores"><div><span>Vendido</span><b>${fmtR(venda)}</b></div><div><span>Custo classificado</span><b>${fmtR(g.custo)}</b></div><div><span>Lucro provisório</span><b>${fmtR(venda - g.custo)}</b></div></div>
+    </div>`);
+  });
+  if (d.qtdPendente) cards.push(`<div class="custos-origem-card warn">
+    <div class="custos-origem-meta"><strong>Não classificado</strong><span>${d.qtdPendente} ${d.qtdPendente === 1 ? 'custo' : 'custos'}</span></div>
+    <div style="font-family:'Space Grotesk',monospace;font-size:18px;font-weight:800;color:var(--warning);margin-top:8px;">${fmtR(d.custoPendente)}</div>
+    <div class="custos-resumo-sub">Enquanto houver pendências, os lucros por origem são provisórios.</div>
+  </div>`);
+  el.innerHTML = `<section class="custos-origem">
+    <div class="custos-origem-head"><div><div class="custos-resumo-title" style="margin-bottom:3px;"><span class="material-symbols-outlined" style="font-size:18px;">account_tree</span> RESULTADO POR ORIGEM</div><div class="custos-resumo-sub">O total da obra não muda; este bloco separa o destino de cada custo.</div></div>
+    ${usuarioAtual?.perfil === 'admin' ? `<button class="btn-save" style="padding:7px 12px;font-size:11px;" onclick="custosAbrirClassificador('${esc(obraId)}')">CLASSIFICAR${d.qtdPendente ? ` (${d.qtdPendente})` : ''}</button>` : ''}</div>
+    <div class="custos-origem-grid">${cards.join('')}</div>
+  </section>`;
+}
+
+function custosAbrirClassificador(obraId) {
+  if (usuarioAtual?.perfil !== 'admin') return showToast('Apenas administrador pode classificar custos.');
+  const d = _custosDadosOrigem(obraId);
+  const adicionaisOpts = d.adicionais.map(a => `<option value="adicional:${esc(a.id)}">Adicional · ${esc(a.descricao || 'Sem descrição')}</option>`).join('');
+  const linhas = d.lista.map(l => {
+    const destino = typeof custoDestinoNormalizar === 'function' ? custoDestinoNormalizar(l) : 'nao_classificado';
+    const atual = destino === 'adicional' ? `adicional:${l.adicional_id}` : destino;
+    return `<div class="custos-class-row" data-busca="${esc(norm(`${l.descricao || ''} ${l.obs || ''} ${l.origem || ''}`))}">
+      <div><strong style="display:block;font-size:12px;">${esc(l.descricao || 'Sem descrição')}</strong><span class="custos-resumo-sub">${fmtData(l.data)} · ${esc(l.origem || 'manual')}</span></div>
+      <strong style="font-family:'Space Grotesk',monospace;text-align:right;">${fmtR(l.total || 0)}</strong>
+      <select id="custo-class-${esc(l.id)}" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:7px;background:var(--bg);color:var(--text-primary);">
+        <option value="nao_classificado" ${atual === 'nao_classificado' ? 'selected' : ''}>Não classificado</option>
+        <option value="padrao" ${atual === 'padrao' ? 'selected' : ''}>Obra padrão</option>${adicionaisOpts.replace(`value="${atual}"`, `value="${atual}" selected`)}
+      </select>
+      <button class="btn-save" style="padding:7px 9px;font-size:10px;" onclick="custosSalvarClassificacao('${esc(l.id)}')">SALVAR</button>
+    </div>`;
+  }).join('');
+  document.getElementById('modal-custos-classificar')?.remove();
+  const modal = document.createElement('div');
+  modal.id = 'modal-custos-classificar';
+  modal.className = 'modal-overlay active';
+  modal.style.zIndex = '9999';
+  modal.innerHTML = `<div class="modal-box" style="max-width:900px;padding:22px;">
+    <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:12px;"><div><strong>Classificar custos</strong><div class="custos-resumo-sub">Escolha o destino real de cada lançamento. Nenhuma classificação é presumida.</div></div><button class="btn-outline" onclick="document.getElementById('modal-custos-classificar')?.remove()">FECHAR</button></div>
+    <input id="custos-class-busca" placeholder="Buscar descrição, observação ou origem" oninput="custosFiltrarClassificador(this.value)" style="width:100%;box-sizing:border-box;padding:10px 12px;margin-bottom:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text-primary);">
+    <div class="custos-class-list">${linhas || '<div style="padding:18px;color:var(--text-tertiary);">Nenhum custo nesta obra.</div>'}</div>
+  </div>`;
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  document.body.appendChild(modal);
+}
+
+function custosFiltrarClassificador(valor) {
+  const termo = norm(valor || '');
+  document.querySelectorAll('#modal-custos-classificar .custos-class-row').forEach(row => {
+    row.style.display = !termo || (row.dataset.busca || '').includes(termo) ? '' : 'none';
+  });
+}
+
+async function custosSalvarClassificacao(lancId) {
+  const lanc = lancamentos.find(l => l.id === lancId);
+  const sel = document.getElementById(`custo-class-${lancId}`);
+  if (!lanc || !sel) return;
+  const valor = sel.value;
+  const adicionalId = valor.startsWith('adicional:') ? valor.slice(10) : null;
+  const destino = adicionalId ? 'adicional' : valor;
+  if (!['padrao', 'adicional', 'nao_classificado'].includes(destino)) return showToast('Classificação inválida.');
+  const payload = { destino_custo: destino, adicional_id: adicionalId };
+  const saved = await sbPatch('lancamentos', `?id=eq.${lancId}`, payload);
+  if (!saved) return showToast('Erro ao classificar o custo.');
+  Object.assign(lanc, payload);
+  _custosRenderResultadoOrigem(lanc.obra_id);
+  showToast('Custo classificado.');
 }
 
 

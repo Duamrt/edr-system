@@ -2495,10 +2495,12 @@ async function diarConfirmarLancamentosEDR() {
 
   // PRE-CHECAGEM de TODAS as chaves antes de escrever. >1 existente = duplicata legada => ABORTA (nao escolhe [0]).
   const existentesPorChave = new Map();
+  const classificacaoPorChave = new Map();
   try {
     for (const g of plano.grupos) {
+      classificacaoPorChave.set(g.chave, custoClassificacaoNovo(g.obraId));
       const existente = await sbGet('lancamentos',
-        `?obra_id=eq.${g.obraId}&obs=eq.${encodeURIComponent(obs)}&etapa=eq.${ETAPA}&select=id`);
+        `?obra_id=eq.${g.obraId}&obs=eq.${encodeURIComponent(obs)}&etapa=eq.${ETAPA}&select=id,destino_custo,adicional_id`);
       existentesPorChave.set(g.chave, Array.isArray(existente) ? existente : []);
     }
   } catch (e) {
@@ -2527,7 +2529,7 @@ async function diarConfirmarLancamentosEDR() {
       if (existente.length === 1) {
         saved = await sbPatch('lancamentos', `?id=eq.${existente[0].id}`, { preco: valor, total: valor, descricao: '000460 · MAO DE OBRA' });
       } else {
-        saved = await sbPostMinimal('lancamentos', { obra_id: g.obraId, descricao: '000460 · MAO DE OBRA', qtd: 1, preco: valor, total: valor, data: hoje, obs, etapa: ETAPA });
+        saved = await sbPostMinimal('lancamentos', { obra_id: g.obraId, descricao: '000460 · MAO DE OBRA', qtd: 1, preco: valor, total: valor, data: hoje, obs, etapa: ETAPA, ...classificacaoPorChave.get(g.chave) });
       }
       if (!saved) { statusEl.innerHTML += `<div style="color:var(--error)"><span class="material-symbols-outlined" style="font-size:14px">error</span> ${obra}: falha ao gravar (conferir e relancar)</div>`; erro++; continue; }
       statusEl.innerHTML += `<div style="color:${existente.length ? 'var(--warning)' : 'var(--success)'}"><span class="material-symbols-outlined" style="font-size:14px">${existente.length ? 'update' : 'check_circle'}</span> ${obra}: R$ ${valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} ${existente.length ? 'atualizado' : 'lancado'}</div>`;

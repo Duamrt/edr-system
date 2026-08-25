@@ -10,6 +10,7 @@ const sql = fs.readFileSync(path.join(raiz, 'sql', 'notas-integridade-financeira
 
 // Toda conta nascida de NF nova carrega o UUID, inclusive despesas e pagamentos.
 assert.match(notas, /nota_id: saved\.id, nota_ref: String\(numero\)/);
+assert.match(notas, /tipo: 'despesa_operacional_nf'[\s\S]*nota_id: saved\.id/);
 assert.match(notas, /nota_id: notaId, nota_ref: numero, status: 'pago'/);
 assert.match(notas, /nota_id: notaId, nota_ref: numero, status: 'pendente'/);
 
@@ -19,7 +20,8 @@ assert.match(notas, /rpc !== 'RPC_AUSENTE'/);
 
 // Financeiro e DRE nunca criam/contam custo duplicado de NF vinculada por UUID.
 assert.match(financeiro, /!conta\.nota_id && !conta\.nota_ref/);
-assert.match(dre, /!c\.nota_id && !c\.nota_ref/);
+assert.match(dre, /c\.tipo === 'despesa_operacional_nf'/);
+assert.match(dre, /r\.filter\(_contaAdminEntraDRE\)/);
 
 // A migration protege novas distribuições e executa exclusão no servidor.
 assert.match(sql, /foreign key \(lancamento_id\)[\s\S]*references public\.lancamentos\(id\)[\s\S]*not valid/i);
@@ -30,4 +32,4 @@ assert.match(sql, /auth_user_role\(\) <> 'admin'/i);
 assert.match(sql, /delete from public\.distribuicoes[\s\S]*delete from public\.lancamentos[\s\S]*delete from public\.notas_fiscais/i);
 assert.match(sql, /d\.lancamento_id in[\s\S]*select l\.id[\s\S]*from public\.lancamentos/i);
 
-console.log('notas-integridade-financeira: 14 assertions passed');
+console.log('notas-integridade-financeira: 16 assertions passed');

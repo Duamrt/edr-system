@@ -1000,6 +1000,7 @@ async function confirmarDistribuicaoItem(chave, obraDestino, etapa, quantidade, 
     data: dataSaida || hojeISO(),
     origem: 'distribuicao_estoque',
     nota_id: lotePrincipal?.nota_id || null,
+    ...custoClassificacaoNovo(obraDestino)
   });
   // Custo primeiro e checado: distribuir do almox SEMPRE gera lancamento (mesmo valor 0).
   // !lanc = falha real de gravacao -> aborta, nao baixa estoque, nao mostra sucesso.
@@ -2546,7 +2547,7 @@ async function salvarEntradaDireta() {
       const movimentaEstoque = (typeof itemMovimentaEstoque !== 'function')
         || itemMovimentaEstoque({ codigo: materialNoCatalogo?.codigo, desc: descSemFornecedor, etapa });
       // Custo primeiro e checado. Cache local (unshift) so depois de consistente.
-      const lanc = await sbPost('lancamentos', { obra_id: obraId, descricao: descLanc, qtd, preco, total: valor, data, obs: obsLanc, etapa, nota_id: null, origem: ehDespesa ? 'manual' : 'compra_direta' });
+      const lanc = await sbPost('lancamentos', { obra_id: obraId, descricao: descLanc, qtd, preco, total: valor, data, obs: obsLanc, etapa, nota_id: null, origem: ehDespesa ? 'manual' : 'compra_direta', ...custoClassificacaoNovo(obraId) });
       if (!lanc) return showToast('Erro ao lancar o custo. Nada foi registrado.', 5000);
       const criaDist = !ehDespesa && movimentaEstoque && !ehEscritorio;
       if (criaDist) {
@@ -2712,7 +2713,8 @@ async function salvarSaidaMaterial() {
         obra_id: obraId, descricao: descSaida,
         qtd, preco: valorUnit, total: valor, data,
         obs: obs || 'SAÍDA MANUAL DE ESTOQUE', etapa,
-        origem: 'saida_manual'
+        origem: 'saida_manual',
+        ...custoClassificacaoNovo(obraId)
       });
       if (!lanc) { showToast('Erro ao lancar o custo. Nada foi registrado.', 5000); return; }
     }

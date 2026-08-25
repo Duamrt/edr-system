@@ -158,6 +158,38 @@
     return { total, noResultado, foraResultado: total - noResultado };
   }
 
+  function _normContaTexto(v) {
+    return String(v || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/\s+/g, ' ').trim();
+  }
+
+  // Conta avulsa entra no DRE. Conta de NF normalmente é só o pagamento de um custo
+  // já presente em lancamentos e deve ficar fora. Exceção: itens operacionais da NF,
+  // que notas.js grava como conta paga e deliberadamente não grava em lancamentos.
+  function _contaAdminEntraDRE(c) {
+    if (!c || c.tipo === 'reembolso_fornecedor') return false;
+    if (!c.nota_id && !c.nota_ref) return true;
+    if (c.tipo === 'despesa_operacional_nf') return true;
+
+    // Compatibilidade com o histórico anterior ao marcador acima: só aceita NF destinada
+    // ao escritório, com descrição de item (não "NF ...") e sem lançamento equivalente.
+    if (!c.nota_id) return false;
+    const notasPool = (typeof notas !== 'undefined' && Array.isArray(notas)) ? notas : [];
+    const nota = notasPool.find(n => String(n.id) === String(c.nota_id));
+    if (!nota || !_normContaTexto(nota.obra || nota.destino).includes('ESCRIT')) return false;
+
+    const descConta = _normContaTexto(c.descricao);
+    if (!descConta || /^NF(?:\s|$)/.test(descConta)) return false;
+    const valorConta = _n(c.valor);
+    const lancs = (typeof lancamentos !== 'undefined' && Array.isArray(lancamentos)) ? lancamentos : [];
+    const temEquivalente = lancs.some(l => {
+      if (String(l.nota_id || '') !== String(c.nota_id)) return false;
+      if (Math.abs(_n(l.total) - valorConta) > 0.009) return false;
+      const descLanc = _normContaTexto(l.descricao).replace(/^\d{4,6}\s*[·-]\s*/, '');
+      return descLanc === descConta || descLanc.includes(descConta) || descConta.includes(descLanc);
+    });
+    return !temEquivalente;
+  }
+
   // Higiene (SÓ leitura): lançamentos sem etapa nas obras reais — o _classif os joga em "material" por default.
   function _semEtapa(per) {
     const lancs = (typeof lancamentos !== 'undefined' && Array.isArray(lancamentos)) ? lancamentos : [];
@@ -265,8 +297,8 @@
       const r = await sbGet('contas_pagar', '?status=eq.pago&obra_id=is.null&order=data_pagamento.desc');
       // DRE = competência: despesa operacional é só conta avulsa (salário, contador, aluguel...).
       // Conta vinculada à NF já entra no DRE pelo lançamento da própria nota.
-      // UUID é a regra atual; nota_ref protege o legado ainda sem vínculo.
-      _contasAdmin = Array.isArray(r) ? r.filter(c => !c.nota_id && !c.nota_ref) : [];
+      // Itens operacionais são a exceção: notas.js cria a conta paga e não cria lançamento.
+      _contasAdmin = Array.isArray(r) ? r.filter(_contaAdminEntraDRE) : [];
     } catch (e) { _contasAdmin = []; }
     _loaded = true;
   }

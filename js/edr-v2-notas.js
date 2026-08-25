@@ -1221,6 +1221,7 @@ async function salvarNota(notaData) {
           descricao: _itD.desc,
           valor: _itD.total, data_vencimento: _hojeDesp,
           status: 'pago', data_pagamento: _hojeDesp,
+          tipo: 'despesa_operacional_nf',
           nota_id: saved.id, nota_ref: String(numero)
         });
         if (!_cp) falhasDesp++;  // [sub-lote 1] falha de despesa nao pode sumir em silencio
@@ -1245,6 +1246,7 @@ async function salvarNota(notaData) {
               qtd: it.qtd, preco: it.preco, total: it.total,
               data: hoje, obs: `NF ${numero} \u00b7 ${fornecedor} \u00b7 Baixa automatica`,
               nota_id: saved.id, etapa: it._etapa || '',
+              ...custoClassificacaoNovo(obraEsc.id)
             });
             if (lanc) lancamentos.unshift(lanc);
             const dist = await sbPost('distribuicoes', {
@@ -1280,6 +1282,7 @@ async function salvarNota(notaData) {
               qtd: it.qtd, preco: it.preco, total: it.total,
               data: dataLanc, obs: `NF ${numero} \u00b7 ${fornecedor}`,
               nota_id: saved.id, etapa: it._etapa || '',
+              ...custoClassificacaoNovo(obraDestino.id)
             });
             if (!lanc) { falhasLanc++; continue; }  // [sub-lote 1] lancamento falhou: nao criar distribuicao orfa (lancamento_id null)
             lancamentos.unshift(lanc);
@@ -1309,6 +1312,7 @@ async function salvarNota(notaData) {
               qtd: 1, preco: frete, total: frete,
               data: dataLanc, obs: `NF ${numero} · ${fornecedor} · Frete destacado`,
               nota_id: saved.id, etapa: '38_frete',
+              ...custoClassificacaoNovo(obraDestino.id)
             });
             if (lancFrete) lancamentos.unshift(lancFrete); else falhasLanc++;
           }
@@ -1320,6 +1324,7 @@ async function salvarNota(notaData) {
               qtd: 1, preco: outras, total: outras,
               data: dataLanc, obs: `NF ${numero} · ${fornecedor} · Outras despesas acessorias`,
               nota_id: saved.id, etapa: '36_outros',
+              ...custoClassificacaoNovo(obraDestino.id)
             });
             if (lancOutras) lancamentos.unshift(lancOutras); else falhasLanc++;
           }
