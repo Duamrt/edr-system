@@ -1370,20 +1370,6 @@ html.dark .hist-badge-obra { background:rgba(14,116,144,.18);color:#67e8f9;borde
 .custos-resumo-value.yellow { color:var(--warning); }
 .custos-resumo-value.purple { color:#8b5cf6; }
 .custos-resumo-sub { font-size:10px;color:var(--text-tertiary);margin-top:3px; }
-.custos-origem { background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:14px; }
-.custos-origem-head { display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px; }
-.custos-origem-grid { display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px; }
-.custos-origem-card { border:1px solid var(--border);border-radius:var(--radius-sm);padding:11px;background:var(--bg); }
-.custos-origem-card.warn { border-color:rgba(217,119,6,.4);background:rgba(217,119,6,.05); }
-.custos-origem-meta { display:flex;justify-content:space-between;gap:8px;font-size:10px;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.5px; }
-.custos-origem-valores { display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px; }
-.custos-origem-valores span { display:block;font-size:9px;color:var(--text-tertiary);text-transform:uppercase; }
-.custos-origem-valores b { display:block;margin-top:2px;font-family:'Space Grotesk',monospace;font-size:13px; }
-.custos-class-list { max-height:58vh;overflow:auto;border:1px solid var(--border);border-radius:var(--radius-sm); }
-.custos-class-row { display:grid;grid-template-columns:minmax(220px,1fr) 110px minmax(190px,260px) 76px;gap:8px;align-items:center;padding:9px 10px;border-bottom:1px solid var(--border); }
-.custos-class-row:last-child { border-bottom:0; }
-@media(max-width:720px){ .custos-origem-head{flex-direction:column;} .custos-class-row{grid-template-columns:1fr 90px;} .custos-class-row select,.custos-class-row button{grid-column:1/-1;} }
-
 /* ── ANALISE DE OBRAS · tabela indicadores por m² — cor de CATEGORIA fixa (tokens existentes, NAO status) ── */
 .relm2-obra { font-weight:700;color:var(--text-primary);font-family:'Plus Jakarta Sans',sans-serif;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
 .relm2-cel { font-family:'Space Grotesk',monospace;text-align:right;white-space:nowrap; }
@@ -2253,7 +2239,6 @@ html.dark .hist-badge-obra { background:rgba(14,116,144,.18);color:#67e8f9;borde
       <input type="hidden" id="custos-filtro-obra" value="">
       <div id="custos-contrato-card"></div>
       <div id="custos-resumo"></div>
-      <div id="custos-resultado-origem"></div>
       <div id="custos-detalhes"></div>
       <div id="custos-historico-mensal" style="margin-top:16px;"></div>
     </div>
