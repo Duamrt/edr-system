@@ -2103,23 +2103,74 @@ function diarTogglePanel() {
 
 
 // ══════════════════════════════════════════════════════════════════
-// EXPORTAR PDF (jsPDF com try/catch)
+// EXPORTAR PDF (jsPDF + QR Pix gerado localmente)
 // ══════════════════════════════════════════════════════════════════
-function diarExportarFolha() {
+const _diarBibliotecasPDF = {};
+
+function _diarCarregarBibliotecaPDF(chave, src, disponivel) {
+  if (disponivel()) return Promise.resolve();
+  if (_diarBibliotecasPDF[chave]) return _diarBibliotecasPDF[chave];
+  _diarBibliotecasPDF[chave] = new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = src;
+    script.onload = () => disponivel() ? resolve() : reject(new Error('Biblioteca ' + chave + ' indisponivel.'));
+    script.onerror = () => reject(new Error('Nao foi possivel carregar ' + chave + '.'));
+    document.head.appendChild(script);
+  }).catch(e => {
+    delete _diarBibliotecasPDF[chave];
+    throw e;
+  });
+  return _diarBibliotecasPDF[chave];
+}
+
+function _diarTemChavePix(chave) {
+  const valor = String(chave || '').trim().toUpperCase();
+  return !!valor && valor !== 'DINHEIRO' && valor !== '—' && valor !== '-';
+}
+
+function _diarQrDataUrl(payload) {
+  if (!window.QRCode) throw new Error('Gerador de QR Code indisponivel.');
+  const host = document.createElement('div');
+  host.style.cssText = 'position:fixed;left:-9999px;top:-9999px;background:#fff;padding:0;';
+  document.body.appendChild(host);
+  try {
+    new window.QRCode(host, {
+      text: payload,
+      width: 256,
+      height: 256,
+      colorDark: '#000000',
+      colorLight: '#ffffff',
+      correctLevel: window.QRCode.CorrectLevel.L
+    });
+    const canvas = host.querySelector('canvas');
+    const imagem = host.querySelector('img');
+    const dataUrl = canvas?.toDataURL('image/png') || imagem?.src;
+    if (!dataUrl) throw new Error('QR Code nao foi renderizado.');
+    return dataUrl;
+  } finally {
+    host.remove();
+  }
+}
+
+async function diarExportarFolha() {
   if (_diarBloqueiaMestre()) return; // guard-mestre:diarExportarFolha
   try {
     const regs = _diarGetRegistrosQuinzena();
     if (!regs.length) { showToast('Nenhum dado para exportar.'); return; }
-
-    if (!window.jspdf) {
-      const script = document.createElement('script');
-      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
-      script.onload = () => _diarGerarPDF(regs);
-      script.onerror = () => { showToast('Nao foi possivel carregar o gerador de PDF. Tente novamente.'); };
-      document.head.appendChild(script);
-    } else {
-      _diarGerarPDF(regs);
+    await _diarCarregarBibliotecaPDF(
+      'jsPDF',
+      'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
+      () => !!window.jspdf
+    );
+    const precisaQr = DiariasModule.funcionariosRaw.some(f => _diarTemChavePix(f.chave_pix));
+    if (precisaQr) {
+      await _diarCarregarBibliotecaPDF(
+        'QRCode',
+        'https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js',
+        () => !!window.QRCode
+      );
     }
+    _diarGerarPDF(regs);
   } catch (e) { showToast('Nao foi possivel exportar: ' + e.message); }
 }
 
@@ -2261,7 +2312,7 @@ function _diarGerarPDF(regs) {
       y += 4;
     }
 
-    // DADOS PARA PAGAMENTO — nome completo + chave PIX do cadastro da equipe
+    // DADOS PARA PAGAMENTO — QR local com chave e valor, sem enviar dados a terceiros
     {
       const cadastro = {};
       DiariasModule.funcionariosRaw.forEach(f => { cadastro[f.nome.toLowerCase()] = f; });
@@ -2270,36 +2321,86 @@ function _diarGerarPDF(regs) {
         const k = (e.funcionario || '').toLowerCase();
         extrasPorFunc[k] = (extrasPorFunc[k] || 0) + e.valor;
       });
-      const pgW = [70, 76, 36];
-      const pgX = [margem, margem + pgW[0], margem + pgW[0] + pgW[1]];
-      const alturaSecao = 5 + 7 + (funcs.length + 1) * 7;
-      if (y + alturaSecao > 270) { doc.addPage(); y = 16; }
-      doc.setTextColor(...CINZA1); doc.setFont('helvetica', 'bold'); doc.setFontSize(10);
-      doc.text('DADOS PARA PAGAMENTO', margem, y);
-      y += 5;
-      doc.setFillColor(...VERDE);
-      doc.rect(margem, y, W - margem * 2, 7, 'F');
-      doc.setTextColor(...BRANCO); doc.setFontSize(8); doc.setFont('helvetica', 'bold');
-      doc.text('FUNCIONARIO', pgX[0] + 2, y + 5);
-      doc.text('CHAVE PIX', pgX[1] + 2, y + 5);
-      doc.text('TOTAL A PAGAR (R$)', pgX[2] + pgW[2] - 2, y + 5, { align: 'right' });
-      y += 7;
+      const pgW = [50, 45, 31, 37, 19];
+      const pgX = [margem];
+      pgW.forEach((w, i) => pgX.push(pgX[i] + w));
+      const alturaLinha = 25;
+
+      const desenharCabecalhoPagamento = (continuacao) => {
+        doc.setTextColor(...CINZA1); doc.setFont('helvetica', 'bold'); doc.setFontSize(10);
+        doc.text('DADOS PARA PAGAMENTO PIX' + (continuacao ? ' — CONTINUACAO' : ''), margem, y);
+        y += 5;
+        doc.setFillColor(...VERDE);
+        doc.rect(margem, y, W - margem * 2, 7, 'F');
+        doc.setTextColor(...BRANCO); doc.setFontSize(7.5); doc.setFont('helvetica', 'bold');
+        doc.text('FUNCIONARIO', pgX[0] + 2, y + 5);
+        doc.text('CHAVE PIX', pgX[1] + 2, y + 5);
+        doc.text('TOTAL (R$)', pgX[2] + pgW[2] - 2, y + 5, { align: 'right' });
+        doc.text('QR PIX', pgX[3] + pgW[3] / 2, y + 5, { align: 'center' });
+        doc.text('PAGO', pgX[4] + pgW[4] / 2, y + 5, { align: 'center' });
+        y += 7;
+      };
+
+      doc.addPage();
+      y = 16;
+      desenharCabecalhoPagamento(false);
       funcs.forEach((f, idx) => {
-        if (y > 275) { doc.addPage(); y = 16; }
+        if (y + alturaLinha > 270) {
+          doc.addPage();
+          y = 16;
+          desenharCabecalhoPagamento(true);
+        }
         const cad = cadastro[f.nome.toLowerCase()];
         const nomePag = (cad?.nome_completo || f.nome).substring(0, 42);
         const pix = (cad?.chave_pix || '—').substring(0, 45);
         const totalPagar = f.valor + (extrasPorFunc[f.nome.toLowerCase()] || 0);
-        if (idx % 2 === 0) { doc.setFillColor(248, 248, 248); doc.rect(margem, y, W - margem * 2, 7, 'F'); }
-        doc.setTextColor(...CINZA1); doc.setFont('helvetica', 'bold'); doc.setFontSize(8);
-        doc.text(nomePag, pgX[0] + 2, y + 5);
-        doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(...CINZA2);
-        doc.text(pix, pgX[1] + 2, y + 5);
+        const valorFormatado = totalPagar.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+        if (idx % 2 === 0) { doc.setFillColor(248, 248, 248); doc.rect(margem, y, W - margem * 2, alturaLinha, 'F'); }
+        doc.setDrawColor(...LINHA);
+        doc.line(margem, y + alturaLinha, W - margem, y + alturaLinha);
+        doc.setTextColor(...CINZA1); doc.setFont('helvetica', 'bold'); doc.setFontSize(7.8);
+        doc.text(doc.splitTextToSize(nomePag, pgW[0] - 4).slice(0, 2), pgX[0] + 2, y + 7);
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(...CINZA2);
+        doc.text(doc.splitTextToSize(pix, pgW[1] - 4).slice(0, 2), pgX[1] + 2, y + 7);
         doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(...VERDE);
-        doc.text('R$ ' + totalPagar.toLocaleString('pt-BR', { minimumFractionDigits: 2 }), pgX[2] + pgW[2] - 2, y + 5, { align: 'right' });
-        y += 7;
+        doc.text('R$ ' + valorFormatado, pgX[2] + pgW[2] - 2, y + 7, { align: 'right' });
+
+        const temPix = _diarTemChavePix(pix);
+        if (temPix && window.PixBRCode && window.QRCode) {
+          try {
+            const payload = window.PixBRCode.montarPayload({
+              chave: pix,
+              nome: nomePag,
+              valor: totalPagar,
+              cidade: 'NAO INFORMADO',
+              txid: '***'
+            });
+            const qrData = _diarQrDataUrl(payload);
+            const qrTam = 20;
+            const qrX = pgX[3] + (pgW[3] - qrTam) / 2;
+            doc.addImage(qrData, 'PNG', qrX, y + 0.8, qrTam, qrTam);
+            const primeiroNome = nomePag.split(/\s+/)[0].substring(0, 10).toUpperCase();
+            doc.setTextColor(...CINZA2); doc.setFont('helvetica', 'bold'); doc.setFontSize(5.2);
+            doc.text(primeiroNome + ' · ' + valorFormatado, pgX[3] + pgW[3] / 2, y + 23.2, { align: 'center' });
+          } catch (e) {
+            console.warn('QR Pix nao gerado para ' + nomePag + ':', e);
+            doc.setTextColor(170, 55, 55); doc.setFont('helvetica', 'bold'); doc.setFontSize(6.5);
+            doc.text('QR INDISPONIVEL', pgX[3] + pgW[3] / 2, y + 12, { align: 'center' });
+          }
+        } else {
+          doc.setTextColor(...CINZA3); doc.setFont('helvetica', 'bold'); doc.setFontSize(6.5);
+          doc.text(temPix ? 'QR INDISPONIVEL' : 'PAGAR EM DINHEIRO', pgX[3] + pgW[3] / 2, y + 12, { align: 'center' });
+        }
+
+        doc.setDrawColor(...CINZA3);
+        doc.rect(pgX[4] + (pgW[4] - 6) / 2, y + 7, 6, 6);
+        y += alturaLinha;
       });
-      y += 10;
+      doc.setFillColor(...VERDE_CL);
+      doc.rect(margem, y + 2, W - margem * 2, 9, 'F');
+      doc.setTextColor(...VERDE); doc.setFont('helvetica', 'bold'); doc.setFontSize(7.2);
+      doc.text('CONFIRA O NOME DO FAVORECIDO E O VALOR NO APLICATIVO DO BANCO ANTES DE CONFIRMAR.', margem + 3, y + 7.7);
+      y += 16;
     }
 
     // CUSTO POR OBRA
@@ -2325,15 +2426,16 @@ function _diarGerarPDF(regs) {
       y += 6;
     }
 
-    // RODAPE
-    y = Math.max(y + 10, 255);
-    if (y > 270) { doc.addPage(); y = 240; }
-    doc.setDrawColor(...LINHA);
-    doc.line(margem, y, W - margem, y);
-    y += 6;
-    doc.setTextColor(...CINZA3); doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5);
-    doc.text('EDR Engenharia — Documento gerado pelo EDR System V2', margem, y);
-    doc.text('Pagina 1', W - margem, y, { align: 'right' });
+    // RODAPE EM TODAS AS PAGINAS
+    const totalPaginas = doc.getNumberOfPages();
+    for (let pagina = 1; pagina <= totalPaginas; pagina++) {
+      doc.setPage(pagina);
+      doc.setDrawColor(...LINHA);
+      doc.line(margem, 282, W - margem, 282);
+      doc.setTextColor(...CINZA3); doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5);
+      doc.text('EDR Engenharia — Documento gerado pelo EDR System V2', margem, 288);
+      doc.text('Pagina ' + pagina + ' de ' + totalPaginas, W - margem, 288, { align: 'right' });
+    }
 
     doc.save('EDR_Folha_' + (DiariasModule.quinzenaAtiva?.label || 'quinzena').replace(/[^a-zA-Z0-9]/g, '_') + '.pdf');
     showToast('PDF gerado!');

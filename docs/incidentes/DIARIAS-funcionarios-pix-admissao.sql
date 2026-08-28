@@ -9,6 +9,10 @@
 -- nome_completo/chave_pix. Como o PDF usa o retorno dessa RPC, imprimia "—".
 -- Correcao versionada em sql/diarias-migration-d-admin-pix-pdf.sql.
 -- Teste de regressao: tests/diarias-pix-pdf.test.js.
+-- Evolucao local 2026-08-28: a folha gera QR Pix estatico por funcionario,
+-- com valor fechado, nome/valor junto ao QR e caixa PAGO para reduzir troca de linha.
+-- O payload BR Code e gerado localmente por js/pix-brcode.js; nenhum dado Pix
+-- e enviado a gerador externo. A confirmacao do favorecido continua obrigatoria no banco.
 -- Aplicada em producao em 2026-08-28; RPC retornou PIX para 7/7 ativos,
 -- mestre recebeu 42501 e o PDF foi confirmado visualmente pelo Duam.
 
