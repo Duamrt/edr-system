@@ -43,8 +43,9 @@ assert.match(diarias, /\.\.\.classificacaoPorChave\.get\(g\.chave\)/);
 assert.match(financeiro, /\.\.\.custoClassificacaoNovo\(conta\.obra_id\)/);
 assert.match(index, /\.\.\.custoClassificacaoNovo\(obraId\)/);
 
-assert.match(custos, /function _custosRenderResultadoOrigem\(obraId\)/);
-assert.match(custos, /destino_custo: destino, adicional_id: adicionalId/);
+assert.doesNotMatch(custos, /custosAbrirClassificador/);
+assert.doesNotMatch(index, /custos-resultado-origem/);
+assert.match(custos, /lancamentos\.filter\(l => l\.obra_id === obraId\)\.reduce\(\(s, l\) => s \+ Number\(l\.total \|\| 0\), 0\)/);
 assert.match(custos, /TOTAL RECEBIDO[\s\S]*fmtR\(totalRecebidoGeral\)/);
 assert.match(custos, /Contrato: \$\{fmtR\(totalRecebido\)\} \| Adicionais: \$\{fmtR\(adds\.totalRecebido \|\| 0\)\}/);
 
@@ -56,4 +57,4 @@ assert.match(sql, /auth\.uid\(\) is not null[\s\S]*public\.auth_user_role\(\) is
 assert.match(sql, /v_adicional\.status in \('pendente', 'cancelado'\)/i);
 assert.match(sql, /create unique index lancamentos_mao_unico[\s\S]*company_id,[\s\S]*obra_id,[\s\S]*obs[\s\S]*where etapa = '28_mao'[\s\S]*obs is not null[\s\S]*obs <> ''/i);
 
-console.log('custos-classificacao-origem: 21 assertions passed');
+console.log('custos-classificacao-origem: 24 assertions passed');
