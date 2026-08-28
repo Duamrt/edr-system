@@ -25,6 +25,10 @@
 - **Funções principais:** `_custosRenderCards`, `custosAbrirDetalhe`, `custosAbrirModalRepasse`, `custosAbrirModalContrato`, `_custosRenderResumoFinanceiro`
 - **Fluxos críticos:** Repasse CEF → recebimento da obra; Contrato → valor de venda; histórico mensal por obra
 - **Dependências:** Raio-X (recebContrato), Relatório (pgtosMes/repassesMes), DRE
+- **Incidente 2026-08-28:** criação direta recebeu `403` da RLS. A migration
+  `custos_salvar_repasse_cef_rpc` foi aplicada: `salvar_repasse_cef()` deriva
+  empresa/papel da sessão e valida a obra no servidor. Publicação do front ainda
+  pendente neste registro.
 - **Riscos prováveis:**
   - `new Date(r.data_credito + 'T12:00:00')` — safe (tem sufixo T12)
   - `new Date(mes + '-15')` — safe (dia 15, sem timezone shift)

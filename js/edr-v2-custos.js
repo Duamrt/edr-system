@@ -755,6 +755,32 @@ async function custosSalvarRepasse() {
   if (!data) return showToast('Informe a data', 5000);
 
   const body = { obra_id: obraId, medicao_numero: medicao, valor, data_credito: data, observacao: obs, tipo };
+  const params = {
+    p_obra_id: obraId,
+    p_medicao_numero: medicao,
+    p_valor: valor,
+    p_data_credito: data,
+    p_observacao: obs,
+    p_tipo: tipo,
+    p_repasse_id: editId || null
+  };
+
+  // A RPC deriva company_id e papel no servidor. Enquanto a migration ainda nao
+  // estiver aplicada, preserva o caminho REST legado para nao quebrar o modulo.
+  const respostaRpc = await sbRpc('salvar_repasse_cef', params);
+  if (respostaRpc !== 'RPC_AUSENTE') {
+    const salvoRpc = Array.isArray(respostaRpc) ? respostaRpc[0] : respostaRpc;
+    if (!salvoRpc) {
+      showToast('Nao foi possivel salvar o repasse. Recarregue e tente novamente.', 5000);
+      return;
+    }
+    showToast(editId ? 'Repasse atualizado' : 'Repasse salvo');
+    closeModal('custos-modal-repasse');
+    await _custosCarregarRepasses();
+    if (CustosModule.obraAtual) custosAbrirDetalhe(CustosModule.obraAtual);
+    else _custosRenderCards();
+    return;
+  }
 
   if (editId) {
     // sbPatch (infra): objeto = persistiu / undefined = 0 linhas (id inexistente/RLS) / null = erro HTTP.
