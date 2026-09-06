@@ -2536,9 +2536,9 @@ html.dark .hist-badge-obra { background:rgba(14,116,144,.18);color:#67e8f9;borde
 <!-- Header sticky -->
     <div class="diarias-header">
       <div class="diarias-header-title"><span class="material-symbols-outlined icon-lg">engineering</span> DIÁRIAS</div>
-      <button onclick="pdfDiarias()" class="admin-only btn-tipo btn-tipo-active-success" style="padding:5px 12px;min-height:auto;font-size:11px;" title="Gerar PDF da quinzena"><span class="material-symbols-outlined icon-sm">picture_as_pdf</span> PDF</button>
+      <button onclick="pdfDiarias()" class="admin-only btn-tipo btn-tipo-active-success" style="padding:5px 12px;min-height:auto;font-size:11px;" title="Gerar PDF do período"><span class="material-symbols-outlined icon-sm">picture_as_pdf</span> PDF</button>
       <button onclick="diarAbrirModalEquipe()" class="admin-only btn-tipo btn-tipo-active-info" style="padding:5px 12px;min-height:auto;font-size:11px;" title="Gerenciar equipe"><span class="material-symbols-outlined icon-sm">group</span> EQUIPE</button>
-      <div class="diarias-quinzena-badge" id="diar-quinzena-badge">QUINZENA</div>
+      <div class="diarias-quinzena-badge" id="diar-quinzena-badge">PERÍODO DE PAGAMENTO</div>
     </div>
     <div class="diarias-main wtab-apontar" id="diar-mainGrid">
       <!-- ABAS DE TRABALHO (só desktop): Apontamento | Registros | Folha, uma por vez em largura total -->
@@ -2571,7 +2571,7 @@ html.dark .hist-badge-obra { background:rgba(14,116,144,.18);color:#67e8f9;borde
           <button class="btn-diarias-confirmar diar-q-salvar diar-lista-salvar" id="diar-listaSalvar" onclick="diarListaAbrirResumo()" disabled>
             <span class="material-symbols-outlined icon-md">check_circle</span> CONFERIR E SALVAR
           </button>
-          <div class="diar-q-hint">Salvar não fecha a quinzena nem lança pagamento. O fechamento continua na Folha.</div>
+          <div class="diar-q-hint">A data escolhida define o período. Salvar não fecha o período nem lança pagamento.</div>
         </div>
         <!-- ══ /LISTA DIÁRIA ══ -->
 
@@ -2643,13 +2643,13 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
       <div class="diarias-panel-right">
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-            <div class="diarias-panel-title" style="margin:0">// QUINZENA</div>
+            <div class="diarias-panel-title" style="margin:0">// PERÍODO DE PAGAMENTO</div>
             <select id="diar-quinzena-select" onchange="diarTrocarQuinzena(this.value)" style="background:var(--bg3);border:1px solid rgba(34,197,94,0.2);border-radius:8px;padding:5px 10px;color:var(--verde-hl);font-size:11px;font-family:'Rajdhani',sans-serif;font-weight:700;cursor:pointer;">
               <option value="">Carregando...</option>
             </select>
-            <button onclick="diarEditarLabelQuinzena()" title="Editar descrição" style="background:rgba(255,255,255,0.04);border:1px solid rgba(34,197,94,0.15);color:var(--verde-hl);border-radius:7px;padding:4px 9px;font-size:12px;cursor:pointer;">✏️</button>
-            <button onclick="diarAbrirModalNovaQuinzena()" title="Nova quinzena" style="background:rgba(255,255,255,0.04);border:1px solid rgba(34,197,94,0.15);color:var(--verde-hl);border-radius:7px;padding:4px 9px;font-size:12px;cursor:pointer;" id="btn-diar-nova-quinzena">＋</button>
-            <button onclick="diarExcluirQuinzena()" title="Excluir quinzena" class="admin-only btn-tipo btn-tipo-active-danger" style="padding:4px 9px;min-height:auto;font-size:12px;" id="btn-diar-del-quinzena"><span class="material-symbols-outlined icon-sm">delete</span></button>
+            <button onclick="diarEditarLabelQuinzena()" title="Editar datas do período" style="background:rgba(255,255,255,0.04);border:1px solid rgba(34,197,94,0.15);color:var(--verde-hl);border-radius:7px;padding:4px 9px;font-size:12px;cursor:pointer;">✏️</button>
+            <button onclick="diarAbrirModalNovaQuinzena()" title="Novo período de pagamento" style="background:rgba(255,255,255,0.04);border:1px solid rgba(34,197,94,0.15);color:var(--verde-hl);border-radius:7px;padding:4px 9px;font-size:12px;cursor:pointer;" id="btn-diar-nova-quinzena">＋</button>
+            <button onclick="diarExcluirQuinzena()" title="Excluir período" class="admin-only btn-tipo btn-tipo-active-danger" style="padding:4px 9px;min-height:auto;font-size:12px;" id="btn-diar-del-quinzena"><span class="material-symbols-outlined icon-sm">delete</span></button>
             <button onclick="diarAbrirLixeira()" title="Lixeira" style="background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.2);color:#f59e0b;border-radius:7px;padding:4px 9px;font-size:12px;cursor:pointer;" class="admin-only">♻</button>
           </div>
           <div class="diarias-tabs">
@@ -2661,7 +2661,7 @@ Seu nego i val casa di Junior 3 cimento"></textarea>
           <div id="diar-registrosContainer">
             <div class="diarias-empty">
               <div class="diarias-empty-icon"><span class="material-symbols-outlined icon-2xl">assignment</span></div>
-              <div class="diarias-empty-text">Nenhum registro nesta quinzena</div>
+              <div class="diarias-empty-text">Nenhum registro neste período</div>
             </div>
           </div>
         </div>

@@ -63,7 +63,7 @@ async function initDiarias() {
   await _diarCarregarQuinzenas();
   _diarRenderRegistros();
   _diarRenderExtras();
-  _diarListaInit();  // Lista Diaria (mobile principal) — funcionarios ativos, Manha/Tarde por tap
+  await _diarListaInit();  // Lista Diaria (mobile principal) — a data seleciona o periodo de pagamento
   _diarWorkTabReset();      // entrar na tela sempre abre em "Apontamento do dia" (padrao)
   _diarWorkTabsBindKeys();  // liga navegacao por teclado nas abas (uma vez)
   _diarAplicarRestricaoMestre();  // mestre: esconde Registros/Folha/Equipe/PDF/quinzena/lixeira
@@ -409,6 +409,21 @@ async function diarSalvarEdicaoFunc(id) {
 // ══════════════════════════════════════════════════════════════════
 let diarQuinzenas = []; // alias temporario p/ compatibilidade interna
 
+function _diarEncontrarQuinzenaPorData(quinzenas, data) {
+  if (!data || !Array.isArray(quinzenas)) return null;
+  return quinzenas.find(q => q && !q.excluida && q.data_inicio <= data && q.data_fim >= data) || null;
+}
+
+function _diarDataBR(data) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(data || '')) return '';
+  return data.split('-').reverse().join('/');
+}
+
+function _diarLabelPeriodo(q) {
+  if (!q?.data_inicio || !q?.data_fim) return 'PERÍODO DE PAGAMENTO';
+  return 'PERÍODO · ' + _diarDataBR(q.data_inicio) + ' A ' + _diarDataBR(q.data_fim);
+}
+
 async function _diarCarregarQuinzenas() {
   try {
     const todas = await sbGet('diarias_quinzenas', '?order=data_inicio.desc&limit=30');
@@ -436,12 +451,15 @@ async function _diarCarregarQuinzenas() {
   }
 
   if (!DiariasModule.quinzenas.length) {
-    showToast('Nenhuma quinzena encontrada. Crie uma clicando em +.');
+    showToast('Nenhum período de pagamento encontrado. Crie um clicando em +.');
     return;
   }
 
   if (!DiariasModule.quinzenaAtiva) {
-    DiariasModule.quinzenaAtiva = DiariasModule.quinzenas.find(q => !q.fechada) || DiariasModule.quinzenas[0];
+    // Ao entrar no modulo, a quinzena da data atual tem prioridade. Uma quinzena
+    // antiga ainda aberta nao pode capturar silenciosamente apontamentos de hoje.
+    const quinzenaHoje = _diarEncontrarQuinzenaPorData(DiariasModule.quinzenas, hojeISO());
+    DiariasModule.quinzenaAtiva = quinzenaHoje || DiariasModule.quinzenas.find(q => !q.fechada) || DiariasModule.quinzenas[0];
   } else {
     DiariasModule.quinzenaAtiva = DiariasModule.quinzenas.find(q => q.id === DiariasModule.quinzenaAtiva.id) || DiariasModule.quinzenas[0];
   }
@@ -449,54 +467,13 @@ async function _diarCarregarQuinzenas() {
   await _diarCarregarRegistros();
 }
 
-async function _diarCriarQuinzenaAuto() {
-  if (DiariasModule._criacaoEmAndamento) return;
-  DiariasModule._criacaoEmAndamento = true;
-  try {
-    if (!_companyId) {
-      if (typeof loadCompanyId === 'function') await loadCompanyId();
-      if (!_companyId) { showToast('Erro: empresa nao carregada. Recarregue.'); DiariasModule._criacaoEmAndamento = false; return; }
-    }
-    const h = new Date();
-    const ano = h.getFullYear(), mes = h.getMonth() + 1;
-    const mesStr = h.toLocaleString('pt-BR', { month: 'long' }).toUpperCase();
-    const q = h.getDate() <= 15 ? 1 : 2;
-    const label = `${q === 1 ? '1\xaa' : '2\xaa'} QUINZENA \xb7 ${mesStr} ${ano}`;
-    const inicio = q === 1 ? `${ano}-${String(mes).padStart(2, '0')}-01` : `${ano}-${String(mes).padStart(2, '0')}-16`;
-    const fim = q === 1 ? `${ano}-${String(mes).padStart(2, '0')}-15` : new Date(ano, mes, 0).toISOString().split('T')[0];
-
-    // Verificar duplicata antes de criar
-    try {
-      const todas = await sbGet('diarias_quinzenas', '?order=data_inicio.desc&limit=20');
-      const existentes = (Array.isArray(todas) ? todas : []).filter(q => !q.excluida && q.data_inicio >= inicio && q.data_fim <= fim);
-      if (existentes.length > 0) {
-        DiariasModule.quinzenas = existentes;
-        DiariasModule.quinzenaAtiva = existentes[0];
-        _diarAtualizarSelectQuinzena();
-        await _diarCarregarRegistros();
-        DiariasModule._criacaoEmAndamento = false;
-        return;
-      }
-    } catch (e) { /* segue pra criar */ }
-
-    try {
-      const nova = await sbPost('diarias_quinzenas', { label, data_inicio: inicio, data_fim: fim });
-      if (!nova) { showToast('Nao foi possivel criar a quinzena. Tente de novo.', 5000); return; }  // nao poe null no array (quebraria _diarAtualizarSelectQuinzena)
-      DiariasModule.quinzenas = [nova];
-      DiariasModule.quinzenaAtiva = nova;
-    } catch (e) { showToast('Erro ao criar quinzena: ' + (e.message || '')); }
-  } finally { DiariasModule._criacaoEmAndamento = false; }
-  _diarAtualizarSelectQuinzena();
-  await _diarCarregarRegistros();
-}
-
 function _diarAtualizarSelectQuinzena() {
   const sel = document.getElementById('diar-quinzena-select');
-  if (sel) sel.innerHTML = DiariasModule.quinzenas.map(q =>
-    `<option value="${q.id}" ${DiariasModule.quinzenaAtiva?.id === q.id ? 'selected' : ''}>${esc(q.label)}${q.fechada ? ' \u2713' : ''}</option>`
+  if (sel) sel.innerHTML = '<option value="">Escolha um período</option>' + DiariasModule.quinzenas.map(q =>
+    `<option value="${q.id}" ${DiariasModule.quinzenaAtiva?.id === q.id ? 'selected' : ''}>${esc(_diarLabelPeriodo(q))}${q.fechada ? ' \u2713' : ''}</option>`
   ).join('');
   const badge = document.getElementById('diar-quinzena-badge');
-  if (badge && DiariasModule.quinzenaAtiva) badge.textContent = DiariasModule.quinzenaAtiva.label;
+  if (badge) badge.textContent = DiariasModule.quinzenaAtiva ? _diarLabelPeriodo(DiariasModule.quinzenaAtiva) : 'SEM PERÍODO PARA A DATA';
 }
 
 async function diarExcluirQuinzena() {
@@ -506,19 +483,19 @@ async function diarExcluirQuinzena() {
   const extrasCount = DiariasModule.extras.filter(e => e.quinzena_id === DiariasModule.quinzenaAtiva.id).length;
 
   if (regsCount > 0 || extrasCount > 0) {
-    const ok = await confirmar('Mover "' + DiariasModule.quinzenaAtiva.label + '" para a lixeira?\n\n' + regsCount + ' registros e ' + extrasCount + ' extras serao arquivados.\nVoce pode restaurar depois.');
+    const ok = await confirmar('Mover "' + _diarLabelPeriodo(DiariasModule.quinzenaAtiva) + '" para a lixeira?\n\n' + regsCount + ' registros e ' + extrasCount + ' extras serao arquivados.\nVoce pode restaurar depois.');
     if (!ok) return;
   } else {
-    const ok = await confirmar('Excluir a quinzena vazia "' + DiariasModule.quinzenaAtiva.label + '"?');
+    const ok = await confirmar('Excluir o período vazio "' + _diarLabelPeriodo(DiariasModule.quinzenaAtiva) + '"?');
     if (!ok) return;
     try {
       const apagou = await sbDelete('diarias_quinzenas', `?id=eq.${DiariasModule.quinzenaAtiva.id}`);
-      if (apagou === null) { showToast('Erro ao excluir a quinzena.', 5000); return; }  // null = falha real, nao remove do cache
+      if (apagou === null) { showToast('Erro ao excluir o período.', 5000); return; }  // null = falha real, nao remove do cache
       DiariasModule.quinzenas = DiariasModule.quinzenas.filter(q => q.id !== DiariasModule.quinzenaAtiva.id);
       DiariasModule.quinzenaAtiva = DiariasModule.quinzenas[0] || null;
       _diarAtualizarSelectQuinzena();
       _diarRenderRegistros(); _diarRenderExtras();
-      showToast(apagou ? 'Quinzena vazia excluida.' : 'Quinzena ja nao existia — lista atualizada.');
+      showToast(apagou ? 'Período vazio excluído.' : 'Período já não existia — lista atualizada.');
     } catch (e) { showToast('Erro ao excluir.'); }
     return;
   }
@@ -528,13 +505,13 @@ async function diarExcluirQuinzena() {
     const arquivada = await sbPatch('diarias_quinzenas', `?id=eq.${DiariasModule.quinzenaAtiva.id}`, {
       excluida: true, excluida_em: new Date().toISOString()
     });
-    if (!arquivada) { showToast(arquivada === null ? 'Erro ao mover a quinzena para a lixeira.' : 'Quinzena nao encontrada — recarregue.', 5000); return; }  // nao remove da lista, NAO zera registros/extras
+    if (!arquivada) { showToast(arquivada === null ? 'Erro ao mover o período para a lixeira.' : 'Período nao encontrado — recarregue.', 5000); return; }  // nao remove da lista, NAO zera registros/extras
     DiariasModule.quinzenas = DiariasModule.quinzenas.filter(q => q.id !== DiariasModule.quinzenaAtiva.id);
     DiariasModule.quinzenaAtiva = DiariasModule.quinzenas[0] || null;
     DiariasModule.registros = []; DiariasModule.extras = [];
     _diarAtualizarSelectQuinzena();
     _diarRenderRegistros(); _diarRenderExtras();
-    showToast('Quinzena movida pra lixeira.');
+    showToast('Período movido para a lixeira.');
   } catch (e) { showToast('Erro: ' + e.message); }
 }
 
@@ -547,14 +524,15 @@ async function diarAbrirLixeira() {
 
     const lista = excluidas.map(q => {
       const dataExc = q.excluida_em ? new Date(q.excluida_em).toLocaleDateString('pt-BR') : '';
+      const periodo = _diarLabelPeriodo(q);
       return `<div style="display:flex;justify-content:space-between;align-items:center;padding:12px;border-bottom:1px solid var(--border-primary);">
         <div>
-          <div style="font-weight:700;font-size:13px;">${esc(q.label)}</div>
+          <div style="font-weight:700;font-size:13px;">${esc(periodo)}</div>
           <div style="color:var(--text-tertiary);" style="font-size:11px;">Excluida em ${dataExc}</div>
         </div>
         <div style="display:flex;gap:8px;">
           <button onclick="diarRestaurarQuinzena('${q.id}')" class="edr-btn-sm" style="background:var(--primary);color:#fff;border-color:var(--primary);">RESTAURAR</button>
-          <button onclick="diarExcluirDefinitivo('${q.id}','${(q.label || '').replace(/'/g, '')}')" class="edr-btn-sm" style="color:var(--error);border-color:rgba(239,68,68,.3);">APAGAR</button>
+          <button onclick="diarExcluirDefinitivo('${q.id}','${periodo}')" class="edr-btn-sm" style="color:var(--error);border-color:rgba(239,68,68,.3);">APAGAR</button>
         </div>
       </div>`;
     }).join('');
@@ -577,14 +555,14 @@ async function diarAbrirLixeira() {
 async function diarRestaurarQuinzena(id) {
   try {
     const restaurada = await sbPatch('diarias_quinzenas', `?id=eq.${id}`, { excluida: false, excluida_em: null });
-    if (!restaurada) { showToast(restaurada === null ? 'Erro ao restaurar a quinzena.' : 'Quinzena nao encontrada — recarregue.', 5000); return; }  // nao fecha modal da lixeira
+    if (!restaurada) { showToast(restaurada === null ? 'Erro ao restaurar o período.' : 'Período nao encontrado — recarregue.', 5000); return; }  // nao fecha modal da lixeira
     document.getElementById('diar-modalLixeira')?.remove();
     await _diarCarregarQuinzenas();
     DiariasModule.quinzenaAtiva = DiariasModule.quinzenas.find(q => q.id === id) || DiariasModule.quinzenaAtiva;
     _diarAtualizarSelectQuinzena();
     await _diarCarregarRegistros();
     _diarRenderRegistros(); _diarRenderExtras();
-    showToast('Quinzena restaurada com todos os dados!');
+    showToast('Período restaurado com todos os dados!');
   } catch (e) { showToast('Erro ao restaurar: ' + e.message); }
 }
 
@@ -622,8 +600,8 @@ async function _diarConfirmarExcDefinitivo(id, modalId) {
     const lancsFolha = await sbGet('lancamentos', `?etapa=eq.28_mao&obs=eq.${obsQ}&select=id`);
     if (Array.isArray(lancsFolha) && lancsFolha.length > 0) {
       const conf = await confirmar(
-        'Esta quinzena tem ' + lancsFolha.length + ' lancamento(s) de mao de obra no financeiro.\n' +
-        'Excluir a quinzena NAO remove esses custos automaticamente.\n\n' +
+        'Este período tem ' + lancsFolha.length + ' lancamento(s) de mao de obra no financeiro.\n' +
+        'Excluir o período NAO remove esses custos automaticamente.\n\n' +
         'Deseja continuar mesmo assim?'
       );
       if (!conf) return;
@@ -634,14 +612,18 @@ async function _diarConfirmarExcDefinitivo(id, modalId) {
     if (apagou === null) { showToast('Erro ao excluir. Nada foi apagado — tente de novo.', 5000); return; }  // NAO fecha modais, NAO afirma sucesso
     document.getElementById(modalId)?.remove();
     document.getElementById('diar-modalLixeira')?.remove();
-    showToast(apagou ? 'Quinzena excluida definitivamente.' : 'Quinzena ja nao existia — lista atualizada.');
+    showToast(apagou ? 'Período excluído definitivamente.' : 'Período já não existia — lista atualizada.');
   } catch (e) { showToast('Erro: ' + e.message); }
 }
 
 async function diarTrocarQuinzena(id) {
-  DiariasModule.quinzenaAtiva = DiariasModule.quinzenas.find(q => q.id === id);
-  const badge = document.getElementById('diar-quinzena-badge');
-  if (badge && DiariasModule.quinzenaAtiva) badge.textContent = DiariasModule.quinzenaAtiva.label;
+  DiariasModule.quinzenaAtiva = DiariasModule.quinzenas.find(q => q.id === id) || null;
+  _diarAtualizarSelectQuinzena();
+  if (!DiariasModule.quinzenaAtiva) {
+    DiariasModule.registros = []; DiariasModule.extras = [];
+    _diarRenderRegistros(); _diarRenderExtras();
+    return;
+  }
   await _diarCarregarRegistros();
   _diarRenderRegistros(); _diarRenderExtras();
 }
@@ -672,30 +654,26 @@ function _diarGetExtrasQuinzena() { return DiariasModule.extras; }
 // ── Nova quinzena (modal) ──────────────────────
 function diarAbrirModalNovaQuinzena() {
   if (_diarBloqueiaMestre()) return; // guard-mestre:diarAbrirModalNovaQuinzena
-  if (usuarioAtual?.perfil === 'mestre') { showToast('Sem permissao para criar quinzena.'); return; }
-  const hoje = hojeISO();
+  if (usuarioAtual?.perfil === 'mestre') { showToast('Sem permissao para criar periodo.'); return; }
   document.body.insertAdjacentHTML('beforeend', `
   <div id="diar-modalNQ" class="modal-overlay active">
     <div class="modal-box" style="max-width:400px">
       <div class="modal-header">
-        <div class="modal-title"><span class="material-symbols-outlined">add_circle</span> NOVA QUINZENA</div>
+        <div class="modal-title"><span class="material-symbols-outlined">add_circle</span> NOVO PERÍODO DE PAGAMENTO</div>
         <button class="modal-close" onclick="document.getElementById('diar-modalNQ').remove()">
           <span class="material-symbols-outlined">close</span>
         </button>
       </div>
-      <div style="display:flex;flex-direction:column;gap:12px">
-        <div>
-          <label style="display:block;font-size:10px;font-weight:700;color:var(--text-tertiary);letter-spacing:1px;margin-bottom:4px;">NOME</label>
-          <input id="nq-label" style="padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-family:inherit;font-size:12px;width:100%;box-sizing:border-box;" type="text" placeholder="Ex: 2a QUINZENA · MARCO 2026">
-        </div>
+      <div style="display:flex;flex-direction:column;gap:12px;padding:0 24px">
+        <div style="font-size:12px;color:var(--text-tertiary);line-height:1.5;">Escolha livremente os dias que serão reunidos nesta folha.</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
           <div>
             <label style="display:block;font-size:10px;font-weight:700;color:var(--text-tertiary);letter-spacing:1px;margin-bottom:4px;">DATA INICIO</label>
-            <input id="nq-inicio" style="padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-family:inherit;font-size:12px;width:100%;box-sizing:border-box;" type="date" value="${hoje}" onchange="diarSugerirLabelNQ()">
+            <input id="nq-inicio" style="padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-family:inherit;font-size:12px;width:100%;box-sizing:border-box;" type="date">
           </div>
           <div>
             <label style="display:block;font-size:10px;font-weight:700;color:var(--text-tertiary);letter-spacing:1px;margin-bottom:4px;">DATA FIM</label>
-            <input id="nq-fim" style="padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-family:inherit;font-size:12px;width:100%;box-sizing:border-box;" type="date" value="${hoje}">
+            <input id="nq-fim" style="padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-family:inherit;font-size:12px;width:100%;box-sizing:border-box;" type="date">
           </div>
         </div>
       </div>
@@ -707,29 +685,20 @@ function diarAbrirModalNovaQuinzena() {
   </div>`);
 }
 
-function diarSugerirLabelNQ() {
-  const v = document.getElementById('nq-inicio')?.value; if (!v) return;
-  const d = new Date(v + 'T12:00:00');
-  const mes = d.toLocaleString('pt-BR', { month: 'long' }).toUpperCase();
-  const q = d.getDate() <= 15 ? '1\xaa' : '2\xaa';
-  document.getElementById('nq-label').value = `${q} QUINZENA \xb7 ${mes} ${d.getFullYear()}`;
-}
-
 async function diarSalvarNovaQuinzena() {
   if (usuarioAtual?.perfil === 'mestre') { showToast('Sem permissao.'); return; }
-  const label = (document.getElementById('nq-label')?.value || '').trim();
   const inicio = document.getElementById('nq-inicio')?.value;
   const fim = document.getElementById('nq-fim')?.value;
-  if (!label || !inicio || !fim) { showToast('Preencha todos os campos.'); return; }
+  if (!inicio || !fim) { showToast('Escolha a data inicial e a data final.'); return; }
   if (inicio > fim) { showToast('Data inicio nao pode ser maior que data fim.'); return; }
   if (!_companyId) { showToast('Erro: empresa nao carregada.'); return; }
+  const label = _diarLabelPeriodo({ data_inicio: inicio, data_fim: fim });
 
   const jaExiste = DiariasModule.quinzenas.find(q => {
-    const labelIgual = q.label.trim().toLowerCase() === label.toLowerCase();
     const sobreposicao = q.data_inicio <= fim && q.data_fim >= inicio;
-    return labelIgual || sobreposicao;
+    return sobreposicao;
   });
-  if (jaExiste) { showToast('Ja existe uma quinzena com esse periodo: ' + jaExiste.label); return; }
+  if (jaExiste) { showToast('Este intervalo cruza um período existente: ' + _diarLabelPeriodo(jaExiste)); return; }
 
   try {
     const result = await sbPost('diarias_quinzenas', { label, data_inicio: inicio, data_fim: fim, fechada: false });
@@ -741,27 +710,36 @@ async function diarSalvarNovaQuinzena() {
     _diarAtualizarSelectQuinzena();
     await _diarCarregarRegistros();
     _diarRenderRegistros(); _diarRenderExtras();
-    showToast('Quinzena criada!');
-  } catch (e) { showToast('Nao foi possivel criar a quinzena: ' + e.message); }
+    await _diarListaSincronizarPeriodo(_diarLista.data, false);
+    await _diarListaPreencherDoDia();
+    showToast('Período de pagamento criado!');
+  } catch (e) { showToast('Nao foi possivel criar o período: ' + e.message); }
 }
 
-// ── Editar label da quinzena ──────────────────
+// ── Editar datas do período ──────────────────
 function diarEditarLabelQuinzena() {
   if (_diarBloqueiaMestre()) return; // guard-mestre:diarEditarLabelQuinzena
-  if (!DiariasModule.quinzenaAtiva) { showToast('Selecione uma quinzena.'); return; }
-  // V2: modal em vez de prompt() nativo
-  const labelAtual = DiariasModule.quinzenaAtiva.label;
+  if (!DiariasModule.quinzenaAtiva) { showToast('Selecione um período.'); return; }
+  const atual = DiariasModule.quinzenaAtiva;
   document.body.insertAdjacentHTML('beforeend', `
   <div id="diar-modalEditLabel" class="modal-overlay active">
     <div class="modal-box" style="max-width:380px">
       <div class="modal-header">
-        <div class="modal-title">Editar Quinzena</div>
+        <div class="modal-title">Editar período de pagamento</div>
         <button class="modal-close" onclick="document.getElementById('diar-modalEditLabel')?.remove()">
           <span class="material-symbols-outlined">close</span>
         </button>
       </div>
-      <label style="display:block;font-size:10px;font-weight:700;color:var(--text-tertiary);letter-spacing:1px;margin-bottom:4px;">DESCRICAO</label>
-      <input id="diar-editLabelInput" style="padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-family:inherit;font-size:12px;width:100%;box-sizing:border-box;" type="text" value="${esc(labelAtual)}">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 24px">
+        <div>
+          <label style="display:block;font-size:10px;font-weight:700;color:var(--text-tertiary);letter-spacing:1px;margin-bottom:4px;">DATA INICIO</label>
+          <input id="diar-editPeriodoInicio" style="padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-family:inherit;font-size:12px;width:100%;box-sizing:border-box;" type="date" value="${atual.data_inicio}">
+        </div>
+        <div>
+          <label style="display:block;font-size:10px;font-weight:700;color:var(--text-tertiary);letter-spacing:1px;margin-bottom:4px;">DATA FIM</label>
+          <input id="diar-editPeriodoFim" style="padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-family:inherit;font-size:12px;width:100%;box-sizing:border-box;" type="date" value="${atual.data_fim}">
+        </div>
+      </div>
       <div class="modal-footer">
         <button onclick="document.getElementById('diar-modalEditLabel')?.remove()" class="btn btn-outline">CANCELAR</button>
         <button onclick="_diarSalvarEditLabel()" class="btn btn-primary">SALVAR</button>
@@ -771,20 +749,31 @@ function diarEditarLabelQuinzena() {
 }
 
 async function _diarSalvarEditLabel() {
-  const novoLabel = (document.getElementById('diar-editLabelInput')?.value || '').trim();
-  if (!novoLabel || novoLabel === DiariasModule.quinzenaAtiva.label) {
+  const atual = DiariasModule.quinzenaAtiva;
+  const inicio = document.getElementById('diar-editPeriodoInicio')?.value;
+  const fim = document.getElementById('diar-editPeriodoFim')?.value;
+  if (!atual || !inicio || !fim) { showToast('Escolha a data inicial e a data final.'); return; }
+  if (inicio > fim) { showToast('Data inicio nao pode ser maior que data fim.'); return; }
+  if (inicio === atual.data_inicio && fim === atual.data_fim) {
     document.getElementById('diar-modalEditLabel')?.remove();
     return;
   }
+  const registroFora = DiariasModule.registros.find(r => r.data && (r.data < inicio || r.data > fim));
+  if (registroFora) { showToast('O período não pode excluir uma diária já salva em ' + _diarDataBR(registroFora.data) + '.', 7000); return; }
+  const sobreposto = DiariasModule.quinzenas.find(q => q.id !== atual.id && q.data_inicio <= fim && q.data_fim >= inicio);
+  if (sobreposto) { showToast('Este intervalo cruza outro período: ' + _diarLabelPeriodo(sobreposto), 7000); return; }
+  const novoLabel = _diarLabelPeriodo({ data_inicio: inicio, data_fim: fim });
   try {
-    const salvo = await sbPatch('diarias_quinzenas', '?id=eq.' + DiariasModule.quinzenaAtiva.id, { label: novoLabel });
-    if (!salvo) { showToast(salvo === null ? 'Erro ao editar a descricao.' : 'Quinzena nao encontrada — recarregue.', 5000); return; }  // nao muta label local, nao fecha modal
-    DiariasModule.quinzenaAtiva.label = novoLabel;
-    const q = DiariasModule.quinzenas.find(x => x.id === DiariasModule.quinzenaAtiva.id);
-    if (q) q.label = novoLabel;
+    const salvo = await sbPatch('diarias_quinzenas', '?id=eq.' + atual.id, { label: novoLabel, data_inicio: inicio, data_fim: fim });
+    if (!salvo) { showToast(salvo === null ? 'Erro ao editar o período.' : 'Período nao encontrado — recarregue.', 5000); return; }
+    atual.label = novoLabel;
+    atual.data_inicio = inicio;
+    atual.data_fim = fim;
     _diarAtualizarSelectQuinzena();
     document.getElementById('diar-modalEditLabel')?.remove();
-    showToast('Descricao atualizada!');
+    await _diarListaSincronizarPeriodo(_diarLista.data, false);
+    await _diarListaPreencherDoDia();
+    showToast('Período atualizado!');
   } catch (e) { showToast('Nao foi possivel editar: ' + e.message); }
 }
 
@@ -1193,7 +1182,7 @@ function _diarRenderPreview(regs) {
 async function diarConfirmarLancamento() {
   if (_diarBloqueiaMestre()) return; // guard-mestre:diarConfirmarLancamento
   if (!DiariasModule.interpretado) return;
-  if (!DiariasModule.quinzenaAtiva) { showToast('Nenhuma quinzena ativa. Crie uma quinzena primeiro.'); return; }
+  if (!DiariasModule.quinzenaAtiva) { showToast('Nenhum período selecionado. Escolha a data da diária primeiro.'); return; }
   if (!DiariasModule._funcionariosCarregados) { showToast('Sem conexao com o banco. Valores de diaria podem estar desatualizados.', 5000); return; }
 
   const btn = document.getElementById('diar-btnConfirmar');
@@ -1278,7 +1267,7 @@ function _diarRenderRegistros() {
   if (!container) return;
   const regs = _diarGetRegistrosQuinzena();
   if (!regs.length) {
-    container.innerHTML = '<div class="edr-empty"><span class="material-symbols-outlined" style="font-size:48px;opacity:.3;">event_note</span><p>Nenhum registro nesta quinzena</p></div>';
+    container.innerHTML = '<div class="edr-empty"><span class="material-symbols-outlined" style="font-size:48px;opacity:.3;">event_note</span><p>Nenhum registro neste período</p></div>';
     return;
   }
   const porDia = {};
@@ -1427,7 +1416,7 @@ function diarEditAddPeriodo() {
 
 async function diarSalvarEdicao(regId) {
   if (_diarBloqueiaMestre()) return; // guard-mestre:diarSalvarEdicao
-  if (DiariasModule.quinzenaAtiva?.fechada) { showToast('Quinzena fechada. Reabra antes de editar.'); return; }
+  if (DiariasModule.quinzenaAtiva?.fechada) { showToast('Período fechado. Reabra antes de editar.'); return; }
   const modal = document.getElementById('diar-modalEdit');
   if (!modal) return;
   const reg = DiariasModule.registros.find(r => r.id === regId);
@@ -1525,7 +1514,7 @@ function diarAddPeriodoModal() {
 
 async function diarConfirmarAdd(data) {
   if (_diarBloqueiaMestre()) return; // guard-mestre:diarConfirmarAdd
-  if (DiariasModule.quinzenaAtiva?.fechada) { showToast('Quinzena fechada. Reabra antes de adicionar.'); return; }
+  if (DiariasModule.quinzenaAtiva?.fechada) { showToast('Período fechado. Reabra antes de adicionar.'); return; }
   const modal = document.getElementById('diar-modalAdd');
   if (!modal) return;
   const sel = modal.querySelector('#add-func');
@@ -1564,7 +1553,7 @@ async function diarConfirmarAdd(data) {
 
 async function diarExcluirRegistro(regId) {
   if (_diarBloqueiaMestre()) return; // guard-mestre:diarExcluirRegistro
-  if (DiariasModule.quinzenaAtiva?.fechada) { showToast('Quinzena fechada. Reabra antes de excluir.'); return; }
+  if (DiariasModule.quinzenaAtiva?.fechada) { showToast('Período fechado. Reabra antes de excluir.'); return; }
   const ok = await confirmar('Excluir este registro de diaria?');
   if (!ok) return;
   try {
@@ -1579,7 +1568,7 @@ async function diarExcluirRegistro(regId) {
 
 async function diarDeletarDia(data) {
   if (_diarBloqueiaMestre()) return; // guard-mestre:diarDeletarDia
-  if (DiariasModule.quinzenaAtiva?.fechada) { showToast('Quinzena fechada. Reabra antes de excluir.'); return; }
+  if (DiariasModule.quinzenaAtiva?.fechada) { showToast('Período fechado. Reabra antes de excluir.'); return; }
   const ok = await confirmar('Remover todos os registros de ' + data + '?');
   if (!ok) return;
   try {
@@ -1635,7 +1624,7 @@ function _diarGetFaltasQuinzena() {
 
 function buildSecaoFaltas() {
   const regs = _diarGetRegistrosQuinzena();
-  if (!regs.length) return '<div class="edr-card" style="margin-top:16px;"><div class="edr-card-title"><span class="material-symbols-outlined">warning</span> FALTAS — QUINZENA ATUAL</div><div style="color:var(--text-tertiary);" style="font-size:12px;">Nenhum registro de diarias na quinzena ativa.</div></div>';
+  if (!regs.length) return '<div class="edr-card" style="margin-top:16px;"><div class="edr-card-title"><span class="material-symbols-outlined">warning</span> FALTAS — PERÍODO ATUAL</div><div style="color:var(--text-tertiary);" style="font-size:12px;">Nenhum registro de diárias no período selecionado.</div></div>';
 
   const diasLancados = [...new Set(regs.map(r => r.data))].sort();
   const faltas = _diarGetFaltasQuinzena();
@@ -1667,7 +1656,7 @@ function buildSecaoFaltas() {
   }).filter(Boolean).join('');
 
   return `<div class="edr-card" style="margin-top:16px;">
-    <div class="edr-card-title"><span class="material-symbols-outlined">warning</span> FALTAS — ${esc(DiariasModule.quinzenaAtiva?.label || 'QUINZENA ATUAL')}</div>
+    <div class="edr-card-title"><span class="material-symbols-outlined">warning</span> FALTAS — ${esc(_diarLabelPeriodo(DiariasModule.quinzenaAtiva))}</div>
     <div style="margin-bottom:16px;">${linhas}</div>
     ${diasHtml ? `<div style="margin-top:12px;"><div class="edr-section-label" style="margin-bottom:8px;">DETALHE POR DIA</div>${diasHtml}</div>` : ''}
   </div>`;
@@ -1849,7 +1838,7 @@ function _diarRenderFolha() {
   const thTotal = isMestre ? '' : '<th style="text-align:right;color:var(--success)">Total</th>';
   const trTotal = isMestre ? '' : `
     <tr class="diar-folha-total-row">
-      <td colspan="5" style="font-weight:700">TOTAL QUINZENA</td>
+      <td colspan="5" style="font-weight:700">TOTAL DO PERÍODO</td>
       <td class="diar-td-val">R$ ${totalDiarias.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
       <td class="diar-td-val" style="color:var(--warning)">R$ ${totalExtras.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
       <td class="diar-td-val" style="font-size:15px;color:var(--success)">R$ ${totalGeral.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
@@ -1931,7 +1920,7 @@ function _diarRenderExtras() {
   if (!el) return;
   const extras = _diarGetExtrasQuinzena();
   if (!extras.length) {
-    el.innerHTML = '<div style="color:var(--text-tertiary);" style="font-size:11px;padding:8px 0;">Nenhum extra lancado nesta quinzena.</div>';
+    el.innerHTML = '<div style="color:var(--text-tertiary);" style="font-size:11px;padding:8px 0;">Nenhum extra lançado neste período.</div>';
     return;
   }
   const totalExtras = extras.reduce((s, e) => s + e.valor, 0);
@@ -2180,7 +2169,7 @@ function _diarGerarPDF(regs) {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
     const W = 210, margem = 14;
-    const quinzena = (DiariasModule.quinzenaAtiva?.label || 'Quinzena');
+    const quinzena = _diarLabelPeriodo(DiariasModule.quinzenaAtiva);
     const hoje = new Date().toLocaleDateString('pt-BR');
 
     const VERDE = [45, 106, 79];     // #2D6A4F (verde floresta V2)
@@ -2484,7 +2473,7 @@ async function _diarBuscarObras() {
 async function diarAbrirModalEDR() {
   if (_diarBloqueiaMestre()) return; // guard-mestre:diarAbrirModalEDR
   const custoPorObra = _diarCalcCustoObra();
-  if (!Object.keys(custoPorObra).length) { showToast('Nenhum dado na quinzena atual.'); return; }
+  if (!Object.keys(custoPorObra).length) { showToast('Nenhum dado no período atual.'); return; }
   const obs = 'Folha quinzenal · ' + (DiariasModule.quinzenaAtiva?.id || DiariasModule.quinzenaAtiva?.label || 'Quinzena');
   const modal = document.getElementById('diar-modalEDR');
   modal.style.display = 'flex';
@@ -2590,7 +2579,7 @@ async function diarConfirmarLancamentosEDR() {
   }
   // GUARDA de lote vazio: sem grupos, NADA lanca e a quinzena NAO fecha silenciosamente.
   if (plano.grupos.length === 0) {
-    statusEl.innerHTML = `<div style="color:var(--warning)"><span class="material-symbols-outlined" style="font-size:14px">info</span> Nenhuma obra para lancar. Quinzena nao foi fechada.</div>`;
+    statusEl.innerHTML = `<div style="color:var(--warning)"><span class="material-symbols-outlined" style="font-size:14px">info</span> Nenhuma obra para lançar. O período não foi fechado.</div>`;
     _reabrirBtn();
     return;
   }
@@ -2649,12 +2638,12 @@ async function diarConfirmarLancamentosEDR() {
       if (savedQz) {
         qz.fechada = true;
         _diarAtualizarSelectQuinzena();
-        statusEl.innerHTML += '<div style="color:var(--success)"><span class="material-symbols-outlined" style="font-size:14px">lock</span> Quinzena marcada como fechada</div>';
+        statusEl.innerHTML += '<div style="color:var(--success)"><span class="material-symbols-outlined" style="font-size:14px">lock</span> Período marcado como fechado</div>';
       } else {
-        statusEl.innerHTML += '<div style="color:var(--warning)"><span class="material-symbols-outlined" style="font-size:14px">warning</span> Folha lancada mas nao foi possivel marcar quinzena como fechada.</div>';
+        statusEl.innerHTML += '<div style="color:var(--warning)"><span class="material-symbols-outlined" style="font-size:14px">warning</span> Folha lançada, mas não foi possível fechar o período.</div>';
       }
     } else if (erro > 0) {
-      statusEl.innerHTML += '<div style="color:var(--warning)"><span class="material-symbols-outlined" style="font-size:14px">warning</span> Quinzena NAO fechada - corrija os erros e relance.</div>';
+      statusEl.innerHTML += '<div style="color:var(--warning)"><span class="material-symbols-outlined" style="font-size:14px">warning</span> Período NÃO fechado — corrija os erros e relance.</div>';
     }
   } else {
     _reabrirBtn(); // tudo falhou: permite nova tentativa
@@ -2770,14 +2759,18 @@ async function _diarListaPreencherDoDia() {
   _diarListaRender();
 }
 
-function _diarListaInit() {
+async function _diarListaInit() {
   const d = document.getElementById('diar-listaData');
   if (d && !d.value) d.value = hojeISO();
-  _diarLista.data = d ? d.value : hojeISO();
+  _diarLista.data = d ? (d.value || null) : null;
   _diarLista.apont = {};
   _diarLista._alvoBusca = null;
-  // ao trocar a data, pre-preenche com o que ja foi salvo naquela data
-  if (d) d.onchange = () => { _diarLista.data = d.value; _diarListaPreencherDoDia(); };
+  // A data e a fonte da verdade: ela escolhe automaticamente o periodo que a contem.
+  if (d) d.onchange = async () => {
+    _diarLista.data = d.value || null;
+    await _diarListaSincronizarPeriodo(_diarLista.data, true);
+    await _diarListaPreencherDoDia();
+  };
   _diarListaNet();
   window.addEventListener('online', _diarListaNet);
   window.addEventListener('offline', _diarListaNet);
@@ -2789,8 +2782,33 @@ function _diarListaInit() {
   }
   // NAO resetar a aba de trabalho aqui: _diarListaInit tambem roda apos salvar/re-render,
   // e resetar ejetaria o operador de Registros/Folha. O reset fica so em initDiarias (entrada da tela).
+  await _diarListaSincronizarPeriodo(_diarLista.data, false);
   // pre-preenche com o que ja foi salvo na data (evita sobrescrever ao reabrir); faz o render.
-  _diarListaPreencherDoDia();
+  await _diarListaPreencherDoDia();
+}
+
+async function _diarListaSincronizarPeriodo(data, avisar) {
+  const periodo = _diarEncontrarQuinzenaPorData(DiariasModule.quinzenas, data);
+  if (!periodo) {
+    DiariasModule.quinzenaAtiva = null;
+    DiariasModule.registros = []; DiariasModule.extras = [];
+    _diarAtualizarSelectQuinzena();
+    _diarRenderRegistros(); _diarRenderExtras();
+    if (avisar && data) {
+      const acao = usuarioAtual?.perfil === 'admin'
+        ? 'Abra Registros e clique em + para criar o período.'
+        : 'Peça ao administrador para criar o período.';
+      showToast('Nenhum período de pagamento inclui ' + _diarDataBR(data) + '. ' + acao, 8000);
+    }
+    return null;
+  }
+  if (DiariasModule.quinzenaAtiva?.id !== periodo.id) {
+    DiariasModule.quinzenaAtiva = periodo;
+    _diarAtualizarSelectQuinzena();
+    await _diarCarregarRegistros();
+    _diarRenderRegistros(); _diarRenderExtras();
+  }
+  return periodo;
 }
 
 function _diarListaNet() {
@@ -3062,11 +3080,12 @@ function _diarListaFecharResumo() {
 // ── SALVAR: envia o LOTE DIÁRIO via RPC diarias_apontar (sem montar valor no cliente).
 //    Fallback para o caminho antigo SÓ se a RPC ainda nao existe (Migration A nao subiu). ──
 async function diarListaSalvar() {
-  if (!DiariasModule.quinzenaAtiva) { showToast('Nenhuma quinzena ativa. Crie uma quinzena primeiro.'); return; }
-  if (DiariasModule.quinzenaAtiva.fechada) { showToast('Quinzena fechada. Reabra antes de lancar.'); return; }
   if (!DiariasModule._funcionariosCarregados) { showToast('Sem conexao com o banco. Nao e seguro salvar agora.', 5000); return; }
   const data = _diarLista.data || document.getElementById('diar-listaData').value;
   if (!data) { showToast('Escolha a data.'); return; }
+  const q = await _diarListaSincronizarPeriodo(data, true);
+  if (!q) return;
+  if (q.fechada) { showToast('Período fechado. Reabra antes de lançar.'); return; }
 
   const ativos = _diarGetFuncionariosAtivos();
   const obrasMap = await _diarBuscarObras();   // { normStr(nome) -> obra_id }
@@ -3113,13 +3132,13 @@ async function diarListaSalvar() {
     // 1) CAMINHO NOVO: RPC transacional (calcula valor no servidor; upsert; sem duplicar)
     const resp = await sbRpc('diarias_apontar', {
       p_data: data,
-      p_quinzena_id: DiariasModule.quinzenaAtiva.id,
+      p_quinzena_id: q.id,
       p_apontamentos: apontamentos
     });
 
     if (resp && resp !== 'RPC_AUSENTE' && resp.ok) {
       _diarLista.apont = {};
-      _diarListaInit();                 // re-preenche a data com o que acabou de salvar
+      await _diarListaInit();           // re-preenche a data com o que acabou de salvar
       await _diarCarregarRegistros();
       _diarRenderRegistros();
       _diarRenderFolha();
