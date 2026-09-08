@@ -57,12 +57,22 @@ const DevolucaoFornecedor = (() => {
     }
 
     const distribuiuOrigem = (Array.isArray(distribuicoes) ? distribuicoes : [])
-      .some(d => d?.nota_id === origem?.id && Number(d.qtd || 0) > 0);
+      .some(d => Number(d?.qtd || 0) > 0 && (d.nota_id === origem?.id
+        || d.origens?.some(o => o.nota_id === origem?.id)));
     if (distribuiuOrigem) {
       erros.push('A compra selecionada já teve saída para obra. A devolução precisa ser conferida manualmente antes de ser lançada.');
     }
 
     const itensOrigem = itensDaNota(origem);
+    const normalizar = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase();
+    const pendenciaSemOrigem = (distribuicoes || []).some(d => d.origens?.some(o => o.tipo === 'sem_origem')
+      && itensOrigem.some(i => {
+        const codigo = String(i.codigo_catalogo || i.codigo || '');
+        return codigo && d.codigo_catalogo ? codigo === d.codigo_catalogo
+          : normalizar(i.desc || i.descricao) === normalizar(d.item_desc);
+      }));
+    if (pendenciaSemOrigem) erros.push('Este material tem saída sem origem pendente de conferência. Confira essa saída antes de devolver a compra.');
+    const qtdNestaDevolucao = new Map();
     const devolucoesAnteriores = (Array.isArray(notas) ? notas : [])
       .filter(n => n?.natureza === 'DEVOLUCAO' && n?.nota_origem_id === origem?.id);
     const itensValidados = [];
@@ -88,11 +98,13 @@ const DevolucaoFornecedor = (() => {
       const qtdAnterior = devolucoesAnteriores.reduce((soma, nota) => soma + itensDaNota(nota)
         .filter(anterior => chaveItem(anterior) === chave)
         .reduce((subtotal, anterior) => subtotal + qtdEstoque(anterior), 0), 0);
-      if (!(qtdDevolvida > 0)) {
+      if (!Number.isFinite(qtdDevolvida) || !(qtdDevolvida > 0)) {
         erros.push(`Item ${indice + 1}: a quantidade devolvida deve ser maior que zero.`);
         continue;
       }
-      if (qtdDevolvida + qtdAnterior > qtdOriginal + EPSILON) {
+      const qtdAcumulada = (qtdNestaDevolucao.get(itemIdx) || 0) + qtdDevolvida;
+      qtdNestaDevolucao.set(itemIdx, qtdAcumulada);
+      if (qtdAcumulada + qtdAnterior > qtdOriginal + EPSILON) {
         erros.push(`Item ${indice + 1}: devolução excede o saldo da compra (${qtdOriginal - qtdAnterior} disponível).`);
         continue;
       }

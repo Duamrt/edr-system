@@ -37,7 +37,7 @@ assert.equal(contexto.normalizar({}), 'nao_classificado');
 assert.equal(contexto.normalizar({ destino_custo: 'adicional', adicional_id: null }), 'nao_classificado');
 
 assert.match(infra, /select=id,obra_id,descricao,qtd,preco,total,data,obs,etapa,criado_por,nota_id,origem,destino_custo,adicional_id/);
-assert.equal((notas.match(/\.\.\.custoClassificacaoNovo\(/g) || []).length, 4);
+assert.match(notas, /p_custo: obraDestino \? custoClassificacaoNovo\(obraDestino\.id\)/);
 assert.equal((estoque.match(/\.\.\.custoClassificacaoNovo\(/g) || []).length, 3);
 assert.match(diarias, /\.\.\.classificacaoPorChave\.get\(g\.chave\)/);
 assert.match(financeiro, /\.\.\.custoClassificacaoNovo\(conta\.obra_id\)/);

@@ -4,13 +4,14 @@ const path = require('node:path');
 
 const raiz = path.resolve(__dirname, '..');
 const notas = fs.readFileSync(path.join(raiz, 'js', 'edr-v2-notas.js'), 'utf8');
+const nfAtomica = fs.readFileSync(path.join(raiz, 'sql', 'notas-custo-atomico-DRAFT.sql'), 'utf8');
 const financeiro = fs.readFileSync(path.join(raiz, 'js', 'edr-v2-financeiro.js'), 'utf8');
 const dre = fs.readFileSync(path.join(raiz, 'js', 'edr-v2-dre.js'), 'utf8');
 const sql = fs.readFileSync(path.join(raiz, 'sql', 'notas-integridade-financeira-migration.sql'), 'utf8');
 
 // Toda conta nascida de NF nova carrega o UUID, inclusive despesas e pagamentos.
-assert.match(notas, /nota_id: saved\.id, nota_ref: String\(numero\)/);
-assert.match(notas, /tipo: 'despesa_operacional_nf'[\s\S]*nota_id: saved\.id/);
+assert.match(nfAtomica, /'despesa_operacional_nf',nf\.id,nf\.numero_nf/);
+assert.match(notas, /sbRpcEstoque\('registrar_nota_fiscal_atomica'/);
 assert.match(notas, /nota_id: notaId, nota_ref: numero, status: 'pago'/);
 assert.match(notas, /nota_id: notaId, nota_ref: numero, status: 'pendente'/);
 

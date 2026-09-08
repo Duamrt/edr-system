@@ -807,6 +807,7 @@ const ImportModule = {
         unidade: item.unidade,
         preco: item.preco,
         total: item.total,
+        desconto_fiscal: item.desconto_fiscal ?? null,
         imposto: 0,
         credito: item.credito,
         cat: res?.cat || item.creditoCat || 'Manual',
@@ -1084,7 +1085,8 @@ const ImportModule = {
       }
       const totalItem = Math.round((vProdItem + vIPI) * 100) / 100;
       const cProd = getVal(prod, 'cProd') || '';
-      if (desc) itens.push({ descOriginal: desc, qtd, preco, unidade, total: totalItem, cProd });
+      if (desc) itens.push({ descOriginal: desc, qtd, preco, unidade, total: totalItem, cProd,
+        desconto_fiscal: parseFloat(getVal(prod, 'vDesc')) || 0 });
     }
 
     let dataFormatada = '';
@@ -1192,6 +1194,7 @@ const ImportModule = {
         unidade: normalizarUnidadeImportacao(item.unidade),
         preco: item.preco,
         total: item.total || item.qtd * item.preco,
+        desconto_fiscal: item.desconto_fiscal ?? null,
         match,
         descFinal: confiavel ? match.material.nome : item.descOriginal,
         codigoCat: confiavel ? match.material.codigo : null,

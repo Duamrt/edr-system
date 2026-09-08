@@ -2,7 +2,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 
-const fonte = fs.readFileSync(require.resolve('../js/edr-v2-estoque.js'), 'utf8') + `
+const fonte = require('./fixtures/custo-nota.cjs').fonte + fs.readFileSync(require.resolve('../js/edr-v2-estoque.js'), 'utf8') + `
 globalThis.__estoqueTeste = { consolidarEstoque, EstoqueModule, abrirHistoricoMaterial };`;
 
 const historicoContent = { innerHTML: '' };
@@ -11,7 +11,7 @@ const historicoModal = { querySelector: seletor => seletor === '.modal' ? histor
 const contexto = {
   console: { log() {}, warn() {}, error() {} },
   document: { addEventListener() {}, getElementById(id) { return id === 'hist-modal' ? historicoModal : null; }, querySelectorAll() { return []; } },
-  window: {}, setTimeout() {}, clearTimeout() {},
+  usuarioAtual: null, window: {}, setTimeout() {}, clearTimeout() {},
   norm: valor => String(valor || '').toUpperCase().trim(),
   esc: valor => String(valor || ''),
   fmt: valor => `R$ ${Number(valor || 0).toFixed(2)}`,

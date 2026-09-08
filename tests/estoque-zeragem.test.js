@@ -2,7 +2,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 
-const fonte = fs.readFileSync(require.resolve('../js/edr-v2-estoque.js'), 'utf8') + `
+const fonte = require('./fixtures/custo-nota.cjs').fonte + fs.readFileSync(require.resolve('../js/edr-v2-estoque.js'), 'utf8') + `
 globalThis.__estoqueZeragemTeste = { consolidarEstoque, abrirHistoricoMaterial, _alvoAbsolutoAjuste };`;
 
 const historicoContent = { innerHTML: '' };
@@ -15,7 +15,7 @@ const contexto = {
     },
     querySelectorAll() { return []; },
   },
-  window: {}, setTimeout() {}, clearTimeout() {},
+  usuarioAtual: null, window: {}, setTimeout() {}, clearTimeout() {},
   norm: valor => String(valor || '').toUpperCase().trim(),
   esc: valor => String(valor || ''),
   fmtR: valor => `R$ ${Number(valor || 0).toFixed(2)}`,
@@ -193,7 +193,7 @@ assert.equal(consolidadoDoisPontos.length, 1);
 assert.equal(consolidadoDoisPontos[0].ajustes, 0);
 assert.equal(consolidadoDoisPontos[0].saldo, 17);
 
-const fonteValidacao = fs.readFileSync(require.resolve('../js/edr-v2-estoque.js'), 'utf8');
+const fonteValidacao = require('./fixtures/custo-nota.cjs').fonte + fs.readFileSync(require.resolve('../js/edr-v2-estoque.js'), 'utf8');
 assert.match(fonteValidacao, /ajusteTipoAtual === 'correcao' && qtd === 0/);
 assert.doesNotMatch(fonteValidacao, /ajusteTipoAtual !== 'inventario' && qtd === 0/);
 

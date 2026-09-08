@@ -499,6 +499,8 @@ function atualizarTotalComFrete() {
   const frete = parseFloat(document.getElementById('f-frete')?.value) || 0;
   const outras = parseFloat(document.getElementById('f-outras')?.value) || 0;
 
+  const desconto = parseFloat(document.getElementById('f-desconto-total')?.value) || 0;
+
   const frRow = document.getElementById('frete-total-row');
   if (frRow) {
     if (frete > 0) {
@@ -518,7 +520,7 @@ function atualizarTotalComFrete() {
   const tnRow = document.getElementById('total-nf-row');
   if (tnRow) {
     const tnVal = document.getElementById('total-nf-val');
-    if (tnVal) tnVal.textContent = fmtR(subtotal + frete + outras);
+    if (tnVal) tnVal.textContent = fmtR(Math.max(0, subtotal + frete + outras - desconto));
     tnRow.classList.toggle('hidden', itens.length === 0);
   }
 }
@@ -754,6 +756,7 @@ function adicionarItem(itemData) {
     unidade_fiscal: itemData.unidade_fiscal || null,
     preco_fiscal: itemData.preco_fiscal ?? null,
     total_fiscal: itemData.total_fiscal ?? null,
+    desconto_fiscal: itemData.desconto_fiscal ?? null,
     qtd_estoque: itemData.qtd_estoque ?? null,
     unidade_estoque: itemData.unidade_estoque || null,
     preco_estoque: itemData.preco_estoque ?? null,
@@ -1029,7 +1032,50 @@ async function _alertarFornDuplicado(existente, novoNome, novoCnpj) {
 }
 
 // salvarNota aceita JSON (desacoplado do HTML pra futuro XML import)
+let _notaSalvando = false;
 async function salvarNota(notaData) {
+  if (_notaSalvando) return false;
+  _notaSalvando = true;
+  try { return await _salvarNotaCompleta(notaData); }
+  finally { _notaSalvando = false; }
+}
+
+function _contextoRegistroNF(chave) {
+  const empresa = typeof _companyId !== 'undefined' ? _companyId : null;
+  const usuario = typeof usuarioAtual !== 'undefined' ? usuarioAtual?.id : null;
+  if (!empresa || !usuario) throw new Error('Entre novamente para registrar a nota.');
+  return 'edr.nota.pendente.v1:' + empresa + ':' + usuario + ':' + chave;
+}
+async function _registrarNotaCompleta(payload, itens, obraDestino) {
+  const chave = _contextoRegistroNF(payload.chave_acesso);
+  const dados = { p_nota: payload,
+    p_classificacoes: itens.map(it => ({ etapa: it._etapa, movimenta_estoque: itemMovimentaEstoque(it) })),
+    p_custo: obraDestino ? custoClassificacaoNovo(obraDestino.id) : {} };
+  const raw = localStorage.getItem(chave);
+  let pedido = raw ? JSON.parse(raw) : null;
+  if (pedido && pedido.intencao !== JSON.stringify(dados)) {
+    throw new Error('Há uma gravação sem confirmação para este XML. Reimporte os mesmos dados e confira antes de alterá-los.');
+  }
+  if (!pedido) {
+    pedido = { intencao: JSON.stringify(dados), params: { p_operacao_id: crypto.randomUUID(), ...dados } };
+    localStorage.setItem(chave, JSON.stringify(pedido));
+  }
+  const resposta = await sbRpcEstoque('registrar_nota_fiscal_atomica', pedido.params);
+  if (_contextoRegistroNF(payload.chave_acesso) !== chave) throw new Error('A sessão mudou. Confira a empresa antes de continuar.');
+  if (!resposta.ok) {
+    if (!resposta.incerto) localStorage.removeItem(chave);
+    throw new Error(resposta.ausente ? 'Gravação completa de NF ainda indisponível. A atualização do banco precisa ser concluída.'
+      : resposta.mensagem || 'Gravação não confirmada. Repita o mesmo pedido para conferir.');
+  }
+  if (resposta.dados?.status === 'excluida') {
+    localStorage.removeItem(chave);
+    throw new Error('Este pedido já foi registrado e excluído. Confira o histórico da NF.');
+  }
+  const r = resposta.dados;
+  if (!r?.nota?.id || !Array.isArray(r.lancamentos) || !Array.isArray(r.distribuicoes)) throw new Error('Resposta incompleta. Repita o mesmo pedido para conferir.');
+  return { ...r, chavePendente: chave };
+}
+async function _salvarNotaCompleta(notaData) {
   // SOMENTE XML: lancamento so e' permitido a partir de um XML importado valido.
   // O contexto (ImportModule._xmlCtx) e' setado ao importar. Se nao existe, ou se
   // fornecedor/numero/total/qtd-itens foram alterados apos importar, bloqueia.
@@ -1175,7 +1221,7 @@ async function salvarNota(notaData) {
       if (!_ok) { showToast('Lancamento cancelado. Classifique os itens.'); return false; }
     }
     // [sub-lote 1] Pre-valida destino ANTES de gravar: obra (nao-estoque) tem que resolver, senao a NF nasce orfa sem custo
-    let obraDestino = null, falhasLanc = 0, falhasDesp = 0, falhasCatalogo = 0;
+    let obraDestino = null;
     if (destino !== COMPANY_DEFAULTS.estoqueGeral) {
       obraDestino = [...obras, ...(obrasArquivadas || [])].find(o => o.nome === destino);
       if (!obraDestino) { showToast(`Obra "${destino}" nao encontrada. Selecione um destino valido antes de salvar.`, 5000); return false; }
@@ -1197,141 +1243,21 @@ async function salvarNota(notaData) {
       payload.nota_origem_id = devolucao.origemId;
       payload.motivo_devolucao = devolucao.motivo;
     }
-    const saved = await sbPost('notas_fiscais', payload);
-    if (!saved) { showToast('Erro ao salvar nota fiscal. Tente novamente.'); return false; }
-    const notaSalva = { ...saved, valor_bruto: totalBruto, frete, outras_despesas: outras };
-    notas.unshift(notaSalva);
-
-    // Auto-cadastrar materiais novos no catalogo
-    const _ac = ehDevolucao ? { novos: [], falhas: 0 } : await autocadastrarMateriais(itens);
-    if (_ac.novos.length > 0) {
-      console.log(`[EDR] Auto-cadastrado(s) no catalogo: ${_ac.novos.join(', ')}`);
-    }
-    // [Onda A2] falha de auto-cadastro usa contador PROPRIO (NAO falhasDesp — este bloqueia o prompt de pagamento, e falha de catalogo != falha financeira).
-    if (_ac.falhas > 0) falhasCatalogo += _ac.falhas;
-
-    // Consumo de escritorio (5 categorias) vira DESPESA (conta paga), nao estoque/obra. O DRE le como despesa.
-    const ETAPAS_DESPESA = ['03_alimentacao', '07_combustivel', '14_expediente', '25_limpeza', '34_tecnologia'];
-    const _itensDespesa = ehDevolucao ? [] : itens.filter(it => ETAPAS_DESPESA.includes(it._etapa));
-    if (_itensDespesa.length) {
-      const _hojeDesp = hojeISO();
-      for (const _itD of _itensDespesa) {
-        const _cp = await sbPost('contas_pagar', {
-          fornecedor: fornecedor || 'Fornecedor',
-          descricao: _itD.desc,
-          valor: _itD.total, data_vencimento: _hojeDesp,
-          status: 'pago', data_pagamento: _hojeDesp,
-          tipo: 'despesa_operacional_nf',
-          nota_id: saved.id, nota_ref: String(numero)
-        });
-        if (!_cp) falhasDesp++;  // [sub-lote 1] falha de despesa nao pode sumir em silencio
-      }
-    }
-
-    // Baixa automatica legada (estoque geral) — getCatEstoque morto, fica inerte; mantida so pra nao quebrar fluxo
-    if (destino === COMPANY_DEFAULTS.estoqueGeral) {
-      // Bloco legado de baixa automática de escritório NEUTRALIZADO (2026-06-22): escritório = custo, nunca estoque.
-      // Forçado vazio para não recriar distribuição mesmo se getCatEstoque voltar. NF p/ ESTOQUE GERAL só entra no almoxarifado.
-      const itensEscritorio = [];
-      if (itensEscritorio.length > 0) {
-        const obraEsc = obras.find(o => o.nome && o.nome.toUpperCase().includes('ESCRIT'));
-        if (obraEsc) {
-          const hoje = hojeISO();
-          for (const it of itensEscritorio) {
-            const itemIdx = itens.indexOf(it);
-            // FIX: lancamento primeiro, distribuicao depois com lancamento_id (rastreabilidade total)
-            const descLanc = it.codigo ? `${it.codigo} \u00b7 ${it.desc}` : it.desc;
-            const lanc = await sbPost('lancamentos', {
-              obra_id: obraEsc.id, descricao: descLanc,
-              qtd: it.qtd, preco: it.preco, total: it.total,
-              data: hoje, obs: `NF ${numero} \u00b7 ${fornecedor} \u00b7 Baixa automatica`,
-              nota_id: saved.id, etapa: it._etapa || '',
-              ...custoClassificacaoNovo(obraEsc.id)
-            });
-            if (lanc) lancamentos.unshift(lanc);
-            const dist = await sbPost('distribuicoes', {
-              nota_id: saved.id, item_desc: it.desc, item_idx: itemIdx,
-              codigo_catalogo: it.codigo || null,
-              obra_id: obraEsc.id, obra_nome: obraEsc.nome,
-              qtd: it.qtd, valor: it.total, data: hoje,
-              lancamento_id: lanc?.id || null
-            });
-            if (dist) distribuicoes.push({ ...dist, obra_nome: obraEsc.nome });
-          }
-          showToast(`NF lancada! ${itensEscritorio.length} item(ns) baixado(s) → ${obraEsc.nome}`);
-        } else {
-          showToast('NF lancada! Crie a obra Escritorio para baixa automatica.');
-        }
-      } else {
-        { const _av = []; if (falhasDesp > 0) _av.push(`${falhasDesp} despesa(s) NAO registradas no financeiro`); if (falhasCatalogo > 0) _av.push(`${falhasCatalogo} material(is) nao entraram no catalogo (revise itens sem codigo)`); showToast(_av.length ? `NF salva, mas ${_av.join('; ')}. Verifique.` : (ehDevolucao ? 'Devolução fiscal salva. Confira o reembolso no Financeiro.' : 'Nota fiscal lancada!'), _av.length ? 5000 : undefined); }
-      }
-    } else {
-      // NF direta pra obra (inclusive escritorio): criar lancamentos + distribuicoes automaticamente
-      {
-        // [sub-lote 1] obraDestino ja foi resolvido e validado antes do sbPost (nao-null garantido aqui)
-        // Escritório = consumo direto: cria só o custo (lançamento), nunca distribuição/estoque.
-        const _ehEscritorio = !!(obraDestino && obraDestino.nome && obraDestino.nome.toUpperCase().includes('ESCRIT'));
-        if (obraDestino) {
-          const dataLanc = recebimento || emissao;
-          for (let idx = 0; idx < itens.length; idx++) {
-            const it = itens[idx];
-            if (ETAPAS_DESPESA.includes(it._etapa)) continue; // ja virou despesa (conta paga) acima — nao lancar na obra
-            const descLanc = it.codigo ? `${it.codigo} \u00b7 ${it.desc}` : it.desc;
-            const lanc = await sbPost('lancamentos', {
-              obra_id: obraDestino.id, descricao: descLanc,
-              qtd: it.qtd, preco: it.preco, total: it.total,
-              data: dataLanc, obs: `NF ${numero} \u00b7 ${fornecedor}`,
-              nota_id: saved.id, etapa: it._etapa || '',
-              ...custoClassificacaoNovo(obraDestino.id)
-            });
-            if (!lanc) { falhasLanc++; continue; }  // [sub-lote 1] lancamento falhou: nao criar distribuicao orfa (lancamento_id null)
-            lancamentos.unshift(lanc);
-            // Só movimenta estoque se for material físico (não taxa/serviço/doc) E não for o escritório (consumo direto)
-            if (!_ehEscritorio && typeof itemMovimentaEstoque === 'function' && itemMovimentaEstoque(it)) {
-              const dist = await sbPost('distribuicoes', {
-                nota_id: saved.id,
-                item_desc: it.desc,
-                item_idx: idx,
-                codigo_catalogo: it.codigo || null,
-                obra_id: obraDestino.id,
-                obra_nome: obraDestino.nome,
-                qtd: it.qtd,
-                valor: it.total,
-                etapa: it._etapa || '',
-                data: dataLanc,
-                lancamento_id: lanc.id
-              });
-              if (dist) distribuicoes.push({ ...dist, obra_nome: obraDestino.nome });
-            }
-          }
-          // [sub-lote 3] Frete destacado da NF vira lancamento proprio na obra (etapa 38_frete), SEM distribuicao. So obra/escritorio (nao estoque geral).
-          if (frete > 0) {
-            const lancFrete = await sbPost('lancamentos', {
-              obra_id: obraDestino.id,
-              descricao: `Frete NF ${numero} · ${fornecedor}`,
-              qtd: 1, preco: frete, total: frete,
-              data: dataLanc, obs: `NF ${numero} · ${fornecedor} · Frete destacado`,
-              nota_id: saved.id, etapa: '38_frete',
-              ...custoClassificacaoNovo(obraDestino.id)
-            });
-            if (lancFrete) lancamentos.unshift(lancFrete); else falhasLanc++;
-          }
-          // [outras_despesas] Outras despesas acessorias da NF viram lancamento proprio na obra (etapa 36_outros "Nao classificado"), SEM distribuicao. So obra/escritorio (nao estoque geral).
-          if (outras > 0) {
-            const lancOutras = await sbPost('lancamentos', {
-              obra_id: obraDestino.id,
-              descricao: `Outras despesas NF ${numero} · ${fornecedor}`,
-              qtd: 1, preco: outras, total: outras,
-              data: dataLanc, obs: `NF ${numero} · ${fornecedor} · Outras despesas acessorias`,
-              nota_id: saved.id, etapa: '36_outros',
-              ...custoClassificacaoNovo(obraDestino.id)
-            });
-            if (lancOutras) lancamentos.unshift(lancOutras); else falhasLanc++;
-          }
-        }
-      }
-      { const _av = []; if (falhasLanc + falhasDesp > 0) _av.push(`${falhasLanc + falhasDesp} lancamento(s)/despesa(s) falharam`); if (falhasCatalogo > 0) _av.push(`${falhasCatalogo} material(is) nao entraram no catalogo (revise itens sem codigo)`); showToast(_av.length ? `NF salva, mas ${_av.join('; ')}. Verifique a conexao.` : 'Nota fiscal lancada!', _av.length ? 5000 : undefined); }
-    }
+    const resultadoNF = await _registrarNotaCompleta(payload, itens, obraDestino);
+    const saved = resultadoNF.nota;
+    notas = [saved, ...notas.filter(n => n.id !== saved.id)];
+    for (const lanc of resultadoNF.lancamentos) lancamentos = [lanc, ...lancamentos.filter(l => l.id !== lanc.id)];
+    for (const dist of resultadoNF.distribuicoes) distribuicoes = [dist, ...distribuicoes.filter(d => d.id !== dist.id)];
+    localStorage.removeItem(resultadoNF.chavePendente);
+    // Cadastro e tela sao posteriores ao commit; falha neles nao repete a NF.
+    let falhaCatalogo = false;
+    try {
+      const ac = ehDevolucao ? { novos: [], falhas: 0 } : await autocadastrarMateriais(itens);
+      falhaCatalogo = ac.falhas > 0;
+    } catch (_) { falhaCatalogo = true; }
+    showToast(falhaCatalogo ? 'NF registrada. Confira os materiais que não entraram no catálogo.'
+      : resultadoNF.repetida ? 'NF já registrada. Confirmação recuperada; confira o Financeiro.'
+      : ehDevolucao ? 'Devolução fiscal salva. Confira o reembolso no Financeiro.' : 'Nota fiscal lancada!', 6000);
 
     // invalida o contexto XML: proxima NF exige nova importacao (nao reusa chave/dados)
     if (typeof ImportModule !== 'undefined') ImportModule._xmlCtx = null;
@@ -1345,10 +1271,10 @@ async function salvarNota(notaData) {
     // [sub-lote 4] Evita dupla contagem: itens de despesa ja viraram contas_pagar individuais (pago) acima.
     // O prompt cobre so a parte NAO-despesa (itens normais + frete + outras). Frete/outras seguem no prompt (nao viraram conta individual).
     const _obraId = [...obras, ...(obrasArquivadas||[])].find(o => o.nome === destino)?.id || null;
-    const totalDespesaJaFinanceiro = _itensDespesa.reduce((s, it) => s + (Number(it.total) || 0), 0);
+    const totalDespesaJaFinanceiro = Number(resultadoNF.despesas) || 0;
     const valorPrompt = Math.max(0, totalBruto - totalDespesaJaFinanceiro);
-    // falhasDesp > 0: NF ficou inconsistente — NAO abrir prompt parcial confuso; o toast ja mandou verificar no Financeiro.
-    if (!ehDevolucao && falhasDesp === 0 && valorPrompt > 0) {
+    // Em repeticao recuperada, o pagamento e conferido no Financeiro.
+    if (!ehDevolucao && !resultadoNF.repetida && valorPrompt > 0) {
       setTimeout(() => _notasPromptPagamento(saved.id, valorPrompt, recebimento || emissao, _obraId, fornecedor, numero), 300);
     }
 
@@ -1459,7 +1385,7 @@ function resetForm() {
   NotasModule.currentCredito = null;
   NotasModule.currentCodigo = null;
   renderItensForm();
-  ['f-numero', 'f-fornecedor', 'f-cnpj', 'f-obs', 'f-frete', 'f-outras'].forEach(id => {
+  ['f-numero', 'f-fornecedor', 'f-cnpj', 'f-obs', 'f-frete', 'f-outras', 'f-desconto-total'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });

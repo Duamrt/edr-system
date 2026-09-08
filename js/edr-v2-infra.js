@@ -24,7 +24,7 @@ function _sbHeaders(preferOverride) {
 // ── MULTI-TENANT ─────────────────────────────────────────────
 const _TABELAS_SEM_TENANT = ['companies', 'company_users', 'usuarios', 'tracker_sync'];
 // Tabelas que pertencem a um tenant — leituras filtradas por company_id
-const _TABELAS_TENANT = new Set(['lancamentos','notas_fiscais','distribuicoes','entradas_diretas','repasses_cef','obra_adicionais','adicional_pagamentos','diarias','obras','projecoes_caixa','ajustes_estoque','garantia_chamados','diarias_funcionarios','diarias_quinzenas','diarias_extras','leads','lead_historico','pci_template_padrao','pci_medicao','pci_itens','pci_historico','centros_custo','materiais','contas_pagar','material_depara','material_conversao']);
+const _TABELAS_TENANT = new Set(['lancamentos','notas_fiscais','distribuicoes','entradas_diretas','repasses_cef','obra_adicionais','adicional_pagamentos','diarias','obras','projecoes_caixa','ajustes_estoque','garantia_chamados','diarias_funcionarios','diarias_quinzenas','diarias_extras','leads','lead_historico','pci_template_padrao','pci_medicao','pci_itens','pci_historico','centros_custo','materiais','contas_pagar','material_depara','material_conversao','estoque_saida_origens','estoque_regularizacoes']);
 
 function _addCompanyToBody(tabela, body) {
   if (_TABELAS_SEM_TENANT.includes(tabela) || !_companyId) return body;
@@ -165,6 +165,39 @@ async function sbRpc(fn, params) {
   } catch (e) { console.warn('sbRpc falha:', fn, e); return null; }
 }
 
+// Resultado explícito: erro de rede/servidor pode ter ocorrido DEPOIS do commit.
+async function sbRpcEstoque(fn, params) {
+  try {
+    const r = await fetch(SUPABASE_URL + '/rest/v1/rpc/' + fn, {
+      method: 'POST', headers: _sbHeaders(), body: JSON.stringify(params || {})
+    });
+    const body = await r.json().catch(() => null);
+    if (!r.ok) {
+      // SQLSTATE 40P01/40001 comprovam rollback desta tentativa, mesmo em HTTP 500.
+      const abortada = ['40P01', '40001'].includes(body?.code);
+      return {
+        ok: false, codigo: body?.code || '',
+        mensagem: abortada ? 'Operação interrompida por disputa simultânea. Tente novamente para conferir os dados.'
+          : body?.message || 'Não foi possível concluir a operação.',
+        ausente: r.status === 404 && body?.code === 'PGRST202',
+        incerto: !abortada && (r.status >= 500 || r.status === 408 || !body?.code),
+      };
+    }
+    return body && typeof body === 'object'
+      ? { ok: true, dados: body }
+      : { ok: false, incerto: true, mensagem: 'Resposta incompleta. Confira a operação antes de repetir.' };
+  } catch (e) {
+    return { ok: false, incerto: true, mensagem: 'Conexão interrompida. Repita o mesmo pedido para conferir o resultado.' };
+  }
+}
+let _estoqueContrato = null;
+function estoqueModoAtomico() {
+  return _estoqueContrato?.company_id === _companyId && _estoqueContrato?.habilitado === true;
+}
+function estoqueContratoAtual() {
+  return _estoqueContrato?.company_id === _companyId ? _estoqueContrato : null;
+}
+
 // ── SANITIZAÇÃO DE TEXTO PARA BANCO ─────────────────────────
 // Remove acentos, cedilhas e converte para CAIXA ALTA
 // Deve ser usada antes de gravar materiais, fornecedores e descrições de obra
@@ -241,7 +274,7 @@ let MODO_DEMO = false;
 // Um saldo so e confiavel quando todos os livros que o compoem carregaram.
 // Estado inicial incompleto evita calcular estoque com arrays vazios durante a
 // primeira carga ou depois de uma falha de rede.
-const _CARGAS_CRITICAS_ESTOQUE = ['notas', 'lancamentos', 'distribuicoes', 'entradasDiretas', 'ajustesEstoque'];
+const _CARGAS_CRITICAS_ESTOQUE = ['notas', 'lancamentos', 'distribuicoes', 'entradasDiretas', 'ajustesEstoque', 'materiais'];
 const _estadoCargaEstoque = Object.fromEntries(_CARGAS_CRITICAS_ESTOQUE.map(chave => [chave, false]));
 function _marcarCargaEstoque(chave, ok) {
   if (Object.prototype.hasOwnProperty.call(_estadoCargaEstoque, chave)) _estadoCargaEstoque[chave] = !!ok;
@@ -404,12 +437,46 @@ async function loadLancamentos() {
   }
 }
 async function loadDistribuicoes() {
+  const empresa = _companyId;
   try {
-    const r = await sbGetAll('distribuicoes', '?order=criado_em.desc,id', { throwOnError: true });
-    distribuicoes = Array.isArray(r) ? r : [];
+    const status = await sbRpcEstoque('estoque_operacao_status', {});
+    let contrato = null;
+    if (status.ausente) contrato = { contrato: 0, company_id: empresa, habilitado: false };
+    else if (status.ok && status.dados.contrato === 2 && status.dados.company_id === empresa
+      && typeof status.dados.habilitado === 'boolean' && status.dados.agora && status.dados.hoje) contrato = status.dados;
+    else throw new Error('Não foi possível conferir o modo de gravação do estoque.');
+    const [r, origens] = await Promise.all([
+      sbGetAll('distribuicoes', '?order=criado_em.desc,id', { throwOnError: true }),
+      contrato.contrato === 2
+        ? sbGetAll('estoque_saida_origens', '?order=id', { throwOnError: true })
+        : Promise.resolve([]),
+    ]);
+    if (empresa !== _companyId) throw new Error('A empresa mudou durante a carga.');
+    const porSaida = new Map();
+    for (const origem of origens) {
+      if (origem.company_id !== empresa) throw new Error('Origem de outra empresa na resposta.');
+      const qtd = Number(origem.qtd);
+      const refValida = origem.tipo === 'nf' ? origem.nota_id && Number.isInteger(Number(origem.item_idx)) && origem.item_idx != null && Number(origem.item_idx) >= 0
+        : origem.tipo === 'entrada_direta' ? origem.entrada_direta_id
+          : ['ajuste', 'contagem'].includes(origem.tipo) ? origem.ajuste_id : origem.tipo === 'sem_origem';
+      if (!Number.isFinite(qtd) || qtd <= 0 || !refValida) throw new Error('Parcela de origem inválida na resposta.');
+      if (!porSaida.has(origem.distribuicao_id)) porSaida.set(origem.distribuicao_id, []);
+      porSaida.get(origem.distribuicao_id).push(origem);
+    }
+    const dados = r.map(d => ({ ...d, origens: porSaida.get(d.id) || [] }));
+    for (const d of dados.filter(d => d.estoque_efetivo_em)) {
+      const soma = d.origens.reduce((s, o) => s + Number(o.qtd), 0);
+      const tolerancia = Math.max(Number.EPSILON, Math.abs(Number(d.qtd)) * Number.EPSILON * 32);
+      if (!Number.isFinite(Number(d.qtd)) || Number(d.qtd) <= 0 || !d.origens.length || !Number.isFinite(soma) || Math.abs(soma - Number(d.qtd)) > tolerancia) {
+        throw new Error('As origens da saída ainda não carregaram por completo.');
+      }
+    }
+    distribuicoes = dados;
+    _estoqueContrato = contrato;
     _marcarCargaEstoque('distribuicoes', true);
     return true;
   } catch (e) {
+    _estoqueContrato = null;
     _marcarCargaEstoque('distribuicoes', false);
     console.warn('loadDistribuicoes falhou; estoque bloqueado ate recarregar.', e);
     return false;
@@ -427,7 +494,18 @@ async function loadEntradasDiretas() {
     return false;
   }
 }
-async function loadMateriais() { try { const r = await sbGetAll('materiais', '?order=codigo'); catalogoMateriais = Array.isArray(r) ? r : []; } catch(e) { catalogoMateriais = []; } }
+async function loadMateriais() {
+  try {
+    const r = await sbGetAll('materiais', '?order=codigo,id', { throwOnError: true });
+    catalogoMateriais = Array.isArray(r) ? r : [];
+    _marcarCargaEstoque('materiais', true);
+    return true;
+  } catch (e) {
+    _marcarCargaEstoque('materiais', false);
+    console.warn('loadMateriais falhou; estoque bloqueado ate recarregar.', e);
+    return false;
+  }
+}
 // Centros de custo customizados (criados pelo usuario) — mesclados na lista ETAPAS.
 // Falha silenciosa: ETAPAS cai na base do codigo (rede de seguranca, nunca fica sem).
 let centrosCustoCustom = [];

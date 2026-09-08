@@ -123,6 +123,15 @@ const contextoNotas = {
     return { id: `${tabela}-1`, ...payload };
   },
 };
+contextoNotas._companyId='empresa'; contextoNotas.usuarioAtual={id:'usuario'};
+contextoNotas.crypto=require('node:crypto').webcrypto;
+const pendencias=new Map();contextoNotas.localStorage={getItem:k=>pendencias.get(k)||null,setItem:(k,v)=>pendencias.set(k,v),removeItem:k=>pendencias.delete(k)};
+contextoNotas.itemMovimentaEstoque=()=>true;
+contextoNotas.sbRpcEstoque=async(fn,p)=>{
+ assert.equal(fn,'registrar_nota_fiscal_atomica');
+ const payload=p.p_nota;gravacoes.push({tabela:'notas_fiscais',payload});
+ return {ok:true,dados:{status:'registrada',nota:{id:'nf-brita-23444',...payload},lancamentos:[],distribuicoes:[],despesas:0}};
+};
 contextoNotas.globalThis = contextoNotas;
 
 const fonteNotas = fs.readFileSync(require.resolve('../js/edr-v2-notas.js'), 'utf8') + `
@@ -156,7 +165,7 @@ vm.runInNewContext(fonteNotas, contextoNotas, { filename: 'edr-v2-notas.js' });
   assert.equal(itemPersistido.preco_estoque, 135);
   assert.equal(itemPersistido.regra_conversao_id, 'regra-brita-mt-m3');
 
-  const fonteEstoque = fs.readFileSync(require.resolve('../js/edr-v2-estoque.js'), 'utf8') + `
+  const fonteEstoque = require('./fixtures/custo-nota.cjs').fonte + fs.readFileSync(require.resolve('../js/edr-v2-estoque.js'), 'utf8') + `
 globalThis.__estoqueTeste = { consolidarEstoque };
 `;
   const contextoEstoque = {

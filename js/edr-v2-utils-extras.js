@@ -15,6 +15,44 @@ function norm(s) { if (!s) return ''; return String(s).toLowerCase().normalize('
 // Parse itens JSON de nota fiscal
 function parseItens(n) { try { return JSON.parse(n.itens||'[]'); } catch(e) { console.error('parseItens JSON inválido:', e); return []; } }
 
+// Custo de aquisicao, separado dos valores fiscais. Rateios fecham em centavos.
+// Mesmo contrato de public.custos_itens_nota em notas-custo-atomico-DRAFT.sql.
+function custosItensNota(nota, itens = parseItens(nota)) {
+  const num = v => Number.isFinite(Number(v)) ? Number(v) : 0;
+  const cent = v => Math.round((Math.max(0, num(v)) + Number.EPSILON) * 100);
+  const bases = itens.map(it => cent(it.total != null && it.total !== '' ? it.total
+    : Math.max(0, num(it.qtd_estoque ?? it.quantidade ?? it.qtd) * num(it.preco_estoque ?? it.preco_unitario ?? it.preco) - num(it.desconto))));
+  const soma = bases.reduce((s, v) => s + v, 0);
+  const frete = cent(nota.frete), outras = cent(nota.outras_despesas), cte = cent(nota.frete_rateado);
+  let desconto = Math.min(soma, cent(nota.desconto_total));
+  // Legado que ja guardou itens liquidos: nao descontar duas vezes.
+  if (desconto && nota.valor_bruto != null && soma + frete + outras === cent(nota.valor_bruto)) desconto = 0;
+  const ratear = (total, pesos) => {
+    const pesoTotal = pesos.reduce((s, v) => s + v, 0);
+    let acumulado = 0, anterior = 0;
+    return pesos.map((peso, i) => {
+      acumulado += pesoTotal ? peso : 1;
+      const atual = Math.round(total * acumulado / (pesoTotal || pesos.length));
+      const parcela = atual - anterior; anterior = atual; return parcela;
+    });
+  };
+  let descontos = itens.map((it, i) => Math.min(bases[i], cent(it.desconto_fiscal)));
+  const informado = descontos.reduce((s, v) => s + v, 0);
+  if (!desconto) descontos = bases.map(() => 0);
+  else if (informado > desconto) descontos = ratear(desconto, descontos);
+  else {
+    const restante = ratear(desconto - informado, bases.map((v, i) => v - descontos[i]));
+    descontos = descontos.map((v, i) => v + restante[i]);
+  }
+  const liquidos = bases.map((v, i) => v - descontos[i]);
+  const acessorios = ratear(frete + outras + cte, liquidos);
+  return itens.map((it, i) => ({
+    fiscal: bases[i] / 100, desconto: descontos[i] / 100, liquido: liquidos[i] / 100,
+    acessorios: acessorios[i] / 100, total: (liquidos[i] + acessorios[i]) / 100,
+    qtd: num(it.qtd_estoque ?? it.quantidade ?? it.qtd)
+  }));
+}
+
 // Formata valor como moeda BRL: 1234.5 → "R$ 1.234,50"
 function fmt(v) { return Number(v||0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
 

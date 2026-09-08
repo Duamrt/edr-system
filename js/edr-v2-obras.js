@@ -1568,7 +1568,12 @@ function abrirNotaDoLancamento(lancId) {
 
 // ── EXCLUIR LANCAMENTO ──────────────────────────────────────────
 async function excluirLanc(id) {
+  const carregado = await Promise.all([loadLancamentos(), loadDistribuicoes()]);
+  if (carregado.some(ok => ok !== true)) {
+    showToast('Não foi possível conferir custo e estoque. Recarregue antes de excluir.', 7000); return;
+  }
   const lanc = lancamentos.find(l => l.id === id);
+  if (!lanc) { showToast('Lançamento não encontrado. Recarregue os dados.'); return; }
   // Lançamento de NF não pode ser excluído manualmente
   if (lanc?.nota_id) { showToast('Custo de NF — exclua pela Nota Fiscal.'); return; }
   if (!await confirmar('Excluir este lancamento? Esta acao nao pode ser desfeita.')) return;
@@ -1584,10 +1589,20 @@ async function excluirLanc(id) {
         d.data === lanc.data
       );
     }
-    for (const d of distVinculadas) {
-      const ok = await sbDelete('distribuicoes', `?id=eq.${d.id}`);
-      if (!ok) { showToast('Erro ao reverter movimentacao de estoque. Operacao abortada.'); return; }
-      distribuicoes = distribuicoes.filter(x => x.id !== d.id);
+    if (distVinculadas.length) {
+      if (distVinculadas.length !== 1 || distVinculadas[0].lancamento_id !== id) {
+        showToast('Há vínculos antigos ou compartilhados. Confira as movimentações antes de excluir este custo.', 8000); return;
+      }
+      const resposta = await sbRpc('excluir_distribuicao_estoque', { p_distribuicao_id: distVinculadas[0].id });
+      if (!resposta || resposta === 'RPC_AUSENTE') {
+        showToast('Exclusão não confirmada. Recarregue para conferir o custo e o estoque.', 8000); return;
+      }
+      const atualizados = await Promise.all([loadLancamentos(), loadDistribuicoes()]);
+      filtrarLanc(); renderDashboard();
+      if (typeof renderEstoque === 'function') renderEstoque();
+      showToast(atualizados.every(ok => ok === true)
+        ? 'Custo e movimentação excluídos juntos.' : 'Exclusão confirmada. Recarregue para atualizar os dados.', 7000);
+      return;
     }
   }
   const okLanc = await sbDelete('lancamentos', `?id=eq.${id}`);

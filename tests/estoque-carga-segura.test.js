@@ -5,7 +5,7 @@ const vm = require('node:vm');
 const fonte = fs.readFileSync(require.resolve('../js/edr-v2-infra.js'), 'utf8') + `
 globalThis.__infraTeste = {
   sbGet, loadNotas, loadLancamentos, loadDistribuicoes, loadEntradasDiretas,
-  loadAjustesEstoque, _marcarCargaEstoque, estoqueDadosCompletos,
+  loadAjustesEstoque, loadMateriais, _marcarCargaEstoque, estoqueDadosCompletos,
   estoqueCargasPendentes, getNotas: () => notas,
 };`;
 
@@ -21,7 +21,7 @@ const contexto = {
   assert.equal(await infra.loadNotas(), true);
   assert.equal(JSON.stringify(infra.getNotas()), JSON.stringify([{ id: 'nf-valida' }]));
 
-  for (const chave of ['lancamentos', 'distribuicoes', 'entradasDiretas', 'ajustesEstoque']) {
+  for (const chave of ['lancamentos', 'distribuicoes', 'entradasDiretas', 'ajustesEstoque', 'materiais']) {
     infra._marcarCargaEstoque(chave, true);
   }
   assert.equal(infra.estoqueDadosCompletos(), true);
@@ -39,6 +39,7 @@ const contexto = {
     ['distribuicoes', infra.loadDistribuicoes],
     ['entradasDiretas', infra.loadEntradasDiretas],
     ['ajustesEstoque', infra.loadAjustesEstoque],
+    ['materiais', infra.loadMateriais],
   ];
   for (const [chave, carregar] of cargas) {
     for (const [outraChave] of cargas) infra._marcarCargaEstoque(outraChave, true);
@@ -46,7 +47,7 @@ const contexto = {
     assert.equal(Array.from(infra.estoqueCargasPendentes()).join(','), chave);
   }
 
-  console.log('estoque-carga-segura: 18 assertions passed');
+  console.log('estoque-carga-segura: cargas criticas e preservacao de cache validadas');
 })().catch(erro => {
   console.error(erro);
   process.exitCode = 1;

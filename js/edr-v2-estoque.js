@@ -120,7 +120,7 @@ function _alvoAbsolutoAjuste(a) {
   // Registros antigos formatavam quantidades com fmt() e gravavam "R$" no
   // motivo; outros usavam dois-pontos (ex.: "Real: 21"). Ambos representam
   // uma contagem absoluta e precisam definir o corte do histórico.
-  const mReal = motivo.match(/real\s*:?\s*(?:R\$\s*)?([\d](?:[\d.,]*\d)?)/i);
+  const mReal = motivo.match(/real\s*:?\s*(?:R\$\s*)?([\d](?:[\d.,]*\d)?(?:e[+-]?\d+)?)/i);
   if (!mReal) return null;
   const bruto = mReal[1];
   const normalizado = bruto.includes(',')
@@ -143,6 +143,277 @@ function _unidadeEstoqueExibicao(unidade) {
   if (chave === 'M3' || chave === 'M³') return 'M³';
   if (chave === 'M2' || chave === 'M²') return 'M²';
   return valor;
+}
+
+
+// Ordena movimentos pelo dia efetivo, sem converter uma data financeira em UTC.
+// Para registros feitos no mesmo dia, criado_em desempata a contagem intradiaria.
+// EDR usa o dia civil de Brasilia; retroativos mantem o dia informado.
+// Sem horario historico nao e possivel inferir a hora fisica: mantem inicio do dia.
+let _formatadorMomentoEstoque = null;
+function _momentoMovimentoEstoque(dataEfetiva, criadoEm) {
+  function civil(timestamp) {
+    if (!timestamp || !String(timestamp).includes('T')) return null;
+    const data = new Date(timestamp);
+    if (!Number.isFinite(data.getTime())) return null;
+    _formatadorMomentoEstoque ||= new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23',
+    });
+    const partes = _formatadorMomentoEstoque.formatToParts(data);
+    const p = Object.fromEntries(partes.map(x => [x.type, x.value]));
+    return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}:${p.second}.${String(data.getUTCMilliseconds()).padStart(3, '0')}`;
+  }
+  if (dataEfetiva && String(dataEfetiva).includes('T')) return civil(dataEfetiva);
+  const dia = String(dataEfetiva || '').match(/^\d{4}-\d{2}-\d{2}$/)?.[0];
+  const criado = civil(criadoEm);
+  if (!dia) return criado;
+  return criado?.slice(0, 10) === dia ? criado : dia + 'T00:00:00.000';
+}
+
+// Reconstroi disponibilidade em ordem efetiva. Os lotes de NF continuam no
+// historico; o conjunto operacional inclui entradas sem NF e contagens.
+// O saldo e a media de compras continuam calculados pelo contrato existente.
+function _recomporLotesEstoque(item, saldo, valorMedio) {
+  const eventos = [], disponiveis = [];
+  let divida = 0;
+  const evento = (tipo, registro, chave) => eventos.push({
+    tipo, registro, momento: registro.momento || '9999', chave: String(chave || ''),
+  });
+  item.lotes.forEach(lote => {
+    lote.qtd_disponivel = 0;
+    evento('entrada', lote, lote.nota_id + ':' + lote.item_idx);
+  });
+  item._ediretas.forEach(e => evento('entrada', {
+    ...e, entrada_direta_id: e.id, nota_id: null, data: e.date, valor_un: e.preco, qtd_disponivel: 0,
+  }, 'ed:' + e.id));
+  item._ajustes.forEach(a => evento('ajuste', a, 'aj:' + a.id));
+  item._contagens.forEach(a => evento('contagem', a, 'ct:' + a.id));
+  item._saidas.forEach(s => evento('saida', s, 'sd:' + s.id));
+  item._devolucoes.forEach(d => evento('devolucao', d, 'dv:' + d.id));
+  const prioridade = { entrada: 0, ajuste: 1, contagem: 2, saida: 3, devolucao: 4 };
+  eventos.sort((a, b) => a.momento.localeCompare(b.momento)
+    || prioridade[a.tipo] - prioridade[b.tipo] || a.chave.localeCompare(b.chave));
+  function adicionar(lote) {
+    const compensar = Math.min(Math.max(0, lote.qtd), divida);
+    divida -= compensar;
+    lote.qtd_disponivel = Math.max(0, lote.qtd - compensar);
+    disponiveis.push(lote);
+  }
+  function consumir(qtd, predicado = () => true) {
+    let restante = qtd;
+    for (const lote of disponiveis) {
+      if (restante <= 0) break;
+      if (!predicado(lote)) continue;
+      const usar = Math.min(lote.qtd_disponivel, restante);
+      lote.qtd_disponivel -= usar;
+      restante -= usar;
+    }
+    return Math.max(0, restante);
+  }
+  const total = () => disponiveis.reduce((s, l) => s + l.qtd_disponivel, 0);
+  function semNF(qtd, registro) {
+    adicionar({ nota_id: null, ajuste_id: registro.id || null, qtd, qtd_disponivel: 0,
+      data: registro.date || null, momento: registro.momento, valor_un: valorMedio });
+  }
+  for (const e of eventos) {
+    const r = e.registro;
+    if (e.tipo === 'entrada') adicionar(r);
+    else if (e.tipo === 'saida') {
+      if (r.origens?.length) {
+        for (const o of r.origens) {
+          if (o.tipo === 'sem_origem') { divida += Number(o.qtd); continue; }
+          const falta = consumir(Number(o.qtd), l => o.tipo === 'nf'
+            ? l.nota_id === o.nota_id && Number(l.item_idx) === Number(o.item_idx)
+            : o.tipo === 'entrada_direta' ? l.entrada_direta_id === o.entrada_direta_id
+              : l.ajuste_id === o.ajuste_id);
+          if (falta > Math.max(1e-9, Number(o.qtd) * 1e-9)) item.origensInconsistentes = true;
+          divida += falta;
+        }
+      } else divida += consumir(r.qtd);
+    }
+    else if (e.tipo === 'devolucao') {
+      divida += consumir(r.qtd, l => l.nota_id === r.nota_origem_id && l.item_idx === r.item_idx_origem);
+    } else if (e.tipo === 'ajuste') {
+      if (r.qtd > 0) semNF(r.qtd, r);
+      else divida += consumir(-r.qtd);
+    } else {
+      divida = 0;
+      const diferenca = r.real - total();
+      if (diferenca < 0) consumir(-diferenca);
+      else if (diferenca > 0) semNF(diferenca, r);
+    }
+  }
+  // Legados sem data/origem: nunca oferecer mais lotes do que o saldo fisico.
+  const diferenca = Math.max(0, saldo) - total();
+  if (diferenca < 0) consumir(-diferenca);
+  else if (diferenca > 0) { divida = 0; semNF(diferenca, {}); }
+  return disponiveis.filter(l => l.qtd_disponivel > 0);
+}
+
+function _planejarOrigemSaidaEstoque(item, qtd, dataSaida) {
+  if (item?.origensInconsistentes) return { ok: false, erro: 'As origens registradas não conferem com o histórico. Confira antes de lançar outra saída.' };
+  let restante = qtd, valor = 0;
+  const tolerancia = Math.max(Number.EPSILON, Math.abs(qtd) * Number.EPSILON * 8);
+  const parcelas = [];
+  for (const lote of item?._lotesOperacionais || []) {
+    if (restante <= tolerancia) break;
+    if (lote.data && String(lote.data).slice(0, 10) > dataSaida) continue;
+    const usar = Math.min(lote.qtd_disponivel, restante);
+    if (usar <= 0) continue;
+    parcelas.push({ lote, qtd: usar });
+    valor += usar * (Number(lote.valor_un) || 0);
+    restante -= usar;
+  }
+  const nfs = parcelas.filter(p => p.lote.nota_id);
+  const origens = new Set(nfs.map(p => p.lote.nota_id + ':' + p.lote.item_idx));
+  // O schema atual tem apenas um nota_id/item_idx. Nao atribuir uma saida
+  // mista a uma NF dominante: isso liberaria devolucao/exclusao da outra NF.
+  if (origens.size > 1 || (nfs.length && (restante > tolerancia || nfs.length !== parcelas.length))) {
+    return { ok: false, erro: 'Esta saída usa mais de um lote de origem. Divida a quantidade em saídas menores para preservar o vínculo com cada nota.' };
+  }
+  if (restante > tolerancia && (item?.saldo || 0) >= qtd) {
+    return { ok: false, erro: 'Não foi possível identificar os lotes disponíveis nessa data. Confira o histórico antes de lançar a saída.' };
+  }
+  valor += Math.max(0, restante) * (item?.valorMedio || 0);
+  return { ok: true, valor, origem: nfs[0]?.lote || null };
+}
+
+// Compartilhado pelos dois botoes: trava a aba durante recarga e gravacao.
+// A transacao/concorrencia entre sessoes continua dependendo do servidor.
+async function _executarSaidaEstoque(operacao) {
+  if (window._saidaEmAndamento) return;
+  window._saidaEmAndamento = true;
+  const sessaoInicial = _contextoSaidaEstoque()?.chave;
+  const botoes = ['btn-confirmar-saida', 'btn-confirmar-distribuicao']
+    .map(id => document.getElementById(id)).filter(Boolean)
+    .map(el => ({ el, disabled: el.disabled, texto: el.textContent, html: el.innerHTML }));
+  botoes.forEach(({ el }) => { el.disabled = true; el.textContent = 'Conferindo...'; });
+  try {
+    const cargas = [
+      typeof loadNotas === 'function' ? loadNotas : null,
+      typeof loadLancamentos === 'function' ? loadLancamentos : null,
+      typeof loadDistribuicoes === 'function' ? loadDistribuicoes : null,
+      typeof loadEntradasDiretas === 'function' ? loadEntradasDiretas : null,
+      typeof loadAjustesEstoque === 'function' ? loadAjustesEstoque : null,
+      typeof loadMateriais === 'function' ? loadMateriais : null,
+    ].filter(Boolean);
+    const resultados = await Promise.all(cargas.map(carregar => carregar()));
+    if (resultados.some(ok => ok !== true)
+        || (typeof estoqueDadosCompletos === 'function' && !estoqueDadosCompletos())) {
+      return showToast('Estoque incompleto. Atualize os dados antes de registrar uma saída.', 6000);
+    }
+    if (_contextoSaidaEstoque()?.chave !== sessaoInicial) return showToast('A sessão mudou durante a conferência. Tente novamente.', 6000);
+    if (typeof catalogoMateriais !== 'undefined') EstoqueModule.catalogoMateriais = catalogoMateriais;
+    consolidarEstoque();
+    botoes.forEach(({ el }) => { el.textContent = 'Salvando...'; });
+    return await operacao();
+  } catch (erro) {
+    console.error('Falha ao preparar saída de estoque:', erro);
+    showToast('Não foi possível concluir a saída. Confira os registros antes de tentar novamente.', 7000);
+  } finally {
+    window._saidaEmAndamento = false;
+    botoes.forEach(({ el, disabled, texto, html }) => {
+      el.disabled = disabled;
+      el.textContent = texto;
+      if (typeof html === 'string') el.innerHTML = html;
+    });
+  }
+}
+
+// Pedido pendente fica separado por empresa/usuario; nunca armazena credenciais.
+function _contextoSaidaEstoque() {
+  const empresa = typeof _companyId !== 'undefined' ? _companyId : null;
+  const usuario = typeof usuarioAtual !== 'undefined' ? usuarioAtual?.id : null;
+  return empresa && usuario ? { empresa, usuario, chave: 'edr.estoque.pendente.v2:' + empresa + ':' + usuario } : null;
+}
+function _pendenciaSaidaEstoque(contexto = _contextoSaidaEstoque()) {
+  if (!contexto) return null;
+  const raw = localStorage.getItem(contexto.chave);
+  if (!raw) return null;
+  const p = JSON.parse(raw);
+  if (p.versao !== 2 || p.empresa !== contexto.empresa || p.usuario !== contexto.usuario || !p.params?.p_operacao_id) {
+    throw new Error('Pedido pendente inválido; conferir antes de registrar outra saída.');
+  }
+  return p;
+}
+function _usarSaidaAtomica() {
+  return (typeof estoqueModoAtomico === 'function' && estoqueModoAtomico()) || !!_pendenciaSaidaEstoque();
+}
+async function _enviarSaidaAtomica(p, contexto) {
+  const aindaNaSessao = () => _contextoSaidaEstoque()?.chave === contexto.chave;
+  if (!aindaNaSessao()) return showToast('A sessão mudou. Confira a empresa antes de continuar.', 6000);
+  const jaIncerta = !!p.incerta;
+  p.incerta = true; // inclusive fechar/recarregar a página durante o envio
+  localStorage.setItem(contexto.chave, JSON.stringify(p));
+  const resposta = await sbRpcEstoque('registrar_saida_estoque_atomica', p.params);
+  if (!aindaNaSessao()) return showToast('A sessão mudou durante o envio. Confira o pedido na empresa de origem.', 7000);
+  const r = resposta.dados;
+  const confirmada = resposta.ok && r?.operacao_id === p.params.p_operacao_id
+    && ['registrada', 'excluida'].includes(r.status) && r.distribuicao_id && r.lancamento_id;
+  if (!confirmada) {
+    if (!resposta.ok && !resposta.incerto && !jaIncerta) localStorage.removeItem(contexto.chave);
+    showToast(resposta.mensagem || 'Resposta incompleta. Repita o pedido para conferir o resultado.', 8000);
+    return;
+  }
+  localStorage.removeItem(contexto.chave);
+  const resultados = await Promise.all([loadNotas(), loadLancamentos(), loadDistribuicoes(), loadEntradasDiretas(), loadAjustesEstoque()]);
+  if (!aindaNaSessao()) return;
+  renderEstoque();
+  if (typeof renderDashboard === 'function') renderDashboard();
+  closeModal('dist-modal');
+  fecharModal('saida');
+  if (r.status === 'excluida') return showToast('Este pedido já foi excluído. Nenhuma nova saída foi criada.', 7000);
+  const pendente = Number(r.sem_origem) > 0
+    ? ' · ' + Number(r.sem_origem).toLocaleString('pt-BR', { maximumFractionDigits: 20 }) + ' sem origem, para conferência'
+    : '';
+  showToast((r.repetida ? 'Saída já registrada; confirmação recuperada' : 'Saída registrada') + pendente
+    + (resultados.some(ok => ok !== true) ? '. A atualização dos dados falhou; recarregue o estoque.' : '.'), 7000);
+}
+async function _registrarSaidaAtomica({ item, qtd, obraId, etapa, data, criterio, obs = '', precoManual = null }) {
+  const contexto = _contextoSaidaEstoque();
+  if (!contexto) return showToast('Entre novamente para registrar a saída.', 6000);
+  const contrato = typeof estoqueContratoAtual === 'function' ? estoqueContratoAtual() : null;
+  if (!contrato?.habilitado || contrato.contrato !== 2) {
+    return showToast('A gravação desta saída está indisponível. O pedido pendente foi preservado.', 7000);
+  }
+  const material = EstoqueModule.catalogoMateriais.find(m => m.codigo === item.codigo);
+  if (!material?.id) return showToast('Vincule o material ao catálogo antes de registrar a saída.', 6000);
+  const intencao = JSON.stringify({ material: material.id, qtd, obraId, etapa, data, criterio, obs, precoManual });
+  const existente = _pendenciaSaidaEstoque(contexto);
+  if (existente) {
+    if (existente.intencao !== intencao) {
+      const ok = await confirmar('Há uma saída sem confirmação: ' + existente.resumo
+        + '. Conferir esse pedido antes de registrar outro?');
+      if (!ok) return;
+    }
+    return _enviarSaidaAtomica(existente, contexto);
+  }
+  if (data !== contrato.hoje) return showToast('Esta etapa aceita saídas de hoje. Uma data anterior precisa de conferência do histórico.', 7000);
+  const semOrigem = Math.max(0, qtd - Math.max(0, Number(item.saldo) || 0));
+  if (semOrigem > 0 && criterio === 'fifo' && !(Number(item.valorMedio) > 0) && !(Number(precoManual) > 0)) {
+    return showToast('Material sem custo registrado. Use Saída manual para informar o custo unitário e conferir a quantidade sem origem.', 8000);
+  }
+  if (semOrigem > 0) {
+    const fmtQ = n => Number(n).toLocaleString('pt-BR', { maximumFractionDigits: 20 });
+    const ok = await confirmar('Saldo registrado: ' + fmtQ(item.saldo) + ' ' + item.unidade
+      + '. Saída: ' + fmtQ(qtd) + ' ' + item.unidade + '. Saldo após a saída: ' + fmtQ(item.saldo - qtd)
+      + ' ' + item.unidade + '. Quantidade sem origem para conferência: ' + fmtQ(semOrigem) + ' ' + item.unidade + '. Confirmar?');
+    if (!ok) return;
+  }
+  const classificacao = custoClassificacaoNovo(obraId);
+  const p = {
+    versao: 2, empresa: contexto.empresa, usuario: contexto.usuario, intencao,
+    resumo: item.desc + ' — ' + qtd + ' ' + item.unidade, incerta: false,
+    params: {
+      p_operacao_id: crypto.randomUUID(), p_material_id: material.id, p_obra_id: obraId,
+      p_qtd: qtd, p_efetivo_em: contrato.agora, p_etapa: etapa, p_criterio: criterio,
+      p_destino_custo: classificacao.destino_custo || 'nao_classificado',
+      p_adicional_id: classificacao.adicional_id || null, p_obs: obs,
+      p_sem_origem_confirmada: semOrigem, p_preco_manual: precoManual,
+    },
+  };
+  return _enviarSaidaAtomica(p, contexto);
 }
 
 function consolidarEstoque(obraId) {
@@ -195,9 +466,10 @@ function consolidarEstoque(obraId) {
         _devolucoes: [],   // devoluções posteriores à contagem também precisam reduzir o saldo
         _ediretas: [],     // { qtd, date } — entradas diretas com data para filtro pós-contagem
         _saidas: [],       // { qtd, date } — saídas com data para filtro pós-contagem
+        _contagens: [],
         _ajustes: [],      // { qtd, date } — ajustes delta com data para filtro pós-contagem
         _ultimaContagem: undefined,      // valor absoluto da última contagem física
-        _ultimaContagemData: undefined,  // data da última contagem (Date object)
+        _ultimaContagemData: undefined,  // chave civil ordenavel da ultima contagem
         temNF: false,
         semCodigo: !catItem?.codigo && !codigoCat,
         nfPendente: false,
@@ -211,23 +483,10 @@ function consolidarEstoque(obraId) {
     ? notas.filter(n => n.obra === obraId)
     : notas.filter(n => n.obra === 'EDR');
 
-  // [sub-lote 2] valor liquido do item (desconto abatido). Prefere it.total; fallback qtd*preco-desconto p/ notas antigas.
-  const _liqItem = x => {
-    const q = parseFloat(x.qtd_estoque ?? x.quantidade ?? x.qtd) || 0;
-    const p = parseFloat(x.preco_estoque ?? x.preco_unitario ?? x.preco) || 0;
-    return (x.total != null && x.total !== '') ? (parseFloat(x.total) || 0) : Math.max(0, q * p - (parseFloat(x.desconto) || 0));
-  };
-
   for (const n of notasFiltradas) {
     const itens = parseItens(n);
     const ehDevolucao = n.natureza === 'DEVOLUCAO';
-    // Frete de CT-e embutido nesta compra: rateia proporcional ao valor liquido de cada item.
-    // fatorFrete = 1 quando nao ha frete embutido (frete_rateado = 0) → custo inalterado.
-    const freteNota = parseFloat(n.frete_rateado) || 0;
-    const totalValorItens = freteNota > 0
-      ? itens.reduce((s, x) => s + _liqItem(x), 0)
-      : 0;
-    const fatorFrete = (freteNota > 0 && totalValorItens > 0) ? (1 + freteNota / totalValorItens) : 1;
+    const custos = custosItensNota(n, itens);
     for (let itemIdx = 0; itemIdx < itens.length; itemIdx++) {
       const it = itens[itemIdx];
       const desc = it.descricao || it.desc || '';
@@ -235,18 +494,24 @@ function consolidarEstoque(obraId) {
       const chave = getChave(desc, codCat);
       const item = garantir(chave, desc, codCat, it.unidade_estoque || it.unidade);
       const qtd = parseFloat(it.qtd_estoque ?? it.quantidade ?? it.qtd) || 0;
-      const _totLiq = _liqItem(it);  // liquido do item (desconto abatido); notas antigas ja tem total liquido salvo
-      const _precoLiqUn = qtd > 0 ? _totLiq / qtd : (parseFloat(it.preco_unitario || it.preco) || 0);
-      const valorUn = _precoLiqUn * fatorFrete;  // unitario liquido (desconto abatido) + frete embutido
+      let valorUn = qtd > 0 ? custos[itemIdx].total / qtd : 0;
+      // Devolver retira o custo do lote original; o reembolso preserva o valor fiscal.
+      if (ehDevolucao && n.nota_origem_id && Number.isInteger(it.item_idx_origem)) {
+        const origem = notas.find(x => x.id === n.nota_origem_id);
+        const custoOrigem = origem && custosItensNota(origem)[it.item_idx_origem];
+        if (custoOrigem?.qtd > 0) valorUn = custoOrigem.total / custoOrigem.qtd;
+      }
       item.entradas += ehDevolucao ? -qtd : qtd;
       item.valorTotal += (ehDevolucao ? -1 : 1) * qtd * valorUn;
       item.temNF = true;
       if (ehDevolucao) {
         item._devolucoes.push({
+          id: n.id,
           nota_origem_id: n.nota_origem_id || null,
           item_idx_origem: Number.isInteger(it.item_idx_origem) ? it.item_idx_origem : null,
           qtd,
           date: _dataMovimentoNotaEstoque(n),
+          momento: _momentoMovimentoEstoque(_dataMovimentoNotaEstoque(n), n.criado_em),
         });
       } else {
         item.lotes.push({
@@ -256,23 +521,12 @@ function consolidarEstoque(obraId) {
           fornecedor: n.fornecedor,
           // Legado cai em recebimento; NFs novas usam data_efetiva_estoque.
           data: _dataMovimentoNotaEstoque(n),
+          momento: _momentoMovimentoEstoque(_dataMovimentoNotaEstoque(n), n.criado_em),
           qtd,
           qtd_disponivel: qtd, // sera reduzido pelas distribuicoes
           valor_un: valorUn,
         });
       }
-    }
-  }
-
-  // A devolução reduz o lote original, mas não é um novo lote para FIFO.
-  // Processa depois de todas as notas porque a lista pode vir em ordem decrescente.
-  for (const item of Object.values(mapa)) {
-    for (const devolucao of item._devolucoes) {
-      const loteOrigem = item.lotes.find(lote =>
-        lote.nota_id === devolucao.nota_origem_id && lote.item_idx === devolucao.item_idx_origem
-      );
-      if (!loteOrigem) continue; // legado inválido não pode derrubar a tela; o banco bloqueia novas ocorrências.
-      loteOrigem.qtd_disponivel = Math.max(0, loteOrigem.qtd_disponivel - devolucao.qtd);
     }
   }
 
@@ -290,7 +544,8 @@ function consolidarEstoque(obraId) {
       item.entradasDiretas += qtd;
       item.valorTotal += qtd * preco;
       if (!item.temNF) item.nfPendente = true;
-      item._ediretas.push({ qtd, date: e.criado_em || e.data || null });
+      item._ediretas.push({ id: e.id, qtd, preco, date: e.data || e.criado_em || null,
+        momento: _momentoMovimentoEstoque(e.data, e.criado_em) });
     }
   }
 
@@ -305,7 +560,8 @@ function consolidarEstoque(obraId) {
       const item = garantir(chave, a.item_desc, a.codigo_catalogo, a.unidade);
       const realAbs = _alvoAbsolutoAjuste(a);
       if (realAbs !== null) {
-        const dataA = (a.criado_em || a.data) ? new Date(a.criado_em || a.data) : null; // ajustes_estoque não tem coluna 'data' — usar criado_em como ponto de corte da contagem
+        const dataA = _momentoMovimentoEstoque(a.criado_em || a.data);
+        item._contagens.push({ id: a.id, real: realAbs, date: a.criado_em || a.data, momento: dataA });
         if (item._ultimaContagem === undefined || (dataA && (!item._ultimaContagemData || dataA >= item._ultimaContagemData))) {
           item._ultimaContagem = realAbs;
           item._ultimaContagemData = dataA;
@@ -314,7 +570,8 @@ function consolidarEstoque(obraId) {
         // Contagem antiga sem alvo legível e ajustes comuns continuam como delta.
         const _dq = parseFloat(a.qtd) || 0;
         item.ajustes += _dq;
-        item._ajustes.push({ qtd: _dq, date: a.criado_em || a.data || null });
+        item._ajustes.push({ id: a.id, qtd: _dq, date: a.criado_em || a.data || null,
+          momento: _momentoMovimentoEstoque(a.criado_em || a.data) });
       }
     }
   }
@@ -348,16 +605,8 @@ function consolidarEstoque(obraId) {
       item.saidas += qtd;
       // A contagem física corta pela data em que a saída aconteceu. Uma baixa
       // antiga cadastrada depois da contagem não pode ser descontada de novo.
-      item._saidas.push({ qtd, date: d.data || d.criado_em || null });
-
-      // Consumir FIFO dos lotes
-      let restante = qtd;
-      for (const lote of item.lotes) {
-        if (restante <= 0) break;
-        const consumir = Math.min(lote.qtd_disponivel, restante);
-        lote.qtd_disponivel -= consumir;
-        restante -= consumir;
-      }
+      item._saidas.push({ id: d.id, qtd, date: d.data || d.criado_em || null,
+        momento: _momentoMovimentoEstoque(d.estoque_efetivo_em || d.data, d.criado_em), origens: d.origens });
     }
   }
 
@@ -368,26 +617,26 @@ function consolidarEstoque(obraId) {
     const it = mapa[chave];
     let saldo;
     if (it._ultimaContagem !== undefined) {
-      const cd = it._ultimaContagemData; // Date | null
+      const cd = it._ultimaContagemData; // chave civil | null
       // Entradas NF posteriores à contagem (lotes com data)
       const postNF = cd
-        ? it.lotes.filter(l => !l.data || new Date(l.data) > cd).reduce((s, l) => s + l.qtd, 0)
+        ? it.lotes.filter(l => !l.momento || l.momento > cd).reduce((s, l) => s + l.qtd, 0)
         : it.entradas;
       const postDevolucoes = cd
-        ? it._devolucoes.filter(d => !d.date || new Date(d.date) > cd).reduce((s, d) => s + d.qtd, 0)
+        ? it._devolucoes.filter(d => !d.momento || d.momento > cd).reduce((s, d) => s + d.qtd, 0)
         : 0;
       // Entradas diretas posteriores
       const postED = cd
-        ? it._ediretas.filter(e => !e.date || new Date(e.date) > cd).reduce((s, e) => s + e.qtd, 0)
+        ? it._ediretas.filter(e => !e.momento || e.momento > cd).reduce((s, e) => s + e.qtd, 0)
         : it.entradasDiretas;
       // Saídas posteriores
       const postS = cd
-        ? it._saidas.filter(s => !s.date || new Date(s.date) > cd).reduce((s, x) => s + x.qtd, 0)
+        ? it._saidas.filter(s => !s.momento || s.momento > cd).reduce((s, x) => s + x.qtd, 0)
         : it.saidas;
       // Ajustes delta posteriores à contagem (mesmo critério das entradas/saídas —
       // não somar delta/zeragem anterior à última contagem absoluta sobre o valor contado)
       const postAjustes = cd
-        ? it._ajustes.filter(a => !a.date || new Date(a.date) > cd).reduce((s, a) => s + a.qtd, 0)
+        ? it._ajustes.filter(a => !a.momento || a.momento > cd).reduce((s, a) => s + a.qtd, 0)
         : it.ajustes;
       saldo = it._ultimaContagem + postNF + postED + postAjustes - postS - postDevolucoes;
     } else {
@@ -395,6 +644,7 @@ function consolidarEstoque(obraId) {
     }
     const totalEntradas = it.entradas + it.entradasDiretas; // custo médio sai só das compras — ajustes (inventário/correção) mudam o saldo, não o custo
     const valorMedio = totalEntradas > 0 ? it.valorTotal / totalEntradas : 0;
+    const lotesOperacionais = _recomporLotesEstoque(it, saldo, valorMedio);
 
     resultado.push({
       chave,
@@ -404,12 +654,16 @@ function consolidarEstoque(obraId) {
       categoria: it.categoria,
       saldo,
       valorMedio,
-      valorEstoque: saldo * valorMedio,
+      valorEstoque: saldo >= 0
+        ? lotesOperacionais.reduce((s, l) => s + l.qtd_disponivel * (Number(l.valor_un) || 0), 0)
+        : saldo * valorMedio,
       entradas: it.entradas,
       entradasDiretas: it.entradasDiretas,
       saidas: it.saidas,
       ajustes: it.ajustes,
       lotes: it.lotes,
+      _lotesOperacionais: lotesOperacionais,
+      origensInconsistentes: !!it.origensInconsistentes,
       temNF: it.temNF,
       semCodigo: it.semCodigo,
       nfPendente: it.nfPendente,
@@ -428,7 +682,7 @@ function consolidarEstoque(obraId) {
 
   // _valorTotal reflete só itens que movimentam estoque (recalculado APÓS o filtro,
   // senão serviço/taxa com saldo positivo contaminava o valor total do estoque)
-  EstoqueModule._valorTotal = resultadoFiltrado.reduce((s, it) => s + (it.saldo > 0 ? it.saldo * it.valorMedio : 0), 0);
+  EstoqueModule._valorTotal = resultadoFiltrado.reduce((s, it) => s + (it.saldo > 0 ? it.valorEstoque : 0), 0);
   EstoqueModule._consolidado = resultadoFiltrado;
   return resultadoFiltrado;
 }
@@ -540,7 +794,7 @@ function _categoriaPorEtapas(desc) {
 function _mostrarEstoqueIndisponivel(cargasPendentes) {
   const nomes = {
     notas: 'notas fiscais', lancamentos: 'lançamentos', distribuicoes: 'distribuições',
-    entradasDiretas: 'entradas diretas', ajustesEstoque: 'ajustes de estoque',
+    entradasDiretas: 'entradas diretas', ajustesEstoque: 'ajustes de estoque', materiais: 'catálogo de materiais',
   };
   const faltando = (cargasPendentes || []).map(chave => nomes[chave] || chave).join(', ');
   const loading = document.getElementById('estoque-loading');
@@ -767,7 +1021,204 @@ function _renderCategoriasSidebar(consolidado) {
 // HISTORICO DO MATERIAL (Modal)
 // ══════════════════════════════════════════════════════════════════
 
+function _rotuloOrigensEstoque(origens) {
+  return (origens || []).map(o => {
+    const qtd = Number(o.qtd).toLocaleString('pt-BR', { maximumFractionDigits: 20 });
+    if (o.tipo === 'nf') {
+      const nota = notas.find(n => n.id === o.nota_id);
+      return 'NF ' + (nota?.numero_nf || nota?.numero || nota?.nf || '---') + ' / item ' + (Number(o.item_idx) + 1) + ': ' + qtd;
+    }
+    const nome = { entrada_direta: 'Entrada sem NF', contagem: 'Contagem física',
+      ajuste: 'Ajuste', sem_origem: 'Sem origem — conferir' }[o.tipo] || 'Origem a conferir';
+    return nome + ': ' + qtd;
+  }).join(' · ');
+}
+
+// Conferencia por administrador: proposta no servidor antes de qualquer vinculo.
+let _regEstoque = null;
+let _regEstoqueOcupado = false;
+function _regContexto() {
+  const c = _contextoSaidaEstoque();
+  return c && { ...c, chave: 'edr.estoque.regularizacao.v1:' + c.empresa + ':' + c.usuario };
+}
+function _regPendente(c) {
+  const raw = localStorage.getItem(c.chave);
+  if (!raw) return null;
+  const p = JSON.parse(raw);
+  if (p.empresa !== c.empresa || p.usuario !== c.usuario || !p.params?.p_operacao_id || p.versao !== 1) {
+    throw Error('Confirmação pendente inválida. Preserve o registro e solicite conferência.');
+  }
+  return p;
+}
+function _regData(valor) {
+  const p = String(valor || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return p ? p[3] + '/' + p[2] + '/' + p[1] : 'Data não informada';
+}
+function _regModal(html) {
+  const content = document.getElementById('hist-modal')?.querySelector('.modal');
+  if (!content) throw Error('Tela de conferência indisponível.');
+  content.innerHTML = `<div class="modal-title-v2"><h3>Conferir origens</h3><button class="modal-close" aria-label="Fechar conferência" onclick="fecharConferenciaEstoque()">×</button></div><div style="line-height:1.5;overflow-wrap:anywhere;">${html}</div>`;
+  openModal('hist-modal');
+}
+function fecharConferenciaEstoque() { _regEstoque = null; closeModal('hist-modal'); }
+async function abrirConferenciaEstoque(materialId) {
+  if (_regEstoqueOcupado) return;
+  const c = _regContexto();
+  if (!c || usuarioAtual?.perfil !== 'admin') return showToast('A conferência de origens exige administrador.', 6000);
+  const s = { c, materialId, proposta: null };
+  _regEstoque = s;
+  try {
+    const pendente = _regPendente(c);
+    if (pendente) {
+      s.pendente = pendente;
+      _regModal('<p>Uma regularização ficou sem confirmação. Confira o resultado antes de iniciar outra.</p><button class="btn btn-primary" style="margin-top:12px;" id="reg-aplicar" onclick="recuperarRegularizacaoEstoque()">Conferir resultado anterior</button>');
+      return;
+    }
+    _regModal('<p role="status">Carregando saídas e comprovantes cadastrados…</p>');
+    const resultados = await Promise.all([loadNotas(), loadLancamentos(), loadDistribuicoes(), loadEntradasDiretas(), loadAjustesEstoque(), loadMateriais()]);
+    if (_regEstoque !== s || _regContexto()?.chave !== c.chave) return;
+    if (resultados.some(x => x !== true)) throw Error('Os dados não carregaram por completo. Tente novamente.');
+    if (estoqueContratoAtual()?.regularizacao !== 1) throw Error('Regularização ainda indisponível neste ambiente.');
+    s.material = catalogoMateriais.find(m => m.id === materialId);
+    if (!s.material) throw Error('Material indisponível nesta empresa.');
+    s.pendencias = distribuicoes.flatMap(d => (d.origens || []).filter(o => o.tipo === 'sem_origem' && o.material_id === materialId).map(o => ({ ...o, saida: d })));
+    s.auditoria = await sbGetAll('estoque_regularizacoes', '?material_id=eq.' + encodeURIComponent(materialId) + '&order=criado_em.desc', { throwOnError: true });
+    if (_regEstoque !== s || _regContexto()?.chave !== c.chave) return;
+    if (s.auditoria.some(a => a.company_id !== c.empresa || a.material_id !== materialId)) throw Error('Conferência recebida não corresponde à empresa/material.');
+    _regRenderFila(s);
+  } catch (e) {
+    if (_regEstoque === s && _regContexto()?.chave === c.chave) _regModal('<p role="alert">' + esc(e.message) + '</p>');
+  }
+}
+function _regRenderFila(s) {
+  _regModal(`<p><strong>${esc(s.material.nome)}</strong> · ${esc(s.material.unidade)}</p>
+    <p>Vincule somente um recebimento comprovado anterior à saída. Recebimento omitido precisa ser cadastrado e conferido primeiro.</p>
+    ${s.pendencias.length ? s.pendencias.map((o, i) => `<div class="hist-item"><div class="hist-content"><strong>${esc(o.saida.obra_nome)}</strong><p>${esc(_regData(o.saida.data))} · ${fmtQtd(o.qtd)} ${esc(s.material.unidade)} sem origem · ${fmtR(o.custo)} estimados</p><button class="btn-secondary" onclick="selecionarPendenciaEstoque(${i})">Conferir esta saída</button></div></div>`).join('') : '<p>Nenhuma quantidade sem origem neste material.</p>'}
+    ${s.auditoria.length ? '<h4>Conferências registradas</h4>' + s.auditoria.map(a => `<div class="hist-item"><div class="hist-content"><strong>${fmtQtd(a.proposta.qtd)} ${esc(s.material.unidade)} · ${a.pedido.tipo === 'nf' ? 'NF' : 'Entrada sem NF'}</strong><p>${esc(_regData(a.criado_em))} · responsável ${esc(a.ator)}</p><p>Comprovante: ${esc(a.pedido.evidencia)}</p><p>${esc(a.pedido.justificativa)}</p><p>Custo mantido: ${fmtR(a.proposta.custo_mantido)} · diferença de referência: ${fmtR(a.proposta.diferenca_referencia)}</p></div></div>`).join('') : ''}`);
+}
+function selecionarPendenciaEstoque(indice) {
+  const s = _regEstoque;
+  if (!s || _regEstoqueOcupado || _regContexto()?.chave !== s.c.chave) return;
+  s.pendencia = s.pendencias[indice];
+  if (!s.pendencia) return;
+  s.proposta = null; s.fonte = null;
+  const m = s.material;
+  const confere = (codigo, nome) => codigo ? codigo === m.codigo : norm(nome) === norm(m.nome);
+  const limite = new Date(s.pendencia.saida.estoque_efetivo_em).getTime();
+  s.fontes = [];
+  for (const n of notas.filter(n => n.obra === 'EDR' && n.natureza !== 'DEVOLUCAO')) {
+    const momento = _momentoMovimentoEstoque(_dataMovimentoNotaEstoque(n), n.criado_em);
+    if (!momento || new Date(momento).getTime() > limite) continue;
+    parseItens(n).forEach((it, idx) => {
+      if (confere(it.codigo_catalogo || it.codigo || it.cod, it.descricao || it.desc)) s.fontes.push({ tipo: 'nf', id: n.id, idx,
+        rotulo: `NF ${n.numero_nf || 'sem número'} · item ${idx + 1} · ${n.fornecedor || 'sem fornecedor'} · ${_regData(_dataMovimentoNotaEstoque(n))}` });
+    });
+  }
+  for (const e of entradasDiretas) {
+    const momento = _momentoMovimentoEstoque(e.data, e.criado_em);
+    if (e.obra === 'EDR' && !e.nf_vinculada && confere(e.codigo_catalogo, e.item_desc) && momento && new Date(momento).getTime() <= limite) {
+      s.fontes.push({ tipo: 'entrada_direta', id: e.id, idx: null, rotulo: `Entrada sem NF · ${e.fornecedor || 'sem fornecedor'} · ${_regData(e.data)} · ${fmtQtd(e.qtd)} ${e.unidade}` });
+    }
+  }
+  _regModal(`<p><strong>${esc(m.nome)}</strong> · saída para ${esc(s.pendencia.saida.obra_nome)} em ${esc(_regData(s.pendencia.saida.data))}</p>
+    <p>Sem origem: ${fmtQtd(s.pendencia.qtd)} ${esc(m.unidade)}</p>
+    <label for="reg-qtd">Quantidade a regularizar (${esc(m.unidade)})</label><input class="form-input" id="reg-qtd" type="number" min="0" step="any" value="${Number(s.pendencia.qtd)}" oninput="invalidarPropostaEstoque()">
+    <label for="reg-busca">Buscar NF ou entrada comprovada</label><input class="form-input" id="reg-busca" type="text" inputmode="search" placeholder="Número, fornecedor ou data" oninput="buscarOrigemRegularizacao()" autocomplete="off">
+    <div id="reg-fontes"></div><p id="reg-selecionada" role="status"></p>
+    <label for="reg-evidencia">Referência do comprovante</label><input class="form-input" id="reg-evidencia" type="text" maxlength="2000" placeholder="Ex.: canhoto NF 123, recebido em 05/09">
+    <label for="reg-motivo">Justificativa da conferência</label><textarea class="form-input" id="reg-motivo" maxlength="2000" rows="2"></textarea>
+    <button class="btn-secondary" style="margin:12px 0;" id="reg-propor" onclick="proporRegularizacaoEstoque()">Conferir proposta</button><div id="reg-proposta" aria-live="polite"></div>`);
+  buscarOrigemRegularizacao();
+}
+function invalidarPropostaEstoque() {
+  if (_regEstoque) _regEstoque.proposta = null;
+  const el = document.getElementById('reg-proposta'); if (el) el.innerHTML = '';
+}
+function buscarOrigemRegularizacao() {
+  const s = _regEstoque, el = document.getElementById('reg-fontes'); if (!s?.fontes || !el) return;
+  const termo = norm(document.getElementById('reg-busca')?.value);
+  const fontes = s.fontes.map((f, i) => ({ f, i })).filter(({ f }) => norm(f.rotulo).includes(termo));
+  el.innerHTML = fontes.length ? fontes.slice(0, 10).map(({ f, i }) => `<button class="btn-secondary" style="display:block;width:100%;white-space:normal;text-align:left;margin:6px 0" onclick="selecionarOrigemRegularizacao(${i})">${esc(f.rotulo)}</button>`).join('') + (fontes.length > 10 ? '<p>Refine a busca para ver as demais origens.</p>' : '') : '<p>Nenhuma origem anterior encontrada. Confira se o recebimento foi cadastrado.</p>';
+}
+function selecionarOrigemRegularizacao(i) {
+  const s = _regEstoque; if (!s || _regEstoqueOcupado) return;
+  invalidarPropostaEstoque(); s.fonte = s.fontes[i];
+  document.getElementById('reg-selecionada').textContent = s.fonte ? 'Selecionada: ' + s.fonte.rotulo : '';
+}
+async function proporRegularizacaoEstoque() {
+  const s = _regEstoque; if (!s?.fonte || _regEstoqueOcupado) return showToast('Selecione a origem comprovada.', 5000);
+  if (_regContexto()?.chave !== s.c.chave) return showToast('A sessão mudou. Reabra a conferência.', 5000);
+  const qtd = Number(document.getElementById('reg-qtd').value);
+  if (!Number.isFinite(qtd) || qtd <= 0 || qtd > Number(s.pendencia.qtd)) return showToast('Informe uma quantidade positiva dentro da pendência.', 5000);
+  invalidarPropostaEstoque();
+  const params = { p_pendencia_id: s.pendencia.id, p_tipo: s.fonte.tipo, p_origem_id: s.fonte.id, p_item_idx: s.fonte.idx, p_qtd: qtd };
+  _regEstoqueOcupado = true;
+  try {
+    const r = await sbRpcEstoque('propor_regularizacao_estoque', params);
+    if (_regEstoque !== s || _regContexto()?.chave !== s.c.chave) return;
+    if (!r.ok) throw Error(r.mensagem || 'Não foi possível conferir a proposta.');
+    const p = r.dados;
+    if (!p?.revisao || p.company_id !== s.c.empresa || p.pendencia_id !== params.p_pendencia_id || Number(p.qtd) !== qtd) throw Error('Proposta recebida não corresponde à conferência.');
+    // Alterar quantidade durante a espera nao pode confirmar uma proposta diferente.
+    if (Number(document.getElementById('reg-qtd')?.value) !== qtd) return;
+    s.proposta = { params, dados: p };
+    document.getElementById('reg-proposta').innerHTML = `<h4>Proposta conferida</h4><p>${fmtQtd(p.qtd)} ${esc(p.unidade)} · ${esc(s.fonte.rotulo)}</p>
+      <p>Saldo: ${fmtQtd(p.saldo_antes)} → ${fmtQtd(p.saldo_depois)} ${esc(p.unidade)}. Pendência restante: ${fmtQtd(p.pendencia_restante)} ${esc(p.unidade)}.</p>
+      <p>Custo já lançado: <strong>${fmtR(p.custo_mantido)}</strong>. Custo da origem: ${fmtR(p.custo_referencia)}. Diferença de referência: ${fmtR(p.diferenca_referencia)}.</p>
+      <label style="display:block;margin:12px 0"><input type="checkbox" id="reg-custo"> Conferi o comprovante e quero manter o custo já lançado. A diferença ficará registrada para análise.</label>
+      <button class="btn btn-primary" style="margin-top:12px;" id="reg-aplicar" onclick="aplicarRegularizacaoEstoque()">Confirmar regularização</button>`;
+  } catch (e) { if (_regEstoque === s && _regContexto()?.chave === s.c.chave) showToast(e.message, 7000); }
+  finally { _regEstoqueOcupado = false; }
+}
+async function aplicarRegularizacaoEstoque() {
+  const s = _regEstoque;
+  if (!s?.proposta || _regEstoqueOcupado) return;
+  try {
+    if (_regContexto()?.chave !== s.c.chave) throw Error('A sessão mudou. Reabra a conferência.');
+    if (_regPendente(s.c)) throw Error('Há uma confirmação pendente. Reabra a conferência para recuperá-la.');
+    if (!document.getElementById('reg-custo')?.checked) throw Error('Confirme a conferência do comprovante e a manutenção do custo.');
+    const evidencia = document.getElementById('reg-evidencia').value.trim(), motivo = document.getElementById('reg-motivo').value.trim();
+    if (evidencia.length < 10 || motivo.length < 10) throw Error('Detalhe o comprovante e a justificativa (mínimo de 10 caracteres cada).');
+    const p = { versao: 1, empresa: s.c.empresa, usuario: s.c.usuario, params: { ...s.proposta.params, p_operacao_id: crypto.randomUUID(),
+      p_revisao: s.proposta.dados.revisao, p_evidencia: evidencia, p_justificativa: motivo, p_tratamento_custo: 'manter_custo_registrado' } };
+    await _regEnviar(s, p, false);
+  } catch (e) { showToast(e.message, 7000); }
+}
+async function recuperarRegularizacaoEstoque() {
+  const s = _regEstoque; if (!s || _regEstoqueOcupado) return;
+  try { const p = _regPendente(s.c); if (p) await _regEnviar(s, p, true); }
+  catch (e) { showToast(e.message, 7000); }
+}
+async function _regEnviar(s, p, jaIncerta) {
+  if (_regEstoqueOcupado) return;
+  if (_regContexto()?.chave !== s.c.chave) throw Error('A sessão mudou. Reabra a conferência.');
+  _regEstoqueOcupado = true;
+  const botao = document.getElementById('reg-aplicar'); if (botao) botao.disabled = true;
+  try {
+    // Persiste antes do envio: recarga/queda reaproveita exatamente a operacao autorizada.
+    localStorage.setItem(s.c.chave, JSON.stringify(p));
+    const r = await sbRpcEstoque('regularizar_origem_estoque', p.params);
+    if (_regContexto()?.chave !== s.c.chave) throw Error('Confira o resultado na empresa de origem.');
+    if (!r.ok) {
+      if (!r.incerto && !jaIncerta) { localStorage.removeItem(s.c.chave); invalidarPropostaEstoque(); }
+      throw Error((r.mensagem || 'Sem confirmação da regularização.') + ((r.incerto || jaIncerta) ? ' Reabra a conferência para recuperar o resultado.' : ' Confira uma nova proposta.'));
+    }
+    if (r.dados?.status !== 'regularizada' || r.dados.operacao_id !== p.params.p_operacao_id || r.dados.company_id !== s.c.empresa || r.dados.pendencia_id !== p.params.p_pendencia_id) {
+      throw Error('Resposta incompleta. Reabra a conferência para recuperar o resultado.');
+    }
+    localStorage.removeItem(s.c.chave);
+    if (_regEstoque === s) fecharConferenciaEstoque();
+    let atualizou = false;
+    try { atualizou = (await Promise.all([loadNotas(), loadDistribuicoes(), loadEntradasDiretas(), loadAjustesEstoque()])).every(x => x === true); } catch (_) {}
+    if (_regContexto()?.chave !== s.c.chave) return;
+    if (atualizou) renderEstoque();
+    showToast(r.dados.saida_excluida ? 'Regularização já confirmada; a saída foi posteriormente excluída.' : atualizou ? 'Origem regularizada. Custo mantido e conferência registrada.' : 'Regularização confirmada, mas a atualização dos dados falhou. Atualize a página.', 7000);
+  } finally { _regEstoqueOcupado = false; if (botao) botao.disabled = false; }
+}
+
+
 function abrirHistoricoMaterial(chave) {
+  _regEstoque = null;
   const item = EstoqueModule._consolidado.find(i => i.chave === chave);
   if (!item) return showToast('Material nao encontrado', 5000);
   const unidade = esc(_unidadeEstoqueExibicao(item.unidade));
@@ -850,7 +1301,7 @@ function abrirHistoricoMaterial(chave) {
           qtd: parseFloat(d.qtd) || 0,
           meta: diretoNaObra
             ? `Não passou pelo almoxarifado · Etapa: ${d.etapa || '---'} · ${fmtR(d.valor || 0)}`
-            : `Etapa: ${d.etapa || '---'} · ${fmtR(d.valor || 0)}`,
+            : `Etapa: ${d.etapa || '---'} · ${fmtR(d.valor || 0)}${d.origens?.length ? ' · ' + _rotuloOrigensEstoque(d.origens) : ''}`,
           nota_id: d.nota_id || null,
         });
       }
@@ -893,6 +1344,7 @@ function abrirHistoricoMaterial(chave) {
       <div class="saldo-final-label">Saldo no almoxarifado</div>
       <div class="saldo-final-value" style="color:${item.saldo < 0 ? 'var(--error)' : item.saldo > 0 ? 'var(--primary)' : 'var(--text-primary)'};">${fmtQtd(item.saldo)} ${unidade}</div>
     </div>
+    ${usuarioAtual?.perfil === 'admin' && estoqueContratoAtual()?.regularizacao === 1 && (catalogoMateriais || []).some(m => m.codigo === item.codigo) ? `<button class="btn-secondary" style="margin-top:12px;" onclick="abrirConferenciaEstoque('${esc(catalogoMateriais.find(m => m.codigo === item.codigo).id)}')">Conferir origens e pendências</button>` : ''}
     <div class="hist-timeline" style="margin-top:16px;">
       ${movs.map(m => {
         const isSaida = m.tipo === 'saida';
@@ -931,63 +1383,41 @@ function abrirHistoricoMaterial(chave) {
 // ══════════════════════════════════════════════════════════════════
 
 // TODO: Migrar para RPC no Supabase na Fase 5
-// A logica FIFO roda no frontend por enquanto. Quando multi-tenant
-// estiver ativo, substituir por chamada atomica via sbPost('rpc/...')
-// para evitar race condition entre usuarios simultaneos.
+// A logica FIFO ainda roda no frontend. A protecao entre sessoes exige
+// uma chamada atomica via sbPost('rpc/...') com alocacoes por origem.
+// A trava abaixo impede apenas cliques simultaneos na mesma aba.
 async function confirmarDistribuicaoItem(chave, obraDestino, etapa, quantidade, dataSaida) {
+  return _executarSaidaEstoque(() => _gravarDistribuicaoItem(chave, obraDestino, etapa, quantidade, dataSaida));
+}
+
+async function _gravarDistribuicaoItem(chave, obraDestino, etapa, quantidade, dataSaida) {
   const item = EstoqueModule._consolidado.find(i => i.chave === chave);
   if (!item) return showToast('Material nao encontrado', 5000);
 
   const qtd = parseFloat(quantidade) || 0;
-  if (qtd <= 0) return showToast('Quantidade invalida', 5000);
+  if (!Number.isFinite(qtd) || qtd <= 0) return showToast('Quantidade invalida', 5000);
 
   if (!obraDestino) return showToast('Selecione a obra destino', 5000);
   if (!etapa) return showToast('Selecione a etapa/centro de custo', 5000);
 
+  if (_usarSaidaAtomica()) return _registrarSaidaAtomica({ item, qtd, obraId: obraDestino, etapa, data: dataSaida || hojeISO(), criterio: 'fifo' });
+
   // Verificar saldo
   if (qtd > item.saldo) {
-    const ok = await confirmar(`Saldo insuficiente (${fmt(item.saldo)} ${item.unidade}). Distribuir ${fmt(qtd)} vai gerar saldo negativo (material fiado). Confirmar?`);
+    const ok = await confirmar(`Saldo insuficiente (${Number(item.saldo).toLocaleString('pt-BR')} ${item.unidade}). Distribuir ${qtd} vai gerar saldo negativo. Confirmar?`);
     if (!ok) return;
   }
 
-  // Calcular FIFO: consumir dos lotes mais antigos
-  let restante = qtd;
-  const lotesConcumidos = [];
-  let valorProporcional = 0;
-
-  // Lotes ordenados por data (mais antigo primeiro)
-  const lotesOrdenados = [...item.lotes].sort((a, b) => (a.data || '').localeCompare(b.data || ''));
-
-  for (const lote of lotesOrdenados) {
-    if (restante <= 0) break;
-    if (lote.qtd_disponivel <= 0) continue;
-
-    const consumir = Math.min(lote.qtd_disponivel, restante);
-    lotesConcumidos.push({
-      nota_id: lote.nota_id,
-      qtd: consumir,
-      valor_un: lote.valor_un,
-    });
-    valorProporcional += consumir * lote.valor_un;
-    restante -= consumir;
-  }
-
-  // Se FIFO nao cobriu tudo: usar valor medio das entradas diretas/ajustes
-  if (restante > 0 && item.valorMedio > 0) {
-    valorProporcional += restante * item.valorMedio;
-  }
+  const plano = _planejarOrigemSaidaEstoque(item, qtd, dataSaida || hojeISO());
+  if (!plano.ok) return showToast(plano.erro, 7000);
+  const valorProporcional = plano.valor;
 
   // FIX: lançamento PRIMEIRO (com campos corretos: qtd/preco/total, não valor/tipo)
-  // depois distribuição vinculada ao lançamento E à nota_id do lote principal
+  // depois distribuicao vinculada ao lancamento e ao unico item de origem
 
   const descLanc = item.codigo
     ? `${item.codigo} · ${item.desc} (distribuicao estoque)`
     : `${item.desc} (distribuicao estoque)`;
-
-  // nota_id dominante = lote com maior valor consumido (FIFO pode cruzar notas)
-  const lotePrincipal = lotesConcumidos.length
-    ? lotesConcumidos.reduce((a, b) => (b.qtd * b.valor_un > a.qtd * a.valor_un ? b : a))
-    : null;
 
   const precoMedio = qtd > 0 ? (valorProporcional / qtd) : 0;
   const lanc = await sbPost('lancamentos', {
@@ -999,7 +1429,7 @@ async function confirmarDistribuicaoItem(chave, obraDestino, etapa, quantidade, 
     etapa,
     data: dataSaida || hojeISO(),
     origem: 'distribuicao_estoque',
-    nota_id: lotePrincipal?.nota_id || null,
+    nota_id: plano.origem?.nota_id || null,
     ...custoClassificacaoNovo(obraDestino)
   });
   // Custo primeiro e checado: distribuir do almox SEMPRE gera lancamento (mesmo valor 0).
@@ -1008,7 +1438,7 @@ async function confirmarDistribuicaoItem(chave, obraDestino, etapa, quantidade, 
 
   const payload = {
     item_desc: item.desc,
-    item_idx: 0,
+    item_idx: plano.origem?.item_idx ?? 0,
     codigo_catalogo: item.codigo || null,
     obra_id: obraDestino,
     obra_nome: obras.find(o => o.id === obraDestino)?.nome || '',
@@ -1016,7 +1446,7 @@ async function confirmarDistribuicaoItem(chave, obraDestino, etapa, quantidade, 
     qtd,
     valor: valorProporcional,
     data: dataSaida || hojeISO(),
-    nota_id: lotePrincipal?.nota_id || null,
+    nota_id: plano.origem?.nota_id || null,
     lancamento_id: lanc.id,
   };
 
@@ -1083,7 +1513,7 @@ function abrirDistribuicao(chave) {
     <div class="info-box">
       <div class="info-box-title">${esc(item.desc)}</div>
       <div class="info-box-sub">
-        ${item.codigo ? `Codigo: ${esc(item.codigo)} · ` : ''}Saldo disponivel: <strong style="color:var(--primary);">${fmt(item.saldo)} ${esc(item.unidade)}</strong>
+        ${item.codigo ? `Codigo: ${esc(item.codigo)} · ` : ''}Saldo disponivel: <strong style="color:var(--primary);">${fmtQtd(item.saldo)} ${esc(item.unidade)}</strong>
       </div>
     </div>
     <div class="dist-form-grid">
@@ -1107,11 +1537,11 @@ function abrirDistribuicao(chave) {
       </div>
       <div class="dist-form-field">
         <label class="dist-form-label">Data de Saída</label>
-        <input class="dist-form-input" id="dist-data" type="date" value="${hojeISO()}"/>
+        <input class="dist-form-input" id="dist-data" type="date" value="${hojeISO()}" onchange="_atualizarValorDistribuicao('${esc(item.chave)}')"/>
       </div>
       <div class="dist-form-field">
         <label class="dist-form-label">Valor Estimado</label>
-        <input class="dist-form-input" id="dist-valor" type="text" value="${fmtR(item.valorMedio)}" readonly style="font-weight:700;color:var(--primary);background:var(--primary-surface);"/>
+        <input class="dist-form-input" id="dist-valor" type="text" value="${fmtR(_estimarValorSaidaFIFO(item, 1, hojeISO()))}" readonly style="font-weight:700;color:var(--primary);background:var(--primary-surface);"/>
       </div>
     </div>
     ${lotesOrdenados.length ? `
@@ -1123,11 +1553,11 @@ function abrirDistribuicao(chave) {
       ${lotesOrdenados.map((l, i) => `
         <div class="dist-lote">
           <span>Lote #${i + 1} — NF ${esc(l.nf || '---')} (${esc(l.data || '---')})</span>
-          <span><strong>${fmt(l.qtd_disponivel)} ${esc(item.unidade)}</strong> disp. · ${fmtR(l.valor_un)}/${esc(item.unidade)}</span>
+          <span><strong>${fmtQtd(l.qtd_disponivel)} ${esc(item.unidade)}</strong> disp. · ${fmtR(l.valor_un)}/${esc(item.unidade)}</span>
         </div>`).join('')}
     </div>` : ''}
     <div class="btn-row btn-row-mt" style="margin-top:24px;">
-      <button class="btn-primary" style="flex:1;padding:14px;font-size:15px;justify-content:center;"
+      <button id="btn-confirmar-distribuicao" class="btn-primary" style="flex:1;padding:14px;font-size:15px;justify-content:center;"
         onclick="confirmarDistribuicaoItem('${esc(item.chave)}', document.getElementById('dist-obra').value, document.getElementById('dist-etapa').value, document.getElementById('dist-qtd').value, document.getElementById('dist-data').value)">
         <span class="material-symbols-outlined icon-lg">check_circle</span>
         Confirmar Distribuicao
@@ -1137,12 +1567,27 @@ function abrirDistribuicao(chave) {
   openModal('dist-modal');
 }
 
+// Previa acompanha os lotes FIFO; a gravacao confere novamente no servidor.
+function _estimarValorSaidaFIFO(item, qtd, data) {
+  if (!Number.isFinite(qtd) || qtd <= 0) return 0;
+  let restante = qtd, valor = 0;
+  for (const lote of item?._lotesOperacionais || []) {
+    if (lote.data && String(lote.data).slice(0, 10) > data) continue;
+    const usar = Math.min(Math.max(0, Number(lote.qtd_disponivel) || 0), restante);
+    valor += usar * (Number(lote.valor_un) || 0);
+    restante -= usar;
+    if (restante <= 0) break;
+  }
+  return valor + Math.max(0, restante) * (Number(item?.valorMedio) || 0);
+}
+
 function _atualizarValorDistribuicao(chave) {
   const item = EstoqueModule._consolidado.find(i => i.chave === chave);
   if (!item) return;
   const qtd = parseFloat(document.getElementById('dist-qtd')?.value) || 0;
   const el = document.getElementById('dist-valor');
-  if (el) el.value = fmtR(qtd * item.valorMedio);
+  const data = document.getElementById('dist-data')?.value || hojeISO();
+  if (el) el.value = fmtR(_estimarValorSaidaFIFO(item, qtd, data));
 }
 
 
@@ -1199,26 +1644,27 @@ async function abrirAjusteEstoque(chave) {
 
   if (real === null) return;
   const { real: realQtd, preco: novoPreco } = real;
-  if (realQtd === undefined || isNaN(realQtd)) return showToast('Quantidade inválida', 5000);
+  if (!Number.isFinite(realQtd) || realQtd < 0) return showToast('Quantidade inválida', 5000);
 
   const diferenca = realQtd - item.saldo;
+  const formatarContagem = valor => Number(valor).toLocaleString('pt-BR', { maximumFractionDigits: 20 });
   const msgPreco = novoPreco ? `\nNovo preço unitário: ${fmtR(novoPreco)}` : '';
-  if (diferenca === 0 && !novoPreco) return showToast('Saldo já confere e nenhum preço informado', 'info');
+  // Mesmo sem diferenca, registrar a contagem preserva o corte do historico.
 
-  const ok = await confirmar(`Ajustar "${esc(item.desc)}"?\nSaldo sistema: ${fmt(item.saldo)}\nContagem real: ${fmt(realQtd)}\nDiferença: ${diferenca > 0 ? '+' : ''}${fmt(diferenca)}${msgPreco}`);
+  const ok = await confirmar(`Ajustar "${esc(item.desc)}"?\nSaldo sistema: ${formatarContagem(item.saldo)}\nContagem real: ${formatarContagem(realQtd)}\nDiferença: ${diferenca > 0 ? '+' : ''}${formatarContagem(diferenca)}${msgPreco}`);
   if (!ok) return;
 
-  if (diferenca !== 0) {
+  {
     const resp = await sbPost('ajustes_estoque', {
       item_desc: item.desc,
       codigo_catalogo: item.codigo || null,
       qtd: diferenca,
       tipo: 'contagem',
-      motivo: `Contagem fisica: sistema ${fmt(item.saldo)}, real ${fmt(realQtd)}, dif ${diferenca > 0 ? '+' : ''}${fmt(diferenca)}`,
+      motivo: `Contagem fisica: sistema ${item.saldo}, real ${realQtd}, dif ${diferenca > 0 ? '+' : ''}${diferenca}`,
     });
     if (!resp) return showToast('Erro ao salvar ajuste', 5000);
   }
-  const ajusteFeito = diferenca !== 0; // se chegou aqui, o ajuste (quando houve) foi gravado — falha ja deu return
+  const ajusteFeito = true; // contagem confirmada e gravada, inclusive quando o saldo confere
 
   // Preco opcional, INDEPENDENTE do ajuste. sbPatch (infra): objeto = atualizou / undefined = 0 linhas
   // (nenhuma entrada com preco=0) / null = erro HTTP. Nao desfaz o ajuste; toast honesto abaixo.
@@ -1234,7 +1680,7 @@ async function abrirAjusteEstoque(chave) {
 
   // Toast final unico e honesto (consolida ajuste + preco sem misturar a logica de gravacao).
   const partes = [];
-  if (ajusteFeito) partes.push(`Estoque ajustado: ${diferenca > 0 ? '+' : ''}${fmt(diferenca)} ${item.unidade}`);
+  if (ajusteFeito) partes.push(`Contagem registrada: ${formatarContagem(realQtd)} ${item.unidade}`);
   if (precoStatus === 'ok') partes.push(`Preço atualizado: ${fmtR(novoPreco)}/${item.unidade}`);
   else if (precoStatus === 'semmatch') partes.push('Preço não atualizado: nenhuma entrada sem preço compatível');
   else if (precoStatus === 'erro') partes.push('Erro ao atualizar o preço');
@@ -1562,9 +2008,9 @@ function renderCatalogo() {
 
   // Mapa de saldo e custo médio calculado. Referência manual é tratada separadamente:
   // ela estima o valor parado no estoque, mas nunca vira custo de obra/DRE.
-  const saldoMap = {}, precoMap = {};
+  const saldoMap = {}, precoMap = {}, valorMap = {};
   for (const c of EstoqueModule._consolidado) {
-    if (c.codigo) { saldoMap[c.codigo] = c.saldo; precoMap[c.codigo] = c.valorMedio || 0; }
+    if (c.codigo) { saldoMap[c.codigo] = c.saldo; precoMap[c.codigo] = c.valorMedio || 0; valorMap[c.codigo] = c.valorEstoque || 0; }
   }
   // Classificacao por tipo: tipo_item vazio/'material' = material fisico
   const _tipoDe = m => (m.tipo_item && m.tipo_item !== 'material') ? m.tipo_item : 'material';
@@ -1656,7 +2102,7 @@ function renderCatalogo() {
     const referencia = _referenciaDe(m);
     const preco = _precoExibidoDe(m);
     const usaReferencia = !(custoReal > 0) && referencia > 0;
-    const valorEstoque = saldo > 0 && preco > 0 ? saldo * preco : 0;
+    const valorEstoque = saldo > 0 ? (usaReferencia ? saldo * referencia : Number(valorMap[m.codigo] || 0)) : 0;
 
     // Coluna TIPO (classificacao — sempre visivel pra TODOS os itens, nao so servico)
     const tipoBadge = `<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:5px;${_tipoCor}font-family:'Space Grotesk',monospace;white-space:nowrap;">${tipoLabels[_ti]}</span>`;
@@ -2123,7 +2569,6 @@ function _calcAjusteContagemItem(codigo, nome, unidade, contagem, cons) {
   const m = (cons || []).find(i => (codigo && i.codigo === codigo) || (nome && norm(i.desc) === norm(nome)));
   const saldoAtual = m ? Number(m.saldo) || 0 : 0;
   const diff = contagem - saldoAtual;
-  if (diff === 0) return null;
   return {
     item_desc: (((m && m.desc) || nome || codigo) || '').toUpperCase(),
     codigo_catalogo: codigo || (m && m.codigo) || null,
@@ -2173,9 +2618,9 @@ function importarContagemEstoque() {
         if (contagemRaw === null || contagemRaw === undefined || contagemRaw === '') return;
         if (!(codigo || nome)) { descartadas.push({ linha: rowNum, motivo: 'sem código nem nome' }); return; }
         const contagem = parseNumBR(contagemRaw);
-        if (!(contagem >= 0)) { descartadas.push({ linha: rowNum, motivo: `contagem inválida (${contagemRaw})` }); return; }
+        if (!Number.isFinite(contagem) || contagem < 0) { descartadas.push({ linha: rowNum, motivo: `contagem inválida (${contagemRaw})` }); return; }
         const aj = _calcAjusteContagemItem(codigo, nome, unidade, contagem, cons);
-        if (aj) ajustes.push(aj); // null = contagem já bate com o saldo, nada a ajustar
+        if (aj) ajustes.push(aj); // toda contagem preenchida registra o corte, mesmo com diferenca zero
       });
 
       if (descartadas.length) {
@@ -2490,7 +2935,14 @@ function _dataSuspeita(dataStr) {
   return dataStr > lim;
 }
 
+let _entradaDiretaSalvando = false;
 async function salvarEntradaDireta() {
+  if (_entradaDiretaSalvando) return;
+  _entradaDiretaSalvando = true;
+  try { return await _gravarEntradaDireta(); }
+  finally { _entradaDiretaSalvando = false; }
+}
+async function _gravarEntradaDireta() {
   const desc = (document.getElementById('entrada-desc').value||'').toUpperCase().trim();
   const qtd = parseFloat(document.getElementById('entrada-qtd').value)||0;
   const unidade = (document.getElementById('entrada-unidade').value||'UN').toUpperCase();
@@ -2510,9 +2962,10 @@ async function salvarEntradaDireta() {
     document.getElementById('entrada-desc').focus();
     return;
   }
-  if (qtd <= 0) { showToast('Informe a quantidade.'); return; }
-  if (!preco || preco <= 0) { showToast('Informe o custo unitário (não pode ficar zerado).'); document.getElementById('entrada-preco').focus(); return; }
+  if (!Number.isFinite(qtd) || qtd <= 0) { showToast('Informe a quantidade.'); return; }
+  if (!Number.isFinite(preco) || preco <= 0) { showToast('Informe o custo unitário (não pode ficar zerado).'); document.getElementById('entrada-preco').focus(); return; }
   if (destinoObra && !obraId) { showToast('Selecione a obra.'); return; }
+  if (destinoObra && !obraObj) { showToast('Obra não encontrada. Selecione novamente.'); return; }
   const etapaVal = document.getElementById('entrada-etapa')?.value || '';
   if (destinoObra && !etapaVal) { showToast('Selecione o centro de custo (etapa).'); document.getElementById('entrada-etapa')?.focus(); return; }
   // Imposto/despesa NAO vai pro almoxarifado (estoque) — so como custo numa obra (ex: Escritorio).
@@ -2658,20 +3111,26 @@ function _mostrarCampoPrecoSaida(desc) {
 }
 
 async function salvarSaidaMaterial() {
-  if (window._saidaEmAndamento) return;
+  const valores = Object.fromEntries(['saida-desc', 'saida-qtd', 'saida-unidade', 'saida-data',
+    'saida-obra', 'saida-etapa', 'saida-obs', 'saida-preco-manual']
+    .map(id => [id, document.getElementById(id)?.value || '']));
+  return _executarSaidaEstoque(() => _gravarSaidaMaterial(valores));
+}
 
-  // Validações ANTES de travar — early return não pode deixar flag preso
-  const desc = (document.getElementById('saida-desc').value||'').toUpperCase().trim();
-  const qtd = parseFloat(document.getElementById('saida-qtd').value)||0;
-  const unidade = document.getElementById('saida-unidade').value||'UN';
-  const data = document.getElementById('saida-data').value;
-  const obraId = document.getElementById('saida-obra').value;
-  const etapa = document.getElementById('saida-etapa').value;
-  const obs = (document.getElementById('saida-obs').value||'').toUpperCase();
+async function _gravarSaidaMaterial(valores) {
+
+  // A trava compartilhada e liberada no finally de _executarSaidaEstoque.
+  const desc = (valores['saida-desc']||'').toUpperCase().trim();
+  const qtd = parseFloat(valores['saida-qtd'])||0;
+  const unidade = valores['saida-unidade']||'UN';
+  const data = valores['saida-data'];
+  const obraId = valores['saida-obra'];
+  const etapa = valores['saida-etapa'];
+  const obs = (valores['saida-obs']||'').toUpperCase();
   const obraObj = obras.find(o => o.id === obraId);
 
   if (!desc) { showToast('Informe o material.'); return; }
-  if (qtd <= 0) { showToast('Informe a quantidade.'); return; }
+  if (!Number.isFinite(qtd) || qtd <= 0) { showToast('Informe a quantidade.'); return; }
   if (!obraId) { showToast('Selecione a obra destino.'); return; }
   if (!etapa) { showToast('Selecione o centro de custo.'); document.getElementById('saida-etapa').focus(); return; }
   if (!data) { showToast('Informe a data.'); document.getElementById('saida-data').focus(); return; }
@@ -2679,26 +3138,34 @@ async function salvarSaidaMaterial() {
 
   if (!EstoqueModule._consolidado.length) consolidarEstoque();
   const estoqueItem = EstoqueModule._consolidado.find(m => norm(m.desc) === norm(desc));
-  const saldo = estoqueItem?.saldo || 0;
+  if (!estoqueItem) return showToast('Material não encontrado no estoque. Confira o catálogo e o saldo antes de lançar a saída.', 6000);
+  if (_usarSaidaAtomica()) {
+    const manual = Number(valores['saida-preco-manual']);
+    if (Number(estoqueItem.valorMedio) <= 0 && !_pendenciaSaidaEstoque() && !(Number.isFinite(manual) && manual > 0)) {
+      _mostrarCampoPrecoSaida(desc);
+      return showToast('Informe o custo unitário.');
+    }
+    return _registrarSaidaAtomica({ item: estoqueItem, qtd, obraId, etapa, data, criterio: 'fifo', obs,
+      precoManual: Number(estoqueItem.valorMedio) <= 0 ? (manual || null) : null });
+  }
+  const saldo = estoqueItem.saldo || 0;
   if (saldo < qtd) {
     showToast(`Saldo atual: ${saldo} ${unidade} — saída de ${qtd} vai gerar negativo.`);
   }
 
-  let valorUnit = estoqueItem?.valorMedio || 0;
+  const plano = _planejarOrigemSaidaEstoque(estoqueItem, qtd, data);
+  if (!plano.ok) return showToast(plano.erro, 7000);
+
+  let valorUnit = qtd > 0 ? plano.valor / qtd : 0;
   if (valorUnit <= 0) {
     const precoInput = document.getElementById('saida-preco-manual');
-    if (precoInput) valorUnit = parseFloat(precoInput.value) || 0;
+    if (precoInput) valorUnit = parseFloat(valores['saida-preco-manual']) || 0;
     if (valorUnit <= 0) {
       showToast('Informe o custo unitário.');
       _mostrarCampoPrecoSaida(desc);
       return;
     }
   }
-
-  // Só trava após todas as validações passarem
-  window._saidaEmAndamento = true;
-  const btnSaida = document.getElementById('btn-confirmar-saida');
-  if (btnSaida) { btnSaida.disabled = true; btnSaida.textContent = 'Salvando...'; }
 
   try {
     const valor = qtd * valorUnit;
@@ -2714,6 +3181,7 @@ async function salvarSaidaMaterial() {
         qtd, preco: valorUnit, total: valor, data,
         obs: obs || 'SAÍDA MANUAL DE ESTOQUE', etapa,
         origem: 'saida_manual',
+        nota_id: plano.origem?.nota_id || null,
         ...custoClassificacaoNovo(obraId)
       });
       if (!lanc) { showToast('Erro ao lancar o custo. Nada foi registrado.', 5000); return; }
@@ -2721,7 +3189,8 @@ async function salvarSaidaMaterial() {
     // Ramo valor<=0: DEFENSIVO / inatingivel hoje (custo obrigatorio na validacao acima). A distribuicao
     // sem lancamento existe so como fallback de seguranca — NAO e regra de negocio "saida sem custo".
     const nova = await sbPost('distribuicoes', {
-      item_desc: desc, item_idx: 0, obra_id: obraId,
+      item_desc: desc, item_idx: plano.origem?.item_idx ?? 0, obra_id: obraId,
+      nota_id: plano.origem?.nota_id || null,
       obra_nome: obraObj?.nome || '',
       qtd, valor, etapa, data,
       lancamento_id: lanc ? lanc.id : null,
@@ -2751,10 +3220,6 @@ async function salvarSaidaMaterial() {
     renderEstoque();
     if (typeof renderDashboard === 'function') renderDashboard();
   } catch(e) { console.error(e); showToast('Não foi possível registrar a saída.'); }
-  finally {
-    window._saidaEmAndamento = false;
-    if (btnSaida) { btnSaida.disabled = false; btnSaida.textContent = 'CONFIRMAR SAÍDA'; }
-  }
 }
 
 
@@ -2841,7 +3306,9 @@ function selecionarAjusteItem(desc, unidade) {
 
 async function salvarAjusteModal() {
   const desc = (document.getElementById('ajuste-desc').value || '').toUpperCase().trim();
-  let qtd = parseFloat(document.getElementById('ajuste-qtd').value) || 0;
+  const qtdRaw = (document.getElementById('ajuste-qtd').value || '').trim();
+  let qtd = Number(qtdRaw);
+  if (!qtdRaw || !Number.isFinite(qtd)) { showToast('Informe uma quantidade válida.'); return; }
   const unidade = (document.getElementById('ajuste-unidade').value || 'UN').toUpperCase();
   const motivo = (document.getElementById('ajuste-motivo').value || '').toUpperCase();
   if (!desc) { showToast('Informe o material.'); return; }
@@ -2854,7 +3321,7 @@ async function salvarAjusteModal() {
     const m = EstoqueModule._consolidado.find(i => norm(i.desc) === norm(desc));
     const saldoAtual = m ? m.saldo : 0;
     const diff = qtd - saldoAtual;
-    if (diff === 0) { showToast('Contagem igual ao saldo — nenhum ajuste necessário.'); return; }
+    // Contagem que confere tambem estabelece um corte para futuros retroativos.
     const ok = await confirmar(`Contagem física: ${qtd} ${unidade}\nSaldo sistema: ${saldoAtual} ${unidade}\nDiferença: ${diff > 0 ? '+' : ''}${diff} ${unidade}\n\nConfirma o ajuste?`);
     if (!ok) return;
     // _motivoContagem embute o valor real para que consolidarEstoque use como reset point
