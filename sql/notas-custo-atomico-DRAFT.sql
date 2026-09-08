@@ -54,6 +54,8 @@ create table public.notas_operacoes(
   pedido jsonb not null,resultado jsonb not null,criado_em timestamptz not null default now()
 );
 alter table public.notas_operacoes enable row level security;
+-- Supabase pode herdar GRANT ALL; RLS nao restringe TRUNCATE.
+revoke all on table public.notas_operacoes from public,anon,authenticated;
 create policy notas_operacoes_empresa on public.notas_operacoes for select to authenticated
   using(company_id=public.auth_company_id() and usuario_id=auth.uid());
 create policy notas_operacoes_criar on public.notas_operacoes for insert to authenticated

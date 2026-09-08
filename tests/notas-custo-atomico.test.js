@@ -9,6 +9,8 @@ else {
   const db=new PGlite();t.after(()=>db.close());
   await db.exec(fs.readFileSync(require.resolve('./fixtures/estoque-transacao-base.sql'),'utf8'));
   await db.exec(`create table contas_pagar(id uuid primary key default gen_random_uuid(),company_id uuid not null,fornecedor text,descricao text,valor numeric not null,data_vencimento date,status text,data_pagamento date,tipo text,nota_id uuid references notas_fiscais(id),nota_ref text)`);
+  // Reproduz os privilegios padrao do projeto Supabase, inclusive TRUNCATE.
+  await db.exec('alter default privileges in schema public grant all on tables to anon, authenticated');
   await db.exec(require('./fixtures/custo-nota.cjs').sql);
   await db.query('insert into companies values($1),($2)',[empresa,outra]);
   await db.query("insert into company_users values($1,$2,'admin'),($3,$2,'leitura')",[usuario,empresa,leitor]);
@@ -24,6 +26,14 @@ else {
   async function totais(){return (await db.query('select (select count(*)::int from notas_fiscais) nf,(select count(*)::int from lancamentos) lc,(select count(*)::int from distribuicoes) dist,(select count(*)::int from contas_pagar) contas,(select count(*)::int from notas_operacoes) recibos')).rows[0];}
   return {...a,db,pedidos,enviar,totais,perderResposta(){perder=true}};
  }
+ test('recibos revogam privilegios herdados e bloqueiam TRUNCATE',async t=>{
+  const a=await preparar(t);
+  const r=(await a.db.query("select has_table_privilege('anon','notas_operacoes','SELECT') anon_le, has_table_privilege('anon','notas_operacoes','TRUNCATE') anon_trunca, has_table_privilege('authenticated','notas_operacoes','TRUNCATE') auth_trunca, has_table_privilege('authenticated','notas_operacoes','INSERT') auth_insere")).rows[0];
+  assert.deepEqual(r,{anon_le:false,anon_trunca:false,auth_trunca:false,auth_insere:true});
+  await assert.rejects(a.db.exec('truncate notas_operacoes'),/permission denied/);
+  await a.db.exec('reset role; set role anon');
+  await assert.rejects(a.db.exec('truncate notas_operacoes'),/permission denied/);
+ });
  test('NF direta: desconto reduz custo; frete e despesas fecham o total',async t=>{
   const a=await preparar(t);assert.equal(await a.salvarNF({destino:'OBRA',desconto:40,frete:40,outras:10}),true,JSON.stringify(a.avisos));
   const r=(await a.db.query('select sum(total)::float8 total from lancamentos')).rows[0];assert.equal(r.total,410);
