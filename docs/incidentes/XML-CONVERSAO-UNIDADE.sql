@@ -40,6 +40,17 @@
 -- cache-busting confirmou HTTP 200 e os marcadores de versao/correcao em
 -- index.html, edr-v2-importar.js, edr-v2-utils-extras.js e sw.js.
 -- Pendente: conferir a previa deste XML em sessao autenticada sem gravar outra NF.
+-- Revisao da trava: cliente antigo podia omitir descricao_fiscal e deixar
+-- unidade_fiscal=RL/qtd_estoque em M sem passar pelo recalculo. A migration
+-- xml_rastro_fiscal_obrigatorio_20260928 passou a rejeitar qualquer item com
+-- campos fiscais sem descricao_fiscal; itens manuais sem rastro fiscal seguem.
+-- Leitura previa: 0 itens fiscais sem descricao existentes. Teste transacional
+-- no banco tentou retirar descricao_fiscal de um item desta NF e recebeu 23514;
+-- a NF permaneceu com 4 itens, primeiro em RL e total R$ 1.451,91.
+-- Auditoria encontrou mais 4 regras RL -> M fator 1 em outros cabos do mesmo
+-- cliente. Tres foram usadas na NF 283896/1 (4/1/1 RL salvos como M).
+-- Esta outra NF e as regras restantes nao foram alteradas nesta janela;
+-- exigem conferencia de movimentacoes e autorizacao propria para reparo.
 -- Nao alterar a unidade dos quatro materiais antigos: tres possuem historico
 -- fisico em M.
 --
@@ -78,6 +89,8 @@
 -- E. [PENDENTE] Em sessao autenticada, abrir a previa deste XML sem salvar
 --    outra NF: deve mostrar RL e bloquear 1:1. Registrar aqui o resultado.
 --    A leitura publica e os testes locais nao comprovam esse fluxo.
+-- F. [ESCOPO SEPARADO] Auditar a NF 283896/1 e as 4 regras RL -> M fator 1
+--    restantes antes de qualquer mudanca de saldo, cadastro ou financeiro.
 
 do $$
 begin

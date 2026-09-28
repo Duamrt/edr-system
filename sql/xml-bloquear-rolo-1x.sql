@@ -1,5 +1,7 @@
 -- APLICADO NO BANCO EDR SYSTEM EM 2026-09-28.
 -- Migration: xml_bloquear_rolo_1x_20260928.
+-- Reaplicado com validacao de rastro fiscal incompleto em
+-- xml_rastro_fiscal_obrigatorio_20260928.
 -- Protege a autoridade do banco contra clientes antigos e outras rotas de escrita.
 -- RL -> M/M²/M³ com fator 1 exige revisao: um rolo nao pode ser apenas
 -- renomeado para uma unidade de medida. Regras validas (ex.: RL -> M, 100)
@@ -31,11 +33,19 @@ declare
   v_material_id uuid;
   v_unidade_estoque text;
 begin
-  if new.itens is null or new.data_efetiva_estoque is null then return new; end if;
+  if new.itens is null then return new; end if;
   for v_item in select value from jsonb_array_elements(new.itens::jsonb)
   loop
-    if coalesce(v_item ->> 'descricao_fiscal', '') = ''
-       or public.fn_unidade_normalizada(v_item ->> 'unidade_fiscal') <> 'RL' then
+    -- Um item de XML sem descricao_fiscal escapava tambem do recalculo legado.
+    -- Rejeitar o rastro fiscal incompleto antes de tratar o item como manual.
+    if btrim(coalesce(v_item ->> 'descricao_fiscal', '')) = ''
+       and (v_item ? 'unidade_fiscal' or v_item ? 'qtd_fiscal'
+         or v_item ? 'total_fiscal' or v_item ? 'codigo_produto_fiscal') then
+      raise exception 'Item XML com campos fiscais sem descricao_fiscal; complete o item antes de salvar'
+        using errcode = '23514';
+    end if;
+    if new.data_efetiva_estoque is null
+       or public.fn_unidade_normalizada(v_item ->> 'unidade_fiscal') is distinct from 'RL' then
       continue;
     end if;
     v_material_id := nullif(v_item ->> 'material_id', '')::uuid;
