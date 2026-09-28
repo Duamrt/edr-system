@@ -12,6 +12,68 @@
 -- equivalencias 1:1 ainda desconhecidas (ex.: BRITA 19, MT -> M³). A regra e'
 -- salva por material em material_conversao; a unidade original do XML continua
 -- preservada. Conversoes nao confirmadas continuam bloqueadas.
+--
+-- 2026-09-28: NF 209169/1, cabo em rolos de 100 m (XML: 2/3/2/2 RL).
+-- Confirmado por leitura no banco: NF salva com 2/3/2/2 M, apesar de o XML
+-- trazer RL; quatro regras RL -> M com fator 1, vigentes desde 2026-09-28.
+-- A NF possui uma conta a pagar de R$ 1.451,91 e nenhuma distribuicao,
+-- lancamento, saida atomica ou devolucao vinculada na leitura desta data.
+-- Causa no cliente: regra 1:1 existente era aplicada sem revisao, e o campo de
+-- unidade/fator da previa nao permitia correcao. O banco sempre recalcula pela
+-- unidade do material e regra vigente (gatilho abaixo).
+-- Correcao local: importador bloqueia RL -> M/M²/M³ com fator 1, permite escolher
+-- material novo em RL ou gravar fator explicito, e falha fechado se a leitura
+-- das regras ou vinculos do fornecedor falhar; pagina todas as regras e vinculos.
+-- A falha ao gravar novo de-para avisa o usuario sem descartar itens conferidos.
+-- O detalhe da NF exibe o preco por unidade real, em vez de /UN fixo.
+-- Teste: tests/xml-conversao-unidade.test.js.
+-- 2026-09-28, autorizacao do Duam: migration xml_bloquear_rolo_1x_20260928
+-- aplicada (sql/xml-bloquear-rolo-1x.sql); ambos os gatilhos ativos.
+-- Ensaio de sql/nota-209169-cabos-rl-reparo.sql com rollback passou; leitura
+-- seguinte confirmou a NF ainda em M, 0 materiais novos e 4 regras antigas.
+-- Reparo definitivo executado: NF agora 2/3/2/2 RL; codigos 000729-000732
+-- criados em RL, de-para atualizado e 4 regras RL -> M fator 1 removidas.
+-- Total R$ 1.451,91 e a mesma conta a pagar preservados. Materiais antigos
+-- 000117/000118/000115/000728 continuam em M.
+-- Pendente nesta etapa: publicar o cliente e conferir a previa autenticada.
+-- Nao alterar a unidade dos quatro materiais antigos: tres possuem historico
+-- fisico em M.
+--
+-- REGRA OPERACIONAL PARA NAO REPETIR O ERRO
+-- 1. Registrar separadamente unidade/quantidade fiscais do XML e
+--    unidade/quantidade do estoque. A descricao "ROLO-100M" ajuda na
+--    conferencia, mas nao substitui a escolha explicita da unidade/fator.
+-- 2. Se o recebimento sera controlado em rolos, vincular a um material RL.
+--    Nesta NF: 2 RL preto + 3 RL verde + 2 RL amarelo + 2 RL branco = 9 RL.
+--    Nao relabelar como RL um codigo antigo em M com movimentacoes historicas;
+--    cadastrar outro material RL e atualizar o de-para do fornecedor.
+-- 3. Se o estoque for controlado em metros, confirmar quantos M existem em
+--    cada RL e salvar o fator por material/empresa. Ex.: fator 100 gera
+--    200/300/200/200 M nesta NF, mantendo o valor fiscal R$ 1.451,91.
+--    RL -> M/M²/M³ com fator 1 exige revisao mesmo se a regra ja existir.
+-- 4. Antes de confirmar, conferir nos quatro itens: qtd/unidade do XML,
+--    qtd/unidade e preco do estoque, material vinculado e total fiscal.
+--    Uma conversao pendente deve mostrar campos de estoque vazios e bloquear
+--    o botao; falha na leitura de regras ou de-para tambem bloqueia o XML.
+--    Falha apenas ao gravar o de-para avisa, sem perder itens ja conferidos.
+-- 5. Nota ja salva nao deve ser importada de novo para "corrigir" o saldo:
+--    usar reparo transacional com precondicoes e verificar estoque/financeiro.
+--
+-- SEQUENCIA DE FECHAMENTO DESTE INCIDENTE
+-- A. [OK 2026-09-28] Reconfirmar no banco NF, quatro regras, de-para, conta a pagar e ausencia
+--    de saidas/devolucoes; estado diferente do revisado cancela o reparo.
+-- B. [OK 2026-09-28] Aplicar primeiro a trava de banco xml-bloquear-rolo-1x.sql, para
+--    impedir que cliente antigo grave outra NF RL -> M com fator 1.
+-- C. [OK 2026-09-28] Ensaiar nota-209169-cabos-rl-reparo.sql com rollback, forcar
+--    SET CONSTRAINTS ALL IMMEDIATE antes do rollback, depois executar em
+--    transacao e conferir 9 RL,
+--    total R$ 1.451,91, conta a pagar intacta e de-para nos novos codigos.
+-- D. [PENDENTE] Publicar a interface pelo processo do projeto (deploy.sh, que atualiza
+--    cache). Conferir artefatos publicos versionados e, autenticado, abrir
+--    a previa deste XML sem salvar outra NF: deve mostrar RL e bloquear 1:1.
+-- E. [PENDENTE] Registrar neste documento a versao publica e o resultado da
+--    conferencia autenticada. Ate isso ocorrer, a interface so tem testes
+--    locais e previa simulada.
 
 do $$
 begin

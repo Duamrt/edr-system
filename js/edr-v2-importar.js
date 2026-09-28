@@ -25,6 +25,10 @@ function dataNoIntervaloSemiaberto(data, inicio, fim) {
   return !fim || data < fim;
 }
 
+function conversaoRoloParaMedidaSemFator(unidadeFiscal, unidadeEstoque, fator) {
+  return unidadeFiscal === 'RL' && ['M', 'M²', 'M³'].includes(unidadeEstoque) && fator === 1;
+}
+
 // A finalidade fiscal 4 e' a fonte autoritativa para devolucao. `natOp` e'
 // texto livre do emissor e pode vir abreviado como "DEV.", sem "DEVOL".
 function classificarNaturezaNFe(nfe) {
@@ -74,6 +78,11 @@ function resolverConversaoImportacao(item, material, regras, dataEfetiva) {
   if (!(fator > 0)) {
     return { ...base, qtd_estoque: null, preco_estoque: null, status_conversao: 'revisao_obrigatoria', motivo_conversao: `Sem regra de conversao ${unidadeFiscal} → ${unidadeEstoque} para este material.` };
   }
+  if (conversaoRoloParaMedidaSemFator(unidadeFiscal, unidadeEstoque, fator)) {
+    return { ...base, qtd_estoque: null, preco_estoque: null, regra_conversao_id: regra.id,
+      status_conversao: 'revisao_obrigatoria',
+      motivo_conversao: `A regra 1 ${unidadeFiscal} = 1 ${unidadeEstoque} não mede o conteúdo do rolo. Use um material em ${unidadeFiscal} ou informe quantos ${unidadeEstoque} há em cada rolo.` };
+  }
 
   const qtdEstoque = qtdFiscal * fator;
   return {
@@ -93,16 +102,22 @@ const ImportModule = {
   _catCache: null,
   _cadastroIdx: null,
   _deParaCache: null, // {key: codigo} do banco — de-para compartilhado/permanente (Fase 4)
+  _deParaFalharam: false,
   _conversoesCache: [],
+  _conversoesFalharam: false,
 
   async _carregarConversoes() {
     try {
-      const rows = (typeof sbGet === 'function')
-        ? await sbGet('material_conversao', '?select=id,material_id,unidade_origem,unidade_destino,fator,vigente_de,vigente_ate')
-        : [];
-      this._conversoesCache = Array.isArray(rows) ? rows : [];
+      if (typeof sbGetAll !== 'function') throw new Error('Leitura de conversões indisponível');
+      const rows = await sbGetAll('material_conversao', '?select=id,material_id,unidade_origem,unidade_destino,fator,vigente_de,vigente_ate&order=id.asc', { throwOnError: true });
+      if (!Array.isArray(rows)) throw new Error('Resposta inválida ao ler conversões');
+      this._conversoesCache = rows;
+      this._conversoesFalharam = false;
+      return true;
     } catch (e) {
       this._conversoesCache = [];
+      this._conversoesFalharam = true;
+      return false;
     }
   },
 
@@ -120,7 +135,7 @@ const ImportModule = {
 
   async aprenderConversaoUnidade(idx) {
     const item = this.itensPreview[idx];
-    const material = item?.match?.material || null;
+    const material = item?.confirmado ? item.match?.material : null;
     if (!item || !material || item.status_conversao !== 'revisao_obrigatoria') return;
     if (item._salvandoConversao) return;
 
@@ -132,6 +147,10 @@ const ImportModule = {
 
     const unidadeFiscal = normalizarUnidadeImportacao(item.unidade_fiscal);
     const unidadeEstoque = normalizarUnidadeImportacao(material.unidade);
+    if (conversaoRoloParaMedidaSemFator(unidadeFiscal, unidadeEstoque, 1)) {
+      showToast('Informe o comprimento de cada rolo ou cadastre este cabo em RL. A equivalência 1:1 está bloqueada.', 6000);
+      return;
+    }
     const qtd = Number(item.qtd_fiscal || 0).toLocaleString('pt-BR', { maximumFractionDigits: 4 });
     const identificacao = `${material.codigo || ''} - ${material.nome || item.descFinal}`.replace(/^\s*-\s*/, '');
     const ok = await confirmar(
@@ -161,6 +180,79 @@ const ImportModule = {
       this._recalcularConversaoItem(item, material);
       this._renderPreview();
       showToast(`Unidade memorizada: ${unidadeFiscal} corresponde a ${unidadeEstoque} neste material.`);
+    } finally {
+      item._salvandoConversao = false;
+    }
+  },
+
+  async salvarFatorConversao(idx) {
+    const item = this.itensPreview[idx];
+    const material = item?.confirmado ? item.match?.material : null;
+    if (!item?.descricao_fiscal || !material || item._salvandoConversao) return;
+    const dataEfetiva = document.getElementById('f-recebimento')?.value || '';
+    if (!dataEfetiva) return showToast('Informe a data de recebimento antes de salvar o fator.', 5000);
+    const unidadeFiscal = normalizarUnidadeImportacao(item.unidade_fiscal);
+    const unidadeEstoque = normalizarUnidadeImportacao(material.unidade);
+    if (unidadeFiscal === unidadeEstoque) return showToast('As unidades já são iguais; não há fator para cadastrar.', 5000);
+    const textoFator = String(document.getElementById(`import-fator-${idx}`)?.value || '').trim().replace(',', '.');
+    if (!/^\d+(?:\.\d{1,8})?$/.test(textoFator)) return showToast('Informe um fator positivo com até 8 casas decimais.', 5000);
+    const fator = Number(textoFator);
+    if (!(fator > 0) || fator >= 1e12 || !Number.isFinite(Number(item.qtd_fiscal) * fator)) {
+      return showToast('Fator fora do limite permitido.', 5000);
+    }
+    if (conversaoRoloParaMedidaSemFator(unidadeFiscal, unidadeEstoque, fator)) {
+      return showToast('1 rolo não pode entrar como 1 metro. Informe o comprimento do rolo ou use um material em RL.', 6000);
+    }
+    const regraAnterior = this._conversoesCache.find(r =>
+      r.material_id === material.id &&
+      normalizarUnidadeImportacao(r.unidade_origem) === unidadeFiscal &&
+      normalizarUnidadeImportacao(r.unidade_destino) === unidadeEstoque &&
+      dataNoIntervaloSemiaberto(dataEfetiva, r.vigente_de, r.vigente_ate)
+    );
+    if (regraAnterior && Number(regraAnterior.fator) === fator) {
+      this._recalcularConversaoItem(item, material);
+      this._renderPreview();
+      return;
+    }
+    const quantidade = Number(item.qtd_fiscal) * fator;
+    const identificacao = `${material.codigo || ''} - ${material.nome || item.descFinal}`.replace(/^\s*-\s*/, '');
+    const ok = await confirmar(`Para ${identificacao}, confirmar 1 ${unidadeFiscal} = ${fator} ${unidadeEstoque}? Esta nota terá ${quantidade.toLocaleString('pt-BR', { maximumFractionDigits: 8 })} ${unidadeEstoque} no estoque e manterá o total fiscal de ${fmtR(item.total_fiscal)}. A regra valerá para este material a partir de ${dataEfetiva}.`);
+    if (!ok) return;
+
+    item._salvandoConversao = true;
+    try {
+      const novaRegra = {
+        material_id: material.id,
+        unidade_origem: unidadeFiscal,
+        unidade_destino: unidadeEstoque,
+        fator,
+        vigente_de: dataEfetiva,
+      };
+      let salva = null;
+      if (regraAnterior?.vigente_de === dataEfetiva) {
+        // O banco só aceita alterar o fator no mesmo dia se nenhuma NF usou a regra.
+        salva = await sbPatch('material_conversao', regraAnterior.id, { fator });
+      } else if (regraAnterior) {
+        const encerrada = await sbPatch('material_conversao', regraAnterior.id, { vigente_ate: dataEfetiva });
+        if (!encerrada) return showToast('Não foi possível encerrar a regra anterior. Nenhuma conversão foi alterada.', 6000);
+        salva = await sbPost('material_conversao', novaRegra);
+        if (!salva) {
+          const restaurada = await sbPatch('material_conversao', regraAnterior.id, { vigente_ate: regraAnterior.vigente_ate || null });
+          return showToast(restaurada
+            ? 'Não foi possível salvar o novo fator. A regra anterior foi restaurada.'
+            : 'A troca de fator ficou incompleta. Confira as regras do material antes de importar.', 7000);
+        }
+      } else {
+        salva = await sbPost('material_conversao', novaRegra);
+      }
+      if (!salva) return showToast('Não foi possível salvar o fator. Se a regra já foi usada por uma NF nesta data, use um novo material em RL.', 6000);
+      if (!await this._carregarConversoes()) {
+        this._renderPreview();
+        return showToast('O fator foi enviado, mas a conferência falhou. Reimporte o XML antes de continuar.', 6000);
+      }
+      this._recalcularConversaoItem(item, material);
+      this._renderPreview();
+      showToast(`Fator salvo: 1 ${unidadeFiscal} = ${fator} ${unidadeEstoque}.`);
     } finally {
       item._salvandoConversao = false;
     }
@@ -421,7 +513,7 @@ const ImportModule = {
 
   abrir() {
     this.itensPreview = [];
-    this._carregarDePara(); // carrega o de-para do banco pro cache (compartilhado/permanente)
+    this._deParaCarregamento = this._carregarDePara(); // espera antes de vincular os itens do XML
 
     // Gera modal via JS (nao depende de HTML externo)
     let modal = document.getElementById('modal-import-v2');
@@ -540,14 +632,33 @@ const ImportModule = {
       const scoreClass = hasMatch ? (item.match.score >= 80 ? 'badge-ok' : 'badge-warn') : 'badge-err';
       const veioDoXml = !!item.descricao_fiscal;
       const conversaoPendente = item.status_conversao === 'revisao_obrigatoria';
+      const unidadeFiscal = normalizarUnidadeImportacao(item.unidade_fiscal);
+      const unidadeEstoque = normalizarUnidadeImportacao(item.unidade_estoque);
+      const unidadesDiferentes = veioDoXml && item.confirmado && !!item.match?.material && unidadeFiscal !== unidadeEstoque;
+      const regraAtual = this._conversoesCache.find(r => r.id === item.regra_conversao_id);
+      const fatorAtual = Number(regraAtual?.fator);
+      const escHtml = v => typeof esc === 'function' ? esc(v) : String(v);
       const statusConversao = veioDoXml ? (conversaoPendente
-        ? `<div style="margin-top:7px;font-size:10px;font-weight:700;color:var(--vermelho);"><span class="material-symbols-outlined" style="font-size:13px;vertical-align:middle;">error</span> REVISAO OBRIGATORIA: ${typeof esc === 'function' ? esc(item.motivo_conversao || 'Conversao sem regra cadastrada.') : (item.motivo_conversao || 'Conversao sem regra cadastrada.')}</div>
-           <button type="button" onclick="ImportModule.aprenderConversaoUnidade(${i})" class="btn-mini btn-secondary" style="margin-top:7px;">
-             <span class="material-symbols-outlined" style="font-size:13px;vertical-align:middle;">school</span>
-             Usar ${typeof esc === 'function' ? esc(item.unidade_estoque) : item.unidade_estoque} e memorizar 1:1
-           </button>`
+        ? `<div style="margin-top:7px;font-size:10px;color:var(--texto3);">XML: ${item.qtd_fiscal} ${typeof esc === 'function' ? esc(item.unidade_fiscal) : item.unidade_fiscal} • ${fmtR(item.preco_fiscal)}/un • total ${fmtR(item.total_fiscal)}</div>
+           <div style="margin-top:7px;font-size:10px;font-weight:700;color:var(--vermelho);"><span class="material-symbols-outlined" style="font-size:13px;vertical-align:middle;">error</span> REVISAO OBRIGATORIA: ${typeof esc === 'function' ? esc(item.motivo_conversao || 'Conversao sem regra cadastrada.') : (item.motivo_conversao || 'Conversao sem regra cadastrada.')}</div>
+           ${unidadesDiferentes && !regraAtual && !conversaoRoloParaMedidaSemFator(unidadeFiscal, unidadeEstoque, 1) ? `<button type="button" onclick="ImportModule.aprenderConversaoUnidade(${i})" class="btn-mini btn-secondary" style="margin-top:7px;">
+              <span class="material-symbols-outlined" style="font-size:13px;vertical-align:middle;">school</span>
+              Usar ${typeof esc === 'function' ? esc(item.unidade_estoque) : item.unidade_estoque} e memorizar 1:1
+            </button>` : ''}`
         : `<div style="margin-top:7px;font-size:10px;color:var(--texto3);">XML: ${item.qtd_fiscal} ${item.unidade_fiscal} • ${fmtR(item.preco_fiscal)}/un • estoque: ${item.qtd_estoque} ${item.unidade_estoque}${item.status_conversao === 'convertido' ? ' (convertido)' : ''}</div>`)
         : '';
+      const campoUnidadeXml = `<select onchange="ImportModule.escolherUnidadeEstoque(${i},this.value)" class="input-mini" aria-label="Unidade de estoque do item ${i + 1}">
+          <option value="atual">${escHtml(item.unidade_estoque)}${item.confirmado && item.match?.material ? ' (catálogo)' : ' (XML)'}</option>
+          ${unidadesDiferentes ? `<option value="fiscal">${escHtml(unidadeFiscal)} (novo item)</option>` : ''}
+          <option value="outra">Outra unidade...</option>
+        </select>`;
+      const editorFator = unidadesDiferentes ? `<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:8px;font-size:11px;color:var(--texto2);">
+          <label for="import-fator-${i}">1 ${escHtml(unidadeFiscal)} equivale a</label>
+          <input id="import-fator-${i}" type="number" min="0.00000001" step="any" value="${fatorAtual > 0 && !conversaoRoloParaMedidaSemFator(unidadeFiscal, unidadeEstoque, fatorAtual) ? fatorAtual : ''}" placeholder="fator" class="input-mini input-mono" style="width:90px;" aria-label="Fator de conversão do item ${i + 1}">
+          <span>${escHtml(unidadeEstoque)}</span>
+          <button type="button" onclick="ImportModule.salvarFatorConversao(${i})" class="btn-mini btn-secondary">Salvar fator</button>
+          <span style="color:var(--texto3);">O total fiscal permanece ${fmtR(item.total_fiscal)}.</span>
+        </div>` : '';
       const somenteLeitura = veioDoXml ? 'readonly' : '';
       const campoQtd = veioDoXml ? 'QTD ESTOQUE' : 'QTD';
       const campoUnidade = veioDoXml ? 'UNIDADE ESTOQUE' : 'UNIDADE';
@@ -556,7 +667,7 @@ const ImportModule = {
       // A conversao pode produzir residuos binarios (0.9990000000000001).
       // O campo e apenas visual/readonly: limita a exibicao, sem alterar o
       // valor que segue para a validacao decimal do banco.
-      const precoExibido = veioDoXml && Number.isFinite(Number(item.preco))
+      const precoExibido = conversaoPendente ? '' : veioDoXml && Number.isFinite(Number(item.preco))
         ? Number(item.preco).toFixed(6).replace(/\.?0+$/, '')
         : item.preco;
 
@@ -587,11 +698,11 @@ const ImportModule = {
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;">
           <div>
             <label class="label-mini">${campoQtd}</label>
-            <input type="number" value="${item.qtd}" onchange="ImportModule.editarCampo(${i},'qtd',this.value)" class="input-mini input-mono" ${somenteLeitura}>
+            <input type="number" value="${conversaoPendente ? '' : item.qtd}" onchange="ImportModule.editarCampo(${i},'qtd',this.value)" class="input-mini input-mono" ${somenteLeitura}>
           </div>
           <div>
             <label class="label-mini">${campoUnidade}</label>
-            <input type="text" value="${item.unidade}" onchange="ImportModule.editarCampo(${i},'unidade',this.value)" class="input-mini" style="text-transform:uppercase;" ${somenteLeitura}>
+            ${veioDoXml ? campoUnidadeXml : `<input type="text" value="${item.unidade}" onchange="ImportModule.editarCampo(${i},'unidade',this.value)" class="input-mini" style="text-transform:uppercase;">`}
           </div>
           <div>
             <label class="label-mini">${campoPreco}</label>
@@ -603,6 +714,7 @@ const ImportModule = {
           </div>
         </div>
         ${statusConversao}
+        ${editorFator}
         ${item.credito !== null ? `
         <div style="margin-top:6px;font-size:10px;font-weight:700;color:${item.credito ? 'var(--verde-hl)' : 'var(--vermelho)'};">
           <span class="material-symbols-outlined" style="font-size:13px;vertical-align:middle;">${item.credito ? 'check_circle' : 'cancel'}</span>
@@ -641,15 +753,32 @@ const ImportModule = {
     if (btnWrap) {
       btnWrap.style.display = 'block';
       const todosClassificados = this.itensPreview.every(i => i.credito !== null);
+      const conversoesValidas = !this._conversoesFalharam && this.itensPreview.every(i => i.status_conversao !== 'revisao_obrigatoria');
       const btn = btnWrap.querySelector('button');
       if (btn) {
-        btn.style.opacity = todosClassificados ? '1' : '0.5';
-        btn.title = todosClassificados ? '' : 'Classifique todos os itens antes de confirmar';
+        btn.style.opacity = todosClassificados && conversoesValidas ? '1' : '0.5';
+        btn.disabled = !todosClassificados || !conversoesValidas;
+        btn.title = !conversoesValidas ? 'Revise a unidade e o fator dos itens antes de confirmar'
+          : todosClassificados ? '' : 'Classifique todos os itens antes de confirmar';
       }
     }
   },
 
   // ── Acoes do preview ─────────────────────────────────────
+
+  escolherUnidadeEstoque(idx, escolha) {
+    const item = this.itensPreview[idx];
+    if (!item?.descricao_fiscal || escolha === 'atual') return;
+    const unidadeSugerida = escolha === 'fiscal' ? normalizarUnidadeImportacao(item.unidade_fiscal) : 'UN';
+    const catalogo = typeof catalogoMateriais !== 'undefined' ? catalogoMateriais : [];
+    let nome = item.descOriginal;
+    if (catalogo.some(m => String(m.nome || '').trim().toUpperCase() === nome.trim().toUpperCase())) {
+      nome += ` - ${unidadeSugerida}`;
+    }
+    this._cadastroRapido(idx, nome, unidadeSugerida);
+    // O material atual permanece vinculado caso o cadastro seja cancelado.
+    this._renderPreview();
+  },
 
   selecionarCatalogo(idx, codigoCat) {
     const item = this.itensPreview[idx];
@@ -687,7 +816,7 @@ const ImportModule = {
     const item = this.itensPreview[idx];
     if (!item) return;
     if (item.descricao_fiscal) {
-      showToast('Dados do XML não podem ser alterados aqui. Ajuste o vínculo ou cadastre a conversão.', 'warning');
+      showToast('Dados do XML não podem ser alterados aqui. Ajuste o vínculo ou cadastre a conversão.', 5000);
       this._renderPreview();
       return;
     }
@@ -764,17 +893,35 @@ const ImportModule = {
   // ══════════════════════════════════════════════════════════
 
   async confirmarImport() {
+    if (this._confirmandoImport) return;
+    this._confirmandoImport = true;
+    try {
+      return await this._confirmarImportInterno();
+    } finally {
+      this._confirmandoImport = false;
+    }
+  },
+
+  async _confirmarImportInterno() {
+    if (this._conversoesFalharam) {
+      showToast('Não foi possível conferir as conversões do catálogo. Reimporte o XML antes de continuar.', 6000);
+      return;
+    }
+    if (this._deParaFalharam && this.itensPreview.some(item => item.cProd)) {
+      showToast('Não foi possível conferir os vínculos do fornecedor. Reimporte o XML antes de continuar.', 6000);
+      return;
+    }
     // Recalcula usando a data de recebimento atual. Sem regra explicita, uma
     // conversao comercial nao pode seguir para a NF silenciosamente.
     this.itensPreview.forEach(item => {
       if (!item.descricao_fiscal) return;
-      const material = item.match?.material || null;
+      const material = item.confirmado ? item.match?.material : null;
       this._recalcularConversaoItem(item, material);
     });
     const pendentesConversao = this.itensPreview.filter(i => i.status_conversao === 'revisao_obrigatoria');
     if (pendentesConversao.length) {
       this._renderPreview();
-      showToast(`${pendentesConversao.length} item(ns) precisam de regra de conversao antes da confirmacao`, 'error');
+      showToast(`${pendentesConversao.length} item(ns) precisam de regra de conversao antes da confirmacao`, 6000);
       return;
     }
 
@@ -790,10 +937,14 @@ const ImportModule = {
       if (!ok) return;
     }
 
-    // Salvar de-para para proximas importacoes do mesmo fornecedor
+    // O vínculo do fornecedor ajuda a próxima importação, mas não invalida
+    // os itens que o usuário acabou de conferir nesta nota.
+    let vinculosNaoSalvos = 0;
     for (const item of this.itensPreview) {
       if (item.cProd && item.codigoCat) {
-        this._deParaSet(item._cnpj, item.cProd, item.codigoCat);
+        if (!await this._deParaSet(item._cnpj, item.cProd, item.codigoCat)) {
+          vinculosNaoSalvos++;
+        }
       }
     }
 
@@ -836,7 +987,9 @@ const ImportModule = {
     // Garante render mesmo se adicionarItem nao chamou (fallback)
     if (typeof renderItensForm === 'function') renderItensForm();
 
-    showToast(`${this.itensPreview.length} itens adicionados a nota`);
+    showToast(vinculosNaoSalvos
+      ? `${this.itensPreview.length} itens adicionados à nota. Atenção: ${vinculosNaoSalvos} vínculo(s) do fornecedor não foram salvos para próximas importações.`
+      : `${this.itensPreview.length} itens adicionados a nota`, vinculosNaoSalvos ? 7000 : undefined);
     this.fechar();
   },
 
@@ -897,11 +1050,11 @@ const ImportModule = {
 
   // ── Cadastro rapido inline ──────────────────────────────
 
-  _cadastroRapido(idx, nomeDigitado) {
+  _cadastroRapido(idx, nomeDigitado, unidadeSugerida) {
     this._cadastroIdx = idx;
     this._catCacheVer = 0;
     if (typeof cadastroRapidoMaterial === 'function') {
-      cadastroRapidoMaterial(nomeDigitado, 'import');
+      cadastroRapidoMaterial(nomeDigitado, 'import', unidadeSugerida);
     }
   },
 
@@ -928,41 +1081,50 @@ const ImportModule = {
   // Carrega o de-para do banco (compartilhado/permanente) pro cache em memoria
   async _carregarDePara() {
     try {
-      const rows = (typeof sbGet === 'function') ? await sbGet('material_depara', '?select=cnpj,cprod,codigo_catalogo') : null;
-      if (Array.isArray(rows)) {
-        const cache = {};
-        for (const r of rows) cache[this._deParaKey(r.cnpj, r.cprod)] = r.codigo_catalogo;
-        this._deParaCache = cache;
-      }
-    } catch (e) { /* mantem fallback localStorage */ }
+      if (typeof sbGetAll !== 'function') throw new Error('Leitura do de-para indisponível');
+      const rows = await sbGetAll('material_depara', '?select=cnpj,cprod,codigo_catalogo&order=cnpj.asc,cprod.asc', { throwOnError: true });
+      if (!Array.isArray(rows)) throw new Error('Resposta inválida ao ler de-para');
+      const cache = {};
+      for (const r of rows) cache[this._deParaKey(r.cnpj, r.cprod)] = r.codigo_catalogo;
+      this._deParaCache = cache;
+      this._deParaFalharam = false;
+      return true;
+    } catch (e) {
+      this._deParaCache = null;
+      this._deParaFalharam = true;
+      return false;
+    }
   },
 
   _deParaGet(cnpj, cProd) {
     if (!cProd) return null;
     const key = this._deParaKey(cnpj, cProd);
-    if (this._deParaCache && this._deParaCache[key]) return this._deParaCache[key];
+    if (this._deParaCache) return this._deParaCache[key] || null;
     try { return localStorage.getItem(key) || null; } catch(e) { return null; }
   },
 
-  _deParaSet(cnpj, cProd, codigoCat) {
-    if (!cProd || !codigoCat) return;
+  async _deParaSet(cnpj, cProd, codigoCat) {
+    if (!cProd || !codigoCat) return true;
+    if (this._deParaFalharam || !this._deParaCache) return false;
     const c = (cnpj || '').replace(/\D/g, '');
     const p = (cProd || '').trim().toUpperCase();
     const key = this._deParaKey(cnpj, cProd);
-    const jaEra = this._deParaCache ? this._deParaCache[key] : undefined;
-    if (!this._deParaCache) this._deParaCache = {};
-    this._deParaCache[key] = codigoCat;
-    try { localStorage.setItem(key, codigoCat); } catch(e) {}
-    if (jaEra === codigoCat) return; // nada mudou
+    const jaEra = this._deParaCache[key];
+    if (jaEra === codigoCat) return true; // nada mudou
     const corpo = { cnpj: c, cprod: p, codigo_catalogo: codigoCat };
     if (typeof _companyId !== 'undefined' && _companyId) corpo.company_id = _companyId;
     try {
+      let salvo = null;
       if (jaEra === undefined && typeof sbPost === 'function') {
-        sbPost('material_depara', corpo); // novo vinculo
+        salvo = await sbPost('material_depara', corpo); // novo vinculo
       } else if (typeof sbPatch === 'function') {
-        sbPatch('material_depara', `?cnpj=eq.${encodeURIComponent(c)}&cprod=eq.${encodeURIComponent(p)}${(typeof _companyId !== 'undefined' && _companyId) ? '&company_id=eq.' + _companyId : ''}`, { codigo_catalogo: codigoCat }); // mudou o vinculo (filtrado por tenant)
+        salvo = await sbPatch('material_depara', `?cnpj=eq.${encodeURIComponent(c)}&cprod=eq.${encodeURIComponent(p)}${(typeof _companyId !== 'undefined' && _companyId) ? '&company_id=eq.' + _companyId : ''}`, { codigo_catalogo: codigoCat }); // mudou o vinculo (filtrado por tenant)
       }
-    } catch(e) {}
+      if (!salvo) return false;
+      this._deParaCache[key] = codigoCat;
+      try { localStorage.setItem(key, codigoCat); } catch(e) {}
+      return true;
+    } catch(e) { return false; }
   },
 
   // ══════════════════════════════════════════════════════════
@@ -990,6 +1152,16 @@ const ImportModule = {
         if (!nfe) { showToast('Nao foi possivel ler a NF-e. Verifique se e um XML de nota fiscal.'); return; }
         // CT-e (frete): oferece embutir o frete no custo de uma compra (rateio proporcional na saida)
         if (nfe._tipoDoc === 'CTE') { this._abrirVinculoFrete(nfe); return; }
+        if (!await this._deParaCarregamento) {
+          this._xmlCtx = null;
+          this.itensPreview = [];
+          const preview = document.getElementById('import-preview-v2');
+          if (preview) preview.innerHTML = '';
+          const confirmarWrap = document.getElementById('import-btn-confirmar-wrap');
+          if (confirmarWrap) confirmarWrap.style.display = 'none';
+          showToast('Não foi possível carregar os vínculos do fornecedor. Importe o XML novamente.', 6000);
+          return;
+        }
         await this._preencherFormComXML(nfe);
       } catch (err) {
         console.error('ImportModule XML erro:', err);
@@ -1100,7 +1272,16 @@ const ImportModule = {
   },
 
   async _preencherFormComXML(nfe) {
-    await this._carregarConversoes();
+    this._xmlCtx = null;
+    this.itensPreview = [];
+    if (!await this._carregarConversoes()) {
+      const preview = document.getElementById('import-preview-v2');
+      if (preview) preview.innerHTML = '';
+      const confirmarWrap = document.getElementById('import-btn-confirmar-wrap');
+      if (confirmarWrap) confirmarWrap.style.display = 'none';
+      showToast('Não foi possível carregar as regras de unidade. Tente importar o XML novamente.', 6000);
+      return false;
+    }
     // Preencher cabecalho da NF (compativel com V2 NotasModule)
     const setVal = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val; };
     // Numero inclui serie quando disponivel (ex: 123456/1) — padrão NF-e

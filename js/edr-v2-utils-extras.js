@@ -174,7 +174,7 @@ function _proxCodigoCatalogo() {
 
 // Cadastro rapido de material (modal compartilhado — NF, estoque, importar)
 let _crOrigem = null;
-function cadastroRapidoMaterial(nomeDigitado, origem) {
+function cadastroRapidoMaterial(nomeDigitado, origem, unidadeSugerida) {
   _crOrigem = origem;
   document.querySelectorAll('.autocomplete-list').forEach(l => l.classList.add('hidden'));
   let modal = document.getElementById('modal-cadastro-rapido');
@@ -198,7 +198,7 @@ function cadastroRapidoMaterial(nomeDigitado, origem) {
           <div>
             <label style="font-size:11px;color:var(--text-secondary);">UNIDADE</label>
             <select id="cr-unidade" class="form-select" style="width:100%;margin-top:4px;">
-              <option value="UN">UN</option><option value="m²">m²</option><option value="m³">m³</option><option value="m">m</option><option value="kg">kg</option><option value="saco">saco</option><option value="rolo">rolo</option><option value="barra">barra</option><option value="gl">gl</option><option value="cx">cx</option><option value="par">par</option><option value="ml">ml</option>
+              <option value="UN">UN</option><option value="PC">PC (peça)</option><option value="RL">RL (rolo)</option><option value="m²">m²</option><option value="m³">m³</option><option value="m">m</option><option value="kg">kg</option><option value="saco">saco</option><option value="rolo">rolo</option><option value="barra">barra</option><option value="gl">gl</option><option value="cx">cx</option><option value="par">par</option><option value="ml">ml</option>
             </select>
           </div>
           <div>
@@ -218,7 +218,9 @@ function cadastroRapidoMaterial(nomeDigitado, origem) {
     document.body.appendChild(modal);
   }
   document.getElementById('cr-nome').value = nomeDigitado;
-  document.getElementById('cr-unidade').value = 'UN';
+  const unidadeCadastro = document.getElementById('cr-unidade');
+  unidadeCadastro.value = unidadeSugerida && [...unidadeCadastro.options].some(o => o.value === unidadeSugerida)
+    ? unidadeSugerida : 'UN';
   document.getElementById('cr-categoria').value = '';
   document.getElementById('cr-aviso').style.display = 'none';
   document.getElementById('cr-similares').style.display = 'none';
@@ -266,6 +268,8 @@ function crUsarExistente(nome, codigo) {
     document.getElementById('entrada-desc').value = nome;
     if (m?.unidade) document.getElementById('entrada-unidade').value = m.unidade;
     setTimeout(() => document.getElementById('entrada-qtd')?.focus(), 100);
+  } else if (_crOrigem === 'import' && typeof importPosicaoRapidoCallback === 'function') {
+    importPosicaoRapidoCallback(codigo);
   }
 }
 
