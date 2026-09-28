@@ -35,7 +35,11 @@
 -- criados em RL, de-para atualizado e 4 regras RL -> M fator 1 removidas.
 -- Total R$ 1.451,91 e a mesma conta a pagar preservados. Materiais antigos
 -- 000117/000118/000115/000728 continuam em M.
--- Pendente nesta etapa: publicar o cliente e conferir a previa autenticada.
+-- Publicacao 09281845 concluida em 2026-09-28 via deploy.sh (main/dev
+-- 011aaef); workflow GitHub Pages 36488310227 aprovado. Leitura publica com
+-- cache-busting confirmou HTTP 200 e os marcadores de versao/correcao em
+-- index.html, edr-v2-importar.js, edr-v2-utils-extras.js e sw.js.
+-- Pendente: conferir a previa deste XML em sessao autenticada sem gravar outra NF.
 -- Nao alterar a unidade dos quatro materiais antigos: tres possuem historico
 -- fisico em M.
 --
@@ -68,12 +72,12 @@
 --    SET CONSTRAINTS ALL IMMEDIATE antes do rollback, depois executar em
 --    transacao e conferir 9 RL,
 --    total R$ 1.451,91, conta a pagar intacta e de-para nos novos codigos.
--- D. [PENDENTE] Publicar a interface pelo processo do projeto (deploy.sh, que atualiza
---    cache). Conferir artefatos publicos versionados e, autenticado, abrir
---    a previa deste XML sem salvar outra NF: deve mostrar RL e bloquear 1:1.
--- E. [PENDENTE] Registrar neste documento a versao publica e o resultado da
---    conferencia autenticada. Ate isso ocorrer, a interface so tem testes
---    locais e previa simulada.
+-- D. [OK 2026-09-28] Publicar a interface pelo deploy.sh; conferir no dominio
+--    publico HTML, importador, cadastro rapido e service worker versionados.
+--    Primeira versao publica da correcao: 09281845 / SW 20260928184542.
+-- E. [PENDENTE] Em sessao autenticada, abrir a previa deste XML sem salvar
+--    outra NF: deve mostrar RL e bloquear 1:1. Registrar aqui o resultado.
+--    A leitura publica e os testes locais nao comprovam esse fluxo.
 
 do $$
 begin
