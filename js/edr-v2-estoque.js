@@ -2371,6 +2371,8 @@ async function exportarEstoqueExcel() {
 
     // Colunas
     ws.getRow(5).values = ['#', 'Codigo', 'Material', 'Unidade', 'Categoria', 'Valor Medio', 'Total R$', 'Saldo Sistema', 'Contagem Real', 'Diferenca', 'Preco Corrigido'];
+    ws.getCell('F5').note = 'Média histórica das compras, apenas para consulta. O total não é saldo multiplicado por esta média.';
+    ws.getCell('G5').note = 'Valor dos lotes remanescentes, igual ao painel do estoque. Referências manuais são estimativas separadas e não compõem este total.';
     ws.getRow(5).font = { bold: true };
     ws.getRow(5).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD1FAE5' } };
 
@@ -2380,10 +2382,10 @@ async function exportarEstoqueExcel() {
     ];
 
     // Dados: catálogo completo + órfãos do consolidado
-    const saldoMap = {}, valorMap = {};
+    const saldoMap = {}, valorMap = {}, totalMap = {};
     for (const c of EstoqueModule._consolidado) {
-      if (c.codigo) { saldoMap[c.codigo] = c.saldo; valorMap[c.codigo] = c.valorMedio || 0; }
-      else { saldoMap['NOME:' + (c.desc || '')] = c.saldo; valorMap['NOME:' + (c.desc || '')] = c.valorMedio || 0; }
+      if (c.codigo) { saldoMap[c.codigo] = c.saldo; valorMap[c.codigo] = c.valorMedio || 0; totalMap[c.codigo] = c.valorEstoque || 0; }
+      else { saldoMap['NOME:' + (c.desc || '')] = c.saldo; valorMap['NOME:' + (c.desc || '')] = c.valorMedio || 0; totalMap['NOME:' + (c.desc || '')] = c.valorEstoque || 0; }
     }
 
     // Itens do catálogo (todos, com ou sem saldo)
@@ -2394,6 +2396,8 @@ async function exportarEstoqueExcel() {
       categoria: m.categoria || '',
       saldo: saldoMap[m.codigo] ?? 0,
       valorMedio: valorMap[m.codigo] ?? 0,
+      valorEstoque: totalMap[m.codigo] ?? 0,
+      valorReferencia: Number(m.valor_referencia_manual) || 0,
       semCodigo: !m.codigo,
     }));
 
@@ -2404,7 +2408,7 @@ async function exportarEstoqueExcel() {
 
     const itens = [
       ...itensCatalogo,
-      ...orfaos.map(c => ({ codigo: null, desc: c.desc, unidade: c.unidade, categoria: c.categoria, saldo: c.saldo, valorMedio: c.valorMedio || 0, semCodigo: true })),
+      ...orfaos.map(c => ({ codigo: null, desc: c.desc, unidade: c.unidade, categoria: c.categoria, saldo: c.saldo, valorMedio: c.valorMedio || 0, valorEstoque: c.valorEstoque || 0, semCodigo: true })),
     ].sort((a, b) => (a.desc || '').localeCompare(b.desc || '', 'pt-BR'));
 
     itens.forEach((it, idx) => {
@@ -2416,12 +2420,17 @@ async function exportarEstoqueExcel() {
         it.unidade,
         catLabel,
         it.valorMedio || 0,
-        (it.saldo || 0) * (it.valorMedio || 0),
+        it.valorEstoque || 0,
         it.saldo,
         null, // contagem real (preenchido manualmente)
         null, // diferenca (formula J = I - H)
         null, // preco corrigido (editavel pelo usuario para reimport)
       ]);
+
+      if (!it.valorMedio && it.valorReferencia > 0) {
+        const estimativa = Math.max(0, it.saldo || 0) * it.valorReferencia;
+        row.getCell(7).note = `Referência manual estimada: R$ ${it.valorReferencia.toLocaleString('pt-BR')} por unidade; total estimado R$ ${estimativa.toLocaleString('pt-BR')}. Fora do valor conhecido e dos custos da obra.`;
+      }
 
       // Formatar valores monetários
       row.getCell(6).numFmt = '#,##0.00';

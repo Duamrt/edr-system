@@ -33,10 +33,12 @@
     });
   }
   const refOf = cod => (cod && _rm[cod]) ? _rm[cod] : null;
-  // valorUnit/valorTot: NF real prevalece; senão o ref manual; senão 0. valorMedio fica intocado no _consolidado.
+  // Média histórica é informativa; total real vem dos lotes remanescentes.
+  // Referência manual é estimativa separada e nunca compõe o valor conhecido.
   const valorUnit = it => (it.valorMedio || 0) > 0 ? it.valorMedio : (refOf(it.codigo) ? refOf(it.codigo).valor : 0);
   const ehManual = it => (it.valorMedio || 0) === 0 && !!refOf(it.codigo);
-  const valorTot = it => it.saldo < 0 ? it.valorEstoque : it.saldo * valorUnit(it);
+  const valorTot = it => Number(it.valorEstoque) || 0;
+  const valorEstimado = it => ehManual(it) && it.saldo > 0 ? it.saldo * valorUnit(it) : 0;
 
   // ── DERIVAÇÕES ──
   function status(it) {
@@ -76,8 +78,9 @@
   function kpis() {
     const u = _universo;
     const comSaldo = u.filter(i => i.saldo > 0);
+    const estimativa = comSaldo.reduce((s, i) => s + valorEstimado(i), 0);
     return [
-      { id: null, cls: 'k-total', lbl: 'Valor conhecido', val: _fmtR(comSaldo.reduce((s, i) => s + i.saldo * valorUnit(i), 0)), tip: u.filter(isPrecificar).length + ' sem preço fora da conta' },
+      { id: null, cls: 'k-total', lbl: 'Valor conhecido', val: _fmtR(comSaldo.reduce((s, i) => s + valorTot(i), 0)), tip: u.filter(isPrecificar).length + ' sem preço fora da conta' + (estimativa > 0 ? ' · estimativa manual separada: ' + _fmtR(estimativa) : '') },
       { id: 'comsaldo', cls: 'k-saldo', lbl: 'Itens com saldo', val: comSaldo.length },
       { id: 'precificar', cls: 'k-precificar', lbl: 'Precificar agora', val: u.filter(isPrecificar).length, tip: 'fila de ação' },
       { id: 'negativos', cls: 'k-neg', lbl: 'Negativos', val: u.filter(i => i.saldo < 0).length },
@@ -113,14 +116,15 @@
         <div class="estk-mat" title="${_esc(it.desc)}">${_esc(it.desc)}</div>
         <div class="estk-cat">${isAdmin ? `<span class="estk-catb estk-cat-edit" onclick="event.stopPropagation();EstoqueTabela.editarCat('${_esc(it.chave)}',this.parentNode)" title="Trocar centro de custo">${_esc(_lbl(it.categoria))}</span>` : `<span class="estk-catb">${_esc(_lbl(it.categoria))}</span>`}</div>
         <div class="estk-saldo ${it.saldo < 0 ? 'neg' : it.saldo === 0 ? 'zero' : ''}">${_fmtQ(it.saldo)} <span class="estk-un">${_esc(it.unidade || 'UN')}</span></div>
-        ${isAdmin ? `<div class="estk-vmed">${vu ? _fmtR(vu) + (man ? ' <span class="estk-manual">MANUAL</span>' : '') : '—'}</div>` : '<div class="estk-vmed">—</div>'}
-        ${isAdmin ? `<div class="estk-total ${tcls}">${vt ? _fmtR(vt) : 'R$ 0'}</div>` : '<div class="estk-total zero">—</div>'}
+        ${isAdmin ? `<div class="estk-vmed">${vu ? _fmtR(vu) + (man ? ' <span class="estk-manual" title="Referência manual: estimativa, fora do valor conhecido">ESTIMATIVA</span>' : '') : '—'}</div>` : '<div class="estk-vmed">—</div>'}
+        ${isAdmin ? `<div class="estk-total ${tcls}" title="${man ? 'Estimativa manual separada: ' + _fmtR(valorEstimado(it)) : 'Valor dos lotes remanescentes'}">${vt ? _fmtR(vt) : 'R$ 0'}</div>` : '<div class="estk-total zero">—</div>'}
         <div class="estk-org"><span class="estk-od od-${o.k}"></span>${o.l}</div>
         <div><span class="estk-st st-${st.toLowerCase()}">${STLABEL[st]}</span></div>
       </div>`;
     }).join('') : `<div class="estk-empty">Nenhum item neste recorte.</div>`;
 
-    const valExib = rows.filter(i => i.saldo > 0).reduce((s, i) => s + i.saldo * valorUnit(i), 0);
+    const valExib = rows.filter(i => i.saldo > 0).reduce((s, i) => s + valorTot(i), 0);
+    const estimativaExib = rows.reduce((s, i) => s + valorEstimado(i), 0);
 
     el.innerHTML = `
       <div class="estk-diag">Diagnóstico do almoxarifado <span>números do estoque inteiro · clique num indicador para filtrar a lista abaixo</span></div>
@@ -128,11 +132,11 @@
       <div class="estk-card">
         <div class="estk-head">
           <div>Código</div><div>Material</div><div>Categoria</div><div class="r">Saldo</div>
-          <div class="r ${isAdmin ? '' : 'estk-hide'}">Vlr médio</div><div class="r ${isAdmin ? '' : 'estk-hide'}">Total</div>
+          <div class="r ${isAdmin ? '' : 'estk-hide'}" title="Média histórica das compras ou referência manual estimada">Média / ref.</div><div class="r ${isAdmin ? '' : 'estk-hide'}">Total</div>
           <div>Origem</div><div>Status</div>
         </div>
         <div class="estk-body">${body}</div>
-        <div class="estk-count"><span>${rows.length} ${rows.length === 1 ? 'item' : 'itens'}</span>${isAdmin ? `<span>valor exibido ${_fmtR(valExib)}</span>` : ''}</div>
+        <div class="estk-count"><span>${rows.length} ${rows.length === 1 ? 'item' : 'itens'}</span>${isAdmin ? `<span>valor conhecido exibido ${_fmtR(valExib)}${estimativaExib > 0 ? ' · estimativa manual separada ' + _fmtR(estimativaExib) : ''}</span>` : ''}</div>
       </div>`;
   }
 
@@ -178,6 +182,7 @@
     if (st === 'LEGADO') return { c: 'info', t: `Entrou sem NF (inventário/ajuste). Valor zero é <b>esperado</b> aqui — não é erro. Vai zerando no uso.` };
     if (st === 'NEGATIVO') return { c: 'danger', t: `Saldo <b>negativo</b>: saiu mais do que entrou no sistema. Conferir distribuições/lançamentos antes de qualquer ajuste.` };
     if (st === 'ZERADO') return { c: 'info', t: `Sem saldo no momento. Histórico preservado.` };
+    if (ehManual(it)) return { c: 'info', t: `Referência manual disponível como <b>estimativa</b>. O valor conhecido permanece <b>${_fmtR(valorTot(it))}</b>; a referência não altera os custos registrados.` };
     return { c: 'ok', t: `Saldo e custo consistentes. Total em estoque <b>${_fmtR(valorTot(it))}</b>.` };
   }
   function open(chave) {
@@ -200,14 +205,15 @@
 
     const FONTE_LBL = { nf_propria: 'última NF do item', nf_parecida: 'item parecido', manual: 'digitado' };
     const acaoSec = ref
-      ? `<div class="estk-sec">Valor de referência</div>
+      ? `<div class="estk-sec">Valor de referência (estimativa)</div>
          <div class="estk-refbox">
            <div class="estk-refval">${_fmtR(ref.valor)} <span class="estk-manual">MANUAL</span></div>
            <div class="estk-note">Fonte: ${_esc(FONTE_LBL[ref.fonte] || ref.fonte)}${ref.por ? ` · por ${_esc(ref.por)}` : ''}${ref.em ? ` · ${_esc(String(ref.em).slice(0, 10))}` : ''}</div>
-           <div class="estk-note" style="margin-top:4px">Vale só pra gestão do estoque — não afeta DRE, custo de obra nem distribuição.</div>
+           ${man && it.saldo > 0 ? `<div class="estk-note">Total estimado: ${_fmtR(valorEstimado(it))} — fora do valor conhecido.</div>` : ''}
+            <div class="estk-note" style="margin-top:4px">Vale só pra gestão do estoque — não afeta DRE, custo de obra nem distribuição.</div>
          </div>`
       : (podePrecificar(it)
-        ? `<div class="estk-sec">Ação</div><div class="estk-action"><div class="estk-note">Item sem preço. Defina um <b>valor de referência</b> pra ele entrar no valor do estoque (não afeta DRE/custo de obra).</div></div>`
+        ? `<div class="estk-sec">Ação</div><div class="estk-action"><div class="estk-note">Item sem preço. Defina um <b>valor de referência estimado</b> para consulta separada do valor conhecido (não afeta DRE/custo de obra).</div></div>`
         : '');
 
     dw.innerHTML = `
@@ -223,7 +229,7 @@
         <div class="estk-grid">
           ${isAdmin ? `<div class="estk-cell hero"><div class="k">Total em estoque</div><div class="v">${_fmtR(valorTot(it))}</div></div>` : ''}
           <div class="estk-cell"><div class="k">Saldo</div><div class="v" style="${it.saldo < 0 ? 'color:var(--error)' : ''}">${_fmtQ(it.saldo)} <span style="font-size:11px;color:var(--text-secondary)">${_esc(it.unidade || 'UN')}</span></div></div>
-          ${isAdmin ? `<div class="estk-cell"><div class="k">Valor ${man ? 'ref.' : 'médio'}</div><div class="v sm" style="${valorUnit(it) ? '' : 'color:var(--warning)'}">${_fmtR(valorUnit(it))}${man ? ' <span class="estk-manual">MANUAL</span>' : ''}</div></div>` : ''}
+          ${isAdmin ? `<div class="estk-cell"><div class="k">${man ? 'Referência estimada' : 'Média histórica'}</div><div class="v sm" style="${valorUnit(it) ? '' : 'color:var(--warning)'}">${_fmtR(valorUnit(it))}${man ? ' <span class="estk-manual">MANUAL</span>' : ''}</div></div>` : ''}
         </div>
         <div class="estk-sec">Composição da origem</div>
         <div class="estk-comp">${comp}</div>
