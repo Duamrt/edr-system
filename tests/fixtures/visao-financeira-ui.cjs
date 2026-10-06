@@ -53,6 +53,20 @@ function fixture() {
         { conta_pagar_id: id(41), pago_centavos: 1000, restante_centavos: 0 }] }
   };
 }
+function fixtureComposicao() {
+  const dados = fixture();
+  const row = (n, campos) => ({ id: id(n), company_id: ids.empresa, obra_id: ids.a, obs: null, ...campos });
+  dados.lancamentos = dados.lancamentos.filter(l => l.obra_id !== ids.a || l.id === id(50));
+  dados.lancamentos.push(
+    row(101, { total: '50.004', data: '2026-09-12', etapa: '28_mao', descricao: 'MAO SINTETICA MES ANTERIOR' }),
+    ...[102, 103, 104].map(n => row(n, { total: '100.004', data: '2026-10-10', etapa: '04_alven', descricao: 'MATERIAL SINTETICO FRACIONARIO ' + n })),
+    row(105, { total: '25.005', data: '2026-10-15', etapa: '28_mao', descricao: 'FP SINTETICA FRACIONARIA', obs: 'Folha quinzenal \u00b7 ' + ids.quinzena }),
+    row(106, { total: 10, data: '2026-10-10', etapa: '24_imposto', descricao: 'IMPOSTO SINTETICO' }),
+    row(107, { total: 5, data: '2026-10-10', etapa: '34_tecnologia', descricao: 'DESPESA SINTETICA' }),
+    row(108, { total: 40, data: '2026-10-10', etapa: '35_terreno', descricao: 'TERRENO SINTETICO' })
+  );
+  return dados;
+}
 function bootstrap(dados, config) {
   const json = JSON.stringify({ dados, config, ids }).replace(/</g, '\\u003c');
   return `(function(){
@@ -111,6 +125,8 @@ function html(dados, config = {}) {
   });
   assert.equal(injetou, true, 'Infra real deve ser carregada antes das fixtures');
   assert.equal(navegacao, 1, 'Shell de navegacao original unico');
+  assert.match(documento, /src=["']js\/edr-v2-visao-financeira-composicao\.js(?:\?[^"']*)?["']/,
+    'Composicao real deve ser carregada pelo index; fixture nao fabrica adaptador');
   const iniciar = `<script>window.addEventListener('DOMContentLoaded',function(){
     document.getElementById('login-screen').style.display='none';document.getElementById('app-shell').style.display='';
     updateShellUser('QA SINTETICA','admin');
@@ -163,4 +179,4 @@ async function abrir(browser, options = {}) {
     }
   };
 }
-module.exports = { abrir, fixture, html, ids, origin, url, raiz };
+module.exports = { abrir, fixture, fixtureComposicao, html, ids, origin, url, raiz };

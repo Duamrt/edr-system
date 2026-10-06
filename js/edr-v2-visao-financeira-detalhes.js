@@ -10,10 +10,11 @@
   const modelo = common ? require('./edr-v2-visao-financeira-modelo.js') : root.FinanceiroVisaoModelo;
   const folha = common ? require('./edr-v2-visao-financeira-folha.js') : root.FinanceiroVisaoFolha;
   const contexto = () => common ? require('./edr-v2-visao-financeira-contexto.js') : root.FinanceiroVisaoContexto;
-  const api = factory(modelo, folha, contexto);
+  const composicao = () => common ? require('./edr-v2-visao-financeira-composicao.js') : root.FinanceiroVisaoComposicao;
+  const api = factory(modelo, folha, contexto, composicao);
   if (common) module.exports = api;
   if (root) root.FinanceiroVisaoDetalhes = api;
-})(typeof globalThis !== 'undefined' ? globalThis : this, function (modelo, folha, obterContexto) {
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (modelo, folha, obterContexto, obterComposicao) {
   'use strict';
   const OPER = ['03_alimentacao', '07_combustivel', '14_expediente', '25_limpeza', '34_tecnologia'];
   const CAMPOS_DRE = {
@@ -175,12 +176,61 @@
     }).join('') || '<p class="detail-note">Nenhuma obra identificada neste recorte. Fontes indisponiveis nao representam saldo zero.</p>';
   }
   function congelar(v) { if (v && typeof v === 'object' && !Object.isFrozen(v)) { Object.values(v).forEach(congelar); Object.freeze(v); } return v; }
+  function origemComposta(ctx, l, oid, somenteMao = false) {
+    const original = (fonte(ctx, l.fonte) || []).find(r => id(r.id) === id(l.id));
+    let descricao, documento = original?.nota_id || l.id;
+    if (l.tipo === 'custo') descricao = somenteMao || String(l.etapa || '').trim() === '28_mao'
+      ? 'Mão de obra lançada (28_mao)' : original?.descricao || 'Custo ou despesa lançada';
+    else if (l.fonte === 'pagamentosAdicionais') {
+      const a = (fonte(ctx, 'adicionais') || []).find(r => id(r.id) === id(original?.adicional_id));
+      descricao = 'Recebimento adicional: ' + (a?.descricao || 'Adicional vinculado');
+    } else descricao = 'Recebimento registrado: ' + (original?.tipo || 'Repasses do contrato');
+    return row(ctx, { id: l.fonte + ':' + id(l.id) }, somenteMao ? l.valorCentavos : l.efeitoCentavos,
+      l.data, descricao, documento, oid);
+  }
+  function tabelaResultado(c, h) {
+    const money = v => h.esc(h.money(inteiro(v)));
+    const negativo = v => inteiro(v) == null ? null : -v;
+    const entrada = (label, v) => `<tr><td>${h.esc(label)}</td><td class="num">${money(v)}</td><td class="num">—</td><td class="num">${money(v)}</td></tr>`;
+    const custo = cat => `<tr><td>${h.esc(cat.label)}</td><td class="num">—</td><td class="num">${money(cat.centavos)}</td><td class="num">${money(negativo(cat.centavos))}</td></tr>`;
+    const principais = entrada('Repasses do contrato (inclui terreno)', c.receitas?.contratoCentavos)
+      + entrada('Recebimentos de adicionais elegíveis', c.receitas?.adicionaisCentavos)
+      + (c.categorias || []).map(custo).join('');
+    const m = c.margemConstrucao;
+    const exclusoes = (m?.exclusoes || []).filter(cat => Number.isSafeInteger(cat.quantidade) && cat.quantidade > 0);
+    const antesDe = exclusoes.length ? 'antes de ' + exclusoes.map(cat => String(cat.label).toLocaleLowerCase('pt-BR')).join(', ')
+      : inteiro(m?.custoCentavos) == null ? 'exclusões de custos e despesas não confirmadas' : 'sem custos/despesas excluídos identificados';
+    const precisaoDre = inteiro(m?.engineResultadoCentavos) != null && inteiro(m?.diferencaArredondamentoCentavos) != null && m.diferencaArredondamentoCentavos !== 0
+      ? '<p class="detail-note">Referência do cálculo separado da DRE, com soma de decimais brutos: ' + money(m.engineResultadoCentavos)
+        + '. Essa referência não integra a composição em centavos por origem e não cria ajuste compensatório.</p>' : '';
+    const linhaMargem = (label, v) => `<tr><td>${h.esc(label)}</td><td class="num">${money(v)}</td></tr>`;
+    const margem = m ? '<details class="receivable-detail-work"><summary>Por que difere da margem da construção</summary>'
+      + '<p class="detail-note">Esta explicação usa centavos arredondados por origem para conferir os componentes. A DRE mantém suas fórmulas e sua soma de decimais brutos.</p>'
+      + '<div class="table-wrap"><table class="data-table"><thead><tr><th>COMPONENTE</th><th class="num">EFEITO</th></tr></thead><tbody>'
+      + linhaMargem('Margem da construção, em centavos por origem — ' + antesDe, m.resultadoCentavos)
+      + linhaMargem('Recebimento de terreno incluído no resultado principal', m.recebimentoTerrenoCentavos)
+      + linhaMargem('Adicionais fora da carteira elegível, presentes na regra DRE', negativo(m.adicionaisForaCarteiraCentavos))
+      + exclusoes.map(cat => linhaMargem('Custo ou despesa incluído no principal: ' + cat.label, negativo(cat.centavos))).join('')
+      + '</tbody><tfoot><tr><th>RECEBIDO MENOS TODOS OS CUSTOS</th><th class="num">' + money(c.resultadoCentavos)
+      + '</th></tr></tfoot></table></div><p class="detail-note">Terreno, impostos e despesas operacionais permanecem identificados. Não há ajuste compensatório nem desconto de custos sem lançamento de origem.</p>' + precisaoDre + '</details>' : '';
+    return '<section class="receivable-detail-work"><h3>Composição do resultado</h3><div class="table-wrap"><table class="data-table">'
+      + '<thead><tr><th>ORIGEM OU CATEGORIA</th><th class="num">RECEBIDO</th><th class="num">CUSTO OU DESPESA</th><th class="num">EFEITO NO RESULTADO</th></tr></thead>'
+      + '<tbody>' + principais + '</tbody><tfoot><tr><th>TOTAL</th><th class="num">' + money(c.recebidoCentavos)
+      + '</th><th class="num">' + money(c.custoCentavos) + '</th><th class="num">' + money(c.resultadoCentavos)
+      + '</th></tr></tfoot></table></div><div class="formula"><small>RECEBIDO MENOS CUSTOS</small>'
+      + money(c.recebidoCentavos) + ' − ' + money(c.custoCentavos) + ' = ' + money(c.resultadoCentavos)
+      + '</div><p class="detail-note">Cada origem aparece uma vez. Fonte indisponível permanece desconhecida; zero exige consulta confirmada.</p></section>' + margem;
+  }
   function vazio(note) { return congelar({ title: 'Detalhe indisponivel', valueCentavos: null, formula: 'Fonte nao confirmada.', note,
     extra: '', rows: [] }); }
   function construir(key, ctx, h, workId = '') {
     if (!h || typeof h.esc !== 'function' || typeof h.money !== 'function') throw new TypeError('Helpers de detalhes incompletos.');
     if (!valido(ctx)) return vazio('A empresa e a leitura deste detalhe nao foram confirmadas.');
-    try { ctx = contextoObra(ctx, workId); } catch (_) { return vazio('Nao foi possivel reconstruir a leitura da obra.'); }
+    // A composicao valida o ID dentro do filtro original e utiliza somente a
+    // folha agregada desse envelope. Refiltrar/reavaliar a folha mudaria sua prova.
+    if (!['resultReceipts', 'laborM2'].includes(key)) {
+      try { ctx = contextoObra(ctx, workId); } catch (_) { return vazio('Nao foi possivel reconstruir a leitura da obra.'); }
+    }
     if (!ctx || !valido(ctx)) return vazio('A obra nao pertence ao recorte confirmado.');
     const ids = new Set(ctx.obras.map(o => id(o.id))), t = ctx.totais, per = ctx.filtro.periodo;
     const out = { title: '', valueCentavos: null, formula: '', note: '', extra: '', rows: [] };
@@ -196,6 +246,34 @@
       out.note = 'Posicao acumulada da carteira atual. O periodo nao reduz a pendencia aos recebimentos daquele mes. Arquivamento nao comprova quitacao.';
       out.extra = itemTable(ctx, h, key === 'receivableExcess', key === 'receivableContract' ? 'contrato' : key === 'receivableExtras' ? 'adicionais' : 'todos');
       out.rows = recebidoRows({ ...ctx, filtro: { ...ctx.filtro, periodo: '' } }, ids);
+    } else if (key === 'resultReceipts' || key === 'laborM2') {
+      const oid = workId || (ctx.obras.length === 1 ? id(ctx.obras[0].id) : '');
+      let c;
+      try {
+        const api = obterComposicao();
+        c = api && typeof api.construir === 'function' ? api.construir(ctx, oid) : null;
+      } catch (_) { return vazio('Não foi possível confirmar a composição deste indicador.'); }
+      if (!c || !oid || id(c.obraId) !== id(oid)) return vazio('Selecione uma obra do recorte confirmado para consultar este indicador.');
+      if (key === 'resultReceipts') {
+        Object.assign(out, { title: 'Resultado sobre recebimentos', valueCentavos: inteiro(c.resultadoCentavos),
+          formula: 'Recebimentos registrados no período − todos os custos e despesas lançados no período, em centavos por origem.',
+          note: 'Inclui terreno, mão de obra, material e serviços, impostos e despesas operacionais lançados na obra. Não representa saldo em conta nem lucro final da obra. Lançamento de custo não comprova pagamento.',
+          extra: tabelaResultado(c, h), rows: (c.linhas || []).map(l => origemComposta(ctx, l, oid)) });
+      } else {
+        const a = c.acumulado, f = a?.folha;
+        const avisoFolha = f?.pendenciaConfirmada === true ? 'Há pendência de folha comprovada nesta consulta; o valor inclui somente mão de obra já lançada.'
+          : f?.cobertura !== 'confirmada' ? 'Fontes ou vínculos de folha não confirmados: não é possível verificar pendências nesta consulta.'
+          : 'A consulta não identificou pendência de folha; a cobertura de todos os dias permanece não verificada.';
+        Object.assign(out, { title: 'Mão de obra lançada por m²', valueCentavos: inteiro(a?.maoPorM2Centavos),
+          formula: 'Mão de obra lançada acumulada (28_mao) ÷ área cadastrada da obra; arredondado ao centavo por m².',
+          note: 'Indicador parcial dos lançamentos acumulados, independente do mês selecionado. Avanço físico e custo final da mão de obra não foram consultados. ' + avisoFolha
+            + (ctx.filtro.periodo ? ' O diagnóstico do mês selecionado não confirma a cobertura acumulada.' : '')
+            + ' Não comprova pagamento nem representa saldo em conta ou lucro final da obra.',
+          extra: '<div class="formula"><small>BASE DO CÁLCULO</small>' + h.esc(h.money(inteiro(a?.maoCentavos))) + ' ÷ '
+            + h.esc(areaValida(a?.areaM2) == null ? 'Área indisponível' : String(a.areaM2) + ' m²') + ' = '
+            + h.esc(h.money(inteiro(a?.maoPorM2Centavos))) + '/m²</div>',
+          rows: (a?.linhasMao || []).map(l => origemComposta(ctx, l, oid, true)), signType: 'cost' });
+      }
     } else if (key === 'received') {
       Object.assign(out, { title: 'Recebido registrado no periodo', valueCentavos: inteiro(t.recebidoPeriodoCentavos),
         formula: 'Repasses registrados + pagamentos de adicionais elegiveis, pelas datas do recebimento.',

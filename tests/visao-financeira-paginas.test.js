@@ -6,6 +6,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 const Modelo = require('../js/edr-v2-visao-financeira-modelo.js');
 const Folha = require('../js/edr-v2-visao-financeira-folha.js');
+const Composicao = require('../js/edr-v2-visao-financeira-composicao.js');
 const Paginas = require('../js/edr-v2-visao-financeira-paginas.js');
 
 const esc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -37,6 +38,7 @@ function snapshotReal() {
   const custo = (id, obra_id, total, etapa, data = '2026-10-03') => scoped({ id, obra_id, total, etapa, data, obs: '' });
   const s = {
     companyId: tenant,
+    fontes: Object.fromEntries(['obras', 'lancamentos', 'repasses', 'adicionais', 'pagamentosAdicionais'].map(f => [f, 'confirmada'])),
     obras: [scoped({ id: 'a', nome: 'Casa Sintética A', valor_venda: 1000, area_m2: 100, arquivada: false }),
       scoped({ id: 'b', nome: 'Casa Sintética B', valor_venda: 350, area_m2: 50, arquivada: true }),
       scoped({ id: 'office', nome: 'ESCRITORIO SINTETICO', valor_venda: 0, area_m2: null })],
@@ -127,11 +129,100 @@ test('Análise preserva custo acumulado por m² sem usar custo mensal ou custo d
   assert.notEqual(valor(h, 'costM2', 'a'), ctx.custoDre.totalCentavos / 100);
   assert.equal(h.chamadas.filter(x => x.tipo === 'numero' && x.key === 'work').length, 0);
   assert.match(html, /data-detail="work" data-work="a">Abrir análise da obra/);
-  assert.equal(valor(h, 'result', 'a'), 8500);
-  assert.match(html, /Contrato e custo por m² usam os valores acumulados/);
+  assert.equal(valor(h, 'resultReceipts', 'a'), 65500);
+  assert.equal(valor(h, 'result', 'a'), undefined);
+  assert.match(html, /Contrato, custo e mão de obra por m² usam os valores acumulados/);
   assert.match(html, /Avanço físico não consultado/);
   assert.match(html, /<div class="progress-line" aria-hidden="true"><\/div>/);
   assert.doesNotMatch(html, /Caixa no fim|Estoque no fim|width:[0-9]+%/);
+});
+
+test('cartão e tabela de Análise fecham recebido menos todos custos e despesas, sem reutilizar margem DRE', () => {
+  const { s } = snapshotReal();
+  const ctx = freezeDeep(contexto(s));
+  const h = componentes();
+  const html = Paginas.renderizar('analise', ctx, h);
+  assert.equal(valor(h, 'received', 'a'), 112500);
+  assert.equal(valor(h, 'cost', 'a'), 47000);
+  assert.equal(valor(h, 'resultReceipts', 'a'), 65500);
+  assert.equal(valor(h, 'resultReceipts', 'a'), valor(h, 'received', 'a') - valor(h, 'cost', 'a'));
+  assert.notEqual(valor(h, 'resultReceipts', 'a'), Modelo.centavos(ctx.visao.obras[0].dre.dados.margem));
+  assert.equal(h.chamadas.filter(x => x.tipo === 'numero' && x.key === 'resultReceipts' && x.work === 'a').length, 2);
+  assert.equal(h.chamadas.filter(x => x.tipo === 'tabela').length, 0);
+  assert.match(html, /Custos e despesas lançados/);
+  assert.match(html, /Resultado sobre recebimentos por obra/);
+  assert.match(html, /Resultado \/ recebimentos/);
+  assert.match(html, /Não representa saldo em conta nem lucro final da obra/);
+  assert.doesNotMatch(html, /Margem da construção|CONTRIBUIÇÃO GERENCIAL|data-detail="result"/);
+});
+
+test('resultado de Análise respeita elegibilidade de adicionais enquanto a DRE preserva todos os pagamentos', () => {
+  const { s } = snapshotReal();
+  s.adicionais[0].status = 'cancelado';
+  const ctx = contexto(s);
+  const h = componentes();
+  const html = Paginas.renderizar('analise', ctx, h);
+  assert.equal(valor(h, 'received', 'a'), 110000);
+  assert.equal(valor(h, 'cost', 'a'), 47000);
+  assert.equal(valor(h, 'resultReceipts', 'a'), 63000);
+  assert.equal(Modelo.centavos(ctx.visao.obras[0].dre.dados.margem), 8500);
+  assert.match(html, /Resultado sobre recebimentos/);
+});
+
+test('mão de obra por m² usa todos os lançamentos acumulados da etapa própria, inclusive fora do mês', () => {
+  const { s } = snapshotReal();
+  s.lancamentos.push({ company_id: s.companyId, id: 'mao-set-a', obra_id: 'a', total: 30,
+    etapa: '\u00a028_mao\u00a0', data: '2026-09-18', obs: '' });
+  const ctx = contexto(s);
+  const h = componentes();
+  const html = Paginas.renderizar('analise', ctx, h);
+  assert.equal(valor(h, 'laborM2', 'a'), 70);
+  assert.notEqual(valor(h, 'laborM2', 'a'), ctx.custoDre.maoCentavos / 100);
+  assert.equal(valor(h, 'costM2', 'a'), 700);
+  assert.match(html, /Mão de obra lançada \/ m² \(acumulado\)/);
+  assert.match(html, /indicador acumulado/);
+  assert.doesNotMatch(html, /mao-set-a|Funcionário/);
+});
+
+test('recebimento zero conserva resultado negativo e percentual desconhecido na Análise', () => {
+  const { s } = snapshotReal();
+  s.repasses = [];
+  s.pagamentosAdicionais = [];
+  const h = componentes();
+  const html = Paginas.renderizar('analise', contexto(s), h);
+  assert.equal(valor(h, 'received', 'a'), 0);
+  assert.equal(valor(h, 'cost', 'a'), 47000);
+  assert.equal(valor(h, 'resultReceipts', 'a'), -47000);
+  assert.match(html, /Resultado \/ recebimentos<\/span><strong>Indisponível/);
+  assert.doesNotMatch(html, /NaN|Infinity/);
+});
+
+test('fonte de custos indisponível mantém recebido confirmado e torna custo, resultado e mão por m² desconhecidos', () => {
+  const { s } = snapshotReal();
+  s.fontes.lancamentos = 'indisponivel';
+  const h = componentes();
+  const html = Paginas.renderizar('analise', contexto(s), h);
+  assert.equal(valor(h, 'received', 'a'), 112500);
+  assert.equal(valor(h, 'cost', 'a'), null);
+  assert.equal(valor(h, 'resultReceipts', 'a'), null);
+  assert.equal(valor(h, 'costM2', 'a'), null);
+  assert.equal(valor(h, 'laborM2', 'a'), null);
+  assert.equal(valor(h, 'contractM2', 'a'), 1000);
+  assert.match(html, /Indisponível/);
+});
+
+test('aviso de folha distingue pendência comprovada sem expor motivos individuais', () => {
+  const { s } = snapshotReal();
+  const filtro = { periodo: '', obraId: 'a', situacao: 'ativas' };
+  const ctx = contexto(s, filtro);
+  ctx.envelope.folha = { companyId: s.companyId, filtro, obras: [{ obraId: 'a',
+    estado: 'pendencia_identificada', cobertura: 'parcial',
+    motivos: [{ severidade: 'pendencia', texto: 'FUNCIONARIO_PRIVADO_NAO_EXIBIR' }] }] };
+  const html = Paginas.renderizar('analise', ctx, componentes());
+  assert.match(html, /Há pendência de folha identificada/);
+  assert.match(html, /não é possível afirmar que toda a mão de obra está lançada/);
+  assert.match(html, /Indicadores por m²<\/span><strong>Acumulado/);
+  assert.doesNotMatch(html, /FUNCIONARIO_PRIVADO_NAO_EXIBIR/);
 });
 
 test('área ausente ou zerada não fabrica indicador por m²; fonte ausente não vira zero', () => {
@@ -143,9 +234,10 @@ test('área ausente ou zerada não fabrica indicador por m²; fonte ausente não
   const h = componentes();
   const html = Paginas.renderizar('analise', ctx, h);
   assert.equal(valor(h, 'cost', 'a'), null);
-  assert.equal(valor(h, 'result', 'a'), null);
+  assert.equal(valor(h, 'resultReceipts', 'a'), null);
   assert.equal(valor(h, 'contractM2', 'a'), null);
   assert.equal(valor(h, 'costM2', 'a'), null);
+  assert.equal(valor(h, 'laborM2', 'a'), null);
   assert.match(html, /Indisponível/);
 });
 
@@ -264,7 +356,7 @@ test('composição não confirmada não publica números anexados de leitura ant
 test('módulo de navegador renderiza sem ler caches, DOM, rede ou escritas operacionais', () => {
   const proibidas = [];
   const proibir = nome => () => { proibidas.push(nome); throw new Error('Acesso proibido: ' + nome); };
-  const ambiente = { FinanceiroVisaoModelo: Modelo, document: { getElementById: proibir('DOM') },
+  const ambiente = { FinanceiroVisaoModelo: Modelo, FinanceiroVisaoComposicao: Composicao, document: { getElementById: proibir('DOM') },
     fetch: proibir('fetch'), sbGet: proibir('sbGet'), sbPost: proibir('sbPost'), sbPatch: proibir('sbPatch'), sbDelete: proibir('sbDelete') };
   Object.defineProperty(ambiente, 'obras', { get: proibir('cache de obras') });
   Object.defineProperty(ambiente, 'localStorage', { get: proibir('localStorage') });

@@ -5,8 +5,16 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const { abrir, fixture, ids, raiz } = require('./fixtures/visao-financeira-ui.cjs');
+const { abrir, fixture, fixtureComposicao, ids, raiz } = require('./fixtures/visao-financeira-ui.cjs');
 const escopo = page => page.locator('.view.active .edr-financial');
+const textoSemAcentos = texto => texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+const campoCard = (page, chave, obra = ids.a) => escopo(page).locator('.work-card [data-detail="' + chave + '"][data-work="' + obra + '"]');
+async function fecharDetalhe(dialog) {
+  await dialog.locator('[data-fv-action="fechar"]').click(); await dialog.waitFor({ state: 'hidden' });
+}
+async function composicao(page, obra = ids.a) {
+  return page.evaluate(obraId => FinanceiroVisaoComposicao.construir(FinanceiroVisaoContexto.construir(FinanceiroVisaoPonte.ler()), obraId), obra);
+}
 async function filtrar(page, campo, valor) {
   const controle = escopo(page).locator('[data-fv-filter="' + campo + '"]');
   assert.equal(await controle.count(), 1, 'Controle compartilhado unico: ' + campo);
@@ -37,7 +45,7 @@ async function semOverflow(page) {
     assert.ok(r.esquerda >= -1 && r.direita <= medida.largura + 1, 'Root fora do viewport: ' + JSON.stringify(r));
     assert.ok(r.conteudo <= r.cliente + 1, 'Overflow externo do painel: ' + JSON.stringify(r));
   }
-  const cortados = await page.evaluate(() => [...document.querySelectorAll('.view.active .edr-financial .metric-value, .view.active .edr-financial .work-card .pair button, .view.active .edr-financial .formula-step button, .view.active .edr-financial .attention-row .amount, .view.active .edr-financial .chart-summary button, .view.active .edr-financial .receivable-total > strong')]
+  const cortados = await page.evaluate(() => [...document.querySelectorAll('.view.active .edr-financial .metric-value, .view.active .edr-financial .work-card .pair button, .view.active .edr-financial .work-card .pair > strong, .view.active .edr-financial .formula-step button, .view.active .edr-financial .attention-row .amount, .view.active .edr-financial .chart-summary button, .view.active .edr-financial .receivable-total > strong')]
     .filter(el => el.getBoundingClientRect().width && el.getBoundingClientRect().height)
     .flatMap(el => {
       const limite = el.matches('.receivable-total > strong') ? el.closest('.panel') :
@@ -45,11 +53,13 @@ async function semOverflow(page) {
       if (!limite) return [];
       const range = document.createRange(); range.selectNodeContents(el);
       const texto = range.getBoundingClientRect(), box = limite.getBoundingClientRect();
-      return texto.left < box.left - 1 || texto.right > box.right + 1 || texto.bottom > box.bottom + 1
-        ? [{ texto: el.textContent, esquerda: texto.left, direita: texto.right, limite: { esquerda: box.left, direita: box.right } }] : [];
+      const css = getComputedStyle(limite), paddingLeft = limite.classList.contains('work-card') ? Number.parseFloat(css.paddingLeft) || 0 : 0;
+      const paddingRight = limite.classList.contains('work-card') ? Number.parseFloat(css.paddingRight) || 0 : 0;
+      return texto.left < box.left + paddingLeft - 1 || texto.right > box.right - paddingRight + 1 || texto.bottom > box.bottom + 1
+        ? [{ texto: el.textContent, esquerda: texto.left, direita: texto.right, limite: { esquerda: box.left + paddingLeft, direita: box.right - paddingRight } }] : [];
     }));
   assert.deepEqual(cortados, [], 'Valores monetarios cortados dentro de cartoes');
-  const moedasQuebradas = await page.evaluate(() => [...document.querySelectorAll('.view.active .edr-financial .metric-value')]
+  const moedasQuebradas = await page.evaluate(() => [...document.querySelectorAll('.view.active .edr-financial .metric-value, .view.active .edr-financial .work-card .pair button')]
     .filter(el => el.getBoundingClientRect().width && el.getBoundingClientRect().height && /^-?R\$\s/.test(el.textContent))
     .flatMap(el => {
       const range = document.createRange(); range.selectNodeContents(el);
@@ -60,6 +70,18 @@ async function semOverflow(page) {
       return linhas !== 1 || rect.height > lineHeight + 1 ? [{ texto: el.textContent, linhas, altura: rect.height, lineHeight }] : [];
     }));
   assert.deepEqual(moedasQuebradas, [], 'Moedas nas metricas devem aparecer inteiras em uma unica linha');
+  const sobrepostos = await page.evaluate(() => [...document.querySelectorAll('.view.active .edr-financial .work-card .pair')]
+    .flatMap(pair => {
+      const label = pair.querySelector(':scope > span'), valor = pair.querySelector(':scope > button, :scope > strong');
+      if (!label || !valor || !pair.getBoundingClientRect().height) return [];
+      const a = document.createRange(), b = document.createRange(); a.selectNodeContents(label); b.selectNodeContents(valor);
+      for (const l of a.getClientRects()) for (const v of b.getClientRects()) {
+        if (Math.min(l.right, v.right) - Math.max(l.left, v.left) > 1 && Math.min(l.bottom, v.bottom) - Math.max(l.top, v.top) > 1)
+          return [{ label: label.textContent, valor: valor.textContent }];
+      }
+      return [];
+    }));
+  assert.deepEqual(sobrepostos, [], 'Labels e valores dos cartoes nao devem se sobrepor');
 }
 async function captura(page, nome) {
   if (!process.env.EDR_UI_EVIDENCE_DIR) return;
@@ -93,6 +115,24 @@ async function colunaDreAcessivel(page, semRolar = false) {
   for (const celula of medida.celulas) assert.ok(celula.esquerda >= medida.limiteEsquerda - 1 && celula.direita <= medida.limiteDireita + 1,
     'Coluna final DRE permanece cortada: ' + JSON.stringify(medida));
 }
+async function textosDoDialogCabem(dialog) {
+  const medida = await dialog.evaluate(el => {
+    const box = el.getBoundingClientRect(), css = getComputedStyle(el);
+    const esquerda = box.left + (Number.parseFloat(css.borderLeftWidth) || 0) + (Number.parseFloat(css.paddingLeft) || 0);
+    const direita = box.right - (Number.parseFloat(css.borderRightWidth) || 0) - (Number.parseFloat(css.paddingRight) || 0);
+    const cortados = [...el.querySelectorAll('.detail-value, .entry-value, .formula')]
+      .filter(no => no.getBoundingClientRect().width && no.getBoundingClientRect().height)
+      .flatMap(no => {
+        const range = document.createRange(); range.selectNodeContents(no);
+        const rect = range.getBoundingClientRect();
+        return rect.left < esquerda - 1 || rect.right > direita + 1
+          ? [{ classe: no.className, texto: no.textContent, esquerda: rect.left, direita: rect.right }] : [];
+      });
+    return { cliente: el.clientWidth, conteudo: el.scrollWidth, esquerda, direita, cortados };
+  });
+  assert.ok(medida.conteudo <= medida.cliente + 1, 'Dialog tem overflow horizontal externo: ' + JSON.stringify(medida));
+  assert.deepEqual(medida.cortados, [], 'Moedas e formulas precisam caber no contentbox do dialog: ' + JSON.stringify(medida));
+}
 async function modal(page, tipo, detalhe = 'metodo') {
   const root = escopo(page);
   const botao = detalhe === 'metodo' ? root.locator('[data-fv-action="metodo"]') : root.locator('[data-detail="' + detalhe + '"]').first();
@@ -100,6 +140,7 @@ async function modal(page, tipo, detalhe = 'metodo') {
   const dialog = page.locator('#fv-detail-' + tipo);
   await dialog.waitFor({ state: 'visible' });
   assert.equal(await dialog.locator('[data-fv-detail-body]').count(), 1);
+  await textosDoDialogCabem(dialog);
   return dialog;
 }
 
@@ -380,6 +421,169 @@ if (!process.env.EDR_PLAYWRIGHT_PATH || !process.env.EDR_CHROMIUM_PATH) {
         assert.doesNotMatch(await escopo(a.page).locator('[data-fv-content]').innerText(), /CASA SINTETICA ALFA/);
         await a.conferirIsolamento();
       } finally { await a.fechar(); }
+    });
+
+    await t.test('novos cards conciliam recebido menos todos custos por origem e preservam referencia DRE sem ajuste', async () => {
+      const a = await abrir(browser, { dados: fixtureComposicao() }); try {
+        await a.pronto(); await navegar(a.page, 'relatorio');
+        await filtrar(a.page, 'periodo', '2026-10'); await filtrar(a.page, 'obraId', ids.a);
+        assert.equal(await a.page.evaluate(() => typeof FinanceiroVisaoComposicao.construir), 'function');
+        const c = await composicao(a.page);
+        assert.equal(c.status, 'confirmada'); assert.equal(c.recebidoCentavos, 142000);
+        assert.equal(c.custoCentavos, 38001); assert.equal(c.resultadoCentavos, 103999);
+        const cats = Object.fromEntries(c.categorias.map(cat => [cat.id, cat.centavos]));
+        assert.equal(cats.material_servicos, 30000); assert.equal(cats.mao, 2501);
+        assert.equal(cats.impostos, 1000); assert.equal(cats.tecnologia, 500); assert.equal(cats.terreno, 4000);
+        assert.equal(c.categorias.reduce((n, cat) => n + cat.centavos, 0), 38001);
+        assert.equal(c.margemConstrucao.resultadoCentavos, 109499);
+        assert.equal(c.margemConstrucao.engineResultadoCentavos, 109498);
+        assert.equal(c.margemConstrucao.diferencaArredondamentoCentavos, 1);
+        assert.equal(c.acumulado.maoCentavos, 7501); assert.equal(c.acumulado.areaM2, 80); assert.equal(c.acumulado.maoPorM2Centavos, 94);
+        const origens = new Set(a.dados.lancamentos.map(l => l.id).concat(a.dados.repasses_cef.map(r => r.id), a.dados.adicional_pagamentos.map(p => p.id)));
+        assert.ok(c.linhas.length > 0 && c.linhas.every(l => origens.has(l.id)), 'Nenhum lancamento compensatorio pode ser fabricado');
+        assert.equal(await campoCard(a.page, 'received').innerText(), 'R$\u00a01.420,00');
+        assert.equal(await campoCard(a.page, 'cost').innerText(), 'R$\u00a0380,01');
+        assert.equal(await campoCard(a.page, 'resultReceipts').innerText(), 'R$\u00a01.039,99');
+        assert.equal(await campoCard(a.page, 'laborM2').innerText(), 'R$\u00a00,94');
+        assert.match(textoSemAcentos(await campoCard(a.page, 'cost').locator('..').innerText()), /Custos e despesas lancados/);
+        assert.match(textoSemAcentos(await campoCard(a.page, 'resultReceipts').locator('..').innerText()), /Resultado sobre recebimentos/);
+        await semOverflow(a.page); await captura(a.page, 'cartoes-composicao-desktop-sinteticos');
+        const result = await modal(a.page, 'analise', 'resultReceipts');
+        const comparacao = result.locator('details.receivable-detail-work').filter({ hasText: 'Por que difere' });
+        assert.equal(await comparacao.count(), 1);
+        await comparacao.locator('summary').click(); assert.equal(await comparacao.evaluate(el => el.open), true);
+        await textosDoDialogCabem(result);
+        const texto = textoSemAcentos(await result.locator('[data-fv-detail-body]').innerText());
+        assert.match(texto, /Resultado sobre recebimentos/); assert.match(texto, /centavos por origem/);
+        for (const rotulo of ['Materiais', 'Mao de obra', 'Impostos', 'Tecnologia', 'Terreno']) assert.ok(texto.includes(rotulo));
+        for (const valor of ['1.420,00', '380,01', '1.039,99', '300,00', '25,01', '10,00', '5,00', '40,00', '1.094,99', '1.094,98']) assert.ok(texto.includes(valor), 'Composicao deve expor valor real ' + valor);
+        assert.match(texto, /DRE/); assert.match(texto, /decimais brutos/); assert.match(texto, /nao cria ajuste compensatorio/);
+        await captura(a.page, 'resultado-composicao-modal-desktop-sintetico'); await fecharDetalhe(result);
+        const labor = await modal(a.page, 'analise', 'laborM2');
+        const mao = textoSemAcentos(await labor.locator('[data-fv-detail-body]').innerText());
+        assert.match(mao, /acumulad/i); assert.match(mao, /80 m/); assert.match(mao, /75,01/); assert.match(mao, /0,94/);
+        assert.match(mao, /parcial|cobertura|nao.*complet/i);
+        await captura(a.page, 'labor-m2-modal-desktop-sintetico'); await fecharDetalhe(labor);
+        await a.conferirIsolamento();
+      } finally { await a.fechar(); }
+    });
+
+    await t.test('resultado segue mes obra e arquivadas enquanto mao por metro permanece acumulada', async () => {
+      const a = await abrir(browser, { dados: fixtureComposicao() }); try {
+        await a.pronto(); await navegar(a.page, 'relatorio'); await filtrar(a.page, 'obraId', ids.a);
+        for (const [periodo, resultado, recebido, custo] of [['2026-09', '-R$\u00a050,00', 20000, 25000], ['2026-10', 'R$\u00a01.039,99', 142000, 38001], ['2026-11', 'R$\u00a020,00', 2000, 0], ['', 'R$\u00a01.009,99', 164000, 63001]]) {
+          await filtrar(a.page, 'periodo', periodo);
+          const c = await composicao(a.page); assert.equal(c.recebidoCentavos, recebido); assert.equal(c.custoCentavos, custo);
+          assert.equal(await campoCard(a.page, 'resultReceipts').innerText(), resultado);
+          assert.equal(await campoCard(a.page, 'laborM2').innerText(), 'R$\u00a00,94');
+          assert.match(textoSemAcentos(await campoCard(a.page, 'laborM2').locator('..').innerText()), /acumulado/i);
+        }
+        await filtrar(a.page, 'periodo', '2026-10'); await filtrar(a.page, 'obraId', ids.b);
+        assert.equal(await campoCard(a.page, 'resultReceipts', ids.b).innerText(), '-R$\u00a0200,00');
+        assert.equal(await campoCard(a.page, 'laborM2', ids.b).innerText(), 'R$\u00a00,00');
+        await filtrar(a.page, 'situacao', 'arquivadas'); await filtrar(a.page, 'obraId', ids.c);
+        assert.equal(await campoCard(a.page, 'resultReceipts', ids.c).innerText(), 'R$\u00a00,00');
+        await filtrar(a.page, 'periodo', '');
+        assert.equal(await campoCard(a.page, 'resultReceipts', ids.c).innerText(), 'R$\u00a0350,00');
+        const idsVisiveis = await escopo(a.page).locator('.work-card [data-work]').evaluateAll(xs => [...new Set(xs.map(x => x.dataset.work))]);
+        assert.deepEqual(idsVisiveis, [ids.c]); await a.conferirIsolamento();
+      } finally { await a.fechar(); }
+    });
+
+    await t.test('area ausente zero negativa e fonte de custo falha deixam indicadores desconhecidos', async () => {
+      for (const area of [null, 0, -80]) {
+        const dados = fixtureComposicao(); dados.obras[0].area_m2 = area;
+        const a = await abrir(browser, { dados }); try {
+          await a.pronto(); await navegar(a.page, 'relatorio'); await filtrar(a.page, 'periodo', '2026-10'); await filtrar(a.page, 'obraId', ids.a);
+          assert.equal(await campoCard(a.page, 'resultReceipts').innerText(), 'R$\u00a01.039,99');
+          for (const chave of ['contractM2', 'costM2', 'laborM2']) assert.equal(await campoCard(a.page, chave).innerText(), 'Indispon\u00edvel');
+          assert.equal((await composicao(a.page)).acumulado.maoPorM2Centavos, null);
+          const dialog = await modal(a.page, 'analise', 'laborM2');
+          assert.match(textoSemAcentos(await dialog.locator('[data-fv-detail-body]').innerText()), /area.*ausente|area.*invalida|area.*zero|area.*indisponivel/i);
+          await fecharDetalhe(dialog); await a.conferirIsolamento();
+        } finally { await a.fechar(); }
+      }
+      const a = await abrir(browser, { dados: fixtureComposicao(), config: { falharTabela: 'lancamentos' } }); try {
+        await a.pronto(); await navegar(a.page, 'relatorio'); await filtrar(a.page, 'periodo', '2026-10'); await filtrar(a.page, 'obraId', ids.a);
+        assert.equal(await campoCard(a.page, 'received').innerText(), 'R$\u00a01.420,00');
+        for (const chave of ['cost', 'resultReceipts', 'costM2', 'laborM2']) assert.equal(await campoCard(a.page, chave).innerText(), 'Indispon\u00edvel');
+        const c = await composicao(a.page); assert.equal(c.custoCentavos, null); assert.equal(c.resultadoCentavos, null); assert.equal(c.acumulado.maoCentavos, null);
+        await a.controlar({ falharTabela: null }); await atualizar(a);
+        assert.equal(await campoCard(a.page, 'resultReceipts').innerText(), 'R$\u00a01.039,99');
+        assert.equal(await campoCard(a.page, 'laborM2').innerText(), 'R$\u00a00,94'); await a.conferirIsolamento();
+      } finally { await a.fechar(); }
+    });
+
+    await t.test('diagnostico de folha desconhecido preserva mao lancada com aviso de cobertura parcial', async () => {
+      const a = await abrir(browser, { dados: fixtureComposicao(), config: { falharTabela: 'diarias' }, viewport: { width: 390, height: 844 } }); try {
+        await a.pronto(); await navegar(a.page, 'relatorio'); await filtrar(a.page, 'obraId', ids.a);
+        const c = await composicao(a.page); assert.equal(c.acumulado.maoPorM2Centavos, 94);
+        assert.equal(c.acumulado.folha.estado, 'nao_avaliado'); assert.notEqual(c.acumulado.folha.cobertura, 'confirmada');
+        assert.equal(await campoCard(a.page, 'laborM2').innerText(), 'R$\u00a00,94');
+        const card = escopo(a.page).locator('.work-card');
+        assert.match(textoSemAcentos(await card.innerText()), /nao.*confirmad|nao.*possivel.*afirmar|parcial/i);
+        await captura(a.page, 'cartao-folha-desconhecida-mobile-sintetico');
+        const dialog = await modal(a.page, 'analise', 'laborM2');
+        const texto = textoSemAcentos(await dialog.locator('[data-fv-detail-body]').innerText());
+        assert.match(texto, /parcial|nao.*confirmad|nao.*possivel/i); assert.match(texto, /75,01/);
+        assert.doesNotMatch(texto, /PESSOA SINTETICA/);
+        await fecharDetalhe(dialog); await semOverflow(a.page); await a.conferirIsolamento();
+      } finally { await a.fechar(); }
+    });
+
+    await t.test('exportacao dos novos cards preserva resultado mao acumulada e filtro sem obras ocultas', async () => {
+      const a = await abrir(browser, { dados: fixtureComposicao() }); try {
+        await a.pronto(); await navegar(a.page, 'relatorio'); await filtrar(a.page, 'periodo', '2026-10'); await filtrar(a.page, 'obraId', ids.a);
+        const popupPromise = a.page.waitForEvent('popup'); await escopo(a.page).locator('[data-fv-action="exportar"]').click();
+        const popup = await popupPromise; await popup.waitForLoadState('domcontentloaded');
+        const texto = textoSemAcentos(await popup.locator('body').innerText());
+        assert.match(texto, /CASA SINTETICA ALFA/); assert.doesNotMatch(texto, /CASA SINTETICA BETA|CASA SINTETICA ARQUIVADA|CASA SINTETICA NEGATIVA/);
+        assert.match(texto, /Resultado sobre recebimentos/); assert.match(texto, /Custos e despesas lancados/);
+        assert.match(texto, /1.039,99/); assert.match(texto, /380,01/); assert.match(texto, /0,94/);
+        assert.match(texto, /acumulado/i); assert.match(texto, /parcial|nao.*comprova|nao.*confirma/i);
+        assert.match(texto, /outubro|2026-10/i);
+        await popup.close(); await a.conferirIsolamento();
+      } finally { await a.fechar(); }
+    });
+
+    await t.test('cards e novos detalhes desktop 390 e 320 mostram valores longos e percentual sem corte ou sobreposicao', async () => {
+      const dados = fixtureComposicao(); dados.obras[0].area_m2 = 1;
+      const antigo = dados.lancamentos.find(l => l.obra_id === ids.a);
+      dados.lancamentos = dados.lancamentos.filter(l => l.obra_id !== ids.a).concat({ ...antigo, total: '90071992547409.91', etapa: '28_mao', data: '2026-10-10', obs: null });
+      const recebido = dados.repasses_cef.find(r => r.obra_id === ids.a);
+      dados.repasses_cef = dados.repasses_cef.filter(r => r.obra_id !== ids.a).concat({ ...recebido, valor: '0.01', data_credito: '2026-10-10' });
+      const adicionaisIds = new Set(dados.obra_adicionais.filter(ad => ad.obra_id === ids.a).map(ad => ad.id));
+      dados.obra_adicionais = dados.obra_adicionais.filter(ad => ad.obra_id !== ids.a);
+      dados.adicional_pagamentos = dados.adicional_pagamentos.filter(p => !adicionaisIds.has(p.adicional_id));
+      for (const viewport of [{ width: 1440, height: 1000 }, { width: 390, height: 844 }, { width: 320, height: 740 }]) {
+        const a = await abrir(browser, { dados, viewport }); try {
+          await a.pronto(); await navegar(a.page, 'relatorio'); await filtrar(a.page, 'periodo', '2026-10'); await filtrar(a.page, 'obraId', ids.a);
+          assert.equal(await campoCard(a.page, 'received').innerText(), 'R$\u00a00,01');
+          assert.equal(await campoCard(a.page, 'laborM2').innerText(), 'R$\u00a090.071.992.547.409,91');
+          const c = await composicao(a.page); assert.equal(c.acumulado.maoPorM2Centavos, Number.MAX_SAFE_INTEGER);
+          assert.equal(c.resultadoCentavos, -9007199254740990); assert.ok(Number.isFinite(c.resultadoPct));
+          await captura(a.page, 'cartoes-valores-largos-' + viewport.width + '-sinteticos'); await semOverflow(a.page);
+          for (const chave of ['resultReceipts', 'laborM2']) {
+            const dialog = await modal(a.page, 'analise', chave);
+            if (chave === 'resultReceipts') {
+              const principal = dialog.locator('.detail-value');
+              assert.equal(await principal.count(), 1); assert.equal(await principal.evaluate(el => el.classList.contains('fv-negative')), true);
+              assert.match(await principal.innerText(), /^-R\$/);
+              const cores = await principal.evaluate(el => {
+                const css = getComputedStyle(el), token = css.getPropertyValue('--error').trim();
+                const hex = /^#([0-9a-f]{6})$/i.exec(token);
+                const erro = hex ? 'rgb(' + [0, 2, 4].map(i => Number.parseInt(hex[1].slice(i, i + 2), 16)).join(', ') + ')' : token;
+                return { exibida: css.color, erro };
+              });
+              assert.ok(cores.erro); assert.equal(cores.exibida, cores.erro, 'Resultado negativo do drawer deve usar a cor de erro EDR');
+            }
+            const box = await dialog.boundingBox(); assert.ok(box.x >= -1 && box.x + box.width <= viewport.width + 1);
+            assert.ok((await dialog.locator('[data-fv-detail-body]').innerText()).length > 40);
+            await captura(a.page, chave + '-modal-' + viewport.width + '-sintetico'); await fecharDetalhe(dialog);
+          }
+          await a.conferirIsolamento();
+        } finally { await a.fechar(); }
+      }
     });
 
     await t.test('valores monetarios largos e fontes indisponiveis nao sao cortados nos cartoes mobile', async () => {

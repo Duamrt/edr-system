@@ -8,6 +8,7 @@ const detalhes = require('../js/edr-v2-visao-financeira-detalhes.js');
 const modelo = require('../js/edr-v2-visao-financeira-modelo.js');
 const contexto = require('../js/edr-v2-visao-financeira-contexto.js');
 const folha = require('../js/edr-v2-visao-financeira-folha.js');
+const composicao = require('../js/edr-v2-visao-financeira-composicao.js');
 const COMPANY = 'empresa-sintetica-detalhes';
 const clone = v => JSON.parse(JSON.stringify(v));
 const row = (id, fields = {}) => ({ id, company_id: COMPANY, ...fields });
@@ -63,6 +64,124 @@ function criarCtx(s = fixture(), f = { periodo: '2001-06', situacao: 'ativas', o
     folha: folha.avaliar(s, visao.filtro), consultadoEm: '2001-06-07T12:00:00Z' });
 }
 const somaRows = d => d.rows.reduce((s, r) => s + (r.valorCentavos || 0), 0);
+
+test('resultReceipts soma recebimentos menos TODAS categorias com origens assinadas unicas', () => {
+  const s = fixture();
+  s.repasses.push(row('terrain-receipt', { obra_id: 'a', valor: 10, tipo: 'terreno', data_credito: '2001-06-06' }));
+  for (const [id, total, etapa] of [['exp', 2, '14_expediente'], ['comb', 1, '07_combustivel'],
+    ['limp', 0.5, '25_limpeza'], ['tech', 0.25, '34_tecnologia'], ['unknown-material', 1.5, 'etapa_nao_cadastrada']]) {
+    s.lancamentos.push(row(id, { obra_id: 'a', total, etapa, data: '2001-06-06', descricao: 'Despesa sintetica ' + id, obs: null }));
+  }
+  const ctx = criarCtx(s), c = composicao.construir(ctx, 'a'), d = detalhes.construir('resultReceipts', ctx, h, 'a');
+  assert.equal(c.recebidoCentavos, 10000); assert.equal(c.custoCentavos, 7425);
+  assert.equal(d.valueCentavos, 2575); assert.equal(somaRows(d), d.valueCentavos);
+  assert.equal(d.title, 'Resultado sobre recebimentos');
+  assert.equal(new Set(d.rows.map(r => r.id)).size, d.rows.length);
+  assert.equal(d.rows.filter(r => r.id.startsWith('lancamentos:')).reduce((n, r) => n + r.valorCentavos, 0), -7425);
+  for (const cat of c.categorias) assert.ok(d.extra.includes(esc(cat.label)), cat.id);
+  assert.ok(d.extra.includes('antes de ' + c.margemConstrucao.exclusoes.map(cat => String(cat.label).toLocaleLowerCase('pt-BR')).join(', ')));
+  assert.match(d.extra, /RECEBIDO MENOS CUSTOS/); assert.match(d.extra, /R\$ 100.00 − R\$ 74.25 = R\$ 25.75/);
+  assert.match(d.note, /Não representa saldo em conta nem lucro final da obra/);
+  assert.equal(d.rows.some(r => r.obraNome === 'Obra sintetica B' || r.obraNome === 'ESCRITORIO SINTETICO'), false);
+  assert.equal(detalhes.construir('cost', ctx, h, 'a').valueCentavos, 7425, 'cost card permanece todos custos');
+  const excluidos = c.margemConstrucao.exclusoes.reduce((n, r) => n + r.centavos, 0);
+  assert.equal(c.margemConstrucao.resultadoCentavos + c.margemConstrucao.recebimentoTerrenoCentavos
+    - c.margemConstrucao.adicionaisForaCarteiraCentavos - excluidos, d.valueCentavos);
+});
+
+test('nested margem identifica adicionais fora carteira e nao altera DRE existente', () => {
+  const ctx = criarCtx(), antes = JSON.stringify(ctx), c = composicao.construir(ctx, 'c');
+  const d = detalhes.construir('resultReceipts', ctx, h, 'c');
+  assert.equal(d.valueCentavos, 1000); assert.equal(somaRows(d), 1000);
+  assert.equal(c.margemConstrucao.resultadoCentavos, 1800); assert.equal(c.margemConstrucao.adicionaisForaCarteiraCentavos, 800);
+  assert.match(d.extra, /Adicionais fora da carteira elegível/); assert.match(d.extra, /R\$ -8.00/);
+  assert.equal(d.rows.some(r => r.id === 'pagamentosAdicionais:pag-p' || r.id === 'pagamentosAdicionais:pag-x'), false);
+  assert.equal(detalhes.construir('result', ctx, h, 'c').valueCentavos, 1800);
+  assert.equal(detalhes.construir('dre:recConstr', ctx, h, 'c').valueCentavos, 2800);
+  assert.equal(JSON.stringify(ctx), antes);
+});
+
+test('resultado por origem preserva centavos e mostra DRE decimal apenas como referencia separada', () => {
+  const s = fixture(); s.repasses = [row('one', { obra_id: 'a', valor: '0.006', tipo: 'pls', data_credito: '2001-06-05' }),
+    row('two', { obra_id: 'a', valor: '0.006', tipo: 'pls', data_credito: '2001-06-05' })];
+  s.adicionais = []; s.pagamentosAdicionais = []; s.lancamentos = [];
+  const ctx = criarCtx(s), d = detalhes.construir('resultReceipts', ctx, h, 'a');
+  assert.equal(d.valueCentavos, 2); assert.equal(somaRows(d), 2);
+  assert.equal(d.rows.length, 2); assert.equal(detalhes.construir('result', ctx, h, 'a').valueCentavos, 1);
+  assert.match(d.extra, /Referência do cálculo separado da DRE/);
+  assert.match(d.extra, /sem custos\/despesas excluídos identificados/);
+  assert.match(d.extra, /soma de decimais brutos: R\$ 0.01/);
+  assert.equal(d.rows.some(r => /ajuste|arredondamento/i.test(r.descricao)), false);
+});
+
+test('estorno e custo negativo conciliam efeito positivo sem duplicar origem', () => {
+  const s = fixture(); s.lancamentos.push(row('estorno', { obra_id: 'a', total: -2.25, etapa: '07_combustivel',
+    data: '2001-06-06', descricao: 'Estorno sintetico', obs: null }));
+  const d = detalhes.construir('resultReceipts', criarCtx(s), h, 'a');
+  assert.equal(d.valueCentavos, 2325); assert.equal(somaRows(d), 2325);
+  assert.equal(d.rows.find(r => r.id === 'lancamentos:estorno').valorCentavos, 225);
+});
+
+test('laborM2 usa mao acumulada, mesma area e nao divulga trabalhador nem pagamento', () => {
+  const s = fixture(); s.lancamentos.find(r => r.id === 'mao-a').descricao = 'FUNCIONARIO_SINTETICO_NAO_DIVULGAR';
+  s.lancamentos.push(row('mao-antes', { obra_id: 'a', total: 3.5, etapa: '28_mao', data: '2001-05-05',
+    descricao: 'FUNCIONARIO_SINTETICO_NAO_DIVULGAR', obs: null }));
+  const ctx = criarCtx(s, { periodo: '2001-07', situacao: 'ativas', obraId: '' });
+  const d = detalhes.construir('laborM2', ctx, h, 'a');
+  assert.equal(d.valueCentavos, 37); assert.equal(somaRows(d), 1850);
+  assert.deepEqual(d.rows.map(r => r.id), ['lancamentos:mao-a', 'lancamentos:mao-antes']);
+  assert.equal(JSON.stringify(d).includes('FUNCIONARIO_SINTETICO_NAO_DIVULGAR'), false);
+  assert.match(d.note, /Indicador parcial/); assert.match(d.note, /Avanço físico e custo final/);
+  assert.match(d.note, /mês selecionado não confirma a cobertura acumulada/); assert.match(d.note, /Não comprova pagamento/);
+  assert.equal(detalhes.construir('resultReceipts', ctx, h, 'a').valueCentavos, 0);
+});
+
+test('laborM2 respeita area valida, zero confirmado e fonte de custos indisponivel', () => {
+  for (const area of [null, 0, -1, '', 'abc']) {
+    const s = fixture(); s.obras[0].area_m2 = area;
+    assert.equal(detalhes.construir('laborM2', criarCtx(s), h, 'a').valueCentavos, null);
+  }
+  const s = fixture(); s.obras[0].area_m2 = '42';
+  assert.equal(detalhes.construir('laborM2', criarCtx(s), h, 'a').valueCentavos, Math.round(1500 / 42));
+  const zero = fixture(); zero.lancamentos = zero.lancamentos.filter(r => r.id !== 'mao-a');
+  assert.equal(detalhes.construir('laborM2', criarCtx(zero), h, 'a').valueCentavos, 0);
+  const base = criarCtx(); const snapshot = { ...base.snapshot, lancamentos: null, dre: { status: 'indisponivel' },
+    fontes: { ...base.snapshot.fontes, lancamentos: { status: 'indisponivel' }, dre: { status: 'indisponivel' } } };
+  const visao = modelo.construir(snapshot, base.filtro), ctx = contexto.construir({ ...base.envelope, snapshot, visao });
+  for (const key of ['laborM2', 'resultReceipts']) {
+    const d = detalhes.construir(key, ctx, h, 'a'); assert.equal(d.valueCentavos, null); assert.equal(d.rows.length, 0);
+    assert.match(d.note, /Valor não confirmado/);
+  }
+});
+
+test('laborM2 usa somente folha agregada recebida e distingue pendencia comprovada de fonte unknown', () => {
+  const base = criarCtx(fixture(), { periodo: '', situacao: 'ativas', obraId: '' });
+  function ctxComFolha(f) { return contexto.construir({ ...base.envelope, folha: f }); }
+  const agregado = { companyId: COMPANY, filtro: base.filtro, obras: [{ obraId: 'a', cobertura: 'confirmada',
+    estado: 'pendencia_identificada', motivos: [{ severidade: 'pendencia', texto: 'FUNCIONARIO_SINTETICO_NAO_DIVULGAR' }] }] };
+  const pendente = detalhes.construir('laborM2', ctxComFolha(agregado), h, 'a');
+  assert.equal(pendente.valueCentavos, 30); assert.match(pendente.note, /pendência de folha comprovada/);
+  assert.equal(JSON.stringify(pendente).includes('FUNCIONARIO_SINTETICO_NAO_DIVULGAR'), false);
+  const unknown = detalhes.construir('laborM2', ctxComFolha(null), h, 'a');
+  assert.equal(unknown.valueCentavos, 30); assert.match(unknown.note, /não é possível verificar pendências/);
+  assert.equal(unknown.note.includes('pendência de folha comprovada'), false);
+});
+
+test('novos detalhes conservam escopo da obra e leitura imutavel em ausencia da DRE', () => {
+  const base = criarCtx(), snapshot = { ...base.snapshot, dre: { status: 'indisponivel' },
+    fontes: { ...base.snapshot.fontes, dre: { status: 'indisponivel' } } };
+  const visao = modelo.construir(snapshot, base.filtro), ctx = contexto.construir({ ...base.envelope, snapshot, visao });
+  const antes = JSON.stringify(ctx);
+  assert.equal(detalhes.construir('resultReceipts', ctx, h, 'a').valueCentavos, 2100);
+  assert.equal(detalhes.construir('laborM2', ctx, h, 'a').valueCentavos, 30);
+  assert.equal(detalhes.construir('result', ctx, h, 'a').valueCentavos, null);
+  for (const key of ['resultReceipts', 'laborM2']) {
+    assert.equal(detalhes.construir(key, ctx, h, 'b').valueCentavos, null);
+    assert.equal(detalhes.construir(key, ctx, h, 'inexistente').valueCentavos, null);
+    assert.equal(Object.isFrozen(detalhes.construir(key, ctx, h, 'a')), true);
+  }
+  assert.equal(JSON.stringify(ctx), antes);
+});
 
 test('recebiveis separa contratos e cada adicional sem compensar excessos', () => {
   const ctx = criarCtx();
@@ -381,7 +500,7 @@ test('fontes DRE e ledger ausentes ou parciais nao confirmam valores a partir de
 test('construir detalhes nao altera contexto/fontes/filtros e todos drawers ficam readonly', () => {
   const ctx = criarCtx(), antes = JSON.stringify(ctx);
   for (const key of ['receivables', 'receivableExcess', 'receivableContract', 'receivableExtras', 'received', 'cost', 'constructionCost',
-    'materials', 'labor', 'result', 'work', 'forecast', 'contractM2', 'costM2', 'payable', 'cash', 'opening', 'paid', 'movement', 'folha', 'estoque',
+    'materials', 'labor', 'result', 'resultReceipts', 'laborM2', 'work', 'forecast', 'contractM2', 'costM2', 'payable', 'cash', 'opening', 'paid', 'movement', 'folha', 'estoque',
     'dre:recBruta', 'dre:recConstr', 'dre:resultado', 'overhead:total']) {
     const d = detalhes.construir(key, ctx, h);
     assert.equal(Object.isFrozen(d), true, key); assert.equal(Array.isArray(d.rows), true, key);

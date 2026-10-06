@@ -572,3 +572,14 @@
 .edr-financial .metric-value.fv-value-long {white-space:nowrap;overflow-wrap:normal}
 .edr-financial .receivable-total>strong {font-size:22px}
 }
+/* Rotulos extensos podem ocupar outra linha; sinal e centavos permanecem juntos. */
+.edr-financial .work-card .pair {flex-wrap:wrap;align-items:center;column-gap:8px;row-gap:4px}
+.edr-financial .work-card .pair>span {flex:1 1 120px;min-width:0}
+.edr-financial .work-card .pair>button, .edr-financial .work-card .pair>strong {flex:0 0 auto;max-width:100%;margin-left:auto;white-space:nowrap}
+.edr-financial .detail-value.fv-negative {color:var(--error)}
+/* Valores extensos no detalhe cabem sem rolagem horizontal nem perda de centavos. */
+.edr-financial .detail-value.fv-value-long {white-space:nowrap}
+.edr-financial .entry-name {min-width:0;overflow-wrap:anywhere}
+@media(max-width:720px) {
+.edr-financial .detail-value.fv-value-long {font-size:clamp(18px,5vw,28px)}
+}

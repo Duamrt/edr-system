@@ -8,13 +8,16 @@
   'use strict';
   const modelo = typeof module === 'object' && module.exports
     ? require('./edr-v2-visao-financeira-modelo.js') : root && root.FinanceiroVisaoModelo;
-  const api = factory(modelo);
+  const composicao = typeof module === 'object' && module.exports
+    ? require('./edr-v2-visao-financeira-composicao.js') : root && root.FinanceiroVisaoComposicao;
+  const api = factory(modelo, composicao);
   if (typeof module === 'object' && module.exports) module.exports = api;
   if (root) root.FinanceiroVisaoPaginas = api;
-})(typeof globalThis !== 'undefined' ? globalThis : this, function (modelo) {
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (modelo, composicao) {
   'use strict';
 
   const TIPOS = ['analise', 'raiox', 'dre'];
+  const AVISO_RESULTADO = 'Não representa saldo em conta nem lucro final da obra.';
   function empresa(v) {
     const id = v && (v.companyId || v.company_id);
     return typeof id === 'string' && id.trim() ? id : null;
@@ -63,33 +66,51 @@
   function par(rotulo, valor, chave, oid, h) {
     return `<div class="pair"><span>${h.esc(rotulo)}</span>${h.nButton(chave, valor, oid)}</div>`;
   }
+  function tabelaAnalise(ctx, leituras, h) {
+    return `<section class="panel"><div class="panel-head"><div><h2>Resultado sobre recebimentos por obra</h2><p>Mesmas obras e período · custos e despesas lançados</p></div><span class="pill">${ctx.visao.obras.length} ${ctx.visao.obras.length === 1 ? 'obra' : 'obras'}</span></div><div class="table-wrap"><table class="data-table"><thead><tr><th>OBRA</th><th class="num">RECEBIDO</th><th class="num">CUSTOS E DESPESAS LANÇADOS</th><th class="num">RESULTADO SOBRE RECEBIMENTOS</th><th class="num">% SOBRE RECEBIMENTOS</th></tr></thead><tbody>${ctx.visao.obras.map(o => {
+      const comp = leituras.get(String(o.id));
+      const resultado = inteiro(comp && comp.resultadoCentavos);
+      return `<tr><td><button data-detail="work" data-work="${h.esc(o.id)}"><span class="work-monogram">${h.esc(String(o.nome || '').trim().slice(0, 2).toUpperCase())}</span><span><span class="work-name">${h.esc(o.nome)}</span><span class="cell-meta">${o.arquivada ? 'Arquivada' : 'Ativa'}</span></span></button></td><td class="num">${h.nButton('received', inteiro(comp && comp.recebidoCentavos), o.id)}</td><td class="num">${h.nButton('cost', inteiro(comp && comp.custoCentavos), o.id)}</td><td class="num ${resultado < 0 ? 'negative' : 'positive'}">${h.nButton('resultReceipts', resultado, o.id)}</td><td class="num">${comp && Number.isFinite(comp.resultadoPct) ? h.pct(comp.resultadoPct) : 'Indisponível'}</td></tr>`;
+    }).join('')}</tbody></table></div><div class="bottom-note">Recebido − custos e despesas lançados. Não representa saldo em conta nem lucro final da obra.</div></section>`;
+  }
 
   function analise(ctx, h) {
     const origens = indice(ctx);
+    const leituras = new Map();
     const acumuladas = new Map(((ctx.acumulada && ctx.acumulada.obras) || []).map(o => [String(o.id), o]));
     const cards = ctx.visao.obras.map(o => {
       const origem = origens.get(String(o.id));
       const acumulada = ctx.acumulada && empresa(ctx.acumulada) === empresa(ctx.visao)
         ? acumuladas.get(String(o.id)) : null;
-      const dre = dadosDre(o.dre);
+      const leitura = composicao && typeof composicao.construir === 'function' ? composicao.construir(ctx, o.id) : null;
+      const comp = leitura && String(leitura.obraId) === String(o.id) ? leitura : null;
+      leituras.set(String(o.id), comp);
+      const mao = comp && comp.acumulado;
+      const avisos = [...(comp && Array.isArray(comp.avisos) ? comp.avisos : []),
+        ...(mao && mao.folha && Array.isArray(mao.folha.avisos) ? mao.folha.avisos : [])]
+        .filter(aviso => aviso !== AVISO_RESULTADO);
       const pendente = somar(o.pendenteContratoCentavos, o.pendenteAdicionaisCentavos);
       const excedente = somar(o.excedenteContratoCentavos, o.excedenteAdicionaisCentavos);
       const codigo = String(o.nome || '').trim().split(/\s+/).filter(Boolean).slice(0, 2).map(n => n[0]).join('').toUpperCase() || 'OB';
       return `<section class="panel work-card"><div class="work-card-top"><span class="work-monogram">${h.esc(codigo)}</span><span class="status-pill ${o.arquivada ? 'archived' : ''}">${o.arquivada ? 'Arquivada' : 'Ativa'}</span></div>
-        <h2>${h.esc(o.nome)}</h2><p>${h.esc(ctx.periodoNome)} · recebimentos e custos do período</p>
+        <h2>${h.esc(o.nome)}</h2><p>${h.esc(ctx.periodoNome)} · recebimentos, custos e despesas lançados</p>
         <div class="progress-line" aria-hidden="true"></div><div class="smallrow"><span>Avanço físico não consultado</span><strong>Indisponível</strong></div>
         ${par('A receber acumulado', pendente, 'receivables', o.id, h)}
         ${par('Recebido a maior', excedente, 'receivableExcess', o.id, h)}
-        ${par('Recebido no período', inteiro(o.recebidoPeriodoCentavos), 'received', o.id, h)}
-        ${par('Custo lançado no período', inteiro(o.custoPeriodoCentavos), 'cost', o.id, h)}
-        ${par('Resultado gerencial da obra', converter(dre && dre.margem), 'result', o.id, h)}
-        <div class="pair"><span>Margem da construção</span><strong>${dre && Number.isFinite(dre.margemPct) ? h.pct(dre.margemPct) : '—'}</strong></div>
+        ${par('Recebido no período', inteiro(comp && comp.recebidoCentavos), 'received', o.id, h)}
+        ${par('Custos e despesas lançados', inteiro(comp && comp.custoCentavos), 'cost', o.id, h)}
+        ${par('Resultado sobre recebimentos', inteiro(comp && comp.resultadoCentavos), 'resultReceipts', o.id, h)}
+        <div class="pair"><span>Resultado / recebimentos</span><strong>${comp && Number.isFinite(comp.resultadoPct) ? h.pct(comp.resultadoPct) : 'Indisponível'}</strong></div>
+        <p class="inline-note">${AVISO_RESULTADO}</p>
+        <div class="smallrow"><span>Indicadores por m²</span><strong>Acumulado</strong></div>
         ${par('Contrato / m²', porMetro(acumulada && acumulada.contratoPrevistoCentavos, origem.area_m2), 'contractM2', o.id, h)}
         ${par('Custo acumulado / m²', porMetro(acumulada && acumulada.custoPeriodoCentavos, origem.area_m2), 'costM2', o.id, h)}
+        ${par('Mão de obra lançada / m² (acumulado)', inteiro(mao && mao.maoPorM2Centavos), 'laborM2', o.id, h)}
+        <p class="inline-note">${[...new Set(avisos)].map(aviso => h.esc(aviso)).join('<br>') || 'Indicadores por m² acumulados e parciais; avanço físico e cobertura da folha não confirmados nesta leitura.'}</p>
         <button class="btn" data-detail="work" data-work="${h.esc(o.id)}">Abrir análise da obra</button>
       </section>`;
     }).join('');
-    return `<div class="split3">${cards}</div><p class="inline-note">Resultado da construção antes de impostos e administração central, conforme a DRE. Contrato e custo por m² usam os valores acumulados; área ausente fica indisponível. O saldo bancário pertence à empresa.</p>${h.workTable(ctx)}`;
+    return `<div class="split3">${cards}</div><p class="inline-note">Resultado sobre recebimentos = recebido no período − custos e despesas lançados no período. Contrato, custo e mão de obra por m² usam os valores acumulados; área ausente fica indisponível. A contribuição da construção conforme a DRE pode ser conferida nos detalhes.</p>${tabelaAnalise(ctx, leituras, h)}`;
   }
 
   function diagnosticoFolha(ctx, h) {
