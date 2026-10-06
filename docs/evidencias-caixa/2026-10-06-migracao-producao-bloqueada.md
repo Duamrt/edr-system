@@ -37,3 +37,7 @@ A chamada retornou `isError: true`. Nenhuma repetição por SQL direto, CLI remo
 Obter aprovação direta de Duam para aplicar este pacote no projeto `mepzoxoahpwcvvlymlfh` e, após conferir os objetos/grants e ausência de abertura, publicar pelo `deploy.sh` em `Duamrt/edr-system`, branches `dev`/`main`, site `sistema.edreng.com.br`. A migração é alteração persistente de schema/segurança nova; a publicação altera o aplicativo servido. A abertura real requer autorização própria do tenant, marco e saldos por conta.
 
 Após a liberação, reconferir referências remotas, catálogo e backup, aplicar exatamente o SQL de hash registrado, registrar resultado e publicar somente se a migração tiver sucesso. Não inferir a liberação pela passagem de tempo ou por este documento.
+
+## Superação posterior do bloqueio
+
+Duam aprovou diretamente o alvo exato às 10:39:07 UTC. Após reconferir ausência de escrita anterior e baseline/hash inalterados, a única repetição permitida de apply_migration foi aceita às10:42:27 UTC, versão20261006104227. A negativa anterior foi respeitada e permanece como histórico; não houve execução por outra rota. Ver [registro efetivo](2026-10-06-implantacao-execucao.md). Abertura segue separada.

@@ -1,0 +1,388 @@
+{
+  "project": "mepzoxoahpwcvvlymlfh",
+  "server_version": "17.6",
+  "execution_role": "postgres",
+  "new_relations": [
+    {
+      "name": "caixa_contas",
+      "owner": "postgres",
+      "rls": true,
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres",
+        "authenticated=r/postgres"
+      ],
+      "anon_select": false,
+      "anon_write": false,
+      "authenticated_select": true,
+      "authenticated_write": false
+    },
+    {
+      "name": "caixa_movimentos",
+      "owner": "postgres",
+      "rls": true,
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres",
+        "authenticated=r/postgres"
+      ],
+      "anon_select": false,
+      "anon_write": false,
+      "authenticated_select": true,
+      "authenticated_write": false
+    },
+    {
+      "name": "caixa_obrigacoes",
+      "owner": "postgres",
+      "rls": true,
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres",
+        "authenticated=r/postgres"
+      ],
+      "anon_select": false,
+      "anon_write": false,
+      "authenticated_select": true,
+      "authenticated_write": false
+    },
+    {
+      "name": "caixa_operacoes",
+      "owner": "postgres",
+      "rls": true,
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres",
+        "authenticated=r/postgres"
+      ],
+      "anon_select": false,
+      "anon_write": false,
+      "authenticated_select": true,
+      "authenticated_write": false
+    }
+  ],
+  "new_functions": [
+    {
+      "name": "caixa_estado",
+      "signature": "caixa_estado()",
+      "owner": "postgres",
+      "definer": true,
+      "config": [
+        "search_path=pg_catalog, public"
+      ],
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres",
+        "authenticated=X/postgres"
+      ],
+      "body_md5": "a708fe6fae5b86d5fc4cc41d905f80a3",
+      "anon_execute": false,
+      "authenticated_execute": true
+    },
+    {
+      "name": "caixa_registrar",
+      "signature": "caixa_registrar(uuid,jsonb)",
+      "owner": "postgres",
+      "definer": true,
+      "config": [
+        "search_path=pg_catalog, public"
+      ],
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres",
+        "authenticated=X/postgres"
+      ],
+      "body_md5": "884a638a876ab5c8f90490c3c74c7dd9",
+      "anon_execute": false,
+      "authenticated_execute": true
+    }
+  ],
+  "new_policies": [
+    {
+      "table": "caixa_contas",
+      "name": "caixa_contas_admin",
+      "roles": [
+        "authenticated"
+      ],
+      "cmd": "SELECT",
+      "qual": "((company_id = auth_company_id()) AND (auth_user_role() = 'admin'::text) AND (auth.uid() IS NOT NULL) AND (EXISTS ( SELECT 1\n   FROM company_users cu\n  WHERE ((cu.user_id = auth.uid()) AND (cu.company_id = caixa_contas.company_id) AND (cu.role = 'admin'::text) AND (cu.active IS TRUE)))))",
+      "with_check": null
+    },
+    {
+      "table": "caixa_movimentos",
+      "name": "caixa_movimentos_admin",
+      "roles": [
+        "authenticated"
+      ],
+      "cmd": "SELECT",
+      "qual": "((company_id = auth_company_id()) AND (auth_user_role() = 'admin'::text) AND (auth.uid() IS NOT NULL) AND (EXISTS ( SELECT 1\n   FROM company_users cu\n  WHERE ((cu.user_id = auth.uid()) AND (cu.company_id = caixa_movimentos.company_id) AND (cu.role = 'admin'::text) AND (cu.active IS TRUE)))))",
+      "with_check": null
+    },
+    {
+      "table": "caixa_obrigacoes",
+      "name": "caixa_obrigacoes_admin",
+      "roles": [
+        "authenticated"
+      ],
+      "cmd": "SELECT",
+      "qual": "((company_id = auth_company_id()) AND (auth_user_role() = 'admin'::text) AND (auth.uid() IS NOT NULL) AND (EXISTS ( SELECT 1\n   FROM company_users cu\n  WHERE ((cu.user_id = auth.uid()) AND (cu.company_id = caixa_obrigacoes.company_id) AND (cu.role = 'admin'::text) AND (cu.active IS TRUE)))))",
+      "with_check": null
+    },
+    {
+      "table": "caixa_operacoes",
+      "name": "caixa_operacoes_admin",
+      "roles": [
+        "authenticated"
+      ],
+      "cmd": "SELECT",
+      "qual": "((company_id = auth_company_id()) AND (auth_user_role() = 'admin'::text) AND (auth.uid() IS NOT NULL) AND (EXISTS ( SELECT 1\n   FROM company_users cu\n  WHERE ((cu.user_id = auth.uid()) AND (cu.company_id = caixa_operacoes.company_id) AND (cu.role = 'admin'::text) AND (cu.active IS TRUE)))))",
+      "with_check": null
+    }
+  ],
+  "counts": {
+    "caixa_contas": 0,
+    "caixa_movimentos": 0,
+    "caixa_obrigacoes": 0,
+    "caixa_operacoes": 0
+  },
+  "relations": [
+    {
+      "name": "audit_logs",
+      "owner": "postgres",
+      "rls": true,
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "anon=arwdDxtm/postgres",
+        "authenticated=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres"
+      ]
+    },
+    {
+      "name": "companies",
+      "owner": "postgres",
+      "rls": true,
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "anon=arwdDxtm/postgres",
+        "authenticated=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres"
+      ]
+    },
+    {
+      "name": "company_users",
+      "owner": "postgres",
+      "rls": true,
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "anon=arwdDxtm/postgres",
+        "authenticated=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres"
+      ]
+    },
+    {
+      "name": "contas_pagar",
+      "owner": "postgres",
+      "rls": true,
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "anon=arwdDxtm/postgres",
+        "authenticated=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres"
+      ]
+    }
+  ],
+  "helpers": [
+    {
+      "name": "auth_company_id",
+      "owner": "postgres",
+      "definer": true,
+      "config": [
+        "search_path=public"
+      ],
+      "definition": "CREATE OR REPLACE FUNCTION public.auth_company_id()\n RETURNS uuid\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\n  SELECT company_id\r\n  FROM company_users\r\n  WHERE user_id = auth.uid()\r\n  LIMIT 1;\r\n$function$\n",
+      "acl": [
+        "=X/postgres",
+        "postgres=X/postgres",
+        "anon=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "name": "auth_user_role",
+      "owner": "postgres",
+      "definer": true,
+      "config": [
+        "search_path=public"
+      ],
+      "definition": "CREATE OR REPLACE FUNCTION public.auth_user_role()\n RETURNS text\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\n  SELECT role\r\n  FROM company_users\r\n  WHERE user_id = auth.uid()\r\n  LIMIT 1;\r\n$function$\n",
+      "acl": [
+        "=X/postgres",
+        "postgres=X/postgres",
+        "anon=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "name": "fn_audit_log",
+      "owner": "postgres",
+      "definer": true,
+      "config": [
+        "search_path=public"
+      ],
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_audit_log()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\nDECLARE\r\n  _uid uuid;\r\n  _nome text;\r\n  _cid uuid;\r\n  _rid uuid;\r\nBEGIN\r\n  -- Identificar usuário\r\n  _uid := auth.uid();\r\n  SELECT raw_user_meta_data->>'nome' INTO _nome\r\n    FROM auth.users WHERE id = _uid;\r\n\r\n  -- Determinar registro e company\r\n  IF TG_OP = 'DELETE' THEN\r\n    _rid := OLD.id;\r\n    _cid := OLD.company_id;\r\n  ELSE\r\n    _rid := NEW.id;\r\n    _cid := NEW.company_id;\r\n  END IF;\r\n\r\n  INSERT INTO audit_logs (tabela, operacao, registro_id, dados_antes, dados_depois, usuario_id, usuario_nome, company_id)\r\n  VALUES (\r\n    TG_TABLE_NAME,\r\n    TG_OP,\r\n    _rid,\r\n    CASE WHEN TG_OP IN ('UPDATE','DELETE') THEN to_jsonb(OLD) ELSE NULL END,\r\n    CASE WHEN TG_OP IN ('INSERT','UPDATE') THEN to_jsonb(NEW) ELSE NULL END,\r\n    _uid,\r\n    _nome,\r\n    _cid\r\n  );\r\n\r\n  IF TG_OP = 'DELETE' THEN RETURN OLD; ELSE RETURN NEW; END IF;\r\nEND;\r\n$function$\n",
+      "acl": [
+        "=X/postgres",
+        "postgres=X/postgres",
+        "anon=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "name": "get_my_company_id",
+      "owner": "postgres",
+      "definer": true,
+      "config": [
+        "search_path=public"
+      ],
+      "definition": "CREATE OR REPLACE FUNCTION public.get_my_company_id()\n RETURNS uuid\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\n  SELECT company_id FROM company_users\r\n  WHERE user_id = auth.uid() AND active = true\r\n  LIMIT 1;\r\n$function$\n",
+      "acl": [
+        "=X/postgres",
+        "postgres=X/postgres",
+        "anon=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ]
+    }
+  ],
+  "policies": [
+    {
+      "table": "audit_logs",
+      "name": "audit_insert",
+      "roles": [
+        "public"
+      ],
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "true"
+    },
+    {
+      "table": "audit_logs",
+      "name": "audit_select",
+      "roles": [
+        "public"
+      ],
+      "cmd": "SELECT",
+      "qual": "(company_id = auth_company_id())",
+      "with_check": null
+    },
+    {
+      "table": "companies",
+      "name": "companies_insert_own",
+      "roles": [
+        "public"
+      ],
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(owner_id = auth.uid())"
+    },
+    {
+      "table": "companies",
+      "name": "companies_member",
+      "roles": [
+        "public"
+      ],
+      "cmd": "ALL",
+      "qual": "((id IN ( SELECT company_users.company_id\n   FROM company_users\n  WHERE ((company_users.user_id = auth.uid()) AND (company_users.active = true)))) OR (owner_id = auth.uid()) OR is_platform_admin())",
+      "with_check": null
+    },
+    {
+      "table": "company_users",
+      "name": "cu_delete",
+      "roles": [
+        "public"
+      ],
+      "cmd": "DELETE",
+      "qual": "((company_id = auth_company_id()) AND (auth_user_role() = 'admin'::text))",
+      "with_check": null
+    },
+    {
+      "table": "company_users",
+      "name": "cu_insert",
+      "roles": [
+        "public"
+      ],
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "((company_id = auth_company_id()) AND (auth_user_role() = 'admin'::text))"
+    },
+    {
+      "table": "company_users",
+      "name": "cu_select",
+      "roles": [
+        "public"
+      ],
+      "cmd": "SELECT",
+      "qual": "(company_id = auth_company_id())",
+      "with_check": null
+    },
+    {
+      "table": "company_users",
+      "name": "cu_update",
+      "roles": [
+        "public"
+      ],
+      "cmd": "UPDATE",
+      "qual": "((company_id = auth_company_id()) AND (auth_user_role() = 'admin'::text))",
+      "with_check": null
+    },
+    {
+      "table": "contas_pagar",
+      "name": "cp_delete",
+      "roles": [
+        "public"
+      ],
+      "cmd": "DELETE",
+      "qual": "((company_id = auth_company_id()) AND (auth_user_role() = ANY (ARRAY['admin'::text, 'operacional'::text])))",
+      "with_check": null
+    },
+    {
+      "table": "contas_pagar",
+      "name": "cp_insert",
+      "roles": [
+        "public"
+      ],
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "((company_id = auth_company_id()) AND (auth_user_role() = ANY (ARRAY['admin'::text, 'operacional'::text])))"
+    },
+    {
+      "table": "contas_pagar",
+      "name": "cp_select",
+      "roles": [
+        "public"
+      ],
+      "cmd": "SELECT",
+      "qual": "(company_id = auth_company_id())",
+      "with_check": null
+    },
+    {
+      "table": "contas_pagar",
+      "name": "cp_update",
+      "roles": [
+        "public"
+      ],
+      "cmd": "UPDATE",
+      "qual": "((company_id = auth_company_id()) AND (auth_user_role() = ANY (ARRAY['admin'::text, 'operacional'::text])))",
+      "with_check": null
+    }
+  ],
+  "migration": [
+    {
+      "version": "20261006104227",
+      "name": "caixa_prospectivo_por_conta_20261006"
+    }
+  ],
+  "consulted_utc": "2026-10-06 10:43:44 UTC"
+}

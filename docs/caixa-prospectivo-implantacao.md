@@ -1,6 +1,6 @@
 # Caixa prospectivo — roteiro de homologação e implantação
 
-Preparado em 06/10/2026 em cópia isolada. A homologação local foi concluída: Auth/PostgREST real 15/15, interface com RPC real 1/1, recuperação sintética 10/10, contingência Chromium 5/5 e regressão integral 279 PASS/0 FAIL. Dois grupos opcionais da regressão foram executados separadamente com sucesso. A revisão técnica aprovou a DDL aditiva vazia de SHA-256 `8fe4dc1cff2b09429e7d7f6959d1bb1396c3693fdad49b310dd630fa5cca167a`. Os gates técnicos da autorização condicional foram cumpridos. A aplicação de produção foi rejeitada pela revisão automática por falta de aprovação direta para o projeto exato; veja o [bloqueio e liberação necessária](evidencias-caixa/2026-10-06-migracao-producao-bloqueada.md). O registro abaixo distingue execução real de preparação; abertura real continua pendente de autorização própria.
+Preparado em 06/10/2026 em cópia isolada. A homologação local foi concluída: Auth/PostgREST real 15/15, interface com RPC real 1/1, recuperação sintética 10/10, contingência Chromium 5/5 e regressão integral 279 PASS/0 FAIL. Dois grupos opcionais da regressão foram executados separadamente com sucesso. A revisão técnica aprovou a DDL aditiva vazia de SHA-256 `8fe4dc1cff2b09429e7d7f6959d1bb1396c3693fdad49b310dd630fa5cca167a`. Os gates técnicos foram cumpridos. Após aprovação direta do alvo por Duam às 10:39:07 UTC, a repetição única foi aceita e a migração concluiu às 10:42:27 UTC. Consulte o [registro efetivo de implantação](evidencias-caixa/2026-10-06-implantacao-execucao.md). Publicação está sendo preparada; abertura real permanece separada.
 
 ## Versões e controle da execução
 
@@ -9,14 +9,14 @@ Preparado em 06/10/2026 em cópia isolada. A homologação local foi concluída:
 | Repositório | `Duamrt/edr-system` |
 | Base revisada | `7ace6ac5295790acf8b7295dd52c07cc53a92614` |
 | Branch local | `dev` na cópia isolada; `main` local preparada; refs remotas preservadas em `7ace6ac` |
-| Commit novo da funcionalidade | **PENDENTE** — preencher SHA completo após congelar/revisar o pacote |
+| Commit novo da funcionalidade | `b70919c809e7bd4480d8be5888cd0d288e7ef368`; pacote retomado `0325011dea1c65f416209d420ed26db94d4f2162` |
 | Commit/build de publicação | **PENDENTE** — preencher após execução autorizada de `deploy.sh` |
 | Cache observado na cópia | Scripts `?v=10051611`; SW `edr-system-v20261005161158`; não são a versão futura |
 | Migração local revisada | `sql/caixa-prospectivo-DRAFT.sql`; SHA-256 `8fe4dc1cff2b09429e7d7f6959d1bb1396c3693fdad49b310dd630fa5cca167a`; aplicada somente à stack QA local |
 | Ambiente/projeto de homologação | Stack local `edr-caixa-qa-20261006`, pasta irmã `caixa-auth-local`, sem `project-ref`; Auth/PostgREST reais e dados/identidades sintéticos |
 | Resultado Auth/PostgREST local real | **APROVADO: 15/15 PASS**, zero falhas/skips, 4281,1055 ms; [log](evidencias-caixa/2026-10-06-auth-local.log). Não equivale a homologar configuração/usuários de produção |
 | Backup e restauração de produção | Oito backups físicos `COMPLETED` comprovados em leitura; restauração física real **NÃO EXECUTADA / NÃO PROVADA** |
-| Migração em produção | **BLOQUEADA pela revisão automática** - falta aprovação direta para `mepzoxoahpwcvvlymlfh` |
+| Migração em produção | CONCLUÍDA: `20261006104227`, 10:42:27 UTC; quatro tabelas vazias e duas RPCs verificadas |
 | Publicação/propagação | **PENDENTE** - depende da migração; nenhum push/deploy executado |
 | Corte e saldos para ativação | **PENDENTE** — declaração privada revisada para o marco escolhido |
 | Ativação e smoke posterior | **PENDENTE** |
@@ -85,7 +85,7 @@ Antes da ativação e durante operação, preservar também `caixa_contas`, `cai
 
 ## Sequência condicionada
 
-1. Registrar a autorização específica de 08:58:37 UTC e a correção já aplicada aos dois RPCs/quatro policies. Os 20 PGlite, 8 nativos e 38 UI aprovados, e a regressão integral 274 PASS/0 FAIL/1 SKIP, são evidência local; o [ensaio Auth real](evidencias-caixa/2026-10-06-auth-local.log) também concluiu 15/15 PASS. Congelar o pacote após revisão final, preencher SHA funcional e reconferir hash da migração. Preservar recebíveis e checkouts alheios.
+1. Registrar a autorização específica de 08:58:37 UTC e a correção já aplicada aos dois RPCs/quatro policies. Os 20 PGlite, 8 nativos e 38 UI aprovados, e a regressão integral 279 PASS/0 FAIL, dois grupos reais executados separadamente, são evidência local; o [ensaio Auth real](evidencias-caixa/2026-10-06-auth-local.log) também concluiu 15/15 PASS. Congelar o pacote após revisão final, preencher SHA funcional e reconferir hash da migração. Preservar recebíveis e checkouts alheios.
 2. Conferir a stack QA identificada, isolamento, bootstrap mínimo, versões, owners/grants/RLS/triggers e perfis sintéticos. A stack já existe; não repetir preparo ou instalar runtime por suposição. Conservar o [ensaio de recuperação aprovado](recuperacao-caixa/backup-restore-local.md), 10/10 PASS, com seus limites: PG17.11, banco novo no mesmo cluster, roles não recriadas em outro cluster e UID simulado por GUC, sem Auth real nesse ensaio nem restore físico gerenciado.
 3. A migração de hash registrado já foi aplicada somente à QA local autorizada. Conservar a evidência dos objetos e do bootstrap sem abertura; não reaplicá-la cegamente nem inferir migração de produção. O SQL não contém seed de abertura ou valores privados.
 4. Conservar o [reensaio Auth/PostgREST aprovado](evidencias-caixa/2026-10-06-auth-local.log), com login real e dados sintéticos: persistência, parciais, transferência, cancelamento, reenvio/HTTP simultâneo, erros, corte temporal e preservação de DRE/estoque/folha/saldo manual. O primeiro erro do harness foi superado pela execução final. Concluir separadamente o fluxo UI com RPC real e sua evidência, sem usar produção.
@@ -153,7 +153,7 @@ Se restauração de obrigações legadas for necessária, preparar plano especí
 | Revisão final/congelamento/commit funcional | CONCLUÍDOS LOCALMENTE | `b70919c809e7bd4480d8be5888cd0d288e7ef368`, SQL hash registrado | Apenas Caixa; pre-deploy check sem BLOCK |
 | Disponibilidade de backups de produção | COMPROVADA EM LEITURA | 8 físicos COMPLETED; último ID `1884527306` | [Metadados](evidencias-caixa/2026-10-06-backups-producao-metadados.json), 09:28:40 UTC |
 | Restauração física real de produção | NÃO EXECUTADA / NÃO PROVADA | Plano aplicável a revisar | Nenhum download ou restore; preservar operações posteriores |
-| Migração de produção | BLOQUEADA / NÃO EXECUTADA | EDR SYSTEM `mepzoxoahpwcvvlymlfh` | [Rejeição automática e liberação](evidencias-caixa/2026-10-06-migracao-producao-bloqueada.md), 09:52:50 UTC |
+| Migração de produção | CONCLUÍDA E VERIFICADA | EDR SYSTEM `mepzoxoahpwcvvlymlfh`, versão `20261006104227` | [Registro efetivo](evidencias-caixa/2026-10-06-implantacao-execucao.md); nenhuma abertura/seed |
 | Deploy/Pages/propagação | PENDENTE / NÃO EXECUTADO | Pages atual legado `main`/raiz, build `7ace6ac` | A preencher para o novo pacote |
 | Corte/saldos e abertura real | PENDENTE / NÃO EXECUTADA | Declaração privada e tenant autorizados | Não inferir foto de 05/10 como saldo atual |
 | Smoke pós-publicação/ativação | PENDENTE | A preencher | A preencher |
