@@ -1,0 +1,574 @@
+/* Referencia visual: previa aprovada, commit a8d9c9f28b9dbaec09ffc176a74690c0a5ae9f10.
+ * Declaracoes e cascata das cinco partes originais preservadas.
+ * Adaptacao: :root/body/main -> .edr-financial; descendentes prefixados;
+ * universal inclui a raiz. O novo dialog deve permanecer dentro dessa raiz.
+ * Navegacao da previa, simulacao e seletor de cenario removidos:
+ * a navegacao e o Banco e dinheiro operacionais do EDR continuam existentes.
+ * IDs de toast/cash-dialog isolados em fv-toast/fv-cash-dialog.
+ * Combinadores HTML escapados foram convertidos para >.
+ */
+.edr-financial {--ink:#111827;--muted:#6B7280;--line:#E5E7EB;--bg:#FAFAFA;--nav:#1A1D23;--cyan:#2D6A4F;--lightcyan:#ECFDF5;--green:#059669;--amber:#D97706;--red:#DC2626;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink);font-size:16px;line-height:1.5;font-synthesis:none}
+.edr-financial, .edr-financial * {box-sizing:border-box}
+.edr-financial {margin:0;background:var(--bg)}
+.edr-financial button, .edr-financial select {font:inherit}
+.edr-financial button {cursor:pointer}
+.edr-financial button, .edr-financial a, .edr-financial select {touch-action:manipulation}
+.edr-financial button:focus-visible, .edr-financial select:focus-visible, .edr-financial a:focus-visible {outline:3px solid #2D6A4F;outline-offset:3px}
+.edr-financial button {color:inherit}
+.edr-financial svg {width:20px;height:20px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round}
+.edr-financial {max-width:1560px;margin:auto;padding:31px 38px 20px}
+.edr-financial .page-heading {display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:25px}
+.edr-financial .eyebrow {font-size:12px;letter-spacing:1.55px;font-weight:700;color:#6B7280}
+.edr-financial h1 {font-size:30px;line-height:1.3;letter-spacing:-.7px;margin:5px 0 5px;font-weight:680}
+.edr-financial .page-heading p {font-size:14px;color:var(--muted);margin:0}
+.edr-financial .btn {border:1px solid #E5E7EB;background:white;border-radius:6px;padding:10px 15px;font-size:13px;font-weight:550;display:inline-flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap}
+.edr-financial .btn:hover {border-color:#2D6A4F;background:#ECFDF5}
+.edr-financial .btn.primary {background:var(--ink);color:white;border-color:var(--ink)}
+.edr-financial .btn.primary:hover {background:#1B4332}
+.edr-financial .btn.ghost {background:transparent}
+.edr-financial .btn:disabled {opacity:.6;cursor:default}
+.edr-financial .filterbar {display:flex;gap:16px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:8px;padding:14px 18px;margin-bottom:22px}
+.edr-financial .filter-title {align-self:center;color:#6B7280;margin-right:1px}
+.edr-financial .filterbar label {display:flex;flex-direction:column;gap:3px;min-width:155px;font-size:12px;line-height:1.4;color:var(--muted)}
+.edr-financial select {border:0;background:transparent;font-size:14px;color:#111827;font-weight:550;width:100%;padding:3px 24px 3px 0;cursor:pointer}
+.edr-financial .filter-sync {margin-left:auto;font-size:12px;color:#9CA3AF;max-width:120px;line-height:1.5}
+.edr-financial .subtabs {display:flex;gap:25px;border-bottom:1px solid var(--line);margin:-3px 0 23px}
+.edr-financial .subtabs button {background:transparent;border:0;border-bottom:2px solid transparent;padding:12px 1px;color:var(--muted);font-size:14px}
+.edr-financial .subtabs button.active {color:#2D6A4F;border-bottom-color:#2D6A4F;font-weight:650}
+.edr-financial .subtabs:empty {display:none}
+.edr-financial .metrics {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-bottom:23px}
+.edr-financial .metric {display:flex;flex-direction:column;align-items:flex-start;text-align:left;background:#fff;border:1px solid var(--line);border-radius:9px;padding:19px 20px;min-height:157px;transition:border-color .15s,transform .15s}
+.edr-financial .metric:hover {border-color:#2D6A4F;transform:translateY(-2px)}
+.edr-financial .metric.featured {background:#2D6A4F;color:#fff;border-color:#2D6A4F}
+.edr-financial .metric-head {display:flex;width:100%;justify-content:space-between;align-items:center;font-size:12px;font-weight:550;color:#6B7280;gap:8px}
+.edr-financial .metric-head svg {width:18px;height:18px;color:#9CA3AF}
+.edr-financial .featured .metric-head {color:#F3F4F6}
+.edr-financial .featured .metric-head svg {color:#D1FAE5}
+.edr-financial .metric-value {font-size:27px;letter-spacing:-.7px;font-weight:660;line-height:1.3;margin:15px 0 7px;font-variant-numeric:tabular-nums}
+.edr-financial .metric-caption {font-size:12px;line-height:1.5;color:#6B7280}
+.edr-financial .featured .metric-caption {color:#D1FAE5}
+.edr-financial .metric-caption .positive {color:#059669}
+.edr-financial .featured .metric-caption .positive {color:#D1FAE5}
+.edr-financial .grid-main {display:grid;grid-template-columns:minmax(0,1.62fr) minmax(275px,1fr);gap:21px;margin-bottom:21px}
+.edr-financial .panel {background:#fff;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.edr-financial .panel-head {display:flex;align-items:flex-start;justify-content:space-between;gap:15px;padding:21px 23px 18px}
+.edr-financial .panel-head h2, .edr-financial .section-title {font-size:16px;line-height:1.4;letter-spacing:-.15px;margin:0;font-weight:650}
+.edr-financial .panel-head p {font-size:12px;color:var(--muted);margin:4px 0 0}
+.edr-financial .pill {font-size:12px;letter-spacing:.3px;background:#F3F4F6;color:#6B7280;white-space:nowrap;padding:4px 7px;border-radius:4px}
+.edr-financial .pill.good {background:#ECFDF5;color:#059669}
+.edr-financial .chart {padding:0 23px 23px}
+.edr-financial .chart-legend {display:flex;gap:16px;font-size:12px;color:var(--muted);margin:0 0 21px}
+.edr-financial .legend-dot {width:8px;height:8px;border-radius:2px;display:inline-block;margin-right:5px;background:#2D6A4F}
+.edr-financial .legend-dot.dark {background:#D1D5DB}
+.edr-financial .barrow {display:grid;grid-template-columns:100px minmax(0,1fr) 93px;align-items:center;gap:10px;margin-bottom:17px;font-size:12px}
+.edr-financial .barrow strong {font-weight:500;white-space:nowrap;text-align:right;font-variant-numeric:tabular-nums}
+.edr-financial .bartrack {height:25px;background:#F3F4F6;border-radius:3px;overflow:hidden}
+.edr-financial .bar {height:100%;background:#2D6A4F;border-radius:3px;min-width:0;transition:width .3s}
+.edr-financial .bar.muted {background:#D1D5DB}
+.edr-financial .bar.mid {background:#6B7280}
+.edr-financial .barrow button {display:contents;text-align:left}
+.edr-financial .chart-summary {border-top:1px dashed #E5E7EB;display:flex;justify-content:space-between;align-items:center;padding-top:14px;margin-top:20px;font-size:12px;color:#6B7280}
+.edr-financial .chart-summary button {font-size:18px;font-weight:650;background:none;border:0;color:var(--green)}
+.edr-financial .attention {padding:0 23px 5px}
+.edr-financial .attention-row {display:flex;gap:12px;padding:16px 0;border-bottom:1px solid #F3F4F6;align-items:flex-start}
+.edr-financial .attention-row:last-child {border-bottom:0}
+.edr-financial .iconbox {width:33px;height:33px;display:grid;place-items:center;background:#F3F4F6;border-radius:7px;flex-shrink:0;color:#6B7280}
+.edr-financial .iconbox.amber {background:#FFFBEB;color:#D97706}
+.edr-financial .attention-row strong {font-size:13px;display:block;font-weight:550}
+.edr-financial .attention-row p {font-size:12px;color:var(--muted);margin:3px 0 0}
+.edr-financial .text-button {border:0;background:none;padding:0;text-align:left}
+.edr-financial .text-button:hover strong, .edr-financial .link:hover {text-decoration:underline}
+.edr-financial .link {color:#2D6A4F;background:none;border:0;padding:0;font-size:12px;font-weight:600}
+.edr-financial .attention-row .amount {margin-left:auto;white-space:nowrap;font-size:14px;font-weight:600}
+.edr-financial .reconcile {display:flex;gap:18px;align-items:center;padding:17px 22px;background:#ECFDF5;border:1px solid #D1FAE5;border-radius:8px;margin-bottom:23px}
+.edr-financial .reconcile>svg {color:#059669}
+.edr-financial .reconcile h3 {font-size:13px;margin:0 0 2px;font-weight:650}
+.edr-financial .reconcile p {font-size:12px;color:#6B7280;margin:0}
+.edr-financial .reconcile .link {margin-left:auto;white-space:nowrap;color:#2D6A4F}
+.edr-financial .table-wrap {overflow:auto}
+.edr-financial .data-table {width:100%;border-collapse:collapse;font-size:13px;text-align:left;white-space:nowrap}
+.edr-financial .data-table th {background:#FAFAFA;font-size:12px;color:#6B7280;font-weight:500;padding:11px 22px;border-top:1px solid #E5E7EB;border-bottom:1px solid #E5E7EB}
+.edr-financial .data-table td {padding:16px 22px;border-bottom:1px solid #F3F4F6}
+.edr-financial .data-table tr:last-child td {border-bottom:0}
+.edr-financial .data-table .num {text-align:right;font-variant-numeric:tabular-nums}
+.edr-financial .data-table td button {border:0;background:none;padding:0;font-size:inherit;display:inline-flex;align-items:center;gap:9px;text-align:left}
+.edr-financial .data-table td button:hover {color:var(--cyan);text-decoration:underline}
+.edr-financial .work-label {display:flex;align-items:center;gap:12px}
+.edr-financial .work-monogram {display:grid;place-items:center;width:31px;height:31px;background:#ECFDF5;color:#2D6A4F;font-size:12px;font-weight:650;border-radius:6px}
+.edr-financial .work-name {font-weight:600}
+.edr-financial .cell-meta {font-size:12px;color:#9CA3AF;display:block;margin-top:3px}
+.edr-financial .positive {color:var(--green)}
+.edr-financial .negative {color:var(--red)}
+.edr-financial .status-pill {font-size:12px;color:#059669;background:#ECFDF5;padding:3px 7px;border-radius:4px}
+.edr-financial .status-pill.archived {color:#6B7280;background:#F3F4F6}
+.edr-financial .mini-progress {display:inline-block;width:55px;background:#E5E7EB;height:4px;border-radius:4px;vertical-align:middle;margin-right:8px}
+.edr-financial .mini-progress span {height:4px;display:block;background:#2D6A4F;border-radius:4px}
+.edr-financial .bottom-note {font-size:12px;color:#6B7280;padding:13px 23px;border-top:1px solid #F3F4F6}
+.edr-financial .split3 {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;margin-bottom:22px}
+.edr-financial .work-card {padding:22px}
+.edr-financial .work-card h2 {font-size:18px;margin:15px 0 4px}
+.edr-financial .work-card p {font-size:12px;color:var(--muted);margin:0}
+.edr-financial .work-card-top {display:flex;justify-content:space-between;align-items:center}
+.edr-financial .progress-line {height:5px;background:#E5E7EB;border-radius:4px;margin:18px 0 8px}
+.edr-financial .progress-line span {height:100%;display:block;background:#2D6A4F;border-radius:4px}
+.edr-financial .smallrow {display:flex;justify-content:space-between;font-size:12px;color:#6B7280;margin-bottom:17px}
+.edr-financial .work-card .pair {display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid #F3F4F6;font-size:12px}
+.edr-financial .work-card .pair button {border:0;background:none;padding:0;font-weight:650;font-variant-numeric:tabular-nums}
+.edr-financial .work-card>.btn {width:100%;margin-top:20px}
+.edr-financial .stackbar {height:34px;display:flex;border-radius:5px;overflow:hidden;margin:3px 0 22px}
+.edr-financial .stackbar button {height:100%;border:0;border-right:2px solid white;padding:0;min-width:0}
+.edr-financial .stackbar button:nth-child(1) {background:#2D6A4F}
+.edr-financial .stackbar button:nth-child(2) {background:#6B7280}
+.edr-financial .stackbar button:nth-child(3) {background:#D1D5DB}
+.edr-financial .cost-breakdown {padding:0 23px 23px}
+.edr-financial .cost-item {padding:13px 0;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #F3F4F6;font-size:13px}
+.edr-financial .cost-item:last-child {border-bottom:0}
+.edr-financial .cost-item button {font:inherit;background:transparent;border:0;padding:0;font-weight:600}
+.edr-financial .cost-item small {display:block;font-size:12px;color:#6B7280;margin-top:3px}
+.edr-financial .dre-info {font-size:12px;color:#6B7280;background:#FAFAFA;border:1px solid #E5E7EB;border-radius:7px;padding:14px 18px;margin-bottom:21px}
+.edr-financial .dre-table {width:100%;border-collapse:collapse;font-size:14px}
+.edr-financial .dre-table th {text-align:left;font-weight:500;font-size:12px;color:#6B7280;background:#FAFAFA;padding:13px 23px}
+.edr-financial .dre-table th:last-child, .edr-financial .dre-table td:last-child {text-align:right}
+.edr-financial .dre-table td {padding:17px 23px;border-bottom:1px solid #E5E7EB}
+.edr-financial .dre-table .group {font-weight:650;background:#FAFAFA}
+.edr-financial .dre-table .child td:first-child {padding-left:39px;color:#6B7280}
+.edr-financial .dre-table .result {background:#ECFDF5;font-weight:650;color:#2D6A4F}
+.edr-financial .dre-table button {background:none;border:0;padding:0;font:inherit}
+.edr-financial .dre-table button:hover {text-decoration:underline}
+.edr-financial .formula-panel {padding:22px}
+.edr-financial .formula-panel h3 {font-size:14px;margin:0 0 13px}
+.edr-financial .formula-panel p {font-size:12px;color:#6B7280;margin:10px 0}
+.edr-financial .formula-step {display:flex;justify-content:space-between;font-size:13px;padding:12px 0;border-bottom:1px solid #F3F4F6}
+.edr-financial .formula-step.total {font-weight:650;border-bottom:0;color:#059669}
+.edr-financial .empty {padding:65px 24px;background:white;border:1px solid var(--line);border-radius:9px;text-align:center}
+.edr-financial .empty h2 {font-size:21px}
+.edr-financial .empty p {font-size:14px;color:var(--muted)}
+.edr-financial footer {display:flex;justify-content:space-between;gap:10px;color:#6B7280;font-size:12px;margin-top:27px}
+.edr-financial footer button {padding:0;border:0;background:none;color:#6B7280;font-size:12px}
+.edr-financial dialog {position:fixed;inset:0 0 0 auto;margin:0;max-height:100dvh;height:100dvh;width:min(650px,100%);max-width:100%;border:0;border-left:1px solid #E5E7EB;padding:27px 31px;color:var(--ink);background:#fff;box-shadow:-12px 0 55px #00000018;overflow-y:auto}
+.edr-financial dialog::backdrop {background:#00000080;backdrop-filter:blur(2px)}
+.edr-financial .drawer-top {display:flex;justify-content:space-between;align-items:center;margin-bottom:25px}
+.edr-financial .icon-btn {background:#F3F4F6;border:0;border-radius:50%;width:35px;height:35px;font-size:24px;font-weight:300}
+.edr-financial .detail-title {font-size:27px;letter-spacing:-.5px;line-height:1.25;margin:0 0 9px}
+.edr-financial .detail-scope {font-size:12px;color:#6B7280}
+.edr-financial .detail-value {font-size:39px;line-height:1.2;font-weight:660;letter-spacing:-1px;margin:25px 0 13px}
+.edr-financial .formula {padding:17px 19px;background:#ECFDF5;border:1px solid #D1FAE5;border-radius:8px;margin:18px 0 24px;font-size:14px;line-height:1.8}
+.edr-financial .formula small {display:block;color:#2D6A4F;font-size:12px;margin-bottom:4px;font-weight:600;letter-spacing:.6px}
+.edr-financial .detail-note {font-size:13px;color:#6B7280;line-height:1.7}
+.edr-financial .detail-list {margin-top:20px;border-top:1px solid var(--line)}
+.edr-financial .detail-entry {display:flex;gap:14px;padding:16px 0;border-bottom:1px solid #E5E7EB}
+.edr-financial .entry-date {font-size:12px;color:#6B7280;min-width:37px;padding-top:3px}
+.edr-financial .entry-name {font-size:13px;flex:1}
+.edr-financial .entry-name small {display:block;font-size:12px;color:#6B7280;margin-top:3px}
+.edr-financial .entry-value {font-size:14px;font-weight:650;white-space:nowrap}
+.edr-financial .detail-heading {font-size:14px;margin-top:29px}
+.edr-financial .method-item {padding:18px 0;border-bottom:1px solid #F3F4F6}
+.edr-financial .method-item h3 {font-size:15px;margin:0 0 5px}
+.edr-financial .method-item p {font-size:13px;color:#6B7280;margin:0}
+.edr-financial .signed {color:#059669}
+.edr-financial #fv-toast {position:fixed;bottom:25px;left:calc(50% + 80px);transform:translateX(-50%);background:#1B4332;color:#fff;border-radius:8px;padding:14px 22px;box-shadow:0 8px 30px #00000022;font-size:13px;max-width:90vw;opacity:0;pointer-events:none;transition:opacity .2s;z-index:9}
+.edr-financial #fv-toast.show {opacity:1}
+.edr-financial .contract-note {font-size:12px;color:#6B7280;margin-top:14px}
+.edr-financial .inline-note {font-size:12px;color:#6B7280;padding:0 23px 20px}
+.edr-financial .unit {font-size:12px;color:#6B7280}
+.edr-financial .safe-box {padding:15px 18px;background:#FAFAFA;border-radius:8px;font-size:12px;color:#6B7280;margin-top:22px}
+@media(min-width:1500px) {
+.edr-financial .metric-value {font-size:31px}
+}
+@media(max-width:1190px) {
+.edr-financial {padding:28px 26px 20px}
+.edr-financial .metric {padding:17px 16px}
+.edr-financial .metric-value {font-size:24px}
+.edr-financial .metric-head {font-size:12px}
+.edr-financial .filter-sync {display:none}
+.edr-financial .grid-main {grid-template-columns:minmax(0,1.35fr) minmax(260px,1fr)}
+.edr-financial .barrow {grid-template-columns:85px minmax(0,1fr) 83px}
+.edr-financial .data-table th, .edr-financial .data-table td {padding-left:18px;padding-right:18px}
+.edr-financial .split3 {grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:960px) {
+.edr-financial {padding:25px 24px}
+.edr-financial .metrics {grid-template-columns:repeat(2,minmax(0,1fr))}
+.edr-financial .metric {min-height:147px}
+.edr-financial .metric-head {font-size:12px}
+.edr-financial .metric-value {font-size:29px}
+.edr-financial .grid-main {grid-template-columns:1fr 1fr}
+.edr-financial .filterbar {gap:15px}
+.edr-financial .filterbar label {min-width:0;flex:1}
+.edr-financial .filter-title {display:none}
+.edr-financial .page-heading {margin-bottom:20px}
+.edr-financial .page-heading p {font-size:12px}
+.edr-financial .barrow {grid-template-columns:75px minmax(0,1fr) 80px;font-size:12px}
+.edr-financial .panel-head, .edr-financial .chart, .edr-financial .attention, .edr-financial .cost-breakdown {padding-left:18px;padding-right:18px}
+.edr-financial .panel-head {gap:8px}
+.edr-financial .panel-head h2 {font-size:15px}
+.edr-financial .pill {font-size:12px}
+.edr-financial .attention-row {gap:8px}
+.edr-financial .attention-row .amount {font-size:12px}
+.edr-financial .iconbox {width:28px;height:28px}
+.edr-financial #fv-toast {left:calc(50% + 35px)}
+}
+@media(max-width:720px) {
+.edr-financial {padding:23px 18px 18px}
+.edr-financial .page-heading {align-items:flex-start;margin-bottom:19px;gap:8px}
+.edr-financial h1 {font-size:26px}
+.edr-financial .eyebrow {font-size:12px}
+.edr-financial .page-heading .btn {font-size:12px;padding:7px 8px;margin-top:21px}
+.edr-financial .filterbar {display:grid;grid-template-columns:1.25fr 1fr;padding:13px 15px;gap:13px;border-radius:7px;margin-bottom:15px}
+.edr-financial .filterbar label {font-size:12px}
+.edr-financial .filterbar label:first-of-type {grid-column:1/-1;border-bottom:1px solid #E5E7EB;padding-bottom:8px}
+.edr-financial select {font-size:13px;padding-bottom:0}
+.edr-financial .subtabs {margin-bottom:18px}
+.edr-financial .metrics {gap:10px;margin-bottom:17px}
+.edr-financial .metric {padding:15px 14px;min-height:147px;border-radius:8px}
+.edr-financial .metric-value {font-size:25px;margin-top:17px}
+.edr-financial .metric-head {font-size:12px;gap:4px;align-items:flex-start}
+.edr-financial .metric-head svg {width:15px;height:15px}
+.edr-financial .metric-caption {font-size:12px}
+.edr-financial .grid-main {grid-template-columns:1fr;gap:17px;margin-bottom:17px}
+.edr-financial .panel-head {padding-top:18px;padding-bottom:17px}
+.edr-financial .panel-head h2 {font-size:16px}
+.edr-financial .panel-head p {font-size:12px}
+.edr-financial .pill {font-size:12px}
+.edr-financial .barrow {grid-template-columns:95px minmax(0,1fr) 94px;font-size:12px;margin-bottom:16px}
+.edr-financial .bartrack {height:25px}
+.edr-financial .reconcile {padding:15px;gap:10px;align-items:flex-start;flex-wrap:wrap;margin-bottom:17px}
+.edr-financial .reconcile>svg {width:18px;height:18px}
+.edr-financial .reconcile>div {flex:1}
+.edr-financial .reconcile p {font-size:12px}
+.edr-financial .reconcile .link {margin-left:28px;font-size:12px}
+.edr-financial .data-table th, .edr-financial .data-table td {padding:12px 15px}
+.edr-financial .data-table {font-size:12px}
+.edr-financial .split3 {grid-template-columns:1fr;gap:16px}
+.edr-financial .work-card {padding:20px}
+.edr-financial .work-card h2 {font-size:19px}
+.edr-financial .work-card .pair {font-size:13px}
+.edr-financial .dre-table {font-size:12px}
+.edr-financial .dre-table td, .edr-financial .dre-table th {padding:15px 18px}
+.edr-financial .dre-table .child td:first-child {padding-left:27px}
+.edr-financial .dre-info {font-size:12px;padding:12px 14px}
+.edr-financial dialog {padding:23px 21px}
+.edr-financial .detail-title {font-size:25px}
+.edr-financial .detail-value {font-size:34px}
+.edr-financial .formula {font-size:13px}
+.edr-financial .entry-name {font-size:12px}
+.edr-financial .entry-value {font-size:13px}
+.edr-financial .entry-date {min-width:34px}
+.edr-financial .detail-entry {gap:8px}
+.edr-financial .detail-heading {font-size:13px}
+.edr-financial footer {font-size:12px;gap:18px;align-items:flex-start}
+.edr-financial footer button {font-size:12px;white-space:nowrap}
+.edr-financial #fv-toast {left:50%;width:90%;bottom:20px}
+.edr-financial .status-pill {font-size:12px}
+}
+@media(prefers-reduced-motion:reduce) {
+.edr-financial, .edr-financial * {transition:none!important;scroll-behavior:auto!important}
+}
+@media print {
+.edr-financial .filterbar, .edr-financial .subtabs, .edr-financial .page-heading .btn, .edr-financial footer, .edr-financial dialog {display:none!important}
+.edr-financial {padding:0;max-width:none}
+.edr-financial .metrics {grid-template-columns:repeat(4,1fr)}
+.edr-financial .panel {break-inside:avoid}
+.edr-financial .grid-main {grid-template-columns:1fr 1fr}
+.edr-financial {background:white}
+}
+/* Readable working-surface labels */
+.edr-financial .metric-head, .edr-financial .filterbar select, .edr-financial .attention-row strong, .edr-financial .cost-item, .edr-financial .formula-step, .edr-financial .data-table, .edr-financial .barrow, .edr-financial .btn, .edr-financial .detail-note, .edr-financial .entry-name {font-size:14px}
+.edr-financial .metric-caption, .edr-financial .filterbar label, .edr-financial .filter-sync, .edr-financial .cell-meta, .edr-financial .entry-name small, .edr-financial .bottom-note, .edr-financial .detail-scope, .edr-financial .panel-head p {font-size:12px}
+.edr-financial .formula-step button {border:0;background:none;padding:0;font:inherit;font-weight:650}
+.edr-financial .formula-step button:hover {text-decoration:underline}
+.edr-financial .attention-row p, .edr-financial .work-card p, .edr-financial .formula-panel p, .edr-financial .dre-info, .edr-financial .reconcile p {font-size:13px}
+.edr-financial .barrow {grid-template-columns:110px minmax(0,1fr) 105px}
+.edr-financial .metrics .metric-head {line-height:1.45}
+.edr-financial .metric {min-height:170px}
+.edr-financial .metric-value {white-space:nowrap}
+@media(max-width:1190px) {
+.edr-financial .metric-head {font-size:13px}
+.edr-financial .barrow {grid-template-columns:98px minmax(0,1fr) 94px;font-size:13px}
+}
+@media(max-width:960px) {
+.edr-financial .grid-main {grid-template-columns:1fr}
+.edr-financial .metric-head {font-size:14px}
+.edr-financial .metric-value {font-size:28px}
+.edr-financial .metric {min-height:162px}
+.edr-financial .filterbar select {font-size:14px}
+}
+@media(max-width:720px) {
+.edr-financial .barrow {font-size:13px;grid-template-columns:95px minmax(0,1fr) 100px}
+.edr-financial .metric-head {font-size:13px}
+.edr-financial .metric-value {font-size:24px}
+.edr-financial .metric {min-height:174px}
+.edr-financial .metric-caption {font-size:12px}
+.edr-financial .page-heading .btn {font-size:12px;white-space:normal;max-width:120px}
+.edr-financial .attention-row .amount {font-size:14px}
+.edr-financial .filterbar select {font-size:14px}
+.edr-financial .dre-table {font-size:14px}
+.edr-financial .entry-value {font-size:14px}
+.edr-financial .detail-entry {font-size:14px}
+.edr-financial .data-table {font-size:14px}
+.edr-financial .formula-step {gap:15px}
+.edr-financial .formula-step strong {white-space:nowrap}
+.edr-financial .reconcile .link {font-size:12px}
+}
+/* EDR System V2 identity: source index.html + edr-v2-dashboard.js at 7ace6ac.
+   Light-first system, forest green, fixed charcoal sidebar, shared typography. */
+.edr-financial {--primary:#2D6A4F;--primary-hover:#1B4332;--primary-light:#D1FAE5;--primary-surface:#ECFDF5;--card:#FFFFFF;--border:#E5E7EB;--border-light:#F3F4F6;--text-primary:#111827;--text-secondary:#6B7280;--text-tertiary:#9CA3AF;--sidebar-bg:#1A1D23;--sidebar-border:#2D3139;--success:#059669;--warning:#D97706;--error:#DC2626;--info:#2563EB;--radius-sm:8px;--radius-md:12px;--radius-lg:16px;--sidebar-width:240px;--header-height:64px;font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased}
+.edr-financial {max-width:1600px;padding:28px 32px}
+.edr-financial .page-heading {padding-top:4px;padding-bottom:20px;border-bottom:1px solid var(--border);margin-bottom:20px}
+.edr-financial .page-heading h1 {font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;letter-spacing:-.3px;font-weight:700;margin:0 0 6px}
+.edr-financial .page-heading p {font-size:13px}
+.edr-financial .eyebrow, .edr-financial .pill, .edr-financial .status-pill, .edr-financial .data-table th, .edr-financial .dre-table th, .edr-financial .work-monogram, .edr-financial .filter-sync {font-family:'Space Grotesk',sans-serif}
+.edr-financial .btn {border-radius:var(--radius-sm);font-weight:600;padding:10px 18px}
+.edr-financial .btn.primary {background:var(--primary);border-color:var(--primary)}
+.edr-financial .btn.primary:hover {background:var(--primary-hover);border-color:var(--primary-hover)}
+.edr-financial .btn.ghost {color:var(--primary);border-color:rgba(45,106,79,.25)}
+.edr-financial .btn.ghost:hover {background:var(--primary-surface)}
+.edr-financial .filterbar {border-radius:var(--radius-md);padding:14px 18px;background:var(--card);gap:18px}
+.edr-financial .filterbar label {font-family:'Space Grotesk',sans-serif;color:var(--text-secondary)}
+.edr-financial .filterbar select {font-family:'Inter',sans-serif;color:var(--text-primary);font-weight:500}
+.edr-financial .subtabs {gap:24px}
+.edr-financial .subtabs button {font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.6px;padding:11px 6px}
+.edr-financial .subtabs button.active {color:var(--primary);border-bottom-color:var(--primary)}
+.edr-financial .metrics {gap:12px;margin-bottom:24px}
+.edr-financial .metric {background:var(--card);color:var(--text-primary);border:1px solid var(--border);border-top:3px solid var(--primary);border-radius:var(--radius-md);padding:17px 18px;min-height:157px}
+.edr-financial .metric.featured {background:var(--card);color:var(--text-primary);border-color:var(--border);border-top-color:var(--primary)}
+.edr-financial .metric[data-detail="result"] {border-top-color:var(--success)}
+.edr-financial .metric[data-detail="cost"], .edr-financial .metric[data-detail="paid"], .edr-financial .metric[data-detail="materials"], .edr-financial .metric[data-detail="labor"], .edr-financial .metric[data-detail="direct"] {border-top-color:var(--warning)}
+.edr-financial .metric[data-detail="forecast"] {border:1px dashed var(--border);padding-top:19px}
+.edr-financial .metric:hover {border-color:rgba(45,106,79,.4);box-shadow:0 5px 16px rgba(0,0,0,.05);transform:translateY(-1px)}
+.edr-financial .metric-head, .edr-financial .featured .metric-head {font-family:'Inter',sans-serif;color:var(--text-secondary);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.4px;line-height:1.5}
+.edr-financial .metric-head svg, .edr-financial .featured .metric-head svg {color:var(--primary);width:18px;height:18px}
+.edr-financial .metric[data-detail="cost"] .metric-head svg, .edr-financial .metric[data-detail="paid"] .metric-head svg {color:var(--warning)}
+.edr-financial .metric-value {font-family:'Space Grotesk',sans-serif;font-size:29px;font-weight:700;letter-spacing:-.6px;color:var(--primary);margin:12px 0 7px;line-height:1.15}
+.edr-financial .metric[data-detail="result"] .metric-value {color:var(--success)}
+.edr-financial .metric[data-detail="cost"] .metric-value, .edr-financial .metric[data-detail="paid"] .metric-value, .edr-financial .metric[data-detail="materials"] .metric-value, .edr-financial .metric[data-detail="labor"] .metric-value, .edr-financial .metric[data-detail="direct"] .metric-value {color:var(--warning)}
+.edr-financial .metric[data-detail="forecast"] .metric-value {color:var(--text-secondary)}
+.edr-financial .metric-caption, .edr-financial .featured .metric-caption {font-size:12px;color:var(--text-secondary)}
+.edr-financial .panel {border-radius:var(--radius-md)}
+.edr-financial .panel-head {padding:18px 22px}
+.edr-financial .panel-head h2, .edr-financial .section-title, .edr-financial .work-card h2, .edr-financial .formula-panel h3, .edr-financial .reconcile h3, .edr-financial .detail-title, .edr-financial .detail-heading, .edr-financial .method-item h3, .edr-financial .empty h2 {font-family:'Plus Jakarta Sans',sans-serif;font-weight:700}
+.edr-financial .panel-head h2 {font-size:16px}
+.edr-financial .panel-head p {color:var(--text-secondary)}
+.edr-financial .pill {border-radius:999px;font-size:12px;background:var(--border-light);color:var(--text-secondary)}
+.edr-financial .pill.good, .edr-financial .status-pill {color:var(--success);background:var(--primary-surface);border-radius:999px;font-weight:700}
+.edr-financial .status-pill.archived {color:var(--text-secondary);background:var(--border-light)}
+.edr-financial .chart-legend, .edr-financial .barrow {font-size:13px}
+.edr-financial .chart-summary button, .edr-financial .amount, .edr-financial .num, .edr-financial .cost-item button, .edr-financial .formula-step button, .edr-financial .formula-step strong, .edr-financial .entry-value, .edr-financial .detail-value, .edr-financial .work-card .pair button {font-family:'Space Grotesk',sans-serif}
+.edr-financial .chart-summary button {color:var(--success)}
+.edr-financial .bar, .edr-financial .legend-dot {background:var(--primary)}
+.edr-financial .bar.mid {background:#6B7280}
+.edr-financial .bar.muted, .edr-financial .legend-dot.dark {background:#D1D5DB}
+.edr-financial .bartrack {background:#F3F4F6}
+.edr-financial .attention-row .iconbox {background:rgba(45,106,79,.08);color:var(--primary);border-radius:8px}
+.edr-financial .attention-row .iconbox.amber {background:rgba(217,119,6,.08);color:var(--warning)}
+.edr-financial .attention-row strong {font-size:14px}
+.edr-financial .attention-row p {font-size:12px}
+.edr-financial .attention-row .amount {font-size:16px}
+.edr-financial .reconcile {border-radius:var(--radius-md);background:var(--primary-surface);border:1px solid var(--primary-light);padding:15px 20px}
+.edr-financial .reconcile h3 {font-size:13px}
+.edr-financial .reconcile p {color:#466653;font-size:12px}
+.edr-financial .reconcile>svg {color:var(--success)}
+.edr-financial .reconcile .link, .edr-financial .link {color:var(--primary)}
+.edr-financial .data-table th, .edr-financial .dre-table th {font-size:12px;letter-spacing:.04em;color:var(--text-secondary);background:var(--bg)}
+.edr-financial .data-table td {border-bottom:1px solid var(--border)}
+.edr-financial .data-table tbody tr:hover {background:var(--bg)}
+.edr-financial .work-monogram {background:var(--primary-surface);color:var(--primary);font-weight:700}
+.edr-financial .cell-meta {color:var(--text-secondary)}
+.edr-financial .positive {color:var(--success)}
+.edr-financial .negative {color:var(--error)}
+.edr-financial .mini-progress span, .edr-financial .progress-line span {background:var(--primary)}
+.edr-financial .work-card {padding:22px}
+.edr-financial .work-card h2 {font-size:19px}
+.edr-financial .stackbar button:nth-child(1) {background:var(--primary)}
+.edr-financial .stackbar button:nth-child(2) {background:#6B7280}
+.edr-financial .stackbar button:nth-child(3) {background:#D1D5DB}
+.edr-financial .cost-item small {color:var(--text-secondary)}
+.edr-financial .dre-info {border-color:var(--border);background:var(--card);color:var(--text-secondary);border-radius:var(--radius-sm);font-size:13px}
+.edr-financial .dre-table .group {background:var(--bg)}
+.edr-financial .dre-table .result {background:var(--primary-surface);color:var(--primary)}
+.edr-financial .formula-step.total {color:var(--success)}
+.edr-financial .formula {border-color:var(--primary-light);background:var(--primary-surface);border-radius:var(--radius-md)}
+.edr-financial .formula small {font-family:'Space Grotesk',sans-serif;color:var(--primary)}
+.edr-financial .detail-value {font-family:'Space Grotesk',sans-serif;font-weight:700;color:var(--primary)}
+.edr-financial .safe-box {background:var(--bg);border-radius:var(--radius-sm)}
+.edr-financial dialog {box-shadow:-12px 0 50px #00000018}
+.edr-financial .detail-title {font-size:25px}
+.edr-financial #fv-toast {background:var(--primary-hover);border-radius:var(--radius-sm)}
+@media(min-width:1500px) {
+.edr-financial .metric-value {font-size:31px}
+}
+@media(max-width:1190px) {
+.edr-financial {padding:26px}
+.edr-financial .metric {padding:15px 14px}
+.edr-financial .metric-value {font-size:25px}
+.edr-financial .metric-head {font-size:12px}
+.edr-financial .grid-main {grid-template-columns:1fr}
+}
+@media(max-width:960px) {
+.edr-financial .metric-value {font-size:29px}
+.edr-financial .metric {min-height:150px}
+.edr-financial .page-heading h1 {font-size:22px}
+}
+@media(max-width:720px) {
+.edr-financial .page-heading {padding-bottom:17px;align-items:center}
+.edr-financial .page-heading h1 {font-size:20px}
+.edr-financial .page-heading p {font-size:12px}
+.edr-financial .page-heading .btn {margin-top:0;padding:8px 10px;max-width:115px}
+.edr-financial .filterbar {padding:13px 15px;gap:12px}
+.edr-financial .filterbar select {font-size:14px}
+.edr-financial .metrics {gap:10px}
+.edr-financial .metric {padding:14px 12px;min-height:164px}
+.edr-financial .metric-head {font-size:12px;letter-spacing:.2px}
+.edr-financial .metric-head svg {width:15px;height:15px}
+.edr-financial .metric-value {font-size:25px;margin:12px 0 7px}
+.edr-financial .metric-caption {font-size:12px}
+.edr-financial .metric[data-detail="forecast"] {padding-top:16px}
+.edr-financial {padding:22px 16px}
+.edr-financial .panel-head {padding:18px}
+.edr-financial .subtabs {gap:20px}
+.edr-financial .subtabs button {font-size:12px}
+.edr-financial .attention-row .amount {font-size:15px}
+.edr-financial .reconcile {padding:14px}
+.edr-financial .reconcile p {font-size:12px}
+.edr-financial .data-table td, .edr-financial .data-table th {padding-left:16px;padding-right:16px}
+}
+/* Receivables use the same EDR language and the same selected scenario everywhere. */
+.edr-financial .receivables-panel {margin-bottom:24px}
+.edr-financial .receivable-totals {display:grid;grid-template-columns:1fr 1fr;margin:0 22px 20px;border:1px solid #E5E7EB;border-radius:10px;overflow:hidden}
+.edr-financial .receivable-total {border:0;background:#ECFDF5;padding:18px 20px;display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:7px}
+.edr-financial .receivable-total:hover {background:#D1FAE5}
+.edr-financial .receivable-total>span {font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;letter-spacing:.04em;color:#2D6A4F}
+.edr-financial .receivable-total>strong {font-family:'Space Grotesk',sans-serif;font-size:30px;line-height:1.2;color:#2D6A4F}
+.edr-financial .receivable-total>small {font-size:12px;color:#4B5563}
+.edr-financial .receivable-total.excess {border-left:1px solid #E5E7EB;background:#FFFBEB}
+.edr-financial .receivable-total.excess:hover {background:#FEF3C7}
+.edr-financial .receivable-total.excess>span, .edr-financial .receivable-total.excess>strong, .edr-financial .excess-text {color:#A16207}
+.edr-financial .receivable-table {font-size:13px}
+.edr-financial .receivable-table th {font-size:11px;white-space:normal;max-width:190px}
+.edr-financial .receivable-table td {font-family:'Space Grotesk',sans-serif}
+.edr-financial .receivable-table td:first-child {font-family:'Inter',sans-serif}
+.edr-financial .receivable-sum {background:#FAFAFA}
+.edr-financial .receivable-example {margin:18px 22px;padding:15px 17px;background:#FAFAFA;border-left:3px solid #2D6A4F;font-size:13px}
+.edr-financial .receivable-example strong {font-family:'Plus Jakarta Sans',sans-serif;font-weight:700}
+.edr-financial .receivable-example p {color:#6B7280;margin:6px 0 0;line-height:1.65}
+.edr-financial .receivable-detail-work {border-top:1px solid #E5E7EB;margin-top:26px;padding-top:10px}
+.edr-financial .receivable-detail-work h3 {font-family:'Plus Jakarta Sans',sans-serif;font-size:17px}
+.edr-financial .receivable-detail-work .data-table {font-size:12px}
+.edr-financial .receivable-detail-work .data-table td, .edr-financial .receivable-detail-work .data-table th {padding:10px 12px}
+.edr-financial .receivable-detail-work .data-table td:first-child {white-space:normal;min-width:120px}
+.edr-financial .receivable-detail-work .formula {font-size:13px}
+.edr-financial .receivable-detail-work .detail-list {margin-top:0}
+.edr-financial .receivable-detail-work .detail-entry {padding:12px 0}
+@media(max-width:1190px) {
+.edr-financial .receivable-total>strong {font-size:28px}
+.edr-financial .receivable-table th {font-size:11px}
+}
+@media(max-width:720px) {
+.edr-financial .receivable-totals {margin:0 15px 16px;grid-template-columns:1fr}
+.edr-financial .receivable-total {padding:16px}
+.edr-financial .receivable-total>strong {font-size:29px}
+.edr-financial .receivable-total.excess {border-left:0;border-top:1px solid #E5E7EB}
+.edr-financial .receivable-example {margin:16px 15px;padding:14px}
+.edr-financial .receivable-table {min-width:750px}
+.edr-financial .receivables-panel .panel-head {flex-wrap:wrap}
+.edr-financial .receivable-table th, .edr-financial .receivable-table td {padding:12px 15px}
+}
+/* Banco e dinheiro: isolated, fictional prospective cash example. */
+.edr-financial [hidden] {display:none!important}
+.edr-financial .cash-intro {display:flex;align-items:center;gap:16px;margin-bottom:20px}
+.edr-financial .cash-intro p {font-size:13px;line-height:1.7;margin:0;color:#4B5563}
+.edr-financial .cash-metrics {grid-template-columns:repeat(3,minmax(0,1fr))}
+.edr-financial .cash-metrics .metric {min-height:155px;cursor:default}
+.edr-financial .cash-metrics .metric:hover {transform:none;box-shadow:none;border-color:var(--border);border-top-color:var(--primary)}
+.edr-financial .cash-actions {display:flex;gap:10px;flex-wrap:wrap;margin-bottom:22px}
+.edr-financial .cash-actions .btn {min-height:44px}
+.edr-financial .cash-actions .ghost {margin-left:auto}
+.edr-financial .cash-opening {padding:20px 22px;display:flex;gap:20px;align-items:flex-start;background:var(--primary-surface);border-color:var(--primary-light);margin-bottom:22px}
+.edr-financial .cash-opening h2 {font-family:'Plus Jakarta Sans',sans-serif;font-size:15px;margin:0 0 6px}
+.edr-financial .cash-opening p {font-size:13px;color:#466653;margin:0;line-height:1.7}
+.edr-financial .cash-opening .pill {background:#fff;color:var(--primary)}
+.edr-financial .cash-obligations {margin-bottom:22px}
+.edr-financial .cash-recognition {padding:0 22px 18px;display:flex;gap:10px;flex-wrap:wrap}
+.edr-financial .cash-recognition p {width:100%;font-size:12px;color:var(--text-secondary);margin:0}
+.edr-financial .cash-obligation-list {padding:0 22px}
+.edr-financial .cash-obligation {display:flex;gap:18px;align-items:center;padding:16px 0;border-top:1px solid var(--border)}
+.edr-financial .cash-obligation>div {flex:1}
+.edr-financial .cash-obligation strong {font-size:14px}
+.edr-financial .cash-obligation small {display:block;font-size:12px;color:var(--text-secondary);margin-top:4px}
+.edr-financial .cash-number {font-family:'Space Grotesk',sans-serif;white-space:nowrap}
+.edr-financial .cash-obligation .btn {min-height:44px}
+.edr-financial .cash-ledger {list-style:none;margin:0;padding:0 22px}
+.edr-financial .cash-ledger li {display:flex;gap:22px;justify-content:space-between;padding:18px 0;border-top:1px solid var(--border)}
+.edr-financial .cash-ledger-description strong, .edr-financial .cash-ledger-description span, .edr-financial .cash-ledger-description small {display:block}
+.edr-financial .cash-ledger-description strong {font-size:14px}
+.edr-financial .cash-ledger-description span {font-size:12px;color:var(--text-secondary);margin-top:4px}
+.edr-financial .cash-ledger-description small {font-size:12px;color:#466653;margin-top:5px}
+.edr-financial .cash-ledger-amount {text-align:right;flex-shrink:0}
+.edr-financial .cash-ledger-amount strong {font-family:'Space Grotesk',sans-serif;font-size:17px;white-space:nowrap}
+.edr-financial .cash-ledger-amount small {display:block;font-size:12px;color:var(--text-secondary);margin-top:6px}
+.edr-financial .cash-separation {font-size:12px;color:var(--text-secondary);line-height:1.7;margin:20px 0}
+.edr-financial .cash-form-note, .edr-financial #fv-cash-dialog-body>p {font-size:14px;color:var(--text-secondary);line-height:1.7}
+.edr-financial .cash-form-fields {display:grid;gap:18px;margin-top:24px}
+.edr-financial .cash-form-fields label {display:flex;flex-direction:column;gap:7px;font-size:13px;font-weight:600}
+.edr-financial .cash-form-fields input, .edr-financial .cash-form-fields select {font-family:Inter,sans-serif;font-size:16px;min-height:48px;width:100%;min-width:0;border:1px solid #D1D5DB;padding:12px;border-radius:8px;color:var(--ink);background:#fff}
+.edr-financial .cash-form-fields input[readonly] {background:#F3F4F6;color:#4B5563}
+.edr-financial .cash-form-fields input:focus-visible {outline:3px solid #2D6A4F;outline-offset:2px}
+.edr-financial .cash-help {font-size:12px;color:var(--text-secondary);line-height:1.7}
+.edr-financial .cash-error {font-size:13px;color:#B91C1C;line-height:1.6;min-height:1.6em}
+.edr-financial .cash-dialog-actions {display:flex;gap:10px;justify-content:flex-end;margin-top:24px;flex-wrap:wrap}
+.edr-financial .cash-dialog-actions .btn {min-height:44px}
+.edr-financial #fv-cash-dialog h2 {font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;line-height:1.4;margin:0}
+.edr-financial .cash-obligation .btn:disabled {opacity:1;color:#6B7280;background:#F3F4F6;border-color:#E5E7EB}
+@media(max-width:1190px) {
+.edr-financial .cash-metrics .metric-value {font-size:25px}
+.edr-financial .cash-opening {flex-wrap:wrap}
+}
+@media(max-width:720px) {
+.edr-financial .cash-intro {flex-wrap:wrap;gap:10px}
+.edr-financial .cash-metrics {grid-template-columns:1fr}
+.edr-financial .cash-metrics .metric {min-height:auto;padding:16px 18px}
+.edr-financial .cash-metrics .metric-value {font-size:29px;margin:8px 0}
+.edr-financial .cash-actions {display:grid;grid-template-columns:1fr 1fr}
+.edr-financial .cash-actions .btn {padding:11px 8px;white-space:normal}
+.edr-financial .cash-actions .ghost {margin-left:0}
+.edr-financial .cash-opening {padding:18px}
+.edr-financial .cash-recognition {padding:0 18px 18px}
+.edr-financial .cash-recognition .btn {width:100%;min-height:44px}
+.edr-financial .cash-obligation-list {padding:0 18px}
+.edr-financial .cash-obligation {flex-wrap:wrap;gap:12px}
+.edr-financial .cash-obligation>div {flex-basis:65%}
+.edr-financial .cash-obligation .btn {width:100%}
+.edr-financial .cash-ledger {padding:0 18px}
+.edr-financial .cash-ledger li {flex-wrap:wrap;gap:10px}
+.edr-financial .cash-ledger-amount {text-align:left;width:100%}
+.edr-financial .cash-ledger-amount small {display:inline;margin-left:8px}
+.edr-financial .cash-dialog-actions {display:grid;grid-template-columns:1fr 1fr}
+.edr-financial .cash-dialog-actions .btn {padding:11px 8px;white-space:normal}
+.edr-financial .cash-form-fields input[type=date] {-webkit-appearance:none;appearance:none}
+}
+@media(max-width:720px) {
+.edr-financial .page-heading #method-button {white-space:normal;line-height:1.4}
+}
+
+/* Adaptacoes minimas dos controles e estados confirmados pelo renderer EDR. */
+.edr-financial .fv-heading-actions {display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+.edr-financial .metric.unavailable .metric-value {font-size:20px;line-height:1.3;white-space:normal;word-break:normal;overflow-wrap:anywhere}
+.edr-financial .metric[data-detail="constructionCost"] {border-top-color:var(--warning)}
+.edr-financial .metric[data-detail="constructionCost"] .metric-head svg, .edr-financial .metric[data-detail="constructionCost"] .metric-value {color:var(--warning)}
+.edr-financial .metric.negative .metric-value {color:var(--error)}
+.edr-financial .chart-summary button.fv-negative, .edr-financial .formula-step.total button.fv-negative, .edr-financial button.fv-negative {color:var(--error)}
+.edr-financial .metric-value.fv-value-long {max-width:100%;min-width:0;font-size:clamp(14px,2.4vw,22px);white-space:normal;word-break:normal;overflow-wrap:anywhere}
+@media(max-width:720px) {
+.edr-financial .metric-value.fv-value-long {font-size:14px}
+}
+/* A regra legada de tabelas moveis usa 560px; a DRE tem somente duas colunas. */
+.edr-financial .dre-table {min-width:0}
+.edr-financial .receivable-total {min-width:0}
+.edr-financial .receivable-total>strong {max-width:100%;min-width:0;white-space:normal;word-break:normal;overflow-wrap:anywhere}
+@media(max-width:360px) {
+/* Uma coluna preserva a moeda integral em telas de320px, sem separar centavos. */
+.edr-financial .metrics {grid-template-columns:minmax(0,1fr)}
+.edr-financial .metric-value:not(.fv-value-long) {font-size:20px;max-width:100%;min-width:0;white-space:nowrap;word-break:normal;overflow-wrap:normal}
+.edr-financial .metric-value.fv-value-long {white-space:nowrap;overflow-wrap:normal}
+.edr-financial .receivable-total>strong {font-size:22px}
+}

@@ -45,37 +45,37 @@
   // Fonte de verdade do interno = OBRAS_INTERNAS por ID (compartilhado com Custos/Obras, edr-v2-custos.js via window).
   // Mantém heurística por nome (ESCRIT/ALMOX) como FALLBACK p/ tenants ainda sem OBRAS_INTERNAS.
   // ADITIVO → não muda o conjunto excluído hoje (o escritório EDR já casava por nome). TODO: migrar p/ obras.tipo.
-  function _ehInterna(o) {
+  function _ehInterna(o, contexto) {
     if (!o) return false;
     const n = String(o.nome || '').toUpperCase();
     if (/^OBRA QA/i.test(n)) return true;
-    const internas = (typeof window !== 'undefined' && window.OBRAS_INTERNAS) || [];
+    const internas = contexto ? contexto.OBRAS_INTERNAS : (typeof window !== 'undefined' && window.OBRAS_INTERNAS) || [];
     if (o.id && internas.indexOf(o.id) !== -1) return true;
     return n.includes('ESCRIT') || n.includes('ALMOX');
   }
-  function _todasObras() {
-    const a = (typeof obras !== 'undefined' && Array.isArray(obras)) ? obras : [];
-    const b = (typeof obrasArquivadas !== 'undefined' && Array.isArray(obrasArquivadas)) ? obrasArquivadas : [];
-    return a.concat(b).filter(o => o && o.id && !_ehInterna(o));
+  function _todasObras(contexto) {
+    const a = contexto ? contexto.obras : (typeof obras !== 'undefined' && Array.isArray(obras)) ? obras : [];
+    const b = contexto ? contexto.obrasArquivadas : (typeof obrasArquivadas !== 'undefined' && Array.isArray(obrasArquivadas)) ? obrasArquivadas : [];
+    return a.concat(b).filter(o => o && o.id && !_ehInterna(o, contexto));
   }
 
   // ── ENGINE: cálculo por obra ──
-  function _calcObra(obraId, per) {
+  function _calcObra(obraId, per, contexto) {
     let recMed = 0, recAdic = 0, recTerr = 0, cMao = 0, cMat = 0, cTerr = 0, cDesp = 0;
-    const reps = (typeof repassesCef !== 'undefined' && Array.isArray(repassesCef)) ? repassesCef : [];
+    const reps = contexto ? contexto.repasses : (typeof repassesCef !== 'undefined' && Array.isArray(repassesCef)) ? repassesCef : [];
     reps.forEach(r => {
       if (r.obra_id !== obraId || !_inPer(r.data_credito, per)) return;
       const v = _n(r.valor);
       if (r.tipo === 'terreno') recTerr += v; else recMed += v; // pls + entrada = construção
     });
-    const pgtos = (typeof adicionaisPgtos !== 'undefined' && Array.isArray(adicionaisPgtos)) ? adicionaisPgtos : [];
-    const adics = (typeof obrasAdicionais !== 'undefined' && Array.isArray(obrasAdicionais)) ? obrasAdicionais : [];
+    const pgtos = contexto ? contexto.pagamentosAdicionais : (typeof adicionaisPgtos !== 'undefined' && Array.isArray(adicionaisPgtos)) ? adicionaisPgtos : [];
+    const adics = contexto ? contexto.adicionais : (typeof obrasAdicionais !== 'undefined' && Array.isArray(obrasAdicionais)) ? obrasAdicionais : [];
     pgtos.forEach(p => {
       if (!_inPer(p.data, per)) return;
       const ad = adics.find(a => a.id === p.adicional_id);
       if (ad && ad.obra_id === obraId) recAdic += _n(p.valor);
     });
-    const lancs = (typeof lancamentos !== 'undefined' && Array.isArray(lancamentos)) ? lancamentos : [];
+    const lancs = contexto ? contexto.lancamentos : (typeof lancamentos !== 'undefined' && Array.isArray(lancamentos)) ? lancamentos : [];
     lancs.forEach(l => {
       if (l.obra_id !== obraId || !_inPer(l.data, per)) return;
       const v = _n(l.total), c = _classif(l);
@@ -96,10 +96,10 @@
   }
 
   // ── ENGINE: consolidado ──
-  function _calcCons(per) {
+  function _calcCons(per, contexto) {
     let recMed = 0, recAdic = 0, recTerr = 0, cMao = 0, cMat = 0, cTerr = 0, area = 0;
-    _todasObras().forEach(o => {
-      const d = _calcObra(o.id, per);
+    _todasObras(contexto).forEach(o => {
+      const d = _calcObra(o.id, per, contexto);
       recMed += d.recMed; recAdic += d.recAdic; recTerr += d.recTerr;
       cMao += d.cMao; cMat += d.cMat; cTerr += d.cTerr;
       if (d.recConstr > 0 || d.custoConstr > 0) area += _n(o.area_m2);
@@ -108,10 +108,10 @@
 
     // Impostos e despesas operacionais REAIS — varre TODAS as obras (inclui ESCRITÓRIO,
     // exclui só as de teste QA), porque o overhead da empresa fica lançado no escritório.
-    const obrasAll = ((typeof obras !== 'undefined' && Array.isArray(obras)) ? obras : [])
+    const obrasAll = contexto ? contexto.obras.concat(contexto.obrasArquivadas) : ((typeof obras !== 'undefined' && Array.isArray(obras)) ? obras : [])
       .concat((typeof obrasArquivadas !== 'undefined' && Array.isArray(obrasArquivadas)) ? obrasArquivadas : []);
     const qaIds = new Set(obrasAll.filter(o => o && _ehQA(o.nome)).map(o => o.id));
-    const lancs = (typeof lancamentos !== 'undefined' && Array.isArray(lancamentos)) ? lancamentos : [];
+    const lancs = contexto ? contexto.lancamentos : (typeof lancamentos !== 'undefined' && Array.isArray(lancamentos)) ? lancamentos : [];
     let impostoReal = 0, despOperReal = 0;
     lancs.forEach(l => {
       if (!_inPer(l.data, per) || qaIds.has(l.obra_id)) return;
@@ -130,7 +130,7 @@
     const custoObras = cMao + cMat;
     const lucroBruto = recLiq - custoObras;
     // Bug 3: fallback para data_vencimento quando data_pagamento está ausente
-    const despAdmin = _contasAdmin.filter(c => _inPer(c.data_pagamento || c.data_vencimento, per)).reduce((s, c) => s + _n(c.valor), 0);
+    const despAdmin = (contexto ? contexto.contasAdmin : _contasAdmin).filter(c => _inPer(c.data_pagamento || c.data_vencimento, per)).reduce((s, c) => s + _n(c.valor), 0);
     const despOper = despOperReal + despAdmin;
     const resultado = lucroBruto - despOper;
     return {
@@ -144,10 +144,10 @@
   }
 
   // ── C: conciliação de overhead interno (escritório) — SÓ leitura p/ exibir, NÃO entra no Resultado ──
-  function _calcOverheadInterno(per) {
-    const internas = (typeof window !== 'undefined' && window.OBRAS_INTERNAS) || [];
+  function _calcOverheadInterno(per, contexto) {
+    const internas = contexto ? contexto.OBRAS_INTERNAS : (typeof window !== 'undefined' && window.OBRAS_INTERNAS) || [];
     if (!internas.length) return null;
-    const lancs = (typeof lancamentos !== 'undefined' && Array.isArray(lancamentos)) ? lancamentos : [];
+    const lancs = contexto ? contexto.lancamentos : (typeof lancamentos !== 'undefined' && Array.isArray(lancamentos)) ? lancamentos : [];
     let total = 0, noResultado = 0;
     lancs.forEach(l => {
       if (internas.indexOf(l.obra_id) === -1 || !_inPer(l.data, per)) return;
@@ -165,7 +165,7 @@
   // Conta avulsa entra no DRE. Conta de NF normalmente é só o pagamento de um custo
   // já presente em lancamentos e deve ficar fora. Exceção: itens operacionais da NF,
   // que notas.js grava como conta paga e deliberadamente não grava em lancamentos.
-  function _contaAdminEntraDRE(c) {
+  function _contaAdminEntraDRE(c, contexto) {
     if (!c || c.tipo === 'reembolso_fornecedor') return false;
     if (!c.nota_id && !c.nota_ref) return true;
     if (c.tipo === 'despesa_operacional_nf') return true;
@@ -173,14 +173,14 @@
     // Compatibilidade com o histórico anterior ao marcador acima: só aceita NF destinada
     // ao escritório, com descrição de item (não "NF ...") e sem lançamento equivalente.
     if (!c.nota_id) return false;
-    const notasPool = (typeof notas !== 'undefined' && Array.isArray(notas)) ? notas : [];
+    const notasPool = contexto ? contexto.notas : (typeof notas !== 'undefined' && Array.isArray(notas)) ? notas : [];
     const nota = notasPool.find(n => String(n.id) === String(c.nota_id));
     if (!nota || !_normContaTexto(nota.obra || nota.destino).includes('ESCRIT')) return false;
 
     const descConta = _normContaTexto(c.descricao);
     if (!descConta || /^NF(?:\s|$)/.test(descConta)) return false;
     const valorConta = _n(c.valor);
-    const lancs = (typeof lancamentos !== 'undefined' && Array.isArray(lancamentos)) ? lancamentos : [];
+    const lancs = contexto ? contexto.lancamentos : (typeof lancamentos !== 'undefined' && Array.isArray(lancamentos)) ? lancamentos : [];
     const temEquivalente = lancs.some(l => {
       if (String(l.nota_id || '') !== String(c.nota_id)) return false;
       if (Math.abs(_n(l.total) - valorConta) > 0.009) return false;
@@ -188,6 +188,40 @@
       return descLanc === descConta || descLanc.includes(descConta) || descConta.includes(descLanc);
     });
     return !temEquivalente;
+  }
+
+  // Snapshot explicito: nenhuma fonte pode cair nas globais/cache vivo do DRE.
+  // O contexto apenas fornece dados ao mesmo motor; nao altera suas classificacoes.
+  function criarContextoLeitura(snapshot) {
+    if (!snapshot || Object.prototype.toString.call(snapshot) !== '[object Object]') throw new TypeError('Snapshot DRE deve ser um objeto.');
+    const campos = ['obras', 'lancamentos', 'repasses', 'adicionais', 'pagamentosAdicionais', 'contasPagar', 'notas', 'OBRAS_INTERNAS'];
+    const pais = new Set();
+    function copiar(v) {
+      if (v == null || typeof v === 'string' || typeof v === 'boolean') return v;
+      if (typeof v === 'number' && Number.isFinite(v)) return v;
+      if (typeof v !== 'object' || (!Array.isArray(v) && Object.prototype.toString.call(v) !== '[object Object]') || pais.has(v)) throw new TypeError('Snapshot DRE deve conter dados simples, finitos e sem ciclos.');
+      pais.add(v);
+      const c = Array.isArray(v) ? v.map(copiar) : Object.fromEntries(Object.entries(v).map(([k, valor]) => [k, copiar(valor)]));
+      pais.delete(v);
+      return Object.freeze(c);
+    }
+    const contexto = {};
+    campos.concat('obrasArquivadas').forEach(campo => {
+      const valores = campo === 'obrasArquivadas' && snapshot[campo] === undefined ? [] : snapshot[campo];
+      if (!Array.isArray(valores)) throw new TypeError('Snapshot DRE exige array explicito: ' + campo + '.');
+      if (campo === 'OBRAS_INTERNAS') {
+        if (valores.some(id => typeof id !== 'string')) throw new TypeError('OBRAS_INTERNAS deve conter IDs.');
+      } else if (valores.some(v => !v || Object.prototype.toString.call(v) !== '[object Object]')) throw new TypeError('Snapshot DRE exige registros: ' + campo + '.');
+      contexto[campo] = copiar(valores);
+    });
+    contexto.contasAdmin = Object.freeze(contexto.contasPagar.filter(c => c.status === 'pago' && !c.obra_id && _contaAdminEntraDRE(c, contexto)));
+    Object.freeze(contexto);
+    return Object.freeze({
+      calcGerencialConsolidado: per => _calcCons(per || '', contexto),
+      calcGerencialPorObra: (obraId, per) => _calcObra(obraId, per || '', contexto),
+      calcGerencialOverhead: per => _calcOverheadInterno(per || '', contexto),
+      listarObrasReais: () => _todasObras(contexto)
+    });
   }
 
   // Higiene (SÓ leitura): lançamentos sem etapa nas obras reais — o _classif os joga em "material" por default.
@@ -298,13 +332,14 @@
       // DRE = competência: despesa operacional é só conta avulsa (salário, contador, aluguel...).
       // Conta vinculada à NF já entra no DRE pelo lançamento da própria nota.
       // Itens operacionais são a exceção: notas.js cria a conta paga e não cria lançamento.
-      _contasAdmin = Array.isArray(r) ? r.filter(_contaAdminEntraDRE) : [];
+      _contasAdmin = Array.isArray(r) ? r.filter(c => _contaAdminEntraDRE(c)) : [];
     } catch (e) { _contasAdmin = []; }
     _loaded = true;
   }
 
   // ── RENDER principal ──
   async function renderDRE() {
+    if (typeof FinanceiroVisaoUI !== 'undefined' && typeof usuarioAtual !== 'undefined' && usuarioAtual?.perfil === 'admin') { const alvo = document.getElementById('dre-content'); if (alvo) FinanceiroVisaoUI.montar('dre', alvo); return; }
     _injectCSS();
     const el = document.getElementById('dre-content');
     if (!el) return;
@@ -545,6 +580,8 @@ ${c.impostoEst ? '<div class="ln">⚠ Impostos estimados em 6% da receita — la
 
   window.DREModule = {
     render: renderDRE, setModo, setPeriodo, exportar,
+    // Contexto independente: exige snapshot completo, nao consulta nem altera o cache legado.
+    criarContextoLeitura,
     // ── API READ-ONLY p/ consumo por outros módulos (ex: Painel) ──
     // Fonte única do cálculo gerencial consolidado — MESMA lógica do DRE Consolidado.
     // Funções puras: NÃO renderizam, NÃO alteram período/modo, NÃO mudam o cálculo.

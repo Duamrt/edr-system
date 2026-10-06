@@ -75,6 +75,7 @@ function _relFmtR(v, abrev) {
 // ── INIT ───────────────────────────────────────────────────────
 
 function initRelatorio() {
+  if (typeof FinanceiroVisaoUI !== 'undefined' && typeof usuarioAtual !== 'undefined' && usuarioAtual?.perfil === 'admin') { renderRelatorio(); return; }
   const hoje = new Date();
   RelatorioModule.mesAtual = hoje.getFullYear() + '-' + String(hoje.getMonth() + 1).padStart(2, '0');
   // Popular select de meses
@@ -93,6 +94,7 @@ function initRelatorio() {
 function renderRelatorio() {
   const el = document.getElementById('rel-content');
   if (!el) return;
+  if (typeof FinanceiroVisaoUI !== 'undefined' && typeof usuarioAtual !== 'undefined' && usuarioAtual?.perfil === 'admin') { FinanceiroVisaoUI.montar('analise', el); return; }
   const secao = document.getElementById('rel-secao')?.value || 'financeiro';
 
   // Skeleton enquanto calcula

@@ -52,11 +52,14 @@ function prepararCopia(){
   const base=normalizar(fs.readFileSync(path.join(raiz,alvo),'utf8')),patch=normalizar(fs.readFileSync(arquivoPatch,'utf8'));
   if(manifesto.alvo!==alvo||hash(base)!==manifesto.base_sha256||hash(patch)!==manifesto.patch_sha256)throw Error('Base/patch de contingencia mudou. Revisar e regenerar; nao aplicar por suposicao.');
   const tmp=pastaTemporaria(),file=path.join(tmp,alvo);fs.mkdirSync(path.dirname(file),{recursive:true});fs.writeFileSync(file,base);
-  execFileSync('git',['apply','--check',arquivoPatch],{cwd:tmp,windowsHide:true,stdio:'pipe'});
-  execFileSync('git',['apply',arquivoPatch],{cwd:tmp,windowsHide:true,stdio:'pipe'});
+  // O clone Windows pode converter o artefato para CRLF. Aplicar a mesma
+  // representacao LF ja validada pelo manifesto, apenas dentro da copia de teste.
+  const patchLocal=path.join(tmp,'caixa-suspender-mutacoes.patch');fs.writeFileSync(patchLocal,patch);
+  execFileSync('git',['apply','--check',patchLocal],{cwd:tmp,windowsHide:true,stdio:'pipe'});
+  execFileSync('git',['apply',patchLocal],{cwd:tmp,windowsHide:true,stdio:'pipe'});
   const source=normalizar(fs.readFileSync(file,'utf8'));
   if(hash(source)!==manifesto.contingencia_sha256)throw Error('Patch aplicado nao corresponde ao artefato revisado');
-  return{tmp,source,manifesto,file};
+  return{tmp,source,manifesto,file,patchLocal};
 }
 module.exports={prepararCopia,gerar,arquivoPatch,arquivoManifesto};
 if(require.main===module){

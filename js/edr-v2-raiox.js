@@ -63,10 +63,12 @@ function _rxCalc(o) {
   const margem = receita > 0 ? (lucro / receita * 100) : 0;
   const aReceberContrato = contrato > 0 ? Math.max(0, contrato - recebContrato) : 0;  // baseado só em repasses
   const aReceber = aReceberContrato + extrasReceber;
+  const excedenteContrato = Math.max(0, recebContrato - contrato);
+  const excedenteAdicionais = Math.max(0, recebExtras - extras);
   const pctReceb = contrato > 0 ? Math.min(100, Math.round(recebContrato / contrato * 100)) : null;  // barra do contrato
   const prog = _rxProgObra(o.id);
   const pctGasto = contrato > 0 ? Math.round(custo / contrato * 100) : null;
-  return { o, status: _rxStatus(o), contrato, extras, extrasReceber, receita, custo, material, receb, recebContrato, recebExtras, lucro, caixa, margem, aReceber, aReceberContrato, pctReceb, prog, pctGasto, qtd: ls.length, adicQtd: Number(adic.qtd || 0) };
+  return { o, status: _rxStatus(o), contrato, extras, extrasReceber, receita, custo, material, receb, recebContrato, recebExtras, lucro, caixa, margem, aReceber, aReceberContrato, excedenteContrato, excedenteAdicionais, pctReceb, prog, pctGasto, qtd: ls.length, adicQtd: Number(adic.qtd || 0) };
 }
 
 function _rxTodas() {
@@ -85,17 +87,21 @@ function _rxKpisHtml(linhas) {
   const lucro = (contratos + extras) - custo;
   const caixa = recebido - custo;
   const aReceber = reais.reduce((s, x) => s + x.aReceber, 0);
+  const excedenteContrato = reais.reduce((s, x) => s + x.excedenteContrato, 0);
+  const excedenteAdicionais = reais.reduce((s, x) => s + x.excedenteAdicionais, 0);
   const estrut = linhas.filter(x => x.status === 'estrutura').reduce((s, x) => s + x.custo, 0);
 
   // [LOCK 2026-05-28] destaque azul (cor #2563eb + destaque:true) do card "Falta receber" é proposital — Duam pediu pra fixar. NÃO mover/remover sem pedido explícito.
-  // RX5a: MESMOS 7 cards (rótulo/valor/subtítulo idênticos), agrupados em 2 níveis — "Carteira em foco" (ação) e "Base da carteira" (contexto).
+  // KPIs agrupados em "Carteira em foco" (ação) e "Base da carteira" (contexto).
   const kContratos = { lab: 'Contratos', val: _rxK(contratos), sub: reais.length + ' obras · valor de venda', cls: 'rx-default' };
   const kExtras = { lab: 'Serviços extras', val: _rxK(extras), sub: 'entrou a mais (adicionais)', cls: 'rx-info' };
   const kRecebido = { lab: 'Recebido', val: _rxK(recebido), sub: 'entrou no caixa', cls: 'rx-success' };
   const kCusto = { lab: 'Custo realizado', val: _rxK(custo), sub: 'saiu' + (estrut > 0 ? ' · +' + _rxK(estrut) + ' estrutura' : ''), cls: 'rx-warning' };
   const kSaldo = { lab: 'Saldo de fluxo acumulado', val: _rxK(caixa), sub: 'recebido − custo, acumulado', cls: caixa >= 0 ? 'rx-success' : 'rx-danger' };
   const kProjecao = { lab: 'Projeção por contrato', val: _rxK(lucro), sub: 'contrato + extras − custo realizado', cls: lucro >= 0 ? 'rx-success' : 'rx-danger' };
-  const kFalta = { lab: 'Falta receber', val: _rxK(aReceber), sub: 'contrato + extras', cor: '#2563eb', destaque: true };
+  const kFalta = { lab: 'Falta receber', val: _rxK(aReceber), sub: 'por obra · contrato e extras separados', cor: '#2563eb', destaque: true };
+  const kExcedente = { lab: 'Recebido acima do contrato cadastrado', val: _rxFmt(excedenteContrato), sub: 'excedentes por obra · não abatem o falta receber', cls: 'rx-warning' };
+  const kExcedenteAdic = { lab: 'Recebido acima dos adicionais cadastrados', val: _rxFmt(excedenteAdicionais), sub: 'pagamentos de extras, separados do contrato', cls: 'rx-warning' };
 
   // Ramo 'destaque' = card "Falta receber": HTML/cor/box byte-idênticos ao original (LOCK 2026-05-28). RX5a só muda o container/grupo externo.
   const card = c => c.destaque
@@ -115,7 +121,7 @@ function _rxKpisHtml(linhas) {
   const secao = t => `<div class="rx-kpi-secao">${t}</div>`;
 
   return secao('Carteira em foco') + grid([kFalta, kSaldo], 'rx-kpi-grid--foco')
-    + secao('Base da carteira') + grid([kContratos, kExtras, kRecebido, kCusto, kProjecao]);
+    + secao('Base da carteira') + grid([kContratos, kExtras, kRecebido, kCusto, kProjecao, kExcedente, ...(excedenteAdicionais > 0 ? [kExcedenteAdic] : [])]);
 }
 
 // ── FILTROS ────────────────────────────────────────────────────
@@ -171,6 +177,8 @@ function _rxCardObra(x) {
       _rxMetric('Recebido', _rxFmt(x.receb), 'rx-success') +
       _rxMetric('Saldo de fluxo acumulado', _rxFmt(x.caixa), x.caixa >= 0 ? 'rx-success' : 'rx-danger', 'recebido − custo, acumulado') +
       _rxMetric('Falta receber', x.aReceber < 10 ? 'quitado' : _rxFmt(x.aReceber), '#2563eb', arSub, true); // LOCK: preservarLegado
+    if (x.excedenteContrato > 0) metricas += _rxMetric('Recebido acima do contrato cadastrado', _rxFmt(x.excedenteContrato), 'rx-warning');
+    if (x.excedenteAdicionais > 0) metricas += _rxMetric('Recebido acima dos adicionais cadastrados', _rxFmt(x.excedenteAdicionais), 'rx-warning');
   }
 
   // barra de recebimento
@@ -215,6 +223,7 @@ function _rxCardObra(x) {
 function renderRaiox(container) {
   const cont = container || document.getElementById('view-raiox');
   if (!cont) return;
+  if (typeof FinanceiroVisaoUI !== 'undefined' && typeof usuarioAtual !== 'undefined' && usuarioAtual?.perfil === 'admin') { FinanceiroVisaoUI.montar('raiox', cont); return; }
   if (!RaioxModule._cronoLoaded) { _rxLoadCrono().then(() => renderRaiox()); }
 
   const linhas = _rxTodas().map(_rxCalc).filter(x => x.qtd > 0 || x.contrato > 0 || x.receb > 0);
@@ -349,6 +358,8 @@ function _rxDocObra(x) {
       <div class="m"><div class="l">Saldo de fluxo acumulado</div><div class="v ${x.caixa >= 0 ? 'pos' : 'neg'}">${_rxFmt(x.caixa)}</div></div>
       <div class="m"><div class="l">Projeção por contrato</div><div class="v ${x.lucro >= 0 ? 'pos' : 'neg'}">${_rxFmt(x.lucro)}</div></div>
       <div class="m"><div class="l">Falta receber</div><div class="v az">${arTxt}</div></div>
+      ${x.excedenteContrato > 0 ? `<div class="m"><div class="l">Recebido acima do contrato cadastrado</div><div class="v acc">${_rxFmt(x.excedenteContrato)}</div></div>` : ''}
+      ${x.excedenteAdicionais > 0 ? `<div class="m"><div class="l">Recebido acima dos adicionais cadastrados</div><div class="v acc">${_rxFmt(x.excedenteAdicionais)}</div></div>` : ''}
       ${x.prog != null ? `<div class="m"><div class="l">Avanço da obra</div><div class="v">${x.prog}%${x.pctGasto != null ? ' · ' + x.pctGasto + '% gasto' : ''}</div></div>` : ''}`;
   }
 
@@ -375,6 +386,8 @@ function rxEmitirRelatorio() {
   const lucro = (contratos + extras) - custo;
   const caixa = recebido - custo;
   const aReceber = reais.reduce((s, x) => s + x.aReceber, 0);
+  const excedenteContrato = reais.reduce((s, x) => s + x.excedenteContrato, 0);
+  const excedenteAdicionais = reais.reduce((s, x) => s + x.excedenteAdicionais, 0);
   const kpis = [
     ['Contratos', _rxK(contratos), reais.length + ' obras'],
     ['Serviços extras', _rxK(extras), 'entrou a mais', 'az'],
@@ -382,7 +395,9 @@ function rxEmitirRelatorio() {
     ['Custo', _rxK(custo), 'saiu', 'acc'],
     ['Saldo de fluxo acumulado', _rxK(caixa), 'recebido − custo, acumulado', caixa >= 0 ? 'pos' : 'neg'],
     ['Projeção por contrato', _rxK(lucro), 'contrato + extras − custo realizado', lucro >= 0 ? 'pos' : 'neg'],
-    ['Falta receber', _rxK(aReceber), 'contrato + extras', 'az'],
+    ['Falta receber', _rxK(aReceber), 'por obra · contrato e extras separados', 'az'],
+    ['Recebido acima do contrato cadastrado', _rxFmt(excedenteContrato), 'excedentes por obra · não abatem o falta receber', 'acc'],
+    ...(excedenteAdicionais > 0 ? [['Recebido acima dos adicionais cadastrados', _rxFmt(excedenteAdicionais), 'pagamentos de extras, separados do contrato', 'acc']] : []),
   ];
   const kpiHtml = kpis.map(k => `<div class="kpi"><div class="l">${k[0]}</div><div class="v ${k[3] || ''}">${k[1]}</div><div class="s">${k[2]}</div></div>`).join('');
 

@@ -2,7 +2,7 @@
 const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const {execFileSync}=require('node:child_process');
-const {prepararCopia,arquivoPatch}=require('./fixtures/caixa-contingencia.cjs');
+const {prepararCopia}=require('./fixtures/caixa-contingencia.cjs');
 const raiz=path.resolve(__dirname,'..');
 const id=n=>'00000000-0000-4000-8000-'+String(n).padStart(12,'0');
 const empresa=id(1),banco=id(2),dinheiro=id(3),cp=id(4);
@@ -12,7 +12,7 @@ test('contingência: patch verificável/reversível modifica só cópia e conser
   new vm.Script(copia.source);
   assert.match(copia.source,/Contingência: consultas preservadas/);
   assert.equal(fs.readFileSync(path.join(raiz,'js/edr-v2-caixa-prospectivo.js'),'utf8').replace(/\r\n/g,'\n'),original);
-  const reversao=prepararCopia();execFileSync('git',['apply','-R',arquivoPatch],{cwd:reversao.tmp,windowsHide:true,stdio:'pipe'});
+  const reversao=prepararCopia();execFileSync('git',['apply','-R',reversao.patchLocal],{cwd:reversao.tmp,windowsHide:true,stdio:'pipe'});
   assert.equal(fs.readFileSync(reversao.file,'utf8').replace(/\r\n/g,'\n'),original);
 });
 

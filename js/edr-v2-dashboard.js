@@ -572,6 +572,7 @@ function _dashBuildResumoFinanceiro(porObra) {
 
   const filtroMes = DashboardModule.finFiltro;
   let totalEntradas = 0, totalSaidas = 0, totalReceita = 0, totalMao = 0;
+  let totalFaltaReceber = 0, totalExcedenteContrato = 0, totalExcedenteAdicionais = 0;
 
   // F1: exclui EDR-ESCRITÓRIO (interna) da visão de OBRAS via listarObrasReais — some da lista "Por obra" e dos totais de obras.
   const _idsReais = (window.DREModule && DREModule.listarObrasReais) ? new Set(DREModule.listarObrasReais().map(o => o.id)) : null;
@@ -581,6 +582,9 @@ function _dashBuildResumoFinanceiro(porObra) {
     totalSaidas += d.custo;
     totalReceita += d.receita;
     totalMao += d.mao;
+    totalFaltaReceber += d.faltaReceber;
+    totalExcedenteContrato += d.excedenteContrato;
+    totalExcedenteAdicionais += d.excedenteAdicionais;
     return d;
   }).filter(d => d.custo > 0 || d.entradas > 0 || (!filtroMes && d.vv > 0));
 
@@ -624,11 +628,14 @@ function _dashBuildResumoFinanceiro(porObra) {
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:14px;">
       ${cardG('trending_up', filtroMes ? 'RECEBIDO NO MES' : 'RECEBIDO', totalEntradas, 'var(--success)', subEntradas)}
       ${cardG('trending_down', filtroMes ? 'APLICADO NO MES' : 'APLICADO NAS OBRAS', totalSaidas, 'var(--danger)', subSaidas)}
-      ${filtroMes ? cardG('account_balance', 'DISPONIVEL NO MES', saldoGeral, saldoGeral >= 0 ? 'var(--success)' : 'var(--danger)', 'Recebido - Aplicado no periodo') : cardG('account_balance_wallet', 'A RECEBER DA CARTEIRA', totalReceita - totalEntradas, '#3b82f6', 'Carteira: ' + _dashFmtR(totalReceita))}
+      ${filtroMes ? cardG('account_balance', 'DISPONIVEL NO MES', saldoGeral, saldoGeral >= 0 ? 'var(--success)' : 'var(--danger)', 'Recebido - Aplicado no periodo') : cardG('account_balance_wallet', 'FALTA RECEBER', totalFaltaReceber, '#3b82f6', 'Carteira: ' + _dashFmtR(totalReceita) + ' · saldos por obra')}
+      ${filtroMes ? '' : cardG('payments', 'RECEBIDO ACIMA DO CONTRATO CADASTRADO', totalExcedenteContrato, 'var(--warning)', 'Repasses acima do valor de venda, por obra')}
+      ${!filtroMes && totalExcedenteAdicionais > 0 ? cardG('payments', 'RECEBIDO ACIMA DOS ADICIONAIS CADASTRADOS', totalExcedenteAdicionais, 'var(--warning)', 'Pagamentos de adicionais, separados do contrato') : ''}
     </div>`;
 
   // Barra progresso (modo geral)
   if (!filtroMes) {
+    html += '<div style="font-size:11px;color:var(--text-tertiary);margin-bottom:14px;font-family:Inter,sans-serif;">Falta receber soma os saldos positivos de contrato e adicionais de cada obra. Excedentes não abatem esses saldos.</div>';
     html += `<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:14px;">
       <div style="font-size:10px;color:var(--text-tertiary);font-weight:700;letter-spacing:1px;margin-bottom:8px;font-family:'Space Grotesk',monospace;">RECEBIDO vs CARTEIRA</div>
       <div style="height:10px;background:var(--border);border-radius:5px;overflow:hidden;">
@@ -682,6 +689,9 @@ function _dashBuildResumoFinanceiro(porObra) {
         ${filtroMes ? '' : '<div><div style="font-size:9px;color:var(--text-tertiary);font-weight:700;letter-spacing:0.5px;margin-bottom:2px;font-family:\'Space Grotesk\',monospace;">A RECEBER</div><div style="font-size:13px;font-weight:800;color:#3b82f6;font-family:\'Space Grotesk\',monospace;">' + _dashFmtR(o.faltaReceber, true) + '</div></div>'}
         <div><div style="font-size:9px;color:var(--text-tertiary);font-weight:700;letter-spacing:0.5px;margin-bottom:2px;font-family:'Space Grotesk',monospace;">SALDO</div><div style="font-size:13px;font-weight:800;color:${corSaldo};font-family:'Space Grotesk',monospace;">${_dashFmtR(o.saldo, true)}</div></div>
       </div>
+      ${!filtroMes && (o.adds.valorTotal > 0 || o.adds.totalRecebido > 0) ? `<div style="font-size:10px;color:var(--text-tertiary);margin-bottom:8px;font-family:Inter,sans-serif;">Falta receber: contrato ${_dashFmtR(o.faltaReceberContrato)} · adicionais ${_dashFmtR(o.faltaReceberAdicionais)}</div>` : ''}
+      ${!filtroMes && o.excedenteContrato > 0 ? `<div style="font-size:10px;color:var(--text-tertiary);margin-bottom:8px;font-family:Inter,sans-serif;">Recebido acima do contrato cadastrado: <strong>${_dashFmtR(o.excedenteContrato)}</strong></div>` : ''}
+      ${!filtroMes && o.excedenteAdicionais > 0 ? `<div style="font-size:10px;color:var(--text-tertiary);margin-bottom:8px;font-family:Inter,sans-serif;">Recebido acima dos adicionais cadastrados: <strong>${_dashFmtR(o.excedenteAdicionais)}</strong></div>` : ''}
       ${filtroMes ? '' : '<div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden;"><div style="height:100%;width:' + Math.min(o.pctReceb, 100) + '%;background:linear-gradient(90deg,#2D6A4F,rgba(45,106,79,0.6));border-radius:3px;transition:width .5s;"></div></div>'}
     </div>`;
   });
@@ -715,13 +725,20 @@ function _dashFinCalcObra(o, filtroMes) {
     adds = typeof getAdicionaisObra === 'function' ? getAdicionaisObra(o.id) : { valorTotal: 0, totalRecebido: 0 };
   }
   const vv = Number(o.valor_venda || 0);
-  const entradas = receb + (adds?.totalRecebido || 0);
-  const receita = vv + (adds?.valorTotal || 0);
-  const faltaReceber = filtroMes ? 0 : (receita - entradas);
+  const recebAdicionais = Number(adds?.totalRecebido || 0);
+  const valorAdicionais = Number(adds?.valorTotal || 0);
+  const entradas = receb + recebAdicionais;
+  const receita = vv + valorAdicionais;
+  // Mesma base do Raio X: contrato e adicionais por obra, sem compensar excedentes.
+  const faltaReceberContrato = filtroMes || vv <= 0 ? 0 : Math.max(0, vv - receb);
+  const faltaReceberAdicionais = filtroMes ? 0 : Math.max(0, valorAdicionais - recebAdicionais);
+  const faltaReceber = faltaReceberContrato + faltaReceberAdicionais;
+  const excedenteContrato = filtroMes ? 0 : Math.max(0, receb - vv);
+  const excedenteAdicionais = filtroMes ? 0 : Math.max(0, recebAdicionais - valorAdicionais);
   const saldo = entradas - custo;
   // pctReceb não faz sentido no modo mensal (entradas do mês / receita total da obra) — vira null pra UI esconder
   const pctReceb = filtroMes ? null : (receita > 0 ? (entradas / receita * 100) : 0);
-  return { ...o, nome: o.nome, id: o.id, vv, custo, receb, entradas, receita, faltaReceber, saldo, mao, pctReceb, adds };
+  return { ...o, nome: o.nome, id: o.id, vv, custo, receb, entradas, receita, faltaReceber, faltaReceberContrato, faltaReceberAdicionais, excedenteContrato, excedenteAdicionais, saldo, mao, pctReceb, adds };
 }
 
 // ── RENDER PRINCIPAL ─────────────────────────────────────────
@@ -746,6 +763,7 @@ function renderDashboard() {
   const el = document.getElementById('dash-admin-content');
   console.log('[DASH] dash-admin-content:', !!el, 'obras:', obras.length, 'lanc:', lancamentos.length);
   if (!el) return;
+  if (typeof FinanceiroVisaoUI !== 'undefined') { FinanceiroVisaoUI.montar('dashboard', el); return; }
 
   // Skeleton instantaneo
   el.innerHTML = '<div class="skeleton-block" style="height:120px;border-radius:16px;margin-bottom:12px;"></div>'.repeat(4);
@@ -935,6 +953,7 @@ function _dashMobileSwipeInit() {
 // ── REGISTER ─────────────────────────────────────────────────
 if (typeof viewRegistry !== 'undefined') {
   viewRegistry.register('dashboard', async () => {
+    if (typeof FinanceiroVisaoUI !== 'undefined' && typeof usuarioAtual !== 'undefined' && usuarioAtual?.perfil === 'admin') { renderDashboard(); return; }
     await loadAgendaNotas();
     renderDashboard();
   });

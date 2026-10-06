@@ -22,7 +22,7 @@ assert.match(notas, /rpc !== 'RPC_AUSENTE'/);
 // Financeiro e DRE nunca criam/contam custo duplicado de NF vinculada por UUID.
 assert.match(financeiro, /!conta\.nota_id && !conta\.nota_ref/);
 assert.match(dre, /c\.tipo === 'despesa_operacional_nf'/);
-assert.match(dre, /r\.filter\(_contaAdminEntraDRE\)/);
+assert.match(dre, /r\.filter\(c => _contaAdminEntraDRE\(c\)\)/);
 
 // A migration protege novas distribuições e executa exclusão no servidor.
 assert.match(sql, /foreign key \(lancamento_id\)[\s\S]*references public\.lancamentos\(id\)[\s\S]*not valid/i);
