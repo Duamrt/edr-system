@@ -1,6 +1,6 @@
 # Caixa prospectivo — roteiro de homologação e implantação
 
-Preparado em 06/10/2026 em cópia isolada. A homologação local foi concluída: Auth/PostgREST real 15/15, interface com RPC real 1/1, recuperação sintética 10/10, contingência Chromium 5/5 e regressão integral 279 PASS/0 FAIL. Dois grupos opcionais da regressão foram executados separadamente com sucesso. A revisão técnica aprovou a DDL aditiva vazia de SHA-256 `8fe4dc1cff2b09429e7d7f6959d1bb1396c3693fdad49b310dd630fa5cca167a`. A autorização de Duam para migração/publicação, condicionada à homologação, tem seus gates técnicos cumpridos. O registro abaixo distingue execução real de preparação; abertura real continua pendente de autorização própria.
+Preparado em 06/10/2026 em cópia isolada. A homologação local foi concluída: Auth/PostgREST real 15/15, interface com RPC real 1/1, recuperação sintética 10/10, contingência Chromium 5/5 e regressão integral 279 PASS/0 FAIL. Dois grupos opcionais da regressão foram executados separadamente com sucesso. A revisão técnica aprovou a DDL aditiva vazia de SHA-256 `8fe4dc1cff2b09429e7d7f6959d1bb1396c3693fdad49b310dd630fa5cca167a`. Os gates técnicos da autorização condicional foram cumpridos. A aplicação de produção foi rejeitada pela revisão automática por falta de aprovação direta para o projeto exato; veja o [bloqueio e liberação necessária](evidencias-caixa/2026-10-06-migracao-producao-bloqueada.md). O registro abaixo distingue execução real de preparação; abertura real continua pendente de autorização própria.
 
 ## Versões e controle da execução
 
@@ -8,7 +8,7 @@ Preparado em 06/10/2026 em cópia isolada. A homologação local foi concluída:
 | --- | --- |
 | Repositório | `Duamrt/edr-system` |
 | Base revisada | `7ace6ac5295790acf8b7295dd52c07cc53a92614` |
-| Branch da preparação local | `local/caixa-prospectivo`; não é a branch de deploy |
+| Branch local | `dev` na cópia isolada; `main` local preparada; refs remotas preservadas em `7ace6ac` |
 | Commit novo da funcionalidade | **PENDENTE** — preencher SHA completo após congelar/revisar o pacote |
 | Commit/build de publicação | **PENDENTE** — preencher após execução autorizada de `deploy.sh` |
 | Cache observado na cópia | Scripts `?v=10051611`; SW `edr-system-v20261005161158`; não são a versão futura |
@@ -16,8 +16,8 @@ Preparado em 06/10/2026 em cópia isolada. A homologação local foi concluída:
 | Ambiente/projeto de homologação | Stack local `edr-caixa-qa-20261006`, pasta irmã `caixa-auth-local`, sem `project-ref`; Auth/PostgREST reais e dados/identidades sintéticos |
 | Resultado Auth/PostgREST local real | **APROVADO: 15/15 PASS**, zero falhas/skips, 4281,1055 ms; [log](evidencias-caixa/2026-10-06-auth-local.log). Não equivale a homologar configuração/usuários de produção |
 | Backup e restauração de produção | Oito backups físicos `COMPLETED` comprovados em leitura; restauração física real **NÃO EXECUTADA / NÃO PROVADA** |
-| Migração em produção | **PENDENTE** |
-| Publicação/propagação | **PENDENTE** |
+| Migração em produção | **BLOQUEADA pela revisão automática** - falta aprovação direta para `mepzoxoahpwcvvlymlfh` |
+| Publicação/propagação | **PENDENTE** - depende da migração; nenhum push/deploy executado |
 | Corte e saldos para ativação | **PENDENTE** — declaração privada revisada para o marco escolhido |
 | Ativação e smoke posterior | **PENDENTE** |
 
@@ -150,10 +150,10 @@ Se restauração de obrigações legadas for necessária, preparar plano especí
 | Recuperação sintética | APROVADA LOCALMENTE: 10/10 PASS | PG17.11, dump/restore lógico em banco novo; 12 UUIDs preservados | [Evidência e limites](recuperacao-caixa/backup-restore-local.md), 5765,4716 ms; cluster encerrado |
 | Contingência compatível | APROVADA LOCALMENTE: 5/5 Chromium | Patch/manifesto separado, sem aplicação no frontend normal | [Evidência sanitizada](evidencias-caixa/2026-10-06-contingencia-testes.md) |
 | Fluxo UI com RPC real | APROVADO: 1/1 E2E | Chromium, GoTrue/PostgREST reais e módulo Caixa original | [Evidência e limites](evidencias-caixa/2026-10-06-ui-auth-real-resultado.md): zero falhas/skips |
-| Revisão final/congelamento/commit funcional | Revisão técnica APROVADA; commit a registrar | SQL SHA-256 `8fe4dc1cff2b09429e7d7f6959d1bb1396c3693fdad49b310dd630fa5cca167a` | Apenas pacote Caixa; recebíveis preservados fora |
+| Revisão final/congelamento/commit funcional | CONCLUÍDOS LOCALMENTE | `b70919c809e7bd4480d8be5888cd0d288e7ef368`, SQL hash registrado | Apenas Caixa; pre-deploy check sem BLOCK |
 | Disponibilidade de backups de produção | COMPROVADA EM LEITURA | 8 físicos COMPLETED; último ID `1884527306` | [Metadados](evidencias-caixa/2026-10-06-backups-producao-metadados.json), 09:28:40 UTC |
 | Restauração física real de produção | NÃO EXECUTADA / NÃO PROVADA | Plano aplicável a revisar | Nenhum download ou restore; preservar operações posteriores |
-| Migração de produção | PENDENTE / NÃO EXECUTADA | A preencher | A preencher |
+| Migração de produção | BLOQUEADA / NÃO EXECUTADA | EDR SYSTEM `mepzoxoahpwcvvlymlfh` | [Rejeição automática e liberação](evidencias-caixa/2026-10-06-migracao-producao-bloqueada.md), 09:52:50 UTC |
 | Deploy/Pages/propagação | PENDENTE / NÃO EXECUTADO | Pages atual legado `main`/raiz, build `7ace6ac` | A preencher para o novo pacote |
 | Corte/saldos e abertura real | PENDENTE / NÃO EXECUTADA | Declaração privada e tenant autorizados | Não inferir foto de 05/10 como saldo atual |
 | Smoke pós-publicação/ativação | PENDENTE | A preencher | A preencher |
