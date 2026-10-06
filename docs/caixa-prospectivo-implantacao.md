@@ -1,6 +1,6 @@
 # Caixa prospectivo — roteiro de homologação e implantação
 
-Preparado em 06/10/2026 em cópia isolada. A homologação local foi concluída: Auth/PostgREST real 15/15, interface com RPC real 1/1, recuperação sintética 10/10, contingência Chromium 5/5 e regressão integral 279 PASS/0 FAIL. Dois grupos opcionais da regressão foram executados separadamente com sucesso. A revisão técnica aprovou a DDL aditiva vazia de SHA-256 `8fe4dc1cff2b09429e7d7f6959d1bb1396c3693fdad49b310dd630fa5cca167a`. Os gates técnicos foram cumpridos. Após aprovação direta do alvo por Duam às 10:39:07 UTC, a repetição única foi aceita e a migração concluiu às 10:42:27 UTC. Consulte o [registro efetivo de implantação](evidencias-caixa/2026-10-06-implantacao-execucao.md). Publicação está sendo preparada; abertura real permanece separada.
+Preparado em 06/10/2026 em cópia isolada. A homologação local foi concluída: Auth/PostgREST real 15/15, interface com RPC real 1/1, recuperação sintética 10/10, contingência Chromium 5/5 e regressão integral 279 PASS/0 FAIL. Dois grupos opcionais da regressão foram executados separadamente com sucesso. A revisão técnica aprovou a DDL aditiva vazia de SHA-256 `8fe4dc1cff2b09429e7d7f6959d1bb1396c3693fdad49b310dd630fa5cca167a`. Os gates técnicos foram cumpridos. Após aprovação direta do alvo por Duam às 10:39:07 UTC, a repetição única foi aceita e a migração concluiu às 10:42:27 UTC. Consulte o [registro efetivo de implantação](evidencias-caixa/2026-10-06-implantacao-execucao.md). Publicação NÃO EXECUTADA: o revisor automático rejeitou a execução do `deploy.sh` antes de criar o processo, por não reconhecer a aprovação delegada como mensagem confiável no contexto desse comando. A [negativa de publicação](evidencias-caixa/2026-10-06-publicacao-bloqueada.md) foi registrada; nenhuma alternativa foi usada. Abertura real permanece separada.
 
 ## Versões e controle da execução
 
@@ -12,12 +12,12 @@ Preparado em 06/10/2026 em cópia isolada. A homologação local foi concluída:
 | Commit novo da funcionalidade | `b70919c809e7bd4480d8be5888cd0d288e7ef368`; pacote retomado `0325011dea1c65f416209d420ed26db94d4f2162` |
 | Commit/build de publicação | **PENDENTE** — preencher após execução autorizada de `deploy.sh` |
 | Cache observado na cópia | Scripts `?v=10051611`; SW `edr-system-v20261005161158`; não são a versão futura |
-| Migração local revisada | `sql/caixa-prospectivo-DRAFT.sql`; SHA-256 `8fe4dc1cff2b09429e7d7f6959d1bb1396c3693fdad49b310dd630fa5cca167a`; aplicada somente à stack QA local |
+| Migração local revisada | `sql/caixa-prospectivo-DRAFT.sql`; SHA-256 `8fe4dc1cff2b09429e7d7f6959d1bb1396c3693fdad49b310dd630fa5cca167a`; aplicada em QA e em produção como `20261006104227`, com quatro tabelas vazias verificadas |
 | Ambiente/projeto de homologação | Stack local `edr-caixa-qa-20261006`, pasta irmã `caixa-auth-local`, sem `project-ref`; Auth/PostgREST reais e dados/identidades sintéticos |
 | Resultado Auth/PostgREST local real | **APROVADO: 15/15 PASS**, zero falhas/skips, 4281,1055 ms; [log](evidencias-caixa/2026-10-06-auth-local.log). Não equivale a homologar configuração/usuários de produção |
 | Backup e restauração de produção | Oito backups físicos `COMPLETED` comprovados em leitura; restauração física real **NÃO EXECUTADA / NÃO PROVADA** |
 | Migração em produção | CONCLUÍDA: `20261006104227`, 10:42:27 UTC; quatro tabelas vazias e duas RPCs verificadas |
-| Publicação/propagação | **PENDENTE** - depende da migração; nenhum push/deploy executado |
+| Publicação/propagação | **BLOQUEADA pela revisão automática** do comando; nenhum push/deploy executado |
 | Corte e saldos para ativação | **PENDENTE** — declaração privada revisada para o marco escolhido |
 | Ativação e smoke posterior | **PENDENTE** |
 
@@ -25,14 +25,14 @@ Antes de qualquer execução, completar os campos com data/hora/fuso, alvo, SHA 
 
 ## Estado atual e histórico da autorização
 
-As informações remotas e da stack foram comunicadas pela tarefa principal em 06/10/2026; esta subetapa documental não executou consultas remotas nem operações de infraestrutura.
+A tabela reúne o histórico de homologação e as verificações efetivas de 06/10/2026. O preflight inicial é preservado como histórico; o registro de execução confirma a migração de 10:42:27 UTC e a negativa posterior da publicação, antes da criação do processo.
 
 | Verificação | Resultado observado | Efeito sobre a implantação |
 | --- | --- | --- |
 | Referências do repositório | `origin/dev` e `origin/main` em `7ace6ac5295790acf8b7295dd52c07cc53a92614`. | Funcionalidade nova não publicada; reconferir os SHAs na execução futura. |
-| Destino configurado | Supabase `mepzoxoahpwcvvlymlfh`; CNAME `sistema.edreng.com.br`. | Produção existente; não foi alvo de migração ou ensaio mutante. |
+| Destino configurado | Supabase `mepzoxoahpwcvvlymlfh`; CNAME `sistema.edreng.com.br`. | Migração aditiva aplicada às 10:42:27 UTC; nenhum ensaio financeiro mutante ou abertura real executado. |
 | PostgreSQL existente | 17.6; leitura como `postgres`, `auth.uid()` nulo e sem claims. | Não comprova login JWT, RPC por usuário ou isolamento ponta a ponta. |
-| Schema de produção | Objetos `caixa_*` ausentes; pré-requisitos de `contas_pagar` presentes; `audit_contas_pagar` chama `fn_audit_log`. | Migração de produção não aplicada; metadados subsidiaram o bootstrap sintético local. |
+| Schema de produção | Preflight: objetos `caixa_*` ausentes. Pós-migração: quatro tabelas RLS vazias e duas RPCs verificadas; pré-requisitos/auditoria legados preservados. | Migração `20261006104227` concluída; [verificação](evidencias-caixa/2026-10-06-migracao-producao-verificacao.json). |
 | Ambiente remoto isolado | EDR com somente branch `main`; outros projetos não identificados como staging do EDR. | Nenhuma branch remota criada; não usar outro projeto por suposição. |
 | Bloqueio local inicial, histórico | Docker engine indisponível e CLI não localizada antes da autorização específica. | Superado pela preparação local autorizada descrita abaixo. |
 | Autorização específica | Duam respondeu **“SIM.EU AUTORIZO”**, em 06/10/2026 às **08:58:37 UTC**. | Autoriza iniciar Docker, instalar CLI e restringir os dois RPCs/quatro policies novos a admins ativos; não libera produção/abertura/deploy antes da homologação. |
@@ -44,7 +44,7 @@ As informações remotas e da stack foram comunicadas pela tarefa principal em 0
 
 **Histórico da negativa:** o revisor automático rejeitou inicialmente a edição de autorização por ser mudança de segurança sem consentimento suficiente. O patch não foi aplicado naquela tentativa nem a rejeição foi contornada. A confirmação específica de Duam às 08:58:37 UTC antecedeu sua aplicação local e os novos testes. Os [metadados e bloqueios](evidencias-caixa/2026-10-06-bloqueios.md) preservam esse registro; os [dados da stack](evidencias-caixa/2026-10-06-stack-local.md) registram a preparação posterior.
 
-**GO técnico para migração aditiva vazia e publicação:** Auth/RLS real, UI com RPC real, recuperação, contingência e regressão aprovados. Preflight de produção confirmou helpers/trigger e owners iguais ao baseline homologado, quatro relações legadas com RLS e novos objetos ausentes. Backup físico mais recente disponível foi confirmado. Nenhuma abertura, seed ou movimento financeiro real integra a migração. Aplicação e publicação só serão registradas após resultados verificáveis; autorização de abertura permanece separada.
+**GO técnico e resultado efetivo:** Auth/RLS real, UI com RPC real, recuperação, contingência e regressão aprovados. Preflight de produção confirmou helpers/trigger e owners iguais ao baseline homologado e backup físico disponível. A migração aditiva foi aceita às 10:42:27 UTC; as quatro tabelas permanecem vazias e o catálogo legado comparado permaneceu igual. A publicação foi rejeitada pelo revisor automático antes da execução do script; não houve push, versão nova de cache ou build. Abertura, seed e movimento financeiro real permanecem não executados; a abertura requer declaração específica.
 
 ### Stack local aplicada e limites
 
@@ -87,11 +87,11 @@ Antes da ativação e durante operação, preservar também `caixa_contas`, `cai
 
 1. Registrar a autorização específica de 08:58:37 UTC e a correção já aplicada aos dois RPCs/quatro policies. Os 20 PGlite, 8 nativos e 38 UI aprovados, e a regressão integral 279 PASS/0 FAIL, dois grupos reais executados separadamente, são evidência local; o [ensaio Auth real](evidencias-caixa/2026-10-06-auth-local.log) também concluiu 15/15 PASS. Congelar o pacote após revisão final, preencher SHA funcional e reconferir hash da migração. Preservar recebíveis e checkouts alheios.
 2. Conferir a stack QA identificada, isolamento, bootstrap mínimo, versões, owners/grants/RLS/triggers e perfis sintéticos. A stack já existe; não repetir preparo ou instalar runtime por suposição. Conservar o [ensaio de recuperação aprovado](recuperacao-caixa/backup-restore-local.md), 10/10 PASS, com seus limites: PG17.11, banco novo no mesmo cluster, roles não recriadas em outro cluster e UID simulado por GUC, sem Auth real nesse ensaio nem restore físico gerenciado.
-3. A migração de hash registrado já foi aplicada somente à QA local autorizada. Conservar a evidência dos objetos e do bootstrap sem abertura; não reaplicá-la cegamente nem inferir migração de produção. O SQL não contém seed de abertura ou valores privados.
-4. Conservar o [reensaio Auth/PostgREST aprovado](evidencias-caixa/2026-10-06-auth-local.log), com login real e dados sintéticos: persistência, parciais, transferência, cancelamento, reenvio/HTTP simultâneo, erros, corte temporal e preservação de DRE/estoque/folha/saldo manual. O primeiro erro do harness foi superado pela execução final. Concluir separadamente o fluxo UI com RPC real e sua evidência, sem usar produção.
+3. A migração de hash registrado foi homologada em QA e aplicada em produção como `20261006104227` às 10:42:27 UTC. Conservar as evidências distintas dos dois ambientes; não reaplicar a migração. O SQL não contém seed de abertura ou valores privados.
+4. Conservar o [reensaio Auth/PostgREST aprovado](evidencias-caixa/2026-10-06-auth-local.log), com login real e dados sintéticos: persistência, parciais, transferência, cancelamento, reenvio/HTTP simultâneo, erros, corte temporal e preservação de DRE/estoque/folha/saldo manual. O primeiro erro do harness foi superado pela execução final. Conservar o fluxo UI com RPC real aprovado separadamente, 1/1 E2E em Chromium, e sua evidência sintética; não usar produção para ensaios financeiros.
 5. Registrar log final, conclusão efetiva, artefatos, limitações e revisão de recuperação. A disponibilidade dos backups físicos foi comprovada; conferir o backup final e plano de restauração aplicável, sem restore global nem perda de operações. Se faltar requisito material, manter produção/publicação/ativação pendentes; não substituir resultado por aprovação local nem contornar negativas.
-6. Cumprida a condição e confirmado o alvo autorizado por Duam, obter/verificar o backup final e aplicar a mesma migração em produção antes do frontend. Registrar versão/hash, operador, data/hora e resultado. Conferir contrato das RPCs e grants em leitura; não declarar abertura nessa etapa.
-7. Publicar pelo `deploy.sh` em `dev` limpa, usando Bash, Git, Node, sed e awk disponíveis no ambiente de publicação. Registrar SHA funcional, SHA de cache, versão emitida e resultado dos pushes. Conferir Pages/job remoto e propagação dos arquivos; o texto de sucesso do script não substitui a leitura do build servido.
+6. CONCLUÍDA: backup final reconfirmado e migração `20261006104227` aplicada às 10:42:27 UTC; owner, permissões, corpos das RPCs, quatro policies e contagens vazias verificados em leitura. Não repetir a DDL nem declarar abertura nessa etapa.
+7. BLOQUEADA: a tentativa do `deploy.sh` foi rejeitada antes da execução; nenhuma rota alternativa foi usada. Quando houver aprovação reconhecida pelo revisor para este comando, publicar pelo `deploy.sh` em `dev` limpa, usando Bash, Git, Node, sed e awk disponíveis no ambiente de publicação. Registrar SHA funcional, SHA de cache, versão emitida e resultado dos pushes. Conferir Pages/job remoto e propagação dos arquivos; o texto de sucesso do script não substitui a leitura do build servido.
 8. Executar o smoke de leitura pós-publicação em sessão própria de validação, sem usar a sessão do usuário nem escrever dados financeiros. Até a ativação, a tela deve pedir abertura e não inventar saldo atual usando histórico ou localStorage.
 9. Ativar somente após autorização específica da declaração privada de abertura e do tenant, além da revisão do marco/saldos por conta e do procedimento operacional descrito abaixo. A autorização de migração/publicação não aprova automaticamente gravação da abertura real. Após essa autorização, registrar abertura uma vez para a empresa expressamente identificada, conservando recibo e conferência. Não habilitar outro tenant por suposição.
 10. Registrar evidências finais e o acompanhamento/rollback escolhido. Não marcar nenhuma etapa como executada sem resultado verificável.

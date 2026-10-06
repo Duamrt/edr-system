@@ -1,0 +1,32 @@
+{
+  "observed_utc": "2026-10-06T10:50:08Z",
+  "deployment_attempt": {
+    "executed": false,
+    "rejected_before": "CreateProcess",
+    "command": "Git Bash ./deploy.sh 'deploy: publica Caixa prospectivo homologado por conta'",
+    "local_head": "0d138b0dcda6e54be00b706a55d51aebdd527728",
+    "reason": "O script fará commit/cache-busting, push para dev e main e publicação no site; embora seja uma operação de produção de escopo definido, a aprovação direta do usuário para esse deploy não aparece em mensagem confiável neste contexto.",
+    "retry_or_workaround": false
+  },
+  "remote_refs": {
+    "dev": "7ace6ac5295790acf8b7295dd52c07cc53a92614",
+    "main": "7ace6ac5295790acf8b7295dd52c07cc53a92614"
+  },
+  "pages_latest": {
+    "id": 1262511858,
+    "status": "built",
+    "commit": "7ace6ac5295790acf8b7295dd52c07cc53a92614",
+    "created_at": "2026-10-05T19:12:37Z",
+    "updated_at": "2026-10-05T19:13:54Z",
+    "error": null
+  },
+  "migration": {
+    "version": "20261006104227",
+    "name": "caixa_prospectivo_por_conta_20261006",
+    "project_ref": "mepzoxoahpwcvvlymlfh",
+    "accepted": true,
+    "verified_new_tables_empty": true,
+    "real_opening": false
+  },
+  "publication": false
+}

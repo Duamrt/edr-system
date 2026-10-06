@@ -24,11 +24,13 @@ A repetição de `apply_migration` retornou `success: true` às **10:42:27 UTC**
 
 [Metadados e contagens pós-migração](2026-10-06-migracao-producao-verificacao.json), consultados às 10:43:44 UTC. Nenhuma abertura, movimento, obrigação de teste, cobrança ou escrita financeira real foi criada pela tarefa.
 
-O backup físico existente `1884527306`, `COMPLETED` em 06/10/2026 07:44:51.78 UTC, foi reconfirmado imediatamente antes da migração. Nenhum download/restore real ou custo foi gerado.
+O backup físico existente `1884527306`, `COMPLETED` em 06/10/2026 07:44:51.78 UTC, foi reconfirmado imediatamente antes da migração. Nenhum novo serviço ou plano foi contratado, e nenhum download/restore real foi executado.
 
 ## Publicação
 
-Etapa seguinte: commit apenas destas evidências/documentos e execução do `deploy.sh` existente em `dev` limpa na cópia isolada. O script fará cache busting e pushes `dev`/`main`; sua mensagem de sucesso não substitui a verificação de build/SHA/arquivos servidos. Registrar resultados efetivos nesta seção após confirmação.
+NÃO EXECUTADA. Após o commit documental `0d138b0dcda6e54be00b706a55d51aebdd527728`, a tentativa de executar o `deploy.sh` existente na cópia isolada limpa foi rejeitada pelo revisor automático antes de `CreateProcess`. O motivo informado foi não reconhecer a aprovação direta para esse deploy em mensagem confiável no contexto do comando. Nenhum retry, push manual ou outra rota foi usado.
+
+Às 10:50:08 UTC, a leitura de GitHub confirmou `dev` e `main` ainda em `7ace6ac5295790acf8b7295dd52c07cc53a92614`; Pages continua no build anterior, `1262511858`, status `built`, atualizado em 05/10/2026 19:13:54 UTC. Cache/HTML não foram alterados pelo script. A migração já aceita permanece aplicada e vazia. [Negativa e ação bloqueada](2026-10-06-publicacao-bloqueada.md).
 
 ## Limites e abertura
 
