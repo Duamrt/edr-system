@@ -56,13 +56,26 @@ function _labelMes(ym) {
 
 function getContasVencidas() {
   const hoje = hojeISO();
-  return contasPagar.filter(c => c.status === 'pendente' && c.data_vencimento < hoje);
+  if (typeof caixaProspectivoEstado === 'function' && !caixaProspectivoEstado()) return [];
+  return contasPagar.filter(c => c.status === 'pendente' && c.data_vencimento < hoje)
+    .map(c => ({...c, valor: typeof caixaProspectivoRestante === 'function' && c.tipo !== 'reembolso_fornecedor'
+      ? caixaProspectivoRestante(c) : c.valor}));
 }
 
 function renderContasPagar() {
+  if (typeof caixaProspectivoEstado === 'function' && !caixaProspectivoEstado()) {
+    const stats = document.getElementById('contas-stats');
+    const lista = document.getElementById('contas-lista');
+    if (stats) stats.innerHTML = '<p role="alert">Pagamentos persistidos indisponíveis. Recarregue para consultar os valores restantes.</p>';
+    if (lista) lista.innerHTML = '';
+    return;
+  }
   const hoje = hojeISO();
   const mesAtual = hoje.slice(0, 7);
-  const lista = contasPagar.map(c => ({ ...c, _status: _getStatusConta(c) }));
+  const lista = contasPagar.map(c => ({ ...c, _status: _getStatusConta(c),
+    _valorOriginal: c.valor,
+    valor: c.tipo !== 'reembolso_fornecedor' && !['pago','cancelado'].includes(c.status) && typeof caixaProspectivoRestante === 'function'
+      ? caixaProspectivoRestante(c) : c.valor }));
   let filtrada = _contasFiltro ? lista.filter(c => c._status === _contasFiltro) : lista;
   if (_contasMes) filtrada = filtrada.filter(c => _mesConta(c) === _contasMes);
 
@@ -145,6 +158,7 @@ function renderContasPagar() {
             ${obraNome ? `<span>Obra: ${esc(obraNome)}</span>` : ''}
             ${c.nota_ref ? `<span>Ref: ${esc(c.nota_ref)}</span>` : ''}
             ${c.data_pagamento ? `<span>Pago em: ${fmtData(c.data_pagamento)}</span>` : ''}
+            ${Number(c.valor) < Number(c._valorOriginal) ? `<span>Pagamento parcial · original ${fmt(c._valorOriginal)}</span>` : ''}
           </div>
         </div>
         <div style="text-align:right;flex-shrink:0;">
@@ -165,6 +179,9 @@ function renderContasPagar() {
 
 // ── MODAL CONTA ───────────────────────────────────────────────────
 function abrirModalConta(contaId) {
+  if (contaId && typeof caixaProspectivoVinculada === 'function' && caixaProspectivoVinculada(contaId)) {
+    showToast('Conta vinculada ao controle prospectivo. Preserve o registro e consulte os movimentos.'); return;
+  }
   const selObra = document.getElementById('conta-obra');
   if (selObra) {
     selObra.innerHTML = '<option value="">— Nenhuma —</option>' +
@@ -203,6 +220,15 @@ async function salvarConta() {
   const obra_id    = document.getElementById('conta-obra').value || null;
   const nota_ref   = (document.getElementById('conta-nota-ref').value || '').trim();
   const id         = document.getElementById('conta-id').value;
+  if (id) {
+    if (typeof caixaProspectivoPodeAlterarConta !== 'function') {
+      showToast('Controle prospectivo indisponível. Recarregue antes de alterar a obrigação.'); return;
+    }
+    if (!await caixaProspectivoPodeAlterarConta(id)) return;
+  }
+  if (id && typeof caixaProspectivoVinculada === 'function' && caixaProspectivoVinculada(id)) {
+    showToast('Conta vinculada ao controle prospectivo. Preserve o valor e consulte os movimentos.'); return;
+  }
 
   if (!fornecedor) { showToast('Informe o fornecedor.'); return; }
   if (valor <= 0)  { showToast('Informe o valor.'); return; }
@@ -236,6 +262,13 @@ async function salvarConta() {
 async function marcarComoPago(contaId) {
   const conta = contasPagar.find(c => c.id === contaId);
   const ehReembolso = conta?.tipo === 'reembolso_fornecedor';
+  if (!ehReembolso) {
+    if (typeof caixaProspectivoAbrir !== 'function') {
+      showToast('Controle prospectivo indisponível. Recarregue antes de registrar o pagamento.'); return;
+    }
+    await caixaProspectivoAbrir('pagamento', contaId);
+    return;
+  }
   if (!confirm(ehReembolso ? 'Confirma que o reembolso do fornecedor foi recebido?' : 'Confirma pagamento desta conta?')) return;
   try {
     // 1) Marcar a conta como paga — checar retorno (sbPatch: objeto=persistiu / undefined=0 linhas / null=erro HTTP).
@@ -256,7 +289,7 @@ async function marcarComoPago(contaId) {
 
     // Reembolso é entrada de caixa, portanto nunca gera lançamento de custo.
     if (ehReembolso) {
-      showToast('Reembolso confirmado como recebido');
+      showToast('Reembolso confirmado. Registre a entrada efetiva por conta no Caixa.', 6000);
       renderContasPagar();
       if (typeof renderDashboard === 'function') renderDashboard();
       return;
@@ -304,6 +337,13 @@ async function marcarComoPago(contaId) {
 }
 
 async function excluirConta(contaId) {
+  if (typeof caixaProspectivoPodeAlterarConta !== 'function') {
+    showToast('Controle prospectivo indisponível. Recarregue antes de excluir a obrigação.'); return;
+  }
+  if (!await caixaProspectivoPodeAlterarConta(contaId)) return;
+  if (typeof caixaProspectivoVinculada === 'function' && caixaProspectivoVinculada(contaId)) {
+    showToast('Conta vinculada ao controle prospectivo. Cancele o movimento no Caixa; preserve a obrigação.'); return;
+  }
   if (!await confirmar('Excluir esta conta? Essa acao nao pode ser desfeita.')) return;
   const ok = await sbDelete('contas_pagar', `?id=eq.${contaId}`);
   if (!ok) { showToast('Erro ao excluir conta. Tente novamente.', 5000); return; }
@@ -428,6 +468,14 @@ function _calcMediaSaidaSemanal() {
 }
 
 async function renderCaixa() {
+  const el = document.getElementById('caixa-content');
+  if (!el) return;
+  if (typeof caixaProspectivoRender === 'function') return caixaProspectivoRender(el);
+  el.innerHTML = '<p role="alert">Controle prospectivo indisponível. Recarregue a página.</p>';
+}
+
+// Cálculo legado preservado para referência; não alimenta a view operacional.
+async function renderCaixaLegado() {
   const el = document.getElementById('caixa-content');
   if (!el) return;
 
@@ -689,6 +737,7 @@ async function excluirProjecao(id) {
 if (typeof viewRegistry !== 'undefined') {
   viewRegistry.register('contas-pagar', async () => {
     if (!contasPagar.length) await _loadContasPagar();
+    if (typeof caixaProspectivoCarregar === 'function') await caixaProspectivoCarregar();
     renderContasPagar();
   });
 

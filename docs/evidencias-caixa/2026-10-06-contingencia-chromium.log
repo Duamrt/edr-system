@@ -1,0 +1,14 @@
+CONTINGENCIA Chromium 154.0.8037.93
+Ô£ö conting├¬ncia: patch verific├ível/revers├¡vel modifica s├│ c├│pia e conserva frontend normal (285.6573ms)
+Ô£ö conting├¬ncia Chromium: leitura/auditoria e restante preservados; bot├Áes e chamadas de muta├º├úo recusados (373.3689ms)
+Ô£ö conting├¬ncia Chromium: edi├º├úo/exclus├úo vinculadas continuam bloqueadas e alertas usam parcial confirmado (175.5936ms)
+Ô£ö conting├¬ncia Chromium: pedido incerto mant├®m UUID/journal sem reenvio durante pausa (186.4279ms)
+Ô£ö conting├¬ncia Chromium: falha de leitura n├úo recupera saldo legado; sem abertura n├úo permite declarar (362.3916ms)
+Ôä╣ tests 5
+Ôä╣ suites 0
+Ôä╣ pass 5
+Ôä╣ fail 0
+Ôä╣ cancelled 0
+Ôä╣ skipped 0
+Ôä╣ todo 0
+Ôä╣ duration_ms 1854.6919

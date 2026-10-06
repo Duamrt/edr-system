@@ -171,30 +171,19 @@ function _somarDias(isoDate, dias) {
 // ─────────────────────────────────────────────────────────────────
 async function _alertCaixa(alertas, hoje) {
   try {
-    const entRepasses   = (Array.isArray(repassesCef) ? repassesCef : []).reduce((s, r) => s + Number(r.valor || 0), 0);
-    const entAdicionais = (Array.isArray(adicionaisPgtos) ? adicionaisPgtos : []).reduce((s, p) => s + Number(p.valor || 0), 0);
-    const saidas        = (Array.isArray(lancamentos) ? lancamentos : []).reduce((s, l) => s + Number(l.total || 0), 0);
-    // contas pagas sem obra (admin expenses)
-    let contasPagas = 0;
-    try {
-      const cp = await sbGet('contas_pagar', '?status=eq.pago&obra_id=is.null&select=valor');
-      contasPagas = Array.isArray(cp) ? cp.reduce((s, c) => s + Number(c.valor || 0), 0) : 0;
-    } catch(e) {}
-    // saldo inicial configurado
-    let saldoInicial = 0;
-    try {
-      const sc = await sbGet('companies', '?id=eq.' + _companyId + '&select=saldo_manual');
-      if (sc && sc[0] && sc[0].saldo_manual !== null && sc[0].saldo_manual !== undefined) {
-        saldoInicial = Number(sc[0].saldo_manual);
-      }
-    } catch(e) {}
-    const saldo = saldoInicial + entRepasses + entAdicionais - saidas - contasPagas;
+    // Saldo vem somente da abertura e dos movimentos efetivos persistidos.
+    // Sem abertura ou leitura confirmada, nao apresentar o calculo historico como saldo atual.
+    if (typeof caixaProspectivoCarregar !== 'function') return;
+    const estado = await caixaProspectivoCarregar();
+    if (!estado || !Array.isArray(estado.contas) || !estado.contas.length ||
+        !Number.isSafeInteger(estado.total_centavos)) return;
+    const saldo = estado.total_centavos / 100;
     if (saldo < 0) {
       alertas.push({
         tipo: 'danger',
         icone: 'account_balance_wallet',
         titulo: 'Fluxo de Caixa Negativo',
-        msg: `Saldo atual: ${fmtR(saldo)}. Revise entradas e saidas.`,
+        msg: `Saldo atual: ${fmtR(saldo)}. Revise movimentos efetivos.`,
         view: 'caixa'
       });
     }
@@ -206,12 +195,29 @@ async function _alertCaixa(alertas, hoje) {
 // ─────────────────────────────────────────────────────────────────
 async function _alertContasPagar(alertas, hoje, em7) {
   try {
-    const contas = await sbGet('contas_pagar', `?status=eq.pendente&select=valor,data_vencimento,descricao`);
-    if (!Array.isArray(contas)) return;
-    const vencidas  = contas.filter(c => c.data_vencimento < hoje);
-    const vencendo  = contas.filter(c => c.data_vencimento >= hoje && c.data_vencimento <= em7);
+    if (typeof caixaProspectivoCarregar !== 'function') return;
+    const estado = await caixaProspectivoCarregar();
+    if (!estado || !Array.isArray(estado.pagamentos) || typeof _companyId === 'undefined' ||
+        estado.company_id !== _companyId) return;
+    const contas = await sbGet('contas_pagar',
+      '?status=eq.pendente&select=id,valor,data_vencimento,descricao,tipo', { throwOnError: true });
+    if (!Array.isArray(contas) || estado.company_id !== _companyId) return;
+    const pagamentos = new Map(estado.pagamentos.map(p => [p.conta_pagar_id, p]));
+    const emAberto = [];
+    for (const conta of contas) {
+      // Reembolso e um recebivel, nao uma obrigacao a pagar.
+      if (String(conta.tipo || '').startsWith('reembolso')) continue;
+      const restante = pagamentos.get(conta.id)?.restante_centavos;
+      // Snapshot ausente/invalido nao autoriza afirmar um total usando o valor integral.
+      if (!Number.isSafeInteger(restante) || restante < 0) return;
+      if (restante > 0) emAberto.push({ ...conta, restante_centavos: restante });
+    }
+    const totalCentavos = emAberto.reduce((s, c) => s + c.restante_centavos, 0);
+    if (!Number.isSafeInteger(totalCentavos)) return;
+    const vencidas  = emAberto.filter(c => c.data_vencimento < hoje);
+    const vencendo  = emAberto.filter(c => c.data_vencimento >= hoje && c.data_vencimento <= em7);
     if (vencidas.length) {
-      const total = vencidas.reduce((s, c) => s + Number(c.valor || 0), 0);
+      const total = vencidas.reduce((s, c) => s + c.restante_centavos, 0) / 100;
       alertas.push({
         tipo: 'danger',
         icone: 'receipt_long',
@@ -221,7 +227,7 @@ async function _alertContasPagar(alertas, hoje, em7) {
       });
     }
     if (vencendo.length) {
-      const total = vencendo.reduce((s, c) => s + Number(c.valor || 0), 0);
+      const total = vencendo.reduce((s, c) => s + c.restante_centavos, 0) / 100;
       alertas.push({
         tipo: 'warning',
         icone: 'schedule',

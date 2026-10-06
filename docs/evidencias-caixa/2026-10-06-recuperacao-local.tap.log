@@ -1,0 +1,73 @@
+TAP version 13
+# RECUPERACAO CAIXA postgres (PostgreSQL) 17.11; 127.0.0.1; evidencias C:\\Users\\Duam Rodrigues\\Documents\\Codex\\2026-10-05\\task-3\\native-pg-caixa-recuperacao\\edr-estoque-pg-HaBeLH
+# Subtest: caixa: dump/restauracao PostgreSQL 17 LOCAL auditavel
+    # Subtest: dataset sintetico cobre ledger, corte, CP e historico auditado
+    ok 1 - dataset sintetico cobre ledger, corte, CP e historico auditado
+      ---
+      duration_ms: 540.5761
+      type: 'test'
+      ...
+    # Subtest: pg_dump custom integral, roles sem senhas, TOC e manifesto SHA-256
+    ok 2 - pg_dump custom integral, roles sem senhas, TOC e manifesto SHA-256
+      ---
+      duration_ms: 301.9639
+      type: 'test'
+      ...
+    # Subtest: pg_restore atomico em banco NOVO preserva dados, schema e owners
+    ok 3 - pg_restore atomico em banco NOVO preserva dados, schema e owners
+      ---
+      duration_ms: 468.3103
+      type: 'test'
+      ...
+    # Subtest: estado, snapshots, datas originais e sentinelas coincidem apos restore
+    ok 4 - estado, snapshots, datas originais e sentinelas coincidem apos restore
+      ---
+      duration_ms: 145.0998
+      type: 'test'
+      ...
+    # Subtest: reenvio de TODOS os 12 UUIDs apos restore nao duplica saldo/recibo/historico
+    ok 5 - reenvio de TODOS os 12 UUIDs apos restore nao duplica saldo/recibo/historico
+      ---
+      duration_ms: 156.5241
+      type: 'test'
+      ...
+    # Subtest: ACL/RLS/functions restauradas mantem isolamento e administrador ativo
+    ok 6 - ACL/RLS/functions restauradas mantem isolamento e administrador ativo
+      ---
+      duration_ms: 525.6648
+      type: 'test'
+      ...
+    # Subtest: dump incompleto falha no hash antes de criar destino; fonte permanece intacta
+    ok 7 - dump incompleto falha no hash antes de criar destino; fonte permanece intacta
+      ---
+      duration_ms: 12.092
+      type: 'test'
+      ...
+    # Subtest: arquivo truncado com TOC legivel falha durante restore e reverte dados parciais
+    ok 8 - arquivo truncado com TOC legivel falha durante restore e reverte dados parciais
+      ---
+      duration_ms: 427.6342
+      type: 'test'
+      ...
+    # Subtest: erro SQL em destino novo faz rollback integral e nunca substitui fonte
+    ok 9 - erro SQL em destino novo faz rollback integral e nunca substitui fonte
+      ---
+      duration_ms: 388.7087
+      type: 'test'
+      ...
+# RECUPERACAO CAIXA: cluster encerrado e confirmado; 9 subtestes aprovados; C:\\Users\\Duam Rodrigues\\Documents\\Codex\\2026-10-05\\task-3\\native-pg-caixa-recuperacao\\edr-estoque-pg-HaBeLH
+    1..9
+ok 1 - caixa: dump/restauracao PostgreSQL 17 LOCAL auditavel
+  ---
+  duration_ms: 5705.79
+  type: 'test'
+  ...
+1..1
+# tests 10
+# suites 0
+# pass 10
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 5765.4716

@@ -1,0 +1,65 @@
+diff --git a/js/edr-v2-caixa-prospectivo.js b/js/edr-v2-caixa-prospectivo.js
+index 1586d19..55e22da 100644
+--- a/js/edr-v2-caixa-prospectivo.js
++++ b/js/edr-v2-caixa-prospectivo.js
+@@ -142,8 +142,9 @@ function _cpFormularioHtml() {
+ function _cpDesenhar(el) {
+   const e = caixaProspectivoEstado();
+   const card = 'background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px;';
++  const aviso = `<div id="cp-contingencia-aviso" role="status" style="${card}"><strong>Contingência: consultas preservadas</strong><p style="margin:8px 0 0;font-size:12px;">Registros e reenvios do controle prospectivo estão temporariamente suspensos. Os pedidos pendentes serão preservados para conferência antes da retomada.</p></div>`;
+   if (!e) {
+-    el.innerHTML = `<div style="${card}" role="alert">${esc(_cpErro || 'Saldo indisponível.')} <button class="btn" onclick="renderCaixa()">Recarregar</button></div>`;
++    el.innerHTML = aviso + `<div style="${card}" role="alert">${esc(_cpErro || 'Saldo indisponível.')} <button class="btn" onclick="renderCaixa()">Recarregar</button></div>`;
+     return;
+   }
+   let html = `<div style="${card}"><h3 style="margin:0 0 8px;font-size:15px;">Banco e dinheiro · controle prospectivo</h3><p style="font-size:12px;color:var(--text-secondary);">Saldo informado no marco + movimentos efetivos posteriores. Obrigações a pagar ficam separadas do disponível.</p><p style="font-size:12px;color:var(--text-secondary);">Registre aqui os recebimentos e pagamentos por conta, inclusive os cadastrados como pagos em outros módulos. Esses cadastros não são importados automaticamente.</p>`;
+@@ -160,7 +161,12 @@ function _cpDesenhar(el) {
+   const nomes = new Map(e.contas.map(c => [c.id,c.nome]));
+   html += `<div style="${card}"><h3 style="font-size:14px;margin:0 0 8px;">Movimentos efetivos</h3>${e.movimentos.map(m => `<div style="border-top:1px solid var(--border);padding:10px 0;${m.cancelado_em?'opacity:.6;':''}"><div>${esc(m.descricao)} · ${esc(m.tipo)} · ${_cpDinheiro(m.valor_centavos)}</div><div style="font-size:12px;color:var(--text-secondary);">${esc(nomes.get(m.conta_id)||'')} ${m.destino_id?' → '+esc(nomes.get(m.destino_id)||''):''} · ${fmtData(m.data_efetiva)} ${esc(m.hora_efetiva||'sem horário')} · ${m.cancelado_em?'Cancelado':m.afeta_saldo?'Movimenta saldo':'Incluído na abertura'} ${!m.cancelado_em ? `<button class="btn" onclick="caixaProspectivoCancelarMovimento('${esc(m.id)}')">Cancelar movimento</button>`:''}</div></div>`).join('') || '<p style="font-size:12px;">Nenhum movimento registrado.</p>'}</div>`;
+   if (typeof projecoesCaixa !== 'undefined') html += `<div style="${card}"><h3 style="font-size:14px;margin:0 0 8px;">Entradas previstas</h3><p style="font-size:12px;">Projeções não integram o saldo disponível.</p>${projecoesCaixa.map(p => `<div style="font-size:12px;padding:5px 0;">${fmtData(p.data_prevista)} · ${esc(p.descricao||p.tipo)} · ${fmt(p.valor)}</div>`).join('')}<button class="btn" onclick="abrirModalProjecao(null)">Adicionar previsão</button></div>`;
+-  el.innerHTML = html;
++  el.innerHTML = aviso + html;
++  el.querySelectorAll('button[onclick]').forEach(botao => {
++    if (/^caixaProspectivo(Abrir|CancelarMovimento|ConferirPendente)\(/.test(botao.getAttribute('onclick') || '')) {
++      botao.disabled = true; botao.title = 'Controle prospectivo temporariamente suspenso.';
++    }
++  });
+ }
+ async function caixaProspectivoRender(el) {
+   el.innerHTML = '<p role="status">Consultando saldo persistido…</p>';
+@@ -179,6 +185,8 @@ async function caixaProspectivoRender(el) {
+   _cpDesenhar(el);
+ }
+ async function caixaProspectivoAbrir(tipo, contaPagarId = null) {
++  // Contingencia revisada: esta copia suspende mutacoes, sem alterar o banco.
++  showToast("Registros e reenvios do controle prospectivo estão temporariamente suspensos. Consultas e auditoria continuam disponíveis."); return;
+   if (_cpEnviando || _cpFormulario?.incerto || _cpCancelamento || _cpLerPendente()) { showToast('Confira o pedido pendente antes de iniciar outro.'); return; }
+   if (!caixaProspectivoPodeOperar()) { showToast('Ação disponível para administradores.'); return; }
+   const ator = usuarioAtual;
+@@ -240,6 +248,8 @@ function _cpCongelar(congelar) {
+   if (cancelar) cancelar.disabled = congelar;
+ }
+ async function caixaProspectivoSalvar() {
++  // Contingencia revisada: esta copia suspende mutacoes, sem alterar o banco.
++  showToast("Registros e reenvios do controle prospectivo estão temporariamente suspensos. Consultas e auditoria continuam disponíveis."); return;
+   if (_cpEnviando || !_cpFormulario) return;
+   if (!caixaProspectivoPodeOperar() || _cpFormulario.company_id!==_companyId || _cpFormulario.ator!==usuarioAtual) { showToast('Sessão mudou. Recarregue antes de salvar.'); return; }
+   const f = _cpFormulario;
+@@ -278,6 +288,8 @@ async function caixaProspectivoSalvar() {
+ }
+ let _cpCancelamento=null;
+ async function caixaProspectivoCancelarMovimento(id) {
++  // Contingencia revisada: esta copia suspende mutacoes, sem alterar o banco.
++  showToast("Registros e reenvios do controle prospectivo estão temporariamente suspensos. Consultas e auditoria continuam disponíveis."); return;
+   if (_cpEnviando || !caixaProspectivoPodeOperar()) return;
+   if (_cpFormulario || (_cpCancelamento && _cpCancelamento.id!==id)) { showToast('Confira o pedido pendente antes de cancelar outro movimento.'); return; }
+   if (!_cpCancelamento) {
+@@ -313,6 +325,8 @@ async function caixaProspectivoCancelarMovimento(id) {
+   if (typeof renderContasPagar==='function') renderContasPagar();
+ }
+ async function caixaProspectivoConferirPendente() {
++  // Contingencia revisada: esta copia suspende mutacoes, sem alterar o banco.
++  showToast("Registros e reenvios do controle prospectivo estão temporariamente suspensos. Consultas e auditoria continuam disponíveis."); return;
+   if (_cpEnviando || !caixaProspectivoPodeOperar()) return;
+   const j=_cpLerPendente();
+   if (!j) return;

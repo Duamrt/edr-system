@@ -1,0 +1,57 @@
+{
+  "project_ref": "mepzoxoahpwcvvlymlfh",
+  "consulta": "supabase CLI 2.119.0 backups list, somente leitura",
+  "consultado_utc": "2026-10-06T09:28:40.1434727Z",
+  "pitr_enabled": false,
+  "walg_enabled": true,
+  "backups": [
+    {
+      "id": 1884527306,
+      "inserted_at": "2026-10-06T07:44:51.78Z",
+      "is_physical_backup": true,
+      "status": "COMPLETED"
+    },
+    {
+      "id": 1875043667,
+      "inserted_at": "2026-10-05T07:49:16.33Z",
+      "is_physical_backup": true,
+      "status": "COMPLETED"
+    },
+    {
+      "id": 1865552561,
+      "inserted_at": "2026-10-04T07:47:53.91Z",
+      "is_physical_backup": true,
+      "status": "COMPLETED"
+    },
+    {
+      "id": 1856073635,
+      "inserted_at": "2026-10-03T07:46:28.014Z",
+      "is_physical_backup": true,
+      "status": "COMPLETED"
+    },
+    {
+      "id": 1846534230,
+      "inserted_at": "2026-10-02T07:44:43.265Z",
+      "is_physical_backup": true,
+      "status": "COMPLETED"
+    },
+    {
+      "id": 1837025205,
+      "inserted_at": "2026-10-01T07:45:49.451Z",
+      "is_physical_backup": true,
+      "status": "COMPLETED"
+    },
+    {
+      "id": 1827474386,
+      "inserted_at": "2026-09-30T07:44:32.503Z",
+      "is_physical_backup": true,
+      "status": "COMPLETED"
+    },
+    {
+      "id": 1817979936,
+      "inserted_at": "2026-09-29T07:45:45.581Z",
+      "is_physical_backup": true,
+      "status": "COMPLETED"
+    }
+  ]
+}

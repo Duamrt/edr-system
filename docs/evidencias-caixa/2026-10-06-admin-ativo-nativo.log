@@ -1,0 +1,25 @@
+CAIXA NATIVO postgres (PostgreSQL) 17.11; listener 127.0.0.1; cluster C:\Users\Duam Rodrigues\Documents\Codex\2026-10-05\task-3\native-pg-caixa\edr-estoque-pg-qHUJOB
+Ô£ö PG nativo: mesmo UUID simult├óneo espera lock e gera um movimento/recibo (520.9945ms)
+Ôä╣ Conexoes independentes: PID 33536 bloqueado por PID 5108
+Ô£ö PG nativo: UUID simult├óneo com payload divergente rejeita sem repetir saldo (502.6514ms)
+Ôä╣ Conexoes independentes: PID 26848 bloqueado por PID 39884
+Ô£ö PG nativo: duas parciais concorrentes n├úo excedem restante da obriga├º├úo (641.1936ms)
+Ôä╣ Conexoes independentes: PID 10300 bloqueado por PID 44496
+Ô£ö PG nativo: duas parciais v├ílidas serializam e quitam somente uma obriga├º├úo (517.0123ms)
+Ôä╣ Conexoes independentes: PID 17892 bloqueado por PID 40356
+Ô£ö PG nativo: cancelar transfer├¬ncia ainda n├úo confirmada espera e neutraliza as duas contas (483.5723ms)
+Ôä╣ Conexoes independentes: PID 40224 bloqueado por PID 32668
+Ô£ö PG nativo: rollback da transfer├¬ncia libera espera; cancelamento n├úo fabrica movimento (501.4096ms)
+Ôä╣ Conexoes independentes: PID 33232 bloqueado por PID 43940
+Ô£ö PG nativo: mesmo cancelamento simult├óneo retorna recibo ├║nico sem neutraliza├º├úo dupla (518.078ms)
+Ôä╣ Conexoes independentes: PID 28812 bloqueado por PID 2932
+Ô£ö PG nativo: rollback aguarda registro concorrente e recusa DROP ap├│s commit da abertura (502.166ms)
+Ôä╣ Conexoes independentes: PID 12780 bloqueado por PID 41872
+Ôä╣ tests 8
+Ôä╣ suites 0
+Ôä╣ pass 8
+Ôä╣ fail 0
+Ôä╣ cancelled 0
+Ôä╣ skipped 0
+Ôä╣ todo 0
+Ôä╣ duration_ms 7925.1409

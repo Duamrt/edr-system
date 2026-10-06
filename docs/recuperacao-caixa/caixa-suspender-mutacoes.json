@@ -1,0 +1,9 @@
+{
+  "versao": 1,
+  "alvo": "js/edr-v2-caixa-prospectivo.js",
+  "normalizacao": "UTF-8; CRLF normalizado para LF antes dos hashes",
+  "base_sha256": "a9b2040ce0c4ebaabdc0f13d26e3b5d92acab63e77129898d0a7ee3738fe80bb",
+  "contingencia_sha256": "53ce76218c0e5d4bd640dd297b4431d70a2a0ba1ce3bc0b3ee393b30e78ab8a5",
+  "patch_sha256": "4f43eda77952e2fbd7c105e81c82370f40c848ff93bd9b19ee67d9cf9f1fb95e",
+  "escopo": "Copia frontend separada: recusa novas mutacoes/reenvios do Caixa; conserva leitura, journal, guards de obrigacoes e alertas. Nao e bloqueio de banco ou de clientes antigos."
+}

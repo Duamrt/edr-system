@@ -1340,7 +1340,7 @@ async function _notasPromptPagamento(notaId, valor, dataRef, obraId, fornecedor,
         });
         if (nova) {
           if (typeof contasPagar !== 'undefined') contasPagar.push(nova);
-          showToast('Saída registrada no financeiro');
+          showToast('Conta marcada paga. Registre a saída efetiva por conta no Caixa.', 6000);
         } else { showToast('Erro ao registrar pagamento. Tente pela tela Financeiro.', 5000); }
       } catch(e) { console.error('[EDR] prompt pagamento:', e); }
     };

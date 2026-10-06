@@ -1,0 +1,26 @@
+ÔûÂ caixa: GoTrue + PostgREST reais na stack LOCAL isolada
+  Ô£ö oito identidades sinteticas criadas e autenticadas pelo GoTrue real (1764.0603ms)
+  Ô£ö sem sessao, anon sem grants, JWT invalido e login incorreto sao negados (217.3275ms)
+  Ô£ö operacional, mestre, visitante, sem empresa e admins false/null nao acessam RPCs (172.0738ms)
+  Ô£ö aberturas imutaveis por tenant e retry real sem duplicar (410.3303ms)
+  Ô£ö corte efetivo e dia sem horario exigem classificacao explicita (120.8244ms)
+  Ô£ö entrada, saida, transferencia e cancelamento por API alteram saldo uma vez (90.6891ms)
+  Ô£ö pagamento parcial/total e cancelamento preservam custo e auditam ator JWT real (223.4879ms)
+  Ô£ö conta ja paga nao duplica e avulsa exige custo confirmado sem criar custo (67.2049ms)
+  Ô£ö as quatro policies isolam duas empresas e negam SELECT a perfis nao autorizados (115.3274ms)
+  Ô£ö DML direto negado nas quatro tabelas mesmo para admin ativo (235.6472ms)
+  Ô£ö argumentos e IDs de outro tenant nao desviam RPC nem vazam recibos (111.6945ms)
+  Ô£ö desativar admin com JWT vivo nega leitura/escrita/retry antes do recibo (267.9805ms)
+  Ô£ö RLS, owner, search_path, grants minimos e Auth sem mocks conferidos no catalogo (84.1125ms)
+  Ô£ö rollback vazio recusa dados novos e mantem API/auditoria sem exclusao (170.1938ms)
+Ô£ö caixa: GoTrue + PostgREST reais na stack LOCAL isolada (4220.3819ms)
+Ôä╣ PostgreSQL LOCAL 17.11; GoTrue/PostgREST reais; endpoints fixados em loopback.
+Ôä╣ Somente dados/identidades sinteticas LOCAL. Senhas/JWT/chaves omitidos. Stack preservada para ensaio separado de recuperacao.
+Ôä╣ tests 15
+Ôä╣ suites 0
+Ôä╣ pass 15
+Ôä╣ fail 0
+Ôä╣ cancelled 0
+Ôä╣ skipped 0
+Ôä╣ todo 0
+Ôä╣ duration_ms 4281.1055

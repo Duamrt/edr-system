@@ -1,0 +1,719 @@
+{
+  "coletado_em_utc": "2026-10-06T08:46:38.486Z",
+  "projeto": "mepzoxoahpwcvvlymlfh",
+  "tipo": "PRECHECK_SOMENTE_LEITURA_NAO_HOMOLOGACAO_AUTH",
+  "referencias_remotas": {
+    "repo": "https://github.com/Duamrt/edr-system",
+    "dev": "7ace6ac5295790acf8b7295dd52c07cc53a92614",
+    "main": "7ace6ac5295790acf8b7295dd52c07cc53a92614",
+    "dominio": "sistema.edreng.com.br"
+  },
+  "limites": [
+    "Consultas de catalogo, sem selecionar dados financeiros/usuarios.",
+    "Conector executa SQL como postgres, auth.uid nulo e sem JWT; não comprova RLS/auth cliente.",
+    "Nenhuma migracao remota, escrita de negocio, mudanca de grants legados ou deploy executado.",
+    "Alvo isolado EDR com auth real e usuarios/sessoes existentes nao identificado."
+  ],
+  "schema": {
+    "columns": [
+      {
+        "udt": "uuid",
+        "name": "id",
+        "type": "uuid",
+        "table": "companies",
+        "default": "gen_random_uuid()",
+        "nullable": "NO"
+      },
+      {
+        "udt": "uuid",
+        "name": "owner_id",
+        "type": "uuid",
+        "table": "companies",
+        "default": null,
+        "nullable": "YES"
+      },
+      {
+        "udt": "text",
+        "name": "name",
+        "type": "text",
+        "table": "companies",
+        "default": null,
+        "nullable": "NO"
+      },
+      {
+        "udt": "text",
+        "name": "slug",
+        "type": "text",
+        "table": "companies",
+        "default": null,
+        "nullable": "NO"
+      },
+      {
+        "udt": "text",
+        "name": "cnpj",
+        "type": "text",
+        "table": "companies",
+        "default": null,
+        "nullable": "YES"
+      },
+      {
+        "udt": "text",
+        "name": "phone",
+        "type": "text",
+        "table": "companies",
+        "default": null,
+        "nullable": "YES"
+      },
+      {
+        "udt": "text",
+        "name": "city",
+        "type": "text",
+        "table": "companies",
+        "default": null,
+        "nullable": "YES"
+      },
+      {
+        "udt": "text",
+        "name": "state",
+        "type": "text",
+        "table": "companies",
+        "default": "'PE'::text",
+        "nullable": "YES"
+      },
+      {
+        "udt": "text",
+        "name": "address",
+        "type": "text",
+        "table": "companies",
+        "default": null,
+        "nullable": "YES"
+      },
+      {
+        "udt": "text",
+        "name": "email_domain",
+        "type": "text",
+        "table": "companies",
+        "default": null,
+        "nullable": "YES"
+      },
+      {
+        "udt": "text",
+        "name": "delivery_base_url",
+        "type": "text",
+        "table": "companies",
+        "default": null,
+        "nullable": "YES"
+      },
+      {
+        "udt": "text",
+        "name": "logo_url",
+        "type": "text",
+        "table": "companies",
+        "default": null,
+        "nullable": "YES"
+      },
+      {
+        "udt": "text",
+        "name": "plan",
+        "type": "text",
+        "table": "companies",
+        "default": "'trial'::text",
+        "nullable": "YES"
+      },
+      {
+        "udt": "timestamptz",
+        "name": "trial_ends_at",
+        "type": "timestamp with time zone",
+        "table": "companies",
+        "default": "(now() + '30 days'::interval)",
+        "nullable": "YES"
+      },
+      {
+        "udt": "timestamptz",
+        "name": "created_at",
+        "type": "timestamp with time zone",
+        "table": "companies",
+        "default": "now()",
+        "nullable": "YES"
+      },
+      {
+        "udt": "text",
+        "name": "notes",
+        "type": "text",
+        "table": "companies",
+        "default": null,
+        "nullable": "YES"
+      },
+      {
+        "udt": "jsonb",
+        "name": "role_permissions",
+        "type": "jsonb",
+        "table": "companies",
+        "default": "'{}'::jsonb",
+        "nullable": "YES"
+      },
+      {
+        "udt": "jsonb",
+        "name": "permissions",
+        "type": "jsonb",
+        "table": "companies",
+        "default": null,
+        "nullable": "YES"
+      },
+      {
+        "udt": "numeric",
+        "name": "saldo_manual",
+        "type": "numeric",
+        "table": "companies",
+        "default": null,
+        "nullable": "YES"
+      },
+      {
+        "udt": "bool",
+        "name": "onboarding_done",
+        "type": "boolean",
+        "table": "companies",
+        "default": "false",
+        "nullable": "YES"
+      },
+      {
+        "udt": "text",
+        "name": "status_pagamento",
+        "type": "text",
+        "table": "companies",
+        "default": "'trial'::text",
+        "nullable": "NO"
+      },
+      {
+        "udt": "int4",
+        "name": "dias_atraso",
+        "type": "integer",
+        "table": "companies",
+        "default": "0",
+        "nullable": "NO"
+      },
+      {
+        "udt": "timestamptz",
+        "name": "bloqueado_em",
+        "type": "timestamp with time zone",
+        "table": "companies",
+        "default": null,
+        "nullable": "YES"
+      },
+      {
+        "udt": "text",
+        "name": "asaas_customer_id",
+        "type": "text",
+        "table": "companies",
+        "default": null,
+        "nullable": "YES"
+      },
+      {
+        "udt": "uuid",
+        "name": "id",
+        "type": "uuid",
+        "table": "company_users",
+        "default": "gen_random_uuid()",
+        "nullable": "NO"
+      },
+      {
+        "udt": "uuid",
+        "name": "company_id",
+        "type": "uuid",
+        "table": "company_users",
+        "default": null,
+        "nullable": "NO"
+      },
+      {
+        "udt": "uuid",
+        "name": "user_id",
+        "type": "uuid",
+        "table": "company_users",
+        "default": null,
+        "nullable": "NO"
+      },
+      {
+        "udt": "text",
+        "name": "role",
+        "type": "text",
+        "table": "company_users",
+        "default": "'operacional'::text",
+        "nullable": "YES"
+      },
+      {
+        "udt": "bool",
+        "name": "active",
+        "type": "boolean",
+        "table": "company_users",
+        "default": "true",
+        "nullable": "YES"
+      },
+      {
+        "udt": "timestamptz",
+        "name": "created_at",
+        "type": "timestamp with time zone",
+        "table": "company_users",
+        "default": "now()",
+        "nullable": "YES"
+      },
+      {
+        "udt": "text",
+        "name": "senha_inicial",
+        "type": "text",
+        "table": "company_users",
+        "default": null,
+        "nullable": "YES"
+      },
+      {
+        "udt": "jsonb",
+        "name": "permissions",
+        "type": "jsonb",
+        "table": "company_users",
+        "default": "'{}'::jsonb",
+        "nullable": "YES"
+      },
+      {
+        "udt": "text",
+        "name": "nome",
+        "type": "text",
+        "table": "company_users",
+        "default": null,
+        "nullable": "YES"
+      },
+      {
+        "udt": "text",
+        "name": "email",
+        "type": "text",
+        "table": "company_users",
+        "default": null,
+        "nullable": "YES"
+      },
+      {
+        "udt": "uuid",
+        "name": "id",
+        "type": "uuid",
+        "table": "contas_pagar",
+        "default": "gen_random_uuid()",
+        "nullable": "NO"
+      },
+      {
+        "udt": "text",
+        "name": "fornecedor",
+        "type": "text",
+        "table": "contas_pagar",
+        "default": null,
+        "nullable": "NO"
+      },
+      {
+        "udt": "text",
+        "name": "descricao",
+        "type": "text",
+        "table": "contas_pagar",
+        "default": "''::text",
+        "nullable": "YES"
+      },
+      {
+        "udt": "numeric",
+        "name": "valor",
+        "type": "numeric",
+        "table": "contas_pagar",
+        "default": null,
+        "nullable": "NO"
+      },
+      {
+        "udt": "date",
+        "name": "data_vencimento",
+        "type": "date",
+        "table": "contas_pagar",
+        "default": null,
+        "nullable": "NO"
+      },
+      {
+        "udt": "text",
+        "name": "status",
+        "type": "text",
+        "table": "contas_pagar",
+        "default": "'pendente'::text",
+        "nullable": "YES"
+      },
+      {
+        "udt": "date",
+        "name": "data_pagamento",
+        "type": "date",
+        "table": "contas_pagar",
+        "default": null,
+        "nullable": "YES"
+      },
+      {
+        "udt": "uuid",
+        "name": "obra_id",
+        "type": "uuid",
+        "table": "contas_pagar",
+        "default": null,
+        "nullable": "YES"
+      },
+      {
+        "udt": "text",
+        "name": "nota_ref",
+        "type": "text",
+        "table": "contas_pagar",
+        "default": "''::text",
+        "nullable": "YES"
+      },
+      {
+        "udt": "timestamptz",
+        "name": "criado_em",
+        "type": "timestamp with time zone",
+        "table": "contas_pagar",
+        "default": "now()",
+        "nullable": "YES"
+      },
+      {
+        "udt": "timestamptz",
+        "name": "atualizado_em",
+        "type": "timestamp with time zone",
+        "table": "contas_pagar",
+        "default": "now()",
+        "nullable": "YES"
+      },
+      {
+        "udt": "uuid",
+        "name": "company_id",
+        "type": "uuid",
+        "table": "contas_pagar",
+        "default": null,
+        "nullable": "NO"
+      },
+      {
+        "udt": "uuid",
+        "name": "nota_id",
+        "type": "uuid",
+        "table": "contas_pagar",
+        "default": null,
+        "nullable": "YES"
+      },
+      {
+        "udt": "text",
+        "name": "tipo",
+        "type": "text",
+        "table": "contas_pagar",
+        "default": null,
+        "nullable": "YES"
+      },
+      {
+        "udt": "date",
+        "name": "data_recebimento",
+        "type": "date",
+        "table": "contas_pagar",
+        "default": null,
+        "nullable": "YES"
+      }
+    ],
+    "helpers": [
+      {
+        "name": "auth_company_id",
+        "owner": "postgres",
+        "config": [
+          "search_path=public"
+        ],
+        "result": "uuid",
+        "arguments": "",
+        "definition": "CREATE OR REPLACE FUNCTION public.auth_company_id()\n RETURNS uuid\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\n  SELECT company_id\r\n  FROM company_users\r\n  WHERE user_id = auth.uid()\r\n  LIMIT 1;\r\n$function$\n",
+        "security_definer": true
+      },
+      {
+        "name": "auth_user_role",
+        "owner": "postgres",
+        "config": [
+          "search_path=public"
+        ],
+        "result": "text",
+        "arguments": "",
+        "definition": "CREATE OR REPLACE FUNCTION public.auth_user_role()\n RETURNS text\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\n  SELECT role\r\n  FROM company_users\r\n  WHERE user_id = auth.uid()\r\n  LIMIT 1;\r\n$function$\n",
+        "security_definer": true
+      },
+      {
+        "name": "get_my_company_id",
+        "owner": "postgres",
+        "config": [
+          "search_path=public"
+        ],
+        "result": "uuid",
+        "arguments": "",
+        "definition": "CREATE OR REPLACE FUNCTION public.get_my_company_id()\n RETURNS uuid\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\n  SELECT company_id FROM company_users\r\n  WHERE user_id = auth.uid() AND active = true\r\n  LIMIT 1;\r\n$function$\n",
+        "security_definer": true
+      }
+    ],
+    "cp_triggers": [
+      {
+        "name": "audit_contas_pagar",
+        "definition": "CREATE TRIGGER audit_contas_pagar AFTER INSERT OR DELETE OR UPDATE ON public.contas_pagar FOR EACH ROW EXECUTE FUNCTION fn_audit_log()"
+      }
+    ],
+    "request_uid": null,
+    "caixa_existing": null,
+    "cp_constraints": [
+      {
+        "name": "contas_pagar_company_id_fkey",
+        "definition": "FOREIGN KEY (company_id) REFERENCES companies(id)"
+      },
+      {
+        "name": "contas_pagar_nota_fk",
+        "definition": "FOREIGN KEY (nota_id) REFERENCES notas_fiscais(id) ON DELETE CASCADE"
+      },
+      {
+        "name": "contas_pagar_obra_id_fkey",
+        "definition": "FOREIGN KEY (obra_id) REFERENCES obras(id) ON DELETE SET NULL"
+      },
+      {
+        "name": "contas_pagar_pkey",
+        "definition": "PRIMARY KEY (id)"
+      }
+    ],
+    "execution_role": "postgres",
+    "server_version": "17.6",
+    "request_claims_present": false
+  },
+  "privilegios": {
+    "public_relations": [
+      {
+        "rls": true,
+        "kind": "r",
+        "name": "contas_pagar",
+        "owner": "postgres",
+        "force_rls": false,
+        "anon_delete": true,
+        "anon_insert": true,
+        "anon_select": true,
+        "anon_update": true,
+        "policy_count": 4,
+        "authenticated_delete": true,
+        "authenticated_insert": true,
+        "authenticated_select": true,
+        "authenticated_update": true
+      },
+      {
+        "rls": true,
+        "kind": "r",
+        "name": "companies",
+        "owner": "postgres",
+        "force_rls": false,
+        "anon_delete": true,
+        "anon_insert": true,
+        "anon_select": true,
+        "anon_update": true,
+        "policy_count": 2,
+        "authenticated_delete": true,
+        "authenticated_insert": true,
+        "authenticated_select": true,
+        "authenticated_update": true
+      },
+      {
+        "rls": true,
+        "kind": "r",
+        "name": "company_users",
+        "owner": "postgres",
+        "force_rls": false,
+        "anon_delete": true,
+        "anon_insert": true,
+        "anon_select": true,
+        "anon_update": true,
+        "policy_count": 4,
+        "authenticated_delete": true,
+        "authenticated_insert": true,
+        "authenticated_select": true,
+        "authenticated_update": true
+      },
+      {
+        "rls": true,
+        "kind": "r",
+        "name": "audit_logs",
+        "owner": "postgres",
+        "force_rls": false,
+        "anon_delete": true,
+        "anon_insert": true,
+        "anon_select": true,
+        "anon_update": true,
+        "policy_count": 2,
+        "authenticated_delete": true,
+        "authenticated_insert": true,
+        "authenticated_select": true,
+        "authenticated_update": true
+      }
+    ],
+    "related_policies": [
+      {
+        "cmd": "INSERT",
+        "qual": null,
+        "roles": [
+          "public"
+        ],
+        "tablename": "companies",
+        "permissive": "PERMISSIVE",
+        "policyname": "companies_insert_own",
+        "schemaname": "public",
+        "with_check": "(owner_id = auth.uid())"
+      },
+      {
+        "cmd": "ALL",
+        "qual": "((id IN ( SELECT company_users.company_id\n   FROM company_users\n  WHERE ((company_users.user_id = auth.uid()) AND (company_users.active = true)))) OR (owner_id = auth.uid()) OR is_platform_admin())",
+        "roles": [
+          "public"
+        ],
+        "tablename": "companies",
+        "permissive": "PERMISSIVE",
+        "policyname": "companies_member",
+        "schemaname": "public",
+        "with_check": null
+      },
+      {
+        "cmd": "DELETE",
+        "qual": "((company_id = auth_company_id()) AND (auth_user_role() = 'admin'::text))",
+        "roles": [
+          "public"
+        ],
+        "tablename": "company_users",
+        "permissive": "PERMISSIVE",
+        "policyname": "cu_delete",
+        "schemaname": "public",
+        "with_check": null
+      },
+      {
+        "cmd": "INSERT",
+        "qual": null,
+        "roles": [
+          "public"
+        ],
+        "tablename": "company_users",
+        "permissive": "PERMISSIVE",
+        "policyname": "cu_insert",
+        "schemaname": "public",
+        "with_check": "((company_id = auth_company_id()) AND (auth_user_role() = 'admin'::text))"
+      },
+      {
+        "cmd": "SELECT",
+        "qual": "(company_id = auth_company_id())",
+        "roles": [
+          "public"
+        ],
+        "tablename": "company_users",
+        "permissive": "PERMISSIVE",
+        "policyname": "cu_select",
+        "schemaname": "public",
+        "with_check": null
+      },
+      {
+        "cmd": "UPDATE",
+        "qual": "((company_id = auth_company_id()) AND (auth_user_role() = 'admin'::text))",
+        "roles": [
+          "public"
+        ],
+        "tablename": "company_users",
+        "permissive": "PERMISSIVE",
+        "policyname": "cu_update",
+        "schemaname": "public",
+        "with_check": null
+      },
+      {
+        "cmd": "DELETE",
+        "qual": "((company_id = auth_company_id()) AND (auth_user_role() = ANY (ARRAY['admin'::text, 'operacional'::text])))",
+        "roles": [
+          "public"
+        ],
+        "tablename": "contas_pagar",
+        "permissive": "PERMISSIVE",
+        "policyname": "cp_delete",
+        "schemaname": "public",
+        "with_check": null
+      },
+      {
+        "cmd": "INSERT",
+        "qual": null,
+        "roles": [
+          "public"
+        ],
+        "tablename": "contas_pagar",
+        "permissive": "PERMISSIVE",
+        "policyname": "cp_insert",
+        "schemaname": "public",
+        "with_check": "((company_id = auth_company_id()) AND (auth_user_role() = ANY (ARRAY['admin'::text, 'operacional'::text])))"
+      },
+      {
+        "cmd": "SELECT",
+        "qual": "(company_id = auth_company_id())",
+        "roles": [
+          "public"
+        ],
+        "tablename": "contas_pagar",
+        "permissive": "PERMISSIVE",
+        "policyname": "cp_select",
+        "schemaname": "public",
+        "with_check": null
+      },
+      {
+        "cmd": "UPDATE",
+        "qual": "((company_id = auth_company_id()) AND (auth_user_role() = ANY (ARRAY['admin'::text, 'operacional'::text])))",
+        "roles": [
+          "public"
+        ],
+        "tablename": "contas_pagar",
+        "permissive": "PERMISSIVE",
+        "policyname": "cp_update",
+        "schemaname": "public",
+        "with_check": null
+      }
+    ],
+    "api_exposed_schemas": null,
+    "audit_trigger_function": {
+      "name": "fn_audit_log",
+      "owner": "postgres",
+      "config": [
+        "search_path=public"
+      ],
+      "definer": true,
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_audit_log()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\nDECLARE\r\n  _uid uuid;\r\n  _nome text;\r\n  _cid uuid;\r\n  _rid uuid;\r\nBEGIN\r\n  -- Identificar usuário\r\n  _uid := auth.uid();\r\n  SELECT raw_user_meta_data->>'nome' INTO _nome\r\n    FROM auth.users WHERE id = _uid;\r\n\r\n  -- Determinar registro e company\r\n  IF TG_OP = 'DELETE' THEN\r\n    _rid := OLD.id;\r\n    _cid := OLD.company_id;\r\n  ELSE\r\n    _rid := NEW.id;\r\n    _cid := NEW.company_id;\r\n  END IF;\r\n\r\n  INSERT INTO audit_logs (tabela, operacao, registro_id, dados_antes, dados_depois, usuario_id, usuario_nome, company_id)\r\n  VALUES (\r\n    TG_TABLE_NAME,\r\n    TG_OP,\r\n    _rid,\r\n    CASE WHEN TG_OP IN ('UPDATE','DELETE') THEN to_jsonb(OLD) ELSE NULL END,\r\n    CASE WHEN TG_OP IN ('INSERT','UPDATE') THEN to_jsonb(NEW) ELSE NULL END,\r\n    _uid,\r\n    _nome,\r\n    _cid\r\n  );\r\n\r\n  IF TG_OP = 'DELETE' THEN RETURN OLD; ELSE RETURN NEW; END IF;\r\nEND;\r\n$function$\n"
+    },
+    "related_default_privileges": [
+      {
+        "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+        "role": "postgres",
+        "type": "r",
+        "schema": "public"
+      },
+      {
+        "acl": "{postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+        "role": "postgres",
+        "type": "f",
+        "schema": "public"
+      },
+      {
+        "acl": "{postgres=rwU/postgres,anon=rwU/postgres,authenticated=rwU/postgres,service_role=rwU/postgres}",
+        "role": "postgres",
+        "type": "S",
+        "schema": "public"
+      },
+      {
+        "acl": "{postgres=rwU/supabase_admin,anon=rwU/supabase_admin,authenticated=rwU/supabase_admin,service_role=rwU/supabase_admin}",
+        "role": "supabase_admin",
+        "type": "S",
+        "schema": "public"
+      },
+      {
+        "acl": "{postgres=arwdDxtm/supabase_admin,anon=arwdDxtm/supabase_admin,authenticated=arwdDxtm/supabase_admin,service_role=arwdDxtm/supabase_admin}",
+        "role": "supabase_admin",
+        "type": "r",
+        "schema": "public"
+      },
+      {
+        "acl": "{postgres=X/supabase_admin,anon=X/supabase_admin,authenticated=X/supabase_admin,service_role=X/supabase_admin}",
+        "role": "supabase_admin",
+        "type": "f",
+        "schema": "public"
+      }
+    ]
+  },
+  "advisors": {
+    "escopo": "Advisors de objetos legados fora da entrega preservados em evidencia privada, sem mudancas de seguranca fora do Caixa."
+  },
+  "escopo_distribuido": "Somente metadados necessarios para reproduzir schema/Auth/owner/grants/triggers relacionados ao Caixa. Consulta integral preservada fora do repositorio; nenhum registro financeiro ou usuario foi copiado."
+}

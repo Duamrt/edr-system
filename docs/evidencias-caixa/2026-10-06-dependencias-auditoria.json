@@ -1,0 +1,172 @@
+{
+  "projeto": "mepzoxoahpwcvvlymlfh",
+  "tipo": "METADADOS_SOMENTE_LEITURA_SEM_DADOS_USUARIOS_FINANCEIROS",
+  "data": {
+    "cp_select": true,
+    "cp_update": true,
+    "cu_select": true,
+    "constraints": [
+      {
+        "name": "companies_owner_id_fkey",
+        "table": "companies",
+        "definition": "FOREIGN KEY (owner_id) REFERENCES auth.users(id)"
+      },
+      {
+        "name": "companies_pkey",
+        "table": "companies",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "companies_slug_key",
+        "table": "companies",
+        "definition": "UNIQUE (slug)"
+      },
+      {
+        "name": "companies_status_pagamento_check",
+        "table": "companies",
+        "definition": "CHECK ((status_pagamento = ANY (ARRAY['trial'::text, 'ativo'::text, 'atrasado'::text, 'bloqueado'::text, 'cancelado'::text])))"
+      },
+      {
+        "name": "company_users_company_id_fkey",
+        "table": "company_users",
+        "definition": "FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE"
+      },
+      {
+        "name": "company_users_company_id_user_id_key",
+        "table": "company_users",
+        "definition": "UNIQUE (company_id, user_id)"
+      },
+      {
+        "name": "company_users_pkey",
+        "table": "company_users",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "company_users_role_check",
+        "table": "company_users",
+        "definition": "CHECK ((role = ANY (ARRAY['admin'::text, 'operacional'::text, 'mestre'::text, 'visitante'::text])))"
+      },
+      {
+        "name": "company_users_user_id_fkey",
+        "table": "company_users",
+        "definition": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+      },
+      {
+        "name": "audit_logs_operacao_check",
+        "table": "audit_logs",
+        "definition": "CHECK ((operacao = ANY (ARRAY['INSERT'::text, 'UPDATE'::text, 'DELETE'::text])))"
+      },
+      {
+        "name": "audit_logs_pkey",
+        "table": "audit_logs",
+        "definition": "PRIMARY KEY (id)"
+      }
+    ],
+    "audit_columns": [
+      {
+        "udt": "uuid",
+        "name": "id",
+        "type": "uuid",
+        "default": "gen_random_uuid()",
+        "nullable": "NO"
+      },
+      {
+        "udt": "text",
+        "name": "tabela",
+        "type": "text",
+        "default": null,
+        "nullable": "NO"
+      },
+      {
+        "udt": "text",
+        "name": "operacao",
+        "type": "text",
+        "default": null,
+        "nullable": "NO"
+      },
+      {
+        "udt": "uuid",
+        "name": "registro_id",
+        "type": "uuid",
+        "default": null,
+        "nullable": "YES"
+      },
+      {
+        "udt": "jsonb",
+        "name": "dados_antes",
+        "type": "jsonb",
+        "default": null,
+        "nullable": "YES"
+      },
+      {
+        "udt": "jsonb",
+        "name": "dados_depois",
+        "type": "jsonb",
+        "default": null,
+        "nullable": "YES"
+      },
+      {
+        "udt": "uuid",
+        "name": "usuario_id",
+        "type": "uuid",
+        "default": null,
+        "nullable": "YES"
+      },
+      {
+        "udt": "text",
+        "name": "usuario_nome",
+        "type": "text",
+        "default": null,
+        "nullable": "YES"
+      },
+      {
+        "udt": "uuid",
+        "name": "company_id",
+        "type": "uuid",
+        "default": null,
+        "nullable": "YES"
+      },
+      {
+        "udt": "text",
+        "name": "ip",
+        "type": "text",
+        "default": null,
+        "nullable": "YES"
+      },
+      {
+        "udt": "timestamptz",
+        "name": "created_at",
+        "type": "timestamp with time zone",
+        "default": "now()",
+        "nullable": "YES"
+      }
+    ],
+    "audit_policies": [
+      {
+        "cmd": "SELECT",
+        "qual": "(company_id = auth_company_id())",
+        "roles": [
+          "public"
+        ],
+        "tablename": "audit_logs",
+        "permissive": "PERMISSIVE",
+        "policyname": "audit_select",
+        "schemaname": "public",
+        "with_check": null
+      },
+      {
+        "cmd": "INSERT",
+        "qual": null,
+        "roles": [
+          "public"
+        ],
+        "tablename": "audit_logs",
+        "permissive": "PERMISSIVE",
+        "policyname": "audit_insert",
+        "schemaname": "public",
+        "with_check": "true"
+      }
+    ],
+    "migration_role": "postgres"
+  }
+}

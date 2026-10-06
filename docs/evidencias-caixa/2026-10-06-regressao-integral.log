@@ -1,0 +1,773 @@
+Ô£ö saldo prospectivo positivo ignora custos de folha antigos e fontes legadas (1.5683ms)
+Ô£ö saldo prospectivo negativo usa total persistido em centavos (1.0782ms)
+Ô£ö total zero nao gera alerta (0.5978ms)
+Ô£ö sem abertura nao gera alerta mesmo com custos antigos ou total negativo (0.7226ms)
+Ô£ö falha, ausencia de RPC ou acesso indisponivel nao usam fallback legado (1.0772ms)
+Ô£ö modulo ausente nao gera alerta nem consulta historico (0.5753ms)
+Ô£ö resposta incompleta ou total invalido nao produz saldo atual (2.316ms)
+Ô£ö vencida parcial mostra restante 250 de obrigacao 400 paga em 150 (1.5391ms)
+Ô£ö vencendo parcial mostra somente restante confirmado (0.701ms)
+Ô£ö restante zero nao entra na contagem nem no total de obrigacoes (1.0041ms)
+Ô£ö sem snapshot confirmado nao alerta obrigacoes nem consulta valor integral (1.5286ms)
+Ô£ö snapshot incompleto ou restante invalido nao usa valor original (1.9266ms)
+Ô£ö erro de leitura das contas nao produz total atualizado (0.5671ms)
+Ô£ö snapshot de outra empresa ou troca durante leitura suprimem alerta (1.0381ms)
+Ô£ö reembolso previsto nao soma a obrigacoes a pagar (0.5801ms)
+CONTINGENCIA Chromium 147.0.7727.15
+Ô£ö conting├¬ncia: patch verific├ível/revers├¡vel modifica s├│ c├│pia e conserva frontend normal (283.8099ms)
+Ô£ö conting├¬ncia Chromium: leitura/auditoria e restante preservados; bot├Áes e chamadas de muta├º├úo recusados (204.3004ms)
+Ô£ö conting├¬ncia Chromium: edi├º├úo/exclus├úo vinculadas continuam bloqueadas e alertas usam parcial confirmado (160.8305ms)
+Ô£ö conting├¬ncia Chromium: pedido incerto mant├®m UUID/journal sem reenvio durante pausa (169.8936ms)
+Ô£ö conting├¬ncia Chromium: falha de leitura n├úo recupera saldo legado; sem abertura n├úo permite declarar (311.1812ms)
+´╣ú caixa: Auth real Supabase LOCAL (0.5236ms) # Stack LOCAL/status privado nao informados; Auth real NAO homologado.
+CAIXA NATIVO postgres (PostgreSQL) 17.11; listener 127.0.0.1; cluster C:\Users\DUAMRO~1\AppData\Local\Temp\edr-estoque-pg-MJpUpz
+Ô£ö PG nativo: mesmo UUID simult├óneo espera lock e gera um movimento/recibo (612.0508ms)
+Ôä╣ Conexoes independentes: PID 27020 bloqueado por PID 4180
+Ô£ö PG nativo: UUID simult├óneo com payload divergente rejeita sem repetir saldo (591.7553ms)
+Ôä╣ Conexoes independentes: PID 44160 bloqueado por PID 40140
+Ô£ö PG nativo: duas parciais concorrentes n├úo excedem restante da obriga├º├úo (638.4647ms)
+Ôä╣ Conexoes independentes: PID 6596 bloqueado por PID 1440
+Ô£ö PG nativo: duas parciais v├ílidas serializam e quitam somente uma obriga├º├úo (637.5437ms)
+Ôä╣ Conexoes independentes: PID 34956 bloqueado por PID 44996
+Ô£ö PG nativo: cancelar transfer├¬ncia ainda n├úo confirmada espera e neutraliza as duas contas (1005.9512ms)
+Ôä╣ Conexoes independentes: PID 35036 bloqueado por PID 11720
+Ô£ö PG nativo: rollback da transfer├¬ncia libera espera; cancelamento n├úo fabrica movimento (712.4579ms)
+Ôä╣ Conexoes independentes: PID 37080 bloqueado por PID 44060
+Ô£ö PG nativo: mesmo cancelamento simult├óneo retorna recibo ├║nico sem neutraliza├º├úo dupla (675.2259ms)
+Ôä╣ Conexoes independentes: PID 4208 bloqueado por PID 43936
+Ô£ö PG nativo: rollback aguarda registro concorrente e recusa DROP ap├│s commit da abertura (620.0233ms)
+Ôä╣ Conexoes independentes: PID 33160 bloqueado por PID 40560
+Ô£ö abertura separada, imut├ível e idempotente preserva saldo manual/custos/folha/estoque (868.4323ms)
+Ô£ö abertura inv├ílida falha atomicamente sem gravar uma conta nem recibo (581.2821ms)
+Ô£ö corte por data/hora efetiva: antes e exatamente marco j├í inclu├¡dos; depois soma uma vez (539.487ms)
+Ô£ö mesmo dia sem hora exige decis├úo; contradi├º├úo e efetivo futuro s├úo rejeitados (518.9369ms)
+Ô£ö hora futura no dia atual ├® rejeitada e timezone declarado independe do timezone da sess├úo (1178.8326ms)
+Ô£ö centavos por conta e total permanecem exatos para Number; excesso reverte a opera├º├úo (679.3542ms)
+Ô£ö transfer├¬ncia vinculada tem total zero; tarifa separada e cancelamento auditado (754.8745ms)
+Ô£ö entrada e sa├¡da expl├¡citas: clique duplo/reenvio usa recibo dur├ível e payload divergente falha (692.4005ms)
+Ô£ö obriga├º├úo antiga paga depois do corte: parcial, conclus├úo, limites e cancelamento sem duplicar custo (712.1965ms)
+Ô£ö fechar pagamento j├í inclu├¡do na abertura quita obriga├º├úo sem debitar novamente; pago legado ├® bloqueado (716.8993ms)
+Ô£ö conta avulsa de obra exige confirma├º├úo auditada de custo sem criar lan├ºamento (700.7563ms)
+Ô£ö erro de persist├¬ncia ap├│s inserir pagamento reverte movimento, snapshot, recibo e obriga├º├úo (609.8621ms)
+Ô£ö falha no recibo dur├ível reverte transfer├¬ncia inteira e permite retry seguro (642.3961ms)
+Ô£ö cancelar recomputa data pelo pagamento ativo e restaura data original da obriga├º├úo (656.8518ms)
+Ô£ö cancelar pagamento em obriga├º├úo removida ou alterada aborta sem alterar auditoria/saldo (695.2834ms)
+Ô£ö cancelamento que falha ao atualizar obriga├º├úo mant├®m movimento ativo e saldo (690.3912ms)
+Ô£ö RLS e RPCs isolam empresa/perfil/sess├úo; escrita e TRUNCATE diretos s├úo negados (732.6728ms)
+Ô£ö administrador desativado com sess├úo v├ílida perde SELECT/read/write/retry; reativa├º├úo preserva tenant e recibo (747.972ms)
+Ô£ö preflight rejeita company_users sem active boolean antes de criar objetos de caixa (1272.179ms)
+Ô£ö rollback s├│ remove schema vazio; abertura/recibos e movimentos bloqueiam qualquer DROP (2011.1611ms)
+´╣ú UI Chromium + RPC/Auth reais LOCAL (0.5251ms) # Defina status QA privado, Playwright e Chromium existentes; este ensaio NAO executado.
+Ô£ö integra├º├úo: m├│dulo Caixa ausente bloqueia pagamento comum e qualquer custo legado (3.4041ms)
+Ô£ö integra├º├úo: m├│dulo Caixa ausente bloqueia edi├º├úo e exclus├úo da obriga├º├úo existente (1.5757ms)
+Ô£ö integra├º├úo: carga parcial do m├│dulo sem guard de leitura tamb├®m bloqueia altera├º├Áes (0.9006ms)
+Ô£ö integra├º├úo: falha na leitura persistida ao pagar n├úo ativa caminho legado (1.7926ms)
+Ô£ö integra├º├úo: recebimento de reembolso preserva confirma├º├úo e data sem m├│dulo Caixa (1.4099ms)
+Ô£ö integra├º├úo: nova obriga├º├úo continua sendo cadastro pendente sem m├│dulo Caixa (1.1611ms)
+Ô£ö UI: tela exibe banco, dinheiro, total e obriga├º├Áes separadas (17.345ms)
+Ô£ö UI: entrada e sa├¡da enviam conta, valor em centavos e data efetiva (6.8997ms)
+Ô£ö UI: transfer├¬ncia vinculada usa uma RPC; origem igual ao destino bloqueia (3.9522ms)
+Ô£ö UI: pagamento parcial envia obriga├º├úo antiga sem criar novo custo (2.6352ms)
+Ô£ö UI: clique duplo durante persist├¬ncia envia apenas uma opera├º├úo (2.8984ms)
+Ô£ö UI: resposta perdida conserva UUID e pedido no reenvio, sem anunciar sucesso (2.4218ms)
+Ô£ö UI: cancelamento do formul├írio n├úo grava; cancelamento de movimento usa RPC (4.7182ms)
+Ô£ö UI: falha definitiva de persist├¬ncia preserva formul├írio e saldo confirmado (2.0215ms)
+Ô£ö UI: movimento no dia do corte sem hor├írio exige declara├º├úo expl├¡cita (2.8952ms)
+Ô£ö UI: dados retornados de outra empresa n├úo s├úo exibidos nem aceitos (0.8573ms)
+Ô£ö UI: abertura envia saldo informado sem sobrescrever manual antigo (1.6665ms)
+Ô£ö UI: journal recupera ap├│s recarga o mesmo UUID e payload; nenhum saldo ├® guardado (5.1402ms)
+Ô£ö UI: indisponibilidade do journal bloqueia envio antes da persist├¬ncia (1.7015ms)
+Ô£ö UI: erro de consulta de obriga├º├Áes n├úo exibe saldo operacional (0.8067ms)
+Ô£ö UI: resposta de grava├º├úo de outra empresa mant├®m pedido sem sucesso (1.6954ms)
+Ô£ö integra├º├úo: renderCaixa usa saldo persistido e bot├úo Pago abre pagamento parcial (4.4491ms)
+Ô£ö integra├º├úo: fechar folha antiga j├í abrangida na abertura n├úo baixa saldo (3.192ms)
+Ô£ö UI: cancelamento confirmado no banco com resposta perdida recupera ap├│s recarga (3.8058ms)
+Ô£ö UI: troca de empresa durante envio preserva journal da origem sem sucesso falso (2.8218ms)
+Ô£ö UI: conta avulsa com obra exige declarar custo j├í registrado, sem lan├ºar outro custo (2.5005ms)
+Ô£ö integra├º├úo: obriga├º├úo com pagamento vinculado n├úo pode ser editada ou exclu├¡da (1.1635ms)
+Ô£ö UI: parcial persistido exibe restante separado do saldo dispon├¡vel (1.4165ms)
+Ô£ö integra├º├úo: falha na recarga de pagamentos bloqueia edi├º├úo e exclus├úo de obriga├º├úo (1.1838ms)
+Ô£ö alerta: usa saldo persistido e n├úo deduz novamente custos antigos (1.2312ms)
+Ô£ö alerta: obriga├º├úo parcialmente paga apresenta apenas o restante a pagar (1.1195ms)
+Ô£ö UI: erro definitivo ap├│s resposta incerta conserva UUID e journal do movimento (2.4067ms)
+Ô£ö UI: erro definitivo na recupera├º├úo de cancelamento incerto conserva UUID e journal (4.6018ms)
+Ô£ö UI: leitura administrativa pendente n├úo vaza ap├│s mudan├ºa de perfil ou ator no mesmo tenant (1.4303ms)
+Ô£ö UI: consulta anterior ao commit n├úo alimenta saldo depois da grava├º├úo (14.3452ms)
+Ô£ö UI Chromium: DOM real, entrada, transfer├¬ncia e falha de persist├¬ncia (1056.8851ms)
+RECUPERACAO CAIXA postgres (PostgreSQL) 17.11; 127.0.0.1; evidencias C:\Users\Duam Rodrigues\Documents\Codex\2026-10-05\task-3\native-pg-caixa-recuperacao\edr-estoque-pg-6ejj3D
+ÔûÂ caixa: dump/restauracao PostgreSQL 17 LOCAL auditavel
+  Ô£ö dataset sintetico cobre ledger, corte, CP e historico auditado (518.428ms)
+  Ô£ö pg_dump custom integral, roles sem senhas, TOC e manifesto SHA-256 (429.5022ms)
+  Ô£ö pg_restore atomico em banco NOVO preserva dados, schema e owners (496.5298ms)
+  Ô£ö estado, snapshots, datas originais e sentinelas coincidem apos restore (162.5351ms)
+  Ô£ö reenvio de TODOS os 12 UUIDs apos restore nao duplica saldo/recibo/historico (157.548ms)
+  Ô£ö ACL/RLS/functions restauradas mantem isolamento e administrador ativo (539.1467ms)
+  Ô£ö dump incompleto falha no hash antes de criar destino; fonte permanece intacta (11.7019ms)
+  Ô£ö arquivo truncado com TOC legivel falha durante restore e reverte dados parciais (448.1461ms)
+  Ô£ö erro SQL em destino novo faz rollback integral e nunca substitui fonte (373.8381ms)
+RECUPERACAO CAIXA: cluster encerrado e confirmado; 9 subtestes aprovados; C:\Users\Duam Rodrigues\Documents\Codex\2026-10-05\task-3\native-pg-caixa-recuperacao\edr-estoque-pg-6ejj3D
+Ô£ö caixa: dump/restauracao PostgreSQL 17 LOCAL auditavel (5811.6676ms)
+catalogo-integridade: 12 verifica├º├Áes estruturais aprovadas
+Ô£ö C:\Users\Duam Rodrigues\Documents\Codex\2026-10-05\task-3\edr-system-caixa-prospectivo\tests\catalogo-integridade.test.js (39.9927ms)
+catalogo-padronizacao: 11 verifica├º├Áes estruturais aprovadas
+Ô£ö C:\Users\Duam Rodrigues\Documents\Codex\2026-10-05\task-3\edr-system-caixa-prospectivo\tests\catalogo-padronizacao.test.js (38.0776ms)
+custos-classificacao-origem: 24 assertions passed
+Ô£ö C:\Users\Duam Rodrigues\Documents\Codex\2026-10-05\task-3\edr-system-caixa-prospectivo\tests\custos-classificacao-origem.test.js (46.6334ms)
+Ô£ö front salva repasse pela RPC e mantem fallback enquanto a migration nao existe (0.7879ms)
+Ô£ö RPC deriva tenant e papel da sessao e valida a obra (0.421ms)
+Ô£ö RPC valida campos financeiros e nao libera anonimo (0.3157ms)
+devolucao-fornecedor: 17 assertions passed
+Ô£ö C:\Users\Duam Rodrigues\Documents\Codex\2026-10-05\task-3\edr-system-caixa-prospectivo\tests\devolucao-fornecedor.test.js (40.9768ms)
+Ô£ö encontra per├¡odo livre pela data, inclusive quando cruza o m├¬s (1.3886ms)
+Ô£ö data escolhida sincroniza automaticamente o per├¡odo antes de preencher o dia (0.1335ms)
+Ô£ö calend├írio fica livre e n├úo ├® limitado pela quinzena selecionada (0.3418ms)
+Ô£ö salvar resolve o per├¡odo pela data e envia o id resolvido ├á RPC (0.2216ms)
+Ô£ö novo per├¡odo exige datas livres e n├úo recria regra fixa de quinzena (0.3275ms)
+Ô£ö edi├º├úo do per├¡odo n├úo pode excluir di├íria salva nem cruzar outro per├¡odo (0.1323ms)
+Ô£ö roster do admin entrega os dados que o PDF usa para pagamento (1.0949ms)
+Ô£ö PIX continua restrito ao admin e ao tenant autenticado (0.3241ms)
+Ô£ö migration e atomica e restaura apenas o grant autenticado (0.2138ms)
+Ô£ö gerador BR Code normaliza CPF, telefone, email e chave aleatoria (0.4389ms)
+Ô£ö CRC16 confere com o exemplo oficial do Manual de Padroes do Pix (0.1775ms)
+Ô£ö payload Pix leva chave normalizada, valor fixo, txid neutro e CRC valido (0.3506ms)
+Ô£ö PDF vincula QR ao funcionario e mantem conferencia manual do pagamento (0.4273ms)
+dre-despesa-operacional-nf: 3 assertions passed
+Ô£ö C:\Users\Duam Rodrigues\Documents\Codex\2026-10-05\task-3\edr-system-caixa-prospectivo\tests\dre-despesa-operacional-nf.test.js (39.0787ms)
+
+-- 1. Contratado sem nenhum repasse ------------------------
+  OK   contratado 14.000
+  OK   recebido 0
+  OK   pendente 14.000
+  OK   status pendente
+  OK   nao quitada
+  OK   rotulo mostra o contratado
+
+-- 2. Parcial: 14.000 contratado, 5.000 lancado ------------
+  OK   recebido 5.000
+  OK   pendente 9.000  <- o defeito exibia 14.000
+  OK   sem excedente
+  OK   status parcial
+  OK   nao quitada
+  OK   rotulo mostra pendente E recebido
+  OK   cor amarela
+
+-- 3. Quitacao exata ---------------------------------------
+  OK   recebido 14.000
+  OK   pendente 0
+  OK   status quitada
+  OK   quitada
+  OK   cor verde
+
+-- 4. Multiplos lancamentos --------------------------------
+  OK   soma dos 3 = 11.000
+  OK   pendente 3.000
+  OK   conta 3 lancamentos
+  OK   status parcial
+  OK   soma exata quita
+  OK   status quitada
+
+-- 5. Recebido acima do contratado -------------------------
+  OK   recebido 16.000
+  OK   pendente 0, NUNCA negativo
+  OK   excedente 2.000
+  OK   status quitada
+  OK   rotulo declara o excedente
+
+-- 6. Legado: entrada_paga=true sem repasse ----------------
+  OK   recebido 0 ÔÇö o booleano NAO fabrica dinheiro
+  OK   pendente 14.000
+  OK   NAO e tratada como quitada
+  OK   status inconsistente
+  OK   registra que o cadastro diz pago
+  OK   alerta explica a divergencia
+  OK   cor vermelha ÔÇö pede conciliacao
+  OK   coerente com totalRecebido do resumo geral
+
+-- 6b. Booleano nao altera a decisao de quitacao -----------
+  OK   sem repasse: booleano nao muda `quitada`
+  OK   sem repasse: booleano nao muda `recebido`
+  OK   sem repasse: booleano nao muda `pendente`
+  OK   parcial: booleano nao muda `quitada`
+  OK   parcial: booleano nao muda `recebido`
+  OK   parcial: booleano nao muda `pendente`
+  OK   quitado: booleano nao muda `quitada`
+  OK   quitado: booleano nao muda `recebido`
+  OK   quitado: booleano nao muda `pendente`
+  OK   excedente: booleano nao muda `quitada`
+  OK   excedente: booleano nao muda `recebido`
+  OK   excedente: booleano nao muda `pendente`
+  OK   booleano sozinho nunca quita
+  OK   um centavo a menos nao quita, mesmo com booleano
+
+-- 7. Legado: entrada_paga=true com repasse parcial --------
+  OK   recebido 5.000 (o ledger vence)
+  OK   pendente 9.000
+  OK   status inconsistente
+  OK   alerta cita cobertura insuficiente
+  OK   booleano NAO quita
+
+-- 8. entrada_paga=true com repasse que cobre --------------
+  OK   status quitada, sem inconsistencia
+  OK   sem alerta
+
+-- 9. Filtra por obra e por tipo ---------------------------
+  OK   ignora outra obra e outros tipos
+  OK   conta so o repasse de entrada da obra
+  OK   repasse sem tipo nao vira entrada
+
+-- 10. Bordas ----------------------------------------------
+  OK   contrato 0 -> sem_contrato
+  OK   sem contrato nao gera rotulo
+  OK   sem campo -> 0
+  OK   entradas nulas nao quebram
+  OK   valor nao numerico vira 0
+  OK   compara obra_id por string
+
+================================================================
+RESULTADO ENTRADA: 67 OK ┬À 0 FALHA
+================================================================
+Ô£ö C:\Users\Duam Rodrigues\Documents\Codex\2026-10-05\task-3\edr-system-caixa-prospectivo\tests\entrada-cliente.test.js (37.7673ms)
+estoque-carga-segura: cargas criticas e preservacao de cache validadas
+Ô£ö C:\Users\Duam Rodrigues\Documents\Codex\2026-10-05\task-3\edr-system-caixa-prospectivo\tests\estoque-carga-segura.test.js (39.8393ms)
+NATIVO postgres (PostgreSQL) 17.11; somente 127.0.0.1; C:\Users\DUAMRO~1\AppData\Local\Temp\edr-estoque-pg-ceuYjh
+Ô£ö PG real: duas saidas concorrentes nao consomem o mesmo saldo (655.1257ms)
+Ôä╣ Espera real: PID 9144 bloqueado por 22352
+Ô£ö PG real: repeticao simultanea do mesmo pedido devolve a mesma saida (619.0701ms)
+Ôä╣ Espera real: PID 29248 bloqueado por 44292
+Ô£ö PG real: duas saidas validas serializam e encerram saldo zero (704.5301ms)
+Ôä╣ Espera real: PID 34188 bloqueado por 34400
+Ô£ö PG real: devolucao aguarda saida e rejeita a origem consumida (601.8775ms)
+Ôä╣ Espera real: PID 22944 bloqueado por 34512
+Ô£ö PG real: saida espera devolucao e le o saldo atualizado (632.5517ms)
+Ôä╣ Espera real: PID 37912 bloqueado por 14216
+Ô£ö PG real: saida espera contagem zero e nao usa lote antigo (786.8027ms)
+Ôä╣ Espera real: PID 34308 bloqueado por 43660
+Ô£ö PG real: contagem posterior espera a saida e conserva o corte (754.5877ms)
+Ôä╣ Espera real: PID 30884 bloqueado por 39240
+Ô£ö PG real: rollback da primeira saida libera saldo para a segunda (720.74ms)
+Ôä╣ Espera real: PID 44412 bloqueado por 43144
+Ô£ö PG real: confirmacao descartada apos commit permite repetir em nova conexao (733.8451ms)
+Ô£ö PG real: deadlock aborta uma transacao e repeticao preserva integridade (1865.7851ms)
+Ôä╣ Espera real: PID 38436 bloqueado por 4800
+Ôä╣ SQLSTATE 40P01 observado; transacao abortada sem custo/origem orfa e repeticao validada.
+Ô£ö PG real REG: repeticao simultanea regulariza uma vez com os mesmos IDs (725.9734ms)
+Ôä╣ Espera real: PID 39960 bloqueado por 14088
+Ô£ö PG real REG: pedidos distintos nao regularizam a mesma pendencia duas vezes (776.7022ms)
+Ôä╣ Espera real: PID 43416 bloqueado por 36564
+Ô£ö PG real NF: duas conexoes repetem pedido sem duplicar NF/custo/baixa (738.2072ms)
+Ôä╣ Espera real: PID 30152 bloqueado por 8380
+Ô£ö contagem nao oculta saida registrada depois no mesmo dia (21.4609ms)
+Ô£ö recebimento depois da contagem no mesmo dia entra no saldo (2.4216ms)
+Ô£ö entrada retroativa nao soma duas vezes depois da contagem (1.7482ms)
+Ô£ö FIFO independe da ordem em que as NFs foram carregadas (2.139ms)
+Ô£ö contagem zero encerra lotes antigos para a proxima distribuicao (5.076ms)
+Ô£ö saida que cruza duas NFs nao grava vinculo parcial (1.7232ms)
+Ô£ö saida preserva indice real do item da NF (2.3032ms)
+Ô£ö saida manual tambem registra NF e item de origem (2.1762ms)
+Ô£ö duplo clique so solicita uma distribuicao (2.0322ms)
+Ô£ö carga incompleta bloqueia distribuicao antes de gravar (1.6178ms)
+Ô£ö contagem rapida preserva tres casas e rejeita negativa (2.3798ms)
+Ô£ö entrada sem NF continua disponivel e nao recebe uma NF inventada (1.8303ms)
+Ô£ö recarga antes de salvar impede vincular mais do que resta na NF (1.5443ms)
+Ô£ö falha de recarga nao grava e libera nova tentativa (1.9664ms)
+Ô£ö falha da distribuicao mantem a compensacao do custo existente (1.8997ms)
+Ô£ö contagens pequenas em notacao cientifica nao viram uma unidade (1.1053ms)
+Ô£ö contagem parcial e ajuste posterior respeitam disponibilidade fisica (1.5324ms)
+Ô£ö movimento retroativo no dia anterior nao muda de dia pelo fuso do navegador (1.6103ms)
+Ô£ö compra direta e NF de obra continuam fora do almoxarifado (1.4327ms)
+Ô£ö contagem igual ao saldo cria checkpoint no modal e na importacao (2.1437ms)
+Ô£ö campo vazio nao e interpretado como contagem zero (1.2674ms)
+Ô£ö saida captura quantidade no clique e protege o botao durante a recarga (1.7307ms)
+Ô£ö quantidade nao finita nao grava custo nem distribuicao pelos dois botoes (1.6058ms)
+Ô£ö quantidade fracionaria pequena conserva a NF de origem (1.6224ms)
+Ô£ö custo separa valor fiscal e desconto, frete e outras despesas (8.879ms)
+Ô£ö total mostrado no formulario desconta o cabecalho da NF (14.5833ms)
+Ô£ö previa de distribuicao usa lotes restantes FIFO inclusive ao cruzar lotes (4.2794ms)
+Ô£ö desconto especifico do XML fica no item que recebeu o desconto (2.4847ms)
+Ô£ö adicionarItem preserva o desconto fiscal recebido da importacao (3.2043ms)
+Ô£ö NF bloqueia gravacao se a RPC estiver ausente e preserva pedido incerto (3.2248ms)
+Ô£ö rateio de centavos fecha sem perda e legado liquido nao desconta duas vezes (2.1901ms)
+Ô£ö FIFO distribuir usa o lote antigo e depois o seguinte (3.8573ms)
+Ô£ö FIFO manual usa o lote antigo e depois o seguinte (3.386ms)
+Ô£ö NF com desconto e acessorios entra e sai pelo custo completo (3.6155ms)
+Ô£ö devolucao retira o custo da origem sem contaminar o material restante (2.2388ms)
+Ô£ö duplo clique cria uma entrada; falha libera a trava para nova tentativa (2.6918ms)
+Ô£ö obra invalida e quantidade nao finita nao criam entrada (1.7428ms)
+Ô£ö falha da exclusao atomica conserva saldo e custo (2.6723ms)
+Ô£ö exclusao confirmada remove baixa e custo juntos (2.8293ms)
+Ô£ö vinculo compartilhado ou carga incompleta bloqueia exclusao (2.4496ms)
+estoque-devolucao: 16 assertions passed
+Ô£ö C:\Users\Duam Rodrigues\Documents\Codex\2026-10-05\task-3\edr-system-caixa-prospectivo\tests\estoque-devolucao.test.js (71.8375ms)
+estoque-exclusao-atomica: 14 verificacoes aprovadas
+Ô£ö C:\Users\Duam Rodrigues\Documents\Codex\2026-10-05\task-3\edr-system-caixa-prospectivo\tests\estoque-exclusao-atomica.test.js (41.9252ms)
+Ô£ö REG SQL: proposta somente leitura e NF comprovada preservam saldo/custo com evidencia (958.6514ms)
+Ô£ö REG SQL: parcial por duas origens preserva valor total e encerra somente a quantidade conferida (605.5609ms)
+Ô£ö REG SQL: UUID repetido inclusive apos estorno nao recria vinculos (563.2992ms)
+Ô£ö REG SQL: origem futura, unidade ausente/incompativel, outro material e indice errado sao rejeitados (540.7785ms)
+Ô£ö REG SQL: unidade de estoque convertida prevalece sobre unidade fiscal (628.1944ms)
+Ô£ö REG SQL: novo movimento invalida proposta sem gravar; nova conferencia pode prosseguir (750.0892ms)
+Ô£ö REG SQL: origem insuficiente e conflito com saida posterior sao rejeitados no replay (749.4058ms)
+Ô£ö REG SQL: contagem posterior mantem saldo absoluto apos regularizacao (759.8011ms)
+Ô£ö REG SQL: falha apos troca de origem reverte vinculo, custo e auditoria juntos (780.7743ms)
+Ô£ö REG SQL: empresa, papel, sessao, ACL e helper sao protegidos (765.8599ms)
+Ô£ö REG SQL: comprovante, justificativa e aceite de custo obrigatorios; quantidade invalida rejeitada (746.0524ms)
+Ô£ö SQL: duas NFs viram um custo, uma saida e duas origens (910.5859ms)
+Ô£ö SQL: repeticao do pedido devolve mesmos IDs; mudanca de payload e rejeitada (562.5661ms)
+Ô£ö SQL: falha depois do custo e da distribuicao desfaz toda a operacao (578.5801ms)
+Ô£ö SQL: segunda saida respeita o saldo consumido e as origens fixadas (555.0911ms)
+Ô£ö SQL: entrada sem NF e mistura com NF guardam origens distintas (626.6049ms)
+Ô£ö SQL: contagem zero encerra lotes anteriores e permite nova NF (761.1047ms)
+Ô£ö SQL: aumento contado tem origem de contagem e zeragem legada continua delta (757.821ms)
+Ô£ö SQL: criterio medio mantem custo atual e total distribuido nas origens (774.1141ms)
+Ô£ö SQL: excesso, nao finitos e horario futuro nao gravam (751.7792ms)
+Ô£ö SQL: outra empresa, papel de leitura e sessao ausente sao rejeitados (622.2272ms)
+Ô£ö SQL: desativada por padrao; cliente nao escreve config/origens nem chama helper (662.0234ms)
+Ô£ö SQL: RLS das origens esconde as parcelas da outra empresa (636.876ms)
+Ô£ö SQL: origem consumida nao pode ser devolvida, apagada ou reescrita (609.795ms)
+Ô£ö SQL: devolucao agrega linhas repetidas antes de aceitar a quantidade (578.8657ms)
+Ô£ö SQL: exclusao isolada e custo alterado sao recusados; RPC remove o conjunto (604.0225ms)
+Ô£ö SQL: perfil operacional autorizado executa a RPC como authenticated (718.9512ms)
+Ô£ö SQL: alteracao retroativa que invalida origem e revertida (763.6537ms)
+Ô£ö SQL: chave composta rejeita referencia de outra empresa (771.2606ms)
+Ô£ö SQL: mudanca parcial de alocacao e recusada no fim da transacao (832.9456ms)
+Ô£ö SQL: reversao anterior ao primeiro uso conserva notas e remove so o novo schema (799.8445ms)
+Ô£ö SQL: reversao apos uso e bloqueada sem apagar custos ou vinculos (779.1622ms)
+Ô£ö SQL: deficit consentido fica sem NF e repeticao nao duplica (741.0278ms)
+Ô£ö SQL: deficit maior que o consentido e custo ausente abortam tudo (755.3022ms)
+Ô£ö SQL: entrada posterior recompoe saldo e conserva conferencia de origem (798.1877ms)
+Ô£ö SQL: status informa contrato e desativacao sem conceder escrita ao cliente (791.522ms)
+Ô£ö integracao local: botoes e ponte reais gravam no PostgreSQL e recarregam as origens (673.608ms)
+Ô£ö conferencia: consulta somente leitura separa quantidade pendente e custo estimado (592.193ms)
+Ô£ö conferencia: NF posterior e contagem nao encerram pendencia nem liberam devolucao (602.6521ms)
+Ô£ö conferencia: fila authenticated nao vaza empresa e sem sessao retorna vazio (598.1897ms)
+Ô£ö conferencia: exclusao conjunta retira pendencia e repeticao nao recria saida (630.5861ms)
+Ô£ö SQL: escrita legada de almoxarifado bloqueada quando modo atomico esta ativo (574.4848ms)
+Ô£ö SQL: FIFO inclui desconto, frete e despesas e devolucao retira custo da origem (608.5094ms)
+Ô£ö UI: os dois botoes usam uma RPC por saida e aceitam duas NFs (15.6964ms)
+Ô£ö UI: saldo insuficiente exige confirmacao e envia somente o deficit consentido (8.1189ms)
+Ô£ö UI: perda da resposta persiste pedido e recarga repete o mesmo UUID e payload (2.5045ms)
+Ô£ö UI: outro pedido primeiro confere a pendencia, sem criar uma segunda saida (2.5749ms)
+Ô£ö UI: falha definitiva inicial libera pedido; erro posterior a resposta perdida conserva UUID (2.3858ms)
+Ô£ö UI: modo desativado com pedido incerto bloqueia fallback legado (1.4521ms)
+Ô£ö UI: troca de empresa durante carga impede envio e durante envio preserva pendencia (2.2072ms)
+Ô£ö UI: duplo clique trava os dois botoes durante envio (1.5313ms)
+Ô£ö UI: falha de recarga apos gravacao informa saida confirmada e dados desatualizados (1.9428ms)
+Ô£ö UI: historico consome origem fixada, em vez de redistribuir FIFO (4.2998ms)
+Ô£ö UI: entrada posterior cobre deficit sem inventar NF na saida antiga (1.2649ms)
+Ô£ö UI: origem inexistente fica sinalizada sem vincular a outra NF (0.9923ms)
+Ô£ö UI: material sem custo orienta saida manual e exige preco positivo antes do envio (1.5625ms)
+Ô£ö ponte: quantidade ou referencia invalida nas parcelas bloqueia estoque (1.7112ms)
+Ô£ö UI: resposta sem identificadores nao apaga pedido pendente (1.5927ms)
+Ô£ö ponte/UI: deadlock confirmado libera nova tentativa com recarga, sem prender pedido incerto (2.0583ms)
+Ô£ö ponte: modo ativo carrega parcelas e falha parcial preserva cache bloqueado (0.8027ms)
+Ô£ö ponte: apenas PGRST202 com 404 reconhece contrato ausente (0.7471ms)
+Ô£ö ponte: modo desativado ainda carrega origens historicas (0.6162ms)
+Ô£ö ponte: origem de outra empresa e troca de empresa durante carga bloqueiam resultado (0.7901ms)
+Ô£ö ponte: rede, JSON ausente e erro de servidor conservam incerteza de gravacao (0.8198ms)
+Ô£ö devolucao: origens multiplas e deficit pendente bloqueiam devolucao; linhas repetidas somam (0.9951ms)
+Ô£ö REG UI: fila, proposta e aceite precedem a unica gravacao (2.099ms)
+Ô£ö REG UI: perda da resposta e recarga recuperam exatamente a mesma operacao (2.3837ms)
+Ô£ö REG UI: erro inicial definitivo libera proposta; erro apos incerteza preserva pedido (1.1604ms)
+Ô£ö REG UI: duplo clique nao duplica e falha de recarga nao vira falha da gravacao (1.0002ms)
+Ô£ö REG UI: troca de empresa impede envio e conserva resultado incerto (1.8025ms)
+Ô£ö REG UI: quantidade alterada invalida proposta e rejeita resposta tardia (1.1785ms)
+Ô£ö REG UI: sem comprovante e justificativa nao envia; falha de armazenamento nao envia (1.1742ms)
+Ô£ö REG UI: carga parcial, perfil e contrato indisponivel bloqueiam tela (1.2162ms)
+Ô£ö REG UI: resposta de outra empresa fica pendente e evidencia e escapada na tela (2.0063ms)
+Ô£ö FIFO: tabela, KPI, detalhe, cards, painel e Excel conservam compra 300 = consumo 100 + estoque 200 (23.4129ms)
+Ô£ö custo desconhecido conserva zero real e orienta confer├¬ncia, sem estimar pela m├®dia (2.0216ms)
+Ô£ö refer├¬ncia manual fica identificada como estimativa e fora dos totais reais (4.0663ms)
+Ô£ö refer├¬ncia manual nunca substitui custo real conhecido (1.513ms)
+Ô£ö saldo zero n├úo conserva valor dos lotes j├í consumidos e preserva a m├®dia hist├│rica (2.2384ms)
+Ô£ö saldo negativo mant├®m sinal no item e Excel e fica fora do valor positivo do painel/KPI (1.8208ms)
+Ô£ö Excel conserva valoriza├º├úo dos itens ├│rf├úos que n├úo est├úo no cat├ílogo (1.8111ms)
+Ô£ö valor real zero com m├®dia hist├│rica positiva n├úo recai no saldo vezes m├®dia (1.8491ms)
+estoque-zeragem: regress├Áes validadas
+Ô£ö C:\Users\Duam Rodrigues\Documents\Codex\2026-10-05\task-3\edr-system-caixa-prospectivo\tests\estoque-zeragem.test.js (64.8873ms)
+formata-preco-unitario: 3 assertions passed
+Ô£ö C:\Users\Duam Rodrigues\Documents\Codex\2026-10-05\task-3\edr-system-caixa-prospectivo\tests\formata-preco-unitario.test.js (51.3599ms)
+nf-brita-fluxo: 33 assertions passed
+Ô£ö C:\Users\Duam Rodrigues\Documents\Codex\2026-10-05\task-3\edr-system-caixa-prospectivo\tests\nf-brita-fluxo.test.js (54.2537ms)
+Ô£ö recibos revogam privilegios herdados e bloqueiam TRUNCATE (814.8768ms)
+Ô£ö NF direta: desconto reduz custo; frete e despesas fecham o total (597.9893ms)
+Ô£ö NF almoxarifado -> baixa FIFO usa desconto e acessorios (524.4563ms)
+Ô£ö falha real de SQL na distribuicao reverte NF e custo inteiro (497.6608ms)
+Ô£ö resposta perdida e reimportacao recuperam mesmo pedido sem duplicar (496.1552ms)
+Ô£ö duplo clique da NF faz uma unica solicitacao (683.2998ms)
+Ô£ö despesa operacional usa desconto, sem baixa e sem custo duplicado (693.0084ms)
+Ô£ö servico para obra grava custo sem distribuicao (714.3139ms)
+Ô£ö obra de outra empresa e perfil leitura nao gravam NF (752.2703ms)
+Ô£ö recibo rejeita payload alterado e nao recria NF excluida (753.0186ms)
+Ô£ö banco usa quantidade convertida devolvida pelo trigger (734.4795ms)
+Ô£ö rateio JS e SQL coincide em centavos, conversao e legado liquido (695.8997ms)
+Ô£ö funcao invoker respeita negacao de policy da distribuicao (705.8496ms)
+Ô£ö reversao do candidato conserva recibos apos uso (709.9701ms)
+Ô£ö reversao antes do uso remove apenas o candidato novo (736.5017ms)
+notas-integridade-financeira: 16 assertions passed
+Ô£ö C:\Users\Duam Rodrigues\Documents\Codex\2026-10-05\task-3\edr-system-caixa-prospectivo\tests\notas-integridade-financeira.test.js (60.6855ms)
+reembolso-fornecedor: 4 assertions passed
+Ô£ö C:\Users\Duam Rodrigues\Documents\Codex\2026-10-05\task-3\edr-system-caixa-prospectivo\tests\reembolso-fornecedor.test.js (39.2835ms)
+
+-- 1. role=radio e aria-checked --------------------------
+  OK   card selecionado tem role=radio
+  OK   card nao selecionado tem role=radio
+  OK   selecionado: aria-checked=true
+  OK   nao selecionado: aria-checked=false
+
+-- 2. Roving tabindex (um so ponto de parada no Tab) -----
+  OK   selecionado e focavel por Tab
+  OK   nao selecionado sai da ordem de Tab
+  OK   exatamente um card no Tab
+
+-- 3. aria-label descreve o card em frase ----------------
+  OK   aria-label existe
+  OK   comeca pelo nome da opcao
+  OK   cita o novo prazo
+  OK   cita as parcelas eliminadas
+  OK   cita a economia de juros
+  OK   prestacao: comeca pelo nome
+  OK   prestacao: cita a nova parcela
+  OK   prestacao: cita o prazo mantido
+  OK   nao e o textContent grudado do card
+  OK   e uma frase, com espacos e ponto final
+
+-- 4. _simTeclaEfeito responde ao teclado ----------------
+  OK   Enter escolhe o card
+  OK   Enter chama preventDefault (nao rola a pagina)
+  OK   Espaco escolhe o card
+  OK   Spacebar (navegador antigo) tambem escolhe
+  OK   ArrowRight alterna para o outro
+  OK   ArrowRight chama preventDefault
+  OK   ArrowRight devolve o foco ao card selecionado
+  OK   ArrowDown alterna para o outro
+  OK   ArrowDown chama preventDefault
+  OK   ArrowDown devolve o foco ao card selecionado
+  OK   ArrowLeft alterna para o outro
+  OK   ArrowLeft chama preventDefault
+  OK   ArrowLeft devolve o foco ao card selecionado
+  OK   ArrowUp alterna para o outro
+  OK   ArrowUp chama preventDefault
+  OK   ArrowUp devolve o foco ao card selecionado
+  OK   Enter nao remove nem move o foco
+  OK   Espaco nao remove nem move o foco
+  OK   tecla qualquer nao mexe no foco
+  OK   seta volta ao primeiro
+  OK   tecla qualquer nao altera
+  OK   tecla qualquer NAO chama preventDefault
+  OK   Tab NAO e capturado (sai do radiogroup)
+
+-- 5. Efeito nao aplicavel nao vira alvo de teclado ------
+  OK   sem role=radio
+  OK   fora da ordem de Tab
+  OK   sem handler de teclado
+  OK   mostra o motivo
+
+================================================================
+RESULTADO ACESSIBILIDADE: 44 OK ┬À 0 FALHA
+================================================================
+Ô£ö C:\Users\Duam Rodrigues\Documents\Codex\2026-10-05\task-3\edr-system-caixa-prospectivo\tests\simulador-acessibilidade.test.js (39.5635ms)
+
+ÔöÇÔöÇ 1. PRICE 100.000,00 ┬À 1% a.m. ┬À 100 meses ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+  OK   gera 100 linhas
+  OK   parcela 1 = 1.586,58
+  OK   parcela 99 = 1.586,58
+  OK   parcela 100 (ultima) = 1.585,56
+  OK   saldo final zero
+  OK   total pago = 158.656,98
+  OK   total formatado
+  OK   soma das linhas == total
+  OK   juros mes 1 = 1.000,00
+  OK   amortizacao mes 1 = 586,58
+
+ÔöÇÔöÇ 2. PRICE: pagamento 1 centavo menor NAO quita ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+  OK   busca binaria acha 158.658 centavos
+  OK   P-1 nao quita em 100 parcelas
+  OK   sobra saldo devedor
+
+ÔöÇÔöÇ 3. SAC 100.000,00 ┬À 1% a.m. ┬À 100 meses ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+  OK   gera 100 linhas
+  OK   amortizacao constante = 1.000,00
+  OK   parcela 1 = 2.000,00
+  OK   parcela 100 = 1.010,00
+  OK   saldo final zero
+  OK   soma das linhas == total
+  OK   parcela decrescente
+
+ÔöÇÔöÇ 4. Taxa zero ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+  OK   PRICE i=0: parcela = 1.000,00
+  OK   PRICE i=0: juros total zero
+  OK   PRICE i=0: total = principal
+  OK   PRICE i=0: saldo zero
+  OK   SAC i=0: juros total zero
+  OK   SAC i=0: total = principal
+  OK   i=0 divisao inexata: saldo zero
+  OK   i=0 divisao inexata: soma exata
+
+ÔöÇÔöÇ 5. Prazo = 1 parcela ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+  OK   PRICE n=1: 1 linha
+  OK   PRICE n=1: 101.000,00
+  OK   PRICE n=1: saldo zero
+  OK   SAC n=1: 101.000,00
+
+ÔöÇÔöÇ 6. Adaptador de taxa ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+  OK   7,95% a.a. -> 6.395.193 ppb
+  OK   0% a.a. -> 0 ppb
+  OK   1% a.m. -> 10.000.000 ppb
+  OK   reusar exibido da 6.395.190 (ERRADO por 3 ppb)
+  OK   diferenca documentada = 3 ppb
+  OK   interpreta "7,95%"
+  OK   interpreta "7.95 % a.a."
+  OK   texto invalido -> null
+  OK   vazio -> null
+  OK   interpreta "360 meses"
+  OK   interpreta "360"
+  OK   prazo invalido -> null
+
+ÔöÇÔöÇ 7. Juros half-up (BigInt) ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+  OK   100.000,00 x 1% = 1.000,00
+  OK   meio centavo exato -> arredonda para cima
+  OK   abaixo de meio -> para baixo
+  OK   acima de meio -> para cima
+  OK   saldo zero -> juros zero
+  OK   taxa zero -> juros zero
+  OK   3 centavos x 0,639% -> 0
+  OK   rejeita Number como saldo [TIPO_INVALIDO]
+  OK   rejeita Number como taxa [TIPO_INVALIDO]
+
+ÔöÇÔöÇ 8. Datas ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+  OK   31/01/2026 + 1 mes = 28/02 (nao bissexto)
+  OK   31/01/2028 + 1 mes = 29/02 (bissexto)
+  OK   31/01 + 3 meses = 30/04
+  OK   vira o ano
+  OK   +12 meses
+  OK   2028 bissexto
+  OK   2100 NAO bissexto (regra 100)
+  OK   2000 bissexto (regra 400)
+  OK   fev 2026 = 28 dias
+  OK   rejeita 30/02 [DATA_INVALIDA]
+  OK   rejeita formato BR [DATA_INVALIDA]
+  OK   rejeita mes 13 [DATA_INVALIDA]
+
+ÔöÇÔöÇ 9. Amortizacao: reduzir_prazo ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+  OK   gera 1 snapshot
+  OK   aplica na parcela 6
+  OK   modalidade registrada
+  OK   saldo coerente
+  OK   parcela preservada
+  OK   prazo reduziu
+  OK   saldo final zero
+  OK   juros totais menores que a base
+  OK   linha 6 marcada com evento
+  OK   amortizacoes somam o principal
+
+ÔöÇÔöÇ 10. Amortizacao: reduzir_prestacao ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+  OK   prazo preservado em 100
+  OK   prazo inalterado no snapshot
+  OK   parcela reduziu
+  OK   saldo final zero
+  OK   parcela pos-evento menor
+  OK   amortizacoes somam o principal
+  OK   SAC reduzir_prestacao: saldo zero
+  OK   SAC: parcela reduziu
+
+ÔöÇÔöÇ 11. Duas amortizacoes na mesma data ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+  OK   dois snapshots
+  OK   sequencia 1 processada primeiro
+  OK   sequencia 2 processada depois
+  OK   1o evento: reduzir_prazo
+  OK   2o evento: reduzir_prestacao
+  OK   encadeamento de saldo
+  OK   saldo final zero
+  OK   total extra = 15.000,00
+  OK   linha 6 tem os 2 eventos
+  OK   ordem de entrada nao altera resultado
+  OK   prazo identico
+
+ÔöÇÔöÇ 12. Quitacao integral e entradas invalidas ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+  OK   quitacao na parcela 5 encerra em 5 linhas
+  OK   saldo zero apos quitacao
+  OK   prazo depois = 0
+  OK   parcela depois = 0
+  OK   amortizacao maior que saldo [AMORTIZACAO_EXCEDE_SALDO]
+  OK   amortizacao valor zero [AMORTIZACAO_INVALIDA]
+  OK   amortizacao valor negativo [AMORTIZACAO_INVALIDA]
+  OK   modalidade invalida [MODALIDADE_INVALIDA]
+  OK   amortizacao depois do fim do prazo [AMORTIZACAO_FORA_DO_PRAZO]
+  OK   saldo zero [SALDO_INVALIDO]
+  OK   prazo zero [PRAZO_INVALIDO]
+  OK   sistema invalido [SISTEMA_INVALIDO]
+  OK   saldo como Number e rejeitado [TIPO_INVALIDO]
+
+ÔöÇÔöÇ 13. Integridade (varredura) ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+  OK   8 casos: saldo zero + somas fecham
+
+ÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉ
+RESULTADO: 108 OK ┬À 0 FALHA
+ÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉ
+Ô£ö C:\Users\Duam Rodrigues\Documents\Codex\2026-10-05\task-3\edr-system-caixa-prospectivo\tests\simulador-calc.test.js (46.7171ms)
+
+ÔöÇÔöÇ 1. Bloqueio de calculo sem dados do extrato ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+  OK   extrato vazio: invalido
+  OK   aponta os 5 campos faltantes
+  OK   calculo com extrato vazio e BLOQUEADO [EXTRATO_INCOMPLETO]
+  OK   sem saldo devedor: invalido
+  OK   sem saldo devedor: calculo bloqueado [EXTRATO_INCOMPLETO]
+  OK   sem data de referencia: invalido
+  OK   sem data de referencia: calculo bloqueado [EXTRATO_INCOMPLETO]
+  OK   sem taxa mensal: invalido
+  OK   sem taxa mensal: calculo bloqueado [EXTRATO_INCOMPLETO]
+  OK   sem prazo remanescente: invalido
+  OK   sem prazo remanescente: calculo bloqueado [EXTRATO_INCOMPLETO]
+  OK   sem sistema: invalido
+  OK   sem sistema: calculo bloqueado [EXTRATO_INCOMPLETO]
+
+ÔöÇÔöÇ 2. Valores invalidos no extrato ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+  OK   saldo zero: invalido
+  OK   saldo zero: calculo bloqueado [EXTRATO_INCOMPLETO]
+  OK   saldo negativo: invalido
+  OK   saldo negativo: calculo bloqueado [EXTRATO_INCOMPLETO]
+  OK   saldo nao numerico: invalido
+  OK   saldo nao numerico: calculo bloqueado [EXTRATO_INCOMPLETO]
+  OK   data formato BR: invalido
+  OK   data formato BR: calculo bloqueado [EXTRATO_INCOMPLETO]
+  OK   taxa negativa: invalido
+  OK   taxa negativa: calculo bloqueado [EXTRATO_INCOMPLETO]
+  OK   taxa acima de 100%: invalido
+  OK   taxa acima de 100%: calculo bloqueado [EXTRATO_INCOMPLETO]
+  OK   prazo zero: invalido
+  OK   prazo zero: calculo bloqueado [EXTRATO_INCOMPLETO]
+  OK   prazo acima de 480: invalido
+  OK   prazo acima de 480: calculo bloqueado [EXTRATO_INCOMPLETO]
+  OK   prazo nao numerico: invalido
+  OK   prazo nao numerico: calculo bloqueado [EXTRATO_INCOMPLETO]
+  OK   sistema invalido: invalido
+  OK   sistema invalido: calculo bloqueado [EXTRATO_INCOMPLETO]
+
+ÔöÇÔöÇ 3. contrato_valor NAO e saldo devedor atual ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+  OK   extrato completo: valido
+  OK   saldo usado vem do EXTRATO
+  OK   saldo NAO e contrato_valor
+  OK   sem saldo, contrato_valor NAO supre a falta [EXTRATO_INCOMPLETO]
+  OK   base do calculo = saldo do extrato
+  OK   base do calculo != valor original
+  OK   usar valor original daria economia DIFERENTE (por isso e bloqueado)
+         economia c/ saldo real  : 13.801,19
+         economia c/ valor origem: 13.805,24
+  OK   contrato_valor vira texto de exibicao, nao centavos de calculo
+  OK   formatacao de exibicao
+
+ÔöÇÔöÇ 4. Impacto calculado a partir do extrato ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+  OK   reduzir_prazo aplicavel
+  OK   reduzir_prestacao aplicavel
+  OK   reduzir_prazo: prazo cai
+  OK   reduzir_prazo: informa parcelas reduzidas
+  OK   reduzir_prestacao: prazo mantido
+  OK   reduzir_prestacao: parcela cai
+  OK   reduzir_prazo: economia positiva
+  OK   reduzir_prestacao: economia positiva
+  OK   reduzir_prazo economiza mais que reduzir_prestacao
+  OK   tabela base quita
+
+ÔöÇÔöÇ 5. Amortizacao maior que o saldo ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+  OK   reduzir_prazo rejeitado
+  OK   reduzir_prestacao rejeitado
+  OK   codigo correto
+
+ÔöÇÔöÇ 6. Parser de moeda (sem float) ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+  OK   380.000,00
+  OK   com prefixo R$
+  OK   um centavo
+  OK   vazio -> null
+  OK   texto -> null
+  OK   3 casas decimais -> null
+  OK   numero do banco -> texto
+  OK   null -> null
+
+ÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉ
+RESULTADO GUARDAS: 63 OK ┬À 0 FALHA
+ÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉ
+Ô£ö C:\Users\Duam Rodrigues\Documents\Codex\2026-10-05\task-3\edr-system-caixa-prospectivo\tests\simulador-guardas.test.js (46.9363ms)
+
+ÔöÇÔöÇ 1. Data de referencia validada por calendario ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+  OK   2026-02-31 e invalida (dia nao existe em fevereiro)
+  OK   aponta o campo data de referencia
+  OK   calculo com 2026-02-31 e BLOQUEADO [EXTRATO_INCOMPLETO]
+  OK   2026-13-01 e invalida
+  OK   2026-00-10 e invalida
+  OK   2026-04-31 e invalida
+  OK   2025-02-29 e invalida
+  OK   2024-02-29 e valida (ano bissexto)
+
+ÔöÇÔöÇ 2. Data de referencia altera a competencia do calculo ÔöÇÔöÇÔöÇÔöÇÔöÇ
+  OK   corte 2026-07-30 -> 1a parcela em 2026-08-30
+  OK   corte 2026-09-30 -> 1a parcela em 2026-10-30
+  OK   mudar a data de referencia muda a competencia
+  OK   corte 31/01 -> 1a parcela 28/02 (clamp)
+
+ÔöÇÔöÇ 3. V1 nao aceita amortizacao fora da data de corte ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+  OK   data posterior ao corte e BLOQUEADA [DATA_AMORT_FORA_DO_CORTE]
+  OK   data anterior ao corte e BLOQUEADA [DATA_AMORT_FORA_DO_CORTE]
+  OK   amortizacao NA data de corte e aceita
+  OK   mensagem de bloqueio cita pro-rata
+
+ÔöÇÔöÇ 4. Evento anterior a data-base e rejeitado ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+  OK   evento antes da data-base e rejeitado [EVENTO_ANTES_DA_BASE]
+  OK   evento NA data-base e aceito
+  OK   sem dataBase o motor nao impoe piso
+
+ÔöÇÔöÇ 5. Sequencia negativa e duplicada sao rejeitadas ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+  OK   sequencia negativa e rejeitada [SEQUENCIA_INVALIDA]
+  OK   mesma data + mesma sequencia e rejeitada [SEQUENCIA_DUPLICADA]
+  OK   mesma data com sequencias distintas e valida
+
+ÔöÇÔöÇ 6. Inversao de eventos ambiguos nao produz 2 resultados ÔöÇÔöÇÔöÇ
+  OK   ordem [A,B] e rejeitada [SEQUENCIA_DUPLICADA]
+  OK   ordem [B,A] e rejeitada [SEQUENCIA_DUPLICADA]
+  OK   sequencias distintas: ordem do array e irrelevante
+  OK   mesmo prazo efetivo nas duas ordens
+
+ÔöÇÔöÇ 7. contrato_taxa exibido sem duplicar simbolo ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+  OK   texto ja com % e preservado
+  OK   texto sem % nao ganha sufixo
+  OK   texto completo preservado
+  OK   vazio -> null
+  OK   null -> null
+  OK   nunca renderiza %% duplo
+  OK   nunca duplica a.a.
+
+ÔöÇÔöÇ 8. Evento na data-base ocorre ANTES da 1a parcela ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+  OK   saldo antes do evento = saldo do extrato
+  OK   saldo depois = 380.000 - 4.000
+  OK   parcelaReferencia = 0 (antes de qualquer parcela)
+  OK   fase = data_base
+  OK   1a parcela um mes apos o corte
+  OK   juros da 1a parcela sobre o saldo pos-amortizacao
+  OK   juros da 1a parcela nao usam o saldo pre-amortizacao
+  OK   1a parcela nao carrega o evento da data-base
+  OK   evento apos o corte tem fase parcela
+  OK   evento apos o corte referencia uma parcela
+
+ÔöÇÔöÇ 9. Obras com nome identico nao podem ser resolvidas pelo nome
+  OK   obras homonimas recebem rotulos distintos
+  OK   nome unico permanece sem sufixo
+  OK   rotulo da 2a homonima resolve id 20
+  OK   rotulo da 1a homonima resolve id 10
+  OK   nome unico resolve normalmente
+  OK   nome ambiguo nao seleciona nenhuma obra
+  OK   texto sem correspondencia -> vazio
+  OK   vazio -> vazio
+
+ÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉ
+RESULTADO TEMPORAL: 51 OK ┬À 0 FALHA
+ÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉ
+Ô£ö C:\Users\Duam Rodrigues\Documents\Codex\2026-10-05\task-3\edr-system-caixa-prospectivo\tests\simulador-temporal.test.js (46.2251ms)
+xml-conversao-unidade: cenarios de regressao passaram
+Ô£ö C:\Users\Duam Rodrigues\Documents\Codex\2026-10-05\task-3\edr-system-caixa-prospectivo\tests\xml-conversao-unidade.test.js (59.0924ms)
+Ôä╣ tests 281
+Ôä╣ suites 0
+Ôä╣ pass 279
+Ôä╣ fail 0
+Ôä╣ cancelled 0
+Ôä╣ skipped 2
+Ôä╣ todo 0
+Ôä╣ duration_ms 48956.0491

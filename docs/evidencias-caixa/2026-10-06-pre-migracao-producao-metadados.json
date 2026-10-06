@@ -1,0 +1,242 @@
+{
+  "project": "mepzoxoahpwcvvlymlfh",
+  "consulted_utc": "2026-10-06 09:36:01 UTC",
+  "server_version": "17.6",
+  "execution_role": "postgres",
+  "new_relations": null,
+  "new_functions": null,
+  "relations": [
+    {
+      "name": "audit_logs",
+      "owner": "postgres",
+      "rls": true,
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "anon=arwdDxtm/postgres",
+        "authenticated=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres"
+      ]
+    },
+    {
+      "name": "companies",
+      "owner": "postgres",
+      "rls": true,
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "anon=arwdDxtm/postgres",
+        "authenticated=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres"
+      ]
+    },
+    {
+      "name": "company_users",
+      "owner": "postgres",
+      "rls": true,
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "anon=arwdDxtm/postgres",
+        "authenticated=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres"
+      ]
+    },
+    {
+      "name": "contas_pagar",
+      "owner": "postgres",
+      "rls": true,
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "anon=arwdDxtm/postgres",
+        "authenticated=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres"
+      ]
+    }
+  ],
+  "helpers": [
+    {
+      "name": "auth_company_id",
+      "owner": "postgres",
+      "definer": true,
+      "config": [
+        "search_path=public"
+      ],
+      "definition": "CREATE OR REPLACE FUNCTION public.auth_company_id()\n RETURNS uuid\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\n  SELECT company_id\r\n  FROM company_users\r\n  WHERE user_id = auth.uid()\r\n  LIMIT 1;\r\n$function$\n",
+      "acl": [
+        "=X/postgres",
+        "postgres=X/postgres",
+        "anon=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "name": "auth_user_role",
+      "owner": "postgres",
+      "definer": true,
+      "config": [
+        "search_path=public"
+      ],
+      "definition": "CREATE OR REPLACE FUNCTION public.auth_user_role()\n RETURNS text\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\n  SELECT role\r\n  FROM company_users\r\n  WHERE user_id = auth.uid()\r\n  LIMIT 1;\r\n$function$\n",
+      "acl": [
+        "=X/postgres",
+        "postgres=X/postgres",
+        "anon=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "name": "fn_audit_log",
+      "owner": "postgres",
+      "definer": true,
+      "config": [
+        "search_path=public"
+      ],
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_audit_log()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\nDECLARE\r\n  _uid uuid;\r\n  _nome text;\r\n  _cid uuid;\r\n  _rid uuid;\r\nBEGIN\r\n  -- Identificar usuário\r\n  _uid := auth.uid();\r\n  SELECT raw_user_meta_data->>'nome' INTO _nome\r\n    FROM auth.users WHERE id = _uid;\r\n\r\n  -- Determinar registro e company\r\n  IF TG_OP = 'DELETE' THEN\r\n    _rid := OLD.id;\r\n    _cid := OLD.company_id;\r\n  ELSE\r\n    _rid := NEW.id;\r\n    _cid := NEW.company_id;\r\n  END IF;\r\n\r\n  INSERT INTO audit_logs (tabela, operacao, registro_id, dados_antes, dados_depois, usuario_id, usuario_nome, company_id)\r\n  VALUES (\r\n    TG_TABLE_NAME,\r\n    TG_OP,\r\n    _rid,\r\n    CASE WHEN TG_OP IN ('UPDATE','DELETE') THEN to_jsonb(OLD) ELSE NULL END,\r\n    CASE WHEN TG_OP IN ('INSERT','UPDATE') THEN to_jsonb(NEW) ELSE NULL END,\r\n    _uid,\r\n    _nome,\r\n    _cid\r\n  );\r\n\r\n  IF TG_OP = 'DELETE' THEN RETURN OLD; ELSE RETURN NEW; END IF;\r\nEND;\r\n$function$\n",
+      "acl": [
+        "=X/postgres",
+        "postgres=X/postgres",
+        "anon=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "name": "get_my_company_id",
+      "owner": "postgres",
+      "definer": true,
+      "config": [
+        "search_path=public"
+      ],
+      "definition": "CREATE OR REPLACE FUNCTION public.get_my_company_id()\n RETURNS uuid\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\n  SELECT company_id FROM company_users\r\n  WHERE user_id = auth.uid() AND active = true\r\n  LIMIT 1;\r\n$function$\n",
+      "acl": [
+        "=X/postgres",
+        "postgres=X/postgres",
+        "anon=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ]
+    }
+  ],
+  "policies": [
+    {
+      "table": "audit_logs",
+      "name": "audit_insert",
+      "roles": [
+        "public"
+      ],
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "true"
+    },
+    {
+      "table": "audit_logs",
+      "name": "audit_select",
+      "roles": [
+        "public"
+      ],
+      "cmd": "SELECT",
+      "qual": "(company_id = auth_company_id())",
+      "with_check": null
+    },
+    {
+      "table": "companies",
+      "name": "companies_insert_own",
+      "roles": [
+        "public"
+      ],
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(owner_id = auth.uid())"
+    },
+    {
+      "table": "companies",
+      "name": "companies_member",
+      "roles": [
+        "public"
+      ],
+      "cmd": "ALL",
+      "qual": "((id IN ( SELECT company_users.company_id\n   FROM company_users\n  WHERE ((company_users.user_id = auth.uid()) AND (company_users.active = true)))) OR (owner_id = auth.uid()) OR is_platform_admin())",
+      "with_check": null
+    },
+    {
+      "table": "company_users",
+      "name": "cu_delete",
+      "roles": [
+        "public"
+      ],
+      "cmd": "DELETE",
+      "qual": "((company_id = auth_company_id()) AND (auth_user_role() = 'admin'::text))",
+      "with_check": null
+    },
+    {
+      "table": "company_users",
+      "name": "cu_insert",
+      "roles": [
+        "public"
+      ],
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "((company_id = auth_company_id()) AND (auth_user_role() = 'admin'::text))"
+    },
+    {
+      "table": "company_users",
+      "name": "cu_select",
+      "roles": [
+        "public"
+      ],
+      "cmd": "SELECT",
+      "qual": "(company_id = auth_company_id())",
+      "with_check": null
+    },
+    {
+      "table": "company_users",
+      "name": "cu_update",
+      "roles": [
+        "public"
+      ],
+      "cmd": "UPDATE",
+      "qual": "((company_id = auth_company_id()) AND (auth_user_role() = 'admin'::text))",
+      "with_check": null
+    },
+    {
+      "table": "contas_pagar",
+      "name": "cp_delete",
+      "roles": [
+        "public"
+      ],
+      "cmd": "DELETE",
+      "qual": "((company_id = auth_company_id()) AND (auth_user_role() = ANY (ARRAY['admin'::text, 'operacional'::text])))",
+      "with_check": null
+    },
+    {
+      "table": "contas_pagar",
+      "name": "cp_insert",
+      "roles": [
+        "public"
+      ],
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "((company_id = auth_company_id()) AND (auth_user_role() = ANY (ARRAY['admin'::text, 'operacional'::text])))"
+    },
+    {
+      "table": "contas_pagar",
+      "name": "cp_select",
+      "roles": [
+        "public"
+      ],
+      "cmd": "SELECT",
+      "qual": "(company_id = auth_company_id())",
+      "with_check": null
+    },
+    {
+      "table": "contas_pagar",
+      "name": "cp_update",
+      "roles": [
+        "public"
+      ],
+      "cmd": "UPDATE",
+      "qual": "((company_id = auth_company_id()) AND (auth_user_role() = ANY (ARRAY['admin'::text, 'operacional'::text])))",
+      "with_check": null
+    }
+  ]
+}

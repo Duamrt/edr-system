@@ -1,0 +1,28 @@
+Ô£ö abertura separada, imut├ível e idempotente preserva saldo manual/custos/folha/estoque (845.2435ms)
+Ô£ö abertura inv├ílida falha atomicamente sem gravar uma conta nem recibo (570.7032ms)
+Ô£ö corte por data/hora efetiva: antes e exatamente marco j├í inclu├¡dos; depois soma uma vez (574.8665ms)
+Ô£ö mesmo dia sem hora exige decis├úo; contradi├º├úo e efetivo futuro s├úo rejeitados (561.3914ms)
+Ô£ö hora futura no dia atual ├® rejeitada e timezone declarado independe do timezone da sess├úo (1313.6608ms)
+Ô£ö centavos por conta e total permanecem exatos para Number; excesso reverte a opera├º├úo (716.8234ms)
+Ô£ö transfer├¬ncia vinculada tem total zero; tarifa separada e cancelamento auditado (673.6545ms)
+Ô£ö entrada e sa├¡da expl├¡citas: clique duplo/reenvio usa recibo dur├ível e payload divergente falha (669.1277ms)
+Ô£ö obriga├º├úo antiga paga depois do corte: parcial, conclus├úo, limites e cancelamento sem duplicar custo (698.2297ms)
+Ô£ö fechar pagamento j├í inclu├¡do na abertura quita obriga├º├úo sem debitar novamente; pago legado ├® bloqueado (712.773ms)
+Ô£ö conta avulsa de obra exige confirma├º├úo auditada de custo sem criar lan├ºamento (719.4261ms)
+Ô£ö erro de persist├¬ncia ap├│s inserir pagamento reverte movimento, snapshot, recibo e obriga├º├úo (721.8853ms)
+Ô£ö falha no recibo dur├ível reverte transfer├¬ncia inteira e permite retry seguro (726.2944ms)
+Ô£ö cancelar recomputa data pelo pagamento ativo e restaura data original da obriga├º├úo (704.9353ms)
+Ô£ö cancelar pagamento em obriga├º├úo removida ou alterada aborta sem alterar auditoria/saldo (705.1819ms)
+Ô£ö cancelamento que falha ao atualizar obriga├º├úo mant├®m movimento ativo e saldo (747.682ms)
+Ô£ö RLS e RPCs isolam empresa/perfil/sess├úo; escrita e TRUNCATE diretos s├úo negados (735.3497ms)
+Ô£ö administrador desativado com sess├úo v├ílida perde SELECT/read/write/retry; reativa├º├úo preserva tenant e recibo (788.711ms)
+Ô£ö preflight rejeita company_users sem active boolean antes de criar objetos de caixa (1244.3322ms)
+Ô£ö rollback s├│ remove schema vazio; abertura/recibos e movimentos bloqueiam qualquer DROP (2191.0393ms)
+Ôä╣ tests 20
+Ôä╣ suites 0
+Ôä╣ pass 20
+Ôä╣ fail 0
+Ôä╣ cancelled 0
+Ôä╣ skipped 0
+Ôä╣ todo 0
+Ôä╣ duration_ms 16936.2719
