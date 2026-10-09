@@ -15,6 +15,7 @@ function movimento(id, tipo, valor, data, more) {
 function snapshot() {
   const s = {
     companyId: COMPANY, company_id: COMPANY,
+    planosEntrada: { status: 'confirmada', company_id: COMPANY, planos: [] },
     obras: [registro('a', { nome: 'Casa A', valor_venda: 1000, area_m2: 50, arquivada: false }),
       registro('b', { nome: 'Casa B', valor_venda: 2000, area_m2: 80, arquivada: true })],
     lancamentos: [registro('l1', { obra_id: 'a', total: 100, data: '2026-09-15', etapa: '28_mao', obs: null }),
@@ -301,6 +302,7 @@ test('dados circulares nao produzem contexto de apresentacao incompleto', () => 
 
 test('namespace global funciona sem DOM ou rede com dependencia modelo explicita', () => {
   const ctx = {};
+  vm.runInNewContext(fs.readFileSync(require.resolve('../js/edr-v2-entrada-plano-projecoes.js'), 'utf8'), ctx);
   vm.runInNewContext(fs.readFileSync(require.resolve('../js/edr-v2-visao-financeira-modelo.js'), 'utf8'), ctx);
   vm.runInNewContext(fs.readFileSync(require.resolve('../js/edr-v2-visao-financeira-contexto.js'), 'utf8'), ctx);
   assert.equal(Object.isFrozen(ctx.FinanceiroVisaoContexto), true);

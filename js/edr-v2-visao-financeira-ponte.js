@@ -164,6 +164,12 @@
         if (typeof caixaProspectivoCarregar !== 'function') throw erro('LEITURA_FALHOU');
         return caixaProspectivoCarregar();
       },
+      carregarPlanosEntrada: async () => {
+        if (typeof sbRpcEstoque !== 'function') throw erro('LEITURA_FALHOU');
+        const r = await sbRpcEstoque('entrada_plano_resumo', {});
+        if (!r?.ok) throw erro('LEITURA_FALHOU');
+        return r.dados;
+      },
       criarDre: snapshot => root.DREModule.criarContextoLeitura(snapshot),
       obrasInternas: Array.isArray(root.OBRAS_INTERNAS) ? root.OBRAS_INTERNAS : []
     });

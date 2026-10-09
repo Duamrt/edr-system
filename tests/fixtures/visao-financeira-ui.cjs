@@ -14,6 +14,7 @@ const copiar = v => JSON.parse(JSON.stringify(v));
 function fixture() {
   const row = (n, campos) => ({ id: id(n), company_id: ids.empresa, ...campos });
   return {
+    planosEntrada: { company_id: ids.empresa, planos: [] },
     obras: [row(10, { nome: 'CASA SINTETICA ALFA', valor_venda: 1000, area_m2: 80, arquivada: false }),
       row(11, { nome: 'CASA SINTETICA BETA', valor_venda: 500, area_m2: 50, arquivada: false }),
       row(12, { nome: 'CASA SINTETICA ARQUIVADA', valor_venda: 300, area_m2: 30, arquivada: true }),
@@ -101,6 +102,7 @@ function bootstrap(dados, config) {
     sbGetAll=async(t,q='',o={})=>{const rows=[];let off=0;for(let i=0;i<100;i++){const b=await sbGet(t,q+(q.includes('?')?'&':'?')+'limit=1000&offset='+off,o);if(!b.length)return rows;rows.push(...b);off+=b.length;}throw new Error('Limite sintetico de paginacao');};
     sbRpcEstoque=async function(nome,args={}) {
       const c=window.__financeiroQa;c.rpc.push(nome);
+      if(nome==='entrada_plano_resumo')return c.falharPlanos?{ok:false,mensagem:'Falha sintetica de leitura dos planos'}:{ok:true,dados:clone(c.dados.planosEntrada)};
       if(nome!=='caixa_estado'){c.escritas.push(nome);throw new Error('RPC DE ESCRITA BLOQUEADA: '+nome);}
       if(c.falharLedger)return{ok:false,mensagem:'Falha sintetica de leitura do caixa'};
       return{ok:true,dados:clone(c.dados.ledger)};
@@ -118,7 +120,7 @@ function html(dados, config = {}) {
     }
     const caminho = src.split('?')[0];
     const permitido = /^js\/edr-v2-visao-financeira-[a-z-]+\.js$/.test(caminho) ||
-      /^js\/edr-v2-(infra|utils-extras|dashboard|relatorio|raiox|financeiro|dre|caixa-prospectivo)\.js$/.test(caminho);
+      /^js\/edr-v2-(infra|utils-extras|dashboard|relatorio|raiox|financeiro|dre|caixa-prospectivo|entrada-plano-projecoes)\.js$/.test(caminho);
     if (!permitido) return '';
     if (caminho === 'js/edr-v2-infra.js') { injetou = true; return tag + '<script>' + bootstrap(dados, config) + '</script>'; }
     return tag;

@@ -22,15 +22,16 @@
  */
 (function (root, factory) {
   'use strict';
-  const api = factory();
+  const projecoes = typeof module === 'object' && module.exports ? require('./edr-v2-entrada-plano-projecoes.js') : root.EntradaPlanoProjecoes;
+  const api = factory(projecoes);
   if (typeof module === 'object' && module.exports) module.exports = api;
   if (root) root.FinanceiroVisaoModelo = api;
-})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (projecoes) {
   'use strict';
 
   const FONTES = ['obras', 'lancamentos', 'repasses', 'adicionais', 'pagamentosAdicionais'];
   const CAMPOS = [
-    'contratoPrevistoCentavos', 'contratoRecebidoCentavos',
+    'contratoOriginalCentavos', 'ajusteEntradaCentavos', 'contratoPrevistoCentavos', 'contratoRecebidoCentavos',
     'adicionaisPrevistosCentavos', 'adicionaisRecebidosCentavos',
     'carteiraCentavos', 'recebidoAcumuladoCentavos', 'recebidoPeriodoCentavos',
     'custoPeriodoCentavos', 'diferencaRecebidoCustoCentavos',
@@ -176,6 +177,13 @@
     const s = { ...entrada, companyId: empresa(entrada) };
     const f = normalizarFiltro(filtro);
     const fs = fontes(s);
+    let resumo = null;
+    const declaracaoPlanos = s.fontes?.planosEntrada;
+    const statusPlanos = (typeof declaracaoPlanos === 'object' ? declaracaoPlanos?.status : declaracaoPlanos) ?? s.planosEntrada?.status;
+    try {
+      if (statusPlanos !== 'confirmada' || !projecoes) throw new Error();
+      resumo = projecoes.validarResumo(s.planosEntrada, s.companyId);
+    } catch (_) { resumo = null; }
     const internas = new Set((Array.isArray(s.obrasInternas) ? s.obrasInternas : (Array.isArray(s.OBRAS_INTERNAS) ? s.OBRAS_INTERNAS : [])).map(String));
     const selecionadas = fs.obras.rows && fs.obras.rows.filter(o => obraReal(o, internas) &&
       (!f.obraId || String(o.id) === f.obraId) &&
@@ -190,7 +198,8 @@
       const idsAdds = adds && new Set(adds.map(a => String(a.id)));
       const pgtos = idsAdds && fs.pagamentosAdicionais.rows &&
         fs.pagamentosAdicionais.rows.filter(p => idsAdds.has(String(p.adicional_id)));
-      const contrato = posicao(centavos(o.valor_venda), sumRows(reps, 'valor', '', 'data_credito'));
+      const planoEntrada = projecoes ? projecoes.projetar({ ...o, company_id: s.companyId }, resumo) : null;
+      const contrato = posicao(planoEntrada?.carteiraCentavos ?? null, sumRows(reps, 'valor', '', 'data_credito'));
       const adicionais = (adds || []).map(a => ({
         id: a.id,
         ...posicao(centavos(a.valor), sumRows(pgtos && pgtos.filter(p => String(p.adicional_id) === String(a.id)), 'valor', '', 'data'))
@@ -203,7 +212,9 @@
       ]);
       const custoPeriodo = sumRows(lancs, 'total', f.periodo, 'data');
       const linha = {
-        id: o.id, nome: o.nome, arquivada: !!o.arquivada, contrato, adicionais,
+        id: o.id, nome: o.nome, arquivada: !!o.arquivada, contrato, adicionais, planoEntrada,
+        contratoOriginalCentavos: centavos(o.valor_venda),
+        ajusteEntradaCentavos: planoEntrada?.ajusteCentavos ?? null,
         contratoPrevistoCentavos: contrato.previstoCentavos,
         contratoRecebidoCentavos: contrato.recebidoCentavos,
         adicionaisPrevistosCentavos: adicionaisPrevistos,
@@ -225,6 +236,7 @@
     const totais = Object.fromEntries(CAMPOS.map(c => [c, selecionadas ? soma(obras.map(o => o[c])) : null]));
     // Com selecao vazia, uma fonte ausente continua desconhecida, nao vira zero.
     if (selecionadas && !obras.length) {
+      if (!resumo) for (const c of ['ajusteEntradaCentavos', 'contratoPrevistoCentavos', 'carteiraCentavos', 'pendenteContratoCentavos', 'excedenteContratoCentavos']) totais[c] = null;
       if (fs.repasses.status !== 'confirmada') for (const c of ['contratoRecebidoCentavos', 'recebidoAcumuladoCentavos', 'recebidoPeriodoCentavos', 'diferencaRecebidoCustoCentavos', 'pendenteContratoCentavos', 'excedenteContratoCentavos']) totais[c] = null;
       if (fs.adicionais.status !== 'confirmada' || fs.pagamentosAdicionais.status !== 'confirmada') {
         for (const c of CAMPOS.filter(c => /adicionais|Adicionais|carteira|recebidoAcumulado|recebidoPeriodo|diferenca/.test(c))) totais[c] = null;
@@ -232,6 +244,7 @@
       if (fs.lancamentos.status !== 'confirmada') for (const c of ['custoPeriodoCentavos', 'diferencaRecebidoCustoCentavos']) totais[c] = null;
     }
     const publicFontes = Object.fromEntries(FONTES.map(nome => [nome, { status: fs[nome].status, quantidade: fs[nome].quantidade }]));
+    publicFontes.planosEntrada = { status: resumo ? 'confirmada' : 'indisponivel', quantidade: resumo ? resumo.planos.length : null };
     const status = !selecionadas ? 'indisponivel' : CAMPOS.every(c => totais[c] != null) ? 'confirmada' : 'parcial';
     return {
       filtro: f, companyId: s.companyId || null, status, fontes: publicFontes,

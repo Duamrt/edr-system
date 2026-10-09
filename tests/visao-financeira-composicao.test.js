@@ -12,6 +12,7 @@ const FONTES = ['obras', 'lancamentos', 'repasses', 'adicionais', 'pagamentosAdi
 function foto() {
   return {
     companyId: COMPANY, company_id: COMPANY,
+    planosEntrada: { status: 'confirmada', company_id: COMPANY, planos: [] },
     obras: [registro('a', { nome: 'Casa Sintética A', arquivada: false, area_m2: 20, valor_venda: 500 }),
       registro('b', { nome: 'Casa Sintética B', arquivada: true, area_m2: 50, valor_venda: 900 })],
     lancamentos: [

@@ -74,7 +74,11 @@ async function sbGetAll(t, q = '', options = {}) {
   for (let i = 0; i < 100; i++) {
     const sep = q.includes('?') ? '&' : '?';
     const batch = await sbGet(t, q + sep + 'limit=' + size + '&offset=' + offset, options);
-    if (!Array.isArray(batch) || batch.length === 0) break;
+    if (!Array.isArray(batch)) {
+      if (options.throwOnError) throw new Error('sbGetAll resposta inválida: ' + t);
+      break;
+    }
+    if (batch.length === 0) break;
     all = all.concat(batch);
     if (batch.length < size) break;
     offset += size;
@@ -731,3 +735,26 @@ const usuarioAtual = {
   perfil: 'operacional',
   empresa_id: null
 };
+
+// Plano de entrada não usa fallback REST. Falha após possível commit conserva a intenção.
+async function sbRpcEntradaPlano(fn, params) {
+  if (!['entrada_plano_estado','entrada_plano_operar','entrada_plano_resumo'].includes(fn))
+    return {ok:false,incerto:false,mensagem:'Operação de entrada inválida.'};
+  try {
+    const r = await fetch(SUPABASE_URL + '/rest/v1/rpc/' + fn, {
+      method:'POST', headers:_sbHeaders(), body:JSON.stringify(params || {})
+    });
+    const body = await r.json().catch(() => null);
+    if (!r.ok) {
+      const rollback = ['40P01','40001'].includes(body?.code);
+      return {ok:false,codigo:body?.code || '',ausente:r.status===404 && body?.code==='PGRST202',
+        incerto:!rollback && (r.status>=500 || r.status===408 || !body?.code),
+        mensagem:rollback?'Operação interrompida por disputa simultânea. Recarregue os dados.':body?.message || 'Não foi possível confirmar o pedido.'};
+    }
+    return body && typeof body==='object' && !Array.isArray(body)
+      ? {ok:true,dados:body}
+      : {ok:false,incerto:true,mensagem:'Resposta incompleta. Confira o mesmo pedido antes de repetir.'};
+  } catch (_) {
+    return {ok:false,incerto:true,mensagem:'Conexão interrompida. Confira o mesmo pedido para recuperar o resultado.'};
+  }
+}

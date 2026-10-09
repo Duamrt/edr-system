@@ -94,6 +94,7 @@ if (!process.env.EDR_PGLITE_PATH) {
           return fontes[tabela].slice(offset, offset + 2);
         },
         carregarLedger: async () => { chamadasLedger++; return jsonRpc; },
+        carregarPlanosEntrada: async () => ({ company_id: empresa, planos: [] }),
         criarDre: snapshot => contexto.window.DREModule.criarContextoLeitura(snapshot)
       });
       return { loader, chamadas, chamadasLedger: () => chamadasLedger };

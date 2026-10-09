@@ -171,8 +171,9 @@
       const total = origem === 'contrato' ? inteiro(valores[0]) : origem === 'adicionais' ? inteiro(valores[1]) : soma(valores);
       const rotulo = (excesso ? 'A MAIOR' : 'A RECEBER') + (origem === 'contrato' ? ' DO CONTRATO' : origem === 'adicionais' ? ' DOS ADICIONAIS' : '') + ' NESTA OBRA';
       const contexto = origem === 'todos' ? '' : ' Quadro de contexto com contrato e adicionais; o calculo destacado considera somente ' + origem + '.';
+      const composicaoEntrada = '<p class="detail-note">Contrato original: ' + h.esc(h.money(o.contratoOriginalCentavos)) + ' · Ajuste aprovado da entrada: ' + h.esc(h.money(o.ajusteEntradaCentavos)) + ' · Contrato atual derivado: ' + h.esc(h.money(o.contratoPrevistoCentavos)) + '. O ajuste inclui o cancelamento proporcional de acréscimo. Contrato cadastrado preservado; nenhum ajuste representa dinheiro recebido.</p>';
       const aviso = fonte(ctx, 'adicionais') && fonte(ctx, 'pagamentosAdicionais') ? '' : '<p class="detail-note">Fonte de adicionais ou recebimentos indisponivel; ausencia de linhas nao confirma inexistencia de adicionais.</p>';
-      return `<section class="receivable-detail-work"><h3>${h.esc(o.nome)}</h3><div class="table-wrap"><table class="data-table"><thead><tr><th>ORIGEM</th><th class="num">VALOR</th><th class="num">RECEBIDO</th><th class="num">A RECEBER</th><th class="num">A MAIOR</th></tr></thead><tbody>${itens.map(a => `<tr><td>${h.esc(a.nome)}</td><td class="num">${h.esc(h.money(a.previstoCentavos))}</td><td class="num">${h.esc(h.money(a.recebidoCentavos))}</td><td class="num">${h.esc(h.money(a.pendenteCentavos))}</td><td class="num">${h.esc(h.money(a.excedenteCentavos))}</td></tr>`).join('')}</tbody></table></div><div class="formula"><small>${h.esc(rotulo)}</small>${h.esc(h.money(total))} = soma dos maximos de cada item (${excesso ? 'recebido - previsto' : 'previsto - recebido'}; 0)</div><p class="detail-note">Excedentes permanecem separados. Um recebimento a maior nao quita outro adicional, o contrato ou outra obra.${h.esc(contexto)}</p>${aviso}</section>`;
+      return `<section class="receivable-detail-work"><h3>${h.esc(o.nome)}</h3><div class="table-wrap"><table class="data-table"><thead><tr><th>ORIGEM</th><th class="num">VALOR</th><th class="num">RECEBIDO</th><th class="num">A RECEBER</th><th class="num">A MAIOR</th></tr></thead><tbody>${itens.map(a => `<tr><td>${h.esc(a.nome)}</td><td class="num">${h.esc(h.money(a.previstoCentavos))}</td><td class="num">${h.esc(h.money(a.recebidoCentavos))}</td><td class="num">${h.esc(h.money(a.pendenteCentavos))}</td><td class="num">${h.esc(h.money(a.excedenteCentavos))}</td></tr>`).join('')}</tbody></table></div><div class="formula"><small>${h.esc(rotulo)}</small>${h.esc(h.money(total))} = soma dos maximos de cada item (${excesso ? 'recebido - previsto' : 'previsto - recebido'}; 0)</div><p class="detail-note">Excedentes permanecem separados. Um recebimento a maior nao quita outro adicional, o contrato ou outra obra.${h.esc(contexto)}</p>${composicaoEntrada}${aviso}</section>`;
     }).join('') || '<p class="detail-note">Nenhuma obra identificada neste recorte. Fontes indisponiveis nao representam saldo zero.</p>';
   }
   function congelar(v) { if (v && typeof v === 'object' && !Object.isFrozen(v)) { Object.values(v).forEach(congelar); Object.freeze(v); } return v; }
@@ -240,7 +241,7 @@
     if (receber[key]) {
       [out.title, out.valueCentavos] = receber[key];
       out.formula = key === 'receivableExcess' ? 'Soma de maximo(recebido - previsto; 0), por contrato e por adicional.'
-        : key === 'receivableContract' ? 'Soma de maximo(contrato - recebimentos do contrato; 0), por obra.'
+        : key === 'receivableContract' ? 'Soma de maximo(contrato original + ajuste aprovado da entrada - recebimentos do contrato; 0), por obra.'
         : key === 'receivableExtras' ? 'Soma de maximo(adicional - recebimentos vinculados; 0), por adicional.'
         : 'Soma de maximo(previsto - recebido; 0), por contrato e por adicional.';
       out.note = 'Posicao acumulada da carteira atual. O periodo nao reduz a pendencia aos recebimentos daquele mes. Arquivamento nao comprova quitacao.';
@@ -298,9 +299,9 @@
         ? inteiro(custo ? acumulada.custoPeriodoCentavos : acumulada.contratoPrevistoCentavos) : null;
       const valor = base != null && area != null ? inteiro(Math.round(base / area)) : null;
       Object.assign(out, { title: custo ? 'Custo acumulado por m²' : 'Contrato por m²', valueCentavos: valor,
-        formula: (custo ? 'Custo lançado acumulado' : 'Valor do contrato cadastrado') + ' ÷ área cadastrada da obra; arredondado ao centavo por m².',
+        formula: (custo ? 'Custo lançado acumulado' : 'Contrato original + ajuste aprovado da entrada') + ' ÷ área cadastrada da obra; arredondado ao centavo por m².',
         note: custo ? 'Inclui todos os lançamentos de custo da obra, de todos os períodos e classificações. Custo registrado não comprova pagamento ou consumo de estoque.'
-          : 'Valor do contrato atual, sem somar adicionais ou recebimentos. Área consultada no mesmo cadastro da obra.',
+          : 'Contrato cadastrado + ajuste aprovado da entrada, sem somar adicionais ou recebimentos. O valor original do cadastro permanece preservado. Área consultada no mesmo cadastro da obra.',
         extra: '<div class="formula"><small>BASE DO CÁLCULO</small>' + h.esc(h.money(base)) + ' ÷ ' + h.esc(area == null ? 'Área indisponível' : String(area) + ' m²')
           + ' = ' + h.esc(h.money(valor)) + '/m²</div>',
         rows: custo ? lancRows({ ...ctx, filtro: { ...ctx.filtro, periodo: '' } }, new Set(oid ? [oid] : []))

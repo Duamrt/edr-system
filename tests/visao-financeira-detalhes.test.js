@@ -18,7 +18,8 @@ function fixture() {
   const l = (id, obra_id, total, etapa = '04_alven', data = '2001-06-05', extra = {}) => row(id, { obra_id, total, etapa, data, descricao: 'Custo sintetico ' + id, obs: null, ...extra });
   const r = (id, obra_id, valor, tipo = 'pls') => row(id, { obra_id, valor, tipo, data_credito: '2001-06-05' });
   return {
-    companyId: COMPANY, company_id: COMPANY, ator_id: 'ator-sintetico', perfil: 'admin',
+    companyId: COMPANY, company_id: COMPANY,
+    planosEntrada: { status: 'confirmada', company_id: COMPANY, planos: [] }, ator_id: 'ator-sintetico', perfil: 'admin',
     obras: [row('a', { nome: 'Obra sintetica A', valor_venda: 100, area_m2: 50, arquivada: false }),
       row('b', { nome: 'Obra sintetica B', valor_venda: 80, area_m2: 40, arquivada: true }),
       row('c', { nome: 'Obra sintetica C', valor_venda: 50, area_m2: 25, arquivada: false }),

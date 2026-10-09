@@ -6,6 +6,7 @@ const { criar } = require('../js/edr-v2-visao-financeira-estado.js');
 const adiar = () => { let resolve, reject; const promise = new Promise((r, j) => { resolve = r; reject = j; }); return { promise, resolve, reject }; };
 function snapshot(companyId = 'empresa-teste', valor = 20) {
   return { companyId,
+    planosEntrada: { status: 'confirmada', company_id: companyId, planos: [] },
     obras: [{ id: 'obra-a', company_id: companyId, nome: 'Obra sintetica A', valor_venda: 100, arquivada: false }],
     lancamentos: [{ id: 'l1', company_id: companyId, obra_id: 'obra-a', total: 10, data: '2001-06-06' }],
     repasses: [{ id: 'r1', company_id: companyId, obra_id: 'obra-a', valor, data_credito: '2001-06-06' }],

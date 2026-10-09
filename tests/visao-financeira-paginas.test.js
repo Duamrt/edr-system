@@ -38,6 +38,7 @@ function snapshotReal() {
   const custo = (id, obra_id, total, etapa, data = '2026-10-03') => scoped({ id, obra_id, total, etapa, data, obs: '' });
   const s = {
     companyId: tenant,
+    planosEntrada: { status: 'confirmada', company_id: tenant, planos: [] },
     fontes: Object.fromEntries(['obras', 'lancamentos', 'repasses', 'adicionais', 'pagamentosAdicionais'].map(f => [f, 'confirmada'])),
     obras: [scoped({ id: 'a', nome: 'Casa Sintética A', valor_venda: 1000, area_m2: 100, arquivada: false }),
       scoped({ id: 'b', nome: 'Casa Sintética B', valor_venda: 350, area_m2: 50, arquivada: true }),

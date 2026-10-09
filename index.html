@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="css/edr-v2-visao-financeira.css?v=10061702"/>
+<link rel="stylesheet" href="css/edr-v2-entrada-plano.css?v=10061702"/>
 <style>
 /* ══════════════════════════════════════════
    EDR SYSTEM V2 — DESIGN SYSTEM (CSS VANILLA)
@@ -2157,6 +2158,7 @@ html.dark .hist-badge-obra { background:rgba(14,116,144,.18);color:#67e8f9;borde
         <button id="obras-tab-lanc" class="tab-btn tab-active" onclick="obrasSwitchTab('lanc')"><span class="material-symbols-outlined icon-sm">list_alt</span> LANÇAMENTOS</button>
         <button id="obras-tab-mat" class="tab-btn" onclick="obrasSwitchTab('mat')"><span class="material-symbols-outlined icon-sm">inventory_2</span> MATERIAIS</button>
         <button id="obras-tab-add" class="tab-btn" onclick="obrasSwitchTab('add')"><span class="material-symbols-outlined icon-sm">note_add</span> ADICIONAIS</button>
+        <button id="obras-tab-entrada" class="tab-btn" onclick="obrasSwitchTab('entrada')"><span class="material-symbols-outlined icon-sm">receipt_long</span> ENTRADA</button>
         <button id="obras-tab-cef" class="tab-btn" onclick="obrasSwitchTab('cef')"><span class="material-symbols-outlined icon-sm">attach_money</span> CEF</button>
       </div>
     </div>
@@ -2193,6 +2195,8 @@ html.dark .hist-badge-obra { background:rgba(14,116,144,.18);color:#67e8f9;borde
       <div id="adicionais-empty" class="empty hidden">Nenhum serviço adicional registrado nesta obra.</div>
     </div>
 
+    <!-- Aba Entrada do cliente: snapshot confirmado pelas RPCs -->
+    <div id="obras-tab-content-entrada" style="display:none;"><div id="entrada-plano-content"></div></div>
     <!-- Aba CEF -->
     <div id="obras-tab-content-cef" style="display:none;">
       <div id="obras-cef-content"></div>
@@ -3407,6 +3411,7 @@ function updateShellUser(nome, perfil) {
 })();
 </script>
 
+<div id="entrada-plano-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="ep-title"></div>
 <!-- ═══════ MODULOS V2 (ordem de dependência) ═══════ -->
 <!-- 0. Infraestrutura: sbGet/sbPost/sbPatch/sbDelete, confirmar(), showModal, usuarioAtual -->
 <script src="js/edr-v2-infra.js?v=10061702"></script>
@@ -3414,7 +3419,10 @@ function updateShellUser(nome, perfil) {
 <!-- 1. Utilitários globais (valorPorExtenso, fmtN) -->
 <script src="js/edr-v2-utils-extras.js?v=10061702"></script>
 <!-- 1b. Entrada do cliente (regra única, usada por Obras e Custos — deve vir antes) -->
+<script src="js/edr-v2-entrada-plano-projecoes.js?v=10061702"></script>
 <script src="js/edr-v2-entrada-cliente.js?v=10061702"></script>
+<script src="js/edr-v2-entrada-plano-calc.js?v=10061702"></script>
+<script src="js/edr-v2-entrada-plano.js?v=10061702"></script>
 <!-- 2. Obras PRIMEIRO (ETAPAS, resolveEtapaKey, etapaCor, etapaLabel — vários módulos dependem) -->
 <script src="js/edr-v2-obras.js?v=10061702"></script>
 <!-- 3. PDF engine (pdfMake CDN + PdfModule) -->
@@ -3868,7 +3876,21 @@ function updateShellUser(nome, perfil) {
 <!-- FUNÇÕES GLOBAIS (Fase 0 — compat V1→V2)                      -->
 <!-- ═══════════════════════════════════════════════════════════════ -->
 <script>
-console.log('%c EDR System v04151731 ', 'background:#1B4332;color:#fff;font-weight:bold;padding:2px 8px;border-radius:3px');
+// Mesmo build do cache publicado; não inventa versão quando a consulta falha.
+(function () {
+  const badge=document.createElement('div');
+  badge.id='edr-build-badge';
+  badge.style.cssText='position:fixed;bottom:5px;right:8px;z-index:20;font:10px Inter,sans-serif;color:var(--text-tertiary);background:var(--bg);padding:3px 6px;border-radius:4px;pointer-events:none;';
+  badge.textContent='EDR v2 · build consultando';
+  document.body.appendChild(badge);
+  fetch('sw.js',{cache:'no-store'}).then(r=>{if(!r.ok)throw Error();return r.text();}).then(source=>{
+    const build=/const\s+CACHE_NAME\s*=\s*['"]([^'"]+)['"]/.exec(source)?.[1];
+    if(!build)throw Error();
+    badge.textContent='EDR v2 · '+build;
+    console.info('EDR System v2 · build '+build);
+  }).catch(()=>{badge.textContent='EDR v2 · build indisponível';console.info('EDR System v2 · build indisponível');});
+})();
+
 // fecharModal — V2 (usa active, remove hidden caso exista)
 function fecharModal(w) {
   const el = document.getElementById('modal-' + w) || document.getElementById(w);

@@ -343,3 +343,103 @@ Isso exigiria abrir a obra logado em produção — não foi feito. A validaçã
 - **Obras com `entrada_paga = true` e sem repasse passarão a exibir "CONFERIR" em
   vermelho.** É o comportamento correto pela regra, mas o volume não foi medido —
   nenhuma consulta ao banco foi feita.
+
+---
+
+# Plano de pagamento da entrada — integração v6 (08/10/2026)
+
+## Fonte e estado da retomada
+
+A prévia aprovada foi recuperada pelo fluxo oficial do Sites, sem alteração ou publicação da prévia: projeto `appgprj_6ac3f96303f081918916ebe011d0e5f2`, versão 6, commit `79e4ffe85b8affdffae76fcee3cadd39299c8b1f`. Esse SHA é da prévia, não do EDR publicado. O pedido atual autoriza a integração isolada, testes, documentação e publicação pelo processo do projeto, preservando os trabalhos locais.
+
+O checkout canônico `C:\Users\Duam Rodrigues\edr-system` estava em `dev`, SHA `74f33d0`, com alterações locais. O remoto estava em `235d371`, incluindo Caixa prospectivo e Visão Financeira. A implementação usa worktree separado `C:\Users\Duam Rodrigues\edr-system-plano-entrada-v6-20261008`, branch `codex/plano-entrada-v6-atual-20261008`, a partir desse remoto. O checkout canônico não foi substituído nem limpo.
+
+O bloqueio de segurança da tarefa anterior é histórico. Nesta retomada, a recuperação oficial da fonte e as operações locais necessárias foram permitidas. Erros de acesso do sandbox, resolução de rede e SQL não devem ser registrados como uma nova recusa de segurança. Uma nova rejeição explícita de revisão automática exige interromper a ação e registrar o resultado concreto; não autoriza trocar de rota para repetir a ação rejeitada.
+
+## Regras de valores e governança
+
+- `obras.contrato_entrada` e `obras.valor_venda` conservam os valores originais. O plano guarda o original; a carteira derivada acrescenta somente `total aprovado líquido − original` à venda original. Cancelamento de acréscimo não fabrica receita, despesa ou movimento.
+- Resumo, panorama e relatório de Custos aplicam essa mesma carteira derivada. A revisão encontrou os três pontos ainda usando só a venda original; foram corrigidos e ganharam regressão. A aba CEF de Obras também consulta o ledger corrente e a mesma projeção aprovada, sem manter obra/identidade capturadas antes da espera. Com entrada original 100, acordo 115 e cancelamento 5, o ajuste é 10 (final 110), sem subtrair cancelamento novamente. Contrato CEF e venda permanecem apresentados como originais. Falha de leitura dos repasses não é recebido zero; saldo fica indisponível. A recarga do detalhe usa o render existente e confere identidade/revisão da leitura.
+- Cada parcela tem original, modo exclusivo (`waived`, `percent` ou `final`), acréscimo, final vigente, recebido e saldo. Percentual é aplicado uma vez; valor final negociado não recebe percentual adicional.
+- 15% é sugestão editável somente quando vencimento e entrega estiverem definidos e o vencimento for posterior à entrega. Não há juros mensais ou compostos.
+- Elyda solicita mudanças e estornos; Duam aprova ou rejeita. O servidor usa os Auth UIDs configurados para a empresa e verifica vínculo atual ativo, sem confiar em nome ou botão. A configuração não cria usuários, não muda papéis e não amplia permissões legadas.
+- Solicitações exigem motivo. Antes/depois, solicitante, aprovador e data/hora ficam auditados. Uma solicitação não modifica parcelas vigentes; pagamento ou outra alteração invalida aprovação de proposta obsoleta. Rejeição preserva o acordo vigente.
+- Duam e Elyda, enquanto administradores ativos configurados, podem registrar dinheiro efetivamente recebido. Operadores sem essa atribuição não ganham essa permissão pelo novo módulo.
+- A previsão financeira de entrega fica exclusivamente em `entrada_planos.delivery`. `obras.data_entrega` continua sendo a data real do Termo: aprovar o plano não a preenche nem impede concluir/reimprimir a obra. Uma mudança do contrato cadastrado durante a proposta inicial impede aprovar o snapshot obsoleto; rejeitar a proposta e solicitar novamente permite conferir o original atual sem apagar a trilha.
+- Vencimentos/entrega indefinidos ficam sem data. Aprovar o plano internamente não é evidência de aceite da cliente. Não importar exemplos da prévia como operação real.
+
+A revisão final reproduziu uma exposição no replay: o snapshot durável podia conter contas do Caixa e era devolvido antes de conferir o papel/responsável atual. O patch aditivo `sql/entrada-plano-revalidar-replay.sql`, SHA-256 `D0F0CF1570D2D654A4FBD37E0239D338B3A4F4FBAF4C59C789F30B73660199E4`, restringe SELECT ao autor ainda administrador ativo e revalida papel, atribuição e tipo depois da espera nos locks, antes de devolver o UUID antigo. A leitura de permissões também exige admin para solicitar. Não altera operações, snapshots, contratos, recibos ou saldos. Configuração trocada revoga a ação; administrador ainda ativo pode ler seu histórico próprio. Testes de downgrade/desativação/troca de responsável e concorrência conferem a recusa sem duplicar dinheiro.
+
+## Recebimentos, antecipação e estorno
+
+O dinheiro recebido continua vindo exclusivamente dos repasses reais do tipo `entrada`. Vincular um repasse existente usa seu ID e não cria outro repasse nem movimento de Caixa. Antes de receber dinheiro novo, os repasses de entrada existentes precisam estar conciliados nas parcelas; a tela deve informar qualquer falta de vínculo. A posição agregada desconta o ledger uma única vez.
+
+Leitura de produção em 09/10 confirmou nenhuma conta/abertura do Caixa para a EDR. Não criar abertura zero ou saldo por dedução. Recebimento novo e estorno com saída real exigem abertura confirmada de Banco/Dinheiro, corte e valores fornecidos pelo Duam; vincular o repasse antigo permanece independente dessa abertura. A publicação do plano não comprova que o Caixa foi configurado.
+
+Um novo recebimento confirmado gera, na mesma transação, um evento imutável do plano, um repasse e um movimento identificado no Caixa prospectivo. A conta Banco/Dinheiro, data efetiva, horário conhecido e posição em relação ao marco seguem as regras do Caixa. Clique duplo/reenvio usa o mesmo UUID e payload; reutilizar UUID com dados ou pessoa diferentes é recusado. Um novo UUID para o mesmo comprovante não é deduplicação automática: em resposta incerta, recuperar o pedido original antes de iniciar outro.
+
+Antecipação estritamente antes da entrega definida recebe principal e cancela o acréscimo proporcional ainda aberto. Em R$ 7.000 + R$ 1.050, receber R$ 3.500 antes da entrega cancela R$ 525: restam R$ 3.500 de principal e R$ 525 de acréscimo. O cancelamento não integra dinheiro recebido. No dia da entrega, depois dela ou com entrega indefinida, não existe cancelamento automático. A proporção acumulada conserva centavos em várias parciais; a última parcela de principal cancela o restante elegível.
+
+Estorno parcial/total depende de solicitação e aprovação. Preserva o recebimento original e cria eventos inversos rastreáveis, com saída real do Caixa e repasse negativo correspondente. Principal, acréscimo recebido e cancelamento anterior são recompostos proporcionalmente. Não excluir/editar silenciosamente recebimentos, repasses ou movimentos vinculados por rotas legadas.
+
+## Larissa e cimento
+
+A leitura real confirmou na retomada: entrada original de R$ 46.216,58, um repasse de R$ 5.000 em 04/09/2026, `entrada_paga = false` e entrega sem data. Esses registros são preservados. O exemplo de R$ 48.316,58 e saldo de R$ 43.316,58 é uma proposta para conferência, não um plano criado automaticamente. Os anos/dias de maio, outubro/dezembro e entrega permanecem sem confirmação.
+
+Não reaplicar ajustes de cimento. A referência local no checkout canônico é `docs/incidentes/ESTOQUE-CIMENTO-CONTAGEM-2026-10-08.md`, ainda não versionada; a contagem/retificação auditadas e os trabalhos de estoque permanecem fora deste release.
+
+## Avisos: dados preparados, automação pendente
+
+Os dados de leitura identificam parcela, obra, empresa, revisão vigente, vencimento e saldo. Aviso elegível considera somente plano aprovado, data completa, saldo positivo e vencimento três dias após a referência. Quitação, substituição ou renegociação aprovada deve atualizar a fonte. Falta de conciliação dos recebimentos antigos deve ser resolvida antes de publicar previsão por parcela.
+
+A futura rotina precisa confirmar fonte acessível, horário/fuso, destino neste chat e registro durável de avisos emitidos. A chave lógica da parcela/vencimento, com revisão separada, deve impedir repetição e permitir substituir o aviso obsoleto. A criação/teste da rotina e a verificação de sua existência são etapas próprias. **Não há automação ativa nesta entrega; não há cobrança enviada a clientes.**
+
+## Migração e implantação
+
+`sql/entrada-plano-DRAFT.sql` contém a DDL aditiva, tabelas com RLS, RPCs autenticadas, histórico/recibos imutáveis e guardas específicas para obra, repasse e Caixa vinculados. Não contém seed de Larissa, datas demonstrativas, saldo de abertura ou identidades reais. A configuração de responsáveis é uma etapa separada e conferível em `sql/entrada-plano-responsaveis-EDR-DRAFT.sql`, usando os Auth UIDs atuais da Elyda e do Duam na empresa EDR. Revalida vínculos ativos/admin na transação e recusa configuração divergente. Não cria identidade nem modifica papel.
+
+Hashes SHA-256 revisados: estrutura `3751522F2989884E579591F8E52A424E6E7E364E0E5C3A4C92B750E140B2DF80`; configuração EDR `990204A59C4350C65C20FE9A31C9EF3BEAB3F55073B5DE6CE9042D1838A91706`. Alteração posterior exige nova revisão e hash.
+
+Antes de aplicar: concluir ensaios SQL/concorrência/UI e revisão de permissões; conferir schema real, owners, grants, triggers e backup disponível; registrar hash exato da migração e configuração. Não mudar helpers/grants legados para fazer testes passarem. A aplicação e configuração reais devem constar do registro de execução, com leitura posterior que confirme resultado. Existência de arquivo SQL não prova aplicação.
+
+Publicar em checkout limpo atualizado, com arquivos explícitos da integração e diff revisado. O fluxo permanece `dev` → `deploy.sh` → fast-forward de `main`, sem push manual alternativo, `SKIP_CHECK`, reset ou force push. O script atual exige commit funcional antes de cache/deploy. Confirmar Pages, conteúdo servido, versão curta e build/SW após propagação. HTTP 200 não comprova login/persistência; smoke autenticado de produção é somente leitura, sem pagamento de teste, abertura ou alteração financeira real. Não abrir Agenda operacional para testar esta integração.
+
+## Recuperação que preserva operações
+
+O rollback DRAFT do banco só pode ser considerado com todas as tabelas novas vazias, inclusive configuração, após adquirir locks `NOWAIT` nas tabelas novas e nas tabelas legadas guardadas e verificar ausência de dados na mesma transação. Ocupação recebe `55P03` e aborta antes de qualquer DROP, sem desconectar usuário nem deixar DDL parcial. As RPCs consultam operações antes de travar obra/configuração para impedir ordem inversa com a recuperação. Seu teste local não autoriza executá-lo em produção. Depois de qualquer configuração/proposta/recebimento, conservar tabelas, auditoria, UUIDs, vínculos e snapshots; corrigir para frente. Não executar DROP/TRUNCATE, excluir trilha ou restaurar backup global apagando operações posteriores.
+
+Antes da migração, conservar esquema/owners/grants/triggers e confirmar backup/procedimento oficial. Depois do uso, preservar também o estado corrente consistente de planos, parcelas, propostas, histórico, operações, recebimentos, repasses e movimentos/contas do Caixa. Dumps e credenciais privadas não pertencem ao repositório publicado. Ensaio de recuperação sintética local não prova restauração física/PITR de produção.
+
+Para contingência do aplicativo, não voltar cegamente a uma UI antiga que desconhece vínculos e permite registrar/excluir entradas avulsas. Preparar patch compatível que suspenda novas mutações do plano, conserve leitura, histórico, guardas e saldo persistido. Publicar pelo mesmo fluxo autorizado e conferir cache/build; abas antigas podem permanecer abertas/offline. Preservar as guardas do banco. Registrar SHA funcional e SHA de cache; reverter apenas HEAD do cache não remove a funcionalidade.
+
+## Registro atual de validação
+
+| Etapa | Resultado confirmado |
+| --- | --- |
+| Recuperação da fonte | V6/commit conferidos; prévia não alterada/publicada |
+| Cálculo local | 10 testes passaram (incluídos nos 323 abaixo), zero falhas/ignorados; inclui comparação com fonte v6, antecipação/estornos parciais acumulados e datas indefinidas |
+| Integração/regressão | 323 testes passaram, zero falhas/ignorados: cálculo com comparação v6, projeções, entrada legada e regressões financeiras/DRE |
+| Interface local | 32 testes passaram, zero falhas/ignorados: 18 controllers/render e 14 Chromium, desktop/390/320 px; mais 3 ensaios das projeções no Caixa. Inclui bloqueio sem abertura do Caixa e tradução dos tipos reais do histórico |
+| Custos derivado | 14 testes passaram, zero falhas/ignorados; resumo/panorama/relatório usam venda original + ajuste líquido aprovado, incluindo adicionais/recebimentos uma vez. Fonte de repasses falha fica desconhecida; vazio confirmado representa zero. Troca de ator/perfil/empresa/token e leitura antiga não publicam estado anterior |
+| Banco/concorrência | 37 casos finais passaram, zero falhas/ignorados: 25 SQL PGlite e 12 PostgreSQL 17 com conexões distintas. Inclui rebaixamento durante espera no lock, replay autorizado sem dinheiro duplicado, original obsoleto, entrega real independente, rollback ocupado e dump/restauração sintéticos. Uma conexão de teste encerrada após erro esperado foi corrigida no harness; os 12 PG foram repetidos, sem repetir os 25 SQL válidos |
+| Obras/CEF e transporte | 17/17 casos locais e 1/1 Chromium relacionado passaram; carteira vigente líquida, troca de identidade/obra e consultas concorrentes; sbGet/sbGetAll e fetch reais locais recusam HTTP 200 com objeto e falha após página válida, sem saldo parcial confirmado. O fallback legado sem modo estrito foi preservado |
+| Auth real local | 16/16 HTTP (15 casos mais agrupador) e 9/9 UI (8 casos mais agrupador) passaram em 09/10/2026 sobre as fontes finais, zero falhas/ignorados; GoTrue/PostgREST e PostgreSQL 17.6 reais, somente 127.0.0.1. Inclui Elyda solicita, Duam aprova, parcial/estorno proporcional, clique duplo/replay, revisão concorrente, RLS/tenant e terceiro negado. Tela geral de login e produção não testadas |
+| Migração/configuração de produção | Aplicadas em 09/10/2026: entrada_plano_v6 20261009121823; responsáveis EDR conferidos às 12:19:14 UTC; 19 gates SQL verdes, seis tabelas operacionais vazias e 13 fingerprints legados preservados |
+| Commit/publicação/smoke real | Ainda não executados |
+| Automação de avisos | Não criada/ativa |
+
+Comando do cálculo: `EDR_PREVIA_V6` aponta para a fonte recuperada fora do repositório, seguido de `node --test tests/entrada-plano-calc.test.js`. Sem essa referência, somente o caso comparativo é explicitamente ignorado; isso não deve ser apresentado como comparação executada.
+
+Homologação Auth de 09/10: stack local dedicada `edr-entrada-qa-20261008`, PostgreSQL 17.6, API `127.0.0.1:55421` e banco `127.0.0.1:55422`; usuários/fixtures preservados fora da produção. A CLI 2.117 publicou inicialmente DB/Kong em `0.0.0.0`; antes de criar identidades, somente esses dois containers QA foram recriados pela API oficial Docker com `HostIp=127.0.0.1`, preservando imagens, configuração, arquivos Kong e volumes. Rede/firewall/daemon globais e outras stacks não foram alterados. Não reiniciar essa QA por `supabase start` sem reconferir os bindings e a escuta efetiva; nenhum segredo ou backup privado pertence ao Git. Os testes Auth usam os preparadores em `tests/fixtures/entrada-plano-auth-local-*` e recusam destino fora da QA marcada.
+
+### Aceite e aplicação real — 09/10/2026
+
+Duam aceitou visualmente Entrada e Custos nesta conversa antes do commit: "ACEITO. PODE PROSSEGUIR". O aceite cobre a apresentação conferida com dados de TESTE; não representa teste de pagamento real ou aceitação do acordo pela cliente.
+
+A migração estrutural foi aplicada pelo conector oficial como `entrada_plano_v6`, versão `20261009121823`, com o hash revisado acima. A configuração separada foi aplicada por owner às `2026-10-09 12:19:14.01147 UTC`; um erro de transporte inicial foi seguido de SELECT vazio e repetição idempotente do mesmo SQL. Nenhuma rejeição de segurança ocorreu nessa aplicação. Leitura posterior às `12:19:24 UTC`: 19 condições verdadeiras, RLS/ACLs/owners/triggers/RPCs conferidos, apenas uma configuração EDR e seis tabelas operacionais vazias. Todos os 13 fingerprints legados permaneceram iguais; Larissa conserva original R$ 46.216,58, repasse R$ 5.000 e entrega sem data. Não houve plano, parcela, recebimento ou abertura fictícios em produção.
+
+O advisor apontou somente controles intencionais nos objetos novos: [configuração privada com RLS sem policy](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy), sem grants aos clientes, e [quatro RPCs definer executáveis por autenticados](https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable), com identidade ativa/tenant/papel conferidos internamente, search_path fixo e helpers privados sem EXECUTE público. Não abrir grants para silenciar avisos. Alertas sobre objetos legados não foram alterados neste escopo.
+
+Patch aditivo aplicado pelo conector oficial como `entrada_plano_revalidar_replay`, versão `20261009124446`, após os ensaios finais. Leitura posterior confirmou os mesmos 19 gates verdes e 13 fingerprints legados preservados, seis tabelas operacionais vazias e corpos das funções iguais aos ensaiados: estado `d477b8c3110466c216ec2b086d1cc4f5`, operar `397d340e8c127361d49ccdad954dc7ae`. Policy de operações exige autor/tenant/admin ativo. Nenhuma operação financeira foi criada.
+
+Recuperação após configuração: não usar o rollback de tabelas vazias, pois a configuração real já existe. Conservar schema, trilha e vínculos; eventual correção é para frente e a contingência de UI deve ser compatível com as guardas. Publicação e smoke autenticado ainda pendentes nesta etapa.

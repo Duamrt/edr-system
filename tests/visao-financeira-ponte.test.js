@@ -14,6 +14,7 @@ const adiar = () => { let resolve, reject; const promise = new Promise((r, j) =>
 function snapshot(valor = 20, extras = {}) {
   const s = {
     companyId: COMPANY, company_id: COMPANY, ator_id: ATOR, perfil: 'admin',
+    planosEntrada: { status: 'confirmada', company_id: COMPANY, planos: [] },
     obras: [{ id: 'obra-a', company_id: COMPANY, nome: 'Obra sintetica A', valor_venda: 100, arquivada: false }],
     lancamentos: [{ id: 'l1', company_id: COMPANY, obra_id: 'obra-a', total: 10, data: '2001-06-06', etapa: '04_alven', obs: null }],
     repasses: [{ id: 'r1', company_id: COMPANY, obra_id: 'obra-a', valor, data_credito: '2001-06-06' }],
@@ -258,6 +259,7 @@ function navegador(extra = {}) {
       calcGerencialPorObra: () => ({ margem: 0 }), calcGerencialConsolidado: () => ({ resultado: 0 }) }; } },
     OBRAS_INTERNAS: ['obra-interna-sintetica'],
     sbGet: async (t, q, opt) => { chamadas.push(['pagina', t, q, opt]); return []; },
+    sbRpcEstoque: async () => ({ok:true,dados:{company_id:COMPANY,planos:[]}}),
     caixaProspectivoCarregar: async () => { chamadas.push(['ledger']); return { company_id: COMPANY, contas: [], movimentos: [], pagamentos: [], total_centavos: 0 }; },
     fetch: bloquear, sbPost: bloquear, sbPatch: bloquear, sbDelete: bloquear, initDiarias: bloquear,
     localStorage: { getItem: bloquear, setItem: bloquear }, console: { log: bloquear, warn: bloquear, error: bloquear },

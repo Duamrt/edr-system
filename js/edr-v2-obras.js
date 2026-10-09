@@ -216,7 +216,7 @@ function _obrasShowOverview() {
   if (overview) overview.style.display = '';
   if (sticky) sticky.style.display = 'none';
   // Esconder todos os paineis de tab
-  ['lanc', 'mat', 'add', 'cef'].forEach(t => {
+  ['lanc', 'mat', 'add', 'cef', 'entrada'].forEach(t => {
     const p = document.getElementById('obras-tab-content-' + t);
     if (p) p.style.display = 'none';
   });
@@ -354,6 +354,7 @@ function toggleObrasArquivadas() {
 
 // ── DETALHE DA OBRA ─────────────────────────────────────────────
 function obrasAbrirDetalhe(obraId) {
+  if (typeof EntradaPlano !== 'undefined') EntradaPlano.invalidar();
   ObrasModule.obraAberta = obraId;
   ObrasModule.catsFiltro.clear();
   // 3.3: sincronizar o DOM do filtro de categoria com o Set ja limpo (mesmo seletor/padrao de obrasCatLimpar) —
@@ -397,7 +398,7 @@ function obrasAbrirDetalhe(obraId) {
 // ── TABS ────────────────────────────────────────────────────────
 function _obrasRenderTabs() {
   // Usar botoes de tab existentes no HTML (obras-tab-lanc, obras-tab-mat, etc.)
-  const tabMap = { lanc: 'obras-tab-lanc', mat: 'obras-tab-mat', add: 'obras-tab-add', cef: 'obras-tab-cef' };
+  const tabMap = { lanc: 'obras-tab-lanc', mat: 'obras-tab-mat', add: 'obras-tab-add', cef: 'obras-tab-cef', entrada: 'obras-tab-entrada' };
   Object.entries(tabMap).forEach(([key, id]) => {
     const btn = document.getElementById(id);
     if (btn) {
@@ -414,7 +415,7 @@ function obrasSwitchTab(tab) {
   _obrasRenderTabs();
 
   // Mostrar/esconder paineis de conteudo
-  ['lanc', 'mat', 'add', 'cef'].forEach(t => {
+  ['lanc', 'mat', 'add', 'cef', 'entrada'].forEach(t => {
     const panel = document.getElementById('obras-tab-content-' + t);
     if (panel) panel.style.display = t === tab ? '' : 'none';
   });
@@ -431,6 +432,7 @@ function obrasSwitchTab(tab) {
     if (addContainer && typeof AdicionaisModule !== 'undefined') AdicionaisModule.render(ObrasModule.obraAberta, addContainer);
   }
   if (tab === 'cef') renderObraCef();
+  if (tab === 'entrada' && typeof EntradaPlano !== 'undefined') EntradaPlano.carregar();
 }
 
 // ── LANCAMENTOS: filtro + render + paginacao ────────────────────
@@ -594,7 +596,34 @@ function filtrarLancCat() {
 }
 
 // ── CEF (aba) ───────────────────────────────────────────────────
-function renderObraCef() {
+function _obrasCefIdentidade() {
+  return { empresa: typeof _companyId !== 'undefined' ? _companyId : null,
+    ator: typeof usuarioAtual !== 'undefined' ? usuarioAtual?.id : null,
+    perfil: typeof usuarioAtual !== 'undefined' ? usuarioAtual?.perfil : null,
+    token: typeof _supabaseToken !== 'undefined' ? _supabaseToken : null,
+    obra: ObrasModule.obraAberta, tab: ObrasModule.tab };
+}
+function _obrasCefMesmaIdentidade(a, b) {
+  return !!a && !!b && ['empresa', 'ator', 'perfil', 'token', 'obra', 'tab'].every(k => a[k] === b[k]);
+}
+function _obrasCefSomarCentavos(valores) {
+  if (!Array.isArray(valores) || typeof EntradaPlanoProjecoes === 'undefined') return null;
+  let soma = 0;
+  for (const valor of valores) {
+    const c = EntradaPlanoProjecoes.centavos(valor);
+    if (!Number.isSafeInteger(c) || !Number.isSafeInteger(soma + c)) return null;
+    soma += c;
+  }
+  return soma;
+}
+function _obrasCefSomaConfirmada(a, b) {
+  return Number.isSafeInteger(a) && Number.isSafeInteger(b) && Number.isSafeInteger(a + b) ? a + b : null;
+}
+function _obrasCefDinheiro(valor) { return valor == null ? 'Indisponível' : fmt(valor); }
+
+async function renderObraCef() {
+  const identidade = _obrasCefIdentidade();
+  const leitura = ObrasModule._cefLeitura = (ObrasModule._cefLeitura || 0) + 1;
   const obraId = ObrasModule.obraAberta;
   const el = document.getElementById('obras-cef-content');
   if (!el) return;
@@ -604,8 +633,26 @@ function renderObraCef() {
     return;
   }
 
+  // Fontes da consulta atual: erro não é saldo zero; o ledger global pode estar desatualizado.
+  const [resumoEntrada, reps] = await Promise.all([
+    (async () => {
+      try { return typeof EntradaPlanoProjecoes !== 'undefined' ? await EntradaPlanoProjecoes.carregar() : null; }
+      catch (_) { return null; }
+    })(),
+    (async () => {
+      try {
+        if (typeof sbGetAll !== 'function') return null;
+        const rows = await sbGetAll('repasses_cef', '?obra_id=eq.' + encodeURIComponent(obraId) + '&order=data_credito.desc,id', { throwOnError: true });
+        if (!Array.isArray(rows) || rows.some(r => !r || r.obra_id !== obraId || (identidade.empresa && r.company_id !== identidade.empresa))) return null;
+        return rows;
+      } catch (_) { return null; }
+    })()
+  ]);
+  if (leitura !== ObrasModule._cefLeitura || !_obrasCefMesmaIdentidade(identidade, _obrasCefIdentidade())) return;
   const obra = [...obras, ...obrasArquivadas].find(o => o.id === obraId);
-  if (!obra) { el.innerHTML = '<div style="text-align:center;padding:48px;color:var(--text-tertiary);">Obra nao encontrada.</div>'; return; }
+  if (!obra || (identidade.empresa && obra.company_id !== identidade.empresa)) {
+    el.innerHTML = '<div role="status">Obra não confirmada para esta empresa. Recarregue.</div>'; return;
+  }
 
   const financiado = Number(obra.contrato_valor || 0);
   const subsidio = Number(obra.contrato_subsidio || 0);
@@ -620,29 +667,31 @@ function renderObraCef() {
   const somaOk = valorVenda > 0 && Math.abs(somaComponentes - valorVenda) < 1;
   const somaAlerta = valorVenda > 0 && !somaOk;
 
-  // Repasses
-  const reps = (typeof repassesCef !== 'undefined' ? repassesCef : []).filter(r => r.obra_id === obraId);
-  const totalRecebido = reps.reduce((s, r) => s + Number(r.valor || 0), 0);
+  // O repasse continua sendo o único dinheiro recebido, inclusive estornos negativos.
+  const totalRecebidoCentavos = _obrasCefSomarCentavos(reps && reps.map(r => r.valor));
+  const ledgerConfirmado = Array.isArray(reps) && totalRecebidoCentavos != null;
+  let posEntrada = EntradaCliente.calcular(obra, reps, resumoEntrada);
+  if (!ledgerConfirmado) posEntrada = { ...posEntrada, status: 'indisponivel', recebido: null,
+    pendente: null, excedente: null, quitada: false, alerta: 'Recebimentos da entrada não confirmados. Recarregue.' };
+  const plano = typeof EntradaPlanoProjecoes !== 'undefined' ? EntradaPlanoProjecoes.projetar(obra, resumoEntrada) : null;
+  const carteiraCentavos = plano?.status === 'confirmada' ? plano.carteiraCentavos : null;
 
-  /* ENTRADA DO CLIENTE — regra única em edr-v2-entrada-cliente.js.
-     Antes desta correção (2026-08-03) esta tela lia SÓ o booleano
-     `obra.entrada_paga`, sem consultar repasse nenhum — divergindo de Custos.
-     O ledger (`repasses_cef` tipo 'entrada') é a fonte de verdade. */
-  const posEntrada = EntradaCliente.calcular(obra, reps);
-
-  // Adicionais
+  // Adicionais aprovados preservam a fonte anterior e entram uma única vez.
   const adds = typeof AdicionaisModule !== 'undefined' ? AdicionaisModule.getAdicionaisObra(obraId) : { lista: [], valorTotal: 0, totalRecebido: 0, saldo: 0 };
-  const receitaObra = valorVenda + adds.valorTotal;
-  // Onda 2.2+2.3 (regra aprovada Duam 2026-07-04): box financeiro coerente numa base so.
-  // recebido total = repasses (todos tipos) + pagamentos de adicionais; receita total = venda + adicionais validos (= receitaObra).
-  const recebidoAdicionais = Number(adds.totalRecebido || 0);
-  const recebidoTotal = totalRecebido + (Number.isFinite(recebidoAdicionais) ? recebidoAdicionais : 0);
-  const saldoReceber = receitaObra - recebidoTotal;
-  const pctRecebido = receitaObra > 0 ? Math.min((recebidoTotal / receitaObra * 100), 100) : 0;
+  const adicionaisCentavos = _obrasCefSomarCentavos([adds.valorTotal || 0]);
+  const adicionaisRecebidosCentavos = _obrasCefSomarCentavos([adds.totalRecebido || 0]);
+  const receitaCentavos = _obrasCefSomaConfirmada(carteiraCentavos, adicionaisCentavos);
+  const recebidoCentavos = _obrasCefSomaConfirmada(totalRecebidoCentavos, adicionaisRecebidosCentavos);
+  const saldoCentavos = _obrasCefSomaConfirmada(receitaCentavos, recebidoCentavos == null ? null : -recebidoCentavos);
+  const recebidoTotal = recebidoCentavos == null ? null : recebidoCentavos / 100;
+  const saldoReceber = saldoCentavos == null ? null : saldoCentavos / 100;
+  const pctRecebido = receitaCentavos != null && recebidoCentavos != null
+    ? receitaCentavos > 0 ? Math.min(recebidoCentavos / receitaCentavos * 100, 100) : 0 : null;
 
-  // Custos
-  const custoTotal = lancamentos.filter(l => l.obra_id === obraId).reduce((s, l) => s + Number(l.total || 0), 0);
-  const lucro = receitaObra - custoTotal;
+  const custoCentavos = _obrasCefSomarCentavos(Array.isArray(lancamentos) ? lancamentos.filter(l => l.obra_id === obraId).map(l => l.total || 0) : null);
+  const lucroCentavos = _obrasCefSomaConfirmada(receitaCentavos, custoCentavos == null ? null : -custoCentavos);
+  const custoTotal = custoCentavos == null ? null : custoCentavos / 100;
+  const lucro = lucroCentavos == null ? null : lucroCentavos / 100;
 
   const isAdmin = usuarioAtual?.perfil === 'admin';
 
@@ -660,8 +709,11 @@ function renderObraCef() {
 
       <!-- Valor de Venda -->
       <div class="cef-hero">
-        <div class="cef-hero-label">Valor de Venda do Imovel</div>
+        <div class="cef-hero-label">Valor de venda original do imóvel</div>
         <div class="cef-hero-value">${valorVenda > 0 ? fmt(valorVenda) : 'Nao definido'}</div>
+        ${plano?.planoId ? `<div class="cef-hero-label">Ajuste líquido aprovado: ${fmt(plano.ajusteCentavos / 100)} · Carteira vigente: ${_obrasCefDinheiro(carteiraCentavos == null ? null : carteiraCentavos / 100)}</div>` : ''}
+        ${carteiraCentavos == null ? '<p role="status">Plano de entrada não confirmado. Carteira, saldo e lucro vigentes indisponíveis.</p>' : ''}
+        ${!ledgerConfirmado ? '<p role="status">Recebimentos indisponíveis. Total recebido e saldo aguardam leitura confirmada.</p>' : ''}
       </div>
 
       <!-- Grid de fontes -->
@@ -686,7 +738,9 @@ function renderObraCef() {
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
         <div class="cef-card">
           <div class="cef-card-label">${
-            posEntrada.status === 'quitada'
+            posEntrada.status === 'indisponivel'
+              ? 'Entrada · consulta indisponível'
+              : posEntrada.status === 'quitada'
               ? 'Entrada <span style="color:var(--success);font-size:9px;">QUITADA</span>'
               : posEntrada.status === 'inconsistente'
                 ? `Entrada pendente <span style="color:var(--error);font-size:9px;" title="${esc(posEntrada.alerta || '')}">CONFERIR</span>`
@@ -695,15 +749,18 @@ function renderObraCef() {
                   : 'Entrada pendente <span style="color:var(--warning);font-size:9px;">PENDENTE</span>'
           }</div>
           <div class="cef-card-value" style="color:${posEntrada.status === 'quitada' ? 'var(--success)' : 'var(--warning)'};">${
-            posEntrada.status === 'quitada' ? fmt(posEntrada.recebido) : fmt(posEntrada.pendente)
+            posEntrada.status === 'indisponivel' ? 'Indisponível' : posEntrada.status === 'quitada' ? fmt(posEntrada.recebido) : fmt(posEntrada.pendente)
           }</div>
           <div style="font-size:10px;color:var(--text-secondary);margin-top:3px;line-height:1.4;">
-            ${posEntrada.status === 'quitada'
+            ${posEntrada.status === 'indisponivel'
+              ? `${_obrasCefDinheiro(posEntrada.original)} original · ${_obrasCefDinheiro(posEntrada.recebido)} recebido`
+              : posEntrada.status === 'quitada'
               ? (posEntrada.excedente > 0
                   ? `${fmt(posEntrada.contratado)} contratado · ${fmt(posEntrada.excedente)} acima`
                   : `${fmt(posEntrada.contratado)} contratado`)
               : `${fmt(posEntrada.contratado)} contratado · ${fmt(posEntrada.recebido)} recebido`}
           </div>
+          ${posEntrada.planoId ? `<div style="font-size:10px;color:var(--text-secondary);margin-top:5px;">Original ${fmt(posEntrada.original)} · ajuste aprovado ${fmt(posEntrada.ajuste)} · final vigente ${fmt(posEntrada.contratado)}</div>` : ''}
           ${posEntrada.alerta ? `<div style="font-size:9.5px;color:var(--error);margin-top:3px;line-height:1.35;">${esc(posEntrada.alerta)}</div>` : ''}
         </div>
         ${terreno > 0 ? `<div class="cef-card">
@@ -715,15 +772,13 @@ function renderObraCef() {
       <!-- Barra de repasses -->
       <div class="cef-progress-box">
         <div class="cef-progress-header">
-          <span class="cef-progress-label">Repasses Recebidos</span>
-          <span class="cef-progress-pct">${pctRecebido.toFixed(0)}%</span>
+          <span class="cef-progress-label">Recebimentos reais · carteira vigente</span>
+          <span class="cef-progress-pct">${pctRecebido == null ? 'Indisponível' : pctRecebido.toFixed(0) + '%'}</span>
         </div>
-        <div class="cef-progress-bar">
-          <div class="cef-progress-fill" style="width:${pctRecebido}%;"></div>
-        </div>
+        ${pctRecebido != null ? `<div class="cef-progress-bar"><div class="cef-progress-fill" style="width:${pctRecebido}%;"></div></div>` : ''}
         <div class="cef-progress-footer">
-          <span>Recebido: <strong style="color:var(--primary);">${fmt(recebidoTotal)}</strong></span>
-          <span>Falta: <strong style="color:var(--warning);">${fmt(Math.max(0, saldoReceber))}</strong></span>
+          <span>Recebido: <strong style="color:var(--primary);">${_obrasCefDinheiro(recebidoTotal)}</strong></span>
+          <span>Falta: <strong style="color:var(--warning);">${_obrasCefDinheiro(saldoReceber == null ? null : Math.max(0, saldoReceber))}</strong></span>
         </div>
       </div>
 
@@ -732,11 +787,11 @@ function renderObraCef() {
       <div class="cef-financeiro">
         <div class="cef-fin-card cef-fin-custo">
           <div class="cef-card-label">Custo Total</div>
-          <div class="cef-card-value" style="color:var(--warning);">${fmt(custoTotal)}</div>
+          <div class="cef-card-value" style="color:var(--warning);">${_obrasCefDinheiro(custoTotal)}</div>
         </div>
         <div class="cef-fin-card cef-fin-lucro">
-          <div class="cef-card-label">Lucro</div>
-          <div class="cef-card-value" style="color:${lucro >= 0 ? 'var(--success)' : 'var(--error)'};">${fmt(lucro)}</div>
+          <div class="cef-card-label">Lucro estimado vigente</div>
+          <div class="cef-card-value" style="color:${lucro >= 0 ? 'var(--success)' : 'var(--error)'};">${_obrasCefDinheiro(lucro)}</div>
         </div>
       </div>` : ''}
 
@@ -755,7 +810,7 @@ function renderObraCef() {
       <!-- Dados do contrato -->
       ${obra.contrato_data || obra.contrato_taxa || obra.contrato_prazo ? `
       <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px;">
-        <div style="font-family:'Space Grotesk',sans-serif;font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-secondary);font-weight:700;margin-bottom:8px;">Dados do Contrato</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-secondary);font-weight:700;margin-bottom:8px;">Dados do contrato CEF original</div>
         ${obra.contrato_data ? `<div style="font-size:13px;color:var(--text-primary);margin-bottom:4px;">Data: <strong>${fmtData(obra.contrato_data)}</strong></div>` : ''}
         ${obra.contrato_taxa ? `<div style="font-size:13px;color:var(--text-primary);margin-bottom:4px;">Taxa: <strong>${esc(obra.contrato_taxa)}% a.a.</strong></div>` : ''}
         ${obra.contrato_prazo ? `<div style="font-size:13px;color:var(--text-primary);">Prazo: <strong>${esc(obra.contrato_prazo)}</strong></div>` : ''}

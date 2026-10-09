@@ -11,10 +11,11 @@
  */
 (function (root, factory) {
   'use strict';
-  const api = factory();
+  const projecoes = typeof module === 'object' && module.exports ? require('./edr-v2-entrada-plano-projecoes.js') : root.EntradaPlanoProjecoes;
+  const api = factory(projecoes);
   if (typeof module === 'object' && module.exports) module.exports = api;
   if (root) root.FinanceiroVisaoDados = api;
-})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (projecoes) {
   'use strict';
 
   const TAMANHO_PAGINA = 1000;
@@ -159,6 +160,8 @@
         FONTES.forEach(([nome]) => { snapshot.fontes[nome] = declaracao('indisponivel', null, 'IDENTIDADE_NAO_AUTORIZADA'); });
         snapshot.fontes.ledger = declaracao('indisponivel', null, 'IDENTIDADE_NAO_AUTORIZADA');
         snapshot.fontes.dre = declaracao('indisponivel', null, 'IDENTIDADE_NAO_AUTORIZADA');
+        snapshot.planosEntrada = null;
+        snapshot.fontes.planosEntrada = declaracao('indisponivel', null, 'IDENTIDADE_NAO_AUTORIZADA');
         snapshot.ledger = { status: 'indisponivel', estado: null };
         snapshot.dre = { status: 'indisponivel' };
         return concluir(snapshot);
@@ -214,9 +217,24 @@
           return { ledger: { status: 'indisponivel', estado: null }, fonte: declaracao('indisponivel', null, 'LEDGER_INDISPONIVEL') };
         }
       }
-      const [resultados, caixa] = await Promise.all([Promise.all(FONTES.map(lerFonte)), lerLedger()]);
+      async function lerPlanos() {
+        try {
+          vigente();
+          if (!projecoes || typeof deps.carregarPlanosEntrada !== 'function') throw erro('PLANOS_INDISPONIVEIS');
+          const resposta = await deps.carregarPlanosEntrada();
+          vigente();
+          const dados = projecoes.validarResumo(resposta, inicial.company_id);
+          return { dados, fonte: declaracao('confirmada', dados.planos.length) };
+        } catch (_) {
+          vigente();
+          return { dados: null, fonte: declaracao('indisponivel', null, 'PLANOS_INDISPONIVEIS') };
+        }
+      }
+      const [resultados, caixa, planos] = await Promise.all([Promise.all(FONTES.map(lerFonte)), lerLedger(), lerPlanos()]);
       vigente();
       resultados.forEach(r => { snapshot[r.nome] = r.rows; snapshot.fontes[r.nome] = r.fonte; });
+      snapshot.planosEntrada = planos.dados;
+      snapshot.fontes.planosEntrada = planos.fonte;
       snapshot.ledger = caixa.ledger;
       snapshot.fontes.ledger = caixa.fonte;
       snapshot.dre = { status: 'indisponivel' };
@@ -246,7 +264,7 @@
   function concluir(snapshot) {
     const f = snapshot.fontes;
     snapshot.dominios = {
-      recebiveis: dominio(f, ['obras', 'repasses', 'adicionais', 'pagamentosAdicionais']),
+      recebiveis: dominio(f, ['obras', 'repasses', 'adicionais', 'pagamentosAdicionais', 'planosEntrada']),
       custos: dominio(f, ['obras', 'lancamentos']),
       dre: dominio(f, DRE_FONTES.concat('dre')),
       folha: { ...dominio(f, ['quinzenas', 'diarias', 'extras']), escopo: 'consulta_registros', coberturaOperacional: 'nao_verificada' },

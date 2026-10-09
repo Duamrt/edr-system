@@ -20,6 +20,7 @@ function fixture() {
   const conta = (id, valor, extra = {}) => comTenant({ id, valor, status: 'pago', data_pagamento: '2026-10-03', ...extra });
   return {
     companyId: empresa,
+    planosEntrada: { status: 'confirmada', company_id: empresa, planos: [] },
     obras: [obra('a', 1000), obra('b', 300, { arquivada: true }), obra('c', 500),
       obra('escritorio', 0, { nome: 'ESCRITORIO FICTICIO' }), obra('qa', 999, { nome: 'OBRA QA FICTICIA' })],
     lancamentos: [custo('la-set', 'a', 100, '2026-09-02'), custo('la-out', 'a', 150, '2026-10-02'),
@@ -64,6 +65,7 @@ function ambiente() {
   ctx.window = ctx;
   vm.createContext(ctx);
   vm.runInContext(fonte('edr-v2-dre.js'), ctx);
+  vm.runInContext(fonte('edr-v2-entrada-plano-projecoes.js'), ctx);
   vm.runInContext(fonte('edr-v2-visao-financeira-modelo.js'), ctx);
   vm.runInContext(fonte('edr-v2-visao-financeira-dados.js'), ctx);
   vm.runInContext(fonte('edr-v2-visao-financeira-estado.js'), ctx);
@@ -94,6 +96,7 @@ function criarLoader(a, dados = fixture(), overrides = {}, limiteServidor = 1000
   };
   const deps = { obterIdentidade: () => identidade, obterPagina,
     carregarLedger: async () => clone(dados.ledger),
+    carregarPlanosEntrada: async () => clone(dados.planosEntrada),
     criarDre: snapshot => a.dre.criarContextoLeitura(snapshot),
     obrasInternas: dados.OBRAS_INTERNAS, ...overrides };
   return { loader: a.dados.criar(deps), deps, chamadas, tabelas, obterPagina,

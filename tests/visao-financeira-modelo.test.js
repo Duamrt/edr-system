@@ -8,6 +8,7 @@ const Modelo = require('../js/edr-v2-visao-financeira-modelo.js');
 function fixture() {
   return {
     companyId: 'empresa-A',
+    planosEntrada: { status: 'confirmada', company_id: 'empresa-A', planos: [] },
     obras: [
       { id: 'a', nome: 'Casa A', valor_venda: '100.00', arquivada: false },
       { id: 'b', nome: 'Casa B', valor_venda: '200.00', arquivada: true },
@@ -207,6 +208,7 @@ test('modelo aceita inputs congelados e resultado nao aponta para objetos fonte'
 test('namespace global existe sem DOM, Date financeiro ou rede', () => {
   const context = { fetch() { throw new Error('Rede proibida'); }, Date() { throw new Error('Date proibido'); } };
   vm.createContext(context);
+  vm.runInContext(fs.readFileSync('js/edr-v2-entrada-plano-projecoes.js', 'utf8'), context);
   vm.runInContext(fs.readFileSync('js/edr-v2-visao-financeira-modelo.js', 'utf8'), context);
   assert.equal(typeof context.FinanceiroVisaoModelo.construir, 'function');
   assert.equal(context.FinanceiroVisaoModelo.centavos('0.11'), 11);
@@ -281,7 +283,7 @@ test('linhas explicitamente de outro tenant nao entram nos resultados ou meses',
 });
 
 test('arrays vazios explicitamente confirmados podem ter zero legitimo', () => {
-  const r = Modelo.construir({ companyId: 'empresa-A', obras: [], lancamentos: [], repasses: [], adicionais: [], pagamentosAdicionais: [] });
+  const r = Modelo.construir({ companyId: 'empresa-A', planosEntrada: { status: 'confirmada', company_id: 'empresa-A', planos: [] }, obras: [], lancamentos: [], repasses: [], adicionais: [], pagamentosAdicionais: [] });
   assert.equal(r.status, 'confirmada');
   assert(Object.values(r.totais).every(v => v === 0));
   assert.equal(r.saldo.totalCentavos, null);

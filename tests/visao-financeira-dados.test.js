@@ -41,6 +41,7 @@ function ambiente(overrides = {}) {
       return rows.slice(off, off + 1000);
     },
     carregarLedger: async () => ledger(),
+    carregarPlanosEntrada: async () => ({ company_id: EMPRESA, planos: [] }),
     criarDre: async s => { contextos.push(s); return adapter(); },
     ...overrides
   };

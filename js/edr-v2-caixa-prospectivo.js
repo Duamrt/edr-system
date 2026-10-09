@@ -7,8 +7,10 @@ let _cpFormulario = null;
 let _cpEnviando = false;
 let _cpLeitura = 0;
 let _cpConsultaPendente = null;
+let _cpPrevisoesAvulsas = null;
+let _cpPrevisoesLeitura = 0;
 function _cpInvalidarLeitura() {
-  ++_cpLeitura; _cpConsultaPendente=null; _cpEstado=null; _cpEstadoAtor=null;
+  ++_cpLeitura; ++_cpPrevisoesLeitura; _cpPrevisoesAvulsas=null; _cpConsultaPendente=null; _cpEstado=null; _cpEstadoAtor=null;
 }
 const _cpFuso = 'America/Sao_Paulo';
 // Journal de intenção para recuperar respostas incertas após reload.
@@ -146,7 +148,7 @@ function _cpDesenhar(el) {
     el.innerHTML = `<div style="${card}" role="alert">${esc(_cpErro || 'Saldo indisponível.')} <button class="btn" onclick="renderCaixa()">Recarregar</button></div>`;
     return;
   }
-  let html = `<div style="${card}"><h3 style="margin:0 0 8px;font-size:15px;">Banco e dinheiro · controle prospectivo</h3><p style="font-size:12px;color:var(--text-secondary);">Saldo informado no marco + movimentos efetivos posteriores. Obrigações a pagar ficam separadas do disponível.</p><p style="font-size:12px;color:var(--text-secondary);">Registre aqui os recebimentos e pagamentos por conta, inclusive os cadastrados como pagos em outros módulos. Esses cadastros não são importados automaticamente.</p>`;
+  let html = `<div style="${card}"><h3 style="margin:0 0 8px;font-size:15px;">Banco e dinheiro · controle prospectivo</h3><p style="font-size:12px;color:var(--text-secondary);">Saldo informado no marco + movimentos efetivos posteriores. Obrigações a pagar ficam separadas do disponível.</p><p style="font-size:12px;color:var(--text-secondary);">O recebimento pelo Plano da entrada já registra o movimento na conta escolhida. Confira os movimentos e preserve esse registro. Para recebimentos fora do plano, informe a conta aqui; cadastros antigos não são importados automaticamente.</p>`;
   if (_cpLerPendente()) html += '<p role="alert">Há um pedido pendente de confirmação. Confira antes de registrar outro movimento.</p><button class="btn" onclick="caixaProspectivoConferirPendente()">Conferir pedido pendente</button>';
   if (!e.contas.length) {
     html += '<p>Declare a abertura para iniciar o controle. O saldo manual antigo será preservado.</p><button class="btn btn-primary" onclick="caixaProspectivoAbrir(\'abertura\')">Declarar abertura</button></div>';
@@ -159,23 +161,58 @@ function _cpDesenhar(el) {
   html += `<div style="${card}"><h3 style="margin:0 0 8px;font-size:14px;">Obrigações a pagar · ${_cpDinheiro(pagar)}</h3><p style="font-size:12px;">Contas cadastradas ainda não quitadas. Folha a pagar e outras obrigações precisam estar cadastradas; lançar custo não altera o disponível.</p>${obrigacoes.map(c => `<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;padding:8px 0;border-top:1px solid var(--border);"><span>${esc(c.fornecedor || c.descricao)} · ${fmtData(c.data_vencimento)}</span><span>${fmt(caixaProspectivoRestante(c))} ${e.contas.length ? `<button class="btn" onclick="caixaProspectivoAbrir('pagamento','${esc(c.id)}')">Pagar</button>` : ''}</span></div>`).join('') || '<p>Nenhuma obrigação cadastrada pendente.</p>'}</div>`;
   const nomes = new Map(e.contas.map(c => [c.id,c.nome]));
   html += `<div style="${card}"><h3 style="font-size:14px;margin:0 0 8px;">Movimentos efetivos</h3>${e.movimentos.map(m => `<div style="border-top:1px solid var(--border);padding:10px 0;${m.cancelado_em?'opacity:.6;':''}"><div>${esc(m.descricao)} · ${esc(m.tipo)} · ${_cpDinheiro(m.valor_centavos)}</div><div style="font-size:12px;color:var(--text-secondary);">${esc(nomes.get(m.conta_id)||'')} ${m.destino_id?' → '+esc(nomes.get(m.destino_id)||''):''} · ${fmtData(m.data_efetiva)} ${esc(m.hora_efetiva||'sem horário')} · ${m.cancelado_em?'Cancelado':m.afeta_saldo?'Movimenta saldo':'Incluído na abertura'} ${!m.cancelado_em ? `<button class="btn" onclick="caixaProspectivoCancelarMovimento('${esc(m.id)}')">Cancelar movimento</button>`:''}</div></div>`).join('') || '<p style="font-size:12px;">Nenhum movimento registrado.</p>'}</div>`;
-  if (typeof projecoesCaixa !== 'undefined') html += `<div style="${card}"><h3 style="font-size:14px;margin:0 0 8px;">Entradas previstas</h3><p style="font-size:12px;">Projeções não integram o saldo disponível.</p>${projecoesCaixa.map(p => `<div style="font-size:12px;padding:5px 0;">${fmtData(p.data_prevista)} · ${esc(p.descricao||p.tipo)} · ${fmt(p.valor)}</div>`).join('')}<button class="btn" onclick="abrirModalProjecao(null)">Adicionar previsão</button></div>`;
+  html += _cpPrevisoesHtml(card);
   el.innerHTML = html;
 }
+function _cpPrevisoesHtml(card) {
+  const api = typeof EntradaPlanoProjecoes !== 'undefined' ? EntradaPlanoProjecoes : null;
+  const previstas = api?.previstas(api.atual(), _companyId, _cpPrevisoesAvulsas);
+  let html = `<div style="${card}"><h3 style="font-size:14px;margin:0 0 8px;">Entradas previstas</h3><p style="font-size:12px;">Parcelas aprovadas em aberto. Previsões não integram o saldo disponível. Avisos automáticos aguardam configuração.</p>`;
+  if (!previstas || previstas.status !== 'confirmada' || !Array.isArray(_cpPrevisoesAvulsas)) {
+    return html + '<p role="alert">Previsões não confirmadas nesta consulta. Recarregue para conferir os planos e as previsões avulsas.</p></div>';
+  }
+  const nomeObra = oid => typeof obras !== 'undefined' ? (obras.find(o => String(o.id) === String(oid))?.nome || 'Obra vinculada') : 'Obra vinculada';
+  html += previstas.parcelas.map(p => `<div style="font-size:12px;padding:7px 0;border-top:1px solid var(--border);">${p.data_prevista ? fmtData(p.data_prevista) : 'Data aguardando definição'} · ${esc(nomeObra(p.obra_id))} · ${esc(p.descricao)} · ${_cpDinheiro(p.valor_centavos)}<br><small>Plano aprovado · revisão ${esc(p.revisao)} · ${esc(p.forma || 'Forma aguardando definição')}</small></div>`).join('');
+  html += previstas.avulsas.map(p => `<div style="font-size:12px;padding:5px 0;">${p.data_prevista ? fmtData(p.data_prevista) : 'Data aguardando definição'} · ${esc(p.descricao || p.tipo)} · ${fmt(p.valor)} <small>Previsão avulsa</small></div>`).join('');
+  html += previstas.conciliacao.map(p => `<p role="alert" style="font-size:12px;">${esc(nomeObra(p.obra_id))}: há recebimento de entrada aguardando vínculo ao plano. Saldo pela entrada registrada: ${_cpDinheiro(p.saldo_centavos)}. Parcelas previstas e avisos aguardam conciliação.</p>`).join('');
+  if (previstas.substituidas.length) html += `<p style="font-size:12px;">${previstas.substituidas.length} previsão(ões) avulsa(s) de entrada preservada(s) no cadastro e substituída(s) aqui pelo plano aprovado da mesma obra.</p>`;
+  if (!previstas.parcelas.length && !previstas.avulsas.length && !previstas.conciliacao.length) html += '<p style="font-size:12px;">Nenhuma entrada prevista confirmada em aberto.</p>';
+  return html + '<button class="btn" onclick="abrirModalProjecao(null)">Adicionar previsão avulsa</button></div>';
+}
 async function caixaProspectivoRender(el) {
+  const leituraPrevisoes = ++_cpPrevisoesLeitura;
+  const tenantPrevisoes = _companyId, atorPrevisoes = usuarioAtual;
+  _cpPrevisoesAvulsas = null;
   el.innerHTML = '<p role="status">Consultando saldo persistido…</p>';
   const e = await caixaProspectivoCarregar();
+  if (!e) { _cpDesenhar(el); return; }
+  await Promise.all([
+    (async () => {
+      try {
+        const ps = await sbGet('projecoes_caixa', '?order=data_prevista', {throwOnError:true});
+        if (leituraPrevisoes !== _cpPrevisoesLeitura || tenantPrevisoes !== _companyId || atorPrevisoes !== usuarioAtual) return;
+        if (!Array.isArray(ps) || ps.some(p => p.company_id !== tenantPrevisoes)) throw new Error();
+        _cpPrevisoesAvulsas = ps;
+      } catch (_) { /* Indisponível continua desconhecido; não vira lista vazia. */ }
+    })(),
+    (async () => {
+      if (typeof EntradaPlanoProjecoes !== 'undefined') await EntradaPlanoProjecoes.carregar();
+    })()
+  ]);
+  if (leituraPrevisoes !== _cpPrevisoesLeitura || tenantPrevisoes !== _companyId || atorPrevisoes !== usuarioAtual) return;
   if (e && typeof sbGet === 'function') {
     try {
       const cs = await sbGet('contas_pagar','?order=data_vencimento',{throwOnError:true});
       if (!Array.isArray(cs)) throw new Error();
-      if (e.company_id !== _companyId) return;
+      if (e.company_id !== _companyId || leituraPrevisoes !== _cpPrevisoesLeitura || atorPrevisoes !== usuarioAtual) return;
       contasPagar = cs;
     } catch (_) {
+      if (leituraPrevisoes !== _cpPrevisoesLeitura || tenantPrevisoes !== _companyId || atorPrevisoes !== usuarioAtual) return;
       _cpEstado = null;
       _cpErro = 'Não foi possível consultar as obrigações persistidas. Recarregue.';
     }
   }
+  if (leituraPrevisoes !== _cpPrevisoesLeitura || tenantPrevisoes !== _companyId || atorPrevisoes !== usuarioAtual) return;
   _cpDesenhar(el);
 }
 async function caixaProspectivoAbrir(tipo, contaPagarId = null) {
