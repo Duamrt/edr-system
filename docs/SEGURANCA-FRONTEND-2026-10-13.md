@@ -6,7 +6,7 @@ Lote autorizado por Duam após auditoria: corrigir as superfícies de renderiza�
 
 Base examinada: `b87407f2b37fe3166fd3bf013d9cded6c01a9b8b`. O trabalho foi feito em clone independente, preservando o checkout canônico e todas as suas alterações locais. Este documento registra a correção do lote, não certifica a segurança integral do sistema nem representa um resultado oficial de scanner.
 
-Não foram alterados banco, RLS, RPCs, credenciais, criação/edição de contas, permissões, aprovações Elyda/Duam, regras financeiras, FIFO ou estoque. Não houve envio de mensagens, escrita em produção nem reprodução de ataques com dados reais.
+Este lote de frontend não alterou banco, RLS, RPCs, credenciais, criação/edição de contas, permissões, aprovações Elyda/Duam, regras financeiras, FIFO ou estoque. Não houve envio de mensagens, escrita de dados em produção nem reprodução de ataques com dados reais. O lote de banco aplicado posteriormente pelo conector está registrado separadamente em [Segurança do banco — auditoria e PCI legado](SEGURANCA-BANCO-AUDIT-PCI-2026-10-13.md).
 
 ## Correções
 
@@ -67,13 +67,13 @@ Gate de publicação: revisão independente do diff, testes descritos acima, aus
 
 A revisão independente foi concluída sem bypass ou regressão concreta identificada no escopo. O revisor executou os 35 testes de segurança, dez regressões adicionais existentes e um ensaio próprio: fechar a aba de origem manteve a impressão enquanto autorizada; logout em outra aba revogou o relatório. Isso não valida outros navegadores, disponibilidade futura de CDN ou controles do servidor.
 
-A verificação posterior deve conferir o SHA implantado e os bytes dos arquivos públicos, além de um smoke test sem login, sem mutações e sem consultas a dados reais. O resultado da publicação e os hashes devem ser registrados no retorno da tarefa.
+A publicação foi confirmada: commit de correção `43204649fc4871f1c63b6f614a015f4a5c23270e`; release/cache `d38f3008870592fbe8cbad54099a60a86410c8b1`. O GitHub Pages informou `built`, sem erro, às `2026-10-13T20:12:56Z`. Os 26 arquivos públicos alterados coincidiram por SHA-256 com os blobs desse release. O smoke em Chromium novo, sem sessão e com transporte externo bloqueado, confirmou login visível, relatório direto vazio e portal sem slug no estado vazio; zero erros de página. Versão dos recursos `10131712`, service worker `edr-system-v20261013171204`.
 
-Não é necessária migração. Há `rollback.sh`, mas ele reverte somente o último commit: se este for o cache bump, não desfaz o patch de segurança. Em caso de regressão, identificar explicitamente o commit afetado e preferir correção pontual; reverter o lote inteiro reabriria os riscos descritos. Não executar rollback automático sem avaliar o problema e o escopo autorizado.
+O frontend não exigiu migração. Há `rollback.sh`, mas ele reverte somente o último commit: se este for o cache bump ou uma atualização documental, não desfaz o patch de segurança. Em caso de regressão, identificar explicitamente o commit afetado e preferir correção pontual; reverter o lote inteiro reabriria os riscos descritos. Rollback de código não reverte o lote de banco aplicado separadamente. Não executar rollback automático sem avaliar o problema e o escopo autorizado.
 
 ## Próximos lotes, sujeitos a aprovação separada
 
-1. **Banco, RLS e RPCs:** preparar mudanças individualizadas após cruzar o inventário atual obtido pelo responsável pelo Supabase. Demonstrar tenant/ator ativo e aprovações no servidor com testes locais sintéticos; levantar consumidores antes de revogar grants/policies. Nenhuma alteração de banco faz parte deste lote.
+1. **Demais objetos de banco, RLS e RPCs:** o conector já concluiu o lote específico de `audit_logs` e `pci_medicoes` plural, documentado separadamente. Para os demais objetos, preparar mudanças individualizadas após cruzar o inventário atual obtido pelo responsável pelo Supabase. Demonstrar tenant/ator ativo e aprovações no servidor com testes locais sintéticos; levantar consumidores antes de revogar grants/policies. Nenhuma alteração de banco foi executada pelo lote de frontend.
 2. **Contas, senhas e sessão no servidor:** proposta própria para as funções implantadas, com checagem de identidade ativa, papel e empresa do alvo. A existência de botão oculto no frontend não serve como autorização. Não modificar credenciais ou contas como efeito deste release.
 3. **Funções e integrações:** localizar jobs/chamadores e confirmar uso de `relatorio-semanal`, `dynamic-endpoint` e funções comerciais condicionais antes de mudanças. Rotação de segredos, restrição de destinos e interrupção de jobs precisam de plano por ação e verificação dos consumidores.
 
