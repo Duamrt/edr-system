@@ -371,7 +371,13 @@
       const parts = [];
       if (d.proprietario) parts.push(d.proprietario);
       if (d.cpf) parts.push('CPF: ' + d.cpf);
-      if (parts.length) assEl.innerHTML = parts.join('<br>');
+      if (parts.length) {
+        assEl.textContent = '';
+        parts.forEach((part, index) => {
+          if (index) assEl.appendChild(document.createElement('br'));
+          assEl.appendChild(document.createTextNode(part));
+        });
+      }
     }
 
     // Nome da empresa dinâmico

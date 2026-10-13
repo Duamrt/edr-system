@@ -1848,12 +1848,23 @@ const CronogramaModule = {
   },
 
   async _carregarSheetJS() {
-    if (window.XLSX) return;
+    const versao = '0.20.3';
+    if (window.XLSX?.version === versao) return;
     await new Promise(function(resolve, reject) {
       const s = document.createElement('script');
-      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
-      s.onload = resolve;
-      s.onerror = reject;
+      s.src = 'https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js';
+      s.onload = function() {
+        s.remove();
+        if (window.XLSX?.version !== versao) {
+          reject(new Error('Versão segura do leitor de planilhas indisponível. Tente novamente.'));
+          return;
+        }
+        resolve();
+      };
+      s.onerror = function() {
+        s.remove();
+        reject(new Error('Não foi possível carregar o leitor de planilhas. Tente novamente.'));
+      };
       document.head.appendChild(s);
     });
   },
@@ -2237,7 +2248,7 @@ const CronogramaModule = {
     const pciOpts = pciLista.map(function(p) {
       const obraNome = p.nome || (obras.find(function(o) { return o.id === p.obra_id; }) || {}).nome || 'PCI ' + p.id;
       const entregaLabel = p.entrega && p.entrega !== 'A definir' ? ' — entrega ' + p.entrega : '';
-      return '<option value="' + p.id + '">' + obraNome + entregaLabel + '</option>';
+      return '<option value="' + esc(p.id) + '">' + esc(obraNome + entregaLabel) + '</option>';
     }).join('');
 
     const html = '<div class="modal-title">'

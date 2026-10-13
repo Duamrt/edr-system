@@ -262,10 +262,10 @@ function _diarRenderListaEquipe() {
       : 'background:rgba(239,68,68,.1);color:var(--error);font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;';
     const statusText = f.ativo ? 'ATIVO' : 'INATIVO';
     const btnToggle = f.ativo
-      ? `<button onclick="diarToggleFuncionario('${esc(f.id)}',false)" class="edr-btn-sm" style="color:var(--error);border-color:rgba(239,68,68,.3);">desativar</button>`
-      : `<button onclick="diarToggleFuncionario('${esc(f.id)}',true)" class="edr-btn-sm edr-btn-success-outline">reativar</button>`;
-    const btnEditar = `<button onclick="diarEditarFuncionario('${esc(f.id)}')" class="edr-btn-sm" style="color:#60a5fa;border-color:rgba(96,165,250,.3);">editar</button>`;
-    const btnExcluir = !f.ativo ? `<button onclick="diarExcluirFuncionario('${esc(f.id)}','${esc(f.nome)}')" class="edr-btn-sm" style="color:var(--error);border-color:rgba(239,68,68,.3);">excluir</button>` : '';
+      ? `<button onclick="diarToggleFuncionario(${escJsArg(f.id)},false)" class="edr-btn-sm" style="color:var(--error);border-color:rgba(239,68,68,.3);">desativar</button>`
+      : `<button onclick="diarToggleFuncionario(${escJsArg(f.id)},true)" class="edr-btn-sm edr-btn-success-outline">reativar</button>`;
+    const btnEditar = `<button onclick="diarEditarFuncionario(${escJsArg(f.id)})" class="edr-btn-sm" style="color:#60a5fa;border-color:rgba(96,165,250,.3);">editar</button>`;
+    const btnExcluir = !f.ativo ? `<button onclick="diarExcluirFuncionario(${escJsArg(f.id)},${escJsArg(f.nome)})" class="edr-btn-sm" style="color:var(--error);border-color:rgba(239,68,68,.3);">excluir</button>` : '';
     return `<div style="${opaco}display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);gap:8px;min-width:0;">
       <div style="flex:1;min-width:0;overflow:hidden;">
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
@@ -274,7 +274,7 @@ function _diarRenderListaEquipe() {
           <span style="${statusStyle}">${statusText}</span>
         </div>
         <div style="font-size:11px;color:var(--text-tertiary);margin-top:2px;">
-          R$ ${Number(f.diaria).toFixed(2)}${apelidos ? ' · apelidos: ' + apelidos : ''}${f.chave_pix ? ' · <span style="color:var(--success);font-weight:700;">PIX ✓</span>' : ''}${f.admissao ? ' · desde ' + _diarFmtDataBR(f.admissao) : ''}
+          R$ ${Number(f.diaria).toFixed(2)}${apelidos ? ' · apelidos: ' + esc(apelidos) : ''}${f.chave_pix ? ' · <span style="color:var(--success);font-weight:700;">PIX ✓</span>' : ''}${f.admissao ? ' · desde ' + _diarFmtDataBR(f.admissao) : ''}
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">${btnEditar}${btnToggle}${btnExcluir}</div>
@@ -361,7 +361,7 @@ function diarEditarFuncionario(id) {
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
           <div><label style="${labelStyle}">DIARIA (R$)</label><input id="diar-edit-diaria" type="number" value="${f.diaria}" min="0" step="5" style="${inputStyle}"></div>
-          <div><label style="${labelStyle}">APELIDOS</label><input id="diar-edit-apelidos" type="text" value="${apelidos}" placeholder="virgula" style="${inputStyle}"></div>
+          <div><label style="${labelStyle}">APELIDOS</label><input id="diar-edit-apelidos" type="text" value="${esc(apelidos)}" placeholder="virgula" style="${inputStyle}"></div>
         </div>
         <div><label style="${labelStyle}">NOME COMPLETO (SAI NO PDF)</label><input id="diar-edit-nomecompleto" type="text" value="${esc(f.nome_completo || '')}" style="${inputStyle}"></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
@@ -1814,7 +1814,7 @@ function _diarRenderFolha() {
     const extra = extrasPorFunc[f.nome] || 0;
     const totalFunc = f.valor + extra;
     return `<tr>
-      <td class="diar-td-nome" style="cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px;" onclick="diarAbrirCalendarioFunc('${esc(f.nome)}')" title="Ver calendario"><span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;opacity:.5">calendar_month</span> ${esc(f.nome)}</td>
+      <td class="diar-td-nome" style="cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px;" onclick="diarAbrirCalendarioFunc(${escJsArg(f.nome)})" title="Ver calendario"><span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;opacity:.5">calendar_month</span> ${esc(f.nome)}</td>
       <td style="color:var(--text-tertiary);" style="font-size:11px">${esc(f.cargo || '-')}</td>
       ${isMestre ? '' : `<td class="edr-text-secondary" style="font-size:11px">R$ ${f.diaria} x ${f.fracoes.toFixed(1)}d</td>`}
       <td>${f.fracoes.toFixed(1)}d</td>
@@ -1934,7 +1934,7 @@ function _diarRenderExtras() {
           </div>
           <div style="display:flex;align-items:center;gap:10px;">
             <span style="font-weight:700;color:var(--success);font-family:'Space Grotesk',monospace;font-size:13px;">R$ ${e.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-            <button onclick="diarExcluirExtra('${esc(e.id)}')" class="edr-btn-sm" style="color:var(--error);border-color:rgba(239,68,68,.3);">
+            <button onclick="diarExcluirExtra(${escJsArg(e.id)})" class="edr-btn-sm" style="color:var(--error);border-color:rgba(239,68,68,.3);">
               <span class="material-symbols-outlined" style="font-size:14px">close</span>
             </button>
           </div>
@@ -2664,8 +2664,7 @@ function diarFecharModalEDR() {
 // Vazio = PENDENTE (bloqueia salvar). Falta = acao explicita. Extra fica fora.
 // Salvar reusa o motor validado (captura antes do insert, insert-first, falha fechada).
 // ══════════════════════════════════════════════════════════════════
-// escape para valores dentro de atributos onclick (barra e aspas simples)
-function _diarEscAttr(s) { return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
+// Argumentos inline usam escJsArg: literal JavaScript + escape do atributo HTML.
 
 const _diarLista = {
   data: null,
@@ -2854,12 +2853,12 @@ function _diarListaRender() {
       const faltaMeio = turno === 'manha' ? ap.faltaManha : ap.faltaTarde;
       const val = ap[turno];
       if (ap.falta) return '<div class="diar-lista-cell falta-dia">falta</div>';
-      if (val) return '<button class="diar-lista-cell on" onclick="diarListaAbrirBusca(&#39;' + _diarEscAttr(id) + '&#39;,&#39;' + turno + '&#39;)">' + esc(val) + '</button>';
-      if (faltaMeio) return '<button class="diar-lista-cell meiofalta" onclick="diarListaAbrirBusca(&#39;' + _diarEscAttr(id) + '&#39;,&#39;' + turno + '&#39;)">faltou</button>';
+      if (val) return '<button class="diar-lista-cell on" onclick="diarListaAbrirBusca(' + escJsArg(id) + ',' + escJsArg(turno) + ')">' + esc(val) + '</button>';
+      if (faltaMeio) return '<button class="diar-lista-cell meiofalta" onclick="diarListaAbrirBusca(' + escJsArg(id) + ',' + escJsArg(turno) + ')">faltou</button>';
       // vazio: se o OUTRO turno ja foi decidido, este vazio precisa de decisao -> destaque confirmar
       const outro = turno === 'manha' ? (ap.tarde || ap.faltaTarde) : (ap.manha || ap.faltaManha);
       const precisa = !!outro;
-      return '<button class="diar-lista-cell vazio' + (precisa ? ' precisa' : '') + '" onclick="diarListaAbrirBusca(&#39;' + _diarEscAttr(id) + '&#39;,&#39;' + turno + '&#39;)">' + (turno === 'manha' ? 'Manhã' : 'Tarde') + '</button>';
+      return '<button class="diar-lista-cell vazio' + (precisa ? ' precisa' : '') + '" onclick="diarListaAbrirBusca(' + escJsArg(id) + ',' + escJsArg(turno) + ')">' + (turno === 'manha' ? 'Manhã' : 'Tarde') + '</button>';
     };
 
     let statusCls = '';
@@ -2875,7 +2874,7 @@ function _diarListaRender() {
       const tv = r.turnoVazio;
       confirmaBar = '<div class="diar-lista-confirma">' +
         '<span>' + (tv === 'manha' ? 'Manhã' : 'Tarde') + ' vazia — faltou nesse turno?</span>' +
-        '<button class="diar-lista-confirma-sim" onclick="diarListaConfirmaMeioFalta(&#39;' + _diarEscAttr(id) + '&#39;,&#39;' + tv + '&#39;)">Sim, faltou</button>' +
+        '<button class="diar-lista-confirma-sim" onclick="diarListaConfirmaMeioFalta(' + escJsArg(id) + ',' + escJsArg(tv) + ')">Sim, faltou</button>' +
         '</div>';
     }
 
@@ -2905,8 +2904,8 @@ function _diarListaRender() {
         '<div class="diar-lista-turnos">' + cell('manha') + cell('tarde') + '</div>' +
         '<div class="diar-lista-acao">' +
           '<span class="diar-lista-val">' + valorTxt + '</span>' +
-          '<button class="diar-lista-falta-btn' + (ap.falta ? ' ativo' : '') + '" onclick="diarListaToggleFalta(&#39;' + _diarEscAttr(id) + '&#39;)" title="Falta o dia inteiro">' + (ap.falta ? 'Faltou dia' : 'Falta dia') + '</button>' +
-          '<button class="diar-lista-ne-btn' + (ap.naoEscalado ? ' ativo' : '') + '" onclick="diarListaToggleNaoEscalado(&#39;' + _diarEscAttr(id) + '&#39;)" title="Nao foi escalado para esta frente hoje">' + (ap.naoEscalado ? 'Não escalado' : 'Não escalado') + '</button>' +
+          '<button class="diar-lista-falta-btn' + (ap.falta ? ' ativo' : '') + '" onclick="diarListaToggleFalta(' + escJsArg(id) + ')" title="Falta o dia inteiro">' + (ap.falta ? 'Faltou dia' : 'Falta dia') + '</button>' +
+          '<button class="diar-lista-ne-btn' + (ap.naoEscalado ? ' ativo' : '') + '" onclick="diarListaToggleNaoEscalado(' + escJsArg(id) + ')" title="Nao foi escalado para esta frente hoje">' + (ap.naoEscalado ? 'Não escalado' : 'Não escalado') + '</button>' +
         '</div>' +
       '</div>' + confirmaBar +
     '</div>';
@@ -2972,7 +2971,7 @@ function _diarListaRenderBusca(filtro) {
   }
   const recSet = new Set(_diarLista.recentes);
   cont.innerHTML = itens.map(o =>
-    '<button class="diar-lista-busca-item" onclick="diarListaEscolherObra(&#39;' + _diarEscAttr(o.nome) + '&#39;)">' +
+    '<button class="diar-lista-busca-item" onclick="diarListaEscolherObra(' + escJsArg(o.nome) + ')">' +
       esc(o.nome) + (recSet.has(o.nome) && !f ? '<span class="diar-lista-recente">recente</span>' : '') +
     '</button>'
   ).join('') || '<div class="edr-empty" style="padding:20px">Nenhuma obra encontrada.</div>';

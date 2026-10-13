@@ -151,6 +151,11 @@ function fmtData(d) {
   return `${dia}/${m}/${y}`;
 }
 
+function escPublico(value) {
+  return String(value == null ? '' : value).replace(/[&<>"']/g,
+    c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
 function slugFromUrl() {
   return new URLSearchParams(location.search).get('slug') || '';
 }
@@ -205,8 +210,8 @@ function renderEtapas(cronograma) {
       <div class="etapa-item">
         <div class="etapa-prog${done ? ' done' : ''}">${pct}%</div>
         <div class="etapa-info">
-          <div class="etapa-nome">${t.nome || 'Etapa'}</div>
-          ${dataFim ? `<div class="etapa-data">${dataFim}</div>` : ''}
+          <div class="etapa-nome">${escPublico(t.nome || 'Etapa')}</div>
+          ${dataFim ? `<div class="etapa-data">${escPublico(dataFim)}</div>` : ''}
           <div class="etapa-bar-wrap"><div class="etapa-bar" style="width:${pct}%"></div></div>
         </div>
       </div>`;
@@ -221,15 +226,15 @@ function renderDiario(diario) {
     if (fotos.length > 0) {
       const cls = fotos.length === 1 ? 'single' : fotos.length === 3 ? 'triple' : '';
       fotosHtml = `<div class="diario-fotos ${cls}">
-        ${fotos.map(f => `<img class="diario-foto" src="${f}" loading="lazy" onclick="abrirLightbox(this.src)" alt="Foto da obra">`).join('')}
+        ${fotos.map(f => `<img class="diario-foto" data-foto-src="${escPublico(f)}" loading="lazy" alt="Foto da obra">`).join('')}
       </div>`;
     }
     const climaLabel = { sol: '☀️ Sol', nublado: '☁️ Nublado', chuva: '🌧️ Chuva', parcial: '⛅ Parcial' };
-    const climaBadge = r.clima ? `<span class="diario-clima">${climaLabel[r.clima] || r.clima}</span>` : '';
-    const relato = r.relato ? `<div class="diario-relato">${r.relato.replace(/</g, '&lt;')}</div>` : `<div class="diario-relato sem-relato">Sem relato escrito.</div>`;
+    const climaBadge = r.clima ? `<span class="diario-clima">${escPublico(climaLabel[r.clima] || r.clima)}</span>` : '';
+    const relato = r.relato ? `<div class="diario-relato">${escPublico(r.relato)}</div>` : `<div class="diario-relato sem-relato">Sem relato escrito.</div>`;
     return `
       <div class="diario-card">
-        <div class="diario-data">📅 ${fmtData(r.data)} ${climaBadge}</div>
+        <div class="diario-data">📅 ${escPublico(fmtData(r.data))} ${climaBadge}</div>
         ${relato}
         ${fotosHtml}
       </div>`;
@@ -249,7 +254,8 @@ async function init() {
     const data = await carregarObra(slug);
 
     if (data.erro || !data.obra) {
-      app.innerHTML = `<div class="error-box"><h2>Obra não encontrada</h2><p>O código <strong>${slug}</strong> não corresponde a nenhuma obra cadastrada.</p></div>`;
+      app.innerHTML = `<div class="error-box"><h2>Obra não encontrada</h2><p>O código <strong></strong> não corresponde a nenhuma obra cadastrada.</p></div>`;
+      app.querySelector('strong').textContent = slug;
       return;
     }
 
@@ -264,20 +270,20 @@ async function init() {
     app.innerHTML = `
       <div class="header">
         <div class="header-logo">EDR Engenharia</div>
-        <div class="header-title">${obra.nome}</div>
-        <div class="header-sub">${obra.cidade || ''}${obra.area_m2 ? ` · ${obra.area_m2} m²` : ''}</div>
-        <div><span class="header-badge">${statusLabel}</span></div>
+        <div class="header-title">${escPublico(obra.nome)}</div>
+        <div class="header-sub">${escPublico(obra.cidade || '')}${obra.area_m2 ? ` · ${escPublico(obra.area_m2)} m²` : ''}</div>
+        <div><span class="header-badge">${escPublico(statusLabel)}</span></div>
       </div>
 
       <div style="padding: 16px 16px 0;">
         <div class="info-grid">
           <div class="info-item">
             <div class="info-item-label">Contratante</div>
-            <div class="info-item-value" style="font-size:13px;">${obra.contratante || '—'}</div>
+            <div class="info-item-value" style="font-size:13px;">${escPublico(obra.contratante || '\u2014')}</div>
           </div>
           <div class="info-item">
             <div class="info-item-label">Previsão término</div>
-            <div class="info-item-value" style="font-size:13px;">${fmtData(obra.data_prevista)}</div>
+            <div class="info-item-value" style="font-size:13px;">${escPublico(fmtData(obra.data_prevista))}</div>
           </div>
         </div>
       </div>
@@ -285,9 +291,9 @@ async function init() {
       <div style="padding: 0 16px;">
         <div class="progress-card">
           <div class="progress-label">Avanço físico geral</div>
-          <div class="progress-pct">${progresso}<span>%</span></div>
+          <div class="progress-pct">${escPublico(progresso)}<span>%</span></div>
           <div class="progress-bar-wrap">
-            <div class="progress-bar" style="width: ${progresso}%"></div>
+            <div class="progress-bar" style="width: ${Number(progresso) || 0}%"></div>
           </div>
           <div class="progress-info">${etapasConcluidas} de ${totalEtapas} etapas concluídas</div>
         </div>
@@ -314,9 +320,15 @@ async function init() {
         Gerenciado pela <a href="https://sistema.edreng.com.br" target="_blank">EDR Engenharia</a>
       </div>
     `;
+    app.querySelectorAll('[data-foto-src]').forEach(img => {
+      img.src = img.dataset.fotoSrc;
+      img.removeAttribute('data-foto-src');
+      img.addEventListener('click', () => abrirLightbox(img.src));
+    });
 
   } catch (e) {
-    app.innerHTML = `<div class="error-box"><h2>Erro ao carregar</h2><p>${e.message}</p></div>`;
+    app.innerHTML = '<div class="error-box"><h2>Erro ao carregar</h2><p></p></div>';
+    app.querySelector('p').textContent = e.message;
   }
 }
 

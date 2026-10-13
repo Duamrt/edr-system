@@ -111,10 +111,10 @@
       const st = status(it), o = origem(it), man = ehManual(it);
       const vt = valorTot(it), vu = valorUnit(it);
       const tcls = vt < 0 ? 'neg' : vt > 0 ? 'pos' : 'zero';
-      return `<div class="estk-row" onclick="EstoqueTabela.open('${_esc(it.chave)}')">
+      return `<div class="estk-row" onclick="EstoqueTabela.open(${escJsArg(it.chave)})">
         <div class="estk-cod">${it.codigo ? _esc(it.codigo) : '—'}</div>
         <div class="estk-mat" title="${_esc(it.desc)}">${_esc(it.desc)}</div>
-        <div class="estk-cat">${isAdmin ? `<span class="estk-catb estk-cat-edit" onclick="event.stopPropagation();EstoqueTabela.editarCat('${_esc(it.chave)}',this.parentNode)" title="Trocar centro de custo">${_esc(_lbl(it.categoria))}</span>` : `<span class="estk-catb">${_esc(_lbl(it.categoria))}</span>`}</div>
+        <div class="estk-cat">${isAdmin ? `<span class="estk-catb estk-cat-edit" onclick="event.stopPropagation();EstoqueTabela.editarCat(${escJsArg(it.chave)},this.parentNode)" title="Trocar centro de custo">${_esc(_lbl(it.categoria))}</span>` : `<span class="estk-catb">${_esc(_lbl(it.categoria))}</span>`}</div>
         <div class="estk-saldo ${it.saldo < 0 ? 'neg' : it.saldo === 0 ? 'zero' : ''}">${_fmtQ(it.saldo)} <span class="estk-un">${_esc(it.unidade || 'UN')}</span></div>
         ${isAdmin ? `<div class="estk-vmed">${vu ? _fmtR(vu) + (man ? ' <span class="estk-manual" title="Referência manual: estimativa, fora do valor conhecido">ESTIMATIVA</span>' : '') : '—'}</div>` : '<div class="estk-vmed">—</div>'}
         ${isAdmin ? `<div class="estk-total ${tcls}" title="${man ? 'Estimativa manual separada: ' + _fmtR(valorEstimado(it)) : 'Valor dos lotes remanescentes'}">${vt ? _fmtR(vt) : 'R$ 0'}</div>` : '<div class="estk-total zero">—</div>'}
@@ -153,7 +153,7 @@
     if (!etapas.length) { (typeof showToast === 'function') && showToast('Lista de etapas indisponível.'); return; }
     etapas.sort((a, b) => String(a.lb || a.key).localeCompare(String(b.lb || b.key), 'pt-BR'));
     const opts = etapas.map(e => `<option value="${_esc(e.key)}" ${e.key === it.categoria ? 'selected' : ''}>${_esc(e.lb || e.key)}</option>`).join('');
-    cell.innerHTML = `<select class="estk-catsel" onclick="event.stopPropagation()" onchange="EstoqueTabela.salvarCat('${_esc(chave)}',this.value)" onkeydown="if(event.key==='Escape'){event.stopPropagation();typeof renderEstoque==='function'&&renderEstoque();}">${opts}</select>`;
+    cell.innerHTML = `<select class="estk-catsel" onclick="event.stopPropagation()" onchange="EstoqueTabela.salvarCat(${escJsArg(chave)},this.value)" onkeydown="if(event.key==='Escape'){event.stopPropagation();typeof renderEstoque==='function'&&renderEstoque();}">${opts}</select>`;
     const sel = cell.querySelector('select');
     if (sel) setTimeout(() => sel.focus(), 0);
   }
@@ -237,10 +237,10 @@
       </div>
       ${isAdmin ? `<div class="estk-note estk-ajwarn">⚠ "Ajustar saldo" altera a quantidade física do almoxarifado. Use apenas após conferência.</div>` : ''}
       <div class="estk-dwf">
-        <button class="estk-btn" onclick="EstoqueTabela.close();(typeof abrirHistoricoMaterial==='function')&&abrirHistoricoMaterial('${_esc(it.chave)}')">Ver histórico</button>
-        ${isAdmin ? `<button class="estk-btn" onclick="EstoqueTabela.close();(typeof abrirAjusteEstoque==='function')&&abrirAjusteEstoque('${_esc(it.chave)}')">Ajustar saldo</button>` : ''}
+        <button class="estk-btn" onclick="EstoqueTabela.close();(typeof abrirHistoricoMaterial==='function')&&abrirHistoricoMaterial(${escJsArg(it.chave)})">Ver histórico</button>
+        ${isAdmin ? `<button class="estk-btn" onclick="EstoqueTabela.close();(typeof abrirAjusteEstoque==='function')&&abrirAjusteEstoque(${escJsArg(it.chave)})">Ajustar saldo</button>` : ''}
         ${(isAdmin && podePrecificar(it))
-          ? `<button class="estk-btn estk-btn-warn" onclick="EstoqueTabela.definir('${_esc(it.chave)}')">${ref ? 'Editar valor' : 'Definir valor'}</button>`
+          ? `<button class="estk-btn estk-btn-warn" onclick="EstoqueTabela.definir(${escJsArg(it.chave)})">${ref ? 'Editar valor' : 'Definir valor'}</button>`
           : ''}
       </div>`;
     dw.classList.add('show'); ov.classList.add('show');

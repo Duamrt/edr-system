@@ -70,7 +70,8 @@ function ambiente() {
   const ctx = {
     console: { log() {}, warn() {}, error: (...args) => erros.push(args.map(String).join(' ')) },
     document: documento, setTimeout() {}, clearTimeout() {},
-    norm: s => String(s || '').toUpperCase().trim(), esc: s => String(s ?? ''),
+    norm: s => String(s || '').toUpperCase().trim(),
+    ...require('./fixtures/seguranca-estoque-diarias-utils.cjs'),
     fmt: String, fmtR: moeda, fmtQtd: String, fmtData: String,
     parseItens: n => JSON.parse(n.itens || '[]'), hojeISO: () => '2026-10-05',
     confirmar: async () => true, confirm: () => true, showToast: msg => avisos.push(msg),

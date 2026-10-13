@@ -170,7 +170,7 @@ function _leadsKanbanCard(l) {
     </div>`;
   }
 
-  return `<div onclick="_leadsAbrirModal('${esc(l.id)}')"
+  return `<div onclick="_leadsAbrirModal(${escJsArg(l.id)})"
     style="background:var(--card);border:1px solid var(--borda);border-left:3px solid ${cfg.cor};
     border-radius:10px;padding:12px;cursor:pointer;transition:all .15s;"
     onmouseenter="this.style.borderColor='${cfg.cor}40'" onmouseleave="this.style.borderColor='var(--borda)'">
@@ -263,7 +263,7 @@ function _leadsAbrirModal(leadId) {
                 </span>
                 ${lead.observacoes ? '<span style="font-size:9px;padding:2px 6px;border-radius:4px;background:rgba(59,130,246,0.1);color:#60a5fa;font-weight:700;">Origem: Chatbot Telegram</span>' : ''}
               </div>
-              ${lead.telefone ? `<a href="https://wa.me/55${lead.telefone.replace(/\\D/g, '')}" target="_blank" style="color:#2D6A4F;text-decoration:none;font-size:14px;font-family:'Space Grotesk',monospace;display:inline-flex;align-items:center;gap:4px;">
+              ${lead.telefone ? `<a href="https://wa.me/55${String(lead.telefone).replace(/\D/g, '')}" target="_blank" style="color:#2D6A4F;text-decoration:none;font-size:14px;font-family:'Space Grotesk',monospace;display:inline-flex;align-items:center;gap:4px;">
                 <span class="material-symbols-outlined" style="font-size:14px;">chat</span> ${esc(lead.telefone)}
               </a>` : ''}`
           }
@@ -316,7 +316,7 @@ function _leadsAbrirModal(leadId) {
             ${acoesOpts}
           </select>
           <input type="date" id="lead-proxima-data" value="${esc(lead.proxima_data || '')}" style="padding:8px 10px;background:var(--input-bg);border:1px solid var(--borda);border-radius:8px;color:var(--texto-pri);font-size:12px;font-family:inherit;">
-          <button onclick="_leadsSalvarAcao('${esc(lead.id)}')" style="padding:8px 14px;background:rgba(45,106,79,0.1);border:1px solid rgba(45,106,79,0.3);color:#2D6A4F;border-radius:8px;font-size:11px;font-weight:700;font-family:inherit;cursor:pointer;">SALVAR</button>
+          <button onclick="_leadsSalvarAcao(${escJsArg(lead.id)})" style="padding:8px 14px;background:rgba(45,106,79,0.1);border:1px solid rgba(45,106,79,0.3);color:#2D6A4F;border-radius:8px;font-size:11px;font-weight:700;font-family:inherit;cursor:pointer;">SALVAR</button>
         </div>
       </div>
 
@@ -338,7 +338,7 @@ function _leadsAbrirModal(leadId) {
         <div style="display:flex;gap:6px;flex-wrap:wrap;">
           ${LEAD_STATUS_ORDEM.filter(s => s !== lead.status).map(s => {
             const sc = LEAD_STATUS[s];
-            return `<button onclick="_leadsAlterarStatus('${esc(lead.id)}','${s}')" style="padding:7px 12px;border-radius:8px;border:1px solid ${sc.cor}30;background:${sc.bg};color:${sc.cor};font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px;">
+            return `<button onclick="_leadsAlterarStatus(${escJsArg(lead.id)},${escJsArg(s)})" style="padding:7px 12px;border-radius:8px;border:1px solid ${sc.cor}30;background:${sc.bg};color:${sc.cor};font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px;">
               <span class="material-symbols-outlined" style="font-size:14px;">${sc.icon}</span> ${sc.lb}
             </button>`;
           }).join('')}
@@ -347,7 +347,7 @@ function _leadsAbrirModal(leadId) {
 
       <!-- Botoes -->
       <div style="display:flex;gap:8px;justify-content:flex-end;">
-        <button onclick="_leadsExcluir('${esc(lead.id)}')" style="padding:8px 14px;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);color:#ef4444;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px;">
+        <button onclick="_leadsExcluir(${escJsArg(lead.id)})" style="padding:8px 14px;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);color:#ef4444;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px;">
           <span class="material-symbols-outlined" style="font-size:14px;">delete</span> Excluir
         </button>
       </div>
@@ -375,7 +375,7 @@ function _leadsAbrirModal(leadId) {
     <div id="lead-pane-notas" style="padding:16px 20px 20px;flex:1;overflow-y:auto;display:none;">
       <div style="margin-bottom:12px;">
         <textarea id="lead-nota-text" placeholder="Escrever anotacao..." style="width:100%;min-height:70px;padding:10px;background:var(--input-bg);border:1px solid var(--borda);border-radius:8px;color:var(--texto-pri);font-size:12px;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea>
-        <button onclick="_leadsAdicionarNota('${esc(lead.id)}')" style="margin-top:6px;padding:8px 16px;background:rgba(45,106,79,0.1);border:1px solid rgba(45,106,79,0.3);color:#2D6A4F;border-radius:8px;font-size:11px;font-weight:700;font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:4px;">
+        <button onclick="_leadsAdicionarNota(${escJsArg(lead.id)})" style="margin-top:6px;padding:8px 16px;background:rgba(45,106,79,0.1);border:1px solid rgba(45,106,79,0.3);color:#2D6A4F;border-radius:8px;font-size:11px;font-weight:700;font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:4px;">
           <span class="material-symbols-outlined" style="font-size:14px;">save</span> SALVAR NOTA
         </button>
       </div>
@@ -543,13 +543,21 @@ function _leadsBindAutocomplete() {
     if (!q) { dd.style.display = 'none'; return; }
     const matches = obras.filter(o => o.nome.toLowerCase().includes(q)).slice(0, 10);
     if (!matches.length) { dd.style.display = 'none'; return; }
-    dd.innerHTML = matches.map(o =>
-      `<div onclick="document.getElementById('lead-obra-input').value='${esc(o.nome)}';document.getElementById('lead-obra-id').value='${esc(o.id)}';document.getElementById('lead-obra-dropdown').style.display='none';"
+    dd.innerHTML = matches.map((o, index) =>
+      `<div data-obra-index="${index}"
         style="padding:8px 10px;font-size:12px;cursor:pointer;border-bottom:1px solid var(--borda);"
         onmouseenter="this.style.background='rgba(45,106,79,0.08)'" onmouseleave="this.style.background='transparent'">
         ${esc(o.nome)}
       </div>`
     ).join('');
+    dd.querySelectorAll('[data-obra-index]').forEach(item => {
+      item.addEventListener('click', () => {
+        const obra = matches[Number(item.dataset.obraIndex)];
+        input.value = obra.nome;
+        hiddenId.value = obra.id;
+        dd.style.display = 'none';
+      });
+    });
     dd.style.display = 'block';
   });
 

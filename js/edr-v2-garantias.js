@@ -373,7 +373,7 @@ function _garantiasSetupObraAC(chamado) {
     const matches = todasObras.filter(o => o.nome.toLowerCase().includes(q)).slice(0, 10);
     if (!matches.length) { dd.style.display = 'none'; return; }
     dd.innerHTML = matches.map(o =>
-      `<div onclick="document.getElementById('gar-obra-input').value='${esc(o.nome)}';document.getElementById('gar-obra-id').value='${esc(o.id)}';document.getElementById('gar-obra-dropdown').style.display='none';"
+      `<div onclick="document.getElementById('gar-obra-input').value=${escJsArg(o.nome)};document.getElementById('gar-obra-id').value=${escJsArg(o.id)};document.getElementById('gar-obra-dropdown').style.display='none';"
         style="padding:8px 10px;font-size:12px;cursor:pointer;border-bottom:1px solid var(--borda);display:flex;justify-content:space-between;"
         onmouseenter="this.style.background='rgba(45,106,79,0.08)'" onmouseleave="this.style.background='transparent'">
         <span>${esc(o.nome)}</span>

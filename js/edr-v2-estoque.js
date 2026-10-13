@@ -925,17 +925,17 @@ function renderEstoque() {
     // Acoes
     let acoes = '';
     if (it.semCodigo) {
-      acoes += `<button class="mat-action-btn" style="border-color:var(--warning);color:var(--warning);" onclick="abrirVincularCodigo('${esc(it.chave)}')" title="Vincular codigo">
+      acoes += `<button class="mat-action-btn" style="border-color:var(--warning);color:var(--warning);" onclick="abrirVincularCodigo(${escJsArg(it.chave)})" title="Vincular codigo">
         <span class="material-symbols-outlined">link</span>Vincular</button>`;
     }
-    acoes += `<button class="mat-action-btn distribuir" onclick="abrirDistribuicao('${esc(it.chave)}')">
+    acoes += `<button class="mat-action-btn distribuir" onclick="abrirDistribuicao(${escJsArg(it.chave)})">
       <span class="material-symbols-outlined">local_shipping</span>Distribuir</button>`;
-    acoes += `<button class="mat-action-btn" style="border-color:var(--error);color:var(--error);" onclick="abrirSaidaMaterial('${esc(it.desc)}','${esc(it.unidade||'UN')}')" title="Baixa Rápida">
+    acoes += `<button class="mat-action-btn" style="border-color:var(--error);color:var(--error);" onclick="abrirSaidaMaterial(${escJsArg(it.desc)},${escJsArg(it.unidade||'UN')})" title="Baixa Rápida">
       <span class="material-symbols-outlined">remove_circle</span>Baixa</button>`;
-    acoes += `<button class="mat-action-btn" onclick="abrirHistoricoMaterial('${esc(it.chave)}')">
+    acoes += `<button class="mat-action-btn" onclick="abrirHistoricoMaterial(${escJsArg(it.chave)})">
       <span class="material-symbols-outlined">history</span>Historico</button>`;
     if (isAdmin) {
-      acoes += `<button class="mat-action-btn" onclick="abrirAjusteEstoque('${esc(it.chave)}')">
+      acoes += `<button class="mat-action-btn" onclick="abrirAjusteEstoque(${escJsArg(it.chave)})">
         <span class="material-symbols-outlined">tune</span>Ajustar</button>`;
     }
 
@@ -1009,7 +1009,7 @@ function _renderCategoriasSidebar(consolidado) {
 
   for (const [cat, count] of cats) {
     const active = EstoqueModule.filtroCategoria === cat ? 'active' : '';
-    html += `<div class="cat-item ${active}" onclick="EstoqueModule.filtroCategoria='${esc(cat)}';EstoqueModule.page=0;renderEstoque();">
+    html += `<div class="cat-item ${active}" onclick="EstoqueModule.filtroCategoria=${escJsArg(cat)};EstoqueModule.page=0;renderEstoque();">
       <span>${esc(typeof etapaLabel === 'function' ? etapaLabel(cat) : cat)}</span><span class="cat-count">${count}</span></div>`;
   }
 
@@ -1344,7 +1344,7 @@ function abrirHistoricoMaterial(chave) {
       <div class="saldo-final-label">Saldo no almoxarifado</div>
       <div class="saldo-final-value" style="color:${item.saldo < 0 ? 'var(--error)' : item.saldo > 0 ? 'var(--primary)' : 'var(--text-primary)'};">${fmtQtd(item.saldo)} ${unidade}</div>
     </div>
-    ${usuarioAtual?.perfil === 'admin' && estoqueContratoAtual()?.regularizacao === 1 && (catalogoMateriais || []).some(m => m.codigo === item.codigo) ? `<button class="btn-secondary" style="margin-top:12px;" onclick="abrirConferenciaEstoque('${esc(catalogoMateriais.find(m => m.codigo === item.codigo).id)}')">Conferir origens e pendências</button>` : ''}
+    ${usuarioAtual?.perfil === 'admin' && estoqueContratoAtual()?.regularizacao === 1 && (catalogoMateriais || []).some(m => m.codigo === item.codigo) ? `<button class="btn-secondary" style="margin-top:12px;" onclick="abrirConferenciaEstoque(${escJsArg(catalogoMateriais.find(m => m.codigo === item.codigo).id)})">Conferir origens e pendências</button>` : ''}
     <div class="hist-timeline" style="margin-top:16px;">
       ${movs.map(m => {
         const isSaida = m.tipo === 'saida';
@@ -1356,7 +1356,7 @@ function abrirHistoricoMaterial(chave) {
         const qtyClass = isDiretoObra ? 'neutral' : isContagem ? 'count' : isSaida ? 'minus' : 'plus';
         const qtyPrefix = (isDiretoObra || isContagem) ? '' : isSaida ? '-' : '+';
         const corDescricao = isDiretoObra ? '#0e7490' : isSaida ? 'var(--error)' : 'var(--primary)';
-        const clickNota = m.nota_id ? ` style="cursor:pointer;color:${corDescricao};" onclick="closeModal('hist-modal');abrirNota('${esc(m.nota_id)}')"` : '';
+        const clickNota = m.nota_id ? ` style="cursor:pointer;color:${corDescricao};" onclick="closeModal('hist-modal');abrirNota(${escJsArg(m.nota_id)})"` : '';
         return `<div class="hist-item">
           <div class="hist-icon ${iconClass}"><span class="material-symbols-outlined">${iconName}</span></div>
           <div class="hist-content">
@@ -1368,9 +1368,9 @@ function abrirHistoricoMaterial(chave) {
       }).join('')}
     </div>
     <div class="btn-row btn-row-mt">
-      ${item.saldo > 0 ? `<button class="btn-primary" style="flex:1;justify-content:center;" onclick="closeModal('hist-modal');abrirDistribuicao('${esc(item.chave)}');">
+      ${item.saldo > 0 ? `<button class="btn-primary" style="flex:1;justify-content:center;" onclick="closeModal('hist-modal');abrirDistribuicao(${escJsArg(item.chave)});">
         <span class="material-symbols-outlined icon-md">local_shipping</span> Distribuir</button>` : ''}
-      <button class="btn-secondary" style="flex:1;justify-content:center;" onclick="closeModal('hist-modal');abrirAjusteEstoque('${esc(item.chave)}');">
+      <button class="btn-secondary" style="flex:1;justify-content:center;" onclick="closeModal('hist-modal');abrirAjusteEstoque(${escJsArg(item.chave)});">
         <span class="material-symbols-outlined icon-md">tune</span> Ajustar Qtd</button>
     </div>`;
 
@@ -1533,11 +1533,11 @@ function abrirDistribuicao(chave) {
       </div>
       <div class="dist-form-field">
         <label class="dist-form-label">Quantidade</label>
-        <input class="dist-form-input" id="dist-qtd" type="number" value="1" min="1" max="${item.saldo > 0 ? item.saldo : 9999}" oninput="_atualizarValorDistribuicao('${esc(item.chave)}')"/>
+        <input class="dist-form-input" id="dist-qtd" type="number" value="1" min="1" max="${item.saldo > 0 ? item.saldo : 9999}" oninput="_atualizarValorDistribuicao(${escJsArg(item.chave)})"/>
       </div>
       <div class="dist-form-field">
         <label class="dist-form-label">Data de Saída</label>
-        <input class="dist-form-input" id="dist-data" type="date" value="${hojeISO()}" onchange="_atualizarValorDistribuicao('${esc(item.chave)}')"/>
+        <input class="dist-form-input" id="dist-data" type="date" value="${hojeISO()}" onchange="_atualizarValorDistribuicao(${escJsArg(item.chave)})"/>
       </div>
       <div class="dist-form-field">
         <label class="dist-form-label">Valor Estimado</label>
@@ -1558,7 +1558,7 @@ function abrirDistribuicao(chave) {
     </div>` : ''}
     <div class="btn-row btn-row-mt" style="margin-top:24px;">
       <button id="btn-confirmar-distribuicao" class="btn-primary" style="flex:1;padding:14px;font-size:15px;justify-content:center;"
-        onclick="confirmarDistribuicaoItem('${esc(item.chave)}', document.getElementById('dist-obra').value, document.getElementById('dist-etapa').value, document.getElementById('dist-qtd').value, document.getElementById('dist-data').value)">
+        onclick="confirmarDistribuicaoItem(${escJsArg(item.chave)}, document.getElementById('dist-obra').value, document.getElementById('dist-etapa').value, document.getElementById('dist-qtd').value, document.getElementById('dist-data').value)">
         <span class="material-symbols-outlined icon-lg">check_circle</span>
         Confirmar Distribuicao
       </button>
@@ -1741,18 +1741,18 @@ function abrirVincularCodigo(chave) {
       <button class="modal-close" onclick="closeModal('vincular-modal')"><span class="material-symbols-outlined">close</span></button>
     </div>
     <div style="margin-bottom:14px;">
-      <input id="_vincular-busca" type="text" placeholder="Pesquisar no catálogo..." class="dist-form-input" style="width:100%;margin-bottom:10px;" oninput="_vincularBuscaInput(this.value,'${esc(chave)}')"/>
+      <input id="_vincular-busca" type="text" placeholder="Pesquisar no catálogo..." class="dist-form-input" style="width:100%;margin-bottom:10px;" oninput="_vincularBuscaInput(this.value,${escJsArg(chave)})"/>
       <div id="_vincular-lista" style="display:flex;flex-direction:column;gap:4px;max-height:280px;overflow-y:auto;">
         ${_renderOpcoes(_calcSimilares(''))}
       </div>
     </div>
     <div class="vincular-divider">— ou —</div>
-    <button class="btn-secondary" style="width:100%;justify-content:center;" onclick="_criarMaterialEVincular('${esc(item.chave)}', '${proximoCodigo}')">
+    <button class="btn-secondary" style="width:100%;justify-content:center;" onclick="_criarMaterialEVincular(${escJsArg(item.chave)}, '${proximoCodigo}')">
       <span class="material-symbols-outlined icon-md">add_circle</span>
       Criar Novo Material no Catalogo (proximo codigo: ${proximoCodigo})
     </button>
     <div class="btn-row btn-row-mt">
-      <button class="btn-primary" style="flex:1;padding:12px;justify-content:center;" onclick="_vincularSelecionado('${esc(item.chave)}')">
+      <button class="btn-primary" style="flex:1;padding:12px;justify-content:center;" onclick="_vincularSelecionado(${escJsArg(item.chave)})">
         <span class="material-symbols-outlined icon-md">link</span>
         Vincular ao Selecionado
       </button>
@@ -2125,11 +2125,11 @@ function renderCatalogo() {
     let acoesCol = '';
     if (isAdmin) {
       if (isAuto) {
-        acoesCol += `<button class="cat-action-btn" style="color:var(--success);" onclick="confirmarAutoMaterial('${esc(m.id)}')"><span class="material-symbols-outlined icon-sm">check_circle</span></button>`;
+        acoesCol += `<button class="cat-action-btn" style="color:var(--success);" onclick="confirmarAutoMaterial(${escJsArg(m.id)})"><span class="material-symbols-outlined icon-sm">check_circle</span></button>`;
       }
-      acoesCol += `<button class="cat-action-btn" onclick="editarMaterial('${esc(m.id)}')"><span class="material-symbols-outlined icon-sm">edit</span></button>`;
-      acoesCol += `<button class="cat-action-btn" onclick="duplicarMaterial('${esc(m.id)}')"><span class="material-symbols-outlined icon-sm">content_copy</span></button>`;
-      acoesCol += `<button class="cat-action-btn" onclick="excluirMaterial('${esc(m.id)}')"><span class="material-symbols-outlined icon-sm">delete</span></button>`;
+      acoesCol += `<button class="cat-action-btn" onclick="editarMaterial(${escJsArg(m.id)})"><span class="material-symbols-outlined icon-sm">edit</span></button>`;
+      acoesCol += `<button class="cat-action-btn" onclick="duplicarMaterial(${escJsArg(m.id)})"><span class="material-symbols-outlined icon-sm">content_copy</span></button>`;
+      acoesCol += `<button class="cat-action-btn" onclick="excluirMaterial(${escJsArg(m.id)})"><span class="material-symbols-outlined icon-sm">delete</span></button>`;
     }
 
     // Categoria: select inline para todos os itens (admin)
@@ -2137,7 +2137,7 @@ function renderCatalogo() {
     let catCol = esc(_et ? _et.lb : (m.categoria || ''));
     if (isAdmin) {
       const borderStyle = isAuto ? 'border:1px solid var(--warning);' : 'border:1px solid var(--border);';
-      catCol = `<select style="padding:4px 8px;border-radius:6px;${borderStyle}background:transparent;font-size:12px;color:var(--text-primary);outline:none;max-width:160px;" onchange="_updateCategoriaMaterial('${esc(m.id)}',this.value)">
+      catCol = `<select style="padding:4px 8px;border-radius:6px;${borderStyle}background:transparent;font-size:12px;color:var(--text-primary);outline:none;max-width:160px;" onchange="_updateCategoriaMaterial(${escJsArg(m.id)},this.value)">
         <option value="">—</option>${etapasOpts.replace(`value="${esc(m.categoria)}"`, `value="${esc(m.categoria)}" selected`)}
       </select>`;
     }
@@ -2193,7 +2193,7 @@ async function editarMaterial(id) {
   _editandoMaterialId = id;
   const selCat = document.getElementById('mat-categoria');
   if (selCat && typeof ETAPAS !== 'undefined') {
-    selCat.innerHTML = '<option value="">— Selecione —</option>' + ETAPAS.map(e => `<option value="${e.key}">${e.lb}</option>`).join('');
+    selCat.innerHTML = '<option value="">— Selecione —</option>' + ETAPAS.map(e => `<option value="${esc(e.key)}">${esc(e.lb)}</option>`).join('');
   }
   document.getElementById('mat-nome').value = mat.nome || '';
   document.getElementById('mat-unidade').value = mat.unidade || 'UN';
@@ -2916,9 +2916,9 @@ function onEntradaDescInput() {
   const top = matches.slice(0,15);
   list.innerHTML = top.map((m,i) => m.cadastroRapido
     ? `<div class="autocomplete-item" data-ed-idx="${i}" style="border-top:1px solid rgba(255,255,255,0.1);margin-top:2px;">
-        <span style="color:var(--verde-hl);font-weight:700;font-size:12px;">+ CADASTRAR "${m.desc}" NO CATÁLOGO</span>
+        <span style="color:var(--verde-hl);font-weight:700;font-size:12px;">+ CADASTRAR "${esc(m.desc)}" NO CATÁLOGO</span>
        </div>`
-    : `<div class="autocomplete-item" data-ed-idx="${i}">${m.codigo?`<span class="ac-codigo">${m.codigo}</span>`:''}<span class="ac-label">${m.desc}</span><span style="font-size:10px;color:var(--texto3);">${m.unidade}</span></div>`
+    : `<div class="autocomplete-item" data-ed-idx="${i}">${m.codigo?`<span class="ac-codigo">${esc(m.codigo)}</span>`:''}<span class="ac-label">${esc(m.desc)}</span><span style="font-size:10px;color:var(--texto3);">${esc(m.unidade)}</span></div>`
   ).join('');
   list.querySelectorAll('.autocomplete-item').forEach((el, i) => {
     const selectItem = ev => {
@@ -3085,10 +3085,10 @@ function onSaidaDescInput() {
     .map(m => ({ ...m, saldo: saldoMap[norm(m.nome)] || 0 }));
   if (!matches.length) { list.classList.add('hidden'); return; }
   list.innerHTML = matches.map(m =>
-    `<div class="autocomplete-item" onclick="selecionarSaidaItem('${esc(m.nome)}','${esc(m.unidade||'UN')}')">
-      <span class="ac-cod">${m.codigo}</span>
-      <span class="ac-label">${m.nome}</span>
-      <span style="color:var(--texto3);font-size:10px;margin-left:auto">${m.saldo > 0 ? m.saldo.toFixed(2)+' '+m.unidade : '<span style="color:#f87171">sem saldo</span>'}</span>
+    `<div class="autocomplete-item" onclick="selecionarSaidaItem(${escJsArg(m.nome)},${escJsArg(m.unidade||'UN')})">
+      <span class="ac-cod">${esc(m.codigo)}</span>
+      <span class="ac-label">${esc(m.nome)}</span>
+      <span style="color:var(--texto3);font-size:10px;margin-left:auto">${m.saldo > 0 ? m.saldo.toFixed(2)+' '+esc(m.unidade) : '<span style="color:#f87171">sem saldo</span>'}</span>
     </div>`
   ).join('');
   list.classList.remove('hidden');
@@ -3289,8 +3289,8 @@ function onAjusteDescInput() {
     .slice(0, 10);
   if (!matches.length) { list.classList.add('hidden'); return; }
   list.innerHTML = matches.map(m =>
-    `<div class="autocomplete-item" onclick="selecionarAjusteItem('${esc(m.nome)}','${esc(m.unidade || 'UN')}')">
-      ${m.codigo ? `<span class="ac-codigo">${m.codigo}</span>` : ''}<span class="ac-label">${m.nome}</span><span style="font-size:10px;color:var(--texto3);">${m.unidade || 'UN'}</span>
+    `<div class="autocomplete-item" onclick="selecionarAjusteItem(${escJsArg(m.nome)},${escJsArg(m.unidade || 'UN')})">
+      ${m.codigo ? `<span class="ac-codigo">${esc(m.codigo)}</span>` : ''}<span class="ac-label">${esc(m.nome)}</span><span style="font-size:10px;color:var(--texto3);">${esc(m.unidade || 'UN')}</span>
     </div>`
   ).join('');
   list.classList.remove('hidden');
@@ -3304,7 +3304,7 @@ function selecionarAjusteItem(desc, unidade) {
   const m = EstoqueModule._consolidado.find(i => norm(i.desc) === norm(desc));
   const saldoEl = document.getElementById('ajuste-saldo-atual');
   if (m) {
-    saldoEl.innerHTML = `Saldo atual no sistema: <strong style="color:var(--verde-hl);">${fmt(m.saldo)} ${m.unidade}</strong>`;
+    saldoEl.innerHTML = `Saldo atual no sistema: <strong style="color:var(--verde-hl);">${fmt(m.saldo)} ${esc(m.unidade)}</strong>`;
     saldoEl.style.display = 'block';
   } else {
     saldoEl.innerHTML = `Material sem saldo no sistema (será criado).`;
@@ -3391,7 +3391,7 @@ function abrirModalNovoMaterial(nomeInicial) {
   document.getElementById('mat-unidade').value = 'UN';
   const selCat = document.getElementById('mat-categoria');
   if (selCat && typeof ETAPAS !== 'undefined') {
-    selCat.innerHTML = '<option value="">— Selecione —</option>' + ETAPAS.map(e => `<option value="${e.key}">${e.lb}</option>`).join('');
+    selCat.innerHTML = '<option value="">— Selecione —</option>' + ETAPAS.map(e => `<option value="${esc(e.key)}">${esc(e.lb)}</option>`).join('');
   }
   if (selCat) selCat.value = '';
   const selTipo = document.getElementById('mat-tipo-item');
@@ -3574,7 +3574,7 @@ function renderCentrosCustoLista() {
     <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">
       <span style="width:14px;height:14px;border-radius:4px;flex-shrink:0;background:${esc(c.cor || '#546e7a')};"></span>
       <span style="flex:1;font-size:13px;color:var(--text-primary);">${esc(c.label)}</span>
-      <button class="lanc-action-btn" title="Renomear / cor" onclick="editarCentroCusto('${esc(c.id)}')"><span class="material-symbols-outlined" style="font-size:16px;">edit</span></button>
+      <button class="lanc-action-btn" title="Renomear / cor" onclick="editarCentroCusto(${escJsArg(c.id)})"><span class="material-symbols-outlined" style="font-size:16px;">edit</span></button>
     </div>`).join('');
 }
 

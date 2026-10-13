@@ -64,11 +64,11 @@ const DiarioModule = {
     const hojeLabel = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
 
     const obrasOpts = DiarioModule.obras.map(o =>
-      '<option value="' + o.id + '"' + (DiarioModule.filtroObra === o.id ? ' selected' : '') + '>' + (o.nome || '') + '</option>'
+      '<option value="' + esc(o.id) + '"' + (DiarioModule.filtroObra === o.id ? ' selected' : '') + '>' + esc(o.nome || '') + '</option>'
     ).join('');
 
     const obrasFormOpts = DiarioModule.obras.map(o =>
-      '<option value="' + o.id + '">' + (o.nome || '') + '</option>'
+      '<option value="' + esc(o.id) + '">' + esc(o.nome || '') + '</option>'
     ).join('');
 
     const stats = DiarioModule._calcStats();
@@ -193,16 +193,16 @@ const DiarioModule = {
             '<div style="flex:1;">' +
               '<div style="font-size:12px;font-weight:600;color:var(--text-primary);margin-bottom:2px;">' +
                 '<span class="material-symbols-outlined" style="font-size:13px;vertical-align:middle;color:var(--primary);">home_work</span> ' +
-                (typeof esc === 'function' ? esc(obraNome) : obraNome) +
+                esc(obraNome) +
               '</div>' +
-              '<div style="font-size:11px;color:var(--text-tertiary);">' + (r.criado_por || '') + '</div>' +
+              '<div style="font-size:11px;color:var(--text-tertiary);">' + esc(r.criado_por || '') + '</div>' +
             '</div>' +
             '<div style="display:flex;align-items:center;gap:8px;">' +
-              '<span style="font-size:18px;" title="' + (r.clima || '') + '">' + climaIcon + '</span>' +
-              '<button onclick="DiarioModule.editar(\'' + r.id.replace(/'/g,"&#39;") + '\')" style="background:none;border:none;cursor:pointer;color:var(--text-tertiary);padding:2px;" title="Editar">' +
+              '<span style="font-size:18px;" title="' + esc(r.clima || '') + '">' + climaIcon + '</span>' +
+              '<button onclick="DiarioModule.editar(' + escJsArg(r.id) + ')" style="background:none;border:none;cursor:pointer;color:var(--text-tertiary);padding:2px;" title="Editar">' +
                 '<span class="material-symbols-outlined" style="font-size:16px;">edit</span>' +
               '</button>' +
-              '<button onclick="DiarioModule.excluir(\'' + r.id.replace(/'/g,"&#39;") + '\')" style="background:none;border:none;cursor:pointer;color:var(--text-tertiary);padding:2px;" title="Excluir">' +
+              '<button onclick="DiarioModule.excluir(' + escJsArg(r.id) + ')" style="background:none;border:none;cursor:pointer;color:var(--text-tertiary);padding:2px;" title="Excluir">' +
                 '<span class="material-symbols-outlined" style="font-size:16px;">delete</span>' +
               '</button>' +
             '</div>' +
@@ -211,7 +211,7 @@ const DiarioModule = {
           // Relato
           if (r.relato) {
             html += '<div style="padding:0 12px 10px;font-size:12px;color:var(--text-secondary);line-height:1.6;white-space:pre-line;">' +
-              (typeof esc === 'function' ? esc(r.relato) : r.relato) +
+              esc(r.relato) +
             '</div>';
           }
 
@@ -219,7 +219,7 @@ const DiarioModule = {
           if (fotos.length > 0) {
             html += '<div style="display:flex;gap:4px;padding:0 12px 10px;overflow-x:auto;">';
             fotos.forEach((f, i) => {
-              html += '<img src="' + f + '" onclick="DiarioModule.verFoto(\'' + r.id + '\',' + i + ')" style="height:80px;width:80px;object-fit:cover;border-radius:6px;cursor:pointer;border:1px solid var(--border);flex-shrink:0;">';
+              html += '<img src="' + esc(f) + '" onclick="DiarioModule.verFoto(' + escJsArg(r.id) + ',' + i + ')" style="height:80px;width:80px;object-fit:cover;border-radius:6px;cursor:pointer;border:1px solid var(--border);flex-shrink:0;">';
             });
             html += '</div>';
           }
@@ -508,7 +508,7 @@ const DiarioModule = {
 
     // Pré-selecionar clima
     if (r.clima) {
-      const climaBtn = container.querySelector('.diario-clima-btn[data-valor="' + r.clima + '"]');
+      const climaBtn = [...container.querySelectorAll('.diario-clima-btn')].find(btn => btn.dataset.valor === r.clima);
       if (climaBtn) climaBtn.click();
     }
 
@@ -558,7 +558,7 @@ const DiarioModule = {
       overlay.addEventListener('click', () => overlay.remove());
       document.body.appendChild(overlay);
     }
-    overlay.innerHTML = '<img src="' + r.fotos[idx] + '" style="max-width:95vw;max-height:95vh;object-fit:contain;border-radius:8px;">';
+    overlay.innerHTML = '<img src="' + esc(r.fotos[idx]) + '" style="max-width:95vw;max-height:95vh;object-fit:contain;border-radius:8px;">';
     overlay.style.display = 'flex';
   }
 };

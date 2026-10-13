@@ -501,7 +501,7 @@ const PciModule = {
     let html = '<div style="border:1px solid var(--borda);border-radius:8px;margin-bottom:6px;overflow:hidden;">';
 
     // Header categoria
-    html += '<div class="pci-cat-header" data-key="' + catKey + '" style="display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;background:var(--fundo);user-select:none;">' +
+    html += '<div class="pci-cat-header" data-key="' + esc(catKey) + '" style="display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;background:var(--fundo);user-select:none;">' +
       '<span style="font-size:11px;font-weight:700;color:var(--texto3);min-width:20px;text-align:right;">' + cat.ordem + '</span>' +
       '<div style="flex:1;min-width:0;">' +
         '<div style="font-size:13px;font-weight:600;">' + esc(cat.nome) + '</div>' +

@@ -96,6 +96,12 @@ function resolverConversaoImportacao(item, material, regras, dataEfetiva) {
 
 const ImportModule = {
 
+  // O motor tambem roda isolado nos testes, sem os utilitarios globais.
+  _escHtml(value) {
+    return String(value == null ? '' : value).replace(/[&<>"']/g,
+      c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  },
+
   // ── Estado encapsulado ──────────────────────────────────
   itensPreview: [],
   _catCacheVer: 0,
@@ -637,15 +643,15 @@ const ImportModule = {
       const unidadesDiferentes = veioDoXml && item.confirmado && !!item.match?.material && unidadeFiscal !== unidadeEstoque;
       const regraAtual = this._conversoesCache.find(r => r.id === item.regra_conversao_id);
       const fatorAtual = Number(regraAtual?.fator);
-      const escHtml = v => typeof esc === 'function' ? esc(v) : String(v);
+      const escHtml = v => this._escHtml(v);
       const statusConversao = veioDoXml ? (conversaoPendente
-        ? `<div style="margin-top:7px;font-size:10px;color:var(--texto3);">XML: ${item.qtd_fiscal} ${typeof esc === 'function' ? esc(item.unidade_fiscal) : item.unidade_fiscal} • ${fmtR(item.preco_fiscal)}/un • total ${fmtR(item.total_fiscal)}</div>
-           <div style="margin-top:7px;font-size:10px;font-weight:700;color:var(--vermelho);"><span class="material-symbols-outlined" style="font-size:13px;vertical-align:middle;">error</span> REVISAO OBRIGATORIA: ${typeof esc === 'function' ? esc(item.motivo_conversao || 'Conversao sem regra cadastrada.') : (item.motivo_conversao || 'Conversao sem regra cadastrada.')}</div>
+        ? `<div style="margin-top:7px;font-size:10px;color:var(--texto3);">XML: ${item.qtd_fiscal} ${escHtml(item.unidade_fiscal)} • ${fmtR(item.preco_fiscal)}/un • total ${fmtR(item.total_fiscal)}</div>
+           <div style="margin-top:7px;font-size:10px;font-weight:700;color:var(--vermelho);"><span class="material-symbols-outlined" style="font-size:13px;vertical-align:middle;">error</span> REVISAO OBRIGATORIA: ${escHtml(item.motivo_conversao || 'Conversao sem regra cadastrada.')}</div>
            ${unidadesDiferentes && !regraAtual && !conversaoRoloParaMedidaSemFator(unidadeFiscal, unidadeEstoque, 1) ? `<button type="button" onclick="ImportModule.aprenderConversaoUnidade(${i})" class="btn-mini btn-secondary" style="margin-top:7px;">
               <span class="material-symbols-outlined" style="font-size:13px;vertical-align:middle;">school</span>
-              Usar ${typeof esc === 'function' ? esc(item.unidade_estoque) : item.unidade_estoque} e memorizar 1:1
+              Usar ${escHtml(item.unidade_estoque)} e memorizar 1:1
             </button>` : ''}`
-        : `<div style="margin-top:7px;font-size:10px;color:var(--texto3);">XML: ${item.qtd_fiscal} ${item.unidade_fiscal} • ${fmtR(item.preco_fiscal)}/un • estoque: ${item.qtd_estoque} ${item.unidade_estoque}${item.status_conversao === 'convertido' ? ' (convertido)' : ''}</div>`)
+        : `<div style="margin-top:7px;font-size:10px;color:var(--texto3);">XML: ${item.qtd_fiscal} ${escHtml(item.unidade_fiscal)} • ${fmtR(item.preco_fiscal)}/un • estoque: ${item.qtd_estoque} ${escHtml(item.unidade_estoque)}${item.status_conversao === 'convertido' ? ' (convertido)' : ''}</div>`)
         : '';
       const campoUnidadeXml = `<select onchange="ImportModule.escolherUnidadeEstoque(${i},this.value)" class="input-mini" aria-label="Unidade de estoque do item ${i + 1}">
           <option value="atual">${escHtml(item.unidade_estoque)}${item.confirmado && item.match?.material ? ' (catálogo)' : ' (XML)'}</option>
@@ -676,7 +682,7 @@ const ImportModule = {
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">
           <div style="flex:1;">
             <div style="font-size:10px;color:var(--texto3);margin-bottom:2px;">ITEM NA NOTA:</div>
-            <div style="font-size:13px;color:var(--texto2);font-family:'Space Grotesk',monospace;">${typeof esc === 'function' ? esc(item.descOriginal) : item.descOriginal}</div>
+            <div style="font-size:13px;color:var(--texto2);font-family:'Space Grotesk',monospace;">${escHtml(item.descOriginal)}</div>
           </div>
           <div style="display:flex;align-items:center;gap:6px;">
             <span class="badge ${scoreClass}">${scoreLabel}${item.match ? ' ' + item.match.score + '%' : ''}</span>
@@ -686,8 +692,8 @@ const ImportModule = {
         <div style="margin-bottom:8px;">
           <div style="font-size:10px;color:var(--verde-hl);margin-bottom:2px;">ITEM EDR (CATALOGO):</div>
           <div style="position:relative;">
-            <input type="text" id="import-cat-input-${i}" placeholder="${hasMatch ? item.codigoCat + ' - ' + item.descFinal : 'Buscar no catalogo...'}"
-              value="${hasMatch ? item.codigoCat + ' - ' + item.descFinal : ''}"
+            <input type="text" id="import-cat-input-${i}" placeholder="${hasMatch ? escHtml(item.codigoCat + ' - ' + item.descFinal) : 'Buscar no catalogo...'}"
+              value="${hasMatch ? escHtml(item.codigoCat + ' - ' + item.descFinal) : ''}"
               oninput="ImportModule._buscarCatInput(${i})" onfocus="ImportModule._buscarCatInput(${i})"
               autocomplete="off"
               class="input-import-cat" style="width:100%;box-sizing:border-box;">
@@ -702,7 +708,7 @@ const ImportModule = {
           </div>
           <div>
             <label class="label-mini">${campoUnidade}</label>
-            ${veioDoXml ? campoUnidadeXml : `<input type="text" value="${item.unidade}" onchange="ImportModule.editarCampo(${i},'unidade',this.value)" class="input-mini" style="text-transform:uppercase;">`}
+            ${veioDoXml ? campoUnidadeXml : `<input type="text" value="${escHtml(item.unidade)}" onchange="ImportModule.editarCampo(${i},'unidade',this.value)" class="input-mini" style="text-transform:uppercase;">`}
           </div>
           <div>
             <label class="label-mini">${campoPreco}</label>
@@ -1023,22 +1029,28 @@ const ImportModule = {
 
     if (!matches.length) {
       list.innerHTML = `<div style="padding:8px 10px;font-size:11px;color:var(--texto3);">Nenhum item encontrado</div>
-        <div onmousedown="ImportModule._cadastroRapido(${idx},'${typeof esc === 'function' ? esc(val) : val}')" class="autocomplete-item autocomplete-item-add">
+        <div class="autocomplete-item autocomplete-item-add">
           <span class="material-symbols-outlined" style="font-size:14px;">add_circle</span> CADASTRAR NO CATALOGO
         </div>`;
+      list.querySelector('.autocomplete-item-add').addEventListener('mousedown', () => this._cadastroRapido(idx, val));
       list.classList.remove('hidden');
       return;
     }
 
-    list.innerHTML = matches.map(m =>
-      `<div onmousedown="ImportModule._selecionarCatPorInput(${idx},'${typeof esc === 'function' ? esc(m.codigo) : m.codigo}')" class="autocomplete-item">
-        <span class="codigo-cat">${m.codigo}</span>
-        <span style="font-size:11px;color:var(--texto1);flex:1;">${m.nome}</span>
-        <span style="font-size:10px;color:var(--texto3);">${m.unidade || 'UN'}</span>
+    list.innerHTML = matches.map((m, matchIdx) =>
+      `<div data-import-catalogo="${matchIdx}" class="autocomplete-item">
+        <span class="codigo-cat">${this._escHtml(m.codigo)}</span>
+        <span style="font-size:11px;color:var(--texto1);flex:1;">${this._escHtml(m.nome)}</span>
+        <span style="font-size:10px;color:var(--texto3);">${this._escHtml(m.unidade || 'UN')}</span>
       </div>`
-    ).join('') + `<div onmousedown="ImportModule._cadastroRapido(${idx},'${typeof esc === 'function' ? esc(val) : val}')" class="autocomplete-item autocomplete-item-add">
+    ).join('') + `<div class="autocomplete-item autocomplete-item-add">
       <span class="material-symbols-outlined" style="font-size:14px;">add_circle</span> CADASTRAR NOVO
     </div>`;
+    list.querySelectorAll('[data-import-catalogo]').forEach(el => {
+      const material = matches[Number(el.dataset.importCatalogo)];
+      el.addEventListener('mousedown', () => this._selecionarCatPorInput(idx, material.codigo));
+    });
+    list.querySelector('.autocomplete-item-add').addEventListener('mousedown', () => this._cadastroRapido(idx, val));
     list.classList.remove('hidden');
 
     input.onblur = () => setTimeout(() => list.classList.add('hidden'), 150);

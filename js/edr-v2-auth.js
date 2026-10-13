@@ -109,6 +109,8 @@ function fazerLogout() {
   _companyId = null;
   if (_refreshTimer) clearTimeout(_refreshTimer);
   try { localStorage.removeItem('edr_auth'); } catch(e) {}
+  try { localStorage.removeItem('edr-relatorio-dados'); } catch(e) {}
+  window.EdrReportTransfer?.clear();
   document.getElementById('app-shell').style.display = 'none';
   document.getElementById('login-screen').style.display = '';
   document.getElementById('login-user').value = '';
@@ -142,6 +144,8 @@ function verificarSessao() {
     return true;
   } catch(e) {
     try { localStorage.removeItem('edr_auth'); } catch(e2) {}
+    try { localStorage.removeItem('edr-relatorio-dados'); } catch(e2) {}
+    window.EdrReportTransfer?.clear();
     return false;
   }
 }
@@ -307,20 +311,19 @@ async function renderPermissoes(container) {
     usersHTML = '<div style="color:var(--text-tertiary);font-size:13px;padding:8px 0;">Nenhum usuário encontrado.</div>';
   } else {
     // Sanitização: nome/email vêm do banco, podem conter <script> ou aspas. Escape em atributo (esc) + escape em string JS.
-    const _jsStr = s => String(s || '').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/</g,'\\x3c').replace(/>/g,'\\x3e');
     usersHTML = usuarios.map(u => {
       const perfilAtual = u.role || 'operacional';
       const perfilCor = (_PERFIS.find(p => p.id === perfilAtual) || {}).cor || '#6b7280';
-      const nomeJs = _jsStr(u.nome);
-      const emailJs = _jsStr(u.email);
-      const nomeLabelJs = _jsStr(u.nome || u.email || 'este usuário');
+      const nomeJs = escJsArg(u.nome);
+      const emailJs = escJsArg(u.email);
+      const nomeLabelJs = escJsArg(u.nome || u.email || 'este usuário');
       const editBtn = isAdmin
         ? `<div style="display:flex;gap:6px;align-items:center;">
-            <button onclick="abrirModalEditarUsuario('${esc(u.id)}','${esc(u.user_id||'')}','${nomeJs}','${emailJs}','${esc(perfilAtual)}')"
+            <button onclick="abrirModalEditarUsuario(${escJsArg(u.id)},${escJsArg(u.user_id)},${nomeJs},${emailJs},${escJsArg(perfilAtual)})"
               style="background:none;border:1px solid var(--border);border-radius:6px;padding:4px 8px;cursor:pointer;color:var(--text-secondary);display:flex;align-items:center;gap:3px;font-size:11px;font-weight:700;">
               <span class="material-symbols-outlined" style="font-size:14px;">edit</span>EDITAR
             </button>
-            <button onclick="excluirUsuario('${esc(u.id)}','${nomeLabelJs}')"
+            <button onclick="excluirUsuario(${escJsArg(u.id)},${nomeLabelJs})"
               style="background:none;border:1px solid #fca5a5;border-radius:6px;padding:4px 8px;cursor:pointer;color:#dc2626;display:flex;align-items:center;gap:3px;font-size:11px;font-weight:700;">
               <span class="material-symbols-outlined" style="font-size:14px;">delete</span>
             </button>

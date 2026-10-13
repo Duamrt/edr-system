@@ -9,6 +9,10 @@ function hojeISO() { const d = new Date(); return `${d.getFullYear()}-${String(d
 // Escape HTML (previne XSS)
 function esc(s) { if (!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 
+// Literal JavaScript inteiro dentro de atributo HTML com aspas duplas.
+// Nao envolver o resultado em outras aspas: onclick="acao(${escJsArg(valor)})".
+function escJsArg(value) { return esc(JSON.stringify(String(value == null ? '' : value))); }
+
 // Normaliza texto (remove acentos, lowercase) — usado em buscas/filtros
 function norm(s) { if (!s) return ''; return String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
 
@@ -240,14 +244,18 @@ function crMostrarSimilares(val) {
   const tokens = norm(val).split(/\s+/).filter(t => t.length >= 3);
   const similares = catalogoMateriais.filter(m => { const nm = norm(m.nome||''); return tokens.some(t => nm.includes(t)); }).slice(0, 4);
   if (!similares.length) { painel.style.display = 'none'; return; }
-  lista.innerHTML = similares.map(m =>
-    `<div onclick="crUsarExistente('${esc(m.nome)}','${esc(m.codigo)}')"
+  lista.innerHTML = similares.map((m, i) =>
+    `<div data-cr-similar="${i}"
        style="display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:6px;cursor:pointer;border:1px solid var(--border);margin-bottom:3px;">
-      <span style="font-family:monospace;font-size:10px;color:var(--primary);padding:2px 6px;border-radius:4px;">${m.codigo}</span>
+      <span style="font-family:monospace;font-size:10px;color:var(--primary);padding:2px 6px;border-radius:4px;">${esc(m.codigo)}</span>
       <span style="font-size:12px;color:var(--text-primary);flex:1;">${esc(m.nome)}</span>
       <span style="font-size:10px;color:var(--primary);font-weight:700;">USAR</span>
     </div>`
   ).join('');
+  lista.querySelectorAll('[data-cr-similar]').forEach(el => {
+    const material = similares[Number(el.dataset.crSimilar)];
+    el.addEventListener('click', () => crUsarExistente(material.nome, material.codigo));
+  });
   painel.style.display = 'block';
 }
 

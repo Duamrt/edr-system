@@ -17,7 +17,7 @@ const contexto = {
   },
   usuarioAtual: null, window: {}, setTimeout() {}, clearTimeout() {},
   norm: valor => String(valor || '').toUpperCase().trim(),
-  esc: valor => String(valor || ''),
+  ...require('./fixtures/seguranca-estoque-diarias-utils.cjs'),
   fmtR: valor => `R$ ${Number(valor || 0).toFixed(2)}`,
   fmtQtd: valor => Number(valor || 0).toLocaleString('pt-BR', { maximumFractionDigits: 3 }),
   showToast() {}, openModal() {},

@@ -112,6 +112,7 @@
 <div id="report-root"></div>
 
 <script src="js/posthog.js?v=10090955"></script>
+<script src="js/edr-v2-report-transfer.js?v=10090955"></script>
 <script>
 function fmtR(v) {
   const n = Number(v) || 0;
@@ -127,14 +128,31 @@ function pct(v, total) {
   return (v / total * 100).toFixed(1) + '%';
 }
 
-const dados = (() => {
-  try { return JSON.parse(localStorage.getItem('edr-relatorio-dados') || 'null'); } catch(e) { return null; }
-})();
+let dados = null;
+let entrega = null;
+const origemRelatorio = window.opener;
+try {
+  const id = new URLSearchParams(location.hash.slice(1)).get('edr-report');
+  history.replaceState(null, '', location.pathname + location.search);
+  if (id && origemRelatorio && !origemRelatorio.closed) entrega = origemRelatorio.EdrReportTransfer?.consume(id);
+  dados = entrega?.data || null;
+} catch (_) { /* Abertura direta/sem origem nao recupera snapshots antigos. */ }
+
+function limparRelatorio() {
+  dados = null;
+  entrega = null;
+  document.title = 'Relatório de obra';
+  const aviso = document.createElement('div');
+  aviso.style.cssText = 'padding:60px;text-align:center;font-family:sans-serif;color:#888;';
+  aviso.textContent = 'Nenhum dado disponível. Gere o relatório pelo sistema.';
+  document.getElementById('report-root').replaceChildren(aviso);
+}
 
 if (!dados) {
   document.getElementById('report-root').innerHTML = '<div style="padding:60px;text-align:center;font-family:sans-serif;color:#888;">Nenhum dado encontrado. Gere o relatório pelo sistema.</div>';
 } else {
   render(dados);
+  EdrReportTransfer.watch(entrega.owner, limparRelatorio, origemRelatorio);
 }
 
 function tagStatus(t, hoje) {

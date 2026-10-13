@@ -66,7 +66,7 @@ function aplicarCentrosCustoExtras(extras) {
   const base = _ETAPAS_BASE.filter(e => e.key !== '36_outros');
   const exs = (Array.isArray(extras) ? extras : [])
     .filter(c => c && c.key && c.label)
-    .map(c => ({ key: c.key, lb: c.label, cor: c.cor || '#546e7a', aliases: [] }));
+    .map(c => ({ key: c.key, lb: c.label, cor: /^#[0-9a-f]{6}$/i.test(c.cor || '') ? c.cor : '#546e7a', aliases: [] }));
   ETAPAS = base.concat(exs).sort((a, b) => (a.lb || '').localeCompare(b.lb || '', 'pt-BR'));
   if (outros) ETAPAS.push(outros);
   _rebuildEtapaAlias();
@@ -88,7 +88,7 @@ function etapaLabel(key) {
 
 function etapaSelectOpts(selected = '', incluiVazio = true) {
   const vazio = incluiVazio ? '<option value="">— Etapa (opcional) —</option>' : '';
-  return vazio + ETAPAS.map(e => `<option value="${e.key}" ${selected === e.key ? 'selected' : ''}>${e.lb}</option>`).join('');
+  return vazio + ETAPAS.map(e => `<option value="${esc(e.key)}" ${selected === e.key ? 'selected' : ''}>${esc(e.lb)}</option>`).join('');
 }
 
 // ── CATS: categorizacao automatica por regex ────────────────────
@@ -143,8 +143,8 @@ function _obrasPopularFiltrosCat() {
   if (!lista) return;
   lista.innerHTML = ETAPAS.map(e => `
     <label style="display:flex;align-items:center;gap:8px;padding:6px 12px;cursor:pointer;font-size:12px;color:var(--text-primary);transition:background .1s;" onmouseenter="this.style.background='rgba(255,255,255,.04)'" onmouseleave="this.style.background=''">
-      <input type="checkbox" value="${e.key}" onchange="obrasCatToggle('${e.key}')" style="accent-color:var(--primary);width:14px;height:14px;cursor:pointer;">
-      ${e.lb}
+      <input type="checkbox" value="${esc(e.key)}" onchange="obrasCatToggle(${escJsArg(e.key)})" style="accent-color:var(--primary);width:14px;height:14px;cursor:pointer;">
+      ${esc(e.lb)}
     </label>`).join('');
 }
 
@@ -288,7 +288,7 @@ function renderObrasCards() {
     const acoes = `<div class="obras-tbl-acoes">
       ${isAdmin ? `<button class="obra-action-btn obra-action-edit" onclick="event.stopPropagation();abrirModalObra('${esc(o.id)}')">Editar</button>` : ''}
       ${isAdmin && !ObrasModule.mostandoArquivadas ? `<button class="obra-action-btn obra-action-complete" onclick="event.stopPropagation();abrirModalConclusao('${esc(o.id)}')">Concluir</button>` : ''}
-      ${isAdmin && ObrasModule.mostandoArquivadas ? `${o.slug_entrega ? `<button class="obra-action-btn" style="color:var(--warning);background:rgba(217,119,6,.06);border:1px solid rgba(217,119,6,.15);" onclick="event.stopPropagation();abrirEntregaDigital('${esc(o.slug_entrega)}')">Entrega</button>` : ''}<button class="obra-action-btn" style="color:#8B5CF6;background:rgba(139,92,246,.06);border:1px solid rgba(139,92,246,.15);" onclick="event.stopPropagation();reimprimirTermo('${esc(o.id)}')">Termo</button><button class="obra-action-btn" style="color:var(--success);background:rgba(5,150,105,.06);border:1px solid rgba(5,150,105,.15);" onclick="event.stopPropagation();reativarObra('${esc(o.id)}')">Reativar</button>` : ''}
+      ${isAdmin && ObrasModule.mostandoArquivadas ? `${o.slug_entrega ? `<button class="obra-action-btn" style="color:var(--warning);background:rgba(217,119,6,.06);border:1px solid rgba(217,119,6,.15);" onclick="event.stopPropagation();abrirEntregaDigital(${escJsArg(o.slug_entrega)})">Entrega</button>` : ''}<button class="obra-action-btn" style="color:#8B5CF6;background:rgba(139,92,246,.06);border:1px solid rgba(139,92,246,.15);" onclick="event.stopPropagation();reimprimirTermo('${esc(o.id)}')">Termo</button><button class="obra-action-btn" style="color:var(--success);background:rgba(5,150,105,.06);border:1px solid rgba(5,150,105,.15);" onclick="event.stopPropagation();reativarObra('${esc(o.id)}')">Reativar</button>` : ''}
       ${isAdmin ? `<button class="obra-action-btn" style="color:#0d5220;background:rgba(13,82,32,.06);border:1px solid rgba(13,82,32,.18);" onclick="event.stopPropagation();gerarRelatorioObra('${esc(o.id)}')">Relatório</button>` : ''}
       <button class="obra-action-btn" onclick="event.stopPropagation();obrasAbrirDetalhe('${esc(o.id)}')">Detalhes</button>
     </div>`;
@@ -540,7 +540,7 @@ function filtrarLanc() {
           ${mostrarObra ? `<span style="display:inline-flex;align-items:center;gap:3px;background:rgba(37,99,235,.1);color:#2563eb;border:1px solid rgba(37,99,235,.28);border-radius:4px;font-size:9px;font-weight:700;padding:1px 6px;"><span class="material-symbols-outlined" style="font-size:11px;">apartment</span>${esc(obraNomePorId[l.obra_id] || '?')}</span>` : ''}
           <span class="etapa-chip" style="font-size:9px;padding:2px 6px;">${esc(etapaLabel(etapaKey))}</span>
           <span>${l.data ? fmtData(l.data) : '—'}</span>
-          ${l.qtd ? `<span>${Number(l.qtd)} ${l.unidade || 'un'}</span>` : ''}
+          ${l.qtd ? `<span>${Number(l.qtd)} ${esc(l.unidade || 'un')}</span>` : ''}
           ${semCodigo ? '<span style="color:var(--text-tertiary);font-size:10px;">sem vinculo catalogo</span>' : ''}
           ${l.criado_por && isAdmin ? `<span style="font-size:10px;color:var(--text-tertiary);">${esc(l.criado_por)}</span>` : ''}
         </div>
@@ -1105,6 +1105,8 @@ async function confirmarConclusaoObra() {
 }
 
 async function gerarRelatorioObra(obraId) {
+  const reportOwner = window.EdrReportTransfer?.capture();
+  if (!reportOwner) { showToast('Sessão indisponível. Entre novamente para gerar o relatório.'); return; }
   const obra = [...obras, ...obrasArquivadas].find(o => o.id === obraId);
   if (!obra) { showToast('Obra não encontrada.'); return; }
 
@@ -1152,8 +1154,9 @@ async function gerarRelatorioObra(obraId) {
     geradoEm: hojeISO(),
   };
 
-  localStorage.setItem('edr-relatorio-dados', JSON.stringify(dados));
-  window.open('relatorio-obra.html', '_blank');
+  if (!EdrReportTransfer.open(dados, reportOwner)) {
+    showToast('Relatório não aberto. Confira a sessão e permita a abertura da nova aba.');
+  }
 }
 
 function gerarTermoEntrega(dados) {
