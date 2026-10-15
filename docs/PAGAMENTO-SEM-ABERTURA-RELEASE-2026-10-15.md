@@ -26,21 +26,21 @@ O `deploy.sh` foi preservado integralmente. Executá-lo neste branch isolado ret
 
 Além do nome da branch, o script exige que origin/dev seja ancestral de dev e depois faz merge fast-forward de dev em main. Origin/dev não é ancestral deste release; inclui os dois documentos alheios. Renomear a branch para dev não resolveria o segundo gate. Não se deve substituir refs, usar remote intermediário, retirar gates ou reiniciar branches para enganar essas verificações.
 
-## Alternativa exata que depende de aprovação adicional
+## Exceção de publicação aprovada
 
-Não há modo oficial de publicar este release isolado sem carregar a diferença de dev. A alternativa preservadora é uma **exceção explícita para esta publicação diretamente em main**:
+Duam autorizou expressamente ("Autorizo sim") a publicação isolada diretamente em main por fast-forward, com verificações equivalentes e preservação de dev. O release funcional aprovado é `88dec2cc706ad3a83e92fbc4190c5cb708ac3ca8`; a publicação acrescenta somente cache e esta documentação. O deploy.sh continua intacto. Etapas autorizadas:
 
 1. Usar somente este branch isolado, confirmar que main continua na base validada e que o diff contém apenas os arquivos aprovados.
 2. Gerar e conferir a atualização de cache equivalente à oficial nos HTMLs rastreados e no service worker; executar o mesmo pre-deploy check, sem ignorar achados bloqueadores.
 3. Repetir o preflight/backup do banco e aplicar somente a migração de Caixa aprovada.
 4. Publicar somente o release em main por fast-forward, sem force push e sem alterar dev; conferir o build Pages, artefatos e contratos em leitura.
 
-Essa alternativa muda o método obrigatório `deploy.sh`/dev→main, embora mantenha o escopo funcional e as verificações. Por isso requer autorização explícita de exceção; não foi executada. Uma alternativa permanente seria aprovar e revisar um modo isolado no próprio deploy.sh, mantendo os gates equivalentes, mas isso adicionaria mudança de ferramenta ao escopo e também não foi implementado.
-
-A autorização funcional de publicação já foi concedida. A preparação e a revalidação foram resolvidas nesta tarefa; resta apenas a decisão sobre esse método incompatível com o script atual.
+Esta autorização cobre somente esta publicação; não altera o fluxo padrão de futuros releases. Cache preparado com as mesmas substituições do script oficial: `edr-system-v20261015054646` e recursos `?v=10150546`. A evidência final externa à árvore publicada registrará o commit efetivamente enviado, a migração e as verificações de produção.
 
 ## Recuperação e limites
 
 O `rollback.sh` atual reverte somente o último commit e não desfaz banco; após o cache, pode reverter apenas a versão de recursos. Não é uma reversão integral do pagamento. A migração é transacional e tem trava de versão. Antes da aplicação, preservar a definição atual e confirmar backup. Depois de registros no formato novo, preservar movimentos/recibos e corrigir de forma compatível; não apagar colunas/dados nem restaurar cegamente funções antigas.
 
-Nenhuma migração, push ou deploy produtivo foi realizado nesta preparação. Nenhum pagamento real, baixa Dantas ou abertura de Caixa foi executado.
+Snapshot direcionado do esquema capturado em `2026-10-15T08:44:39.312836+00:00`: definições das duas funções, colunas, constraints, policies, ACLs/RLS, contagens e impressão digital de contas_pagar. As quatro tabelas Caixa estavam vazias. Este snapshot não equivale a backup integral gerenciado. O roteiro de recuperação preparado bloqueia as quatro tabelas, aborta se houver qualquer registro e só então permite restaurar as funções originais, preservando as colunas aditivas; não foi executado.
+
+No momento deste registro preparatório, migração e publicação ainda aguardam execução e verificação. Nenhum pagamento real, baixa Dantas ou abertura de Caixa foi executado. Evidências finais serão registradas separadamente sem alterar dados financeiros.
