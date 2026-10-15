@@ -110,6 +110,11 @@ function _cpCampo(id, label, input) {
 }
 const _cpEstiloCampo = 'style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text-primary);font:inherit;box-sizing:border-box;"';
 function _cpOrigem(m) { return m.origem_codigo === 'banco' ? 'C6 PJ' : m.origem_codigo === 'dinheiro' ? 'Dinheiro no escritório' : ''; }
+function _cpDescricaoMovimento(m) {
+  if (m?.descricao || m?.tipo !== 'pagamento') return m?.descricao || '';
+  const conta = (typeof contasPagar !== 'undefined' ? contasPagar : []).find(c => c.id === m.conta_pagar_id);
+  return [conta?.fornecedor, conta?.nota_ref].filter(Boolean).join(' — ') || conta?.descricao || 'Conta a pagar vinculada';
+}
 function _cpConciliacaoCampo() {
   return _cpCampo('cp-decisao', 'Este pagamento já está incluído no saldo de abertura?', '<select required '+_cpEstiloCampo+'><option value="">Selecione após conferir o saldo</option><option value="incluido_abertura">Sim, já está incluído — não descontar novamente</option><option value="apos_corte">Não, ocorreu após a abertura — descontar uma vez</option></select>');
 }
@@ -122,7 +127,7 @@ function _cpFormularioHtml() {
   if (f.tipo === 'conciliar') {
     const m = caixaProspectivoEstado()?.movimentos.find(x => x.id === f.contaPagarId);
     const conta = contas.find(c => c.codigo === m?.origem_codigo);
-    campos = '<p>'+esc(m?.descricao)+' — '+_cpDinheiro(m?.valor_centavos)+'<br>'+esc(_cpOrigem(m || {}))+' · '+fmtData(m?.data_efetiva)+' '+esc(m?.hora_efetiva || 'sem horário')+'<br>Abertura: '+(conta ? esc(_cpMarco(conta)) : 'indisponível')+'</p>' + _cpConciliacaoCampo() + '<p>Se ainda não souber, cancele e mantenha a conciliação pendente.</p>';
+    campos = '<p>'+esc(_cpDescricaoMovimento(m))+' - '+_cpDinheiro(m?.valor_centavos)+'<br>'+esc(_cpOrigem(m || {}))+' · '+fmtData(m?.data_efetiva)+' '+esc(m?.hora_efetiva || 'sem horário')+'<br>Abertura: '+(conta ? esc(_cpMarco(conta)) : 'indisponível')+'</p>' + _cpConciliacaoCampo() + '<p>Se ainda não souber, cancele e mantenha a conciliação pendente.</p>';
   } else if (f.tipo === 'abertura') {
     campos = _cpCampo('cp-corte', 'Data e horário do saldo informado (São Paulo)', `<input type="datetime-local" required ${_cpEstiloCampo}>`) +
       _cpCampo('cp-banco', 'Saldo informado C6 PJ (R$)', `<input type="number" min="0" step="0.01" required ${_cpEstiloCampo}>`) +
@@ -142,7 +147,9 @@ function _cpFormularioHtml() {
       _cpCampo('cp-data', 'Data efetiva (São Paulo)', `<input type="date" required ${_cpEstiloCampo}>`) +
       _cpCampo('cp-hora', 'Horário efetivo, se conhecido (São Paulo)', `<input type="time" ${_cpEstiloCampo}>`) +
       _cpCampo('cp-decisao', 'Sem horário no dia do corte: posição em relação à abertura', `<select ${_cpEstiloCampo}><option value="">Selecione se a data for o dia do corte</option><option value="incluido_abertura">Já incluído no saldo de abertura</option><option value="apos_corte">Ocorreu após o marco de abertura</option></select>`) +
-      _cpCampo('cp-descricao', 'Descrição / referência do comprovante', `<input type="text" maxlength="500" required ${_cpEstiloCampo}>`) +
+      (f.tipo === 'pagamento'
+        ? '<details><summary>Adicionar observação</summary>' + _cpCampo('cp-descricao', 'Observação (opcional)', `<input type="text" maxlength="500" ${_cpEstiloCampo}>`) + '</details>'
+        : _cpCampo('cp-descricao', 'Descrição / referência do comprovante', `<input type="text" maxlength="500" required ${_cpEstiloCampo}>`)) +
       '<p style="font-size:12px;color:var(--text-secondary);">Registre cada movimento uma vez. Custo, consumo e fechamento da folha não confirmam pagamento. Movimentos anteriores ou já incluídos na abertura não mudam o saldo.</p>';
   }
   if (f.tipo === 'pagamento') {
@@ -180,7 +187,7 @@ function _cpDesenhar(el) {
   const pagar = obrigacoes.reduce((s,c) => s + Math.round(caixaProspectivoRestante(c)*100),0);
   html += `<div style="${card}"><h3 style="margin:0 0 8px;font-size:14px;">Obrigações a pagar · ${_cpDinheiro(pagar)}</h3><p style="font-size:12px;">Contas cadastradas ainda não quitadas. Folha a pagar e outras obrigações precisam estar cadastradas; lançar custo não altera o disponível.</p>${obrigacoes.map(c => `<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;padding:8px 0;border-top:1px solid var(--border);"><span>${esc(c.fornecedor || c.descricao)} · ${fmtData(c.data_vencimento)}</span><span>${fmt(caixaProspectivoRestante(c))} ${(e.contas.length || e.pagamento_sem_abertura) ? `<button class="btn" onclick="caixaProspectivoAbrir('pagamento','${esc(c.id)}')">Pagar</button>` : ''}</span></div>`).join('') || '<p>Nenhuma obrigação cadastrada pendente.</p>'}</div>`;
   const nomes = new Map(e.contas.map(c => [c.id,c.nome]));
-  html += `<div style="${card}"><h3 style="font-size:14px;margin:0 0 8px;">Movimentos efetivos</h3>${e.movimentos.map(m => `<div style="border-top:1px solid var(--border);padding:10px 0;${m.cancelado_em?'opacity:.6;':''}"><div>${esc(m.descricao)} · ${esc(m.tipo)} · ${_cpDinheiro(m.valor_centavos)}${m.desconto_centavos || m.juros_centavos ? ` (desconto ${_cpDinheiro(m.desconto_centavos || 0)}; juros ${_cpDinheiro(m.juros_centavos || 0)})` : ''}</div><div style="font-size:12px;color:var(--text-secondary);">${esc(nomes.get(m.conta_id)||_cpOrigem(m))} ${m.destino_id?' → '+esc(nomes.get(m.destino_id)||''):''} · ${fmtData(m.data_efetiva)} ${esc(m.hora_efetiva||'sem horário')} · ${m.cancelado_em?'Cancelado':m.decisao_corte==='pendente'?'Conciliação pendente':m.afeta_saldo?'Movimenta saldo':'Incluído na abertura'} ${!m.cancelado_em && m.decisao_corte==='pendente' && e.contas.length===2 ? `<button class="btn" onclick="caixaProspectivoAbrir('conciliar','${esc(m.id)}')">Conferir com abertura</button>` : ''} ${!m.cancelado_em ? `<button class="btn" onclick="caixaProspectivoCancelarMovimento('${esc(m.id)}')">Cancelar movimento</button>`:''}</div></div>`).join('') || '<p style="font-size:12px;">Nenhum movimento registrado.</p>'}</div>`;
+  html += `<div style="${card}"><h3 style="font-size:14px;margin:0 0 8px;">Movimentos efetivos</h3>${e.movimentos.map(m => `<div style="border-top:1px solid var(--border);padding:10px 0;${m.cancelado_em?'opacity:.6;':''}"><div>${esc(_cpDescricaoMovimento(m))} · ${esc(m.tipo)} · ${_cpDinheiro(m.valor_centavos)}${m.desconto_centavos || m.juros_centavos ? ` (desconto ${_cpDinheiro(m.desconto_centavos || 0)}; juros ${_cpDinheiro(m.juros_centavos || 0)})` : ''}</div><div style="font-size:12px;color:var(--text-secondary);">${esc(nomes.get(m.conta_id)||_cpOrigem(m))} ${m.destino_id?' → '+esc(nomes.get(m.destino_id)||''):''} · ${fmtData(m.data_efetiva)} ${esc(m.hora_efetiva||'sem horário')} · ${m.cancelado_em?'Cancelado':m.decisao_corte==='pendente'?'Conciliação pendente':m.afeta_saldo?'Movimenta saldo':'Incluído na abertura'} ${!m.cancelado_em && m.decisao_corte==='pendente' && e.contas.length===2 ? `<button class="btn" onclick="caixaProspectivoAbrir('conciliar','${esc(m.id)}')">Conferir com abertura</button>` : ''} ${!m.cancelado_em ? `<button class="btn" onclick="caixaProspectivoCancelarMovimento('${esc(m.id)}')">Cancelar movimento</button>`:''}</div></div>`).join('') || '<p style="font-size:12px;">Nenhum movimento registrado.</p>'}</div>`;
   html += _cpPrevisoesHtml(card);
   el.innerHTML = html;
 }
@@ -292,7 +299,9 @@ function _cpPedido() {
     ...(_cpFormulario.tipo==='pagamento' ? {pagamento_confirmado:true,origem_codigo:e.contas.find(c=>c.id===valor('cp-conta'))?.codigo || valor('cp-origem'),desconto_centavos:caixaProspectivoCentavos(valor('cp-desconto')||'0'),juros_centavos:caixaProspectivoCentavos(valor('cp-juros')||'0')} : {}),destino_id:valor('cp-destino')||null,
     valor_centavos:caixaProspectivoCentavos(valor('cp-valor')),data_efetiva:valor('cp-data'),hora_efetiva:valor('cp-hora')||null,
     decisao_corte:valor('cp-decisao')||null,descricao:valor('cp-descricao').trim(),conta_pagar_id:_cpFormulario.contaPagarId};
-  if (p.valor_centavos<=0 || !p.descricao || !/^\d{4}-\d{2}-\d{2}$/.test(p.data_efetiva)) throw new Error('Informe valor, data efetiva e descrição.');
+  if (p.valor_centavos<=0 || !/^\d{4}-\d{2}-\d{2}$/.test(p.data_efetiva)) throw new Error('Informe valor e data efetiva.');
+  if (p.tipo!=='pagamento' && !p.descricao) throw new Error('Informe a descrição.');
+  if (p.descricao.length>500) throw new Error('Descrição ou observação deve ter até 500 caracteres.');
   if (document.getElementById('cp-custo-confirmado') && !document.getElementById('cp-custo-confirmado').checked) throw new Error('Registre o custo na obra e confirme antes do pagamento.');
   if (document.getElementById('cp-custo-confirmado')) p.custo_confirmado = true;
   if (p.tipo==='transferencia' && p.conta_id===p.destino_id) throw new Error('Selecione duas contas diferentes.');
