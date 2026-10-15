@@ -14,6 +14,7 @@ const empresa = id(1), banco = id(2), dinheiro = id(3), obrigacao = id(4);
 function estadoSintetico() {
   return {
     company_id: empresa,
+    pagamento_sem_abertura: true,
     contas: [
       { id: banco, codigo: 'banco', nome: 'Banco de teste', abertura_centavos: 100000, corte_em: '2026-09-14T15:00:00Z', fuso: 'America/Sao_Paulo', saldo_centavos: 100000 },
       { id: dinheiro, codigo: 'dinheiro', nome: 'Dinheiro de teste', abertura_centavos: 10000, corte_em: '2026-09-14T15:00:00Z', fuso: 'America/Sao_Paulo', saldo_centavos: 10000 },
@@ -111,6 +112,7 @@ async function abrir(a, tipo = 'entrada', conta = null) {
 }
 
 function preencher(a, values = {}) {
+  if (a.campos.has('cp-pago-confirmado')) a.campos.get('cp-pago-confirmado').checked = true;
   for (const [name, value] of Object.entries({ 'cp-data': '2026-09-16', 'cp-hora': '14:05', 'cp-conta': banco, 'cp-valor': '50.00', 'cp-descricao': 'Movimento sintético', ...values })) {
     const field = a.campos.get(name);
     assert.ok(field, 'Campo esperado no formulário: ' + name);
@@ -249,6 +251,38 @@ test('UI: pagamento parcial envia obrigação antiga sem criar novo custo', asyn
   assert.equal(a.ctx.lancamentos.length, 0);
 });
 
+test('UI: sem abertura exige origem e confirmação; pedido preserva ajustes e reenvio', async () => {
+  const s=estadoSintetico();s.contas=[];s.total_centavos=0;
+  const a=ambiente(s);await abrir(a,'pagamento',obrigacao);
+  assert.match(a.ctx.document.body.innerHTML,/conciliação pendente/);
+  assert.ok(!a.campos.has('cp-conta'));assert.ok(!a.campos.has('cp-decisao'));
+  for(const [k,v] of Object.entries({'cp-data':'2001-06-05','cp-valor':'40','cp-descricao':'Comprovante QA','cp-desconto':'5','cp-juros':'2'}))a.campos.get(k).value=v;
+  await a.ctx.caixaProspectivoSalvar();assert.equal(a.writes().length,0);
+  a.campos.get('cp-pago-confirmado').checked=true;await a.ctx.caixaProspectivoSalvar();assert.equal(a.writes().length,0);
+  a.campos.get('cp-origem').value='dinheiro';a.onWrite(async()=>({ok:false,incerto:true}));
+  await a.ctx.caixaProspectivoSalvar();const one=plain(a.writes()[0].params);
+  assert.equal(one.p_pedido.conta_id,null);assert.equal(one.p_pedido.origem_codigo,'dinheiro');assert.equal(one.p_pedido.desconto_centavos,500);assert.equal(one.p_pedido.juros_centavos,200);
+  await a.ctx.caixaProspectivoSalvar();assert.deepEqual(a.writes()[1].params,one);
+});
+
+test('UI: conciliação pede decisão explícita e recupera mesma operação após recarga', async () => {
+  const s=estadoSintetico();const movimento=id(77);
+  s.movimentos=[{id:movimento,tipo:'pagamento',conta_id:null,origem_codigo:'banco',valor_centavos:4000,descricao:'QA',data_efetiva:'2001-06-05',decisao_corte:'pendente',afeta_saldo:false}];
+  const a=ambiente(s);await abrir(a,'conciliar',movimento);
+  assert.match(a.content.innerHTML,/conciliação pendente/);
+  await a.ctx.caixaProspectivoSalvar();assert.equal(a.writes().length,0);
+  a.campos.get('cp-decisao').value='incluido_abertura';a.onWrite(async()=>({ok:false,incerto:true}));await a.ctx.caixaProspectivoSalvar();
+  const sent=plain(a.writes()[0].params);assert.equal(sent.p_pedido.action,'conciliar');assert.equal(sent.p_pedido.movimento_id,movimento);
+  const b=ambiente(s,a.journal);await b.ctx.caixaProspectivoConferirPendente();assert.deepEqual(b.writes()[0].params,sent);
+});
+
+test('UI: pagamento no dia do corte sem horário pode permanecer pendente; banco antigo bloqueia', async () => {
+  const a=ambiente();await abrir(a,'pagamento',obrigacao);preencher(a,{'cp-data':'2026-09-14','cp-hora':''});await a.ctx.caixaProspectivoSalvar();
+  assert.equal(a.writes().length,1);assert.equal(a.writes()[0].params.p_pedido.decisao_corte,null);
+  const s=estadoSintetico();delete s.pagamento_sem_abertura;const b=ambiente(s);await abrir(b,'pagamento',obrigacao);
+  assert.equal(b.writes().length,0);assert.match(b.avisos.join(' '),/Atualização.*banco/);
+});
+
 test('UI: clique duplo durante persistência envia apenas uma operação', async () => {
   const a = ambiente(); await abrir(a); preencher(a);
   let finish;
@@ -382,7 +416,7 @@ test('integração: renderCaixa usa saldo persistido e botão Pago abre pagament
   await a.ctx.renderCaixa();
   assert.match(a.content.innerHTML, /1\.100,00/);
   await a.ctx.marcarComoPago(obrigacao);
-  assert.match(a.ctx.document.body.innerHTML, /Pagamento efetivo/);
+  assert.match(a.ctx.document.body.innerHTML, /Confirmar pagamento ocorrido/);
   assert.equal(a.writes().length, 0, 'Abrir pagamento não pode marcar a obrigação como paga');
   preencher(a, { 'cp-valor': '150.00' }); await a.ctx.caixaProspectivoSalvar();
   assert.equal(a.writes().length, 1);
@@ -478,6 +512,18 @@ test('UI: parcial persistido exibe restante separado do saldo disponível', asyn
   assert.equal(a.ctx.caixaProspectivoRestante(a.ctx.contasPagar[0]), 250);
   assert.match(a.content.innerHTML, /Obrigações a pagar.*250,00/);
   assert.match(a.content.innerHTML, /TOTAL DISPONÍVEL.*1\.100,00/);
+});
+
+test('UI: conta quitada com desconto distingue valor original do dinheiro pago', async () => {
+  const s=estadoSintetico();s.pagamentos[0]={conta_pagar_id:obrigacao,pago_centavos:25000,quitado_centavos:40000,restante_centavos:0};
+  s.movimentos=[{id:id(91),conta_pagar_id:obrigacao,tipo:'pagamento',valor_centavos:25000,desconto_centavos:15000,juros_centavos:0,decisao_corte:'pendente',cancelado_em:null}];
+  const a=ambiente(s);a.ctx.contasPagar[0].status='pago';a.ctx.contasPagar[0].data_pagamento='2026-09-16';a.ctx._testContas=plain(a.ctx.contasPagar);
+  for(const name of ['contas-stats','contas-lista']){const el=a.ctx.document.createElement('div');el.id=name;}
+  vm.runInContext(fs.readFileSync(path.join(__dirname,'../js/edr-v2-financeiro.js'),'utf8')+'\ncontasPagar = _testContas;',a.ctx);
+  await a.ctx.caixaProspectivoCarregar();a.ctx.renderContasPagar();
+  assert.match(a.campos.get('contas-stats').innerHTML,/QUITADAS NO MÊS · VALOR ORIGINAL/);
+  assert.match(a.campos.get('contas-lista').innerHTML,/Original.*400,00.*Pago.*250,00.*Desconto.*150,00/);
+  assert.match(a.campos.get('contas-lista').innerHTML,/Conciliação pendente/);
 });
 
 test('integração: falha na recarga de pagamentos bloqueia edição e exclusão de obrigação', async () => {
@@ -679,6 +725,7 @@ if (!process.env.EDR_PLAYWRIGHT_PATH) {
     await page.evaluate(conta => caixaProspectivoAbrir('pagamento', conta), obrigacao);
     await page.locator('#cp-data').fill('2026-09-16'); await page.locator('#cp-hora').fill('14:06');
     await page.locator('#cp-valor').fill('150'); await page.locator('#cp-descricao').fill('Pagamento parcial sintético');
+    await page.locator('#cp-pago-confirmado').check();
     await page.locator('#cp-salvar').click(); await page.waitForFunction(() => !document.getElementById('cp-modal'));
     const partial = await page.evaluate(() => window.__writes.at(-1).params.p_pedido);
     assert.equal(partial.conta_pagar_id, obrigacao); assert.equal(partial.valor_centavos, 15000);
@@ -698,6 +745,25 @@ if (!process.env.EDR_PLAYWRIGHT_PATH) {
     await page.evaluate(() => { window.__fail = true; }); await page.locator('#cp-salvar').click();
     assert.equal(await page.locator('#cp-modal').count(), 1);
     assert.match(await page.locator('#cp-erro').innerText(), /Falha sintética/);
+    await page.locator('#cp-cancelar').click();
+    await page.evaluate(() => {window.__fail=false;window.__state.contas=[];window.__state.total_centavos=0;});
+    await page.evaluate(cp => caixaProspectivoAbrir('pagamento',cp),obrigacao);
+    assert.equal(await page.locator('#cp-conta').count(),0);assert.equal(await page.locator('#cp-decisao').count(),0);
+    await page.locator('#cp-origem').selectOption('dinheiro');await page.locator('#cp-data').fill('2001-06-05');
+    await page.locator('#cp-valor').fill('40');await page.locator('#cp-descricao').fill('Pagamento QA');
+    await page.locator('summary').click();await page.locator('#cp-desconto').fill('5');await page.locator('#cp-juros').fill('2');await page.locator('#cp-pago-confirmado').check();
+    if(process.env.EDR_UI_EVIDENCE_DIR){
+      await page.locator('summary').click();
+      await page.evaluate(()=>{document.querySelector('#cp-modal .modal-box').scrollTop=0;});
+      await page.screenshot({path:path.join(process.env.EDR_UI_EVIDENCE_DIR,'pagamento-sem-abertura-desktop.png'),fullPage:true});
+      await page.setViewportSize({width:390,height:844});
+      await page.evaluate(()=>{document.querySelector('#cp-modal .modal-box').scrollTop=0;});
+      assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth));
+      await page.screenshot({path:path.join(process.env.EDR_UI_EVIDENCE_DIR,'pagamento-sem-abertura-mobile.png'),fullPage:true});
+    }
+    await page.locator('#cp-salvar').click();await page.waitForFunction(()=>!document.getElementById('cp-modal'));
+    const payment=await page.evaluate(()=>window.__writes.at(-1).params.p_pedido);
+    assert.equal(payment.conta_id,null);assert.equal(payment.origem_codigo,'dinheiro');assert.equal(payment.pagamento_confirmado,true);assert.equal(payment.desconto_centavos,500);assert.equal(payment.juros_centavos,200);
     assert.equal(external, 0, 'O harness não pode acessar recursos externos');
   });
 }

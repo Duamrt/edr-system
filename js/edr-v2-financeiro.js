@@ -111,7 +111,7 @@ function renderContasPagar() {
           <div style="font-size:16px;font-weight:800;color:#ef4444;font-family:'Space Grotesk',monospace;">${fmt(totalVencido)}</div>
         </div>
         <div style="background:var(--card);border:1px solid var(--border);border-top:2px solid #22c55e;border-radius:10px;padding:12px;text-align:center;">
-          <div style="font-size:9px;color:var(--text-tertiary);font-weight:700;letter-spacing:1px;">${_contasMes ? 'PAGO EM ' + _labelMes(_contasMes).toUpperCase() : 'PAGAS NO MES'}</div>
+          <div style="font-size:9px;color:var(--text-tertiary);font-weight:700;letter-spacing:1px;">${_contasMes ? 'QUITADAS EM ' + _labelMes(_contasMes).toUpperCase() + ' · VALOR ORIGINAL' : 'QUITADAS NO MÊS · VALOR ORIGINAL'}</div>
           <div style="font-size:16px;font-weight:800;color:#22c55e;font-family:'Space Grotesk',monospace;">${fmt(pagasMes)}</div>
         </div>
         <div style="background:var(--card);border:1px solid var(--border);border-top:2px solid #3b82f6;border-radius:10px;padding:12px;text-align:center;">
@@ -144,6 +144,8 @@ function renderContasPagar() {
   obras.forEach(o => obraMap[o.id] = o.nome);
 
   listaEl.innerHTML = filtrada.map(c => {
+    const movimentos = typeof caixaProspectivoEstado === 'function' ? (caixaProspectivoEstado()?.movimentos || []).filter(m => m.conta_pagar_id === c.id && !m.cancelado_em) : [];
+    const resumoPagamento = movimentos.length ? `<div style="font-size:12px;margin-top:5px;">Original ${fmt(c._valorOriginal)} · Pago ${fmt(movimentos.reduce((s,m)=>s+Number(m.valor_centavos),0)/100)} · Desconto ${fmt(movimentos.reduce((s,m)=>s+Number(m.desconto_centavos || 0),0)/100)} · Juros ${fmt(movimentos.reduce((s,m)=>s+Number(m.juros_centavos || 0),0)/100)}${movimentos.some(m=>m.decisao_corte==='pendente') ? '<br><strong>Conciliação pendente no Caixa</strong>' : ''}</div>` : '';
     const st = CONTA_STATUS[c._status] || CONTA_STATUS.pendente;
     const bordaCor = c._status === 'vencido' ? '#ef4444' : c._status === 'pago' ? '#22c55e' : c._status === 'reembolsado' ? '#3b82f6' : '#f59e0b';
     const obraNome = c.obra_id ? (obraMap[c.obra_id] || '') : '';
@@ -152,6 +154,7 @@ function renderContasPagar() {
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
         <div style="flex:1;min-width:0;">
           <div style="font-weight:700;font-size:14px;color:var(--text-primary);margin-bottom:2px;">${esc(c.fornecedor)}</div>
+          ${resumoPagamento}
           ${c.descricao ? `<div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;">${esc(c.descricao)}</div>` : ''}
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:11px;color:var(--text-tertiary);">
             <span>Vence: <strong style="color:${c._status === 'vencido' ? '#ef4444' : 'var(--text-primary)'};">${fmtData(c.data_vencimento)}</strong></span>
@@ -167,7 +170,7 @@ function renderContasPagar() {
         </div>
       </div>
       ${!isPago ? `<div class="admin-only" style="display:flex;gap:6px;margin-top:10px;justify-content:flex-end;">
-        <button onclick="marcarComoPago('${esc(c.id)}')" style="padding:5px 12px;border-radius:8px;border:1px solid rgba(34,197,94,0.3);background:rgba(34,197,94,0.08);color:#22c55e;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">${c.tipo === 'reembolso_fornecedor' ? 'Confirmar recebimento' : 'Pago'}</button>
+        <button onclick="marcarComoPago('${esc(c.id)}')" style="padding:5px 12px;border-radius:8px;border:1px solid rgba(34,197,94,0.3);background:rgba(34,197,94,0.08);color:#22c55e;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">${c.tipo === 'reembolso_fornecedor' ? 'Confirmar recebimento' : 'Confirmar pagamento'}</button>
         <button onclick="abrirModalConta('${esc(c.id)}')" style="padding:5px 12px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text-secondary);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">Editar</button>
         <button onclick="excluirConta('${esc(c.id)}')" style="padding:5px 12px;border-radius:8px;border:1px solid rgba(239,68,68,0.2);background:transparent;color:#f87171;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">Excluir</button>
       </div>` : `<div class="admin-only" style="display:flex;gap:6px;margin-top:10px;justify-content:flex-end;">
