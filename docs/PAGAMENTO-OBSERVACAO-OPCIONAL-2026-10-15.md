@@ -1,6 +1,6 @@
 # Observação opcional na confirmação de pagamento
 
-Base isolada: `14ebb2a7aa39c60a34d7f5bdc5eee97b275646bc`, já publicada. Este ajuste está em preparação para nova aprovação; não autoriza publicação nem migração em produção.
+Base isolada: `14ebb2a7aa39c60a34d7f5bdc5eee97b275646bc`, já publicada. A migração e a publicação deste ajuste foram aprovadas especificamente por Duam em 15/10/2026. O release permanece isolado para preservar dev e os demais trabalhos locais.
 
 ## Causa confirmada
 
@@ -29,4 +29,4 @@ Resultado: **17/17 etapas aprovadas**, execução e71b2f2017, encerrada em 2026-
 
 ## Limite desta entrega
 
-Não houve push, alteração de cache, deploy ou migração em produção neste ajuste. Não houve pagamento real. O checkout original e os outros trabalhos locais permanecem fora deste worktree.
+Na conclusão da preparação não havia push, alteração de cache, deploy ou migração em produção. A autorização posterior permite agora a publicação coordenada deste ajuste; o resultado efetivo será registrado em IMPLANTACAO-OBSERVACAO-CONCLUIDA-2026-10-15.md, no diretório da tarefa. Nenhum pagamento real será executado pela implantação. O checkout original e os outros trabalhos locais permanecem fora deste worktree.
