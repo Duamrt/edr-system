@@ -69,6 +69,7 @@ function domSintetico() {
 
 function ambiente(initial = estadoSintetico(), journal = new Map()) {
   const dom = domSintetico(), avisos = [], pedidos = [], storage = new Map();
+  const operacoes = [], movimentosPersistidos = [];
   let estado = plain(initial), onWrite;
   const ctx = {
     console: { log() {}, warn() {}, error() {} }, crypto: webcrypto,
@@ -82,9 +83,12 @@ function ambiente(initial = estadoSintetico(), journal = new Map()) {
     contasPagar: [{ id: obrigacao, company_id: empresa, fornecedor: 'Fornecedor sintético', descricao: 'Obrigação anterior ao corte', valor: 400, status: 'pendente', data_vencimento: '2026-09-01' }],
     lancamentos: [], adicionaisPgtos: [], obras: [],
     loadContasPagar: async () => true,
-    sbGet: async tabela => {
+    sbGet: async (tabela,query='') => {
+      const target=/[?&]id=eq\.([^&]+)/.exec(query)?.[1];
+      if (tabela==='caixa_operacoes') return plain(operacoes.filter(o=>o.id===target));
+      if (tabela==='caixa_movimentos') return plain(movimentosPersistidos.filter(m=>m.id===target));
       if (tabela !== 'contas_pagar') throw Error('Leitura inesperada: ' + tabela);
-      return plain(ctx.contasPagar);
+      return plain(ctx.contasPagar.filter(c=>!target || c.id===target));
     },
     localStorage: { getItem: k => storage.get(k) || null, setItem: (k, v) => storage.set(k, v), removeItem: k => storage.delete(k) },
     sessionStorage: { getItem: k => journal.get(k) || null, setItem: (k, v) => journal.set(k, v), removeItem: k => journal.delete(k) },
@@ -96,6 +100,12 @@ function ambiente(initial = estadoSintetico(), journal = new Map()) {
       if (fn === 'caixa_estado') return { ok: true, dados: plain(estado) };
       if (fn !== 'caixa_registrar') throw Error('RPC inesperada: ' + fn);
       if (onWrite) return onWrite(fn, params);
+      if (params.p_pedido.tipo==='pagamento') {
+        const m={...plain(params.p_pedido),company_id:empresa,id:webcrypto.randomUUID(),operacao_id:params.p_operacao};
+        const resultado={company_id:empresa,operacao_id:params.p_operacao,acao:'movimento',movimento_id:m.id};
+        movimentosPersistidos.push(m);operacoes.push({company_id:empresa,id:params.p_operacao,pedido:plain(params.p_pedido),resultado});
+        return {ok:true,dados:resultado};
+      }
       return { ok: true, dados: { company_id: empresa, operacao_id: params.p_operacao, status: 'registrado', estado: plain(estado) } };
     },
   };
@@ -262,7 +272,10 @@ test('UI: sem abertura exige origem e confirmação; pedido preserva ajustes e r
   a.campos.get('cp-origem').value='dinheiro';a.onWrite(async()=>({ok:false,incerto:true}));
   await a.ctx.caixaProspectivoSalvar();const one=plain(a.writes()[0].params);
   assert.equal(one.p_pedido.conta_id,null);assert.equal(one.p_pedido.origem_codigo,'dinheiro');assert.equal(one.p_pedido.desconto_centavos,500);assert.equal(one.p_pedido.juros_centavos,200);
-  await a.ctx.caixaProspectivoSalvar();assert.deepEqual(a.writes()[1].params,one);
+  const get=a.ctx.sbGet;
+  a.ctx.sbGet=async (t,...args)=>t==='caixa_operacoes'?[]:get(t,...args);
+  await a.ctx.caixaProspectivoSalvar();assert.equal(a.writes().length,1,'Consultar não reenvia');
+  await a.ctx.caixaProspectivoReenviarPagamentoPendente();assert.deepEqual(a.writes()[1].params,one);
 });
 
 test('UI: conciliação pede decisão explícita e recupera mesma operação após recarga', async () => {
@@ -681,17 +694,29 @@ if (!process.env.EDR_PLAYWRIGHT_PATH) {
     await page.goto(harnessUrl);
     await page.evaluate(({ state, ids }) => {
       window._companyId = ids.empresa; window.usuarioAtual = { id: ids.empresa, perfil: 'admin', role: 'admin' };
-      window.__state = state; window.__writes = []; window.__toasts = []; window.__fail = false;
+      window.__state = state; window.__writes = []; window.__toasts = []; window.__fail = false; window.__ops=[]; window.__movements=[];
       window.hojeISO = () => '2026-09-16'; window.fmtData = x => x ? String(x).split('-').reverse().join('/') : '';
       window.fmt = x => Number(x).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
       window.esc = x => String(x ?? '').replace(/[&<>"']/g, x => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[x]);
       window.showToast = msg => window.__toasts.push(msg); window.confirmar = async () => true;
-      window.contasPagar = [{ id: ids.obrigacao, fornecedor: 'Fornecedor sintético', descricao: 'Obrigação sintética', valor: 400, status: 'pendente', data_vencimento: '2026-09-01' }];
-      window.loadContasPagar = async () => true; window.sbGet = async () => window.contasPagar;
+      window.contasPagar = [{ id: ids.obrigacao, company_id: ids.empresa, fornecedor: 'Fornecedor sintético', descricao: 'Obrigação sintética', valor: 400, status: 'pendente', data_vencimento: '2026-09-01' }];
+      window.loadContasPagar = async () => true;
+      window.sbGet = async (table,query='') => {
+        const target=/[?&]id=eq\.([^&]+)/.exec(query)?.[1];
+        const rows={contas_pagar:window.contasPagar,caixa_operacoes:window.__ops,caixa_movimentos:window.__movements}[table];
+        if(!rows)throw Error('Leitura inesperada');
+        return JSON.parse(JSON.stringify(rows.filter(r=>!target || r.id===target)));
+      };
       window.sbRpcEstoque = async (fn, params = {}) => {
         if (fn === 'caixa_estado') return { ok: true, dados: JSON.parse(JSON.stringify(window.__state)) };
         window.__writes.push({ fn, params: JSON.parse(JSON.stringify(params)) });
         if (window.__fail) return { ok: false, incerto: false, mensagem: 'Falha sintética' };
+        if (params.p_pedido.tipo==='pagamento') {
+          const m={...params.p_pedido,id:crypto.randomUUID(),company_id:ids.empresa,operacao_id:params.p_operacao};
+          const resultado={company_id:ids.empresa,operacao_id:params.p_operacao,acao:'movimento',movimento_id:m.id};
+          window.__movements.push(m);window.__ops.push({company_id:ids.empresa,id:params.p_operacao,pedido:params.p_pedido,resultado});
+          return {ok:true,dados:resultado};
+        }
         return { ok: true, dados: { company_id: ids.empresa, operacao_id: params.p_operacao, status: 'registrado', estado: window.__state } };
       };
     }, { state: estadoSintetico(), ids: { empresa, obrigacao } });
@@ -724,7 +749,7 @@ if (!process.env.EDR_PLAYWRIGHT_PATH) {
     assert.equal((await page.evaluate(() => window.__writes)).length, 2);
     await page.evaluate(conta => caixaProspectivoAbrir('pagamento', conta), obrigacao);
     await page.locator('#cp-data').fill('2026-09-16'); await page.locator('#cp-hora').fill('14:06');
-    await page.locator('#cp-valor').fill('150'); await page.locator('#cp-descricao').fill('Pagamento parcial sintético');
+    await page.locator('#cp-valor').fill('150'); await page.getByText('Adicionar observação',{exact:true}).click(); await page.locator('#cp-descricao').fill('Pagamento parcial sintético');
     await page.locator('#cp-pago-confirmado').check();
     await page.locator('#cp-salvar').click(); await page.waitForFunction(() => !document.getElementById('cp-modal'));
     const partial = await page.evaluate(() => window.__writes.at(-1).params.p_pedido);
@@ -750,10 +775,10 @@ if (!process.env.EDR_PLAYWRIGHT_PATH) {
     await page.evaluate(cp => caixaProspectivoAbrir('pagamento',cp),obrigacao);
     assert.equal(await page.locator('#cp-conta').count(),0);assert.equal(await page.locator('#cp-decisao').count(),0);
     await page.locator('#cp-origem').selectOption('dinheiro');await page.locator('#cp-data').fill('2001-06-05');
-    await page.locator('#cp-valor').fill('40');await page.locator('#cp-descricao').fill('Pagamento QA');
-    await page.locator('summary').click();await page.locator('#cp-desconto').fill('5');await page.locator('#cp-juros').fill('2');await page.locator('#cp-pago-confirmado').check();
+    await page.locator('#cp-valor').fill('40');await page.getByText('Adicionar observação',{exact:true}).click();await page.locator('#cp-descricao').fill('Pagamento QA');
+    await page.locator('#cp-modal summary').filter({hasText:'Desconto'}).click();await page.locator('#cp-desconto').fill('5');await page.locator('#cp-juros').fill('2');await page.locator('#cp-pago-confirmado').check();
     if(process.env.EDR_UI_EVIDENCE_DIR){
-      await page.locator('summary').click();
+      await page.locator('#cp-modal summary').filter({hasText:'Desconto'}).click();
       await page.evaluate(()=>{document.querySelector('#cp-modal .modal-box').scrollTop=0;});
       await page.screenshot({path:path.join(process.env.EDR_UI_EVIDENCE_DIR,'pagamento-sem-abertura-desktop.png'),fullPage:true});
       await page.setViewportSize({width:390,height:844});

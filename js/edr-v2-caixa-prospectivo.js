@@ -9,6 +9,9 @@ let _cpLeitura = 0;
 let _cpConsultaPendente = null;
 let _cpPrevisoesAvulsas = null;
 let _cpPrevisoesLeitura = 0;
+let _cpConferindoPagamento = false;
+let _cpPagamentoConsulta = null;
+let _cpUltimoRecibo = null;
 function _cpInvalidarLeitura() {
   ++_cpLeitura; ++_cpPrevisoesLeitura; _cpPrevisoesAvulsas=null; _cpConsultaPendente=null; _cpEstado=null; _cpEstadoAtor=null;
 }
@@ -17,7 +20,7 @@ const _cpFuso = 'America/Sao_Paulo';
 // Guarda UUID/pedido, nunca saldo; a confirmação continua exclusiva do banco.
 function _cpJournalKey() { return 'edr-caixa-pedido:' + _companyId; }
 function _cpGuardarPendente(pedido, cancelamento = false) {
-  const raw = JSON.stringify({company_id:_companyId,operacao:pedido.operacao,pedido:pedido.pedido,cancelamento});
+  const raw = JSON.stringify({company_id:_companyId,operacao:pedido.operacao,pedido:pedido.pedido,cancelamento,identificacao:pedido.identificacao});
   sessionStorage.setItem(_cpJournalKey(),raw);
   if (sessionStorage.getItem(_cpJournalKey())!==raw) throw new Error('Não foi possível guardar a chave de recuperação. Nenhum pedido enviado.');
 }
@@ -28,6 +31,132 @@ function _cpLerPendente() {
   } catch (_) { return null; }
 }
 function _cpLimparPendente() { try { sessionStorage.removeItem(_cpJournalKey()); } catch (_) {} }
+
+function _cpEhPagamento(f) { return !f?.cancelamento && f?.pedido?.action==='movimento' && f.pedido.tipo==='pagamento'; }
+function _cpContextoPagamento(f) {
+  return caixaProspectivoPodeOperar() && f.company_id===_companyId && f.ator===usuarioAtual;
+}
+// JSONB não conserva a ordem das chaves. Compare o pedido inteiro, sem depender dela.
+function _cpPedidoCanonico(p) {
+  if (Array.isArray(p)) return p.map(_cpPedidoCanonico);
+  if (p && typeof p==='object') return Object.fromEntries(Object.keys(p).sort().map(k=>[k,_cpPedidoCanonico(p[k])]));
+  return p;
+}
+function _cpMesmoPedido(a,b) { return JSON.stringify(_cpPedidoCanonico(a))===JSON.stringify(_cpPedidoCanonico(b)); }
+function _cpPagamentoAindaPendente(f) {
+  const j=_cpLerPendente();
+  return _cpContextoPagamento(f) && j?.operacao===f.operacao && _cpMesmoPedido(j.pedido,f.pedido);
+}
+function _cpPagamentoTelas() {
+  if (typeof renderContasPagar==='function') renderContasPagar();
+  const el=document.getElementById('caixa-content');
+  if (el) _cpDesenhar(el);
+}
+function caixaProspectivoPagamentoPainel() {
+  if (!caixaProspectivoPodeOperar()) return '';
+  const j=_cpLerPendente();
+  const estilo='display:grid;gap:8px;font-size:13px;line-height:1.45;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px;width:100%;box-sizing:border-box;';
+  if (_cpEhPagamento(j)) {
+    const consulta=_cpPagamentoConsulta;
+    const atual=consulta?.company_id===_companyId && consulta.ator===usuarioAtual && consulta.operacao===j.operacao;
+    const ocupado=_cpEnviando || _cpConferindoPagamento;
+    const identificacao=j.identificacao || {};
+    return `<section style="${estilo}border-left:3px solid #f59e0b;" role="alert"><strong>Pagamento aguardando confirmação</strong>
+      <p>${esc([identificacao.fornecedor,identificacao.nota_ref].filter(Boolean).join(' · ') || 'Conta vinculada à tentativa')} · ${_cpDinheiro(j.pedido.valor_centavos)} · ${esc(fmtData(j.pedido.data_efetiva))}</p>
+      <p>${esc(atual ? consulta.mensagem : 'O resultado desta tentativa ainda precisa ser conferido. Consulte antes de registrar novamente.')}</p>
+      <small style="overflow-wrap:anywhere;">Operação: ${esc(j.operacao)}</small>
+      <button class="btn" onclick="caixaProspectivoConsultarPagamentoPendente()" ${ocupado?'disabled':''}>${ocupado?'Conferindo…':'Consultar resultado'}</button>
+      ${atual && consulta.status==='ausente' && !ocupado ? '<p>A operação não foi localizada nesta consulta. Um reenvio mantém o mesmo identificador e os mesmos dados, mesmo que a resposta anterior ainda esteja a caminho.</p><button class="btn" onclick="caixaProspectivoReenviarPagamentoPendente()">Reenviar o mesmo registro</button>' : ''}
+      </section>`;
+  }
+  const r=_cpUltimoRecibo;
+  if (!r || !_cpContextoPagamento(r)) return '';
+  return `<section style="${estilo}border-left:3px solid ${r.cancelado?'#f59e0b':'#22c55e'};" role="status" aria-label="Recibo do registro de pagamento">
+    <strong>${r.cancelado?'Registro localizado — cancelado':'Pagamento registrado no sistema'}</strong>
+    <p>${esc(r.fornecedor || 'Fornecedor não informado')}${r.nota_ref ? ' · NF / parcela: '+esc(r.nota_ref) : ''}${r.descricao ? '<br>'+esc(r.descricao) : ''}</p>
+    <p>Valor pago: <strong>${_cpDinheiro(r.valor_centavos)}</strong> · Data efetiva: ${esc(fmtData(r.data_efetiva))}${r.hora_efetiva ? ' '+esc(r.hora_efetiva) : ''} (São Paulo)
+    ${r.desconto_centavos || r.juros_centavos ? '<br>Desconto: '+_cpDinheiro(r.desconto_centavos)+' · Juros: '+_cpDinheiro(r.juros_centavos) : ''}</p>
+    <p>${r.cancelado?'Este movimento foi cancelado. Consulte o histórico antes de registrar outro pagamento.':r.status_conta==='pago'?'Conta quitada na consulta.':'A conta não está quitada na consulta; este recibo identifica apenas o pagamento registrado.'}</p>
+    <small style="overflow-wrap:anywhere;">Operação: ${esc(r.operacao)}</small>
+    <details style="overflow-wrap:anywhere;"><summary>Identificadores do registro</summary><small>Movimento: ${esc(r.movimento_id)}<br>Conta: ${esc(r.conta_pagar_id)}</small></details>
+    <p>Confirma o registro no EDR. Não é comprovante de transferência bancária.</p></section>`;
+}
+
+// Consulta somente SELECT, pelas permissões e pelo filtro de empresa já existentes em sbGet.
+// Ausência nunca prova rollback: somente a mesma chave pode ser reenviada depois da consulta.
+async function _cpLerResultadoPagamento(f, resposta = null) {
+  if (!_cpPagamentoAindaPendente(f)) return {status:'sessao'};
+  const uuid=/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
+  if (!uuid.test(f.operacao) || !uuid.test(f.pedido.conta_pagar_id)) return {status:'divergente'};
+  try {
+    const ops=await sbGet('caixa_operacoes','?select=id,company_id,pedido,resultado&id=eq.'+encodeURIComponent(f.operacao),{throwOnError:true});
+    if (!_cpPagamentoAindaPendente(f)) return {status:'sessao'};
+    if (!Array.isArray(ops)) return {status:'indisponivel'};
+    if (!ops.length) return {status:'ausente'};
+    const op=ops[0], r=op.resultado;
+    if (ops.length!==1 || op.company_id!==f.company_id || op.id!==f.operacao || !_cpMesmoPedido(op.pedido,f.pedido) ||
+      r?.company_id!==f.company_id || r.operacao_id!==f.operacao || r.acao!=='movimento' || !uuid.test(r.movimento_id) ||
+      (resposta && (resposta.movimento_id!==r.movimento_id || resposta.acao!==r.acao))) return {status:'divergente'};
+    const [ms,cs]=await Promise.all([
+      sbGet('caixa_movimentos','?select=id,company_id,operacao_id,tipo,conta_pagar_id,valor_centavos,desconto_centavos,juros_centavos,data_efetiva,hora_efetiva,origem_codigo,cancelado_em&id=eq.'+encodeURIComponent(r.movimento_id),{throwOnError:true}),
+      sbGet('contas_pagar','?id=eq.'+encodeURIComponent(f.pedido.conta_pagar_id),{throwOnError:true})
+    ]);
+    if (!_cpPagamentoAindaPendente(f)) return {status:'sessao'};
+    if (!Array.isArray(ms) || !Array.isArray(cs)) return {status:'indisponivel'};
+    const m=ms[0], c=cs[0], p=f.pedido;
+    if (ms.length!==1 || cs.length!==1 || m.company_id!==f.company_id || c.company_id!==f.company_id ||
+      m.id!==r.movimento_id || m.operacao_id!==f.operacao || m.tipo!=='pagamento' || m.conta_pagar_id!==p.conta_pagar_id || c.id!==p.conta_pagar_id ||
+      Number(m.valor_centavos)!==p.valor_centavos || Number(m.desconto_centavos || 0)!==Number(p.desconto_centavos || 0) ||
+      Number(m.juros_centavos || 0)!==Number(p.juros_centavos || 0) || m.data_efetiva!==p.data_efetiva ||
+      (m.hora_efetiva || '').slice(0,5)!==(p.hora_efetiva || '') || m.origem_codigo!==p.origem_codigo) return {status:'divergente'};
+    return {status:'confirmado',conta:c,recibo:{company_id:f.company_id,ator:f.ator,operacao:f.operacao,
+      movimento_id:m.id,conta_pagar_id:c.id,fornecedor:c.fornecedor,nota_ref:c.nota_ref,descricao:c.descricao,
+      valor_centavos:Number(m.valor_centavos),desconto_centavos:Number(m.desconto_centavos || 0),juros_centavos:Number(m.juros_centavos || 0),
+      data_efetiva:m.data_efetiva,hora_efetiva:(m.hora_efetiva || '').slice(0,5),cancelado:!!m.cancelado_em,status_conta:c.status}};
+  } catch (_) { return {status:_cpContextoPagamento(f)?'indisponivel':'sessao'}; }
+}
+function _cpAvisarConsultaPagamento(f,status) {
+  const mensagens={ausente:'Nenhum registro com esta operação foi localizado agora. Isso não confirma que a tentativa falhou.',
+    divergente:'Os identificadores ou dados retornados não correspondem à tentativa. Não registre novamente; solicite conferência com o número da operação.',
+    indisponivel:'Não foi possível confirmar o resultado. A tentativa foi preservada; consulte novamente quando a conexão estiver disponível.'};
+  _cpPagamentoConsulta={company_id:f.company_id,ator:f.ator,operacao:f.operacao,status,mensagem:mensagens[status] || mensagens.indisponivel};
+  const erro=document.getElementById('cp-erro');
+  if (erro) erro.textContent=_cpPagamentoConsulta.mensagem;
+  _cpPagamentoTelas();
+}
+async function _cpConcluirPagamento(f,resultado) {
+  if (!_cpPagamentoAindaPendente(f)) return;
+  _cpUltimoRecibo=resultado.recibo;
+  _cpPagamentoConsulta=null;
+  _cpFormulario=null;
+  _cpLimparPendente();
+  document.getElementById('cp-modal')?.remove();
+  if (typeof contasPagar!=='undefined') contasPagar=contasPagar.map(c=>c.id===resultado.conta.id?resultado.conta:c);
+  _cpInvalidarLeitura();
+  showToast(resultado.recibo.cancelado?'Registro localizado, mas cancelado. Confira o recibo.':'Pagamento registrado no sistema. Confira o recibo.');
+  _cpPagamentoTelas();
+  await caixaProspectivoCarregar();
+  if (_cpContextoPagamento(f)) _cpPagamentoTelas();
+}
+async function _cpResolverPagamentoPendente(reenviar) {
+  if (_cpEnviando || _cpConferindoPagamento || !caixaProspectivoPodeOperar()) return;
+  const j=_cpLerPendente();
+  if (!_cpEhPagamento(j)) return;
+  const f={...j,tipo:'pagamento',contaPagarId:j.pedido.conta_pagar_id,ator:usuarioAtual,incerto:true};
+  _cpConferindoPagamento=true;
+  _cpPagamentoTelas();
+  const resultado=await _cpLerResultadoPagamento(f);
+  _cpConferindoPagamento=false;
+  if (!_cpPagamentoAindaPendente(f)) return;
+  if (resultado.status==='confirmado') { await _cpConcluirPagamento(f,resultado); return; }
+  _cpAvisarConsultaPagamento(f,resultado.status);
+  if (!reenviar || resultado.status!=='ausente') return;
+  // A ação explícita de reenvio consulta novamente e conserva UUID e pedido integral.
+  _cpFormulario=f;
+  await _cpEnviarFormulario(f);
+}
+async function caixaProspectivoConsultarPagamentoPendente() { await _cpResolverPagamentoPendente(false); }
+async function caixaProspectivoReenviarPagamentoPendente() { await _cpResolverPagamentoPendente(true); }
 
 function caixaProspectivoPodeOperar() {
   return typeof _companyId !== 'undefined' && !!_companyId &&
@@ -170,11 +299,12 @@ function _cpDesenhar(el) {
   const e = caixaProspectivoEstado();
   const card = 'background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px;';
   if (!e) {
-    el.innerHTML = `<div style="${card}" role="alert">${esc(_cpErro || 'Saldo indisponível.')} <button class="btn" onclick="renderCaixa()">Recarregar</button></div>`;
+    el.innerHTML = caixaProspectivoPagamentoPainel()+`<div style="${card}" role="alert">${esc(_cpErro || 'Saldo indisponível.')} <button class="btn" onclick="renderCaixa()">Recarregar</button></div>`;
     return;
   }
   let html = `<div style="${card}"><h3 style="margin:0 0 8px;font-size:15px;">Banco e dinheiro · controle prospectivo</h3><p style="font-size:12px;color:var(--text-secondary);">Saldo informado no marco + movimentos efetivos posteriores. Obrigações a pagar ficam separadas do disponível.</p><p style="font-size:12px;color:var(--text-secondary);">O recebimento pelo Plano da entrada já registra o movimento na conta escolhida. Confira os movimentos e preserve esse registro. Para recebimentos fora do plano, informe a conta aqui; cadastros antigos não são importados automaticamente.</p>`;
-  if (_cpLerPendente()) html += '<p role="alert">Há um pedido pendente de confirmação. Confira antes de registrar outro movimento.</p><button class="btn" onclick="caixaProspectivoConferirPendente()">Conferir pedido pendente</button>';
+  html=caixaProspectivoPagamentoPainel()+html;
+  if (_cpLerPendente() && !_cpEhPagamento(_cpLerPendente())) html += '<p role="alert">Há um pedido pendente de confirmação. Confira antes de registrar outro movimento.</p><button class="btn" onclick="caixaProspectivoConferirPendente()">Conferir pedido pendente</button>';
   if (!e.contas.length) {
     html += '<p>Declare a abertura para iniciar o controle. O saldo manual antigo será preservado.</p><button class="btn btn-primary" onclick="caixaProspectivoAbrir(\'abertura\')">Declarar abertura</button></div>';
   } else {
@@ -243,7 +373,7 @@ async function caixaProspectivoRender(el) {
   _cpDesenhar(el);
 }
 async function caixaProspectivoAbrir(tipo, contaPagarId = null) {
-  if (_cpEnviando || _cpFormulario?.incerto || _cpCancelamento || _cpLerPendente()) { showToast('Confira o pedido pendente antes de iniciar outro.'); return; }
+  if (_cpEnviando || _cpConferindoPagamento || _cpFormulario?.incerto || _cpCancelamento || _cpLerPendente()) { showToast('Confira o pedido pendente antes de iniciar outro.'); return; }
   if (!caixaProspectivoPodeOperar()) { showToast('Ação disponível para administradores.'); return; }
   const ator = usuarioAtual;
   if (!['abertura','entrada','saida','transferencia','pagamento','conciliar'].includes(tipo)) return;
@@ -264,6 +394,10 @@ async function caixaProspectivoAbrir(tipo, contaPagarId = null) {
   }
   document.getElementById('cp-modal')?.remove();
   _cpFormulario = {tipo,contaPagarId,company_id:_companyId,ator:usuarioAtual,pedido:null,operacao:null,incerto:false};
+  if (tipo==='pagamento') {
+    const c=contasPagar.find(x=>x.id===contaPagarId);
+    _cpFormulario.identificacao={fornecedor:c.fornecedor,nota_ref:c.nota_ref};
+  }
   document.body.insertAdjacentHTML('beforeend',_cpFormularioHtml());
   const agora = _cpAgora();
   if (tipo==='abertura') document.getElementById('cp-corte').value = agora;
@@ -274,6 +408,12 @@ async function caixaProspectivoAbrir(tipo, contaPagarId = null) {
   document.getElementById(tipo==='abertura'?'cp-corte':tipo==='conciliar'?'cp-decisao':'cp-valor')?.focus();
 }
 function caixaProspectivoCancelarFormulario() {
+  if (!_cpEnviando && !_cpConferindoPagamento && _cpFormulario?.tipo==='pagamento' && _cpFormulario.incerto) {
+    _cpFormulario=null;
+    document.getElementById('cp-modal')?.remove();
+    _cpPagamentoTelas();
+    return;
+  }
   if (_cpEnviando || _cpFormulario?.incerto) { showToast('Resultado pendente. Reenvie o mesmo pedido para conferir.'); return; }
   _cpFormulario = null;
   document.getElementById('cp-modal')?.remove();
@@ -317,31 +457,54 @@ function _cpCongelar(congelar) {
   if (cancelar) cancelar.disabled = congelar;
 }
 async function caixaProspectivoSalvar() {
-  if (_cpEnviando || !_cpFormulario) return;
+  if (_cpEnviando || _cpConferindoPagamento || !_cpFormulario) return;
   if (!caixaProspectivoPodeOperar() || _cpFormulario.company_id!==_companyId || _cpFormulario.ator!==usuarioAtual) { showToast('Sessão mudou. Recarregue antes de salvar.'); return; }
   const f = _cpFormulario;
+  if (f.tipo==='pagamento' && f.incerto) { await caixaProspectivoConsultarPagamentoPendente(); return; }
   const erro = document.getElementById('cp-erro');
   try {
     if (!f.incerto) { f.pedido=_cpPedido(); f.operacao=crypto.randomUUID(); }
     _cpGuardarPendente(f);
   } catch (e) { if (erro) erro.textContent=e.message; return; }
+  if (f.tipo==='pagamento') { _cpUltimoRecibo=null; _cpPagamentoConsulta=null; }
+  await _cpEnviarFormulario(f);
+}
+async function _cpEnviarFormulario(f) {
+  if (_cpEnviando || _cpConferindoPagamento || !_cpContextoPagamento(f) || !_cpPagamentoAindaPendente(f)) return;
+  const erro = document.getElementById('cp-erro');
   _cpEnviando=true;
+  if (f.tipo==='pagamento') { _cpPagamentoConsulta=null; _cpPagamentoTelas(); }
   _cpCongelar(true);
   const botao=document.getElementById('cp-salvar');
   if (botao) botao.disabled=true;
   let r;
   try { r=await sbRpcEstoque('caixa_registrar',{p_operacao:f.operacao,p_pedido:f.pedido}); }
-  catch (_) { r={ok:false,incerto:true,mensagem:'Conexão interrompida. Reenvie o mesmo pedido para conferir.'}; }
+  catch (_) { r={ok:false,incerto:true,mensagem:f.tipo==='pagamento'?'Conexão interrompida. Consulte o resultado antes de reenviar.':'Conexão interrompida. Reenvie o mesmo pedido para conferir.'}; }
+  if (r?.ok && f.tipo==='pagamento' && r.dados?.operacao_id===f.operacao && r.dados?.company_id===f.company_id) {
+    const resultado=await _cpLerResultadoPagamento(f,r.dados);
+    if (resultado.status==='confirmado') {
+      _cpEnviando=false;
+      await _cpConcluirPagamento(f,resultado);
+      return;
+    }
+    if (_cpContextoPagamento(f)) _cpAvisarConsultaPagamento(f,resultado.status);
+    r={ok:false,incerto:true,mensagem:_cpPagamentoConsulta?.mensagem || 'Não foi possível conferir o registro. Consulte o resultado.'};
+  }
   _cpEnviando=false;
   if (botao) botao.disabled=false;
   if (f.company_id!==_companyId || f.ator!==usuarioAtual || !caixaProspectivoPodeOperar()) { _cpFormulario=null; _cpEstado=null; document.getElementById('cp-modal')?.remove(); showToast('Sessão mudou. Confira o pedido na empresa de origem.'); return; }
-  if (r?.ok && (r.dados?.operacao_id !== f.operacao || r.dados?.company_id !== f.company_id)) r={ok:false,incerto:true,mensagem:'Resposta incompleta. Reenvie o mesmo pedido para conferir.'};
+  if (r?.ok && (r.dados?.operacao_id !== f.operacao || r.dados?.company_id !== f.company_id)) r={ok:false,incerto:true,mensagem:f.tipo==='pagamento'?'Resposta incompleta. Consulte o resultado antes de reenviar.':'Resposta incompleta. Reenvie o mesmo pedido para conferir.'};
   if (!r?.ok) {
     f.incerto=f.incerto || !!r?.incerto;
     if (!f.incerto) _cpLimparPendente();
     _cpCongelar(f.incerto);
     if (erro) erro.textContent=r?.ausente?'Controle prospectivo ainda não instalado.':r?.mensagem||'Falha ao persistir. Nenhum sucesso confirmado.';
-    if (botao) botao.textContent=f.incerto?'Conferir / reenviar mesmo pedido':'Salvar';
+    if (botao) botao.textContent=f.incerto?(f.tipo==='pagamento'?'Consultar resultado':'Conferir / reenviar mesmo pedido'):'Salvar';
+    if (f.incerto && f.tipo==='pagamento') {
+      const cancelar=document.getElementById('cp-cancelar');
+      if (cancelar) { cancelar.disabled=false; cancelar.textContent='Voltar à lista'; }
+      _cpPagamentoTelas();
+    }
     return;
   }
   _cpFormulario=null;
@@ -355,7 +518,7 @@ async function caixaProspectivoSalvar() {
 }
 let _cpCancelamento=null;
 async function caixaProspectivoCancelarMovimento(id) {
-  if (_cpEnviando || !caixaProspectivoPodeOperar()) return;
+  if (_cpEnviando || _cpConferindoPagamento || !caixaProspectivoPodeOperar()) return;
   if (_cpFormulario || (_cpCancelamento && _cpCancelamento.id!==id)) { showToast('Confira o pedido pendente antes de cancelar outro movimento.'); return; }
   if (!_cpCancelamento) {
     const m=caixaProspectivoEstado()?.movimentos.find(x=>x.id===id && !x.cancelado_em);
@@ -390,9 +553,10 @@ async function caixaProspectivoCancelarMovimento(id) {
   if (typeof renderContasPagar==='function') renderContasPagar();
 }
 async function caixaProspectivoConferirPendente() {
-  if (_cpEnviando || !caixaProspectivoPodeOperar()) return;
+  if (_cpEnviando || _cpConferindoPagamento || !caixaProspectivoPodeOperar()) return;
   const j=_cpLerPendente();
   if (!j) return;
+  if (_cpEhPagamento(j)) { await caixaProspectivoConsultarPagamentoPendente(); return; }
   if (j.cancelamento) {
     _cpCancelamento={...j,id:j.pedido.movimento_id,ator:usuarioAtual,incerto:true};
     await caixaProspectivoCancelarMovimento(_cpCancelamento.id);

@@ -63,10 +63,11 @@ function getContasVencidas() {
 }
 
 function renderContasPagar() {
+  const painelPagamento=typeof caixaProspectivoPagamentoPainel==='function' ? caixaProspectivoPagamentoPainel() : '';
   if (typeof caixaProspectivoEstado === 'function' && !caixaProspectivoEstado()) {
     const stats = document.getElementById('contas-stats');
     const lista = document.getElementById('contas-lista');
-    if (stats) stats.innerHTML = '<p role="alert">Pagamentos persistidos indisponíveis. Recarregue para consultar os valores restantes.</p>';
+    if (stats) stats.innerHTML = painelPagamento+'<p role="alert">Pagamentos persistidos indisponíveis. Recarregue para consultar os valores restantes.</p>';
     if (lista) lista.innerHTML = '';
     return;
   }
@@ -90,7 +91,7 @@ function renderContasPagar() {
 
   const statsEl = document.getElementById('contas-stats');
   if (statsEl) {
-    statsEl.innerHTML = `
+    statsEl.innerHTML = painelPagamento+`
       <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;width:100%;">
         <button onclick="_contasFiltro='';renderContasPagar()" style="padding:5px 12px;border-radius:20px;border:1px solid ${!_contasFiltro ? 'var(--primary)' : 'var(--border)'};background:${!_contasFiltro ? 'rgba(45,106,79,0.1)' : 'transparent'};color:${!_contasFiltro ? 'var(--primary)' : 'var(--text-tertiary)'};font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">Todas (${lista.length})</button>
         <button onclick="_contasFiltro='pendente';renderContasPagar()" style="padding:5px 12px;border-radius:20px;border:1px solid ${_contasFiltro==='pendente' ? '#f59e0b' : 'var(--border)'};background:${_contasFiltro==='pendente' ? 'rgba(245,158,11,0.1)' : 'transparent'};color:${_contasFiltro==='pendente' ? '#f59e0b' : 'var(--text-tertiary)'};font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">Pendentes (${qtdPendente})</button>
