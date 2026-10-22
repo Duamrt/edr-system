@@ -267,4 +267,14 @@ if (!process.env.EDR_PGLITE_PATH) {
     await assert.rejects(a.db.query('insert into contas_pagar(company_id,valor,parcelamento) values($1,10,null)',[empresa]),/not-null/);
     assert.equal((await a.contas()).length,0);
   });
+  test('INSERT de aba antiga não recria total depois do parcelamento; fluxos especiais preservados',async t=>{
+    const a=await preparar(t);await a.enviar();
+    await assert.rejects(a.inserir(),/já possui parcelamento/);
+    await assert.rejects(a.db.query("insert into contas_pagar(company_id,nota_id,valor,parcelamento) values($1,$2,1854.17,$3)",
+      [empresa,nf,JSON.stringify([{operacao_id:id(99),conta_ids:[id(98)]}])]),/não pertence à operação/);
+    assert.equal((await a.contas()).length,2);
+    await a.inserir({id:id(60),tipo:'despesa_operacional_nf',valor:50});
+    await a.inserir({id:id(61),tipo:'reembolso_fornecedor',valor:60});
+    assert.equal((await a.contas()).length,4);
+  });
 }

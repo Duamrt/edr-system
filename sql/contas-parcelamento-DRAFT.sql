@@ -179,9 +179,21 @@ begin
       pagamento := (p_pedido->>'data_pagamento')::date;
     end if;
   else
+    -- Ordem de locks igual ao INSERT e à exclusão: Caixa -> NF -> conta.
+    -- A releitura com lock detecta um vínculo alterado entre as consultas.
+    select c.nota_id into nota from public.contas_pagar c
+      where c.id=nullif(p_pedido->>'conta_id','')::uuid and c.company_id=empresa;
+    if not found then raise exception 'Conta removida ou indisponível nesta empresa'; end if;
+    if nota is not null then
+      select * into nf from public.notas_fiscais where id=nota and company_id=empresa for update;
+      if not found then raise exception 'Nota fiscal removida ou indisponível nesta empresa'; end if;
+    end if;
     select * into origem from public.contas_pagar
       where id=nullif(p_pedido->>'conta_id','')::uuid and company_id=empresa for update;
     if not found then raise exception 'Conta removida ou indisponível nesta empresa'; end if;
+    if origem.nota_id is distinct from nota then
+      raise exception 'Conta alterada após a abertura; recarregue antes de desdobrar';
+    end if;
     if origem.status is distinct from 'pendente' or origem.data_pagamento is not null
         or nullif(to_jsonb(origem)->>'data_recebimento','') is not null
         or coalesce(origem.tipo,'') like 'reembolso%'
@@ -271,6 +283,41 @@ begin
   return jsonb_build_object('contas',resultado,'repetida',false);
 end;
 $$;
+
+-- Abas antigas ainda usam INSERT direto. Elas não podem criar o total novamente
+-- após a operação parcelada. A mesma ordem de locks cobre os dois sentidos da
+-- disputa: INSERT legado primeiro ou RPC primeiro. As parcelas da própria RPC
+-- são identificadas pelo recibo completo já ancorado na primeira conta.
+create or replace function public.validar_insercao_conta_parcelada()
+returns trigger language plpgsql security invoker set search_path=pg_catalog,public as $$
+declare novo_recibo jsonb; possui_historico boolean; pertence boolean;
+begin
+  if new.nota_id is null or new.tipo='despesa_operacional_nf'
+      or coalesce(new.tipo,'') like 'reembolso%' then return new; end if;
+  perform pg_advisory_xact_lock(hashtextextended(new.company_id::text||':caixa-prospectivo',0));
+  perform 1 from public.notas_fiscais where id=new.nota_id and company_id=new.company_id for update;
+  if not found then raise exception 'Nota fiscal removida ou indisponível nesta empresa'; end if;
+  select exists(select 1 from public.contas_pagar c where c.company_id=new.company_id
+    and c.nota_id=new.nota_id and coalesce(c.tipo,'')<>'despesa_operacional_nf'
+    and coalesce(c.tipo,'') not like 'reembolso%' and jsonb_array_length(c.parcelamento)>0)
+    into possui_historico;
+  if not possui_historico then return new; end if;
+  if jsonb_typeof(new.parcelamento) is distinct from 'array' or jsonb_array_length(new.parcelamento)=0 then
+    raise exception 'Esta NF já possui parcelamento; revise a conta existente e não crie outra obrigação';
+  end if;
+  novo_recibo:=new.parcelamento->-1;
+  select exists(select 1 from public.contas_pagar c where c.company_id=new.company_id
+    and c.nota_id=new.nota_id and c.parcelamento->-1=novo_recibo
+    and novo_recibo->'conta_ids' @> jsonb_build_array(new.id)) into pertence;
+  if not pertence then
+    raise exception 'Esta NF já possui parcelamento; nova conta não pertence à operação registrada';
+  end if;
+  return new;
+end;
+$$;
+drop trigger if exists validar_insercao_conta_parcelada on public.contas_pagar;
+create trigger validar_insercao_conta_parcelada before insert on public.contas_pagar
+for each row execute function public.validar_insercao_conta_parcelada();
 
 -- Uma exclusão apagaria o recibo que impede repetir pagamentos após perda de
 -- resposta. Somente contas produzidas por este fluxo ganham esta proteção.

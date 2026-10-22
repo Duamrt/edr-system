@@ -107,4 +107,18 @@ if(!process.env.EDR_POSTGRES_BIN){
     const r=await outro;assert.equal(r.ok,false);assert.match(r.erro.message,/preserve o registro/);
     assert.deepEqual(await q.estado(),{n:2,total:1854.17,nf:1});
   });
+  const insertLegado=`insert into contas_pagar(company_id,nota_id,nota_ref,fornecedor,descricao,valor,data_vencimento,status)
+    values('${empresa}','${nf}','321/1','FORNECEDOR SINTÉTICO','Modal antigo',1854.17,'2026-10-28','pendente');`;
+  test('RPC vence INSERT concorrente da aba antiga: total não é duplicado',async t=>{
+    const q=await preparar(t);await q.a.query('begin;');await q.a.json(q.rpc());
+    const outro=resultado(q.b.query(insertLegado));await q.bloqueado(q.b);await q.a.query('commit;');
+    const r=await outro;assert.equal(r.ok,false);assert.match(r.erro.message,/já possui parcelamento/);
+    assert.deepEqual(await q.estado(),{n:2,total:1854.17,nf:1});
+  });
+  test('INSERT da aba antiga vence RPC concorrente: nova operação exige revisar conta existente',async t=>{
+    const q=await preparar(t);await q.a.query('begin;'+insertLegado);
+    const outro=resultado(q.b.json(q.rpc()));await q.bloqueado(q.b);await q.a.query('commit;');
+    const r=await outro;assert.equal(r.ok,false);assert.match(r.erro.message,/já possui conta/);
+    assert.deepEqual(await q.estado(),{n:1,total:1854.17,nf:1});
+  });
 }

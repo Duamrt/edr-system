@@ -1,6 +1,6 @@
 # NF e contas a pagar: parcelas independentes
 
-Estado: correção local em revisão, **não publicada e sem SQL aplicado ao servidor**.
+Estado em 22/10/2026: correção validada, com publicação funcional autorizada pelo usuário. A evidência de implantação registra separadamente o build efetivamente disponível.
 
 ## Resultado e diagnóstico
 
@@ -30,6 +30,7 @@ Esse XML não informa valores/vencimentos dos dois boletos. Nenhuma divisão igu
 - Gravação de todas as parcelas em uma transação. O mesmo UUID de operação recupera a confirmação sem duplicar, inclusive após perda de resposta e recarga do navegador. Divergência do pedido original é rejeitada.
 - Histórico durável registra pedido, autor, instante, estado anterior, totais e IDs. Exclusão de contas com esse histórico é impedida; mudanças financeiras precisam acrescentar um novo registro de revisão. Pagamentos pelo Caixa continuam sujeitos às regras existentes.
 - A exclusão de NF agora exige consulta financeira bem-sucedida. Erro de rede/leitura não é tratado como ausência de contas. O vínculo usa UUID e conserva o fallback legado por número e fornecedor.
+- O banco também impede que uma aba antiga insira outra obrigação integral depois do parcelamento. INSERT legado e RPC usam a mesma ordem de locks: Caixa, NF e conta. Ambas as ordens da disputa foram testadas com conexões independentes.
 
 ## Arquivos
 
@@ -41,19 +42,23 @@ Esse XML não informa valores/vencimentos dos dois boletos. Nenhuma divisão igu
 - `sql/contas-parcelamento-DRAFT.sql`: proposta de coluna/histórico, RPC atômica e proteção de integridade. `SECURITY INVOKER`, sem GRANT/REVOKE ou mudança de RLS.
 - Testes novos de cobrança XML, interface, banco e exclusão; regressões de integridade/NF atualizadas para o novo contrato.
 
-## Limites e publicação condicionada à aprovação
+## Validação em 22/10/2026
 
-O banco de produção não foi consultado. A compatibilidade com as definições efetivamente instaladas, as permissões existentes de execução e os triggers do Caixa deve ser conferida em leitura antes da aplicação. O contrato local restringe a RPC ao administrador sem elevar privilégios. A coluna `parcelamento` não substitui o sistema de auditoria existente.
+188 testes passaram, sem falhas ou testes ignorados: 88 de XML/interface/integração e regressões de NF/estoque/financeiro, 20 de banco PGlite, 8 de concorrência em PostgreSQL 17.11 nativo e 72 de regressão do pagamento/recibo/Caixa já publicados. Houve revisão visual desktop e mobile e revisão independente do SQL e dos locks.
+
+Os cenários sintéticos incluem R$ 927,08 em 28/10/2026 e R$ 927,09 em 04/11/2026 (soma R$ 1.854,17), além de R$ 413,75 em 05/11/2026 e R$ 413,76 em 12/11/2026 (soma R$ 827,51). Os créditos informativos de R$ 162,97 e R$ 340,46 não foram abatidos automaticamente.
+
+Schema, políticas, privilégios, auditoria e funções do Caixa/exclusão instalados em produção foram conferidos somente em leitura. O contrato restringe a RPC ao administrador ativo da mesma empresa, sem elevar privilégios. O pagamento existente modifica status/data de pagamento, compatíveis com a proteção do histórico. A coluna `parcelamento` não substitui a auditoria existente. Não é necessária mudança de permissões, RLS, credenciais ou configuração de segurança.
+
+## Limites e publicação
 
 Contas/NFs que já estejam duplicadas ou órfãs não foram saneadas. Essa correção previne novos problemas no fluxo e protege o histórico; não autoriza remoção retroativa. O usuário deve conferir os valores e vencimentos nos dois boletos reais.
 
-Após aprovação explícita:
+A publicação funcional abaixo foi autorizada em 22/10. Alteração de registros financeiros reais continua fora do escopo:
 
-1. Conferir em leitura schema/RLS existentes e a compatibilidade do contrato: `contas_pagar`, `notas_fiscais`, `obras`, `lancamentos`, `caixa_movimentos`, `caixa_obrigacoes`, `auth_company_id()`, `auth_user_role()`, `auth.uid()`, RPC de exclusão e lock do Caixa. Não alterar permissões para contornar incompatibilidade.
-2. Validar a migration em ambiente de homologação com schema equivalente, repetir testes e ensaiar resposta perdida, edição concorrente e exclusão/reimportação com dados sintéticos.
-3. Aplicar **somente** `sql/contas-parcelamento-DRAFT.sql` revisado como migration. A proposta não inclui backfill ou saneamento de registros financeiros reais. Confirmar a disponibilização da RPC antes do frontend.
-4. Separar este diff das alterações locais preexistentes. Preparar checkout/worktree limpo na branch `dev`, revisar e commitar apenas os arquivos da correção. O checkout original já estava sujo; `deploy.sh` deliberadamente recusa essa condição.
-5. Publicar exclusivamente por `./deploy.sh "fix: parcelas independentes de NF e contas a pagar"`. O script atualiza os parâmetros de cache e Service Worker automaticamente, faz push de `dev` e avanço de `main`; essas ações exigem aprovação. Não fazer push manual como substituição.
-6. Conferir carregamento/build em leitura. Uma validação com registro financeiro real só pode ocorrer com autorização específica e com os valores/vencimentos reais em mãos. Não excluir/reimportar a NF em uso como teste.
+1. Aplicar somente `sql/contas-parcelamento-DRAFT.sql` revisado como migration; o nome DRAFT foi conservado para preservar as referências dos testes. Não há backfill nem saneamento de dados financeiros. Confirmar RPC, coluna e triggers antes do frontend, comparando contagens/hashes dos registros e das permissões/políticas.
+2. Usar o checkout isolado `edr-release`, em `dev`, integrado com os commits efetivamente publicados até 19/10. O checkout original e suas alterações preexistentes foram preservados.
+3. Publicar exclusivamente por `./deploy.sh "fix: parcelas independentes de NF e contas a pagar"`. O script atualiza cache/Service Worker, publica `dev` e avança `main`. Não fazer push manual como substituição.
+4. Conferir build, conteúdo dos módulos e interface servidos pelo domínio público. O smoke usa navegador novo sem sessão, bloqueia APIs e toda requisição não GET, abre os dois exemplos sintéticos somente em memória e cancela sem salvar. A persistência foi ensaiada exclusivamente nos bancos locais descartáveis.
 
 Rollback do frontend, se necessário, deve preservar a coluna e o histórico já gravado. Não apagar parcelas ou recibos para desfazer publicação; o frontend antigo não conhece os novos guards e a proteção de banco deve permanecer.
