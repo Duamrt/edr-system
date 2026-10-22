@@ -58,35 +58,15 @@ const itemNota = {
 const elementos = new Map([
   ['f-desconto-total', { value: '' }],
 ]);
-const overlays = [];
-function criarOverlay() {
-  const nodes = new Map();
-  const node = seletor => {
-    if (!nodes.has(seletor)) nodes.set(seletor, {
-      style: {}, value: '', textContent: '', onclick: null,
-      focus() {}, remove() {},
-    });
-    return nodes.get(seletor);
-  };
-  const overlay = {
-    innerHTML: '', className: '', removed: false,
-    querySelector: node,
-    querySelectorAll() { return []; },
-    addEventListener() {},
-    remove() { this.removed = true; },
-  };
-  overlays.push(overlay);
-  return overlay;
-}
-
 const gravacoes = [];
 const agendados = [];
 const avisos = [];
+const pedidosEditor = [];
 const contextoNotas = {
   console: { log() {}, warn() {}, error() {} },
   document: {
     getElementById: id => elementos.get(id) || null,
-    createElement: criarOverlay,
+    createElement() { throw new Error('A NF deve delegar o formulário ao editor de parcelas.'); },
     body: { appendChild() {} },
     addEventListener() {},
     querySelectorAll() { return []; },
@@ -94,6 +74,9 @@ const contextoNotas = {
   setTimeout: fn => { agendados.push(fn); return agendados.length; },
   clearTimeout() {},
   showToast: mensagem => avisos.push(mensagem),
+  // O DOM e a persistência do editor comum têm ensaios próprios. Aqui verificamos
+  // o contrato real NF -> editor, sem inventar quitação ou boleto a partir da NF.
+  ParcelasConta: { abrir: async pedido => { pedidosEditor.push(JSON.parse(JSON.stringify(pedido))); } },
   confirmar: async () => true,
   norm: valor => String(valor || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim(),
   fmtData: valor => valor,
@@ -191,19 +174,25 @@ globalThis.__estoqueTeste = { consolidarEstoque };
   assert.equal(estoque[0].valorEstoque, 1552.5);
 
   assert.equal(agendados.length, 1);
-  agendados[0]();
-  const promptPagamento = overlays.at(-1);
-  assert.ok(promptPagamento);
-  await promptPagamento.querySelector('#_pp-vista').onclick();
-  const postFinanceiro = gravacoes.find(g => g.tabela === 'contas_pagar');
-  assert.ok(postFinanceiro);
-  assert.equal(postFinanceiro.payload.valor, 1552.5);
-  assert.equal(postFinanceiro.payload.nota_id, 'nf-brita-23444');
-  assert.equal(postFinanceiro.payload.nota_ref, numero);
-  assert.equal(postFinanceiro.payload.status, 'pago');
-  assert.equal(contextoNotas.__notasTeste.getContas().length, 1);
+  await agendados[0]();
+  assert.equal(pedidosEditor.length, 1);
+  const pedido = pedidosEditor[0];
+  assert.equal(pedido.modo, 'nota');
+  assert.equal(pedido.valorTotalNF, 1552.5);
+  assert.equal(pedido.notaId, 'nf-brita-23444');
+  assert.equal(pedido.numero, numero);
+  assert.equal(pedido.fornecedor, tag('xNome'));
+  assert.equal(pedido.obraId, null);
+  assert.equal(pedido.cobranca, null);
+  assert.equal(pedido.despesasJaRegistradas, 0);
+  assert.equal(pedido.data_pagamento, undefined);
+  assert.equal(pedido.dataRef, undefined);
+  assert.equal(pedido.status, undefined);
+  assert.equal(pedido.parcelas, undefined);
+  assert.equal(gravacoes.some(g => g.tabela === 'contas_pagar'), false);
+  assert.equal(contextoNotas.__notasTeste.getContas().length, 0);
 
-  console.log('nf-brita-fluxo: 33 assertions passed');
+  console.log('nf-brita-fluxo: conversão, estoque, custo e contrato financeiro aprovados');
 })().catch(erro => {
   console.error(erro);
   process.exitCode = 1;

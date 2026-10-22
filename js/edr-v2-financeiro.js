@@ -64,6 +64,7 @@ function getContasVencidas() {
 
 function renderContasPagar() {
   const painelPagamento=typeof caixaProspectivoPagamentoPainel==='function' ? caixaProspectivoPagamentoPainel() : '';
+  if (typeof ParcelasConta !== 'undefined') ParcelasConta.renderPendencias();
   if (typeof caixaProspectivoEstado === 'function' && !caixaProspectivoEstado()) {
     const stats = document.getElementById('contas-stats');
     const lista = document.getElementById('contas-lista');
@@ -161,6 +162,7 @@ function renderContasPagar() {
             <span>Vence: <strong style="color:${c._status === 'vencido' ? '#ef4444' : 'var(--text-primary)'};">${fmtData(c.data_vencimento)}</strong></span>
             ${obraNome ? `<span>Obra: ${esc(obraNome)}</span>` : ''}
             ${c.nota_ref ? `<span>Ref: ${esc(c.nota_ref)}</span>` : ''}
+            ${_contaTemHistoricoParcelas(c) ? '<span>Parcelamento registrado · histórico preservado</span>' : ''}
             ${c.data_pagamento ? `<span>Pago em: ${fmtData(c.data_pagamento)}</span>` : ''}
             ${Number(c.valor) < Number(c._valorOriginal) ? `<span>Pagamento parcial · original ${fmt(c._valorOriginal)}</span>` : ''}
           </div>
@@ -182,7 +184,43 @@ function renderContasPagar() {
 }
 
 // ── MODAL CONTA ───────────────────────────────────────────────────
+function _contaTemHistoricoParcelas(conta) {
+  return Array.isArray(conta?.parcelamento) && conta.parcelamento.length > 0;
+}
+
+function _contaParcelamentoPendente(contaId) {
+  if (!contaId || typeof ParcelasConta === 'undefined' || !ParcelasConta.temPendente(contaId)) return false;
+  showToast('Há um parcelamento aguardando confirmação. Confira o pedido pendente antes de alterar esta conta.', 6000);
+  return true;
+}
+
+async function desdobrarConta(contaId) {
+  if (_contaParcelamentoPendente(contaId)) return;
+  const conta = contasPagar.find(c => c.id === contaId);
+  if (!conta || conta.status !== 'pendente' || conta.data_pagamento || conta.data_recebimento) {
+    showToast('Somente contas pendentes sem pagamento podem ser desdobradas.'); return;
+  }
+  if (['despesa_operacional_nf', 'reembolso_fornecedor'].includes(conta.tipo)) {
+    showToast('Este registro não é um boleto a desdobrar. Preserve o lançamento de origem.'); return;
+  }
+  if (typeof ParcelasConta === 'undefined' || typeof caixaProspectivoPodeAlterarConta !== 'function') {
+    showToast('Consulta financeira indisponível. Recarregue antes de desdobrar a conta.'); return;
+  }
+  if (!await caixaProspectivoPodeAlterarConta(contaId)) return;
+  if (typeof caixaProspectivoVinculada === 'function' && caixaProspectivoVinculada(contaId)) {
+    showToast('Conta com movimentos vinculados. Preserve a obrigação e consulte o Caixa.'); return;
+  }
+  fecharModal('conta');
+  return ParcelasConta.abrirDesdobramento(conta);
+}
+
 function abrirModalConta(contaId) {
+  if (_contaParcelamentoPendente(contaId)) return;
+  const contaExistente = contaId ? contasPagar.find(c => c.id === contaId) : null;
+  if (contaId && (!contaExistente || contaExistente.status !== 'pendente' || contaExistente.data_pagamento || contaExistente.data_recebimento)) {
+    showToast('Conta finalizada ou com pagamento. Preserve o registro e consulte os movimentos.'); return;
+  }
+  if (_contaTemHistoricoParcelas(contaExistente)) return desdobrarConta(contaId);
   if (contaId && typeof caixaProspectivoVinculada === 'function' && caixaProspectivoVinculada(contaId)) {
     showToast('Conta vinculada ao controle prospectivo. Preserve o registro e consulte os movimentos.'); return;
   }
@@ -212,6 +250,23 @@ function abrirModalConta(contaId) {
     if (selObra) selObra.value = '';
     document.getElementById('conta-nota-ref').value = '';
   }
+  let botaoParcelas = document.getElementById('conta-desdobrar');
+  if (!botaoParcelas) {
+    const box = document.querySelector('#modal-conta .modal-box');
+    if (box) {
+      botaoParcelas = document.createElement('button');
+      botaoParcelas.id = 'conta-desdobrar';
+      botaoParcelas.type = 'button';
+      botaoParcelas.className = 'btn';
+      botaoParcelas.style.cssText = 'width:100%;margin-top:10px;';
+      botaoParcelas.textContent = 'Desdobrar em parcelas';
+      box.appendChild(botaoParcelas);
+    }
+  }
+  if (botaoParcelas) {
+    botaoParcelas.hidden = !contaExistente || ['despesa_operacional_nf', 'reembolso_fornecedor'].includes(contaExistente.tipo);
+    botaoParcelas.onclick = () => desdobrarConta(contaId);
+  }
   openModal('conta');
   setTimeout(() => document.getElementById('conta-fornecedor').focus(), 100);
 }
@@ -225,6 +280,14 @@ async function salvarConta() {
   const nota_ref   = (document.getElementById('conta-nota-ref').value || '').trim();
   const id         = document.getElementById('conta-id').value;
   if (id) {
+    if (_contaParcelamentoPendente(id)) return;
+    const conta = contasPagar.find(c => c.id === id);
+    if (!conta || conta.status !== 'pendente' || conta.data_pagamento || conta.data_recebimento) {
+      showToast('Conta finalizada ou com pagamento. Preserve o registro e consulte os movimentos.'); return;
+    }
+    if (_contaTemHistoricoParcelas(conta)) {
+      showToast('Use Desdobrar em parcelas para revisar esta obrigação com histórico preservado.', 6000); return;
+    }
     if (typeof caixaProspectivoPodeAlterarConta !== 'function') {
       showToast('Controle prospectivo indisponível. Recarregue antes de alterar a obrigação.'); return;
     }
@@ -264,6 +327,7 @@ async function salvarConta() {
 }
 
 async function marcarComoPago(contaId) {
+  if (_contaParcelamentoPendente(contaId)) return;
   const conta = contasPagar.find(c => c.id === contaId);
   const ehReembolso = conta?.tipo === 'reembolso_fornecedor';
   if (!ehReembolso) {
@@ -341,6 +405,10 @@ async function marcarComoPago(contaId) {
 }
 
 async function excluirConta(contaId) {
+  if (_contaParcelamentoPendente(contaId)) return;
+  if (_contaTemHistoricoParcelas(contasPagar.find(c => c.id === contaId))) {
+    showToast('Conta com histórico de parcelamento. Preserve o registro e consulte o Financeiro.', 6000); return;
+  }
   if (typeof caixaProspectivoPodeAlterarConta !== 'function') {
     showToast('Controle prospectivo indisponível. Recarregue antes de excluir a obrigação.'); return;
   }

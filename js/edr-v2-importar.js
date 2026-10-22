@@ -1280,7 +1280,26 @@ const ImportModule = {
     const infNFeEl = getTag(xml, 'infNFe');
     const chaveAcesso = infNFeEl ? (infNFeEl.getAttribute('Id') || '').replace(/^NFe/, '') : '';
 
-    return { fornecedor, cnpj, numero, serie, natureza, finalidade, dataEmissao: dataFormatada, valorBruto, frete, outras, desconto, vNF, itens, chaveAcesso };
+    // A cobranca e independente do total fiscal: nao dividir vNF, nem usar
+    // data de emissao como vencimento quando o XML nao informa duplicatas.
+    // Preserva strings e campos ausentes para revisao manual, inclusive centavos.
+    const cobr = infNFeEl ? getTag(infNFeEl, 'cobr') : null;
+    const fat = cobr ? getTag(cobr, 'fat') : null;
+    const cobranca = cobr ? {
+      fatura: {
+        numero: fat ? getVal(fat, 'nFat') : '',
+        valorOriginal: fat ? getVal(fat, 'vOrig') : '',
+        desconto: fat ? getVal(fat, 'vDesc') : '',
+        valorLiquido: fat ? getVal(fat, 'vLiq') : '',
+      },
+      duplicatas: Array.from(getAllTag(cobr, 'dup'), dup => ({
+        numero: getVal(dup, 'nDup'),
+        vencimento: getVal(dup, 'dVenc'),
+        valor: getVal(dup, 'vDup'),
+      })),
+    } : null;
+
+    return { fornecedor, cnpj, numero, serie, natureza, finalidade, dataEmissao: dataFormatada, valorBruto, frete, outras, desconto, vNF, itens, chaveAcesso, cobranca };
   },
 
   async _preencherFormComXML(nfe) {
@@ -1350,6 +1369,7 @@ const ImportModule = {
       numero: (numComSerie || '').trim(),
       vNF: nfe.vNF || 0,
       qtdItens: (nfe.itens || []).length,
+      cobranca: nfe.cobranca || null,
     };
 
     const natEl = document.getElementById('f-natureza');

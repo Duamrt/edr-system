@@ -1275,7 +1275,10 @@ async function _salvarNotaCompleta(notaData) {
     const valorPrompt = Math.max(0, totalBruto - totalDespesaJaFinanceiro);
     // Em repeticao recuperada, o pagamento e conferido no Financeiro.
     if (!ehDevolucao && !resultadoNF.repetida && valorPrompt > 0) {
-      setTimeout(() => _notasPromptPagamento(saved.id, valorPrompt, recebimento || emissao, _obraId, fornecedor, numero), 300);
+      setTimeout(() => _notasPromptPagamento(saved.id, valorPrompt, recebimento || emissao, _obraId, fornecedor, numero, {
+        valorTotalNF: _ctx.vNF || Number(totalBruto.toFixed(2)), cobranca: _ctx.cobranca || null,
+        despesasJaRegistradas: Number(totalDespesaJaFinanceiro.toFixed(2)),
+      }), 300);
     }
 
     return true;
@@ -1294,81 +1297,17 @@ async function _salvarNotaCompleta(notaData) {
 }
 
 // ── PROMPT PAGAMENTO PÓS-NF ────────────────────────────────────────
-async function _notasPromptPagamento(notaId, valor, dataRef, obraId, fornecedor, numero) {
-  return new Promise(resolve => {
-    const overlay = document.createElement('div');
-    overlay.className = 'modal-overlay active';
-    overlay.innerHTML = `
-      <div class="modal-box" style="max-width:400px;">
-        <div class="modal-header">
-          <span class="modal-title">Registrar pagamento?</span>
-          <button class="btn-icon modal-close" onclick="this.closest('.modal-overlay').remove()">
-            <span class="material-symbols-outlined">close</span>
-          </button>
-        </div>
-        <div class="modal-body" style="padding:20px 24px 8px;">
-          <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;">
-            NF ${esc(numero)} · ${esc(fornecedor)}<br>
-            <strong style="font-size:16px;color:var(--text-primary);">${fmtR(valor)}</strong>
-          </p>
-          <div id="_pp-prazo-row" style="display:none;margin-top:8px;">
-            <label style="font-size:12px;color:var(--text-secondary);font-weight:600;">Data de vencimento</label>
-            <input type="date" id="_pp-venc" style="width:100%;margin-top:6px;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text-primary);font-size:14px;font-family:inherit;">
-          </div>
-        </div>
-        <div class="modal-footer" style="flex-direction:column;gap:8px;padding:16px 24px;">
-          <button class="btn btn-primary" id="_pp-vista" style="width:100%;">À vista — já pago</button>
-          <button class="btn" id="_pp-prazo" style="width:100%;background:rgba(245,158,11,0.1);color:#f59e0b;border-color:#f59e0b;">A prazo — criar conta a pagar</button>
-          <button class="btn" id="_pp-skip" style="width:100%;color:var(--text-tertiary);">Não registrar agora</button>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(overlay);
-    const fechar = () => { overlay.remove(); resolve(); };
-
-    overlay.querySelector('#_pp-skip').onclick = fechar;
-    overlay.querySelector('.modal-close').onclick = fechar;
-    overlay.addEventListener('keydown', e => { if (e.key === 'Escape') fechar(); });
-
-    overlay.querySelector('#_pp-vista').onclick = async () => {
-      fechar();
-      try {
-        const nova = await sbPost('contas_pagar', {
-          fornecedor, descricao: `NF ${numero} · ${fornecedor}`,
-          valor, data_vencimento: dataRef, obra_id: obraId,
-          nota_id: notaId, nota_ref: numero, status: 'pago', data_pagamento: dataRef
-        });
-        if (nova) {
-          if (typeof contasPagar !== 'undefined') contasPagar.push(nova);
-          showToast('Conta marcada paga. Registre a saída efetiva por conta no Caixa.', 6000);
-        } else { showToast('Erro ao registrar pagamento. Tente pela tela Financeiro.', 5000); }
-      } catch(e) { console.error('[EDR] prompt pagamento:', e); }
-    };
-
-    overlay.querySelector('#_pp-prazo').onclick = () => {
-      const row = overlay.querySelector('#_pp-prazo-row');
-      row.style.display = 'block';
-      const inp = overlay.querySelector('#_pp-venc');
-      inp.focus();
-      overlay.querySelector('#_pp-prazo').style.display = 'none';
-      overlay.querySelector('#_pp-vista').textContent = 'Salvar conta a pagar';
-      overlay.querySelector('#_pp-vista').onclick = async () => {
-        const venc = inp.value;
-        if (!venc) { showToast('Informe a data de vencimento.'); inp.focus(); return; }
-        fechar();
-        try {
-          const nova = await sbPost('contas_pagar', {
-            fornecedor, descricao: `NF ${numero} · ${fornecedor}`,
-            valor, data_vencimento: venc, obra_id: obraId,
-            nota_id: notaId, nota_ref: numero, status: 'pendente'
-          });
-          if (nova) {
-            if (typeof contasPagar !== 'undefined') contasPagar.push(nova);
-            showToast('Conta a pagar criada');
-          } else { showToast('Erro ao criar conta a pagar. Tente pela tela Financeiro.', 5000); }
-        } catch(e) { console.error('[EDR] prompt pagamento:', e); }
-      };
-    };
+async function _notasPromptPagamento(notaId, valor, dataRef, obraId, fornecedor, numero, contexto = {}) {
+  if (typeof ParcelasConta === 'undefined') {
+    showToast('Editor de parcelas indisponível. Recarregue a página e confira o Financeiro.', 6000);
+    return;
+  }
+  // Datas e valores de boleto são independentes do recebimento e do total da NF.
+  return ParcelasConta.abrir({
+    modo: 'nota', notaId, obraId, fornecedor, numero,
+    valorTotalNF: contexto.valorTotalNF ?? valor,
+    cobranca: contexto.cobranca || null,
+    despesasJaRegistradas: contexto.despesasJaRegistradas || 0,
   });
 }
 
@@ -1445,13 +1384,15 @@ function processarXMLNFe(input) {
 async function _contasQueTravam(notaId, nfNum, fornecedorNota, status) {
   const num = (nfNum || '').trim();
   const porId = notaId
-    ? await sbGet('contas_pagar', `?nota_id=eq.${notaId}&status=eq.${status}`)
+    ? await sbGet('contas_pagar', `?nota_id=eq.${notaId}&status=eq.${status}`, { throwOnError: true })
     : [];
-  if (!num) return Array.isArray(porId) ? porId : [];
-  const porTexto = await sbGet('contas_pagar', `?nota_id=is.null&nota_ref=ilike.${encodeURIComponent(num)}&status=eq.${status}`);
-  const lista = [...(Array.isArray(porId) ? porId : []), ...(Array.isArray(porTexto) ? porTexto : [])];
-  const fornNota = norm(fornecedorNota || '');
-  const daNota = lista.filter(c => c.nota_id || !c.fornecedor || norm(c.fornecedor) === fornNota);
+  if (!Array.isArray(porId)) throw new Error('Resposta financeira inválida.');
+  if (!num) return porId;
+  const porTexto = await sbGet('contas_pagar', `?nota_id=is.null&nota_ref=ilike.${encodeURIComponent(num)}&status=eq.${status}`, { throwOnError: true });
+  if (!Array.isArray(porTexto)) throw new Error('Resposta financeira inválida.');
+  const lista = [...porId, ...porTexto];
+  const fornNota = norm(fornecedorNota || '').trim();
+  const daNota = lista.filter(c => c.nota_id || !c.fornecedor || norm(c.fornecedor).trim() === fornNota);
   const colisao = lista.filter(c => !c.nota_id).length - daNota.filter(c => !c.nota_id).length;
   if (colisao > 0) console.warn(`[EDR] Exclusao NF ${num} (${status}): ${colisao} conta(s) com mesmo numero mas fornecedor diferente (colisao ignorada).`);
   return daNota;
@@ -1462,15 +1403,21 @@ async function confirmarExclusaoNota(id) {
   if (!nota) { showToast('Nota nao encontrada.', 5000); return; }
 
   // Trava financeira: nao excluir NF com conta PAGA ou PENDENTE relacionada (mesmo fornecedor).
-  const _contasPagas = await _contasQueTravam(nota.id, nota.numero_nf, nota.fornecedor, 'pago');
-  if (_contasPagas.length > 0) {
-    showToast(`NF ${nota.numero_nf} ja esta PAGA no financeiro. Cancele o pagamento antes de excluir.`, 5000);
-    return;
-  }
-  // [Onda2-3] contas a pagar PENDENTES ficariam orfas apos excluir a NF — bloqueia e manda resolver no Financeiro.
-  const _contasPend = await _contasQueTravam(nota.id, nota.numero_nf, nota.fornecedor, 'pendente');
-  if (_contasPend.length > 0) {
-    showToast(`NF ${nota.numero_nf} tem ${_contasPend.length} conta(s) a pagar pendente(s). Resolva no Financeiro antes de excluir.`, 5000);
+  try {
+    const _contasPagas = await _contasQueTravam(nota.id, nota.numero_nf, nota.fornecedor, 'pago');
+    if (_contasPagas.length > 0) {
+      showToast(`NF ${nota.numero_nf} ja esta PAGA no financeiro. Cancele o pagamento antes de excluir.`, 5000);
+      return;
+    }
+    // [Onda2-3] contas a pagar PENDENTES ficariam orfas apos excluir a NF - bloqueia e manda resolver no Financeiro.
+    const _contasPend = await _contasQueTravam(nota.id, nota.numero_nf, nota.fornecedor, 'pendente');
+    if (_contasPend.length > 0) {
+      showToast(`NF ${nota.numero_nf} tem ${_contasPend.length} conta(s) a pagar pendente(s). Resolva no Financeiro antes de excluir.`, 5000);
+      return;
+    }
+  } catch (_) {
+    // Erro de rede/consulta não prova que a NF está sem vínculo financeiro.
+    showToast('Não foi possível conferir as contas desta NF. Nenhum dado foi excluído. Tente novamente.', 7000);
     return;
   }
 

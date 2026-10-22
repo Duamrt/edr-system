@@ -4,6 +4,7 @@ const path = require('node:path');
 
 const raiz = path.resolve(__dirname, '..');
 const notas = fs.readFileSync(path.join(raiz, 'js', 'edr-v2-notas.js'), 'utf8');
+const parcelas = fs.readFileSync(path.join(raiz, 'js', 'edr-v2-parcelas.js'), 'utf8');
 const nfAtomica = fs.readFileSync(path.join(raiz, 'sql', 'notas-custo-atomico-DRAFT.sql'), 'utf8');
 const financeiro = fs.readFileSync(path.join(raiz, 'js', 'edr-v2-financeiro.js'), 'utf8');
 const dre = fs.readFileSync(path.join(raiz, 'js', 'edr-v2-dre.js'), 'utf8');
@@ -12,8 +13,11 @@ const sql = fs.readFileSync(path.join(raiz, 'sql', 'notas-integridade-financeira
 // Toda conta nascida de NF nova carrega o UUID, inclusive despesas e pagamentos.
 assert.match(nfAtomica, /'despesa_operacional_nf',nf\.id,nf\.numero_nf/);
 assert.match(notas, /sbRpcEstoque\('registrar_nota_fiscal_atomica'/);
-assert.match(notas, /nota_id: notaId, nota_ref: numero, status: 'pago'/);
-assert.match(notas, /nota_id: notaId, nota_ref: numero, status: 'pendente'/);
+assert.match(notas, /return ParcelasConta\.abrir\(\{[\s\S]*?modo: 'nota', notaId, obraId, fornecedor, numero/);
+assert.match(parcelas, /modo: ref\.modo, nota_id: ref\.notaId \|\| null, conta_id: ref\.contaId \|\| null/);
+assert.match(parcelas, /obra_id: ref\.obraId \|\| null, nota_ref: ref\.numero \|\| null/);
+assert.match(parcelas, /status: pago \? 'pago' : 'pendente'/);
+assert.match(parcelas, /sbRpcEstoque\('registrar_parcelas_conta', \{ p_operacao_id: pendente\.operacao_id, p_pedido: pendente\.pedido \}\)/);
 
 // Exclusão usa RPC primeiro e só aceita o caminho legado se a migration faltar.
 assert.match(notas, /sbRpc\('excluir_nota_fiscal', \{ p_nota_id: nota\.id \}\)/);
@@ -33,4 +37,4 @@ assert.match(sql, /auth_user_role\(\) <> 'admin'/i);
 assert.match(sql, /delete from public\.distribuicoes[\s\S]*delete from public\.lancamentos[\s\S]*delete from public\.notas_fiscais/i);
 assert.match(sql, /d\.lancamento_id in[\s\S]*select l\.id[\s\S]*from public\.lancamentos/i);
 
-console.log('notas-integridade-financeira: 16 assertions passed');
+console.log('notas-integridade-financeira: 19 assertions passed');
