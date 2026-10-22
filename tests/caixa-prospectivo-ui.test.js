@@ -7,6 +7,9 @@ const vm = require('node:vm');
 const { webcrypto } = require('node:crypto');
 
 const modulePath = path.join(__dirname, '../js/edr-v2-caixa-prospectivo.js');
+const contasLeituraSource = require('./fixtures/contas-leitura-source.cjs');
+// Os ensaios isolados já carregam esse trecho real; a integração acrescenta o restante.
+const financeiroComplementoSource = fs.readFileSync(path.join(__dirname, '../js/edr-v2-financeiro.js'), 'utf8').replace(contasLeituraSource, '');
 const plain = x => JSON.parse(JSON.stringify(x));
 const id = n => '00000000-0000-4000-8000-' + String(n).padStart(12, '0');
 const empresa = id(1), banco = id(2), dinheiro = id(3), obrigacao = id(4);
@@ -82,7 +85,6 @@ function ambiente(initial = estadoSintetico(), journal = new Map()) {
     setTimeout, clearTimeout,
     contasPagar: [{ id: obrigacao, company_id: empresa, fornecedor: 'Fornecedor sintético', descricao: 'Obrigação anterior ao corte', valor: 400, status: 'pendente', data_vencimento: '2026-09-01' }],
     lancamentos: [], adicionaisPgtos: [], obras: [],
-    loadContasPagar: async () => true,
     sbGet: async (tabela,query='') => {
       const target=/[?&]id=eq\.([^&]+)/.exec(query)?.[1];
       if (tabela==='caixa_operacoes') return plain(operacoes.filter(o=>o.id===target));
@@ -111,6 +113,7 @@ function ambiente(initial = estadoSintetico(), journal = new Map()) {
   };
   vm.createContext(ctx);
   vm.runInContext(fs.readFileSync(modulePath, 'utf8'), ctx, { filename: modulePath });
+  vm.runInContext(contasLeituraSource, ctx);
   ctx.renderCaixa = () => ctx.caixaProspectivoRender(dom.content);
   const writes = () => pedidos.filter(p => p.fn === 'caixa_registrar');
   return { ...dom, ctx, avisos, pedidos, storage, journal, writes, setEstado: x => { estado = plain(x); }, onWrite: f => { onWrite = f; } };
@@ -181,7 +184,7 @@ test('integração: carga parcial do módulo sem guard de leitura também bloque
 
 test('integração: falha na leitura persistida ao pagar não ativa caminho legado', async () => {
   const a = ambiente(); a.ctx._testContas = plain(a.ctx.contasPagar);
-  vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/edr-v2-financeiro.js'), 'utf8') + '\ncontasPagar = _testContas;', a.ctx);
+  vm.runInContext(financeiroComplementoSource + '\ncontasPagar = _testContas;', a.ctx);
   a.ctx.sbRpcEstoque = async () => ({ ok: false, ausente: true });
   let mutations = 0; a.ctx.sbPatch = a.ctx.sbPostMinimal = async () => { mutations++; return true; };
   await a.ctx.marcarComoPago(obrigacao);
@@ -422,7 +425,7 @@ test('integração: renderCaixa usa saldo persistido e botão Pago abre pagament
   const a = ambiente();
   a.ctx._testContas = plain(a.ctx.contasPagar);
   for (const name of ['contas-stats', 'contas-lista']) { const el = a.ctx.document.createElement('div'); el.id = name; }
-  vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/edr-v2-financeiro.js'), 'utf8') + '\ncontasPagar = _testContas; _saldoManual = 777;', a.ctx);
+  vm.runInContext(financeiroComplementoSource + '\ncontasPagar = _testContas; _saldoManual = 777;', a.ctx);
   await a.ctx.renderCaixa();
   assert.match(a.content.innerHTML, /1\.100,00/);
   a.ctx.lancamentos.push({ data: '2026-09-10', total: 5000, etapa: '28_mao' });
@@ -510,7 +513,7 @@ test('UI: conta avulsa com obra exige declarar custo já registrado, sem lançar
 test('integração: obrigação com pagamento vinculado não pode ser editada ou excluída', async () => {
   const state = estadoSintetico(); state.movimentos = [{ id: id(9), tipo: 'pagamento', conta_id: banco, conta_pagar_id: obrigacao, valor_centavos: 10000, data_efetiva: '2026-09-16', descricao: 'Pagamento sintético', afeta_saldo: true }];
   const a = ambiente(state); a.ctx._testContas = plain(a.ctx.contasPagar);
-  vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/edr-v2-financeiro.js'), 'utf8') + '\ncontasPagar = _testContas;', a.ctx);
+  vm.runInContext(financeiroComplementoSource + '\ncontasPagar = _testContas;', a.ctx);
   for (const [name, value] of Object.entries({ 'conta-id': obrigacao, 'conta-fornecedor': 'Fornecedor alterado', 'conta-descricao': 'Alteração sintética', 'conta-valor': '500', 'conta-vencimento': '2026-09-20', 'conta-obra': '', 'conta-nota-ref': '' })) a.campos.set(name, { value });
   let mutations = 0;
   a.ctx.sbPatch = a.ctx.sbDelete = async () => { mutations++; return true; };
@@ -532,7 +535,7 @@ test('UI: conta quitada com desconto distingue valor original do dinheiro pago',
   s.movimentos=[{id:id(91),conta_pagar_id:obrigacao,tipo:'pagamento',valor_centavos:25000,desconto_centavos:15000,juros_centavos:0,decisao_corte:'pendente',cancelado_em:null}];
   const a=ambiente(s);a.ctx.contasPagar[0].status='pago';a.ctx.contasPagar[0].data_pagamento='2026-09-16';a.ctx._testContas=plain(a.ctx.contasPagar);
   for(const name of ['contas-stats','contas-lista']){const el=a.ctx.document.createElement('div');el.id=name;}
-  vm.runInContext(fs.readFileSync(path.join(__dirname,'../js/edr-v2-financeiro.js'),'utf8')+'\ncontasPagar = _testContas;',a.ctx);
+  vm.runInContext(financeiroComplementoSource+'\ncontasPagar = _testContas;',a.ctx);
   await a.ctx.caixaProspectivoCarregar();a.ctx.renderContasPagar();
   assert.match(a.campos.get('contas-stats').innerHTML,/QUITADAS NO MÊS · VALOR ORIGINAL/);
   assert.match(a.campos.get('contas-lista').innerHTML,/Original.*400,00.*Pago.*250,00.*Desconto.*150,00/);
@@ -541,7 +544,7 @@ test('UI: conta quitada com desconto distingue valor original do dinheiro pago',
 
 test('integração: falha na recarga de pagamentos bloqueia edição e exclusão de obrigação', async () => {
   const a = ambiente(); a.ctx._testContas = plain(a.ctx.contasPagar);
-  vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/edr-v2-financeiro.js'), 'utf8') + '\ncontasPagar = _testContas;', a.ctx);
+  vm.runInContext(financeiroComplementoSource + '\ncontasPagar = _testContas;', a.ctx);
   for (const [name, value] of Object.entries({ 'conta-id': obrigacao, 'conta-fornecedor': 'Fornecedor alterado', 'conta-descricao': 'Alteração sintética', 'conta-valor': '500', 'conta-vencimento': '2026-09-20', 'conta-obra': '', 'conta-nota-ref': '' })) a.campos.set(name, { value });
   await a.ctx.caixaProspectivoCarregar();
   a.ctx.sbRpcEstoque = async () => ({ ok: false, mensagem: 'Leitura sintética indisponível' });
@@ -700,7 +703,6 @@ if (!process.env.EDR_PLAYWRIGHT_PATH) {
       window.esc = x => String(x ?? '').replace(/[&<>"']/g, x => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[x]);
       window.showToast = msg => window.__toasts.push(msg); window.confirmar = async () => true;
       window.contasPagar = [{ id: ids.obrigacao, company_id: ids.empresa, fornecedor: 'Fornecedor sintético', descricao: 'Obrigação sintética', valor: 400, status: 'pendente', data_vencimento: '2026-09-01' }];
-      window.loadContasPagar = async () => true;
       window.sbGet = async (table,query='') => {
         const target=/[?&]id=eq\.([^&]+)/.exec(query)?.[1];
         const rows={contas_pagar:window.contasPagar,caixa_operacoes:window.__ops,caixa_movimentos:window.__movements}[table];
@@ -721,6 +723,7 @@ if (!process.env.EDR_PLAYWRIGHT_PATH) {
       };
     }, { state: estadoSintetico(), ids: { empresa, obrigacao } });
     await page.addScriptTag({ content: fs.readFileSync(modulePath, 'utf8') });
+    await page.addScriptTag({ content: contasLeituraSource });
     await page.evaluate(() => { window.renderCaixa = () => caixaProspectivoRender(document.getElementById('caixa-content')); });
     await page.evaluate(() => caixaProspectivoRender(document.getElementById('caixa-content')));
     assert.match(await page.locator('#caixa-content').innerText(), /Banco de teste/);

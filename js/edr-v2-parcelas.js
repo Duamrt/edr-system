@@ -306,6 +306,11 @@ const ParcelasConta = (() => {
           pendente = null;
           enviando = false;
           fechar();
+          // O recibo contém apenas as contas desta operação. A lista pode ainda
+          // não ter sido aberta nesta sessão; consulte o conjunto completo.
+          // A gravação já foi confirmada: falha de leitura não recria o pedido.
+          const carregou = typeof _loadContasPagar === 'function' ? await _loadContasPagar() : true;
+          if (carregou === null || !mesmaSessao()) return;
           if (typeof renderContasPagar === 'function') renderContasPagar();
           showToast(r.dados.repetida ? 'Pedido confirmado. As parcelas já estavam registradas.' : 'Parcelas registradas. Confira os vencimentos no Financeiro.', 6000);
         } catch (e) {

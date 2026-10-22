@@ -11,6 +11,8 @@
 let contasPagar = [];
 let _contasFiltro = '';
 let _contasMes = '';  // 'YYYY-MM' — filtro por mês (vazio = todos)
+let _contasLeitura = 0;
+let _contasErroLeitura = '';
 
 const CONTA_STATUS = {
   pendente:  { lb: 'PENDENTE',  cor: '#f59e0b', bg: 'rgba(245,158,11,0.08)' },
@@ -20,11 +22,30 @@ const CONTA_STATUS = {
   cancelado: { lb: 'CANCELADO', cor: '#6b7280', bg: 'rgba(255,255,255,0.04)' }
 };
 
+function _contasSessaoAtual() {
+  return JSON.stringify([typeof _companyId !== 'undefined' ? _companyId : null,
+    typeof usuarioAtual !== 'undefined' ? usuarioAtual?.id : null]);
+}
+
+// true: lista aplicada; false: falha atual; null: consulta ultrapassada/outra sessão.
 async function _loadContasPagar() {
+  const leitura = ++_contasLeitura;
+  const sessao = _contasSessaoAtual();
+  const vigente = () => leitura === _contasLeitura
+    && sessao === _contasSessaoAtual();
   try {
-    const r = await sbGet('contas_pagar', '?order=data_vencimento');
-    contasPagar = Array.isArray(r) ? r : [];
-  } catch(e) { contasPagar = []; }
+    const r = await sbGet('contas_pagar', '?order=data_vencimento', { throwOnError: true });
+    if (!vigente()) return null;
+    if (!Array.isArray(r)) throw new Error('Resposta inválida ao consultar contas');
+    contasPagar = r;
+    _contasErroLeitura = '';
+    return true;
+  } catch(e) {
+    if (!vigente()) return null;
+    // Uma falha não apaga o cache nem confirma que a lista parcial é completa.
+    _contasErroLeitura = 'Não foi possível atualizar a lista completa de contas. Os registros foram preservados. Tente carregar novamente.';
+    return false;
+  }
 }
 
 function _getStatusConta(c) {
@@ -65,6 +86,14 @@ function getContasVencidas() {
 function renderContasPagar() {
   const painelPagamento=typeof caixaProspectivoPagamentoPainel==='function' ? caixaProspectivoPagamentoPainel() : '';
   if (typeof ParcelasConta !== 'undefined') ParcelasConta.renderPendencias();
+  if (_contasErroLeitura) {
+    const stats = document.getElementById('contas-stats');
+    const lista = document.getElementById('contas-lista');
+    if (stats) stats.innerHTML = painelPagamento + '<p role="alert">' + _contasErroLeitura
+      + '</p><button class="btn btn-secondary" onclick="_loadContasPagar().then(ok=>{if(ok!==null)renderContasPagar();})">Carregar contas novamente</button>';
+    if (lista) lista.innerHTML = '';
+    return;
+  }
   if (typeof caixaProspectivoEstado === 'function' && !caixaProspectivoEstado()) {
     const stats = document.getElementById('contas-stats');
     const lista = document.getElementById('contas-lista');
@@ -542,6 +571,11 @@ function _calcMediaSaidaSemanal() {
 async function renderCaixa() {
   const el = document.getElementById('caixa-content');
   if (!el) return;
+  if (_contasErroLeitura) {
+    el.innerHTML = '<p role="alert">' + _contasErroLeitura
+      + '</p><button class="btn btn-secondary" onclick="_loadContasPagar().then(ok=>{if(ok!==null)renderCaixa();})">Carregar contas novamente</button>';
+    return;
+  }
   if (typeof caixaProspectivoRender === 'function') return caixaProspectivoRender(el);
   el.innerHTML = '<p role="alert">Controle prospectivo indisponível. Recarregue a página.</p>';
 }
@@ -808,14 +842,24 @@ async function excluirProjecao(id) {
 // ─────────────────────────────────────────────────────────────────
 if (typeof viewRegistry !== 'undefined') {
   viewRegistry.register('contas-pagar', async () => {
-    if (!contasPagar.length) await _loadContasPagar();
+    // O cache pode conter apenas o retorno de uma gravação feita em outra view.
+    // Ter itens não significa que a consulta da lista completa já aconteceu.
+    const sessao = _contasSessaoAtual();
+    const consulta = _loadContasPagar(), leitura = _contasLeitura;
+    const carregou = await consulta;
+    if (carregou === null || leitura !== _contasLeitura || sessao !== _contasSessaoAtual()) return;
     if (typeof caixaProspectivoCarregar === 'function') await caixaProspectivoCarregar();
+    if (leitura !== _contasLeitura || sessao !== _contasSessaoAtual()) return;
     renderContasPagar();
   });
 
   viewRegistry.register('caixa', async () => {
-    if (!contasPagar.length) await _loadContasPagar();
+    const sessao = _contasSessaoAtual();
+    const consulta = _loadContasPagar(), leitura = _contasLeitura;
+    const carregou = await consulta;
+    if (carregou === null || leitura !== _contasLeitura || sessao !== _contasSessaoAtual()) return;
     await _loadProjecoes();
+    if (leitura !== _contasLeitura || sessao !== _contasSessaoAtual()) return;
     renderCaixa();
   });
 }

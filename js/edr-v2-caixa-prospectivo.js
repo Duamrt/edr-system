@@ -357,12 +357,14 @@ async function caixaProspectivoRender(el) {
     })()
   ]);
   if (leituraPrevisoes !== _cpPrevisoesLeitura || tenantPrevisoes !== _companyId || atorPrevisoes !== usuarioAtual) return;
-  if (e && typeof sbGet === 'function') {
+  if (e) {
     try {
-      const cs = await sbGet('contas_pagar','?order=data_vencimento',{throwOnError:true});
-      if (!Array.isArray(cs)) throw new Error();
-      if (e.company_id !== _companyId || leituraPrevisoes !== _cpPrevisoesLeitura || atorPrevisoes !== usuarioAtual) return;
-      contasPagar = cs;
+      const consulta = _loadContasPagar(), leituraContas = _contasLeitura;
+      const carregou = await consulta;
+      if (leituraContas !== _contasLeitura || e.company_id !== _companyId || leituraPrevisoes !== _cpPrevisoesLeitura || atorPrevisoes !== usuarioAtual) return;
+      // Outra leitura assumiu o cache; não a substitua nem invalide seu estado.
+      if (carregou === null) return;
+      if (carregou !== true) throw new Error();
     } catch (_) {
       if (leituraPrevisoes !== _cpPrevisoesLeitura || tenantPrevisoes !== _companyId || atorPrevisoes !== usuarioAtual) return;
       _cpEstado = null;
@@ -385,9 +387,11 @@ async function caixaProspectivoAbrir(tipo, contaPagarId = null) {
   if (tipo === 'abertura' ? e.contas.length > 0 : tipo === 'pagamento' ? ![0,2].includes(e.contas.length) : e.contas.length !== 2) { showToast(tipo==='abertura'?'Abertura já declarada.':'Declare a abertura primeiro.'); return; }
   if (tipo === 'pagamento') {
     try {
-      const cs = await sbGet('contas_pagar','?order=data_vencimento',{throwOnError:true});
-      if (!Array.isArray(cs) || e.company_id !== _companyId || ator !== usuarioAtual || !caixaProspectivoPodeOperar()) throw new Error();
-      contasPagar = cs;
+      const consulta = _loadContasPagar(), leituraContas = _contasLeitura;
+      const carregou = await consulta;
+      if (leituraContas !== _contasLeitura || e.company_id !== _companyId || ator !== usuarioAtual || !caixaProspectivoPodeOperar()) return;
+      if (carregou === null) return;
+      if (carregou !== true) throw new Error();
     } catch (_) { showToast('Não foi possível consultar a obrigação persistida. Recarregue.'); return; }
     const c = (typeof contasPagar !== 'undefined' ? contasPagar : []).find(x => x.id === contaPagarId);
     if (!c || ['pago','cancelado'].includes(c.status) || c.tipo==='reembolso_fornecedor') { showToast('Conta indisponível para pagamento. Recarregue.'); return; }

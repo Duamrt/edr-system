@@ -6,6 +6,7 @@ const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
+const contasLeituraSource = require('./fixtures/contas-leitura-source.cjs');
 const { LocalSupabase, configFromEnvironment, REPO, inside } = require('./fixtures/caixa-supabase-local-runtime.cjs');
 const success = (response, label) => {
   assert.equal(response.ok, true, `${label}: HTTP ${response.status}, codigo ${response.code || 'omitido'}`);
@@ -93,7 +94,6 @@ if (!process.env.EDR_CAIXA_AUTH_LOCAL_STATUS || !process.env.EDR_PLAYWRIGHT_PATH
           if (table !== 'contas_pagar') throw new Error('Tabela fora do ensaio QA');
           return get('/rest/v1/' + table + (query || '?select=*') + '&company_id=eq.' + member.company_id);
         };
-        window._loadContasPagar = async () => { window.contasPagar = await window.sbGet('contas_pagar', '?order=data_vencimento'); };
         window.sbRpcEstoque = async (name, body = {}) => {
           if (!['caixa_estado', 'caixa_registrar'].includes(name)) throw new Error('RPC fora do ensaio QA');
           try {
@@ -105,6 +105,7 @@ if (!process.env.EDR_CAIXA_AUTH_LOCAL_STATUS || !process.env.EDR_PLAYWRIGHT_PATH
         };
       }, { token, key: local.config.anon, origin });
       await page.addScriptTag({ content: fs.readFileSync(path.join(REPO, 'js/edr-v2-caixa-prospectivo.js'), 'utf8') });
+      await page.addScriptTag({ content: contasLeituraSource });
       await page.evaluate(() => { window.renderCaixa = () => caixaProspectivoRender(document.getElementById('caixa-content')); });
       await page.evaluate(() => renderCaixa());
     }
