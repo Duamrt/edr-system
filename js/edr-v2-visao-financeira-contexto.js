@@ -145,6 +145,7 @@
       coberturaTemporal: 'nao_avaliada', marcos: [] };
     if (!e) return r;
     if (!e.contas.length) return { ...r, status: 'sem_abertura' };
+    if (e.movimentos.some(m => m.decisao_corte === 'pendente' && !m.cancelado_em)) return { ...r, status: 'conciliacao_pendente' };
     const marcos = e.contas.map(marcoCivil);
     if (marcos.some(m => !m)) return r;
     r.marcos = marcos;

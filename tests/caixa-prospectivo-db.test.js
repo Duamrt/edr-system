@@ -11,7 +11,7 @@ if (!process.env.EDR_PGLITE_PATH) {
 } else {
   const { PGlite } = require(process.env.EDR_PGLITE_PATH);
   const fixture = fs.readFileSync(path.join(__dirname,'fixtures/caixa-prospectivo-base.sql'),'utf8');
-  const migration = fs.readFileSync(path.join(__dirname,'../sql/caixa-prospectivo-DRAFT.sql'),'utf8');
+  const migration = fs.readFileSync(path.join(__dirname,'../sql/caixa-prospectivo-DRAFT.sql'),'utf8') + '\n' + fs.readFileSync(path.join(__dirname,'../sql/caixa-pagamento-sem-abertura-DRAFT.sql'),'utf8');
   const rollback = fs.readFileSync(path.join(__dirname,'../sql/caixa-prospectivo-rollback-DRAFT.sql'),'utf8');
   const id = n => '00000000-0000-4000-8000-'+String(n).padStart(12,'0');
   const company=id(1), other=id(2), admin=id(3), operational=id(4), reader=id(5), otherAdmin=id(6);
@@ -35,7 +35,7 @@ if (!process.env.EDR_PGLITE_PATH) {
     if(abrir) await enviar(abertura());
     const movimento=async (extra={},op) => {
       const s=await estado();
-      return enviar({action:'movimento',tipo:'saida',conta_id:s.contas.find(c=>c.codigo==='banco').id,
+      return enviar({action:'movimento',tipo:'saida',pagamento_confirmado:true,conta_id:s.contas.find(c=>c.codigo==='banco').id,
         destino_id:null,valor_centavos:1000,data_efetiva:'2001-06-06',hora_efetiva:null,
         decisao_corte:null,descricao:'Movimento sintético QA',conta_pagar_id:null,...extra},op);
     };
@@ -146,7 +146,7 @@ if (!process.env.EDR_PGLITE_PATH) {
   test('obrigação antiga paga depois do corte: parcial, conclusão, limites e cancelamento sem duplicar custo',async t => {
     const a=await ambiente(t);const original=await a.original();const cp=await a.conta(100,'vencido');
     const p1=await a.movimento({tipo:'pagamento',conta_pagar_id:cp,valor_centavos:4000});
-    assert.equal(await total(a),116000);assert.deepEqual((await a.estado()).pagamentos.find(p=>p.conta_pagar_id===cp),{conta_pagar_id:cp,pago_centavos:4000,restante_centavos:6000});
+    assert.equal(await total(a),116000);assert.deepEqual((await a.estado()).pagamentos.find(p=>p.conta_pagar_id===cp),{conta_pagar_id:cp,pago_centavos:4000,quitado_centavos:4000,restante_centavos:6000});
     assert.equal((await a.owner('select status from contas_pagar')).rows[0].status,'vencido');
     await assert.rejects(a.movimento({tipo:'pagamento',conta_pagar_id:cp,valor_centavos:6001}),/excede/);
     const p2=await a.movimento({tipo:'pagamento',conta_pagar_id:cp,valor_centavos:6000,data_efetiva:'2001-06-07'});

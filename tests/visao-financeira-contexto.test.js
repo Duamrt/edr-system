@@ -6,6 +6,15 @@ const vm = require('node:vm');
 const modelo = require('../js/edr-v2-visao-financeira-modelo.js');
 const { construir } = require('../js/edr-v2-visao-financeira-contexto.js');
 const COMPANY = 'tenant-sintetico';
+test('pagamento pendente mantém saldo disponível desconhecido sem esconder obrigação restante', () => {
+  const s=snapshot();
+  s.ledger.estado.movimentos.push(movimento('pendente','pagamento',100,'2026-10-12',{conta_id:null,origem_codigo:'banco',conta_pagar_id:'cp1',decisao_corte:'pendente',afeta_saldo:false}));
+  const saldo=modelo.saldoGeral(s.ledger,COMPANY);
+  assert.equal(saldo.status,'conciliacao_pendente');assert.equal(saldo.totalCentavos,null);
+  const c=construir(envelope(s));
+  assert.equal(c.ledger.status,'conciliacao_pendente');assert.equal(c.ledger.saidasCentavos,null);
+  assert.equal(c.obrigacoes.status,'confirmada');
+});
 function registro(id, more) { return { id, company_id: COMPANY, ...more }; }
 function movimento(id, tipo, valor, data, more) {
   return { id, operacao_id: 'op-' + id, tipo, valor_centavos: valor, data_efetiva: data,

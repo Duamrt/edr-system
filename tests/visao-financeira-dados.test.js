@@ -26,6 +26,17 @@ const transferencia = () => ({ id: 'mov-1', operacao_id: 'op-1', tipo: 'transfer
   data_efetiva: '2026-09-02', hora_efetiva: null, decisao_corte: 'apos_corte', afeta_saldo: true,
   descricao: 'Transferencia sintetica', conta_pagar_id: null, cancelado_em: null });
 
+test('ledger aceita pagamento pendente sem conta, mas rejeita origem/efeito incompatíveis', async () => {
+  const m={...transferencia(),tipo:'pagamento',conta_id:null,destino_id:null,origem_codigo:'banco',conta_pagar_id:'cp-qa',decisao_corte:'pendente',afeta_saldo:false};
+  const estado=ledger({pagamento_sem_abertura:true,movimentos:[m]});
+  const a=ambiente({carregarLedger:async()=>estado});
+  assert.equal((await a.loader.carregar()).ledger.status,'confirmada');
+  for(const change of [{afeta_saldo:true},{origem_codigo:'terceiro'},{tipo:'saida'},{conta_id:'conta-banco'}]){
+    const b=ambiente({carregarLedger:async()=>({...estado,movimentos:[{...m,...change}]})});
+    assert.equal((await b.loader.carregar()).ledger.status,'indisponivel');
+  }
+});
+
 function ambiente(overrides = {}) {
   let ator = { company_id: EMPRESA, ator_id: ATOR, perfil: 'admin' };
   const consultas = [], contextos = [], fontes = overrides.fontes || {};

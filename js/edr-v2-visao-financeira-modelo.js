@@ -163,6 +163,7 @@
     const e = ledger.estado;
     if (!e || e.company_id !== companyId || !Array.isArray(e.contas)) return indisponivel;
     if (!e.contas.length) return { ...indisponivel, status: 'sem_abertura' };
+    if (e.movimentos?.some(m => m.decisao_corte === 'pendente' && !m.cancelado_em)) return { ...indisponivel, status: 'conciliacao_pendente' };
     if (!Number.isSafeInteger(e.total_centavos) || e.contas.some(c => !c || !Number.isSafeInteger(c.saldo_centavos))) return indisponivel;
     const total = soma(e.contas.map(c => c.saldo_centavos));
     if (total == null || total !== e.total_centavos) return indisponivel;

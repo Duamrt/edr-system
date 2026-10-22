@@ -99,7 +99,7 @@
       contas.add(String(c.id)); codigos.add(c.codigo);
       total += BigInt(c.saldo_centavos);
     }
-    if (total !== BigInt(e.total_centavos) || (!e.contas.length && e.movimentos.length)) throw erro('LEDGER_INVALIDO');
+    if (total !== BigInt(e.total_centavos)) throw erro('LEDGER_INVALIDO');
     const pagamentos = new Set();
     for (const p of e.pagamentos) {
       if (!idValido(p.conta_pagar_id) || pagamentos.has(String(p.conta_pagar_id)) ||
@@ -109,11 +109,13 @@
     }
     const movimentos = new Set(), operacoes = new Set();
     for (const m of e.movimentos) {
+      const pendente = e.pagamento_sem_abertura === true && m.decisao_corte === 'pendente' && m.tipo === 'pagamento' &&
+        m.conta_id == null && ['banco', 'dinheiro'].includes(m.origem_codigo) && m.afeta_saldo === false;
       if (!idValido(m.id) || movimentos.has(String(m.id)) || !idValido(m.operacao_id) || operacoes.has(String(m.operacao_id)) ||
-          !['entrada', 'saida', 'transferencia', 'pagamento'].includes(m.tipo) || !contas.has(String(m.conta_id)) ||
+          !['entrada', 'saida', 'transferencia', 'pagamento'].includes(m.tipo) || (!pendente && !contas.has(String(m.conta_id))) ||
           !Number.isSafeInteger(m.valor_centavos) || m.valor_centavos <= 0 || !dataCivil(m.data_efetiva) ||
           (m.hora_efetiva != null && !/^([01]\d|2[0-3]):[0-5]\d$/.test(m.hora_efetiva)) ||
-          !['incluido_abertura', 'apos_corte'].includes(m.decisao_corte) || typeof m.afeta_saldo !== 'boolean' ||
+          (!pendente && !['incluido_abertura', 'apos_corte'].includes(m.decisao_corte)) || typeof m.afeta_saldo !== 'boolean' ||
           (m.cancelado_em != null && (!instante(m.cancelado_em) || m.afeta_saldo)) ||
           (m.decisao_corte === 'incluido_abertura' && m.afeta_saldo) ||
           typeof m.descricao !== 'string' || !m.descricao.trim() ||
