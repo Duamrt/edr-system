@@ -433,8 +433,8 @@ test('desdobramento: snapshot original preservado e correcao do total exige moti
     const conta = { id: id(20), nota_id: nf.notaId, nota_ref: nf.numero, fornecedor: nf.fornecedor, descricao: 'NF sintética QA', valor: 1854.17, data_vencimento: '2026-10-28', status: 'pendente', obra_id: nf.obraId };
     await a.page.evaluate(c => { void ParcelasConta.abrirDesdobramento(c); }, conta);
     await a.page.locator('#parcelas-conta-modal').waitFor();
-    assert.equal(await a.page.getByLabel('Valor da parcela 1', { exact: true }).inputValue(), '');
-    assert.equal(await a.page.getByLabel('Vencimento da parcela 1', { exact: true }).inputValue(), '');
+    assert.equal(await a.page.getByLabel('Valor da parcela 1', { exact: true }).inputValue(), '1854.17');
+    assert.equal(await a.page.getByLabel('Vencimento da parcela 1', { exact: true }).inputValue(), '2026-10-28');
     await preencher(a.page, 1, '800.01', '2026-10-29');
     await a.page.locator('#parcelas-adicionar').click();
     await preencher(a.page, 2, '1041.82', '2026-11-13');
@@ -462,11 +462,12 @@ test('conta paga/baixa e reembolso nao abrem desdobramento', async () => {
     await a.page.evaluate(async id => {
       await ParcelasConta.abrirDesdobramento({ id, status: 'pago' });
       await ParcelasConta.abrirDesdobramento({ id, status: 'pendente', data_pagamento: '2026-10-20' });
+      await ParcelasConta.abrirDesdobramento({ id, status: 'pendente', data_recebimento: '2026-10-20' });
       await ParcelasConta.abrirDesdobramento({ id, status: 'pendente', tipo: 'reembolso_fornecedor' });
     }, id(20));
     assert.equal(await a.page.locator('#parcelas-conta-modal').count(), 0);
     assert.deepEqual(await writes(a.page), []);
-    assert.equal(await a.page.evaluate(() => __qa.toasts.length), 3);
+    assert.equal(await a.page.evaluate(() => __qa.toasts.length), 4);
     semFalhas(a);
   } finally { await a.close(); }
 });

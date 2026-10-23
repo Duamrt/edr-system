@@ -223,8 +223,30 @@ function _contaParcelamentoPendente(contaId) {
   return true;
 }
 
+let _contaEdicaoSnapshot = null;
+const _contaCamposEdicao = ['conta-fornecedor', 'conta-descricao', 'conta-valor', 'conta-vencimento', 'conta-obra', 'conta-nota-ref'];
+function _contaCamposAtuais() {
+  return _contaCamposEdicao.map(id => String(document.getElementById(id)?.value ?? ''));
+}
+
+function _contaBloquearRascunhoParcelas(contaId) {
+  const modal = document.getElementById('modal-conta');
+  if (!modal?.classList?.contains('active') || _contaEdicaoSnapshot?.id !== contaId) return false;
+  const campos = _contaCamposAtuais();
+  if (campos.every((valor, i) => valor === _contaEdicaoSnapshot.campos[i])) return false;
+  const mensagem = 'Há alterações não salvas nesta conta. Salve ou cancele essas alterações antes de editar valores e parcelas.';
+  const aviso = document.getElementById('conta-parcelas-aviso');
+  if (aviso) { aviso.textContent = mensagem; aviso.hidden = false; aviso.focus(); }
+  showToast(mensagem, 7000);
+  return true;
+}
+
 async function desdobrarConta(contaId) {
   if (_contaParcelamentoPendente(contaId)) return;
+  if (_contaBloquearRascunhoParcelas(contaId)) return;
+  const sessaoInicial = _contasSessaoAtual();
+  const edicaoInicial = _contaEdicaoSnapshot;
+  const modalInicial = document.getElementById('modal-conta')?.classList?.contains('active');
   const conta = contasPagar.find(c => c.id === contaId);
   if (!conta || conta.status !== 'pendente' || conta.data_pagamento || conta.data_recebimento) {
     showToast('Somente contas pendentes sem pagamento podem ser desdobradas.'); return;
@@ -235,12 +257,19 @@ async function desdobrarConta(contaId) {
   if (typeof ParcelasConta === 'undefined' || typeof caixaProspectivoPodeAlterarConta !== 'function') {
     showToast('Consulta financeira indisponível. Recarregue antes de desdobrar a conta.'); return;
   }
+  // O editor de parcelas recebe somente a conta salva, nunca valores do rascunho.
+  const contaSalva = { ...conta };
   if (!await caixaProspectivoPodeAlterarConta(contaId)) return;
+  if (sessaoInicial !== _contasSessaoAtual()) return;
   if (typeof caixaProspectivoVinculada === 'function' && caixaProspectivoVinculada(contaId)) {
     showToast('Conta com movimentos vinculados. Preserve a obrigação e consulte o Caixa.'); return;
   }
+  // A consulta pode demorar; preserve também alterações digitadas durante ela.
+  if (_contaEdicaoSnapshot !== edicaoInicial ||
+      (modalInicial && !document.getElementById('modal-conta')?.classList?.contains('active'))) return;
+  if (_contaBloquearRascunhoParcelas(contaId)) return;
   fecharModal('conta');
-  return ParcelasConta.abrirDesdobramento(conta);
+  return ParcelasConta.abrirDesdobramento(contaSalva);
 }
 
 function abrirModalConta(contaId) {
@@ -279,25 +308,19 @@ function abrirModalConta(contaId) {
     if (selObra) selObra.value = '';
     document.getElementById('conta-nota-ref').value = '';
   }
-  let botaoParcelas = document.getElementById('conta-desdobrar');
-  if (!botaoParcelas) {
-    const box = document.querySelector('#modal-conta .modal-box');
-    if (box) {
-      botaoParcelas = document.createElement('button');
-      botaoParcelas.id = 'conta-desdobrar';
-      botaoParcelas.type = 'button';
-      botaoParcelas.className = 'btn';
-      botaoParcelas.style.cssText = 'width:100%;margin-top:10px;';
-      botaoParcelas.textContent = 'Desdobrar em parcelas';
-      box.appendChild(botaoParcelas);
-    }
-  }
+  _contaEdicaoSnapshot = { id: contaId || null, campos: _contaCamposAtuais() };
+  const avisoParcelas = document.getElementById('conta-parcelas-aviso');
+  if (avisoParcelas) { avisoParcelas.textContent = ''; avisoParcelas.hidden = true; }
+  const acaoParcelas = document.getElementById('conta-parcelas-acao');
+  const botaoParcelas = document.getElementById('conta-desdobrar');
+  const mostrarParcelas = !!contaExistente && !['despesa_operacional_nf', 'reembolso_fornecedor'].includes(contaExistente.tipo);
+  if (acaoParcelas) acaoParcelas.hidden = !mostrarParcelas;
   if (botaoParcelas) {
-    botaoParcelas.hidden = !contaExistente || ['despesa_operacional_nf', 'reembolso_fornecedor'].includes(contaExistente.tipo);
+    botaoParcelas.hidden = !mostrarParcelas;
     botaoParcelas.onclick = () => desdobrarConta(contaId);
   }
   openModal('conta');
-  setTimeout(() => document.getElementById('conta-fornecedor').focus(), 100);
+  setTimeout(() => document.getElementById(mostrarParcelas ? 'conta-desdobrar' : 'conta-fornecedor')?.focus(), 100);
 }
 
 async function salvarConta() {
@@ -315,7 +338,7 @@ async function salvarConta() {
       showToast('Conta finalizada ou com pagamento. Preserve o registro e consulte os movimentos.'); return;
     }
     if (_contaTemHistoricoParcelas(conta)) {
-      showToast('Use Desdobrar em parcelas para revisar esta obrigação com histórico preservado.', 6000); return;
+      showToast('Use Editar valores e parcelas para revisar esta obrigação com histórico preservado.', 6000); return;
     }
     if (typeof caixaProspectivoPodeAlterarConta !== 'function') {
       showToast('Controle prospectivo indisponível. Recarregue antes de alterar a obrigação.'); return;

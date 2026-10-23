@@ -5,6 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 const fonte = fs.readFileSync(require.resolve('../js/edr-v2-financeiro.js'), 'utf8');
+const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
 const clonar = x => JSON.parse(JSON.stringify(x));
 const contaBase = () => ({
   id: 'conta-sintetica', fornecedor: 'FORNECEDOR SINTETICO', descricao: 'NF SINTETICA',
@@ -15,8 +16,10 @@ const contaBase = () => ({
 function ambiente(contas = [contaBase()]) {
   const campos = new Map();
   function elemento(id) {
+    const classes = new Set();
     const el = { id, value: '', innerHTML: '', textContent: '', hidden: false,
       style: {}, children: [], focus() {},
+      classList: { add: c => classes.add(c), remove: c => classes.delete(c), contains: c => classes.has(c) },
       appendChild(child) {
         assert.equal(this.children.includes(child), false, 'somente elemento novo');
         this.children.push(child); campos.set(child.id, child);
@@ -27,7 +30,8 @@ function ambiente(contas = [contaBase()]) {
   }
   for (const id of ['conta-obra', 'modal-conta-titulo', 'conta-id', 'conta-fornecedor',
     'conta-descricao', 'conta-valor', 'conta-vencimento', 'conta-nota-ref', 'contas-lista',
-    'contas-stats', 'modal-box']) elemento(id);
+    'contas-stats', 'modal-box', 'modal-conta', 'conta-desdobrar', 'conta-parcelas-acao', 'conta-parcelas-aviso']) elemento(id);
+  campos.get('conta-desdobrar').textContent = index.match(/<button[^>]*id="conta-desdobrar"[^>]*>([^<]+)<\/button>/)[1];
   const chamadas = { abrir: [], fechar: [], desdobrar: [], patch: [], pagar: [], delete: [], banners: 0 };
   const avisos = [];
   const ctx = {
@@ -43,8 +47,8 @@ function ambiente(contas = [contaBase()]) {
       renderPendencias: () => chamadas.banners++,
     },
     showToast: m => avisos.push(m),
-    openModal: m => chamadas.abrir.push(m),
-    fecharModal: m => chamadas.fechar.push(m),
+    openModal: m => { chamadas.abrir.push(m); campos.get('modal-' + m)?.classList.add('active'); },
+    fecharModal: m => { chamadas.fechar.push(m); campos.get('modal-' + m)?.classList.remove('active'); },
     caixaProspectivoPodeAlterarConta: async () => true,
     caixaProspectivoVinculada: () => false,
     caixaProspectivoAbrir: async (...args) => chamadas.pagar.push(args),
@@ -68,7 +72,8 @@ test('conta pendente: botão abre formulário comum com dados originais e sem gr
   a.ctx.abrirModalConta('conta-sintetica');
   const botao = a.campos.get('conta-desdobrar');
   assert.equal(botao.hidden, false);
-  assert.equal(botao.textContent, 'Desdobrar em parcelas');
+  assert.equal(botao.textContent, 'Editar valores e parcelas');
+  assert.equal(a.campos.get('conta-parcelas-acao').hidden, false);
   await botao.onclick();
   assert.deepEqual(a.chamadas.desdobrar, [contaBase()]);
   assert.deepEqual(a.chamadas.fechar, ['conta']);
@@ -76,14 +81,91 @@ test('conta pendente: botão abre formulário comum com dados originais e sem gr
   assert.deepEqual(a.chamadas.delete, []);
 });
 
-test('reabrir modal reutiliza botão; conta nova não mostra desdobramento', () => {
+test('reabrir modal reutiliza CTA estático; conta nova não mostra desdobramento', () => {
   const a = ambiente();
+  const botao = a.campos.get('conta-desdobrar');
   a.ctx.abrirModalConta('conta-sintetica');
   a.ctx.abrirModalConta('conta-sintetica');
-  assert.equal(a.campos.get('modal-box').children.length, 1);
+  assert.equal(a.campos.get('conta-desdobrar'), botao);
+  assert.equal(a.campos.get('modal-box').children.length, 0);
   a.ctx.abrirModalConta(null);
   assert.equal(a.campos.get('conta-desdobrar').hidden, true);
+  assert.equal(a.campos.get('conta-parcelas-acao').hidden, true);
 });
+
+for (const campo of ['conta-fornecedor', 'conta-descricao', 'conta-valor', 'conta-vencimento', 'conta-obra', 'conta-nota-ref']) {
+  test('rascunho não salvo preservado antes de editar parcelas: ' + campo, async () => {
+    const a = ambiente();
+    a.ctx.abrirModalConta('conta-sintetica');
+    a.campos.get(campo).value = 'ALTERACAO SINTETICA';
+    await a.campos.get('conta-desdobrar').onclick();
+    assert.equal(a.campos.get(campo).value, 'ALTERACAO SINTETICA');
+    assert.equal(a.campos.get('modal-conta').classList.contains('active'), true);
+    assert.equal(a.campos.get('conta-parcelas-aviso').hidden, false);
+    assert.match(a.campos.get('conta-parcelas-aviso').textContent, /Salve ou cancele/);
+    for (const tipo of ['patch', 'delete', 'fechar', 'desdobrar']) assert.deepEqual(a.chamadas[tipo], []);
+  });
+}
+
+test('voltar ao valor salvo libera CTA e envia somente a conta persistida', async () => {
+  const a = ambiente();
+  a.ctx.abrirModalConta('conta-sintetica');
+  a.campos.get('conta-valor').value = '900';
+  await a.campos.get('conta-desdobrar').onclick();
+  a.campos.get('conta-valor').value = '1854.17';
+  await a.campos.get('conta-desdobrar').onclick();
+  assert.deepEqual(a.chamadas.desdobrar, [contaBase()]);
+  assert.deepEqual(a.chamadas.patch, []);
+});
+
+test('rascunho digitado durante a consulta financeira também é preservado', async () => {
+  const a = ambiente();
+  a.ctx.abrirModalConta('conta-sintetica');
+  let liberar;
+  a.ctx.caixaProspectivoPodeAlterarConta = () => new Promise(resolve => { liberar = resolve; });
+  const pedido = a.campos.get('conta-desdobrar').onclick();
+  a.campos.get('conta-vencimento').value = '2026-12-01';
+  liberar(true);
+  await pedido;
+  assert.equal(a.campos.get('conta-vencimento').value, '2026-12-01');
+  assert.equal(a.campos.get('modal-conta').classList.contains('active'), true);
+  assert.deepEqual(a.chamadas.desdobrar, []);
+  assert.deepEqual(a.chamadas.fechar, []);
+});
+
+test('cancelar ou trocar a conta durante a consulta não reabre o editor anterior', async () => {
+  const a = ambiente();
+  a.ctx.abrirModalConta('conta-sintetica');
+  let liberar;
+  a.ctx.caixaProspectivoPodeAlterarConta = () => new Promise(resolve => { liberar = resolve; });
+  const pedido = a.campos.get('conta-desdobrar').onclick();
+  a.ctx.fecharModal('conta');
+  a.ctx.abrirModalConta(null);
+  a.campos.get('conta-fornecedor').value = 'OUTRO RASCUNHO';
+  liberar(true);
+  await pedido;
+  assert.equal(a.campos.get('conta-fornecedor').value, 'OUTRO RASCUNHO');
+  assert.equal(a.campos.get('modal-conta').classList.contains('active'), true);
+  assert.deepEqual(a.chamadas.desdobrar, []);
+  assert.equal(a.chamadas.fechar.length, 1);
+});
+
+for (const alvo of ['empresa', 'usuario']) {
+  test('troca de ' + alvo + ' durante a consulta não abre conta da sessão anterior', async () => {
+    const a = ambiente();
+    a.ctx._companyId = 'empresa-sintetica-a';
+    a.ctx.usuarioAtual = { id: 'usuario-sintetico-a' };
+    a.ctx.abrirModalConta('conta-sintetica');
+    let liberar;
+    a.ctx.caixaProspectivoPodeAlterarConta = () => new Promise(resolve => { liberar = resolve; });
+    const pedido = a.campos.get('conta-desdobrar').onclick();
+    if (alvo === 'empresa') a.ctx._companyId = 'empresa-sintetica-b';
+    else a.ctx.usuarioAtual.id = 'usuario-sintetico-b';
+    liberar(true);
+    await pedido;
+    for (const tipo of ['patch', 'delete', 'fechar', 'desdobrar']) assert.deepEqual(a.chamadas[tipo], []);
+  });
+}
 
 test('confirmação pendente bloqueia editar, salvar, pagar, excluir e novo desdobramento', async () => {
   const a = ambiente();

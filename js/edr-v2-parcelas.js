@@ -80,7 +80,7 @@ const ParcelasConta = (() => {
     banner.querySelectorAll('[data-recuperar]').forEach(b => b.onclick = () => abrir(ps[Number(b.dataset.recuperar)].contexto));
   }
   async function abrirDesdobramento(c) {
-    if (!c || c.status !== 'pendente' || c.data_pagamento ||
+    if (!c || c.status !== 'pendente' || c.data_pagamento || c.data_recebimento ||
         ['reembolso_fornecedor', 'despesa_operacional_nf'].includes(c.tipo)) {
       showToast('Somente uma conta pendente, sem pagamento ou baixa, pode ser desdobrada.'); return;
     }
@@ -115,7 +115,9 @@ const ParcelasConta = (() => {
     const dup = ref.cobranca?.duplicatas || [];
     let linhas = pendente ? pendente.pedido.parcelas.map(p => ({
       numero: p.numero, valor: (p.valor_centavos / 100).toFixed(2), vencimento: p.vencimento,
-    })) : dup.length ? dup.map(p => ({ numero: p.numero || '', valor: p.valor || '', vencimento: p.vencimento || '' }))
+    })) : split ? [{ numero: '', valor: original !== null ? (original / 100).toFixed(2) : '',
+      vencimento: dataValida(ref.original?.data_vencimento) ? ref.original.data_vencimento : '' }]
+      : dup.length ? dup.map(p => ({ numero: p.numero || '', valor: p.valor || '', vencimento: p.vencimento || '' }))
       : [{ numero: '', valor: '', vencimento: '' }];
     let enviando = false;
     return new Promise(resolve => {
@@ -141,7 +143,7 @@ const ParcelasConta = (() => {
           @media(max-width:520px){#parcelas-conta-modal .modal-body{padding:14px}.parcela-linha{grid-template-columns:1fr 1fr}.parcela-linha button{justify-self:end}.parcela-linha label:first-child{grid-column:1 / -1}}
         </style>
         <div class="modal-box">
-          <div class="modal-header"><span class="modal-title" id="parcelas-titulo">${split ? 'Desdobrar conta em parcelas' : 'Registrar pagamento?'}</span>
+          <div class="modal-header"><span class="modal-title" id="parcelas-titulo">${split ? 'Editar valores e parcelas' : 'Registrar pagamento?'}</span>
             <button type="button" class="btn-icon modal-close" aria-label="Fechar"><span class="material-symbols-outlined">close</span></button></div>
           <div class="modal-body">
             <p style="font-size:13px">${ref.numero ? 'NF ' + escHtml(ref.numero) + ' · ' : ''}${escHtml(ref.fornecedor)}</p>
@@ -153,7 +155,7 @@ const ParcelasConta = (() => {
               <div>Soma das parcelas<strong id="parcelas-soma"></strong></div>
             </div>
             <p style="font-size:13px;color:var(--text-secondary)">${split
-              ? 'A conta atual será substituída pela primeira parcela e pelas parcelas adicionais, com histórico preservado. Informe os valores e vencimentos de cada boleto.'
+              ? 'Revise o valor e o vencimento desta conta. Para dividir em boletos, use Adicionar parcela e informe cada valor e vencimento. As demais contas permanecem como estão.'
               : dup.length ? `${dup.length} duplicata(s) lida(s) do XML. Confira os valores e vencimentos antes de salvar.`
               : 'O XML não informa duplicatas. Informe o valor e o vencimento de cada boleto; nenhuma divisão ou data será presumida.'}</p>
             ${despesas > 0 ? `<div class="parcela-aviso">Já existem ${moeda(despesas)} de despesas desta NF registradas no Financeiro. Confira o que os boletos cobrem para não duplicar obrigações.</div>` : ''}
@@ -169,7 +171,7 @@ const ParcelasConta = (() => {
           </div>
           <div class="modal-footer">
             <button type="button" class="btn" id="parcelas-cancelar">${split ? 'Cancelar' : 'Não registrar agora'}</button>
-            <button type="button" class="btn btn-primary" id="parcelas-salvar">${pendente ? 'Conferir pedido enviado' : 'Salvar contas a pagar'}</button>
+            <button type="button" class="btn btn-primary" id="parcelas-salvar">${pendente ? 'Conferir pedido enviado' : split ? 'Salvar alterações e parcelas' : 'Salvar contas a pagar'}</button>
           </div>
         </div>`;
       document.body.appendChild(overlay);
@@ -318,7 +320,7 @@ const ParcelasConta = (() => {
         } finally {
           enviando = false;
           if (overlay.isConnected) {
-            q('parcelas-salvar').textContent = pendente ? 'Conferir pedido enviado' : 'Salvar contas a pagar';
+            q('parcelas-salvar').textContent = pendente ? 'Conferir pedido enviado' : split ? 'Salvar alterações e parcelas' : 'Salvar contas a pagar';
             bloquear();
           }
           renderPendencias();

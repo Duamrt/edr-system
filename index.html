@@ -509,6 +509,41 @@ html.dark .badge-info { background: rgba(37,99,235,.15); }
   display: flex; justify-content: flex-end; gap: 12px;
 }
 
+/* Conta a pagar: cabeçalho e ações fixos, formulário com rolagem própria. */
+#modal-conta > .modal-box {
+  width: 95vw; max-width: 520px; max-height: 90vh;
+  padding: 0; display: flex; flex-direction: column; overflow: hidden;
+}
+#modal-conta .modal-header,
+#modal-conta .modal-body,
+#modal-conta .modal-footer { padding: 24px; }
+#modal-conta .modal-header,
+#modal-conta .modal-footer { flex-shrink: 0; }
+#modal-conta .modal-header { gap: 12px; }
+#modal-conta .modal-title { margin: 0; padding: 0; border: 0; }
+#modal-conta .modal-body { min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+#modal-conta .conta-campo { margin-bottom: 16px; }
+#modal-conta .conta-campo:last-child { margin-bottom: 0; }
+#modal-conta .conta-campo label { display: block; margin: 0 0 6px; }
+#modal-conta .conta-campo input,
+#modal-conta .conta-campo select { width: 100%; min-width: 0; box-sizing: border-box; }
+#modal-conta .conta-valores { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+#modal-conta .conta-parcelas-acao {
+  margin-bottom: 20px; padding: 16px; border: 1px solid var(--primary);
+  border-radius: var(--radius-sm); background: var(--primary-surface);
+}
+#modal-conta .conta-parcelas-acao p { margin: 10px 0 0; font-size: 12px; line-height: 1.5; color: var(--text-secondary); }
+#modal-conta #conta-desdobrar { width: 100%; min-height: 44px; white-space: normal; line-height: 1.35; }
+#modal-conta #conta-parcelas-aviso { margin: 12px 0 0; color: var(--text-primary); font-weight: 600; }
+#modal-conta [hidden] { display: none; }
+#modal-conta .modal-footer .btn { min-height: 44px; }
+@media (max-width: 480px) {
+  #modal-conta .modal-header,
+  #modal-conta .modal-body,
+  #modal-conta .modal-footer { padding: 16px; }
+  #modal-conta .conta-parcelas-acao { padding: 12px; }
+}
+
 /* ══════════════════════════════════════════
    TOAST / SNACKBAR
    ══════════════════════════════════════════ */
@@ -3484,43 +3519,50 @@ function updateShellUser(nome, perfil) {
 <!-- ═══════════════════════════════════════════════════════════════ -->
 
 <!-- MODAL CONTA A PAGAR -->
-<div id="modal-conta" class="modal-overlay hidden" role="dialog" aria-modal="true" onclick="if(event.target===this)fecharModal('conta')">
-  <div class="modal-box" style="max-width:460px;width:95vw;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-      <span id="modal-conta-titulo" style="font-size:16px;font-weight:800;color:var(--text-primary);">Nova conta</span>
-      <button class="modal-close" onclick="fecharModal('conta')"><span class="material-symbols-outlined">close</span></button>
+<div id="modal-conta" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-conta-titulo" onclick="if(event.target===this)fecharModal('conta')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2 id="modal-conta-titulo" class="modal-title">Nova conta</h2>
+      <button type="button" class="modal-close" aria-label="Fechar edição da conta" onclick="fecharModal('conta')"><span class="material-symbols-outlined" aria-hidden="true">close</span></button>
     </div>
+    <div class="modal-body">
     <input type="hidden" id="conta-id">
-    <div style="margin-bottom:12px;position:relative;">
-      <label style="font-size:11px;font-weight:700;color:var(--text-tertiary);letter-spacing:1px;display:block;margin-bottom:4px;">FORNECEDOR *</label>
+    <section id="conta-parcelas-acao" class="conta-parcelas-acao" hidden>
+      <button type="button" id="conta-desdobrar" class="btn btn-primary" aria-describedby="conta-parcelas-ajuda">Editar valores e parcelas</button>
+      <p id="conta-parcelas-ajuda">Adicione parcelas e informe o valor e o vencimento de cada boleto. A conta salva será revisada no editor de parcelas.</p>
+      <p id="conta-parcelas-aviso" role="alert" tabindex="-1" hidden></p>
+    </section>
+    <div class="conta-campo" style="position:relative;">
+      <label for="conta-fornecedor">FORNECEDOR *</label>
       <input type="text" id="conta-fornecedor" placeholder="Ex: Depósito Central" oninput="onContaFornInput()" autocomplete="off" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;background:var(--bg);color:var(--text-primary);box-sizing:border-box;">
       <div id="ac-conta-forn" class="autocomplete-list hidden" style="position:absolute;top:100%;left:0;right:0;z-index:200;background:var(--card);border:1px solid var(--border);border-radius:8px;max-height:200px;overflow-y:auto;"></div>
     </div>
-    <div style="margin-bottom:12px;">
-      <label style="font-size:11px;font-weight:700;color:var(--text-tertiary);letter-spacing:1px;display:block;margin-bottom:4px;">DESCRICAO</label>
+    <div class="conta-campo">
+      <label for="conta-descricao">DESCRIÇÃO</label>
       <input type="text" id="conta-descricao" placeholder="Ex: Material hidráulico" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;background:var(--bg);color:var(--text-primary);box-sizing:border-box;">
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
-      <div>
-        <label style="font-size:11px;font-weight:700;color:var(--text-tertiary);letter-spacing:1px;display:block;margin-bottom:4px;">VALOR (R$) *</label>
+    <div class="conta-valores">
+      <div class="conta-campo">
+        <label for="conta-valor">VALOR (R$) *</label>
         <input type="number" id="conta-valor" min="0" step="0.01" placeholder="0,00" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;background:var(--bg);color:var(--text-primary);box-sizing:border-box;">
       </div>
-      <div>
-        <label style="font-size:11px;font-weight:700;color:var(--text-tertiary);letter-spacing:1px;display:block;margin-bottom:4px;">VENCIMENTO *</label>
+      <div class="conta-campo">
+        <label for="conta-vencimento">VENCIMENTO *</label>
         <input type="date" id="conta-vencimento" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;background:var(--bg);color:var(--text-primary);box-sizing:border-box;">
       </div>
     </div>
-    <div style="margin-bottom:12px;">
-      <label style="font-size:11px;font-weight:700;color:var(--text-tertiary);letter-spacing:1px;display:block;margin-bottom:4px;">OBRA (OPCIONAL)</label>
+    <div class="conta-campo">
+      <label for="conta-obra">OBRA (OPCIONAL)</label>
       <select id="conta-obra" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;background:var(--bg);color:var(--text-primary);box-sizing:border-box;"></select>
     </div>
-    <div style="margin-bottom:20px;">
-      <label style="font-size:11px;font-weight:700;color:var(--text-tertiary);letter-spacing:1px;display:block;margin-bottom:4px;">REF. NOTA FISCAL</label>
+    <div class="conta-campo">
+      <label for="conta-nota-ref">REF. NOTA FISCAL</label>
       <input type="text" id="conta-nota-ref" placeholder="Ex: NF-001" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;background:var(--bg);color:var(--text-primary);box-sizing:border-box;">
     </div>
-    <div style="display:flex;gap:10px;">
-      <button onclick="fecharModal('conta')" style="flex:1;padding:12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);font-size:14px;font-weight:700;cursor:pointer;">Cancelar</button>
-      <button onclick="salvarConta()" style="flex:2;padding:12px;border-radius:var(--radius-sm);border:none;background:var(--primary);color:#fff;font-size:14px;font-weight:700;cursor:pointer;">Salvar</button>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn" onclick="fecharModal('conta')">Cancelar</button>
+      <button type="button" class="btn btn-primary" onclick="salvarConta()">Salvar conta</button>
     </div>
   </div>
 </div>
