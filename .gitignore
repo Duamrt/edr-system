@@ -39,3 +39,6 @@ CLAUDE.md
 preview.png
 preview-polimento.html
 dmstack-*.png
+
+# Saida do build do site (Cloudflare Pages)
+dist/

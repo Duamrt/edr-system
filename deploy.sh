@@ -92,6 +92,10 @@ fs.writeFileSync('novo-cliente.html',c);
 echo "[2/4] Atualizando Service Worker..."
 sed -i -E "s/const CACHE_NAME = 'edr-system-v[0-9]+';/const CACHE_NAME = 'edr-system-v$VERSION';/" sw.js
 
+# Confere que o site monta com a allowlist do Cloudflare Pages (dist/ nao e versionado)
+echo "[2.5/4] Conferindo build do site (build-site.sh)..."
+bash build-site.sh
+
 # 3. Git commit + push explicitos
 echo "[3/4] Commitando..."
 git add -- "${HTML_FILES[@]}" sw.js
