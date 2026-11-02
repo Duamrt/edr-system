@@ -19,3 +19,23 @@ teste-estados-painel.png
 
 # repo embutido de revisao (nao versionar aqui)
 revisao-diarias-rpc/
+
+# Arquivos internos fora do site publico (repo publico - remocao temporaria 2026-11)
+docs/
+sql/
+tests/
+scripts/
+.playwright-mcp/
+.claude/
+.codex/
+.agents/
+supabase/.temp/
+HANDOFF.md
+INVENTARIO_TECNICO.md
+V2-TRACKER.md
+test-spec.md
+AGENTS.md
+CLAUDE.md
+preview.png
+preview-polimento.html
+dmstack-*.png
