@@ -43,6 +43,24 @@ if ! git merge-base --is-ancestor origin/main dev; then
   exit 1
 fi
 
+# Testes de regressao (repo privado edr-system-testes, ao lado desta pasta).
+# Roda antes de alterar qualquer arquivo: teste falhando = deploy bloqueado.
+TESTES_DIR="${EDR_TESTES_DIR:-$(cd .. && pwd)/edr-system-testes}"
+if [ ! -f "$TESTES_DIR/rodar-testes.sh" ]; then
+  echo "[BLOQUEADO] Repositorio de testes nao encontrado em: $TESTES_DIR"
+  echo "  Rode uma vez: git clone https://github.com/Duamrt/edr-system-testes \"$TESTES_DIR\""
+  exit 1
+fi
+echo "[PRE-FLIGHT] Atualizando testes de regressao..."
+if ! git -C "$TESTES_DIR" pull --ff-only --quiet; then
+  echo "[BLOQUEADO] Nao consegui atualizar $TESTES_DIR (sem internet ou alteracao local la)."
+  exit 1
+fi
+if ! bash "$TESTES_DIR/rodar-testes.sh" "$(pwd)"; then
+  echo "[BLOQUEADO] Teste de regressao falhou. Nada foi alterado nem publicado."
+  exit 1
+fi
+
 # Se uma etapa posterior falhar, devolve o operador para a branch de origem.
 restore_branch() {
   STATUS=$?
